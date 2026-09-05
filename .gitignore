@@ -1,0 +1,6 @@
+build/
+build-*/
+tmp/
+__pycache__/
+.env
+secrets.h
