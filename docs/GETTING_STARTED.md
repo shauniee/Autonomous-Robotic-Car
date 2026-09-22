@@ -26,6 +26,8 @@ team plan, not an additional course requirement.
 5. Set up the Pico SDK. Build and flash the starter. Verify USB status and the
    `s`/`x` bench commands. With the current invalid sensor stubs, `s` should report
    a sensor fault and `x` should report a commanded stop.
+   For Buddy 1, follow [WiFi setup](WIFI_TELEMETRY.md) to configure the implemented
+   Pico W transport and check telemetry independently of the sensor drivers.
 6. Agree on measurable success targets and start a calibration/test log.
 
 Do not begin with five complete programs that each own `main()`. Each buddy
@@ -67,8 +69,10 @@ drivers as valid readings in the production loop.
 - C is the starter choice; confirm any course-mandated language or RTOS.
 - Confirm barcode encoding, line/junction geometry, obstacle rules, course
   dimensions and numerical assessment targets with your instructor.
-- Choose the WiFi arrangement and MQTT broker before implementing Buddy 1's driver.
-- Agree whether WiFi loss requires a stop or permits continued autonomous motion.
+- The implemented transport targets Pico W and a local IPv4 MQTT broker; fill the
+  local configuration and confirm the module mounted on the carrier board.
+- The current default stops on loss of an established MQTT connection. Agree with
+  the team before changing `ROBOT_STOP_ON_DISCONNECT`.
 - Set measured sensor rates, timeouts, speed limits and stopping clearance.
   Values in `config.h` are examples, not calibrated operating limits.
 - Define how a navigation action completes, times out, and hands control back.

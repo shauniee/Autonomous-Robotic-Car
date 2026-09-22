@@ -1,6 +1,6 @@
 # Autonomous Robotic Car
 
-A C starter project for a Raspberry Pi Pico, based on `Project Briefing.pdf`.
+A C project for a Raspberry Pi Pico W, based on `Project Briefing.pdf`.
 The car must follow a line, decode navigation barcodes, measure humps, bypass
 obstacles, and report telemetry. Five subsystem owners share one vehicle controller.
 
@@ -14,13 +14,18 @@ obstacles, and report telemetry. Five subsystem owners share one vehicle control
 - Stop behavior for obstacles, lost line, collision, invalid/stale readings,
   and navigation actions that have not been implemented.
 - A scripted desktop demo, controller tests, and a Pico SDK build target.
-- Separate source files for all five buddies, ready to replace with real drivers.
+- Pico W WiFi/MQTT telemetry, heartbeat, validated commands and reconnect handling.
+- Separate source files for all five buddies, with sensor/motor drivers still to implement.
+
+**Buddy 1 setup:** [WiFi and MQTT guide](docs/WIFI_TELEMETRY.md).
 
 **This is a scaffold, not working autonomous-car firmware.** Sensor drivers,
 motor PWM/encoder PID, barcode decoding, IMU processing, servo scanning,
-avoidance/recovery, WiFi, and MQTT are TODOs. Pico sensor stubs return invalid
-readings, motor functions do nothing, and communications produce USB serial
-status only. No GPIO pins are assigned yet.
+avoidance/recovery are TODOs. Pico sensor stubs return invalid readings and motor
+functions do nothing. Communications use the Pico W onboard radio after local
+network configuration; desktop builds use USB/console output. No external sensor
+or motor GPIO pins are assigned yet. Radio/broker operation still needs a physical
+bench test; successful compilation and mock tests do not establish hardware operation.
 
 ## Run without hardware (Windows PowerShell)
 
@@ -30,29 +35,34 @@ Prerequisites: GCC on PATH. No Pico SDK is needed for this desktop check.
 powershell -ExecutionPolicy Bypass -File scripts/check.ps1
 ```
 
-This compiles the shared controller and all subsystem stubs, runs the tests,
-then prints a synthetic mission sequence. It does not simulate vehicle physics.
+This compiles the shared controller and subsystem stubs, tests command parsing,
+telemetry encoding and network recovery through a fake SDK, then prints a synthetic
+mission sequence. It does not simulate vehicle physics or test a real radio/broker.
 
-## Build for Pico
+## Build for Pico W
 
 Install the Raspberry Pi Pico C/C++ SDK, its ARM toolchain, CMake, and Ninja.
 Set `PICO_SDK_PATH` to your SDK checkout (including its submodules).
 See the [official SDK setup](https://github.com/raspberrypi/pico-sdk).
 
 ```powershell
+# First-time setup only; do not overwrite an existing configuration.
+Copy-Item config/network_config.example.h config/network_config.h
+# Edit config/network_config.h locally with WiFi and broker settings.
 $env:PICO_SDK_PATH = 'C:\path\to\pico-sdk'
-cmake -S . -B build-pico -G Ninja -DPICO_BOARD=pico
-cmake --build build-pico
+cmake -S . -B build-picow -G Ninja -DPICO_BOARD=pico_w
+cmake --build build-picow
 ```
 
-The intended output is `build-pico/robot_car.uf2`. Hold BOOTSEL while connecting
-the board, then copy the UF2 to its USB drive. The starter reports `IDLE` over USB
-serial and will not drive a motor. CMake requires a working SDK/toolchain setup;
-the desktop check alone does not verify the firmware build.
+Alternatively, `powershell -ExecutionPolicy Bypass -File scripts/build-picow.ps1`
+uses installed tools or the project-local tools in ignored `tmp/` when available.
+The output is `build-picow/robot_car.uf2`. Hold BOOTSEL while connecting the board,
+then copy the UF2 to its USB drive. Empty settings build successfully but leave
+networking disabled. The car starts in `IDLE`; sensor stubs prevent motion.
 
-A standard Pico has **no onboard WiFi**. For Buddy 1, confirm whether you actually
-have a Pico W/WH or need an external WiFi module. A Pico W build uses
-`-DPICO_BOARD=pico_w`; selecting that board does not implement networking.
+A standard Pico has **no onboard WiFi**. The default target is now Pico W.
+For a USB-only standard Pico build, use a separate build directory and
+`-DPICO_BOARD=pico -DROBOT_ENABLE_WIFI=OFF`.
 See [official board variants](https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html).
 
 ## Layout
@@ -60,10 +70,13 @@ See [official board variants](https://www.raspberrypi.com/documentation/microcon
 ```text
 include/robot/       Shared types, configuration, controller and subsystem APIs
 src/controller.c    Mission decisions; never accesses GPIO
-src/subsystems/     One implementation file per buddy
+src/comms_protocol.c Shared telemetry encoding and validated command inbox
+src/subsystems/     Buddy modules; comms_picow.c is the real WiFi/MQTT backend
 src/main_pico.c     Cooperative Pico loop and USB command entry point
 sim/main.c          Scripted inputs for a desktop demonstration
 tests/              Controller behavior checks
 scripts/check.ps1   Compile, test, and run on Windows with GCC
+scripts/mqtt_client.py Laptop monitor/start/stop tool
+config/             Network configuration example and local lab broker config
 docs/               Build order, API contracts, pin planning and test evidence
 ```

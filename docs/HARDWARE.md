@@ -1,18 +1,20 @@
 # Hardware and pin planning
 
-Board specified by the team: **Raspberry Pi Pico**. Exact variant, peripheral
-models and wiring are still to be confirmed. No GPIO map is embedded in the code.
+Communications target confirmed in the conversation: **Raspberry Pi Pico W**.
+`MACHINE.MD` lists ROBO PICO and MAKER PI PICO carrier boards; verify that the
+mounted module is the W variant. Peripheral models and wiring still need
+confirmation. No external GPIO map is embedded in the code.
 
 | Part | Exact model | Interface / signal needs | Proposed GPIOs | Owner |
 | --- | --- | --- | --- | --- |
-| Controller | Pico; verify variant | USB, GPIO | TBD | Integration |
+| Controller | Pico W; confirm mounted module | USB, GPIO, onboard WiFi | TBD | Integration |
 | Motor driver | TBD | PWM/direction/enable per actual driver | TBD | Buddy 2 |
 | Left/right encoders | TBD | Digital edge inputs; confirm channel count | TBD | Buddy 2 |
 | 3 IR sensors | TBD | Analogue or digital output; confirm model | TBD | Buddy 3 |
 | IMU | TBD | I2C or SPI; confirm address and axes | TBD | Buddy 4 |
 | Ultrasonic sensor | TBD | Trigger/echo or model-specific interface | TBD | Buddy 5 |
 | Servo | TBD | Control pulse and separate power requirements | TBD | Buddy 5 |
-| WiFi | Onboard only if W; otherwise external module TBD | Module-specific UART/SPI if external | TBD | Buddy 1 |
+| WiFi | Pico W onboard CYW43 | Managed by Pico SDK | No external pin assignment | Buddy 1 |
 | Battery/regulators | TBD | Voltage/current budget and common reference | N/A | Whole team |
 
 Before selecting pins, check the actual part datasheets and Pico pin functions,

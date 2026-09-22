@@ -1,0 +1,8 @@
+#define ROBOT_WIFI_SSID "test-network"
+#define ROBOT_WIFI_PASSWORD "test-only"
+#define ROBOT_MQTT_BROKER_IP "192.0.2.1"
+#define ROBOT_MQTT_PORT 1883
+#define ROBOT_MQTT_USERNAME ""
+#define ROBOT_MQTT_PASSWORD ""
+#define ROBOT_MQTT_TOPIC_ROOT "robot/car01"
+#define ROBOT_STOP_ON_DISCONNECT 1
