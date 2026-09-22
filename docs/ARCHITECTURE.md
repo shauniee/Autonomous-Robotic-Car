@@ -14,16 +14,16 @@ flowchart TD
     US --> WIFI
 ```
 
-This diagram is the intended data flow. The USB telemetry stub currently reports
-controller state, reason and requested speeds; its API already accepts sensor
-and motion readings for later telemetry expansion.
+This diagram is the data flow. Both communications backends encode controller,
+sensor and measured-motion data using the shared telemetry encoder. The Pico W
+backend publishes it through MQTT; the desktop backend prints it to the console.
 
 ## Source ownership
 
 | Owner | File | Responsibility |
 | --- | --- | --- |
 | Integration owner | `src/controller.c`, `src/main_pico.c` | Decide mission state; coordinate calls and priorities |
-| Buddy 1 | `src/subsystems/comms.c` | Connection, command validation, telemetry, heartbeat/reconnect |
+| Buddy 1 | `src/subsystems/comms_picow.c`, `src/comms_protocol.c` | WiFi/MQTT, command validation, telemetry, heartbeat/reconnect; `comms.c` is the desktop/USB backend |
 | Buddy 2 | `src/subsystems/motion.c` | Exclusive motor-output ownership, encoders, PID, bounded turns |
 | Buddy 3 | `src/subsystems/line_barcode.c` | Three IR readings, calibration, line/junction/barcode interpretation |
 | Buddy 4 | `src/subsystems/terrain.c` | IMU calibration, orientation, humps/height, collision/motion events |
@@ -82,26 +82,34 @@ reacquisition, each with completion conditions and timeouts. Hump measurement
 can initially run alongside navigation. Do not estimate height as a bare double
 integral of uncorrected acceleration; define and validate the measurement method.
 
-## Proposed MQTT contract (not implemented)
+## Implemented MQTT contract
 
 | Topic | Direction | Purpose |
 | --- | --- | --- |
 | `robot/car01/telemetry` | Car to broker | State, reason, measured speed/distance, sensor values and validity |
 | `robot/car01/heartbeat` | Car to broker | Uptime and connection health |
 | `robot/car01/command` | Broker to car | Start/stop requests |
+| `robot/car01/status` | Car/broker to monitor | Retained online status / last will |
 
-Example command: `{"id":42,"command":"stop"}`.
-Reject unknown commands, bound payload size, consume commands once, and avoid
-retained start messages or re-executing duplicates after reconnection. Define
-session/sequence handling and expiration before enabling remote start. Keep
-credentials out of source control. Start with a bench broker and record message
-examples plus reconnect behavior in Buddy 1's MQTT documentation.
+Start requires `session`, `id`, `issued_ms` and `command` fields. A connection gets
+a new random session, announced in heartbeat messages. Commands with the wrong
+session, repeated IDs, malformed fields or an age over 5 seconds are rejected.
+Plain `stop` is also accepted. See [WiFi guide](WIFI_TELEMETRY.md) for exact formats.
+
+Commands pass through the controller, never directly to motors. Losing an
+established MQTT connection emits one STOP by default and clears pending starts;
+reconnection does not resume driving. This policy is configurable through
+`ROBOT_STOP_ON_DISCONNECT`. Starting locally before a first network connection
+remains possible once sensor drivers are implemented.
 
 ## Initial scheduling proposal
 
 `main_pico.c` polls modules once per loop, then sleeps 20 ms. Each module should
 internally schedule its acquisition at a rate supported by the chosen hardware.
 The effective loop period includes execution time and is not a guaranteed 50 Hz.
-USB status is requested every 500 ms. Measure timing, bound telemetry work, and
+Telemetry is requested every 500 ms and MQTT heartbeat every second. The Pico W
+backend services CYW43/lwIP from `comms_poll()` on the same core. Joins and broker
+connections use asynchronous completion with bounded deadlines and backoff;
+offline telemetry is dropped. Measure timing, bound telemetry work, and
 introduce deadline scheduling before tuning control loops; add an RTOS only if
 your course or measured timing needs justify it.

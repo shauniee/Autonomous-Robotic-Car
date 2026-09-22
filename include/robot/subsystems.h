@@ -5,7 +5,9 @@
 
 /* All update calls must return promptly; never wait for a full scan or network. */
 
-/* Buddy 1: transport implementation is currently USB printf only. */
+/* Buddy 1: Pico W WiFi/MQTT or USB-only desktop backend.
+   Call init once, then poll frequently on the same core (never from an ISR).
+   Network operations do not wait for connection completion. */
 void comms_init(void);
 RobotCommand comms_poll(uint32_t now_ms);
 void comms_publish(const VehicleController *controller, const SensorFrame *sensors,

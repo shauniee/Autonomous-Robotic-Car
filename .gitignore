@@ -4,3 +4,4 @@ tmp/
 __pycache__/
 .env
 secrets.h
+config/network_config.h

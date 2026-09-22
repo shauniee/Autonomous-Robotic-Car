@@ -4,7 +4,7 @@ Push-Location $projectRoot
 try {
     New-Item -ItemType Directory -Force -Path build | Out-Null
     $sources = @(
-        'src/controller.c', 'src/subsystems/comms.c', 'src/subsystems/motion.c',
+        'src/controller.c', 'src/comms_protocol.c', 'src/subsystems/comms.c', 'src/subsystems/motion.c',
         'src/subsystems/line_barcode.c', 'src/subsystems/terrain.c',
         'src/subsystems/obstacle.c'
     )
@@ -13,6 +13,14 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed.' }
     & ./build/test_controller.exe
     if ($LASTEXITCODE -ne 0) { throw 'Controller tests failed.' }
+    & gcc @flags src/controller.c src/comms_protocol.c tests/test_comms_protocol.c -o build/test_comms_protocol.exe
+    if ($LASTEXITCODE -ne 0) { throw 'Protocol test compilation failed.' }
+    & ./build/test_comms_protocol.exe
+    if ($LASTEXITCODE -ne 0) { throw 'Protocol tests failed.' }
+    & gcc @flags -Itests/fakes src/controller.c src/comms_protocol.c src/subsystems/comms_picow.c tests/test_comms_network.c -o build/test_comms_network.exe
+    if ($LASTEXITCODE -ne 0) { throw 'Network test compilation failed.' }
+    & ./build/test_comms_network.exe
+    if ($LASTEXITCODE -ne 0) { throw 'Network tests failed.' }
     & gcc @flags @sources sim/main.c -o build/robot_sim.exe
     if ($LASTEXITCODE -ne 0) { throw 'Demo compilation failed.' }
     & ./build/robot_sim.exe
