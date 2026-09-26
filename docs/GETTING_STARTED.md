@@ -15,8 +15,8 @@ team plan, not an additional course requirement.
 
 ## First team session
 
-1. Confirm the exact board: Pico, Pico W, or another variant. Standard Pico needs
-   an external WiFi solution to satisfy the communication requirement.
+1. Use the confirmed Raspberry Pi Pico WH on the Cytron Maker Pi Pico carrier.
+   Its onboard WiFi uses the SDK's `pico_w` target; no external radio is needed.
 2. List the actual motor driver, encoder, IR sensor, IMU, ultrasonic sensor,
    servo, battery and regulator part numbers in [HARDWARE.md](HARDWARE.md).
 3. Assign each buddy a subsystem and name an integration owner for `controller.c`.
@@ -27,7 +27,7 @@ team plan, not an additional course requirement.
    `s`/`x` bench commands. With the current invalid sensor stubs, `s` should report
    a sensor fault and `x` should report a commanded stop.
    For Buddy 1, follow [WiFi setup](WIFI_TELEMETRY.md) to configure the implemented
-   Pico W transport and check telemetry independently of the sensor drivers.
+   Pico WH transport and check telemetry independently of the sensor drivers.
 6. Agree on measurable success targets and start a calibration/test log.
 
 Do not begin with five complete programs that each own `main()`. Each buddy
@@ -69,8 +69,8 @@ drivers as valid readings in the production loop.
 - C is the starter choice; confirm any course-mandated language or RTOS.
 - Confirm barcode encoding, line/junction geometry, obstacle rules, course
   dimensions and numerical assessment targets with your instructor.
-- The implemented transport targets Pico W and a local IPv4 MQTT broker; fill the
-  local configuration and confirm the module mounted on the carrier board.
+- The implemented transport targets the confirmed Pico WH and a local IPv4 MQTT
+  broker; fill the local configuration and verify it on the bench.
 - The current default stops on loss of an established MQTT connection. Agree with
   the team before changing `ROBOT_STOP_ON_DISCONNECT`.
 - Set measured sensor rates, timeouts, speed limits and stopping clearance.

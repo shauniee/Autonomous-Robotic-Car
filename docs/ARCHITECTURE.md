@@ -15,8 +15,20 @@ flowchart TD
 ```
 
 This diagram is the data flow. Both communications backends encode controller,
-sensor and measured-motion data using the shared telemetry encoder. The Pico W
+sensor and measured-motion data using the shared telemetry encoder. The Pico WH
 backend publishes it through MQTT; the desktop backend prints it to the console.
+
+Confirmed platform: Raspberry Pi Pico WH on Cytron Maker Pi Pico, built using
+`PICO_BOARD=pico_w`. The communications path is:
+
+```text
+Pico WH onboard WiFi -> WiFi access point -> MQTT broker -> laptop telemetry monitor
+Pico WH command inbox <- WiFi access point <- MQTT broker <- laptop commands
+```
+
+USB serial telemetry remains independent of network availability. An empty SSID
+disables networking; an empty broker IP allows WiFi-only bring-up. Internal
+connection states stay inside Buddy 1, with the existing init/poll/publish API.
 
 ## Source ownership
 
@@ -107,7 +119,7 @@ remains possible once sensor drivers are implemented.
 `main_pico.c` polls modules once per loop, then sleeps 20 ms. Each module should
 internally schedule its acquisition at a rate supported by the chosen hardware.
 The effective loop period includes execution time and is not a guaranteed 50 Hz.
-Telemetry is requested every 500 ms and MQTT heartbeat every second. The Pico W
+Telemetry is requested every 500 ms and MQTT heartbeat every second. The Pico WH
 backend services CYW43/lwIP from `comms_poll()` on the same core. Joins and broker
 connections use asynchronous completion with bounded deadlines and backoff;
 offline telemetry is dropped. Measure timing, bound telemetry work, and

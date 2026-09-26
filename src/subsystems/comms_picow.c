@@ -1,4 +1,4 @@
-/* Buddy 1's Pico W implementation.
+/* Buddy 1's Pico W/WH implementation (Pico WH on Maker Pi Pico).
    main_pico.c calls init once, poll every loop, and publish periodically.
    WiFi joins the local network; MQTT connects to the broker on that network.
    A callback is a function the networking library calls when an event happens,
@@ -18,11 +18,12 @@
 
 /* Polling architecture: callbacks and application calls run on the same core.
    Do not call this backend from interrupts or a second core. */
-typedef enum { NET_DISABLED, WIFI_WAIT, WIFI_JOIN, MQTT_WAIT,
+typedef enum { NET_DISABLED, WIFI_WAIT, WIFI_JOIN, WIFI_READY, MQTT_WAIT,
                MQTT_CONNECTING, MQTT_SUBSCRIBING, NET_ONLINE } NetworkState;
 /* These named states describe progress:
    DISABLED -> no network work; WIFI_WAIT -> wait until retry time;
-   WIFI_JOIN -> association/IP setup; MQTT_WAIT -> ready to try the broker;
+   WIFI_JOIN -> association/IP setup; WIFI_READY -> WiFi only, no broker configured;
+   MQTT_WAIT -> ready to try the broker;
    MQTT_CONNECTING -> wait for connection result;
    MQTT_SUBSCRIBING -> wait for permission to receive commands;
    NET_ONLINE -> publish data and accept commands. */
@@ -91,7 +92,7 @@ static void schedule_retry(uint32_t now, bool wifi_lost) {
                       (ROBOT_STOP_ON_DISCONNECT && net.had_connection);
     /* Stop trusting incoming commands before closing the old connection. */
     net.state = wifi_lost ? WIFI_WAIT : MQTT_WAIT;
-    mqtt_disconnect(net.client);
+    if (net.client) mqtt_disconnect(net.client);
     command_inbox_reset(&net.inbox, "");
     if (stop) command_inbox_stop(&net.inbox);
     net.had_connection = false;
@@ -171,19 +172,20 @@ void comms_init(void) {
     net.state = NET_DISABLED;
     net.backoff_ms = 1000u;
     /* Index [0] is a string's first character; zero here means the string is empty. */
-    if (!ROBOT_WIFI_SSID[0] || !ROBOT_MQTT_BROKER_IP[0]) {
+    if (!ROBOT_WIFI_SSID[0]) {
         puts("[net] Disabled: fill config/network_config.h and rebuild");
         return;
     }
     /* Convert the broker address, check port range, reject wildcard topic roots,
        and build all four topic names before starting any network activity. */
-    if (!ipaddr_aton(ROBOT_MQTT_BROKER_IP, &net.broker) ||
+    const bool mqtt_enabled = ROBOT_MQTT_BROKER_IP[0] != '\0';
+    if (mqtt_enabled && (!ipaddr_aton(ROBOT_MQTT_BROKER_IP, &net.broker) ||
         ROBOT_MQTT_PORT < 1 || ROBOT_MQTT_PORT > 65535 ||
         !ROBOT_MQTT_TOPIC_ROOT[0] || strchr(ROBOT_MQTT_TOPIC_ROOT, '#') ||
         strchr(ROBOT_MQTT_TOPIC_ROOT, '+') ||
         !topic(net.telemetry_topic, "telemetry") ||
         !topic(net.heartbeat_topic, "heartbeat") ||
-        !topic(net.command_topic, "command") || !topic(net.status_topic, "status")) {
+        !topic(net.command_topic, "command") || !topic(net.status_topic, "status"))) {
         puts("[net] Disabled: invalid broker IP, port or topic root");
         return;
     }
@@ -192,8 +194,8 @@ void comms_init(void) {
         puts("[net] CYW43 initialization failed");
         return;
     }
-    net.client = mqtt_client_new(); /* Allocate the MQTT client once at startup. */
-    if (!net.client) {
+    net.client = mqtt_enabled ? mqtt_client_new() : NULL;
+    if (mqtt_enabled && !net.client) {
         puts("[net] MQTT allocation failed");
         cyw43_arch_deinit();
         return;
@@ -218,7 +220,8 @@ void comms_init(void) {
     cyw43_arch_enable_sta_mode();
     net.state = WIFI_WAIT;
     net.deadline_ms = clock_ms();
-    puts("[net] Pico W networking initialized");
+    puts("[net] Pico W/WH networking initialized");
+    if (!mqtt_enabled) puts("[net] WiFi only: configure broker IP and rebuild for MQTT");
 }
 
 RobotCommand comms_poll(uint32_t now_ms) {
@@ -241,7 +244,8 @@ RobotCommand comms_poll(uint32_t now_ms) {
     } else if (net.state == WIFI_JOIN) {
         if (link == CYW43_LINK_UP) {
             printf("[net] WiFi connected; IP %s\n", ip4addr_ntoa(netif_ip4_addr(netif_default)));
-            net.state = MQTT_WAIT;
+            net.state = net.client ? MQTT_WAIT : WIFI_READY;
+            if (!net.client) net.backoff_ms = 1000u;
             net.deadline_ms = now_ms;
         } else if (link < 0 || due(now_ms, net.deadline_ms)) {
             schedule_retry(now_ms, true);

@@ -1,20 +1,21 @@
 # Hardware and pin planning
 
-Communications target confirmed in the conversation: **Raspberry Pi Pico W**.
-`MACHINE.MD` lists ROBO PICO and MAKER PI PICO carrier boards; verify that the
-mounted module is the W variant. Peripheral models and wiring still need
-confirmation. No external GPIO map is embedded in the code.
+Confirmed hardware: **Raspberry Pi Pico WH mounted on a Cytron Maker Pi Pico
+carrier board**. The Pico WH supplies onboard WiFi; no external WiFi module is
+required. Build with `PICO_BOARD=pico_w`. Peripheral models and wiring still
+need confirmation. No external GPIO map is embedded in the code.
 
 | Part | Exact model | Interface / signal needs | Proposed GPIOs | Owner |
 | --- | --- | --- | --- | --- |
-| Controller | Pico W; confirm mounted module | USB, GPIO, onboard WiFi | TBD | Integration |
+| Controller | Raspberry Pi Pico WH | USB, GPIO, onboard WiFi | TBD | Integration |
+| Carrier | Cytron Maker Pi Pico | Breakout and carrier peripherals; pin mapping pending | TBD | Integration |
 | Motor driver | TBD | PWM/direction/enable per actual driver | TBD | Buddy 2 |
 | Left/right encoders | TBD | Digital edge inputs; confirm channel count | TBD | Buddy 2 |
 | 3 IR sensors | TBD | Analogue or digital output; confirm model | TBD | Buddy 3 |
 | IMU | TBD | I2C or SPI; confirm address and axes | TBD | Buddy 4 |
 | Ultrasonic sensor | TBD | Trigger/echo or model-specific interface | TBD | Buddy 5 |
 | Servo | TBD | Control pulse and separate power requirements | TBD | Buddy 5 |
-| WiFi | Pico W onboard CYW43 | Managed by Pico SDK | No external pin assignment | Buddy 1 |
+| WiFi | Pico WH onboard CYW43 | Managed by Pico SDK | No external pin assignment | Buddy 1 |
 | Battery/regulators | TBD | Voltage/current budget and common reference | N/A | Whole team |
 
 Before selecting pins, check the actual part datasheets and Pico pin functions,
