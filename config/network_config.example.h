@@ -10,7 +10,7 @@
 #define ROBOT_NETWORK_CONFIG_H
 
 /* Copy to config/network_config.h (gitignored), then edit locally.
-   Empty SSID/broker leaves networking disabled but firmware still builds. */
+   Empty SSID leaves networking disabled; empty broker enables WiFi-only bring-up. */
 /* The WiFi network name, exactly as shown on your phone/laptop.
    SSID means Service Set Identifier. An empty string disables networking. */
 #define ROBOT_WIFI_SSID ""
@@ -21,7 +21,8 @@
    This initial transport intentionally does not use DNS or TLS. */
 /* LAN IPv4 address of the computer running the MQTT message server (broker).
    Example: "192.168.1.20". Do not use the Pico IP or "localhost" here.
-   An empty string disables networking; hostnames are not supported by this backend. */
+   An empty string skips MQTT but still joins WiFi when SSID is set.
+   Hostnames are not supported by this backend. */
 #define ROBOT_MQTT_BROKER_IP ""
 /* TCP port where the broker listens. 1883 is the usual plain-MQTT port.
    It must match the listener port in mosquitto-lab.conf. Changing this number

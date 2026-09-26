@@ -15,6 +15,8 @@ static mqtt_client_t client;
 static uint32_t now;
 static int link, joins, connects, subscriptions, publishes;
 static bool fail_publish;
+static int init_result, join_result, deinitializations, polls;
+static bool fail_allocation;
 static mqtt_connection_cb_t connection_cb;
 static mqtt_request_cb_t subscribe_cb;
 static mqtt_incoming_publish_cb_t incoming_pub;
@@ -23,22 +25,22 @@ static char heartbeat[512], telemetry[2048];
 
 uint32_t get_absolute_time(void) { return now; }
 uint32_t to_ms_since_boot(uint32_t time) { return time; }
-int cyw43_arch_init(void) { return 0; }
-void cyw43_arch_deinit(void) { }
-void cyw43_arch_poll(void) { }
+int cyw43_arch_init(void) { return init_result; }
+void cyw43_arch_deinit(void) { ++deinitializations; }
+void cyw43_arch_poll(void) { ++polls; }
 void cyw43_arch_enable_sta_mode(void) { }
 void cyw43_arch_disable_sta_mode(void) { link = 0; }
 int cyw43_arch_wifi_connect_async(const char *ssid, const char *password, uint32_t auth) {
     assert(ssid[0] && password[0] && auth == CYW43_AUTH_WPA2_AES_PSK);
     ++joins;
-    return 0;
+    return join_result;
 }
 int cyw43_tcpip_link_status(int *state, int itf) { (void)state; (void)itf; return link; }
 void pico_get_unique_board_id_string(char *out, size_t capacity) { snprintf(out, capacity, "1234567890abcdef"); }
 uint64_t get_rand_64(void) { static uint64_t value = 10; return ++value; }
 int ipaddr_aton(const char *text, ip_addr_t *ip) { (void)text; ip->addr = 1; return 1; }
 const char *ip4addr_ntoa(const ip_addr_t *ip) { (void)ip; return "192.0.2.2"; }
-mqtt_client_t *mqtt_client_new(void) { return &client; }
+mqtt_client_t *mqtt_client_new(void) { return fail_allocation ? NULL : &client; }
 void mqtt_disconnect(mqtt_client_t *c) { c->connected = false; }
 err_t mqtt_client_connect(mqtt_client_t *c, const ip_addr_t *ip, u16_t port,
                           mqtt_connection_cb_t cb, void *arg, const struct mqtt_connect_client_info_t *info) {
@@ -101,8 +103,38 @@ static void make_start(char *out, size_t capacity, uint32_t id) {
              ",\"issued_ms\":%" PRIu32 ",\"command\":\"start\"}", session, id, now);
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+    /* Separate process per startup case, matching the API's init-once contract. */
+    if (argc == 2) {
+        if (strcmp(argv[1], "init-failure") == 0) init_result = -1;
+        else { assert(strcmp(argv[1], "allocation-failure") == 0); fail_allocation = true; }
+        comms_init();
+        assert(tick(0) == COMMAND_NONE && tick(60000) == COMMAND_NONE);
+        assert(joins == 0 && connects == 0 && polls == 0);
+        assert(deinitializations == (fail_allocation ? 1 : 0));
+        VehicleController c; controller_init(&c);
+        SensorFrame s = {0}; MotionFeedback m = {0};
+        comms_publish(&c, &s, &m, now); /* USB telemetry remains callable. */
+        assert(publishes == 0);
+        puts("Network startup failure checks passed (fake SDK).");
+        return 0;
+    }
     comms_init();
+#ifdef ROBOT_TEST_WIFI_ONLY
+    assert(tick(0) == COMMAND_NONE && joins == 1);
+    link = CYW43_LINK_UP;
+    tick(20); tick(60000);
+    assert(connects == 0 && publishes == 0);
+    link = 0;
+    assert(tick(60020) == COMMAND_NONE); /* No established MQTT session to stop. */
+    tick(61019); assert(joins == 1);
+    tick(61020); assert(joins == 2);
+    link = CYW43_LINK_UP;
+    tick(61040); tick(62000);
+    assert(connects == 0 && publishes == 0);
+    puts("WiFi-only recovery checks passed (fake SDK).");
+    return 0;
+#endif
     assert(tick(0) == COMMAND_NONE && joins == 1);
     assert(tick(19999) == COMMAND_NONE && joins == 1);
     tick(20000); /* Join timeout, retry after backoff. */
@@ -157,6 +189,18 @@ int main(void) {
     assert(tick(44280) == COMMAND_STOP);
     tick(45280); accept_connection(); tick(45300);
     assert(subscriptions == 4); /* Subscription restored after broker disconnect. */
+    /* Immediate join errors must back off, cap at 30 s, and survive uptime wrap. */
+    link = 0;
+    uint32_t retry = UINT32_MAX - 500u;
+    assert(tick(retry) == COMMAND_STOP);
+    join_result = -1;
+    const uint32_t delays[] = {1000, 2000, 4000, 8000, 16000, 30000, 30000};
+    for (size_t i = 0; i < sizeof(delays) / sizeof(delays[0]); ++i) {
+        const int previous_joins = joins;
+        retry += delays[i];
+        assert(tick(retry - 1u) == COMMAND_NONE && joins == previous_joins);
+        assert(tick(retry) == COMMAND_NONE && joins == previous_joins + 1);
+    }
     puts("Pico W backend failure/reconnect checks passed (fake SDK).");
     return 0;
 }

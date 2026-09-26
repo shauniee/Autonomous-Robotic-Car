@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.13)
 
+# Pico WH uses the same SDK board definition as Pico W (headers do not change it).
 if(NOT DEFINED PICO_BOARD)
     set(PICO_BOARD pico_w CACHE STRING "Pico board")
 endif()
-option(ROBOT_ENABLE_WIFI "Build Pico W WiFi/MQTT backend" ON)
+option(ROBOT_ENABLE_WIFI "Build Pico W/WH onboard WiFi/MQTT backend" ON)
 set(ROBOT_NETWORK_CONFIG "${CMAKE_CURRENT_LIST_DIR}/config/network_config.h"
     CACHE FILEPATH "Local WiFi/MQTT configuration header")
 
@@ -25,6 +26,12 @@ if(ROBOT_ENABLE_WIFI)
     if(NOT PICO_CYW43_SUPPORTED)
         message(FATAL_ERROR "WiFi needs Pico W/WH. Use -DPICO_BOARD=pico_w or -DROBOT_ENABLE_WIFI=OFF.")
     endif()
+    foreach(network_target pico_cyw43_arch_lwip_poll pico_lwip_mqtt)
+        if(NOT TARGET ${network_target})
+            message(FATAL_ERROR
+                "Missing SDK target ${network_target}. Initialize the Pico SDK submodules (git submodule update --init --recursive in the SDK checkout). No external MQTT library is required.")
+        endif()
+    endforeach()
     set(COMMS_SOURCE src/subsystems/comms_picow.c)
     if(EXISTS "${ROBOT_NETWORK_CONFIG}")
         configure_file("${ROBOT_NETWORK_CONFIG}" generated/network_config.h COPYONLY)

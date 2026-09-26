@@ -1,14 +1,28 @@
-# Pico W WiFi and telemetry
+# Pico WH WiFi and telemetry
 
-Buddy 1 now has a Pico W C implementation. It joins WiFi asynchronously, connects
+Buddy 1 has a Pico W/WH C implementation. It joins WiFi asynchronously, connects
 to an IPv4 MQTT broker, publishes measurements, receives validated start/stop
 commands, sends heartbeats, and reconnects with backoff. The same main loop still
 owns the controller and motion calls.
 
-`MACHINE.MD` records ROBO PICO and MAKER PI PICO carrier boards. This implementation
-targets the **Pico W module** discussed in the conversation; confirm that the
-module mounted on your carrier is the wireless variant. No carrier GPIOs are used
+The confirmed hardware is **Raspberry Pi Pico WH on Cytron Maker Pi Pico**.
+The WH uses the SDK's `pico_w` board definition. No carrier GPIOs are assigned
 for WiFi. Regular Pico builds can still select the USB-only backend.
+
+Telemetry flows **Pico WH -> onboard WiFi -> access point -> MQTT broker ->
+laptop monitor**. Commands flow back through the broker to Buddy 1's validated
+inbox, then the vehicle controller. The broker runs on the laptop or another
+reachable LAN machine, not on the carrier board. USB serial is a separate debug path.
+
+## SDK dependencies
+
+The installed Pico SDK 2.2.0 was inspected: `src/rp2_common/pico_lwip/CMakeLists.txt`
+provides `pico_lwip_mqtt` using its bundled `lib/lwip/src/apps/mqtt/mqtt.c` and
+`lwip/apps/mqtt.h`. Firmware links this together with
+`pico_cyw43_arch_lwip_poll`, `pico_unique_id`, and `pico_rand`. No third-party
+firmware MQTT library is added. CMake checks that networking targets exist.
+If absent, run `git submodule update --init --recursive` in your SDK checkout.
+The optional Paho dependency is only for the existing laptop Python helper.
 
 ## 1. Configure your network locally
 
@@ -36,8 +50,12 @@ policy. Settings are C string literals: escape `"` and `\` inside credentials.
 They are embedded in the firmware. The local header and build folders are ignored
 by Git; do not commit credentials or share a configured UF2 publicly.
 
-Empty SSID or broker IP disables networking with a USB message. Invalid numeric
-IP/topic configuration also disables networking. Changing settings requires a rebuild.
+Empty SSID disables networking with a USB message. With an SSID and empty broker
+IP, WiFi joins and recovers normally but MQTT, remote commands and MQTT heartbeat
+remain disabled. This supports WiFi bring-up before a broker is available.
+Invalid nonempty broker IP/port/topic configuration disables networking.
+Changing settings requires a rebuild. CYW43 initialization or MQTT allocation
+failure leaves networking disabled until reboot; USB/controller polling continues.
 
 ## 2. Start a local broker
 
@@ -69,8 +87,9 @@ and a Pico SDK checkout with its CYW43, lwIP and TinyUSB submodules initialized.
 Set `PICO_SDK_PATH` and, if needed, `PICO_TOOLCHAIN_PATH` for your installation.
 See [official SDK setup](https://github.com/raspberrypi/pico-sdk).
 
-Hold BOOTSEL while connecting your Pico W. Copy `build-picow/robot_car.uf2` to its
-USB drive. Open USB serial after it reboots. Expected progress messages include:
+Hold BOOTSEL while connecting your Pico WH. Copy `build-picow/robot_car.uf2` to its
+USB drive (`RPI-RP2`). Open its COM port in PuTTY at 115200, 8N1, no flow control,
+after it reboots. Expected progress messages include:
 
 ```text
 [net] Joining WiFi
@@ -189,7 +208,9 @@ protocol acceptance, not successful mission execution; check controller state to
 Run `powershell -ExecutionPolicy Bypass -File scripts/check.ps1` for controller,
 protocol and fake-SDK recovery tests. These cover fragmentation, malformed JSON,
 overflow, replay/expiration, stop priority, stale sessions, timeouts, subscription
-failure, link loss, reconnect and subscription restoration.
+failure, link loss, reconnect and subscription restoration. Additional cases cover
+WiFi-only recovery, CYW43 initialization failure, MQTT allocation failure, immediate
+join errors, the 30-second backoff cap and retry deadlines across uptime wrap.
 
 Run `python -m unittest discover -s tests -p "test_mqtt_client.py"` for the laptop
 helper and an independent JSON parse of the C telemetry fixture (run C tests first).
@@ -198,11 +219,27 @@ Firmware was compile/link checked against Pico SDK 2.2.0 and ARM GCC 14.2.1 with
 WiFi enabled and test-only credentials. Physical RF/network behavior is not yet
 verified. Complete these bench checks and record evidence in `docs/test-log.csv`:
 
-1. Observe live heartbeat and invalid-sensor telemetry on the laptop.
+1. Keep motor power disconnected for communications bring-up. Observe live
+   heartbeat (about 1 s) and invalid-sensor telemetry (about 500 ms) on the laptop.
+   Confirm USB telemetry continues with the broker stopped and WiFi unavailable.
 2. Send STOP, then START; confirm the expected controller results above.
 3. Restart the broker; confirm reconnect, a new session, and working subscription.
 4. Interrupt WiFi; confirm the detected-loss stop, reconnect, and no automatic start.
 5. Replay an earlier start payload; confirm rejection and no state change.
+6. Boot with the access point unavailable or a deliberately incorrect local WiFi
+   password. Observe continued USB uptime/telemetry and working `x` STOP while
+   joins fail or reach their 20 s deadline and retries back off to 30 s. Restore valid settings
+   (rebuild/flash if changed) and verify recovery. Do not log passwords.
+7. Temporarily leave the broker IP empty in the local header, rebuild and flash:
+   observe WiFi-only mode and an assigned IP, with USB telemetry but no MQTT.
+   Interrupt/restore the access point and confirm reassociation. Restore the broker
+   configuration and rebuild/flash for the full MQTT checks.
+
+Pending hardware evidence: actual association/DHCP, broker delivery, command and
+loss recovery, and worst-case loop/poll timing under network failure or load.
+Application join/retry waits are bounded and asynchronous; SDK driver calls and
+poll execution still need measurement on the board. No physical timing guarantee
+or motor-stop verification is implied by desktop tests or a successful UF2 build.
 
 Implementation references: [Pico W MQTT example](https://github.com/raspberrypi/pico-examples/tree/master/pico_w/wifi/mqtt),
 [Pico polling architecture](https://www.raspberrypi.com/documentation/pico-sdk/networking.html),
