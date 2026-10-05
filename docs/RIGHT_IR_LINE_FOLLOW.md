@@ -15,7 +15,7 @@ Use two suitable wires per motor, secured in the Robo Pico screw terminals. Reus
 
 These colors are the motor leads in the project wiring references. Reused extension-wire colors were not supplied: label each wire at both ends and follow the motor lead/terminal, rather than guessing by extension color. Use wires rated for the actual motor current and secure terminal contact. With wheels raised, verify physical forward direction; if a wheel runs backwards, swap that motor's black/yellow terminal connections with power off (or change its `FOLLOW_*_FORWARD_A` setting and rebuild).
 
-Right IR stays on **Grove 5**: **AOUT → GP26/ADC0, VCC → 3V3, GND → GND**. DOUT stays disconnected. IR wire colors are not documented; follow the module's AOUT/VCC/GND labels. The four encoder wires (blue GND, white supply, red A, green B) are **not motor-power leads**; encoders are not used by this firmware, so leave unused ends insulated.
+Right IR now uses **Grove 6**: **AOUT → GP27/ADC1, VCC → 3V3, GND → GND**. DOUT stays disconnected. Left IR moves to **Grove 5 / GP26 / ADC0** and is unused by this one-sensor firmware. Leave Grove 6’s shared GP26 contact disconnected. IR wire colors are not documented; follow the module's AOUT/VCC/GND labels. The four encoder wires (blue GND, white supply, red A, green B) are **not motor-power leads**; encoders are not used by this firmware, so leave unused ends insulated.
 
 Servo: disconnect its plug; the new firmware holds **GP12 LOW**, generates no servo PWM and accepts no servo controls. IMU/sonar ports GP2–GP5 are unused. Power-bank red/black continue to VIN +/− per the existing design. Motor leads go to M1/M2 only; no extra wires from motor terminals to Pico GPIO are needed.
 

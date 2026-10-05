@@ -10,7 +10,7 @@ obstacles, and report telemetry. Five subsystem owners share one vehicle control
 ## Current setup: right IR motor line following
 
 Use [the wiring and line-following guide](docs/RIGHT_IR_LINE_FOLLOW.md).
-`right_ir_follow_mqtt` reads GP26, drives M1/M2 through GP8-GP11, and keeps
+`right_ir_follow_mqtt` reads GP27 (Grove 6 / ADC1), drives M1/M2 through GP8-GP11, and keeps
 GP12 LOW (servo disabled). IMU and ultrasonic are unused. Local GP20 starts/resets;
 GP21 stops. MQTT retains live IR/state/PWM statistics.
 

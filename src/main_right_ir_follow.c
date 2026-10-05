@@ -29,7 +29,7 @@ static void init_outputs(void){
     brake();
 }
 int main(void){
-    init_outputs();adc_init();adc_gpio_init(FOLLOW_IR_GPIO);adc_select_input(0);
+    init_outputs();adc_init();adc_gpio_init(FOLLOW_IR_GPIO);adc_select_input(FOLLOW_IR_ADC_CHANNEL);
     gpio_init(20);gpio_set_dir(20,GPIO_IN);gpio_pull_up(20);
     gpio_init(21);gpio_set_dir(21,GPIO_IN);gpio_pull_up(21);
     stdio_init_all();comms_init();watchdog_enable(250,true);
@@ -82,7 +82,7 @@ int main(void){
             if(reading.valid){snprintf(fraction,sizeof(fraction),"%.4f",(double)reading.fraction);snprintf(error,sizeof(error),"%.4f",(double)reading.error);}
             else{snprintf(fraction,sizeof(fraction),"null");snprintf(error,sizeof(error),"null");}
             int n=snprintf(json,sizeof(json),"{\"schema\":3,\"mode\":\"right_ir_follow\",\"state\":\"%s\",\"reason\":\"%s\",\"uptime_ms\":%" PRIu32
-                ",\"ir_right\":{\"valid\":true,\"gpio\":26,\"raw_adc\":%u,\"age_ms\":%" PRIu32 ",\"calibrated\":%s,\"black_fraction\":%s,\"edge_error\":%s},"
+                ",\"ir_right\":{\"valid\":true,\"gpio\":27,\"raw_adc\":%u,\"age_ms\":%" PRIu32 ",\"calibrated\":%s,\"black_fraction\":%s,\"edge_error\":%s},"
                 "\"motors\":{\"enabled\":%s,\"left_duty\":%.4f,\"right_duty\":%.4f,\"left_mps\":null,\"right_mps\":null},\"servo\":{\"enabled\":false}}",
                 state==RUNNING?"FOLLOW_LINE":(state==STOPPED?"STOPPED":"READY"),reason,now,raw,(uint32_t)(now-last_adc),reading.valid?"true":"false",fraction,error,
                 left>0||right>0?"true":"false",(double)left,(double)right);
