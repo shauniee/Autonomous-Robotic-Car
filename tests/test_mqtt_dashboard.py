@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import sys
 import time
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 
 root = Path(__file__).resolve().parent.parent
 publisher = shutil.which("mosquitto_pub") or "/opt/homebrew/bin/mosquitto_pub"
@@ -33,6 +33,23 @@ try:
     assert state["live"] is True
     assert state["telemetry"]["ir_right"]["raw_adc"] == 2048
     assert state["telemetry"]["motors"]["enabled"] is False
+    heartbeat={"online":True,"session":"0123456789abcdef","uptime_ms":100,"last_command_id":0}
+    follow={"mode":"right_ir_follow","state":"READY","motors":{"enabled":False}}
+    for suffix,data in [("heartbeat",heartbeat),("telemetry",follow)]:
+        subprocess.run([publisher,"-h","127.0.0.1","-t","codex/sensor-bench-test/"+suffix,"-m",json.dumps(data),"-r","-q","1"],check=True)
+    time.sleep(.2)
+    with urlopen("http://127.0.0.1:8766/api") as response: current=json.load(response)
+    subscriber = subprocess.Popen([str(Path(publisher).with_name("mosquitto_sub")),"-h","127.0.0.1","-t","codex/sensor-bench-test/command","-C","1","-W","5"],stdout=subprocess.PIPE,text=True)
+    try:
+        time.sleep(.2)
+        request=Request("http://127.0.0.1:8766/calibrate",data=json.dumps({"action":"calibrate_black","token":current["api_token"]}).encode(),headers={"Content-Type":"application/json"})
+        with urlopen(request) as response: result=json.load(response)
+        message=json.loads(subscriber.communicate(timeout=6)[0])
+        assert message["command"]=="calibrate_black" and message["id"]==result["request_id"]
+        assert message["session"]==heartbeat["session"]
+    finally:
+        if subscriber.poll() is None: subscriber.terminate(); subscriber.wait(timeout=2)
+    print("Actual dashboard calibration POST -> MQTT command passed on isolated test topic.")
     time.sleep(3.1)
     with urlopen("http://127.0.0.1:8766/api", timeout=1) as response:
         state = json.load(response)
@@ -40,5 +57,6 @@ try:
     print("Actual local MQTT broker -> dashboard data and stale-state check passed (isolated synthetic topic; no hardware claim).")
 finally:
     subprocess.run([publisher, "-h", "127.0.0.1", "-t", topic, "-n", "-r"], check=True)
+    subprocess.run([publisher, "-h", "127.0.0.1", "-t", "codex/sensor-bench-test/heartbeat", "-n", "-r"], check=True)
     process.send_signal(2)
     process.wait(timeout=5)
