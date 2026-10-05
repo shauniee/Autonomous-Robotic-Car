@@ -1,249 +1,45 @@
-> Historical teammate setup: this branch accepts status and stopped calibration only. MQTT start/stop and stop-on-disconnect described below no longer apply. Use [the current guide](RIGHT_IR_LINE_FOLLOW.md) and browser dashboard.
+# WiFi and MQTT contract
 
-# Pico WH WiFi and telemetry
+Transport source: `src/subsystems/comms_picow.c`, originally supplied on the teammate’s `wifi_telemetry` branch. The current branch builds on that transport. Primary policy: [design review FR12 and Section 4.3](<../../CSC01 Design Review.docx>); [implementation](IMPLEMENTATION.md) explains the active application.
 
-Buddy 1 has a Pico W/WH C implementation. It joins WiFi asynchronously, connects
-to an IPv4 MQTT broker, publishes measurements, receives validated start/stop
-commands, sends heartbeats, and reconnects with backoff. The same main loop still
-owns the controller and motion calls.
+## Connection and configuration
 
-The confirmed hardware is **Raspberry Pi Pico WH on Cytron Maker Pi Pico**.
-The WH uses the SDK's `pico_w` board definition. No carrier GPIOs are assigned
-for WiFi. Regular Pico builds can still select the USB-only backend.
+Pico WH onboard WiFi → access point → LAN Mosquitto broker on the Mac → dashboard subscriber. `config/network_config.h` contains private SSID/password, IPv4 broker, port and topic root; it is ignored by Git. `config/network_config.example.h` is the nonsecret template. Build with `PICO_BOARD=pico_w`; no external radio/MQTT library is needed beyond Pico SDK/lwIP and its initialized submodules.
 
-Telemetry flows **Pico WH -> onboard WiFi -> access point -> MQTT broker ->
-laptop monitor**. Commands flow back through the broker to Buddy 1's validated
-inbox, then the vehicle controller. The broker runs on the laptop or another
-reachable LAN machine, not on the carrier board. USB serial is a separate debug path.
+The current lab endpoint is 192.168.0.8:1883 and topic root `robot/car01`; update the ignored header and rebuild if the Mac’s LAN address changes. `config/mosquitto-lab.conf` is the local anonymous lab-broker configuration. It is an implementation setup, not a confirmed final mission deployment/security decision.
 
-## SDK dependencies
-
-The installed Pico SDK 2.2.0 was inspected: `src/rp2_common/pico_lwip/CMakeLists.txt`
-provides `pico_lwip_mqtt` using its bundled `lib/lwip/src/apps/mqtt/mqtt.c` and
-`lwip/apps/mqtt.h`. Firmware links this together with
-`pico_cyw43_arch_lwip_poll`, `pico_unique_id`, and `pico_rand`. No third-party
-firmware MQTT library is added. CMake checks that networking targets exist.
-If absent, run `git submodule update --init --recursive` in your SDK checkout.
-The optional Paho dependency is only for the existing laptop Python helper.
-
-## 1. Configure your network locally
-
-If `config/network_config.h` does not exist, copy the example:
-
-```powershell
-Copy-Item config/network_config.example.h config/network_config.h
+```sh
+mosquitto -c config/mosquitto-lab.conf -d
+python3 scripts/mqtt_dashboard.py --port 8765
 ```
 
-Edit that local file:
+Open http://127.0.0.1:8765/ on the Mac. Broker and dashboard are separate processes. The Pico connects to the Mac’s LAN address, not localhost. The dashboard uses installed `mosquitto_sub`/`mosquitto_pub`; no Python MQTT package is required for this path. `scripts/mqtt_monitor.py` is an alternative monitor. Legacy `mqtt_client.py` start/stop actions are disabled for this branch; use physical GP20/21.
 
-```c
-#define ROBOT_WIFI_SSID "YOUR_2_4_GHZ_WIFI"
-#define ROBOT_WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
-#define ROBOT_MQTT_BROKER_IP "192.168.1.20"
-```
+## Topics and freshness
 
-Use your laptop/broker's actual LAN IPv4 address, not `localhost` or the car's IP.
-The car and laptop must be able to reach one another through the test network;
-guest/client isolation can prevent this even on the same SSID. The initial backend
-supports open WiFi or WPA2 personal authentication, not an enterprise login portal.
-
-Optional settings are broker port/username/password, topic root and stop-on-loss
-policy. Settings are C string literals: escape `"` and `\` inside credentials.
-They are embedded in the firmware. The local header and build folders are ignored
-by Git; do not commit credentials or share a configured UF2 publicly.
-
-Empty SSID disables networking with a USB message. With an SSID and empty broker
-IP, WiFi joins and recovers normally but MQTT, remote commands and MQTT heartbeat
-remain disabled. This supports WiFi bring-up before a broker is available.
-Invalid nonempty broker IP/port/topic configuration disables networking.
-Changing settings requires a rebuild. CYW43 initialization or MQTT allocation
-failure leaves networking disabled until reboot; USB/controller polling continues.
-
-## 2. Start a local broker
-
-Install [Eclipse Mosquitto](https://mosquitto.org/download/) on the laptop. From the
-repository root, start a foreground broker with the supplied lab configuration:
-
-```powershell
-& 'C:\Program Files\mosquitto\mosquitto.exe' -c config/mosquitto-lab.conf -v
-```
-
-This listens on TCP 1883 on all laptop interfaces. Permit it on the private test
-network if Windows Firewall asks. If a Mosquitto service already uses port 1883,
-use that broker's configuration instead or choose another port in both configs.
-
-The example broker permits anonymous clients. This first implementation uses
-plain MQTT without TLS and a numeric IPv4 address (no DNS): use it only on your
-trusted bench network. For a password-protected broker, set matching username/
-password values in the local header. TLS-only/cloud brokers are not supported yet.
-
-## 3. Build and flash
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/build-picow.ps1
-```
-
-The script uses a configured SDK/toolchain, or the project-local dependencies in
-`tmp/` if they are present. A fresh clone needs CMake, Ninja, an ARM GCC toolchain,
-and a Pico SDK checkout with its CYW43, lwIP and TinyUSB submodules initialized.
-Set `PICO_SDK_PATH` and, if needed, `PICO_TOOLCHAIN_PATH` for your installation.
-See [official SDK setup](https://github.com/raspberrypi/pico-sdk).
-
-Hold BOOTSEL while connecting your Pico WH. Copy `build-picow/robot_car.uf2` to its
-USB drive (`RPI-RP2`). Open its COM port in PuTTY at 115200, 8N1, no flow control,
-after it reboots. Expected progress messages include:
-
-```text
-[net] Joining WiFi
-[net] WiFi connected; IP ...
-[net] Connecting to MQTT broker
-[net] MQTT online; command subscription ready
-```
-
-Early boot messages can be missed if the serial monitor opens late. Periodic JSON
-status continues over USB. An absent USB reader does not impose the default long
-stdout wait; USB debug output may be dropped when the host cannot keep up.
-
-## 4. Monitor and send commands
-
-In a second terminal, install the laptop tool dependency:
-
-```powershell
-python -m pip install -r scripts/requirements-mqtt.txt
-python scripts/mqtt_client.py monitor --broker 192.168.1.20
-```
-
-In another terminal:
-
-```powershell
-python scripts/mqtt_client.py stop --broker 192.168.1.20
-python scripts/mqtt_client.py start --broker 192.168.1.20
-```
-
-Use your actual broker IP. Optional `--root` and `--port` must match the firmware.
-For broker authentication, set `ROBOT_MQTT_USERNAME` and `ROBOT_MQTT_PASSWORD` in
-the laptop terminal's environment. Credentials are not CLI arguments or log output.
-
-The start helper waits for a new non-retained heartbeat and creates the command
-automatically. Use one command operator at a time: multiple operators can choose
-the same next ID, causing one command to be rejected. Broker acknowledgement only
-confirms delivery to the broker; telemetry shows whether the controller acted.
-
-**With the current sensor stubs, START should produce `FAULT` with
-`sensor_invalid_or_stale`; STOP should produce `STOPPED` with `command_stop`.**
-That is enough to verify command integration. Do not fake valid sensor readings
-in the production loop just to make a start succeed.
-
-## Message contract
-
-Default root: `robot/car01`. Use a different root for each car.
-
-| Topic suffix | Rate / QoS / retained | Payload |
+| Topic suffix | Purpose | Delivery |
 | --- | --- | --- |
-| `/telemetry` | Every 500 ms by default / 0 / no | JSON state, reason, requested and measured motion, line, terrain, obstacle |
-| `/heartbeat` | Every 1 s / 0 / no | JSON session, uptime, last accepted command ID and error counters |
-| `/command` | Subscription QoS 1; publish without retain | Strict command JSON, or plain `stop` |
-| `/status` | On connect, last will / 1 / yes | `{"online":true}` or `{"online":false}` |
+| `/telemetry` | Current application state, readings and validity/age | QoS 0, not retained; nominal 500 ms |
+| `/heartbeat` | Online/session/uptime and command/publish diagnostics | QoS 0, not retained; 1 s |
+| `/status` | Online state and broker last will | QoS 1, retained |
+| `/command` | Validated reporting/calibration request | Subscription QoS 1; requests sent without retain |
 
-Read status together with heartbeat freshness. A retained online flag can be stale;
-last-will detection takes time, and intentional disconnects do not trigger a will.
-Treat absence of heartbeats for several seconds as unavailable. The car's MQTT
-keepalive is 10 seconds; this is not an instantaneous physical emergency-stop link.
+Do not mistake a retained online status for fresh telemetry. Dashboard freshness uses actual receive times. Motor duties are requested PWM, never encoder-measured speeds.
 
-Telemetry has `schema:1`, `uptime_ms`, `state`, `reason`, target wheel speeds and
-nested `motion`, `line`, `terrain`, `obstacle` objects. Sensor groups carry `valid`,
-`sampled_ms` and `age_ms`. Invalid or non-finite numeric readings become JSON
-`null`; boolean/event fields are meaningful only when the group's reading is valid.
-Heights/profile values have additional validity flags. Units appear in field names.
-`line.navigation` uses the current `Navigation` enum from `include/robot/types.h`;
-navigation/barcode interpretation itself remains Buddy 3's responsibility.
+## Subscription and local motion
 
-Example heartbeat (values illustrative):
+The review permits **status requests only**, rejects remote driving/start/stop and requires healthy local autonomy to continue through WiFi/MQTT loss. The active bench adds user-requested `calibrate_black`/`calibrate_white` while stopped. Firmware rejects calibration while moving. All accepted requests use exactly `session`, `id`, `issued_ms` and `command`; the current session/uptime come from a fresh heartbeat, ID increases and maximum accepted age is 5 s. Wrong sessions, stale/replayed messages, malformed fields and overlapping pending calibration are rejected.
+
+Illustrative implemented envelope:
 
 ```json
-{"schema":1,"online":true,"session":"0123456789abcdef","uptime_ms":12000,"last_command_id":0,"rejected_commands":0,"dropped_publish":0}
+{"session":"0123456789abcdef","id":1,"issued_ms":1000,"command":"status"}
 ```
 
-Corresponding start, sent promptly on `/command`:
+Use actual fresh heartbeat values, not these constants. The review’s `{"request":"status"}` is an illustrative design example, not the current parser format. GP20/GP21 remain the motion controls.
 
-```json
-{"session":"0123456789abcdef","id":1,"issued_ms":12000,"command":"start"}
-```
+The backend uses asynchronous connection attempts, bounded deadlines and exponential backoff up to 30 s. Offline telemetry is dropped instead of accumulated. It does not inject a stop on network loss or start motion on reconnect. Actual scheduling and recovery timing still require measured trials under load.
 
-Rules:
+## Evidence
 
-- Exactly four fields, any order; no unknown or duplicate fields. Strings use
-  plain unescaped ASCII; integer fields are unsigned 32-bit decimal integers.
-- `session` must match the current heartbeat. It changes on every MQTT connection.
-- `id` must be positive and greater than the last accepted ID in that session.
-- `issued_ms` is **car uptime from heartbeat**, not a laptop wall-clock timestamp.
-  Age must be at most 5000 ms. The start is checked again when consumed.
-- A message is capped at 192 bytes. Fragments are assembled before validation.
-- Stop wins over start when both are pending in the same poll. Plain `stop` is
-  accepted without a session; it can never start the car.
-- The session/ID rules prevent accidental replay, not unauthorized access. Broker
-  access controls are responsible for who can send commands.
-- Do not retain command messages. The public lwIP callback does not expose the
-  retained flag; old-session starts are rejected by the application protocol.
-
-Telemetry samples are snapshots. Very brief one-shot events between telemetry
-periods may be missed; reliable event history/acknowledgements are a future extension.
-
-## Recovery and integration
-
-WiFi attempts have a 20-second deadline; broker connection/subscription attempts
-have a 15-second deadline. Failures retry with backoff from 1 to 30 seconds. No
-connection-completion wait runs inside the vehicle loop. Call `comms_poll()` often
-on the same core; blocking in another buddy's module will still delay networking.
-
-The default `ROBOT_STOP_ON_DISCONNECT=1` emits one STOP when an established MQTT
-connection is lost. Initial connection failures do not repeatedly override local
-USB commands. Queued starts are discarded on disconnect. Reconnection restores
-the subscription and heartbeat, but never resumes driving automatically.
-
-There is no unbounded telemetry queue: disconnected samples are dropped, and
-publish-buffer failures increment `dropped_publish`. `last_command_id` acknowledges
-protocol acceptance, not successful mission execution; check controller state too.
-
-## Validation
-
-Run `powershell -ExecutionPolicy Bypass -File scripts/check.ps1` for controller,
-protocol and fake-SDK recovery tests. These cover fragmentation, malformed JSON,
-overflow, replay/expiration, stop priority, stale sessions, timeouts, subscription
-failure, link loss, reconnect and subscription restoration. Additional cases cover
-WiFi-only recovery, CYW43 initialization failure, MQTT allocation failure, immediate
-join errors, the 30-second backoff cap and retry deadlines across uptime wrap.
-
-Run `python -m unittest discover -s tests -p "test_mqtt_client.py"` for the laptop
-helper and an independent JSON parse of the C telemetry fixture (run C tests first).
-
-Firmware was compile/link checked against Pico SDK 2.2.0 and ARM GCC 14.2.1 with
-WiFi enabled and test-only credentials. Physical RF/network behavior is not yet
-verified. Complete these bench checks and record evidence in `docs/test-log.csv`:
-
-1. Keep motor power disconnected for communications bring-up. Observe live
-   heartbeat (about 1 s) and invalid-sensor telemetry (about 500 ms) on the laptop.
-   Confirm USB telemetry continues with the broker stopped and WiFi unavailable.
-2. Send STOP, then START; confirm the expected controller results above.
-3. Restart the broker; confirm reconnect, a new session, and working subscription.
-4. Interrupt WiFi; confirm the detected-loss stop, reconnect, and no automatic start.
-5. Replay an earlier start payload; confirm rejection and no state change.
-6. Boot with the access point unavailable or a deliberately incorrect local WiFi
-   password. Observe continued USB uptime/telemetry and working `x` STOP while
-   joins fail or reach their 20 s deadline and retries back off to 30 s. Restore valid settings
-   (rebuild/flash if changed) and verify recovery. Do not log passwords.
-7. Temporarily leave the broker IP empty in the local header, rebuild and flash:
-   observe WiFi-only mode and an assigned IP, with USB telemetry but no MQTT.
-   Interrupt/restore the access point and confirm reassociation. Restore the broker
-   configuration and rebuild/flash for the full MQTT checks.
-
-Pending hardware evidence: actual association/DHCP, broker delivery, command and
-loss recovery, and worst-case loop/poll timing under network failure or load.
-Application join/retry waits are bounded and asynchronous; SDK driver calls and
-poll execution still need measurement on the board. No physical timing guarantee
-or motor-stop verification is implied by desktop tests or a successful UF2 build.
-
-Implementation references: [Pico W MQTT example](https://github.com/raspberrypi/pico-examples/tree/master/pico_w/wifi/mqtt),
-[Pico polling architecture](https://www.raspberrypi.com/documentation/pico-sdk/networking.html),
-[Mosquitto configuration](https://mosquitto.org/man/mosquitto-conf-5.html),
-[Paho Python client](https://eclipse.dev/paho/files/paho.mqtt.python/html/client.html).
+SDK builds and fake-SDK startup/reconnect/protocol checks passed; actual Pico MQTT/right-IR telemetry was observed in the bench session. Broker availability does not establish encoder measurement, complete mission operation or review T12/T13/T15 acceptance. Record physical trials in [test-log.csv](test-log.csv).

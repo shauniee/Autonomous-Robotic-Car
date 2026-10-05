@@ -1,35 +1,34 @@
-# Hardware and pin planning
+# Hardware and pin assignments
 
-Confirmed hardware: **Raspberry Pi Pico WH mounted on a Cytron Maker Pi Pico
-carrier board**. The Pico WH supplies onboard WiFi; no external WiFi module is
-required. Build with `PICO_BOARD=pico_w`. Peripheral models and wiring still
-need confirmation. No external GPIO map is embedded in the code.
+Primary design: [CSC01 Design Review, Section 2](<../../CSC01 Design Review.docx>). Detailed electrical evidence: [tech-info.md](tech-info.md). Platform: **Raspberry Pi Pico WH on Cytron Robo Pico**, SDK `PICO_BOARD=pico_w`. Maker Pi Pico in the former code documents was stale information.
 
-| Part | Exact model | Interface / signal needs | Proposed GPIOs | Owner |
-| --- | --- | --- | --- | --- |
-| Controller | Raspberry Pi Pico WH | USB, GPIO, onboard WiFi | TBD | Integration |
-| Carrier | Cytron Maker Pi Pico | Breakout and carrier peripherals; pin mapping pending | TBD | Integration |
-| Motor driver | TBD | PWM/direction/enable per actual driver | TBD | Buddy 2 |
-| Left/right encoders | TBD | Digital edge inputs; confirm channel count | TBD | Buddy 2 |
-| 3 IR sensors | TBD | Analogue or digital output; confirm model | TBD | Buddy 3 |
-| IMU | TBD | I2C or SPI; confirm address and axes | TBD | Buddy 4 |
-| Ultrasonic sensor | TBD | Trigger/echo or model-specific interface | TBD | Buddy 5 |
-| Servo | TBD | Control pulse and separate power requirements | TBD | Buddy 5 |
-| WiFi | Pico WH onboard CYW43 | Managed by Pico SDK | No external pin assignment | Buddy 1 |
-| Battery/regulators | TBD | Voltage/current budget and common reference | N/A | Whole team |
+## Submitted integrated design versus current bench
 
-Before selecting pins, check the actual part datasheets and Pico pin functions,
-PWM resource sharing, I2C/SPI/UART availability and ADC needs. Record those source
-links with the chosen components. Verify supply and GPIO logic levels before
-connecting any sensor output, especially ultrasonic echo and encoder outputs.
-Motors require a driver and a suitable supply; GPIO pins are control signals.
+| Device | Review connection | Current right-IR bench |
+| --- | --- | --- |
+| Left motor M1 | Black → M1A, yellow → M1B; internal GP8/GP9 | Used; verify physical forward polarity |
+| Right motor M2 | Black → M2A, yellow → M2B; internal GP10/GP11 | Used; verify physical forward polarity |
+| Right encoder | Grove 1: green B GP0, red A GP1, white supply, blue GND | Unused |
+| Left encoder | Grove 7: green B GP7, red A GP28, white supply, blue GND | Unused; GP28 battery jumper stays open |
+| Right line IR | Grove 5: AOUT GP26/ADC0, VCC 3V3, GND | **Swapped to Grove 6 GP27/ADC1** |
+| Left line IR | Grove 6: AOUT GP27, VCC 3V3, GND | **Swapped to Grove 5 GP26/ADC0**, unused |
+| Barcode IR | Grove 4: DOUT GP16, VCC 3V3, GND | Unused |
+| GY-511 / LSM303DLHC | Grove 3: SDA GP4, SCL GP5, Vin 3V3, GND | Disconnected; wires reused for motors |
+| HC-SR04P | Grove 2: Echo GP2, Trig GP3, VCC 3V3, GND | Disconnected; wires reused for motors |
+| SG90 | Servo 1: orange signal GP12, red +, brown − | Disabled; GP12 LOW, no pulses |
+| Local start/reset | Onboard GP20 | Fresh press starts Ready; Stopped reset requires separate new start press |
+| Local stop | Onboard GP21 | Brakes and latches Stopped |
+| Power bank | Red/black → green VIN +/− | Same intended supply; actual rails/load require measurement |
 
-For the first powered motion test, keep wheels raised and verify the physical
-stop behavior before trying low-speed runs on the course. Record wheel diameter,
-track width, encoder counts per revolution and gearing for distance/turn control.
+The Word table labels left GP27 as ADC0; **GP27 is ADC1**. Preserve the document as submitted and use the physical mapping above. Do not silently revert the current GPIO swap to match the submitted baseline. Firmware/header and [bench guide](RIGHT_IR_LINE_FOLLOW.md) specify what to wire for the active UF2.
 
-Official references:
+## Electrical and shared-resource constraints
 
-- [Pico board variants and pinout resources](https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html)
-- [Pico SDK setup](https://github.com/raspberrypi/pico-sdk)
-- [Official hardware examples](https://github.com/raspberrypi/pico-examples)
+- Motors connect to M1/M2 screw terminals, never sensor Grove GPIO or 3V3. Extension-wire colors were not supplied; follow motor-lead colors and terminal labels.
+- Pico GPIO/ADC and I2C highs must stay within 3.3 V. Measure the installed HC-SR04P Echo HIGH before connecting GP2; a standard 5 V HC-SR04 is not interchangeable.
+- Grove 5 and 6 share GP26. Only the GP26 line sensor uses it; leave Grove 6’s shared GP26 contact disconnected.
+- Grove 2 shares GP2/GP3 with the Maker port. GP28 encoder use excludes the optional battery-sense jumper.
+- Aggregate Grove 3V3 budget: 300 mA. Each motor channel: 1 A continuous, 1.5 A peak under 5 s. Check actual loads and VIN/servo rail against installed parts.
+- GY-511 contains accelerometer and magnetometer, **no gyroscope**. Physical hump height requires a reference-validated method.
+
+These are intended connections and cited limits, not blanket proof of installed wiring, actual currents or successful subsystem tests. Exact motor/IR/encoder variants and measured geometry remain unresolved. Track geometry and final barcode mapping are recorded with evidence boundaries in [technical reference](tech-info.md).
