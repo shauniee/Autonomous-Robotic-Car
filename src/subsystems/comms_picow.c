@@ -1,4 +1,4 @@
-/* Buddy 1's Pico W/WH implementation (Pico WH on Maker Pi Pico).
+/* Buddy 1's Pico W/WH implementation (Pico WH on Robo Pico).
    main_pico.c calls init once, poll every loop, and publish periodically.
    WiFi joins the local network; MQTT connects to the broker on that network.
    A callback is a function the networking library calls when an event happens,
@@ -48,7 +48,7 @@ static struct {
     CommandInbox inbox;                       /* Receives, validates and queues commands. */
     uint32_t deadline_ms, backoff_ms, heartbeat_ms; /* Deadline, retry delay, last heartbeat time. */
     uint32_t dropped_publish, rejected_commands;  /* Diagnostics reported in heartbeat JSON. */
-    bool reconnect_requested, had_connection, announce_online; /* Recovery/status flags. */
+    bool reconnect_requested, announce_online; /* Recovery/status flags. */
     char telemetry[COMMS_TELEMETRY_MAX];       /* Reused output buffer; no growing message queue. */
 } net;
 
@@ -86,16 +86,11 @@ static bool publish(const char *name, const char *data, bool retained) {
 }
 
 static void schedule_retry(uint32_t now, bool wifi_lost) {
-    /* Preserve an already-requested STOP, or request one under the configured
-       disconnect policy. had_connection avoids stopping on every initial failure. */
-    const bool stop = net.inbox.pending == COMMAND_STOP ||
-                      (ROBOT_STOP_ON_DISCONNECT && net.had_connection);
+    /* The Word design keeps local autonomy independent of network loss. */
     /* Stop trusting incoming commands before closing the old connection. */
     net.state = wifi_lost ? WIFI_WAIT : MQTT_WAIT;
     if (net.client) mqtt_disconnect(net.client);
     command_inbox_reset(&net.inbox, "");
-    if (stop) command_inbox_stop(&net.inbox);
-    net.had_connection = false;
     net.reconnect_requested = false;
     net.announce_online = false;
     net.deadline_ms = now + net.backoff_ms;
@@ -136,7 +131,6 @@ static void subscribed(void *arg, err_t error) {
     /* Connecting to MQTT is not enough: wait until command subscription succeeds. */
     if (error != ERR_OK) { net.reconnect_requested = true; return; }
     net.state = NET_ONLINE;
-    net.had_connection = true;
     net.backoff_ms = 1000u;
     net.heartbeat_ms = clock_ms() - HEARTBEAT_MS;
     /* Make the first heartbeat due immediately so the laptop learns the session. */
@@ -154,12 +148,10 @@ static void connected(mqtt_client_t *client, void *arg, mqtt_connection_status_t
     }
     char session[COMMS_SESSION_LENGTH + 1];
     /* Format a random 64-bit number as 16 hex characters. A new session prevents
-       a START recorded during a previous connection from being accepted now.
+       a status request recorded during a previous connection from being accepted now.
        PRIx64 supplies the right printf format for this integer type. */
     snprintf(session, sizeof(session), "%016" PRIx64, get_rand_64());
-    const bool stop = net.inbox.pending == COMMAND_STOP;
     command_inbox_reset(&net.inbox, session);
-    if (stop) command_inbox_stop(&net.inbox);
     net.state = MQTT_SUBSCRIBING;
     net.deadline_ms = clock_ms() + MQTT_TIMEOUT_MS;
     /* Subscribe at QoS 1. The inbox's increasing IDs handle duplicate commands. */
@@ -289,7 +281,7 @@ RobotCommand comms_poll(uint32_t now_ms) {
         publish(net.heartbeat_topic, payload, false);
     }
     /* Consume once. The caller gives this to the controller; no motor writes here. */
-    return command_inbox_take(&net.inbox, now_ms);
+    return COMMAND_NONE; /* Status-only MQTT, per the Word design. */
 }
 
 void comms_publish(const VehicleController *c, const SensorFrame *s,
@@ -301,4 +293,16 @@ void comms_publish(const VehicleController *c, const SensorFrame *s,
     /* USB remains useful before the broker/network is available. */
     puts(net.telemetry);
     if (net.state == NET_ONLINE) publish(net.telemetry_topic, net.telemetry, false);
+}
+
+void comms_publish_json(const char *json) {
+    if (!json || !json[0] || strlen(json) >= COMMS_TELEMETRY_MAX) { ++net.dropped_publish; return; }
+    puts(json);
+    if (net.state == NET_ONLINE) publish(net.telemetry_topic, json, false);
+}
+
+bool comms_status_requested(void) {
+    bool requested = net.inbox.status_requested;
+    net.inbox.status_requested = false;
+    return requested;
 }

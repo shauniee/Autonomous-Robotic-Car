@@ -38,11 +38,6 @@
    adds "/telemetry", "/heartbeat", "/command" and "/status" to this string.
    Use a different root for each car, and the same root in the laptop tool. */
 #define ROBOT_MQTT_TOPIC_ROOT "robot/car01"
-/* Stop on loss of an established MQTT connection. No automatic restart. */
-/* 1 = request a stop when an established MQTT connection is lost.
-   0 = do not inject that stop; the vehicle controller continues its own decisions.
-   This does not stop on every initial connection failure. Reconnecting never
-   automatically restarts the car. Keep 1 for the current default behavior. */
-#define ROBOT_STOP_ON_DISCONNECT 1
+/* Local autonomy continues on network loss; subscription accepts status only. */
 
 #endif

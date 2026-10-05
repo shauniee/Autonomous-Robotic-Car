@@ -3,6 +3,7 @@
 #include "fake_sdk.h"
 #include "robot/subsystems.h"
 #include "robot/controller.h"
+#include "robot/comms_protocol.h"
 #include <assert.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -152,13 +153,20 @@ int main(int argc, char **argv) {
     assert(strstr(heartbeat, "\"session\":") && subscriptions == 2);
     char start[192];
     make_start(start, sizeof(start), 1);
-    send(start);
-    assert(tick(42100) == COMMAND_START);
+    send(start); /* Remote motion commands must be rejected. */
+    assert(tick(42100) == COMMAND_NONE);
     send(start); assert(tick(42120) == COMMAND_NONE); /* Duplicate. */
     make_start(start, sizeof(start), 2);
     send(start);
     send("stop");
-    assert(tick(42140) == COMMAND_STOP);
+    assert(tick(42140) == COMMAND_NONE);
+
+    char request[192];
+    const char *value = strstr(heartbeat, "\"session\":\"");
+    char session[17]; memcpy(session, value + strlen("\"session\":\""), 16); session[16] = 0;
+    snprintf(request, sizeof(request), "{\"session\":\"%s\",\"id\":1,\"issued_ms\":%" PRIu32 ",\"command\":\"status\"}", session, now);
+    send(request); assert(tick(42160) == COMMAND_NONE);
+    assert(comms_status_requested() && !comms_status_requested());
 
     VehicleController c; controller_init(&c);
     SensorFrame s = {0}; MotionFeedback m = {0};
@@ -173,7 +181,7 @@ int main(int argc, char **argv) {
     make_start(start, sizeof(start), 3);
     send(start); /* Pending start must be cleared on link loss. */
     link = 0;
-    assert(tick(43160) == COMMAND_STOP);
+    assert(tick(43160) == COMMAND_NONE);
     assert(tick(43180) == COMMAND_NONE);
     int before = publishes;
     comms_publish(&c, &s, &m, now);
@@ -184,15 +192,15 @@ int main(int argc, char **argv) {
     send(start); /* Old session is rejected even when timestamp is still fresh. */
     assert(tick(44240) == COMMAND_NONE);
     make_start(start, sizeof(start), 1); send(start);
-    assert(tick(44260) == COMMAND_START);
+    assert(tick(44260) == COMMAND_NONE);
     connection_cb(&client, NULL, MQTT_CONNECT_DISCONNECTED);
-    assert(tick(44280) == COMMAND_STOP);
+    assert(tick(44280) == COMMAND_NONE);
     tick(45280); accept_connection(); tick(45300);
     assert(subscriptions == 4); /* Subscription restored after broker disconnect. */
     /* Immediate join errors must back off, cap at 30 s, and survive uptime wrap. */
     link = 0;
     uint32_t retry = UINT32_MAX - 500u;
-    assert(tick(retry) == COMMAND_STOP);
+    assert(tick(retry) == COMMAND_NONE);
     join_result = -1;
     const uint32_t delays[] = {1000, 2000, 4000, 8000, 16000, 30000, 30000};
     for (size_t i = 0; i < sizeof(delays) / sizeof(delays[0]); ++i) {
