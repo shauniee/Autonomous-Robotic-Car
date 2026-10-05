@@ -8,7 +8,6 @@
 #define FOLLOW_BASE_DUTY .22f
 #define FOLLOW_MAX_DUTY .35f
 #define FOLLOW_KP .30f
-#define FOLLOW_EDGE_TIMEOUT_MS 1500u
 /* Right edge: more black under the sensor -> steer right. */
 #define FOLLOW_EDGE_SIGN 1
 #define FOLLOW_LEFT_FORWARD_A 1
