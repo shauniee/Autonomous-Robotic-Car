@@ -9,9 +9,13 @@
 #define COMMS_COMMAND_MAX_AGE_MS 5000u /* Reject JSON commands older than 5 seconds. */
 #define COMMS_TELEMETRY_MAX 2048u      /* Outgoing JSON buffer capacity, including final '\0'. */
 
+typedef enum { CALIBRATION_NONE, CALIBRATION_BLACK, CALIBRATION_WHITE } CalibrationKind;
+typedef struct { CalibrationKind kind; uint32_t id, issued_ms; } CalibrationRequest;
+
 typedef struct {
     char session[COMMS_SESSION_LENGTH + 1]; /* +1 stores the C string terminator, '\0'. */
     uint32_t last_id;                      /* Highest accepted ID; rejects repeated commands. */
+    CalibrationRequest calibration;
     bool status_requested;                /* One-shot request; cannot control motion. */
     char payload[COMMS_COMMAND_MAX + 1];   /* Collects a message that arrives in fragments. */
     size_t expected;                       /* Total byte count announced by MQTT. */
@@ -30,6 +34,8 @@ bool command_inbox_data(CommandInbox *inbox, const void *data, size_t length,
 RobotCommand command_inbox_take(CommandInbox *inbox, uint32_t now_ms);
 /* Consume a validated status request and request an immediate snapshot. */
 bool comms_status_requested(void);
+CalibrationRequest command_inbox_take_calibration(CommandInbox *inbox, uint32_t now_ms);
+CalibrationRequest comms_take_calibration(uint32_t now_ms);
 
 /* Returns bytes written, or zero on overflow. Output is always terminated
    when capacity is nonzero; never publish a buffer after an overflow. */

@@ -34,7 +34,9 @@ int main(void){
     gpio_init(21);gpio_set_dir(21,GPIO_IN);gpio_pull_up(21);
     stdio_init_all();comms_init();watchdog_enable(250,true);
     enum{READY,RUNNING,STOPPED} state=READY;
-    const char *reason="calibrate_black_b_white_w";
+    const char *reason="calibrate_black_white_via_mqtt";
+    const char *calibration_result="waiting";
+    uint32_t calibration_id=0;
     bool black_set=false,white_set=false,candidate=false,stable=false,armed=false;
     uint16_t raw=0,black=0,white=0;int calibration_key=0;
     uint32_t last_adc=0,last_edge=0,last_publish=0,changed=0;
@@ -55,8 +57,8 @@ int main(void){
         if((uint32_t)(now-last_adc)>=20){
             uint32_t sum=0;for(unsigned i=0;i<8;++i)sum+=adc_read();raw=sum/8;last_adc=now;
             if(state!=RUNNING){
-                if(calibration_key=='b'){black=raw;black_set=true;printf("black=%u\n",black);}
-                if(calibration_key=='w'){white=raw;white_set=true;printf("white=%u\n",white);}
+                if(calibration_key=='b'){black=raw;black_set=true;calibration_result="black_captured";}
+                if(calibration_key=='w'){white=raw;white_set=true;calibration_result="white_captured";}
             }
             calibration_key=0;
             reading=right_ir_steering(raw,black,white,black_set&&white_set,FOLLOW_EDGE_SIGN);
@@ -71,21 +73,29 @@ int main(void){
         }
         if(pressed&&!stop){
             if(state==STOPPED){state=READY;reason="ready_place_sensor_on_right_edge";}
-            else if(state==READY&&reading.valid&&reading.fraction>.1f&&reading.fraction<.9f){
+            else if(state==READY&&calibration_key==0&&reading.valid&&reading.fraction>.1f&&reading.fraction<.9f){
                 state=RUNNING;reason="right_ir_edge_follow";last_edge=now;
             }
         }
         (void)comms_poll(now);
         now=to_ms_since_boot(get_absolute_time());
+        CalibrationRequest request=comms_take_calibration(now);
+        if(request.kind!=CALIBRATION_NONE){
+            calibration_id=request.id;
+            if(state==RUNNING){calibration_result="rejected_while_moving";}
+            else if(calibration_key!=0){calibration_result="rejected_busy";}
+            else{calibration_key=request.kind==CALIBRATION_BLACK?'b':'w';calibration_result="pending";}
+            last_publish=now-500u;
+        }
         if(comms_status_requested()||(uint32_t)(now-last_publish)>=500){
             char fraction[24],error[24];
             if(reading.valid){snprintf(fraction,sizeof(fraction),"%.4f",(double)reading.fraction);snprintf(error,sizeof(error),"%.4f",(double)reading.error);}
             else{snprintf(fraction,sizeof(fraction),"null");snprintf(error,sizeof(error),"null");}
             int n=snprintf(json,sizeof(json),"{\"schema\":3,\"mode\":\"right_ir_follow\",\"state\":\"%s\",\"reason\":\"%s\",\"uptime_ms\":%" PRIu32
                 ",\"ir_right\":{\"valid\":true,\"gpio\":27,\"raw_adc\":%u,\"age_ms\":%" PRIu32 ",\"calibrated\":%s,\"black_fraction\":%s,\"edge_error\":%s},"
-                "\"motors\":{\"enabled\":%s,\"left_duty\":%.4f,\"right_duty\":%.4f,\"left_mps\":null,\"right_mps\":null},\"servo\":{\"enabled\":false}}",
+                "\"motors\":{\"enabled\":%s,\"left_duty\":%.4f,\"right_duty\":%.4f,\"left_mps\":null,\"right_mps\":null},\"servo\":{\"enabled\":false},\"calibration\":{\"request_id\":%" PRIu32 ",\"result\":\"%s\",\"black_reference\":%u,\"white_reference\":%u,\"black_set\":%s,\"white_set\":%s}}",
                 state==RUNNING?"FOLLOW_LINE":(state==STOPPED?"STOPPED":"READY"),reason,now,raw,(uint32_t)(now-last_adc),reading.valid?"true":"false",fraction,error,
-                left>0||right>0?"true":"false",(double)left,(double)right);
+                left>0||right>0?"true":"false",(double)left,(double)right,calibration_id,calibration_result,black,white,black_set?"true":"false",white_set?"true":"false");
             if(n>0&&(size_t)n<sizeof(json))comms_publish_json(json);
             last_publish=now;
         }

@@ -306,3 +306,7 @@ bool comms_status_requested(void) {
     net.inbox.status_requested = false;
     return requested;
 }
+
+CalibrationRequest comms_take_calibration(uint32_t now_ms) {
+    return command_inbox_take_calibration(&net.inbox, now_ms);
+}

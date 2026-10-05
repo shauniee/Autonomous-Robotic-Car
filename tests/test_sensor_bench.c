@@ -33,6 +33,13 @@ int main(void) {
     assert(accept(&inbox,"{\"session\":\"0123456789abcdef\",\"id\":1,\"issued_ms\":100,\"command\":\"status\"}"));
     assert(command_inbox_take(&inbox,100)==COMMAND_NONE);
     assert(!accept(&inbox,"{\"session\":\"0123456789abcdef\",\"id\":1,\"issued_ms\":100,\"command\":\"status\"}"));
+    assert(accept(&inbox,"{\"session\":\"0123456789abcdef\",\"id\":2,\"issued_ms\":100,\"command\":\"calibrate_black\"}"));
+    assert(!accept(&inbox,"{\"session\":\"0123456789abcdef\",\"id\":3,\"issued_ms\":100,\"command\":\"calibrate_white\"}"));
+    CalibrationRequest request=command_inbox_take_calibration(&inbox,100);
+    assert(request.kind==CALIBRATION_BLACK&&request.id==2);
+    assert(command_inbox_take_calibration(&inbox,100).kind==CALIBRATION_NONE);
+    assert(accept(&inbox,"{\"session\":\"0123456789abcdef\",\"id\":3,\"issued_ms\":100,\"command\":\"calibrate_white\"}"));
+    assert(command_inbox_take_calibration(&inbox,6000).kind==CALIBRATION_NONE);
     SensorBench s = {.ir_status={true,100},.ir_raw=2048,.servo_enabled=true,.servo_command_deg=90,.servo_pulse_us=1500,
         .accel={.status={true,100},.z=1},.forward={.status={true,100},.angle_deg=90,.distance_m=1,.echo_us=5800}};
     char json[COMMS_TELEMETRY_MAX];

@@ -61,7 +61,7 @@ static bool accept_command(CommandInbox *inbox, uint32_t now_ms) {
     /* 'inbox->field' accesses a field through a pointer to an existing struct. */
     const char *p = inbox->payload;
     char session[COMMS_SESSION_LENGTH + 1] = {0};
-    char command[8] = {0};
+    char command[24] = {0};
     uint32_t id = 0, issued_ms = 0;
     unsigned fields = 0; /* Bit mask: session=1, id=2, issued_ms=4, command=8. */
     if (!token(&p, '{')) return false;
@@ -93,9 +93,14 @@ static bool accept_command(CommandInbox *inbox, uint32_t now_ms) {
     if (*p || fields != 15 || !inbox->session[0] ||
         strcmp(session, inbox->session) != 0 || id <= inbox->last_id ||
         (uint32_t)(now_ms - issued_ms) > COMMS_COMMAND_MAX_AGE_MS) return false;
-    if (strcmp(command, "status") != 0) return false;
+    CalibrationKind kind = CALIBRATION_NONE;
+    if (strcmp(command, "calibrate_black") == 0) kind = CALIBRATION_BLACK;
+    else if (strcmp(command, "calibrate_white") == 0) kind = CALIBRATION_WHITE;
+    else if (strcmp(command, "status") != 0) return false;
+    if (kind != CALIBRATION_NONE && inbox->calibration.kind != CALIBRATION_NONE) return false;
     inbox->last_id = id;
-    inbox->status_requested = true;
+    if (kind != CALIBRATION_NONE) inbox->calibration = (CalibrationRequest){kind, id, issued_ms};
+    else inbox->status_requested = true;
     return true;
 }
 
@@ -228,4 +233,11 @@ size_t comms_encode_telemetry(char *out, size_t capacity, const VehicleControlle
     /* Never return a partial JSON message as usable telemetry. */
     if (w.failed) { out[0] = '\0'; return 0; }
     return w.used;
+}
+
+CalibrationRequest command_inbox_take_calibration(CommandInbox *inbox, uint32_t now_ms) {
+    CalibrationRequest r = inbox->calibration;
+    inbox->calibration = (CalibrationRequest){0};
+    if ((uint32_t)(now_ms - r.issued_ms) > COMMS_COMMAND_MAX_AGE_MS) return (CalibrationRequest){0};
+    return r;
 }
