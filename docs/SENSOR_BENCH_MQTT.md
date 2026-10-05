@@ -2,6 +2,8 @@
 
 Branch: **`feat/mqtt-sensor-bench`**. Firmware target: **`sensor_bench_mqtt`**.
 
+This optional legacy target uses the review’s original right IR GP26, not the active follower’s GP27 swap. Its servo/IMU/sonar setup is not the current disconnected setup.
+
 This firmware reads the actual right IR ADC, GY-511 acceleration/magnetic field and servo-mounted HC-SR04P, then publishes timestamped measurements over WiFi/MQTT. Both drive motors are reported disconnected, and GP8–GP11 stay LOW; this target does not link a motor motion driver or configure motor PWM. It monitors sensors on a stationary robot, so line-following movement is outside this mode.
 
 `CSC01 Design Review.docx` was read for the pin assignments and **not modified**. The project references remain the target mission design; this bench is an intermediate implementation, not a completed autonomous mission. The teammate's `wifi_telemetry` backend (commit `828f6f9`) is reused with a status-only subscription; remote start/stop/drive are rejected. Network loss leaves local sensor acquisition running.

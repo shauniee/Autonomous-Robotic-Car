@@ -41,4 +41,4 @@ cc -std=c11 -Wall -Wextra -Werror -pedantic -Iinclude src/right_ir_follow.c test
 build-host/test_right_ir_follow
 ```
 
-The local real SDK firmware build and pure steering checks passed. Motor polarity, actual braking, physical line following and Pico-to-MQTT behavior are unverified until the robot is connected and tested. The donor wires' actual colors/rating also remain unverified.
+The local real SDK firmware build and pure steering checks passed. Actual Pico MQTT telemetry and right-IR readings were subsequently observed. Motor polarity, braking response and repeatable physical line following still require measured trials. The donor wires' actual colors/rating also remain unverified.
