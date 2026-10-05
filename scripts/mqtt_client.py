@@ -72,6 +72,10 @@ def main():
             state["received_at"] = time.monotonic()
             heartbeat_ready.set()
 
+    if args.action != "monitor":
+        print("This branch uses physical GP20/GP21 start/stop. Use the dashboard for calibration.")
+        return 1
+
     client.on_connect = on_connect
     client.on_subscribe = on_subscribe
     client.on_message = on_message

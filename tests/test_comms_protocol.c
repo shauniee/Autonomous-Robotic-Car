@@ -6,7 +6,7 @@
 #include <string.h>
 
 static const char *session = "0123456789abcdef";
-static const char *start = "{\"session\":\"0123456789abcdef\",\"id\":1,\"issued_ms\":1000,\"command\":\"start\"}";
+static const char *start = "{\"session\":\"0123456789abcdef\",\"id\":1,\"issued_ms\":1000,\"command\":\"calibrate_black\"}";
 
 static bool feed(CommandInbox *inbox, const char *payload, uint32_t now) {
     size_t n = strlen(payload);
@@ -24,7 +24,7 @@ int main(void) {
         assert(command_inbox_data(&inbox, start, split, false, 1100));
         assert(command_inbox_take(&inbox, 1100) == COMMAND_NONE);
         assert(command_inbox_data(&inbox, start + split, strlen(start) - split, true, 1100));
-        assert(command_inbox_take(&inbox, 1100) == COMMAND_START);
+        assert(command_inbox_take_calibration(&inbox, 1100).kind == CALIBRATION_BLACK);
         assert(command_inbox_take(&inbox, 1100) == COMMAND_NONE);
         assert(!feed(&inbox, start, 1100)); /* Duplicate ID. */
     }
@@ -32,18 +32,18 @@ int main(void) {
     assert(!feed(&inbox, start, 6001)); /* Expired. */
     assert(!feed(&inbox, start, 999)); /* Future uptime. */
     assert(feed(&inbox, start, 1100));
-    assert(command_inbox_take(&inbox, 6001) == COMMAND_NONE); /* Expired in queue. */
+    assert(command_inbox_take_calibration(&inbox, 6001).kind == CALIBRATION_NONE); /* Expired in queue. */
     command_inbox_reset(&inbox, "fedcba9876543210");
     assert(!feed(&inbox, start, 1100)); /* Old retained command after reconnect. */
 
     const char *bad[] = {
         "start", "{}", "{", "null", "stop ",
-        "{\"session\":\"0123456789abcdef\",\"id\":1,\"issued_ms\":1000,\"command\":\"start\"}junk",
-        "{\"session\":\"0123456789abcdef\",\"id\":4294967296,\"issued_ms\":1000,\"command\":\"start\"}",
-        "{\"session\":\"0123456789abcdef\",\"id\":-1,\"issued_ms\":1000,\"command\":\"start\"}",
-        "{\"session\":\"0123456789abcdef\",\"id\":01,\"issued_ms\":1000,\"command\":\"start\"}",
-        "{\"session\":\"0123456789abcdef\",\"id\":1.5,\"issued_ms\":1000,\"command\":\"start\"}",
-        "{\"session\":\"0123456789abcdef\",\"id\":1,\"id\":2,\"command\":\"start\"}",
+        "{\"session\":\"0123456789abcdef\",\"id\":1,\"issued_ms\":1000,\"command\":\"calibrate_black\"}junk",
+        "{\"session\":\"0123456789abcdef\",\"id\":4294967296,\"issued_ms\":1000,\"command\":\"calibrate_black\"}",
+        "{\"session\":\"0123456789abcdef\",\"id\":-1,\"issued_ms\":1000,\"command\":\"calibrate_black\"}",
+        "{\"session\":\"0123456789abcdef\",\"id\":01,\"issued_ms\":1000,\"command\":\"calibrate_black\"}",
+        "{\"session\":\"0123456789abcdef\",\"id\":1.5,\"issued_ms\":1000,\"command\":\"calibrate_black\"}",
+        "{\"session\":\"0123456789abcdef\",\"id\":1,\"id\":2,\"command\":\"calibrate_black\"}",
         "{\"session\":\"0123456789abcdef\",\"id\":1,\"issued_ms\":1000,\"command\":\"turn\"}",
         "{\"session\":\"0123456789abcdef\",\"id\":1,\"issued_ms\":1000,\"command\":\"st\\u0061rt\"}",
         "{\"session\":\"0123456789abcdef\",\"id\":1,\"issued_ms\":1000,\"extra\":\"start\"}"
@@ -67,13 +67,12 @@ int main(void) {
 
     command_inbox_reset(&inbox, session);
     assert(feed(&inbox, start, 1100));
-    assert(feed(&inbox, "stop", 1100));
-    assert(feed(&inbox, "{ \"command\" : \"start\", \"issued_ms\":1000, \"id\":2, \"session\":\"0123456789abcdef\" }", 1100));
-    assert(command_inbox_take(&inbox, 1100) == COMMAND_STOP); /* Stop wins a batch. */
-    assert(command_inbox_take(&inbox, 1100) == COMMAND_NONE);
+    assert(!feed(&inbox, "stop", 1100));
+    assert(command_inbox_take_calibration(&inbox, 1100).kind == CALIBRATION_BLACK);
+    assert(command_inbox_take_calibration(&inbox, 1100).kind == CALIBRATION_NONE);
     command_inbox_reset(&inbox, session);
-    assert(feed(&inbox, "{\"session\":\"0123456789abcdef\",\"id\":1,\"issued_ms\":4294967290,\"command\":\"start\"}", 10));
-    assert(command_inbox_take(&inbox, 10) == COMMAND_START); /* Uptime wrap. */
+    assert(feed(&inbox, "{\"session\":\"0123456789abcdef\",\"id\":1,\"issued_ms\":4294967290,\"command\":\"calibrate_white\"}", 10));
+    assert(command_inbox_take_calibration(&inbox, 10).kind == CALIBRATION_WHITE);
 
     VehicleController c;
     controller_init(&c);

@@ -1,3 +1,5 @@
+> Historical teammate setup: this branch accepts status and stopped calibration only. MQTT start/stop and stop-on-disconnect described below no longer apply. Use [the current guide](RIGHT_IR_LINE_FOLLOW.md) and browser dashboard.
+
 # Pico WH WiFi and telemetry
 
 Buddy 1 has a Pico W/WH C implementation. It joins WiFi asynchronously, connects
