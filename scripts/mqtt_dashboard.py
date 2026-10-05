@@ -55,7 +55,7 @@ def main():
                 snapshot["error"] = line.strip()
     threading.Thread(target=receive, daemon=True).start()
     threading.Thread(target=errors, daemon=True).start()
-    page = (Path(__file__).resolve().parent.parent / "dashboard" / "index.html").read_bytes()
+    page_path = Path(__file__).resolve().parent.parent / "dashboard" / "index.html"
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             if self.path == "/api":
@@ -67,7 +67,7 @@ def main():
                 body = json.dumps(data, allow_nan=False).encode()
                 mime = "application/json"
             elif self.path in ("/", "/index.html"):
-                body, mime = page, "text/html; charset=utf-8"
+                body, mime = page_path.read_bytes(), "text/html; charset=utf-8"
             else:
                 self.send_error(404)
                 return

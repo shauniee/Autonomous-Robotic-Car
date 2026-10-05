@@ -8,6 +8,9 @@ import time
 
 
 def statistics(data):
+    if data.get("mode") == "right_ir_follow":
+        ir, motors = data.get("ir_right", {}), data.get("motors", {})
+        return f"{data.get('state')} ({data.get('reason')}) | IR={ir.get('raw_adc')} black={ir.get('black_fraction')} error={ir.get('edge_error')} | PWM left={motors.get('left_duty')} right={motors.get('right_duty')} | servo disabled"
     if data.get("mode") != "sensor_bench":
         return "Different firmware mode: " + json.dumps(data)
     ir = data.get("ir_right", {})

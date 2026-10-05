@@ -7,17 +7,17 @@ obstacles, and report telemetry. Five subsystem owners share one vehicle control
 **Start here:** [project guide](docs/GETTING_STARTED.md), then
 [interfaces and ownership](docs/ARCHITECTURE.md).
 
-## MQTT physical sensor bench (motors disconnected)
+## Current setup: right IR motor line following
 
-Use [the sensor bench guide](docs/SENSOR_BENCH_MQTT.md) on branch
-`feat/mqtt-sensor-bench`. The separate `sensor_bench_mqtt` target reads the
-GY-511, right analogue IR on GP26, and GP2/GP3 ultrasonic, with a GP12 scanning
-servo. Motor outputs GP8-GP11 remain LOW. The teammate WiFi/MQTT backend reports
-actual readings and validity to a local browser dashboard.
+Use [the wiring and line-following guide](docs/RIGHT_IR_LINE_FOLLOW.md).
+`right_ir_follow_mqtt` reads GP26, drives M1/M2 through GP8-GP11, and keeps
+GP12 LOW (servo disabled). IMU and ultrasonic are unused. Local GP20 starts/resets;
+GP21 stops. MQTT retains live IR/state/PWM statistics.
 
-The firmware build, host/fake-SDK checks and local MQTT broker/dashboard checks
-pass. Flashing, physical readings and Pico WiFi/MQTT still require the actual
-board. The full mission target below remains a scaffold.
+The previous [stationary sensor bench](docs/SENSOR_BENCH_MQTT.md) remains an
+optional target, disabled by default. Flash the current right-IR UF2 for the
+new setup. Firmware build and steering checks pass; physical behavior needs
+hardware trials. The full mission target below remains a scaffold.
 
 ## What works today
 
@@ -53,7 +53,7 @@ See the [official SDK setup](https://github.com/raspberrypi/pico-sdk).
 
 ```powershell
 $env:PICO_SDK_PATH = 'C:\path\to\pico-sdk'
-cmake -S . -B build-pico -G Ninja -DPICO_BOARD=pico -DROBOT_BUILD_SENSOR_BENCH=OFF
+cmake -S . -B build-pico -G Ninja -DPICO_BOARD=pico -DROBOT_BUILD_SENSOR_BENCH=OFF -DROBOT_BUILD_RIGHT_IR_FOLLOW=OFF
 cmake --build build-pico
 ```
 
