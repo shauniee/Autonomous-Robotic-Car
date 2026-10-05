@@ -39,7 +39,7 @@ int main(void){
     uint32_t calibration_id=0;
     bool black_set=false,white_set=false,candidate=false,stable=false,armed=false;
     uint16_t raw=0,black=0,white=0;int calibration_key=0;
-    uint32_t last_adc=0,last_edge=0,last_publish=0,changed=0;
+    uint32_t last_adc=0,last_publish=0,changed=0;
     FollowResult reading={0};float left=0,right=0;
     static char json[1024];
     puts("right_ir_follow_mqtt: servo disabled. USB b=black,w=white,x=stop; GP20=start/reset, GP21=stop.");
@@ -62,9 +62,8 @@ int main(void){
             }
             calibration_key=0;
             reading=right_ir_steering(raw,black,white,black_set&&white_set,FOLLOW_EDGE_SIGN);
-            if(reading.valid&&reading.fraction>.1f&&reading.fraction<.9f)last_edge=now;
-            if(state==RUNNING&&(!reading.valid||(uint32_t)(now-last_edge)>=FOLLOW_EDGE_TIMEOUT_MS)){
-                state=STOPPED;reason=reading.valid?"edge_lost_timeout":"invalid_calibration";
+            if(state==RUNNING&&!reading.valid){
+                state=STOPPED;reason="invalid_calibration";
             }
             if(state==RUNNING&&!stop){
                 left=reading.left;right=reading.right;
@@ -72,9 +71,9 @@ int main(void){
             }else{brake();left=right=0;}
         }
         if(pressed&&!stop){
-            if(state==STOPPED){state=READY;reason="ready_place_sensor_on_right_edge";}
-            else if(state==READY&&calibration_key==0&&reading.valid&&reading.fraction>.1f&&reading.fraction<.9f){
-                state=RUNNING;reason="right_ir_edge_follow";last_edge=now;
+            if(state==STOPPED){state=READY;reason="ready_press_gp20_to_start";}
+            else if(state==READY&&calibration_key==0&&reading.valid){
+                state=RUNNING;reason="right_ir_edge_follow";
             }
         }
         (void)comms_poll(now);
