@@ -1,6 +1,8 @@
-# WiFi and MQTT contract
+# Communications architecture
 
-Transport source: `src/subsystems/comms_picow.c`, originally supplied on the teammate’s `wifi_telemetry` branch. The current branch builds on that transport. Primary policy: [design review FR12 and Section 4.3](<../../CSC01 Design Review.docx>); [implementation](IMPLEMENTATION.md) explains the active application.
+Owner: Shaun. Parent: [system architecture](../ARCHITECTURE.md).
+
+Transport source: `src/subsystems/comms_picow.c`, originally supplied on the teammate’s `wifi_telemetry` branch. The current branch builds on that transport. Primary policy: [design review FR12 and Section 4.3](<../../../CSC01 Design Review.docx>); [implementation](../ARCHITECTURE.md) explains the active application.
 
 ## Connection and configuration
 
@@ -42,4 +44,12 @@ The backend uses asynchronous connection attempts, bounded deadlines and exponen
 
 ## Evidence
 
-SDK builds and fake-SDK startup/reconnect/protocol checks passed; actual Pico MQTT/right-IR telemetry was observed in the bench session. Broker availability does not establish encoder measurement, complete mission operation or review T12/T13/T15 acceptance. Record physical trials in [test-log.csv](test-log.csv).
+SDK builds and fake-SDK startup/reconnect/protocol checks passed; actual Pico MQTT/right-IR telemetry was observed in the bench session. Broker availability does not establish encoder measurement, complete mission operation or review T12/T13/T15 acceptance. Record physical trials in [test-log.csv](../test-log.csv).
+
+## Integrated target contract and verification
+
+Communications is proposed FreeRTOS priority 1. It consumes `M_telemetry` and queues validated status requests in `Q_status`; it has no actuator ownership. Bounded network work must yield below Safety/Motion/Mission. The implemented cooperative backend services the same transport from `comms_poll`, without RTOS task/mailbox wrappers yet.
+
+Full mission reporting includes requested versus measured speeds/counts/distance, line/junction/barcode, terrain/maximum valid height, independent front/profile validity and acquisition ages, mission reason and connection health. Current right-IR JSON reports raw ADC, calibration, state and commanded PWM, with measured speeds null. Dashboard capture succeeds only after matching robot acknowledgement; stale state/heartbeat or moving motors inhibit requests. Calibration references live in RAM.
+
+Review T12/T13/T14/T15 cover actual broker messages, prohibited/replayed commands, disconnect/reconnect under sensor load and bounded timing. Preserve freshness and command validation even when simplifying the code.
