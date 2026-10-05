@@ -59,11 +59,6 @@ static bool uint_value(const char **p, uint32_t *value) {
 
 static bool accept_command(CommandInbox *inbox, uint32_t now_ms) {
     /* 'inbox->field' accesses a field through a pointer to an existing struct. */
-    /* Plain stop is also supported: it can only stop, never start a vehicle. */
-    if (strcmp(inbox->payload, "stop") == 0) {
-        command_inbox_stop(inbox);
-        return true;
-    }
     const char *p = inbox->payload;
     char session[COMMS_SESSION_LENGTH + 1] = {0};
     char command[8] = {0};
@@ -98,16 +93,9 @@ static bool accept_command(CommandInbox *inbox, uint32_t now_ms) {
     if (*p || fields != 15 || !inbox->session[0] ||
         strcmp(session, inbox->session) != 0 || id <= inbox->last_id ||
         (uint32_t)(now_ms - issued_ms) > COMMS_COMMAND_MAX_AGE_MS) return false;
-    RobotCommand result;
-    if (strcmp(command, "start") == 0) result = COMMAND_START;
-    else if (strcmp(command, "stop") == 0) result = COMMAND_STOP;
-    else return false;
+    if (strcmp(command, "status") != 0) return false;
     inbox->last_id = id;
-    /* A new START must never replace a STOP waiting for the controller. */
-    if (inbox->pending != COMMAND_STOP) {
-        inbox->pending = result;
-        inbox->pending_issued_ms = issued_ms;
-    }
+    inbox->status_requested = true;
     return true;
 }
 
@@ -117,10 +105,6 @@ void command_inbox_reset(CommandInbox *inbox, const char *session) {
     if (strlen(session) == COMMS_SESSION_LENGTH) {
         memcpy(inbox->session, session, COMMS_SESSION_LENGTH + 1);
     }
-}
-
-void command_inbox_stop(CommandInbox *inbox) {
-    inbox->pending = COMMAND_STOP;
 }
 
 void command_inbox_begin(CommandInbox *inbox, size_t length, bool correct_topic) {
@@ -150,13 +134,9 @@ bool command_inbox_data(CommandInbox *inbox, const void *data, size_t length,
 }
 
 RobotCommand command_inbox_take(CommandInbox *inbox, uint32_t now_ms) {
-    RobotCommand command = inbox->pending;
-    inbox->pending = COMMAND_NONE; /* Clear it now so the next loop cannot repeat it. */
-    if (command == COMMAND_START &&
-        (uint32_t)(now_ms - inbox->pending_issued_ms) > COMMS_COMMAND_MAX_AGE_MS) {
-        return COMMAND_NONE;
-    }
-    return command;
+    (void)now_ms;
+    inbox->status_requested = false;
+    return COMMAND_NONE;
 }
 
 /* Tracks a fixed output buffer: its address, total space, used bytes and overflow.
