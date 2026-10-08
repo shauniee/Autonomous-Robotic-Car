@@ -1,8 +1,10 @@
-# Barcode architecture
+> Runtime update, 8 October 2026: micro T-Kernel template imported. This subsystem remains a proposed full-mission feature and has no active driver/task in the IR bench. See [TEAM.md](../../TEAM.md) and [getting started](../GETTINGS_STARTED.md). Earlier scaffold file names below are historical and recoverable from the pre-migration snapshot.
+
+# Barcode architecture: deferred S3 feature
 
 Owner: Nicholas. Parent: [system architecture](../ARCHITECTURE.md). Wiring: [hardware](../HARDWARE.md). Review scope: FR2/FR3/FR9, Sections 3–6; trials T04/T05/T11/T14/T15.
 
-## Capture, decode and navigation contract
+## 1. Capture, decode and navigation contract
 
 GP16 DOUT edge ISR captures bounded ordered transitions, timestamps and coherent encoder context independently of 20 ms line sampling. Decode **both black bars and white spaces**, using encoder distance or validated speed compensation. Calibrate comparator polarity/threshold, printed scale, traversal orientation and mounting. Identify complete frames and reject partial, unknown, malformed or overflowed captures rather than guessing a command.
 
@@ -10,11 +12,13 @@ Queue each mapped frame once in `Q_nav` with ID, symbol, action and acquisition 
 
 Mission requests left/right/straight/U-turn as one ID-bound Motion action, with encoder completion and absolute timeout. Repeated lease renewal retains the action ID/deadline. Completion persists until acknowledged, then Mission reacquires the original line. Obstacle handling preempts navigation and cancels its prior action. Unknown course mapping/finish rules remain unresolved.
 
-## Current implementation
+## 2. Current implementation and future states
 
-The active right-IR follower performs no barcode decoding or encoder turns. `src/subsystems/line_barcode.c` is a mission stub; the shared navigation enum still lacks U-turn. Known A/Z captures, final course mapping, four-action accuracy, speed variation, duplicates and reverse/partial reads need tests before mission acceptance.
+The active two-sensor proportional IR bench has no GP16 barcode driver, capture ISR, decoder, navigation FIFO or encoder turns. The retired src/subsystems/line_barcode.c scaffold is historical, not a current file. U-turn and the other three encoder actions remain proposed Mission/S2 work. The later S3 refactor changes line steering only. Known A/Z captures, final course mapping, four-action accuracy, speed variation, duplicates and reverse/partial reads need tests before mission acceptance.
 
-## Track geometry and sample technical reference
+Future decoder states are disabled/unconfigured, wait quiet zone, capture frame, validate frame, queue event, wait for rearm, and fault. Partial/malformed/unknown/time-out frames are rejected outcomes; capture/queue overflow faults explicitly. DOUT HIGH/LOW becomes black/white only after measured polarity. No command mapping or finish rule is guessed. [IR_FUTURE_PLANS.md](IR_FUTURE_PLANS.md) defines staged work and planned checks. Source-grounded geometry and A/Z transcription below are retained.
+
+## 3. Track geometry and sample technical reference
 
 
 

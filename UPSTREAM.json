@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/sirfonzie/INF2004_ProjectTemplate",
+  "revision": "c3b09544cb1fd6dac6ad4b8f523be0af59b44482",
+  "sha256_archive": "8bcd0324cc8cafbbbd4cd6fc88f3000a038009b37a02a5dd60bcf4e9e120da19",
+  "local_changes": [
+    "app_program project replacement",
+    "TEAM.md project ownership/proposed priorities",
+    "config/config_device.h disable native ADC",
+    "project docs/tests/scripts"
+  ]
+}

@@ -1,86 +1,120 @@
-# Line following architecture
+# Line following: S3 proportional IR bench
 
-Owner: Nicholas (line sensing); Mahesha (motion/encoder control). Parent: [system architecture](../ARCHITECTURE.md). Wiring: [hardware](../HARDWARE.md). Design authority: [CSC01 Design Review](<../../../CSC01 Design Review.docx>), FR1/FR9 and Sections 3–6.
+## 1. Ownership and implemented scope
 
-## Integrated target design
+Nicholas / 2501552 owns S3 acquisition, paired calibration, proportional steering, local controls, recovery and health policy. Mahesha owns S2 motor output. [TEAM.md](../../TEAM.md) defines the unchanged S2 interfaces; [getting started](../GETTINGS_STARTED.md) gives the button/power sequence.
 
-Line/Barcode samples both calibrated analogue IR channels every nominal 20 ms and publishes timestamped signed line error/junction/loss in `M_line`. Mission selects the behavior and sends an ID-bound leased target through `M_motion_cmd`; Motion alone drives GP8–GP11, uses encoder PID and publishes measured/stationary/completion feedback. Steering is an outer correction, not measured wheel-speed control.
+This proportional-only implementation is Nicholas's later requested bench override on 8 October 2026. The unchanged [Word design, Section 6.6](<../../../CSC01 Design Review.docx>) describes the previous PID bench and proposed full mission. Barcode decoding, encoder speed control, terrain, sonar, junction interpretation and original-line identification remain deferred. The [future plan](IR_FUTURE_PLANS.md) separates those additions from active behaviour; the [historical guide](../history/pre-mtkernel/architecture/LINE_FOLLOWING.md) preserves earlier SDK/MQTT instructions.
 
-Calibrate mounted black/white ranges and polarity, wheel geometry, counts/revolution, speed limits and stopping response. On recoverable loss, Mission performs bounded original-line recovery with valid forward clearance. Stable reacquisition resumes following; exhausted recovery stops. Stop/fault and stale required observations override steering. The target uses two line sensors; the current bench below uses one edge sensor.
+## 2. Pins, peripherals and task
 
-Tests: review T02/T03/T05/T11/T14/T15. Repeat straight/curve/T-junction trials, light/speed changes, encoder turn/stop accuracy and controlled loss/recovery. Numeric accuracy/lease/geometry limits require calibration; no completed full-mission trials are claimed.
-
-## Current right IR bench implementation
-
-Current active firmware: **`right_ir_follow_mqtt`** on branch `feat/mqtt-sensor-bench`. This replaces the previous stationary sensor bench for Nicholas's current setup: IMU and ultrasonic disconnected to reuse their wires, servo disabled, right IR plus two drive motors. The Word document is untouched.
-
-## Wiring (power off first)
-
-Use two suitable wires per motor, secured in the Robo Pico screw terminals. Reusing a wire does not reuse its old Grove port. Do not attach motor power leads to Grove 2/3, 3V3 or GPIO headers.
-
-| Original motor lead | Robo Pico terminal | Controller pin already wired inside carrier |
-| --- | --- | --- |
-| **Left black, motor +** | **M1A** | GP8 |
-| **Left yellow, motor −** | **M1B** | GP9 |
-| **Right black, motor +** | **M2A** | GP10 |
-| **Right yellow, motor −** | **M2B** | GP11 |
-
-These colors are the motor leads in the project wiring references. Reused extension-wire colors were not supplied: label each wire at both ends and follow the motor lead/terminal, rather than guessing by extension color. Use wires rated for the actual motor current and secure terminal contact. With wheels raised, verify physical forward direction; if a wheel runs backwards, swap that motor's black/yellow terminal connections with power off (or change its `FOLLOW_*_FORWARD_A` setting and rebuild).
-
-Right IR now uses **Grove 6**: **AOUT → GP27/ADC1, VCC → 3V3, GND → GND**. DOUT stays disconnected. Left IR moves to **Grove 5 / GP26 / ADC0** and is unused by this one-sensor firmware. Leave Grove 6’s shared GP26 contact disconnected. IR wire colors are not documented; follow the module's AOUT/VCC/GND labels. The four encoder wires (blue GND, white supply, red A, green B) are **not motor-power leads**; encoders are not used by this firmware, so leave unused ends insulated.
-
-Servo: disconnect its plug; the new firmware holds **GP12 LOW**, generates no servo PWM and accepts no servo controls. IMU/sonar ports GP2–GP5 are unused. Power-bank red/black continue to VIN +/− per the existing design. Motor leads go to M1/M2 only; no extra wires from motor terminals to Pico GPIO are needed.
-
-## Flash and operate
-
-Flash **`build-right-ir-follow/right_ir_follow_mqtt.uf2`**, not the earlier sensor-bench UF2. Hold BOOTSEL while connecting USB, then copy to RPI-RP2. Boot keeps both motors braked (LOW/LOW) until local start.
-
-1. Open the MQTT dashboard at **http://127.0.0.1:8765/**, with the wheels raised and the motors stopped. Hold the right IR over black and click **Capture black**; hold it over white and click **Capture white**. Wait for the robot’s capture acknowledgement after each click. Each captures a fresh averaged ADC value. At least 300 counts contrast is required. Calibration lives in RAM and must be repeated after reboot.
-2. Place the right IR near the **right edge of the black line**. It may read fully black or fully white; no intermediate ADC range is required. Press/release **GP20** to start after calibration. Initially verify both wheels move forward with wheels raised, then perform a low-speed track trial.
-3. **GP21** or USB **`x`** brakes both motors and latches Stopped. A fresh GP20 press resets to Ready only; release and press again to start. Held start at boot cannot start it; held stop inhibits motion.
-4. More black under the right sensor makes the left wheel faster, steering right; more white makes the right wheel faster. The controller targets the black/white boundary. All-black/all-white readings continue steering; they do not trigger a timeout because this sensor may switch directly between the two extremes. Invalid calibration still stops the motors.
-
-With only one IR, this follows a chosen **edge**, not the centre using two sensors. It cannot tell which side it is on after losing the line. There is no obstacle avoidance, barcode decoding, IMU processing, encoder speed control or physical speed measurement in this mode. Starting duty is 10%, capped at 35%; gain and mounting need real-car tuning. Without an edge-loss timeout, it keeps turning on white even if the track is absent; use GP21 to stop.
-
-The [dashboard](http://127.0.0.1:8765/) displays raw IR, calibration, edge error, state/reason and applied motor PWM when this firmware publishes. MQTT settings are retained in the ignored local header; the broker is on this Mac at 192.168.0.8:1883. MQTT supports black/white calibration while stopped, in addition to status requests. It never starts/drives/stops the car. Calibration requests use a fresh session/timestamp and one-shot ID; stale, duplicate and busy requests are rejected. Network loss does not block local line following; a 250 ms watchdog returns a hung loop to braked boot.
-
-## Rebuild and checks
-
-```sh
-cmake -S . -B build-right-ir-follow -DPICO_BOARD=pico_w -DPICO_SDK_PATH=/path/to/pico-sdk -DROBOT_BUILD_SENSOR_BENCH=OFF
-cmake --build build-right-ir-follow --target right_ir_follow_mqtt -j 6
-cc -std=c11 -Wall -Wextra -Werror -pedantic -Iinclude src/right_ir_follow.c tests/test_right_ir_follow.c -lm -o build-host/test_right_ir_follow
-build-host/test_right_ir_follow
-```
-
-The local real SDK firmware build and pure steering checks passed. Actual Pico MQTT telemetry and right-IR readings were subsequently observed. Motor polarity, braking response and repeatable physical line following still require measured trials. The donor wires' actual colors/rating also remain unverified.
-
-## Speed and steering tuning
-
-Edit `include/robot/right_ir_follow.h` from the repository root. Current values: `FOLLOW_BASE_DUTY .10f`, `FOLLOW_MAX_DUTY .35f`, `FOLLOW_KP .10f`. Higher base increases requested power; the maximum caps each wheel; higher gain makes corrections sharper. Rebuild/flash after editing. Black/white calibration is separate and available through MQTT.
-
-The implementation averages eight ADC readings every 20 ms, normalizes `(raw-white)/(black-white)`, clamps black fraction to 0–1 and uses error `2*fraction-1`. Duties are clamped `base ± gain*error`. With current values, extreme black/white requests approximately 20% on one wheel and 0% on the other. Servo/IMU/sonar/encoders are unused in this mode.
-
-## Reflectance sensor technical reference
-
-### Supplied device references describe different products
-
-- [Infrared-Reflective-Sensor-UserManual.pdf](../../../document/Infrared-Reflective-Sensor-UserManual.pdf) describes a **Waveshare ST188/LM393 module** with `DOUT`, `AOUT`, `GND`, and `VCC` (3.0–5.3 V). `AOUT` is a reflectance-related analogue signal and `DOUT` is thresholded by the onboard comparator. Its example wiring uses 3.3 V for an STM32 and 5 V for an Arduino; these are examples, not the team's pin choices. [pp. 1–2]
-- [tcrt5000.pdf](../../../document/tcrt5000.pdf) describes the **bare Vishay TCRT5000/TCRT5000L** emitter/phototransistor, not a powered four-pin module. It needs an LED current-limiting circuit and a detector load/conditioning circuit. Its peak operating distance is **2.5 mm**; its relative response remains above 20% over roughly **0.2–15 mm** in the stated test. The emitter wavelength is about 950 nm and the package has a visible-light filter. Actual black/white contrast depends strongly on mounting height and surface. [pp. 1–4]
-- [LM393-D.PDF](../../../document/LM393-D.PDF) describes the **comparator IC**, not a whole sensor module. It compares analogue voltages and its output needs a suitable pull-up/board circuit; a module powered at 5 V may present a 5 V digital pull-up even if the bare comparator can run over a broad supply range. Its IC supply range of 2–36 V is **not** permission to feed 5 V into Pico GPIO. Check the actual module's output high level and pull-up rail. [pp. 1–3]
-
-The documents do not establish whether the team's three IR modules are ST188 modules, TCRT5000 modules, another model, or a mix. Do not assume a TCRT5000 chip datasheet proves the pinout of a four-pin board.
-
-**Waveshare module information transcribed from its two-page manual:** the reflective element is listed as ST188, comparator as LM393, allowed module supply 3.0–5.3 V, board size 30.2 × 11.9 mm, and fixing-hole size 2.0 mm. Its connector order is **1 DOUT, 2 AOUT, 3 GND, 4 VCC**. The manual's STM32 example uses DOUT GPIOA.4, AOUT GPIOA.6 and 3.3 V supply; its Arduino example uses D2, A0 and 5 V. The example serial setting is 115200 baud, 8 data bits, no parity, 1 stop bit; this is the demonstration program, **not** a serial interface on the IR module. Its onboard indicator lights when close to a barrier in the manual's example. The manual does not state which DOUT logic level means black, the exact comparator threshold, or the best mounting height for this course. [Infrared manual pp. 1–2]
-
-**Bare TCRT5000 limits and optics:** it combines an IR LED and phototransistor in a 10.2 × 5.8 × 7 mm leaded package; TCRT5000L has longer leads. The peak relative response occurs at about **2.5 mm** from a reflective target, and the quoted >20% relative-current distance range is **0.2–15 mm** under the datasheet's test conditions. The emitter has a visible-light blocking package, approximately 940–950 nm peak emission, about 1.25 V typical forward drop at a stated 60 mA test current, and **60 mA absolute maximum continuous forward current**; this maximum is not a recommended design current. The detector's stated collector-emitter maximum is 70 V and collector-current maximum 100 mA, but neither allows Pico GPIO to exceed 3.3 V. The sensor needs external LED current limiting and detector load/threshold circuitry; it is not interchangeable pin-for-pin with the Waveshare module. Reflectance changes with surface, height, temperature and LED current, so calibrate on the actual black line and white floor at the mounted height. [tcrt5000 pp. 1–4]
-
-**LM393 comparator IC details:** two independent comparators are inside one 8-pin IC. On the bare IC, pins are `1=OUT A`, `2=IN− A`, `3=IN+ A`, `4=GND`, `5=IN+ B`, `6=IN− B`, `7=OUT B`, `8=VCC`. Its single-supply operating range is 2–36 V, but its input common-mode high end is about `VCC − 1.5 V` at 25 °C (or `VCC − 2.0 V` over the listed temperature range). At 5 V and 25 °C the LM393 family's typical supply current is 0.4 mA; the comparator can sink output current and needs an output pull-up to produce a high level. Pull-up **voltage**, not the broad chip VCC range, determines what a Pico digital input sees. Noise near the threshold can make DOUT chatter; the datasheet discusses adding a small amount of positive feedback (hysteresis) and keeping output traces away from sensitive inputs. If the module already contains these components, do not duplicate them blindly. [LM393 pp. 1, 3, 5]
-
-| Question for line tracking | What to observe on the assembled sensor |
+| Resource | S3 use |
 | --- | --- |
-| Black vs white | Log `AOUT` if connected and `DOUT` on both surfaces; record the actual polarity. |
-| Height | Compare black/white separation at the real chassis clearance, not the bare TCRT5000 datasheet's ideal test distance. |
-| Lighting and speed | Test under the demonstration lighting and at slow/normal travel speeds. |
-| Comparator threshold | Adjust or record the module's trim setting if present; use hysteresis/debounce where transitions chatter. |
-| Electrical levels | Power module from a verified rail and measure DOUT HIGH before connecting to 3.3 V Pico GPIO. |
+| GP26 / ADC0 | Left AOUT, Grove 5 |
+| GP27 / ADC1 | Right AOUT, Grove 6; shared GP26 contact disconnected |
+| GP20 / GP21 | Active-low capture/start/reset and stop |
+| GP22 / PWM3 | Asynchronous 2 kHz buzzer; check carrier mute switch |
+| GP16 | Future barcode DOUT; inactive |
+
+Use 3V3/GND; leave both line DOUT conductors disconnected. One task, priority 12, core 1 (TP_PRC2), checks controls every nominal 10 ms and samples paired ADC every 20 ms. It blocks between releases and skips missed releases. The kernel ADC device stays disabled. S3 discards one conversion after each mux change and averages eight; the whole pair has a 2 ms budget and finite poll cap, including a stalled timer.
+
+S3 creates no mailbox, queue, mutex or event flag. S2 owns the request/health mutex and persistent stop event; S3 uses those interfaces. S3's task uses the existing 2048-byte task stack; stack margin still requires measurement.
+
+## 3. Modules and data flow
+
+| Module | Responsibility |
+| --- | --- |
+| subsystem3.c / subsystem3.h | Lifecycle and task priority; initialize timebase before startup |
+| task_ir.c / task_ir.h | Private RTOS loop; local inputs, acquisition, S2 calls, feedback and watchdog |
+| drv_ir.c | Bounded ADC access; return success/failure and a complete pair |
+| ir_tracking.c | Capture/normalization, line classification/hysteresis and memoryless P output |
+| robot_control.c | Local state transitions, bounded recovery and requested duties |
+| drv_feedback.c / watchdog_policy.c | Existing input/buzzer/timebase/watchdog I/O and pure progress gate |
+
+Data flow: driver pair + acquisition success + acquisition time -> tracker -> controller -> S2 MotionRequest. Failed acquisition is explicit; there is no fabricated out-of-range failure pair. S3 never writes motor GPIO and makes no network calls.
+
+IrTrackingOutput retains validity, line condition, signed error, steering in [-1,1] and original acquisition ms. Its valid flag means a fresh calibrated visible-line steering result; it does not grant motion permission. A valid raw acquisition can still be lost or broad black and have invalid steering. P is calculated directly from the current reading; there is no separate PID update, derivative/integral history or steering timestamp. Latest samples are not made fresh by repeated reads.
+
+## 4. Calibration and proportional control
+
+Each black/white capture needs at least 25 distinct paired sample timestamps over at least 500 ms. Require at least 300 ADC counts contrast independently on both channels. Opposite sensor polarities and unequal spans are supported.
+
+~~~text
+fraction   = clamp((raw - white) / (black - white), 0, 1)
+error      = right_fraction - left_fraction
+correction = clamp(0.10 * error, -0.10, +0.10)
+left_duty  = clamp(0.10 + correction, 0, 0.35)
+right_duty = clamp(0.10 - correction, 0, 0.35)
+~~~
+
+Negative error requests a left correction; positive requests right. Initial base duty is 0.10, duty cap 0.35, and broad-black duty 0.05 per wheel. Physical forward polarity and suitable gains/duties require trials. Requested duty is not measured wheel speed.
+
+One IrCaptureKind enum selects black/white. IrCaptureResult records pending, black/white completion, unsupported, busy, moving, stop held, acquisition gap, invalid acquisition, contrast rejection, missing black reference or stop cancellation. Strings are only presentation names; there are no capture IDs/acknowledgements. Starting a new black capture clears the old pair. White needs a black reference. Failed white contrast clears both references. GP21 cancels the active capture; completed references survive reset, but not reboot.
+
+## 5. Complete IR state catalogue
+
+### 5.1 Nine calibrated observation combinations
+
+White means fraction <0.15; partial means 0.15 through 0.85 inclusive; black means >0.85. These are documentation bands, not nine additional controller states.
+
+| Left | Right | Normal response while following |
+| --- | --- | --- |
+| White | White | Enter bounded recovery if direction is known; otherwise stop |
+| White | Partial | Correct right |
+| White | Black | Correct right |
+| Partial | White | Correct left |
+| Partial | Partial | Use signed difference; equal fractions give zero correction |
+| Partial | Black | Correct right |
+| Black | White | Correct left |
+| Black | Partial | Correct left |
+| Black | Black | Slow straight: both duties 0.05; no navigation event |
+
+The table assumes normal following with valid data. During recovery, the recovery policy takes precedence. Both-white/both-black are ambiguous reflectance observations, not proof of position, junction, barcode or finish. Equal fractions do not prove centring. A plausible ADC value cannot reliably identify a disconnected sensor.
+
+### 5.2 Line classification and data condition
+
+| Line enum | Meaning / guard |
+| --- | --- |
+| UNKNOWN | No usable calibrated observation |
+| VISIBLE | Usable fractions outside lost/broad-black conditions; may include partial reflectance |
+| LOST | Both fractions <0.15; once lost, remain lost while both are <0.25 |
+| BROAD_BLACK | Both fractions >0.85; overrides lost classification, but cannot reacquire the line |
+
+Data conditions are separate: no sample; uncalibrated; capture active; fresh valid acquisition; invalid acquisition; stale acquisition. Acquisition freshness accepts age <=60 ms and rejects >60 ms. Invalid/stale acquisitions never authorize recovery. Losing the line is different from losing sensor validity.
+
+### 5.3 Calibration workflow
+
+| Stage | Entry / next step |
+| --- | --- |
+| Need black | Boot or rejected contrast; new GP20 press |
+| Capturing black | Motors inhibited; wait >=500 ms and >=25 samples |
+| Need white | Black completed; one chirp; release then press GP20 |
+| Capturing white | Motors inhibited; same acquisition bounds |
+| Calibrated | White contrast accepted; two chirps; position over visible line and press again |
+
+Stages are derived from existing calibration flags and capture kind; no duplicate setup state machine is stored. Rejection gives three chirps. Cancellation/gap/invalid samples end the active capture. A cancelled replacement black leaves the pair cleared; a cancelled white keeps a completed black reference. A failed white contrast starts again at need black.
+
+### 5.4 Controller transitions
+
+| State | Behaviour | Exit |
+| --- | --- | --- |
+| READY | Zero demand; calibration or fresh start checks | Fresh valid visible-line start -> FOLLOW_LINE |
+| FOLLOW_LINE | P steering; broad black uses slow-straight override | Valid both-white -> RECOVER_LINE if direction known; otherwise STOPPED |
+| RECOVER_LINE | Last-direction turn: one duty 0.10, the other 0 | Two consecutive qualifying samples before deadline -> FOLLOW_LINE; failure -> STOPPED |
+| STOPPED | Both demands zero; persistent S2 stop | Stop released + fresh GP20 reset -> READY only |
+
+A qualifying recovery sample is fresh, VISIBLE, has at least one fraction >=0.25, and advances the acquisition timestamp. Both-black resets the streak; a duplicate timestamp cannot count twice. Recovery ends at elapsed >=100 ms, including a sample arriving exactly at that deadline. Once the line returns, P performs alignment; there is no separate blind alignment spin.
+
+Stop reasons include local stop, invalid acquisition/calibration/steering, late control update, unavailable recovery direction, exhausted recovery, and Motion inhibition/reset/start/publish failures. Stop dominates calibration, following and recovery. Reset and start require separate released presses; held buttons cannot restart.
+
+![Current S3 architecture and workflow](../diagrams/project-activity-diagram.png)
+
+Editable source: [SVG](../diagrams/project-activity-diagram.svg). The Word figures remain the prior design record.
+
+## 6. S2 boundary, watchdog and evidence
+
+S3 publishes enabled requests only in FOLLOW_LINE or RECOVER_LINE. S2 alone writes GP8/9 left and GP10/11 right, checks acquisition-based expiry (>60 ms), duty bounds and the persistent stop event. Stop also wakes S2 independently of its snapshot mutex. Reset invalidates old requests; reset alone cannot move. TEST=1 always brakes at S2 output.
+
+The 250 ms watchdog feeds only when valid IR acquisition and Motion output service both advance and are <=60 ms old. Neither a repeating sample nor a stuck Motion sequence is progress.
+
+Run sh scripts/check-ir-tracking.sh and both firmware profiles in the [setup guide](../GETTINGS_STARTED.md). [S3 tests](../../testing/subsystem3/TEST_LOG.md) distinguish P/capture/recovery checks from historical PID results; [integration tests](../../testing/integration/TEST_LOG.md) exercise the real S3 loop against fakes and the unchanged S2 service. [Physical trials](../../testing/system/TEST_LOG.md) remain pending. Report T02/T03/T05/T11/T14/T15 remain planned mission trials; this short local recovery does not prove original-line identification after bypass.

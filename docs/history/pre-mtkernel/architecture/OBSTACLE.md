@@ -1,0 +1,29 @@
+# Obstacle architecture
+
+Owner: Jia Jing. Parent: [system architecture](../ARCHITECTURE.md). Wiring: [hardware](../HARDWARE.md). Review scope: FR6–FR9, Sections 3–6; trials T08–T10/T14/T15.
+
+## Integrated target behavior
+
+Maintain fresh forward clearance separately from the scan profile in `M_obstacle`. Invalid/missing/stale forward range inhibits movement. Mission first requests a stop and waits for fresh measured stationary feedback, then sends an ID-bound `Q_scan_request`. Obstacle performs a bounded coarse scan and a targeted fine scan, reporting closest point, width/location and left/right clearance with validity and separate ages.
+
+Mission compares profile against measured car width, stopping distance, margin and permitted course boundary. Only a supported path authorizes a bounded Motion bypass. Restore center and acquire fresh forward range before movement; side samples never refresh old forward data. Blocked/exhausted scans stop. Navigation/bypass completion leads to bounded original-line reacquisition; recovery does not invent a safe route from unknown range.
+
+Echo ISR captures bounded timestamps and wakes processing with `S_echo`; acquisition, servo settling and retries must not block high-priority control. Duplicate scan IDs are ignored; stop/fault cancels. Expected forward gaps during a stationary scan are governed by scan progress/deadline; movement stays inhibited until valid forward clearance returns. Queue, echo, settling and maneuver deadlines require installed-hardware calibration.
+
+## Current implementation and optional stationary bench
+
+The active follower disables GP12 and does not read sonar. The full mission `src/subsystems/obstacle.c` remains a stub. Optional `sensor_bench_mqtt` uses `src/sensor_bench.c`: GP2 echo, GP3 trigger, GP12 servo, 10 µs trigger, 65 ms minimum spacing, 30 ms echo timeout; separate forward/side ages, 1500 ms range expiry. Servo PWM is 50 Hz with nominal 1000–2000 µs endpoints/1500 µs center, sweep 60°/90°/120° with center between sides and 300 ms settling. Values are bench defaults requiring physical validation.
+
+In this optional stationary firmware, GP20 toggles scanning and GP21 disables pulses; USB a/c/x select scan/center/off. These controls differ from the active motor follower’s GP20/21 motion controls. Servo angle is commanded, not measured; pulse-off is not a mechanical brake. Use [optional setup](../GETTINGS_STARTED.md#optional-stationary-sensor-bench) only with the matching wiring and target.
+
+## Ranging and servo technical reference
+
+**Installed part reported by Nicholas:** HC-SR04P, the 3.3 V-capable variant. An [HC-SR04P manufacturer listing](https://www.okystar.com/product-item/hc-sr04-ultrasonic-sensor-module-oky3261-2/38/) specifies a **3–5.5 V** operating range and lists **2–400 cm at 3.3 V** for that manufacturer's module. This supports the intended [architecture.md](../ARCHITECTURE.md) connection of VCC to Grove 2 **3V3**, GND to Grove 2 GND, Echo to **GP2**, and Trig to **GP3**. Confirm the actual board is marked HC-SR04P (or has its own 3.3 V specification) before relying on that range; the manufacturer listing is representative, not proof of the exact installed board or its measured performance.
+
+The supplied [HCSR04.pdf](../../../document/HCSR04.pdf) describes a **different, older HC-SR04 that requires 5 V**. It remains a reference for the four-pin trigger/echo ranging principle: a ≥10 µs trigger, an eight-cycle 40 kHz acoustic burst, echo pulse width proportional to round-trip distance, and `distance_cm ≈ echo_high_us / 58`. Its approximately 15° beam and >60 ms measurement interval are conservative starting assumptions for planning, **not verified HC-SR04P specifications**. Measure the installed HC-SR04P's usable range, response, and minimum repeat interval on the car. [HCSR04 pp. 1–3]
+
+At a 3.3 V supply, the intended direct Echo→GP2 connection is appropriate **only after** verifying the installed module's Echo HIGH remains at or below the Pico's 3.3 V GPIO limit; use a divider/level shifter if it does not. The 3.3 V Pico GP3 trigger should be tested with the installed module. A standard 5 V-only HC-SR04 must not be substituted into this wiring: it would need 5 V power and Echo level protection. Share ground, bound the echo wait, and treat a missing echo as **unknown/timeout**, never infinite clearance. Angle, smoothness, size, and material affect reflections, so a scan does not uniquely reveal exact object shape. [Pico W p. 14; HCSR04 pp. 1–3]
+
+The Robo Pico provides servo signal ports GP12–GP15. **Nicholas identified the installed servo as a 9 g SG90**; it is not specified in the original 14 PDFs. [Cytron's SG90 listing](https://sg.cytron.io/p-sg90-micro-servo) gives brown=`GND`, red=`5 V`, orange=`Signal` and 4.8–5.0 V operating supply for the version it sells. Connect one three-wire plug to **servo port 1 / GP12** with orange on `S`, red on `+`, and brown on `−`; follow the actual board's silkscreen, not a presumed left/right orientation. With power off, verify that red aligns with `+` before seating the plug. The Robo Pico servo `+` follows its input power path, so measure that rail with the connected power bank and check the actual SG90 variant's rating. The supplied PDFs do not give this servo's current draw, stall current, calibrated angle range or center pulse. [Robo Pico pp. 4, 7]
+
+A coarse-to-fine scan should wait for servo settling, keep each reading's angle/time, periodically refresh straight-ahead clearance, estimate left/right passability with car width and safety margin, and stop/retry when data are insufficient. Using the older HC-SR04 sheet's conservative >60 ms interval, five coarse readings span **more than 240 ms from first to fifth trigger**, plus servo settling; the HC-SR04P's actual timing should be tested. The robot should be stopped or moving under a separately justified safe condition during such scans. [Robo Pico p. 4; HCSR04 p. 2]

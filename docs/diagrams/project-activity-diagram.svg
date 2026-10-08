@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#24486b"/></marker></defs>
+<rect width="1600" height="1120" fill="white"/>
+<text x="800" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="31" fill="#172c40" font-weight="bold">S3 proportional IR bench: micro T-Kernel 3, SMP=1</text>
+<rect x="35" y="75" width="390" height="200" rx="12" fill="#eef4f9" stroke="#24486b" stroke-width="2.5"/>
+<text x="230.0" y="109" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">Core 0: kernel services</text>
+<text x="230.0" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">USB console priority 3</text>
+<text x="230.0" y="168" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">WiFi service priority 4</text>
+<text x="230.0" y="196" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">NET=none / MQTT=0</text>
+<text x="230.0" y="224" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">S1/S4/S5 inactive</text>
+<rect x="470" y="75" width="530" height="200" rx="12" fill="#eef4f9" stroke="#24486b" stroke-width="2.5"/>
+<text x="735.0" y="109" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">Core 1: S3 ir_task, priority 12</text>
+<text x="735.0" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">GP20/21 every 10 ms; ADC every 20 ms</text>
+<text x="735.0" y="168" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Calibration, P steering, recovery, GP22</text>
+<text x="735.0" y="196" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">ADC success + original acquisition time</text>
+<text x="735.0" y="224" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Watchdog needs IR + Motion progress</text>
+<rect x="1050" y="75" width="515" height="200" rx="12" fill="#eef4f9" stroke="#24486b" stroke-width="2.5"/>
+<text x="1307.5" y="109" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">Core 1: S2 Motion, priority 13</text>
+<text x="1307.5" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">20 ms service + independent stop wake</text>
+<text x="1307.5" y="168" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Exclusive GP8-11 motor writer</text>
+<text x="1307.5" y="196" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Request: duties, acquisition ms, enabled</text>
+<text x="1307.5" y="224" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Stop / invalid / &gt;60 ms =&gt; brake</text>
+<path d="M1000 143H1050" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M1050 224H1000" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="800" y="320" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">Calibration and start use separate released, fresh GP20 presses</text>
+<rect x="35" y="365" width="330" height="145" rx="12" fill="#eef4f9" stroke="#24486b" stroke-width="2.5"/>
+<text x="200.0" y="399" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">NEED BLACK</text>
+<text x="200.0" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Motors inhibited</text>
+<text x="200.0" y="458" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Capture &gt;=500 ms / 25 samples</text>
+<text x="200.0" y="486" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">1 chirp on completion</text>
+<rect x="435" y="365" width="330" height="145" rx="12" fill="#eef4f9" stroke="#24486b" stroke-width="2.5"/>
+<text x="600.0" y="399" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">NEED WHITE</text>
+<text x="600.0" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Motors inhibited</text>
+<text x="600.0" y="458" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Capture; &gt;=300 counts contrast</text>
+<text x="600.0" y="486" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">2 chirps when valid</text>
+<rect x="835" y="365" width="330" height="145" rx="12" fill="#eef4f9" stroke="#24486b" stroke-width="2.5"/>
+<text x="1000.0" y="399" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">READY</text>
+<text x="1000.0" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Fresh visible line required</text>
+<text x="1000.0" y="458" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Completed references kept in RAM</text>
+<text x="1000.0" y="486" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Separate press starts</text>
+<rect x="1235" y="365" width="330" height="145" rx="12" fill="#eef4f9" stroke="#24486b" stroke-width="2.5"/>
+<text x="1400.0" y="399" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">FOLLOW LINE</text>
+<text x="1400.0" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Bounded proportional duties</text>
+<text x="1400.0" y="458" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Broad black: 0.05 / 0.05</text>
+<text x="1400.0" y="486" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Both-white -&gt; recovery or stop</text>
+<path d="M365 436H435" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M765 436H835" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M1165 436H1235" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="35" y="650" width="490" height="160" rx="12" fill="#fff2df" stroke="#24486b" stroke-width="2.5"/>
+<text x="280.0" y="684" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">REJECTED CONTRAST</text>
+<text x="280.0" y="715" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">3 chirps; motors remain inhibited</text>
+<text x="280.0" y="743" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Failed white clears both references</text>
+<text x="280.0" y="771" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Repeat black, then white</text>
+<rect x="580" y="650" width="420" height="160" rx="12" fill="#fff2df" stroke="#24486b" stroke-width="2.5"/>
+<text x="790.0" y="684" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">RECOVER LINE</text>
+<text x="790.0" y="715" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Last direction: 0.10 / 0 or 0 / 0.10</text>
+<text x="790.0" y="743" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Two distinct fresh visible samples</text>
+<text x="790.0" y="771" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Each: a fraction &gt;=0.25</text>
+<text x="790.0" y="799" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Broad black cannot qualify</text>
+<rect x="1050" y="650" width="515" height="160" rx="12" fill="#fff2df" stroke="#24486b" stroke-width="2.5"/>
+<text x="1307.5" y="684" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">STOPPED / INHIBITED</text>
+<text x="1307.5" y="715" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">GP21, invalid/stale data or exhausted turn</text>
+<text x="1307.5" y="743" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Zero demand; persistent Motion stop</text>
+<text x="1307.5" y="771" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Release + fresh reset -&gt; READY only</text>
+<text x="1307.5" y="799" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Then release + separate press to start</text>
+<path d="M600 510V590H280V650" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="420" y="578" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#172c40">White contrast rejected</text>
+<path d="M35 730H20V436H35" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M1400 510V565H790V650" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="1100" y="553" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#172c40">Known direction</text>
+<path d="M1000 685H1025V600H1210V455H1235" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="1112" y="589" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" fill="#172c40">2 qualifying samples</text>
+<path d="M1000 760H1050" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="1025" y="748" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#172c40">100 ms</text>
+<path d="M1565 437H1585V730H1565" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M1307 650V620H1000V510" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="1160" y="639" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" fill="#172c40">Reset only</text>
+<text x="800" y="867" text-anchor="middle" font-family="Arial, sans-serif" font-size="23" fill="#172c40" font-weight="bold">Unknown direction -&gt; STOPPED. Recovery deadline is never extended by partial returns.</text>
+<text x="800" y="910" text-anchor="middle" font-family="Arial, sans-serif" font-size="23" fill="#172c40">GP21 dominates every stage; invalid acquisitions never authorize a recovery turn.</text>
+<text x="800" y="953" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#172c40">Use ONE power source: USB alone for inhibited TEST checks; unplug before power-bank trials.</text>
+<text x="800" y="995" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#172c40">Reboot clears calibration. GP22 is asynchronous; TEST=1 always brakes at S2 output.</text>
+<text x="800" y="1037" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#172c40">Host and build checks verify software. Tracking, polarity and physical stop timing require trials.</text>
+<text x="800" y="1080" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#172c40">Later requested S3 override; Word report and its earlier PID figures remain unchanged.</text>
+</svg>

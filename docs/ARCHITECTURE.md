@@ -1,14 +1,20 @@
-# Autonomous robotic car — system architecture
+# Autonomous robotic car: revised architecture
 
-## Scope and status
+The [Word report](<../../CSC01 Design Review.docx>) records the revised micro T-Kernel proposal. Current implementation is a two-task IR bench on core 1: S3 priority 12 coordinates local buttons/calibration/20 ms ADC/proportional steering/explicit bounded recovery/watchdog; S2 priority 13 alone writes motor PWM and brakes on stop, invalid or >60 ms requests. Kernel USB 3 and WiFi 4 remain on core 0. Smaller numbers are higher priority. S1/S4/S5 are inactive; MQTT, encoders, barcode, terrain and obstacle behavior are pending.
 
-This is the **target design** for the team car, based on the mission requirements below, [hardware evidence](HARDWARE.md), and the [design review](<../../CSC01 Design Review.docx>). The car must autonomously follow a black line, decode navigation barcodes, execute left/right/straight/U-turn actions, detect and estimate the highest hump, profile and bypass obstacles, reacquire the original line, and report telemetry over WiFi/MQTT. It is a Pico WH on a Cytron Robo Pico carrier. On 5 October 2026 Nicholas requested swapping the IR Grove ports: right IR is now Grove 6 / GP27, left IR Grove 5 / GP26; the Word design is preserved as submitted. The active setup uses the later bench IR swap; [HARDWARE.md](HARDWARE.md) also preserves the review’s original right/left allocation. The documented connections do not prove installed electrical verification.
+The instructor template and revised shared configuration are a Nicholas-requested migration, not a claimed team approval. Original full mission requirements remain in scope. [TEAM.md](../TEAM.md) gives implemented objects; [line following](architecture/LINE_FOLLOWING.md) gives calibration policy; [history](history/pre-mtkernel/ARCHITECTURE.md) preserves the earlier proposal and source audit.
 
-## Authority and implementation status
+Current IR wiring is left GP26/ADC0 and right GP27/ADC1, the later explicit swap from the original submitted allocation. The revised Word map now follows this bench; original map remains in recovery. One source at a time, USB disconnected before power-bank trials.
 
-The [CSC01 Design Review](<../../CSC01 Design Review.docx>) is the primary integrated design reference. The mission requirements and source audit below preserve assignment/design evidence. [Hardware](HARDWARE.md) retains datasheet facts and submitted versus current bench wiring.
+## Current S3 bench override (8 October 2026)
 
-The review is a **proposed FreeRTOS design**, not implemented task scheduling or hardware-test evidence. The current `right_ir_follow_mqtt` application is a cooperative single-loop bench follower: right IR GP27/ADC1, M1/M2 PWM, local GP20/21, MQTT calibration/status and telemetry. It disables servo, omits IMU/sonar/encoders, and has no barcode, obstacle or hump mission. `robot_car` is the full-mission scaffold; the optional `sensor_bench_mqtt` is a stationary acquisition application. These are alternative firmware targets, not simultaneous programs on the robot.
+Nicholas requested proportional-only line steering after the Word report's PID bench. The Word remains the integrated design record; current S3 behaviour is documented in [line following](architecture/LINE_FOLLOWING.md) and [future PID/barcode work](architecture/IR_FUTURE_PLANS.md). Lifecycle and the private task loop are separate, matching the template. One S3 task owns the ADC/controls/feedback; no additional task or queue is introduced.
+
+S3 states are READY, FOLLOW_LINE, RECOVER_LINE and STOPPED. Both-white with valid acquisition starts a <=100 ms turn in the last nonzero error direction (one duty0.10, the other0); no direction means stop. Two consecutive distinct fresh VISIBLE samples with a fraction >=0.25 resume proportional alignment. Both-black never satisfies that guard; normal following still handles it as slow straight. Invalid/stale sensing, GP21, timeout or Motion failure inhibit requests and latch stop. Short bench recovery does not identify the original line after a mission bypass.
+
+Calibration kind and outcomes are typed; removed command IDs/acknowledgements do not affect S2's public interfaces. Acquisition failure is explicit, and original timestamps still govern freshness and watchdog progress.
+
+## Proposed full mission (not implemented)
 
 ## System data flow
 
@@ -28,23 +34,23 @@ flowchart TD
     Motion --> Motors[M1 and M2]
 ```
 
-This is the proposed integrated task flow; the cooperative bench does not implement these RTOS objects. Critical producers also notify Safety through the independent fault path described below.
+This is the proposed integrated task flow; the implemented IR bench does not implement these RTOS objects. Critical producers also notify Safety through the independent fault path described below.
 
 ## Target task boundaries and data flow
 
 | Task / owner | Priority | Nominal release | Responsibility |
 | --- | ---: | --- | --- |
-| Safety / Nicholas | 5 | 10 ms and events | Local GP20/21; persistent stop/fault; independent wake-up of Motion |
-| Motion / Mahesha | 4 | 20 ms and stop notification | Sole GP8–GP11 writer; encoder PID; action IDs, completion, command expiry and brake |
-| Mission / Nicholas | 3 | 20 ms and bounded events | Mission arbitration; motion commands; scan requests; telemetry aggregation |
-| Line/Barcode / Nicholas | 3 | ADC 20 ms; barcode IRQ | GP26/27 line observations; GP16 bar/space captures; one-shot navigation |
-| Terrain / Darrius | 2 | 20 ms fresh polling | GY-511/I2C0; classification, impact and validated maximum hump height |
-| Obstacle / Jia Jing | 2 | Bounded acquisition states | GP2 echo, GP3 trigger, GP12 servo; independent front/profile freshness |
-| Communications / Shaun | 1 | Network events; 500 ms telemetry | WiFi/MQTT, status validation, bounded reconnection |
+| Safety / Nicholas | 12 | 10 ms and events | Local GP20/21; persistent stop/fault; independent wake-up of Motion |
+| Motion / Mahesha | 13 | 20 ms and stop notification | Sole GP8–GP11 writer; encoder PID; action IDs, completion, command expiry and brake |
+| Mission / Nicholas | 14 | 20 ms and bounded events | Mission arbitration; motion commands; scan requests; telemetry aggregation |
+| Line/Barcode / Nicholas | 15 | ADC 20 ms; barcode IRQ | GP26/27 line observations; GP16 bar/space captures; one-shot navigation |
+| Terrain / Darrius | 16 | 20 ms fresh polling | GY-511/I2C0; classification, impact and validated maximum hump height |
+| Obstacle / Jia Jing | 17 | Bounded acquisition states | GP2 echo, GP3 trigger, GP12 servo; independent front/profile freshness |
+| Communications bridge / Shaun | 20 | Network events; 500 ms telemetry | Deferred application bridge to kernel network service; status validation |
 
-This allocation comes from review Sections 3–4. The current bench main directly owns motor GPIO; that is a limited bring-up implementation, not the proposed RTOS ownership split. The shared `include/robot/` interfaces still need action IDs, leases, U-turn and full RTOS contracts before mission integration.
+This allocation comes from review Sections 3–4. The current S2 Motion task exclusively owns motor GPIO; the encoder action/feedback interfaces remain pending before full mission integration. Current shared bench interfaces are in `app_program/subsystem2/subsystem2.h`.
 
-Latest-value mailboxes `M_line`, `M_terrain`, `M_obstacle`, `M_motion_feedback` and `M_telemetry` hold coherent timestamped observations. `M_motion_cmd` carries ID-bound leased commands. FIFO `Q_nav` preserves one-shot events; `Q_scan_request` carries bounded scan requests. `Q_local` carries fresh local controls, `Q_status` requests reporting, `S_echo` wakes echo processing and `EG_system` carries Safety latches. Critical producer faults notify Safety independently of diagnostic queues. Snapshot overwrites must never erase navigation events or action completion; command expiry brakes locally. Queues, stack sizes, deadlines and lease bounds require measurement.
+Mutex-protected latest-value snapshots `M_line`, `M_terrain`, `M_obstacle`, `M_motion_feedback` and `M_telemetry` hold coherent timestamped observations. `M_motion_cmd` carries ID-bound leased commands. FIFO `Q_nav` preserves one-shot events; `Q_scan_request` carries bounded scan requests. `Q_local` carries fresh local controls, `Q_status` requests reporting, `S_echo` wakes echo processing and `EG_system` carries Safety latches. Critical producer faults notify Safety independently of diagnostic queues. Snapshot overwrites must never erase navigation events or action completion; command expiry brakes locally. Queues, stack sizes, deadlines and lease bounds require measurement.
 
 ## Detailed subsystem designs
 
@@ -60,15 +66,15 @@ Full wiring/electrical references are in [HARDWARE.md](HARDWARE.md). Setup and t
 
 ## Mission arbitration
 
-The target state machine is **idle/ready → follow line → execute navigation or scan/bypass → reacquire line → follow line**, with stopped/fault states and a finish state only after the course end rule is defined. Hump monitoring and telemetry run alongside motion. The controller gives physical stop/fault conditions first priority, then stale/invalid sensor or motion feedback, then obstacle handling, then barcode/junction actions, then ordinary line steering. Each maneuver needs entry criteria, completion evidence, timeout, and a safe exit. No network message may override a safety stop. The review permits validated status requests only and rejects drive/start/stop. The current bench additionally permits stopped black/white calibration as a user-requested implementation extension. The `s`/`x` USB commands are bench-only scaffold controls.
+The target state machine is **idle/ready → follow line → execute navigation or scan/bypass → reacquire line → follow line**, with stopped/fault states and a finish state only after the course end rule is defined. Hump monitoring and telemetry run alongside motion. The controller gives physical stop/fault conditions first priority, then stale/invalid sensor or motion feedback, then obstacle handling, then barcode/junction actions, then ordinary line steering. Each maneuver needs entry criteria, completion evidence, timeout, and a safe exit. No network message may override a safety stop. The review permits validated status requests only and rejects drive/start/stop. The current bench additionally permits stopped black/white calibration as a user-requested implementation extension. The former USB s/x and MQTT calibration controls are retired; GP20/21 now control the bench.
 
-Use a monotonic timestamp at acquisition, an explicit validity flag, and separate status for optional profile/height values. Distances and heights are metres, speed metres/second, angles degrees, and line error is negative left/positive right. Treat navigation events as one-shot. Updates should finish promptly: sonar waits, servo settling, and WiFi reconnection must not block motor control. The target uses deadline scheduling: Safety 10 ms, Motion/Mission/line/Terrain 20 ms, required-sample age initially 250 ms, and commanded brake within 50 ms. These are design targets requiring timing measurements. The bench samples ADC every 20 ms and services networking in a loop sleeping 1 ms; it does not establish RTOS deadlines. `code/include/robot/config.h` contains demonstration values, not calibrated limits.
+Use a monotonic timestamp at acquisition, an explicit validity flag, and separate status for optional profile/height values. Distances and heights are metres, speed metres/second, angles degrees, and line error is negative left/positive right. Treat navigation events as one-shot. Updates should finish promptly: sonar waits, servo settling, and WiFi reconnection must not block motor control. The target uses deadline scheduling: Safety 10 ms, Motion/Mission/line/Terrain 20 ms, required-sample age initially 250 ms, and commanded brake within 50 ms. These are design targets requiring timing measurements. The current micro T-Kernel bench samples every nominal 20 ms with no application networking. Source periods are implemented, but timing guarantees require measurement. Historical scaffold constants are preserved in the recovery snapshot, not treated as calibrated limits.
 
 ## Telemetry and verification boundaries
 
-The intended MQTT publication covers mission state/reason, measured wheel speed/counts/distance, line/barcode status, hump events and highest valid height, forward and side obstacle data, plus validity/age and heartbeat/connection health. The review requires healthy local autonomy to continue through WiFi/MQTT loss. The bench uses `robot/car01/{telemetry,heartbeat,command,status}`, 500 ms telemetry, 1 s heartbeat, and a session/ID/age-validated command envelope. Credentials are in the ignored local header. These configured implementation details are not all fixed by the review. USB logs can support early bench tests but do not satisfy MQTT. Keep credentials out of source control and prevent stale or replayed subscribed messages from taking effect.
+The intended MQTT publication covers mission state/reason, measured wheel speed/counts/distance, line/barcode status, hump events and highest valid height, forward and side obstacle data, plus validity/age and heartbeat/connection health. The review requires healthy local autonomy to continue through WiFi/MQTT loss. Those topics, heartbeat and command envelopes belong to the retired SDK/MQTT bench preserved in history. The active micro T-Kernel S3 bench has NET=none/MQTT=0 and no robot network commands. Future endpoint/topic settings remain S1 work. USB logs can support early bench tests but do not satisfy MQTT. Keep credentials out of source control and prevent stale or replayed subscribed messages from taking effect.
 
-Before calling this architecture operational, show repeatable subsystem measurements, a physically verified stop, bounded turns, known-barcode trials, known-height hump trials, obstacle bypass with line reacquisition, and a full mission with telemetry. Log firmware revision, setup, expected and actual results, units, and evidence in [`code/docs/test-log.csv`](test-log.csv). The review defines planned T01–T16 trials and candidate timing/electrical targets, while course-level accuracy/pass thresholds still require agreement. No planned trial is a passed result.
+Before calling this architecture operational, show repeatable subsystem measurements, a physically verified stop, bounded turns, known-barcode trials, known-height hump trials, obstacle bypass with line reacquisition, and a full mission with telemetry. Log firmware revision, setup, expected and actual results, units, and evidence in the [subsystem/integration/system logs](../testing/README.md); retain the legacy test-log.csv as migration history. The review defines planned T01–T16 trials and candidate timing/electrical targets, while course-level accuracy/pass thresholds still require agreement. No planned trial is a passed result.
 
 
 ## Mission requirements
@@ -105,28 +111,11 @@ The write-up lists mission completion, navigation accuracy, obstacle avoidance, 
 
 The briefing explicitly calls for: defined inputs/outputs/owners; repeatable subsystem tests; recorded measurements and calibration; early integration using stable APIs; and practice for a **Week 10 demonstration**. It does not supply a dated schedule or a Week 10 marking sheet.
 
-## Firmware targets
+## Firmware and evidence
 
-| Target | Entry point | Status |
-| --- | --- | --- |
-| `right_ir_follow_mqtt` | `src/main_right_ir_follow.c` | Active cooperative bench: actual GP27 ADC, M1/M2 PWM, local buttons, calibration/status MQTT |
-| `sensor_bench_mqtt` | `src/main_sensor_bench.c` | Optional stationary IR/GY-511/servo-sonar acquisition; disabled by default |
-| `robot_car` | `src/main_pico.c` | Full-mission controller scaffold with invalid/no-op sensor/motor drivers and WiFi backend when enabled |
+`build_make/mtk3pico_smp1_usb_cdc_wifi.uf2` is the normal two-task bench; `_test.uf2` contains on-target self-checks and unconditionally brakes motors. Entry point is `app_program/app_main.c`. Every subsystem creates objects first; all tasks start second. Kernel/libraries/build system are imported unchanged. S1/S4/S5 placeholders create no application tasks.
 
-Each target has its own `main`; only the flashed target runs. Do not flash the scaffold expecting the bench motor follower.
-
-
-## Remaining structure
-
-`include/robot/` contains shared types/contracts; `src/subsystems/` contains mission modules and networking. `tests/` provides pure control/protocol checks and fake-SDK driver/network tests. `config/network_config.h` is ignored private configuration; `wifi/include/lwipopts.h` configures lwIP. `scripts/` contains build/check and monitoring tools. Project and technical Markdown lives in this directory.
-
-The teammate `wifi_telemetry` branch supplied WiFi/MQTT connection, retries, heartbeat and legacy start/stop tools. This branch is rebased onto it and changes the subscription policy to match the design’s local motion controls, with user-requested stopped calibration added. [WiFi guide](architecture/COMMUNICATIONS.md) documents the reconciled current transport contract.
-
-
-## Verification boundary
-
-Real SDK firmware builds, host steering/protocol/controller checks and fake-SDK driver/network checks passed after integration. Actual Pico MQTT telemetry and right-IR raw readings were observed during the current bench session. Physical speed, polarity/braking response, repeatable line tracking, encoder PID, RTOS scheduling, barcode, hump height, obstacle bypass and full mission acceptance are not established by those checks. The review’s T01–T16 are planned trials, not passed results.
-
+The old SDK/CMake mission scaffold, stationary bench, dashboard and networking implementation are recoverable from the pre-migration snapshot. They are historical alternatives, not current build targets. Host tests cover actual `app_program/subsystem2/3` calculation/policy/ADC modules. Normal and TEST images build; no two-sensor physical run or on-target migration pass is claimed. Saved 2026-10-08 logs identify the working tree tested before commit through a SHA256 manifest. All report T01-T16 physical/integrated trials remain pending.
 
 ## Source consistency and unresolved differences
 
@@ -136,21 +125,21 @@ Real SDK firmware builds, host steering/protocol/controller checks and fake-SDK 
 | --- | --- |
 | Root architecture versus code architecture | Consolidated into `ARCHITECTURE.md`: review target, proposed tasks/contracts and separate current implementation status |
 | Maker Pi Pico versus Robo Pico | Review Section 2 and wiring figure identify Robo Pico; hardware/machine/getting-started corrected |
-| Cooperative loop presented as final architecture | Review Section 3 proposes FreeRTOS Safety P5, Motion P4, Mission/Line P3, Terrain/Obstacle P2, Communications P1. Cooperative bench remains an implementation distinction |
+| Cooperative loop presented as final architecture | Revised report: micro T-Kernel SMP, smaller numbers higher; bench S3 P12 and Motion P13, future task split P12-20 |
 | Integration owner unassigned / Shawn spelling | Review ownership table assigns Nicholas integration/Safety/Mission; communications owner is Shaun |
-| MQTT start/stop, default stop on disconnect | Review FR12 and Section 4.3 permit status only; reject drive/start/stop; healthy local autonomy continues on loss. Current bench’s stopped calibration is a later user-requested extension |
-| Right/left IR ports differ | Review Section 2: right GP26/Grove 5, left GP27/Grove 6. Current user-requested bench swap: right GP27/Grove 6, left GP26/Grove 5. Both recorded; firmware unchanged |
-| Review labels GP27 ADC0 | Physical GP27 is ADC1; technical/firmware mapping uses ADC1, while documenting the submitted typo |
+| MQTT start/stop, default stop on disconnect | Review FR12 and Section 4.3 permit status only; reject drive/start/stop; healthy local autonomy continues on loss. Current calibration is local GP20/21; network integration deferred |
+| Right/left IR ports differ | Original review: right GP26/Grove 5, left GP27/Grove 6. Revised report and firmware: left GP26/Grove 5, right GP27/Grove 6; original retained in recovery |
+| Review labels GP27 ADC0 | Physical GP27 is ADC1; revised report and firmware correct the original typo |
 | Stale TBD hardware table | Updated reported GY-511, HC-SR04P, SG90, motor GPIO and local buttons; exact variants/measurements remain unverified |
 | Fixed A/B/C/D mapping in MACHINE.MD | Review assumptions leave final course mapping unresolved; A/B/C/D is an assignment example; supplied samples A/Z do not prove final commands |
 | Review trials and timing targets mistaken for implementation | T01–T16 remain planned; Safety 10 ms, control/sensing 20 ms, initial age 250 ms and commanded brake ≤50 ms are design targets requiring measurements |
-| Current follower presented as full mission | Explicitly limited to right IR + M1/M2; no encoder speed, barcode, terrain/obstacle mission or RTOS tasks |
+| Current follower presented as full mission | Explicitly limited to calibrated line IR + M1/M2; no encoder speed, barcode or terrain/obstacle mission; two bench RTOS tasks only |
 
 ### Unresolved source issues
 
-The review repeats NFR1/NFR2 as NFR12/NFR13. Preserve the source numbering and avoid treating duplicates as additional independent requirements. Its status example `{"request":"status"}` is illustrative; the implemented command envelope uses session, ID, issued uptime and command. Final mission schema, barcode mapping/finish rule, measured geometry, electrical/timing/resource limits and calibration-dependent pass thresholds require agreement/evidence.
+The duplicate original NFR12/NFR13 rows were removed; NFR1-11 identifiers remain stable. The status example `{"request":"status"}` is illustrative; robot MQTT is deferred, and historical command envelopes do not describe the current bench. Final mission schema, barcode mapping/finish rule, measured geometry, electrical/timing/resource limits and calibration-dependent pass thresholds require agreement/evidence.
 
-Submitted design authority does not overwrite later explicitly requested bench wiring or turn proposals into tested implementation. Datasheet electrical/ADC facts retain their physical authority. No Word or firmware changes were made by this documentation audit.
+Submitted design authority does not overwrite later explicitly requested bench wiring or turn proposals into tested implementation. Datasheet electrical/ADC facts retain their physical authority. The prior audit was read-only; the explicitly requested 8 October migration revises the Word report and firmware.
 
 
 ## Embedded C coding reference
@@ -172,3 +161,7 @@ Submitted design authority does not overwrite later explicitly requested bench w
 | Control flow | Declare one variable per statement. Keep nested `if`/`else` no deeper than two levels; do not assign in `if` tests; end `if`/`else if` chains with `else`. Every `switch` gets `default`, and intentional case fallthrough gets a comment. Use named constants for loop limits, avoid assignment in loop tests, spell an infinite loop `for (;;)`, and explain empty loops. Avoid `abort()`, `exit()`, `setjmp()` and `longjmp()`. When comparing with `==`, put the constant on the left. | 63–68 |
 
 The appendices provide an accepted-abbreviation list, header/source templates and a CRC example, followed by a bibliography and index. They are **examples**, not an assignment requirement to implement CRC or copy Barr Group's template copyright. [Barr pp. 69–86] For this project, decide which formatting and static-analysis rules the team will enforce, document any exceptions, and apply them consistently across drivers and buddy modules. The current skeleton has not been certified against this standard.
+
+## Runtime clarification
+
+M_ names in the future diagram mean logical snapshots, implemented with mutex copies; micro T-Kernel mailboxes link pointers and do not copy/overwrite payloads. Q_ names are proposed bounded FIFO message buffers or explicitly pooled messages. S1 is a deferred application bridge; all network calls belong to kernel service priority 4 on core 0. No student task performs networking. Kernel service priority cannot be lowered by describing S1 as low priority. See TEAM.md and the revised report for the final proposal.
