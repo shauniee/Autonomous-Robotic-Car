@@ -44,22 +44,40 @@ static void motion_task(INT stacd, void *exinf) {
         if (er>=E_OK) { r=latest; tk_unl_mtx(request_mutex); }
         bool stopped=tk_ref_flg(stop_flag,&f)<E_OK || (f.flgptn&1)!=0;
         bool valid=er>=E_OK && motion_request_valid(r,stopped,now);
+        ER output_er;
         if (!valid) {
-            drv_motor_brake();
+            output_er=drv_motor_brake();
             /* Expiry/bad active request is latched, even if the producer recovers. */
             if (r.enabled || er<E_OK) tk_set_flg(stop_flag,1);
         } else {
 #if APP_TEST
-            drv_motor_brake(); /* Test firmware never permits motor movement. */
+            output_er=drv_motor_brake(); /* TEST never permits movement. */
 #else
-            drv_motor_apply(r.left,r.right);
+            output_er=drv_motor_apply(r.left,r.right);
 #endif
         }
-        er=tk_loc_mtx(request_mutex,2);
-        if (er>=E_OK) {
-            progress.serviced_ms=now; ++progress.sequence;
-            tk_unl_mtx(request_mutex);
-        } else { drv_motor_brake(); tk_set_flg(stop_flag,1); }
+        if (output_er < E_OK)
+        {
+            /* Do not report a failed output cycle as watchdog progress. */
+            (void)drv_motor_brake();
+            tk_set_flg(stop_flag, 1);
+        }
+        else
+        {
+            uint32_t serviced_ms = now_ms();
+            er = tk_loc_mtx(request_mutex, 2);
+            if (er >= E_OK)
+            {
+                progress.serviced_ms = serviced_ms;
+                ++progress.sequence;
+                tk_unl_mtx(request_mutex);
+            }
+            else
+            {
+                (void)drv_motor_brake();
+                tk_set_flg(stop_flag, 1);
+            }
+        }
         /* Fixed deadline; stop wake-ups service immediately without shifting it. */
         now=now_ms();
         if ((int32_t)(now-next)>=0) {
@@ -71,7 +89,11 @@ static void motion_task(INT stacd, void *exinf) {
     }
 }
 ER subsystem2_init(void) {
-    drv_motor_init();
+    ER er = drv_motor_init();
+    if (er < E_OK)
+    {
+        return er;
+    }
     T_CMTX m={0}; m.mtxatr=TA_INHERIT;
     request_mutex=tk_cre_mtx(&m); if (request_mutex<E_OK) return request_mutex;
     T_CFLG f={0}; f.iflgptn=1;
