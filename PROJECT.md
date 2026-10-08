@@ -8,6 +8,8 @@ This is a later requested S3 bench override: the unchanged Word report describes
 
 One power source at a time: USB only for flashing/inhibited TEST=1 checks, disconnected before battery trials. GP20 captures black, captures white and starts on separate fresh presses; GP21 stops/cancels. GP22 chirps 1/2/3 for black/valid white/rejection. Calibration is RAM-only.
 
+IR development template: [Phase 1 IR-to-Motion handoff](docs/architecture/IR_MOTION_HANDOFF.md). The existing request path is available for software development; physical motor operation remains unverified.
+
 Software check: `sh scripts/check-ir-tracking.sh`. Builds: see [getting started](docs/GETTINGS_STARTED.md). Recovery of all pre-migration source/report/figures is in `../recovery/pre-mtkernel-20261008/`; credentials and generated artifacts are excluded.
 
 The configured project repository is private: [Autonomous-Robotic-Car](https://github.com/shauniee/Autonomous-Robotic-Car). Confirm instructor access before hand-in. The saved software checks identify the tested working tree through source manifests; use the resulting Git revision and flashed-image checksum for subsequent on-target trials.
