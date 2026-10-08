@@ -84,7 +84,7 @@ No application networking task exists. Future full mission split: Safety 12, Mot
 |---|---|---|---|
 | IF-01 | S3 -> S2 | S2 priority-inheritance mutex + latest MotionRequest | Bounded duties 0..0.35, acquisition ms, enabled. Expired >60 ms or invalid active request brakes and latches stop |
 | IF-02 | S3 -> S2 | S2 persistent event flag + tk_wup_tsk | Stop independent of request mutex. Separate local reset clears flag and invalidates old request; reset alone cannot move |
-| IF-03 | S2 -> S3 | S2 mutex-protected MotionHealth | Completed output-service timestamp and sequence; no encoder speed claimed |
+| IF-03 | S2 -> S3 | S2 mutex-protected MotionHealth | Software service sequence and cycle-entry timestamp; stopped is the latch, not brake acknowledgement or measured stationarity |
 | IF-04 | IR calculations -> S3 coordinator | In-task IrTrackingOutput | Fresh visible-steering validity, condition, signed error, memoryless P steering [-1,1], original acquisition time |
 
 Use mutex copies for latest snapshots; micro T-Kernel mailboxes pass pointers and require lifetime management, not FreeRTOS length-one overwrite semantics. Future navigation FIFO should use a bounded message buffer or explicit pooled mailbox messages; no navigation FIFO is implemented here.
@@ -108,3 +108,7 @@ This is S3 usage, not the total including S2 and kernel services. Existing confi
 Create all subsystem objects before starting any task. Initialization failure prevents startup; a task-start failure returns its error. Motors are inhibited at boot. TEST=1 also inhibits all motor outputs in the service task.
 
 **One power source at a time.** USB alone for flashing and inhibited desktop checks. Disconnect USB before power-bank operation; never connect it to collect logs during a powered trial. References live in RAM: calibrate again after the power change.
+
+## Phase 1 IR development handoff
+
+The [IR-to-Motion handoff](docs/architecture/IR_MOTION_HANDOFF.md) freezes the existing IF-01/02/03 bench interface, shows the S3 publication template and lists inhibited Maker/Pico and radio build profiles. Motor operation is unverified and currently reported not working. Stop serialization and acknowledged reset remain future phases; no new shared runtime/interface or teammate approval is asserted.
