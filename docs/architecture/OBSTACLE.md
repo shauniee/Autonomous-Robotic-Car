@@ -16,7 +16,7 @@ Echo ISR captures bounded timestamps and wakes processing with `S_echo`; acquisi
 
 The active follower disables GP12 and does not read sonar. The full mission `src/subsystems/obstacle.c` remains a stub. Optional `sensor_bench_mqtt` uses `src/sensor_bench.c`: GP2 echo, GP3 trigger, GP12 servo, 10 µs trigger, 65 ms minimum spacing, 30 ms echo timeout; separate forward/side ages, 1500 ms range expiry. Servo PWM is 50 Hz with nominal 1000–2000 µs endpoints/1500 µs center, sweep 60°/90°/120° with center between sides and 300 ms settling. Values are bench defaults requiring physical validation.
 
-In this optional stationary firmware, GP20 toggles scanning and GP21 disables pulses; USB a/c/x select scan/center/off. These controls differ from the active motor follower’s GP20/21 motion controls. Servo angle is commanded, not measured; pulse-off is not a mechanical brake. Use [optional setup](../GETTINGS_STARTED.md#optional-stationary-sensor-bench) only with the matching wiring and target.
+In this historical optional stationary firmware, GP20 toggles scanning and GP21 disables pulses; USB a/c/x select scan/center/off. These controls differ from the active motor follower’s GP20/21 motion controls. Servo angle is commanded, not measured; pulse-off is not a mechanical brake. The [archived optional setup](../history/pre-mtkernel/GETTINGS_STARTED.md#optional-stationary-sensor-bench) describes the retired wiring and target; it is not an active build instruction.
 
 ## Ranging and servo technical reference
 

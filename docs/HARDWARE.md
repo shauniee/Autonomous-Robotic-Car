@@ -2,6 +2,8 @@
 
 **Use one power source at a time.** USB alone for flashing/TEST=1 desktop checks. Disconnect USB before connecting the power bank; do not attach USB to collect logs during a powered trial. This follows the instructor constraint; no cause is assigned to the earlier reported damage. Recalibrate in RAM after the power change. Current report wiring is left GP26/ADC0, right GP27/ADC1; the original allocation below is historical provenance.
 
+[Cytron's power instructions](https://my.cytron.io/tutorial/get-started-robo-pico-circuitpython-power-up-robo-pico) explicitly support a computer's 5 V USB micro-B supply with the carrier power switch on. Use the inhibited wireless TEST profile for USB-alone checks. The optional `NET=lwip MQTT=1` profile reports S3 data over onboard 2.4 GHz WiFi during power-bank-alone trials, without adding wiring or changing sensor/motor ownership. See [setup](GETTINGS_STARTED.md#5-wireless-telemetry-on-the-mac); measured rails, motor current and correct wiring remain physical release checks.
+
 S2 owns motor GP8-11/PWM4-5; S3 owns IR, GP20/21 and buzzer GP22/PWM3. Native ADC is disabled. Full mission peripherals are inactive in this build. GP0/1 remain available with CRASH_REPORT=0. Check buzzer mute switch for calibration cues.
 
 # Hardware and pin assignments

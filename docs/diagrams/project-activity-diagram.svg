@@ -6,8 +6,8 @@
 <text x="230.0" y="109" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">Core 0: kernel services</text>
 <text x="230.0" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">USB console priority 3</text>
 <text x="230.0" y="168" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">WiFi service priority 4</text>
-<text x="230.0" y="196" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">NET=none / MQTT=0</text>
-<text x="230.0" y="224" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">S1/S4/S5 inactive</text>
+<text x="230.0" y="196" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Optional lwIP / MQTT=1</text>
+<text x="230.0" y="224" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">S1 snapshot; no new task</text>
 <rect x="470" y="75" width="530" height="200" rx="12" fill="#eef4f9" stroke="#24486b" stroke-width="2.5"/>
 <text x="735.0" y="109" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">Core 1: S3 ir_task, priority 12</text>
 <text x="735.0" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">GP20/21 every 10 ms; ADC every 20 ms</text>
@@ -22,6 +22,8 @@
 <text x="1307.5" y="224" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="#172c40">Stop / invalid / &gt;60 ms =&gt; brake</text>
 <path d="M1000 143H1050" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
 <path d="M1050 224H1000" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="230" y="254" text-anchor="middle" font-family="Arial, sans-serif" font-size="19" fill="#172c40">Latest JSON every 500 ms</text>
+<path d="M470 240H425" fill="none" stroke="#24486b" stroke-width="3" marker-end="url(#arrow)"/>
 <text x="800" y="320" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">Calibration and start use separate released, fresh GP20 presses</text>
 <rect x="35" y="365" width="330" height="145" rx="12" fill="#eef4f9" stroke="#24486b" stroke-width="2.5"/>
 <text x="200.0" y="399" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#172c40" font-weight="bold">NEED BLACK</text>
