@@ -1,3 +1,5 @@
+> Runtime update, 8 October 2026: micro T-Kernel template imported. This subsystem remains a proposed full-mission feature and has no active driver/task in the IR bench. See [TEAM.md](../../TEAM.md) and [getting started](../GETTINGS_STARTED.md). Earlier scaffold file names below are historical and recoverable from the pre-migration snapshot.
+
 # Obstacle architecture
 
 Owner: Jia Jing. Parent: [system architecture](../ARCHITECTURE.md). Wiring: [hardware](../HARDWARE.md). Review scope: FR6–FR9, Sections 3–6; trials T08–T10/T14/T15.

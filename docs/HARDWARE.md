@@ -1,17 +1,23 @@
+# Current operation policy (8 October 2026)
+
+**Use one power source at a time.** USB alone for flashing/TEST=1 desktop checks. Disconnect USB before connecting the power bank; do not attach USB to collect logs during a powered trial. This follows the instructor constraint; no cause is assigned to the earlier reported damage. Recalibrate in RAM after the power change. Current report wiring is left GP26/ADC0, right GP27/ADC1; the original allocation below is historical provenance.
+
+S2 owns motor GP8-11/PWM4-5; S3 owns IR, GP20/21 and buzzer GP22/PWM3. Native ADC is disabled. Full mission peripherals are inactive in this build. GP0/1 remain available with CRASH_REPORT=0. Check buzzer mute switch for calibration cues.
+
 # Hardware and pin assignments
 
 Primary design: [CSC01 Design Review, Section 2](<../../CSC01 Design Review.docx>). Detailed electrical evidence is included below. Platform: **Raspberry Pi Pico WH on Cytron Robo Pico**, SDK `PICO_BOARD=pico_w`. Maker Pi Pico in the former code documents was stale information.
 
-## Submitted integrated design versus current bench
+## 1. Revised review wiring and current bench
 
-| Device | Review connection | Current right-IR bench |
+| Device | Revised review connection | Current IR tracking bench |
 | --- | --- | --- |
 | Left motor M1 | Black → M1A, yellow → M1B; internal GP8/GP9 | Used; verify physical forward polarity |
 | Right motor M2 | Black → M2A, yellow → M2B; internal GP10/GP11 | Used; verify physical forward polarity |
 | Right encoder | Grove 1: green B GP0, red A GP1, white supply, blue GND | Unused |
 | Left encoder | Grove 7: green B GP7, red A GP28, white supply, blue GND | Unused; GP28 battery jumper stays open |
-| Right line IR | Grove 5: AOUT GP26/ADC0, VCC 3V3, GND | **Swapped to Grove 6 GP27/ADC1** |
-| Left line IR | Grove 6: AOUT GP27, VCC 3V3, GND | **Swapped to Grove 5 GP26/ADC0**, unused |
+| Right line IR | Grove 6: AOUT GP27/ADC1, VCC 3V3, GND | Same revised allocation |
+| Left line IR | Grove 5: AOUT GP26/ADC0, VCC 3V3, GND | Same revised allocation |
 | Barcode IR | Grove 4: DOUT GP16, VCC 3V3, GND | Unused |
 | GY-511 / LSM303DLHC | Grove 3: SDA GP4, SCL GP5, Vin 3V3, GND | Disconnected; wires reused for motors |
 | HC-SR04P | Grove 2: Echo GP2, Trig GP3, VCC 3V3, GND | Disconnected; wires reused for motors |
@@ -20,7 +26,7 @@ Primary design: [CSC01 Design Review, Section 2](<../../CSC01 Design Review.docx
 | Local stop | Onboard GP21 | Brakes and latches Stopped |
 | Power bank | Red/black → green VIN +/− | Same intended supply; actual rails/load require measurement |
 
-The Word table labels left GP27 as ADC0; **GP27 is ADC1**. Preserve the document as submitted and use the physical mapping above. Do not silently revert the current GPIO swap to match the submitted baseline. Firmware/header and [bench guide](architecture/LINE_FOLLOWING.md) specify what to wire for the active UF2.
+The original submitted allocation was right GP26 and left GP27, with an incorrect left ADC0 label; it is historical and preserved in recovery. The revised Word Section 2 now agrees with the current allocation above: left GP26/ADC0, right GP27/ADC1. The Word stays unchanged during this S3 refactor. The IR tracking application uses both AOUT channels; both DOUT conductors remain disconnected. Do not silently revert the current GPIO swap to match the submitted baseline. Firmware/header and the [bench guide](architecture/LINE_FOLLOWING.md) specify active wiring, proportional control and observation states. Measure sensor spacing/height and track geometry before treating equal/both-white reflectance as a known position. An in-range ADC value alone cannot prove the sensor is connected.
 
 ## Electrical and shared-resource constraints
 
