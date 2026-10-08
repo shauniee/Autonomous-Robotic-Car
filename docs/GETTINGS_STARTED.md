@@ -2,9 +2,11 @@
 
 The [Word report](<../../CSC01 Design Review.docx>) is the integrated revised proposal. Start with [PROJECT.md](../PROJECT.md), [TEAM.md](../TEAM.md), [hardware](HARDWARE.md), [architecture](ARCHITECTURE.md) and the subsystem guides. Template README files remain intact; the former SDK/MQTT documentation is preserved under [history](history/pre-mtkernel/GETTINGS_STARTED.md) as historical material.
 
+For Maker Pi Pico development and the existing S3-to-S2 request template, start with the [IR-to-Motion handoff](architecture/IR_MOTION_HANDOFF.md). It includes the ordinary-Pico `WIFI=none TEST=1` profile and the local SDK path workaround. Motor operation remains unverified.
+
 ## 1. Build and software checks
 
-From `code/`, set `PICO_SDK_PATH` to your Pico SDK checkout, with TinyUSB and CYW43 submodules installed, and put `arm-none-eabi-gcc` on PATH:
+From the Git repository root (`code/` in Nicholas's workspace), set `PICO_SDK_PATH` to a path without spaces pointing to your Pico SDK checkout, with TinyUSB and CYW43 submodules installed, and put `arm-none-eabi-gcc` on PATH:
 
 ```sh
 sh scripts/check-ir-tracking.sh
@@ -20,14 +22,14 @@ Use `mtk3pico_smp1_usb_cdc_wifi_test.uf2` for USB checks: Motion always brakes i
 2. For a powered trial, flash the normal image, disconnect USB, then connect the power bank as the sole source. Never reconnect USB while that source is connected. A reboot loses calibration.
 3. With the motors stopped, place both IR sensors fully over black at mounted height. Release then press GP20; hold the pose for at least 500 ms. One chirp means black captured.
 4. Place both over white. Release then press GP20; hold for at least 500 ms. Two chirps mean valid calibration. Three mean rejection; inspect contrast/pose and repeat. Each channel needs >=300 counts contrast. Failed white contrast clears both references and returns to black.
-5. Place on a visible line. Release then press GP20 to start. Fully white and broad black reject start. Check motor polarity with wheels raised before a low-speed floor run. GP21 stops immediately through the independent latch/wake path; it also cancels capture.
+5. Place on a visible line. Release then press GP20 to start. Fully white and broad black reject start. Check motor polarity with wheels raised before a low-speed floor run. GP21 requests stop through the independent latch/wake path (physical latency is unmeasured); it also cancels capture.
 6. After stopping, release GP21 and use a fresh GP20 press to reset to Ready. Release GP20, then press again to start. Reset preserves valid calibration; held inputs cannot restart.
 
 ## 3. Proportional following and recovery
 
 S3 now uses proportional control only (Kp=0.10), a later Nicholas-requested bench override from the unchanged Word report's PID version. Negative error requests left correction; positive requests right. The [line guide](architecture/LINE_FOLLOWING.md) contains all nine observation combinations, software states and equations. [IR_FUTURE_PLANS.md](architecture/IR_FUTURE_PLANS.md) records future PD/PID and barcode work.
 
-During valid both-white loss, S3 requests one wheel at duty 0.10 and the other at zero in the last known direction, for at most 100 ms. No known direction means immediate stop. Two consecutive distinct fresh visible samples, each with a fraction >=0.25, return to P following; broad black cannot qualify. Invalid/stale sensing or GP21 stops immediately. Timeout requires a local reset and a separate fresh start, after repositioning. These are software policies, not measured physical recovery guarantees.
+During valid both-white loss, S3 requests one wheel at duty 0.10 and the other at zero in the last known direction, for at most 100 ms. No known direction means immediate stop. Two consecutive distinct fresh visible samples, each with a fraction >=0.25, return to P following; broad black cannot qualify. Invalid/stale sensing or GP21 requests a latched stop. Timeout requires a local reset and a separate fresh start, after repositioning. These are software policies, not measured physical recovery guarantees.
 
 GP22 buzzer feedback is asynchronous; check the carrier mute switch. Initial base duty is 0.10, cap 0.35, lost-line recovery limit 100 ms. Motor polarity, stop latency, ADC ranges and reliable tracking remain **physical tests pending**.
 
