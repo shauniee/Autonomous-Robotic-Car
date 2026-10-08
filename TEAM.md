@@ -85,7 +85,7 @@ No application networking task exists. Future full mission split: Safety 12, Mot
 |---|---|---|---|
 | IF-01 | S3 -> S2 | S2 priority-inheritance mutex + latest MotionRequest | Bounded duties 0..0.35, acquisition ms, enabled. Expired >60 ms or invalid active request brakes and latches stop |
 | IF-02 | S3 -> S2 | S2 persistent event flag + tk_wup_tsk | Stop independent of request mutex. Separate local reset clears flag and invalidates old request; reset alone cannot move |
-| IF-03 | S2 -> S3 | S2 mutex-protected MotionHealth | Completed output-service timestamp and sequence; no encoder speed claimed |
+| IF-03 | S2 -> S3 | S2 mutex-protected MotionHealth | Software service sequence and cycle-entry timestamp; stopped is the latch, not brake acknowledgement or measured stationarity |
 | IF-04 | IR calculations -> S3 coordinator | In-task IrTrackingOutput | Fresh visible-steering validity, condition, signed error, memoryless P steering [-1,1], original acquisition time |
 | IF-05 | S3 -> S1 snapshot -> kernel network service | S1 priority-inheritance mutex + latest S1Telemetry | Portable fixed-size value copy; producer and consumer use TMO_POL. Busy/unavailable object skips diagnostics. Sequence advances only on stored updates; original sample time is preserved. JSON <=768 bytes; QoS 0, no retain, 500 ms; no commands |
 
@@ -112,3 +112,7 @@ For MQTT=1, S1 adds **one mutex, zero tasks**. `subsystem1_init()` creates it; `
 Create all subsystem objects before starting any application task. Required initialization failure prevents startup; a task-start failure returns its error. Optional telemetry allocation failure skips diagnostics. Motors are inhibited at boot. TEST=1 also inhibits all motor outputs in the Motion task.
 
 **One power source at a time.** USB alone for flashing and inhibited desktop checks. Disconnect USB before power-bank operation; never connect it to collect logs during a powered trial. References live in RAM: calibrate again after the power change.
+
+## Phase 1 IR development handoff
+
+The [IR-to-Motion handoff](docs/architecture/IR_MOTION_HANDOFF.md) freezes the existing IF-01/02/03 bench interface, shows the S3 publication template and lists inhibited Maker/Pico and radio build profiles. Motor operation is unverified and currently reported not working. Stop serialization and acknowledged reset remain future phases; no new shared runtime/interface or teammate approval is asserted.
