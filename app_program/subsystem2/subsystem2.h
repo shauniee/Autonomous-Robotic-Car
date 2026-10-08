@@ -10,6 +10,7 @@
 #define S2_PRI_MOTION 13
 ER subsystem2_init(void);
 ER subsystem2_start(void);
+/* Progress records successful output processing, not measured motion. */
 typedef struct { uint32_t serviced_ms, sequence; bool stopped; } MotionHealth;
 ER s2_publish(MotionRequest request);
 ER s2_stop(void); /* Persistent event flag plus independent wake-up. */
