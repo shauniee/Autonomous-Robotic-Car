@@ -82,3 +82,13 @@ S3-U03 belongs to the earlier PID bench and is retired after this override; keep
 Use the exact normal/TEST build options in [getting started](../docs/GETTINGS_STARTED.md). USB alone is used for inhibited TEST logging; disconnect USB before powering battery trials and recalibrate after reboot. Use camera/scope/operator evidence for battery trials, never simultaneous USB/power-bank logging.
 
 The saved 2026-10-08 migration and proportional-control checks ran against an uncommitted working tree. Their SHA256 source manifests plus base HEAD identify the tested source; the base HEAD alone does not. Preserve original evidence and give later runs distinct filenames. Formal hardware trials record a committed source revision and flashed-image checksum.
+
+## Wireless telemetry workflow
+
+Run the same host script for S1-U04/U05, INT-06 and INT-07 as well as the existing S3/S2 cases. It exercises the actual store/encoder/adapter and real S3 loop with fake kernel/hardware/network calls; it does not connect a Pico. With Mosquitto installed, `python3 tests/test_mqtt_broker.py` separately runs INT-08 against a temporary **loopback-only** broker, then shuts it down. Its synthetic fixture cannot count as robot telemetry.
+
+Use [getting started section 5](../docs/GETTINGS_STARTED.md#5-wireless-telemetry-on-the-mac) for explicit normal/TEST MQTT build flags and the offline profile. INT-09 records those builds. TEST firmware includes S1-U04 without networking in the self-check; a built image is not an on-target PASS.
+
+Actual Pico connectivity is SYS-09, followed by bank-only trials SYS-10. Keep USB alone for inhibited console checks and disconnect it before powering from the bank. Save `mosquitto_sub -h 127.0.0.1 -p 1883 -t robot/s3/telemetry -v` output for wireless observations. Record source revision, image checksum, wiring/power source and network-test actions. The 500 ms stream cannot prove a 100 ms recovery deadline; camera/scope records are still needed.
+
+The distinct `2026-10-08_s3-mqtt-*` logs/manifests record this branch's precommit working-tree software checks. Historical logs remain intact. S1 snapshot failure and broker loss are diagnostics failures; they must never be counted as sensor progress or used to inhibit healthy local motion.

@@ -18,7 +18,7 @@
 /* Only used when built with MQTT=1 (also requires NET=lwip). */
 #define MQTT_BROKER_IP   "192.168.1.10"
 #define MQTT_BROKER_PORT 1883
-#define MQTT_CLIENT_ID   "mtk3smp-pico"
-#define MQTT_TOPIC       "mtk3smp-pico/heartbeat"
+#define MQTT_CLIENT_ID   "csc01-s3-pico"
+#define MQTT_TOPIC       "robot/s3/telemetry"
 
 #endif /* WIFI_SECRETS_H */

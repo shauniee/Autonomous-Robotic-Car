@@ -35,7 +35,55 @@ GP22 buzzer feedback is asynchronous; check the carrier mute switch. Initial bas
 
 - Wiring/electrical release: measure rails, signal highs and currents; confirm actual modules, motor polarity, shared Grove GP26 and open GP28 jumper.
 - Bench validation: USB test console, battery black/white capture, stop/reset, straight/curve tracking, line-loss/reboot. Record in `testing/`; never label a build as a hardware pass.
-- Full mission: encoder control/actions, barcode mapping, terrain/reference height, sonar/stationary profiling, bounded bypass/original-line recovery and MQTT bridge remain pending. Keep requirements from the report; settle course rules and numerical targets before trials.
+- Full mission: encoder control/actions, barcode mapping, terrain/reference height, sonar/stationary profiling, bounded bypass/original-line recovery and mission telemetry remain pending. Keep requirements from the report; settle course rules and numerical targets before trials.
+
+## 5. Wireless telemetry on the Mac
+
+USB alone is a supported Robo Pico supply: connect the Pico micro-B port to the computer and turn the carrier switch on, as described in [Cytron's power guide](https://my.cytron.io/tutorial/get-started-robo-pico-circuitpython-power-up-robo-pico). Disconnect the power bank first. Use TEST=1 for USB sensor/console checks; its motor outputs are inhibited. Driving uses the power bank alone after unplugging USB.
+
+Mosquitto is already installed on this Mac. On another Mac, install it with `brew install mosquitto`. Use a reachable private 2.4 GHz WiFi network shared by Pico and Mac. Guest/client isolation, a VPN or a firewall can prevent the Pico reaching the broker. This bench configuration allows anonymous unencrypted access on TCP 1883 and is intended only for that private network.
+
+From `code/`, create `config/wifi_secrets.h` from `config/wifi_secrets.example.h` **only if it is missing**, then edit the local file:
+
+```sh
+test -f config/wifi_secrets.h || cp config/wifi_secrets.example.h config/wifi_secrets.h
+ipconfig getifaddr en0
+```
+
+Set `WIFI_SSID`, `WIFI_PASSWORD`, `MQTT_BROKER_IP` to the Mac's reachable LAN IPv4 address, port 1883, client ID `csc01-s3-pico` and topic `robot/s3/telemetry`. `en0` must be the active WiFi interface; use the WiFi settings' TCP/IP address if it is different. Do not use 127.0.0.1 for the Pico broker address. The local file is ignored; do not commit credentials or firmware binaries. Rebuild after changing it; move networks only after updating the broker address.
+
+In terminal 1, from `code/`:
+
+```sh
+mosquitto -c config/mosquitto-lab.conf
+```
+
+In terminal 2, also from `code/`:
+
+```sh
+mosquitto_sub -h 127.0.0.1 -p 1883 \
+  -t robot/s3/telemetry -v
+```
+
+`mosquitto_sub` prints incoming messages directly; `-v` includes the topic. See the [official subscriber documentation](https://mosquitto.org/man/mosquitto_sub-1.html). Leave both terminals running. If port 1883 is already occupied by your broker, reuse it instead of launching a second instance. Allow the selected broker's incoming connections in the Mac firewall if prompted.
+
+With `PICO_SDK_PATH` and the ARM compiler set as in section 1, build these profiles sequentially:
+
+```sh
+make -C build_make -j6 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=1
+make -C build_make -j6 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0
+make -C build_make -j6 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=0
+```
+
+| Profile | File inside build_make/ | Use |
+| --- | --- | --- |
+| Wireless TEST | mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2 | USB-alone connectivity, calibration and self-checks; motor outputs always inhibited |
+| Wireless normal | mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2 | Power-bank-alone driving with wireless observations |
+| Offline normal | mtk3pico_smp1_usb_cdc_wifi.uf2 | Existing local bench without MQTT |
+
+First flash wireless TEST over USB alone and verify messages roughly every 500 ms, `test_inhibited:true`, changing raw values and completed black/white references. GP20 still captures black, captures white and starts on separate released presses. `motion_enabled:true` reports the controller's request; it does not override TEST motor inhibition. Then flash wireless normal, unplug USB, connect only the power bank, recalibrate and use the same subscriber while running. Reboot clears calibration and resets the stream sequence.
+
+The [payload guide](architecture/COMMUNICATIONS.md) explains `null` values, acquisition age and failure behavior. A 500 ms stream can miss the entire 100 ms recovery turn: use an instrument/camera for physical timing. Actual Pico connectivity and driving results must be recorded in [system tests](../testing/system/TEST_LOG.md); a successful build or a host fixture message is not a Pico pass.
 - Team review: confirm the revised shared files and priority proposal. No teammate/instructor approval is asserted by this migration.
 - Week 6 report has no five-page limit. Host/build evidence is separate from proposed T01-T16 hardware trials and later Week 8/10 assessment work.
 

@@ -1,0 +1,13 @@
+Initial development run: python3 tests/test_mqtt_broker.py
+Host harness before the PTY output-buffering fix; this is not the final source manifest.
+Captured diagnostic from the first tool run:
+Traceback (most recent call last):
+  File "/Users/nicholasbay/Documents/Resume/projects/sit-es-project/code/tests/test_mqtt_broker.py", line 119, in <module>
+    main()
+  File "/Users/nicholasbay/Documents/Resume/projects/sit-es-project/code/tests/test_mqtt_broker.py", line 89, in main
+    read_until(subscriber, ready)
+  File "/Users/nicholasbay/Documents/Resume/projects/sit-es-project/code/tests/test_mqtt_broker.py", line 45, in read_until
+    raise AssertionError("subscriber event timeout")
+AssertionError: subscriber event timeout
+Resolution: give mosquitto_sub a PTY so it emits terminal-style line-buffered output.
+The corrected run is saved separately as 2026-10-08_s3-mqtt-broker.txt.

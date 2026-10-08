@@ -3,6 +3,9 @@
 #include "drv_ir.h"
 #include "drv_feedback.h"
 #include "../app_program/subsystem2/subsystem2.h"
+#if TM_MQTT
+#include "../app_program/subsystem1/subsystem1.h"
+#endif
 #include <assert.h>
 #include <math.h>
 #include <setjmp.h>
@@ -13,11 +16,26 @@ static jmp_buf finished;
 static uint32_t now;
 static unsigned scenario, feeds, chirps[4], resets, publications, stops;
 static bool stopped;
+#if TM_MQTT
+static bool telemetry_busy;
+ID tk_cre_mtx(const T_CMTX *m) { assert(m->mtxatr==TA_INHERIT); return 7; }
+ER tk_loc_mtx(ID id,TMO wait) { assert(id==7 && wait==TMO_POL); return telemetry_busy ? E_OBJ : E_OK; }
+ER tk_unl_mtx(ID id) { assert(id==7); return E_OK; }
+#endif
 static bool near(float a,float b) { return fabsf(a-b)<.0001f; }
 static bool window(unsigned lo,unsigned hi) { return now>=lo && now<hi; }
 ER tk_get_otm(SYSTIM *t) { t->lo=now; return E_OK; }
 ER tk_dly_tsk(RELTIM delay) {
     assert(delay>0 && delay<=10);
+#if TM_MQTT
+    if(!telemetry_busy) {
+        S1Telemetry snapshot;
+        assert(s1_telemetry_copy(&snapshot));
+        assert(snapshot.test_inhibited==(APP_TEST!=0));
+        assert(snapshot.observed_ms==now && (uint32_t)(now-snapshot.sampled_ms)<=60);
+        if(now>=1450 && now<1510) assert(!snapshot.motion_enabled);
+    }
+#endif
     if (scenario==DELAY && now==1340) now+=80;
     else now+=delay;
     if (now>(scenario==NORMAL ? 1820u : 1420u)) longjmp(finished,1);
@@ -77,6 +95,11 @@ ER s2_publish(MotionRequest r) {
 void tm_printf(const UB *format,...) { (void)format; }
 
 int main(void) {
+#if TM_MQTT
+    assert(subsystem1_init()==E_OK);
+    for(unsigned diagnostics=0;diagnostics<2;++diagnostics) {
+        telemetry_busy=diagnostics!=0;
+#endif
     for (scenario=NORMAL;scenario<=INHIBITED;++scenario) {
         now=0; feeds=resets=publications=stops=0;
         chirps[0]=chirps[1]=chirps[2]=chirps[3]=0; stopped=true;
@@ -89,5 +112,9 @@ int main(void) {
             else assert(stops>0);
         }
     }
+#if TM_MQTT
+    }
+    puts("[TEST] INT-07 PASS real S3 loop: nonblocking telemetry and unavailable snapshot preserve stop/recovery/watchdog");
+#endif
     puts("[TEST] INT-05 PASS real S3 loop: recovery enable, stop/reset, ADC/interface failure and missed release");
 }

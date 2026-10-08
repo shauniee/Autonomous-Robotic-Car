@@ -1,12 +1,12 @@
 # CSC01 team, ownership and interfaces
 
-Migration requested by Nicholas on 8 October 2026. Shared configuration and priority allocation are a **revised proposal for team review**, not recorded teammate/instructor approval. The proportional-only S3 change is a later Nicholas-requested bench override; the Word report is preserved. Original template guidance, including owner-edit and shared-file agreement rules, is preserved in [UPSTREAM_TEAM.md](docs/UPSTREAM_TEAM.md).
+Migration requested by Nicholas on 8 October 2026. Shared configuration and priority allocation are a **revised proposal for team review**, not recorded teammate/instructor approval. The proportional-only S3 change and read-only MQTT addition are later Nicholas-requested bench overrides; the Word report is preserved. The MQTT adapter and its output-ring setting are intentional shared-library changes under that request. Original template guidance, including owner-edit and shared-file agreement rules, is preserved in [UPSTREAM_TEAM.md](docs/UPSTREAM_TEAM.md).
 
 ## 1. Members and subsystems
 
 | # | Owner / student ID | Responsibility | Active status |
 |---|---|---|---|
-| S1 | Shaun / 2500629 | Communications | Inactive placeholder; MQTT deferred |
+| S1 | Shaun / 2500629 | Communications | Latest S3 telemetry snapshot, mutex and bounded JSON; kernel service publishes; no S1 task |
 | S2 | Mahesha / 2503973 | Motion / motors / encoders | Motor PWM and local expiry implemented; encoders pending |
 | S3 | Nicholas / 2501552 | Line/barcode; integration | Proportional IR, button calibration, explicit bounded recovery and watchdog; barcode pending |
 | S4 | Darrius / 2500360 | Terrain | Inactive placeholder |
@@ -57,15 +57,16 @@ What students *can* do:
   T_CYW43_UTK_STATUS st;
   cyw43_utk_get_status(&st);   /* st.ready, st.link_status, st.ip_addr, ... */
   ```
-- **Send or receive data over the network** by adding code that *runs
-  inside the service task*. The MQTT client is in
-  `lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c`. It publishes a heartbeat
-  today. A "cloud / reporting" subsystem would add a kernel object
-  (e.g. a message buffer) that application tasks fill. The MQTT code then
-  reads it with `TMO_POL` (never blocking) and publishes it.
-  Because this changes shared library code, **agree it with the team and
-  the instructor first**, and record it as an interface in section 5.
-  It needs the `NET=lwip MQTT=1` build (README section 3).
+- **Publish telemetry inside the service task.** The requested adapter in
+  `lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c` replaces the template demo
+  heartbeat/echo subscription. S3 fills S1's portable snapshot through IF-05;
+  the service copies it with `TMO_POL`, formats JSON and publishes every
+  500 ms. There are no subscriptions or remote controls. It needs
+  `NET=lwip MQTT=1`; the offline profile still works.
+
+The upstream shared-file agreement rule remains a team process requirement;
+this requested bench extension does not record teammate/instructor approval.
+Networking remains exclusive to the existing core-0 service.
 
 ## 4. Task priorities
 
@@ -86,6 +87,7 @@ No application networking task exists. Future full mission split: Safety 12, Mot
 | IF-02 | S3 -> S2 | S2 persistent event flag + tk_wup_tsk | Stop independent of request mutex. Separate local reset clears flag and invalidates old request; reset alone cannot move |
 | IF-03 | S2 -> S3 | S2 mutex-protected MotionHealth | Completed output-service timestamp and sequence; no encoder speed claimed |
 | IF-04 | IR calculations -> S3 coordinator | In-task IrTrackingOutput | Fresh visible-steering validity, condition, signed error, memoryless P steering [-1,1], original acquisition time |
+| IF-05 | S3 -> S1 snapshot -> kernel network service | S1 priority-inheritance mutex + latest S1Telemetry | Portable fixed-size value copy; producer and consumer use TMO_POL. Busy/unavailable object skips diagnostics. Sequence advances only on stored updates; original sample time is preserved. JSON <=768 bytes; QoS 0, no retain, 500 ms; no commands |
 
 Use mutex copies for latest snapshots; micro T-Kernel mailboxes pass pointers and require lifetime management, not FreeRTOS length-one overwrite semantics. Future navigation FIFO should use a bounded message buffer or explicit pooled mailbox messages; no navigation FIFO is implemented here.
 
@@ -103,8 +105,10 @@ Use mutex copies for latest snapshots; micro T-Kernel mailboxes pass pointers an
 
 This is S3 usage, not the total including S2 and kernel services. Existing configuration limits are unchanged; stack margin/capacity under future load require measurement. S3 private raw samples/capture sums/control state are task-local and use no additional kernel object. The one IrCaptureKind and typed IrCaptureResult replace legacy command IDs/string-based branching.
 
+For MQTT=1, S1 adds **one mutex, zero tasks**. `subsystem1_init()` creates it; `subsystem1_start()` does not start a task. The kernel service may run before application initialization, so an atomic object ID gates access. Allocation failure disables diagnostics while local startup continues. Snapshot copying neither waits for a mutex nor feeds the watchdog. For MQTT=0 no S1 mutex is allocated and S3 omits the handoff.
+
 ## 7. Startup and power
 
-Create all subsystem objects before starting any task. Initialization failure prevents startup; a task-start failure returns its error. Motors are inhibited at boot. TEST=1 also inhibits all motor outputs in the service task.
+Create all subsystem objects before starting any application task. Required initialization failure prevents startup; a task-start failure returns its error. Optional telemetry allocation failure skips diagnostics. Motors are inhibited at boot. TEST=1 also inhibits all motor outputs in the Motion task.
 
 **One power source at a time.** USB alone for flashing and inhibited desktop checks. Disconnect USB before power-bank operation; never connect it to collect logs during a powered trial. References live in RAM: calibrate again after the power change.

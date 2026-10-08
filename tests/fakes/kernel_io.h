@@ -13,6 +13,7 @@ typedef struct { unsigned flgptn; } T_RFLG;
 typedef struct { uint32_t lo; } SYSTIM;
 #define E_OK 0
 #define E_OBJ (-41)
+#define TMO_POL 0
 #define TA_INHERIT 2
 #define TP_PRC2 2
 #define TSK_SELF 0

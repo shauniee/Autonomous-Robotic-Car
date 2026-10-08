@@ -12,9 +12,18 @@ cc -std=c11 -Wall -Wextra -Werror -pedantic -I"$s3" "$s3/ir_tracking.c" "$s3/rob
 build-host/test_robot_control
 cc -std=c11 -Wall -Wextra -Werror -pedantic -I"$s3" -I"$s2" "$s3/ir_tracking.c" "$s3/robot_control.c" "$s3/watchdog_policy.c" "$s2/motion_policy.c" tests/test_mtkernel_bench.c -lm -o build-host/test_mtkernel_bench
 build-host/test_mtkernel_bench
+s1=app_program/subsystem1
+cc -std=c11 -Wall -Wextra -Werror -pedantic -DBENCH_KERNEL_HOST_TEST -DTM_MQTT=1 -Itests/fakes -I"$s3" "$s1/subsystem1.c" "$s1/telemetry.c" "$s3/telemetry_s3.c" "$s3/ir_tracking.c" "$s3/robot_control.c" tests/test_telemetry.c -lm -o build-host/test_telemetry
+build-host/test_telemetry
+cc -std=c11 -Wall -Wextra -Werror -pedantic -pthread -DBENCH_KERNEL_HOST_TEST -DTM_MQTT=1 -Itests/fakes "$s1/subsystem1.c" tests/test_telemetry_concurrency.c -o build-host/test_telemetry_concurrency
+build-host/test_telemetry_concurrency
+cc -std=c11 -Wall -Wextra -Werror -pedantic -DBENCH_KERNEL_HOST_TEST -DTM_MQTT=1 -Itests/mqtt_fakes -Itests/fakes "$s1/subsystem1.c" "$s1/telemetry.c" lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c tests/test_mqtt_telemetry.c -o build-host/test_mqtt_telemetry
+build-host/test_mqtt_telemetry
 for profile in 0 1; do
     cc -std=c11 -Wall -Wextra -Werror -pedantic -DBENCH_KERNEL_HOST_TEST -DAPP_TEST="$profile" -I"$s3" -I"$s2" -Itests/fakes "$s3/task_ir.c" "$s3/ir_tracking.c" "$s3/robot_control.c" "$s3/watchdog_policy.c" tests/test_ir_task.c -lm -o "build-host/test_ir_task_$profile"
     "build-host/test_ir_task_$profile"
+    cc -std=c11 -Wall -Wextra -Werror -pedantic -DBENCH_KERNEL_HOST_TEST -DAPP_TEST="$profile" -DTM_MQTT=1 -I"$s3" -I"$s2" -Itests/fakes "$s3/task_ir.c" "$s3/ir_tracking.c" "$s3/robot_control.c" "$s3/watchdog_policy.c" "$s3/telemetry_s3.c" "$s1/subsystem1.c" tests/test_ir_task.c -lm -o "build-host/test_ir_task_mqtt_$profile"
+    "build-host/test_ir_task_mqtt_$profile"
     cc -std=c11 -Wall -Wextra -Werror -pedantic -DBENCH_KERNEL_HOST_TEST -DAPP_TEST="$profile" -I"$s2" -Itests/fakes "$s2/subsystem2.c" "$s2/motion_policy.c" tests/test_motion_service.c -lm -o "build-host/test_motion_service_$profile"
     "build-host/test_motion_service_$profile"
 done

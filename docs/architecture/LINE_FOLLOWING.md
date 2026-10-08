@@ -29,9 +29,12 @@ S3 creates no mailbox, queue, mutex or event flag. S2 owns the request/health mu
 | drv_ir.c | Bounded ADC access; return success/failure and a complete pair |
 | ir_tracking.c | Capture/normalization, line classification/hysteresis and memoryless P output |
 | robot_control.c | Local state transitions, bounded recovery and requested duties |
+| telemetry_s3.c | Optional snapshot adapter after each control cycle; copies original acquisition time and policy results to S1 without network calls |
 | drv_feedback.c / watchdog_policy.c | Existing input/buzzer/timebase/watchdog I/O and pure progress gate |
 
 Data flow: driver pair + acquisition success + acquisition time -> tracker -> controller -> S2 MotionRequest. Failed acquisition is explicit; there is no fabricated out-of-range failure pair. S3 never writes motor GPIO and makes no network calls.
+
+With MQTT=1, S3 also attempts one nonblocking S1 snapshot update after handling Motion publication failure and servicing feedback. S1 owns the additional mutex; S3 adds no task/object. The core-0 kernel service publishes the latest copy every 500 ms. A busy snapshot mutex or failed network publication skips diagnostics and cannot change controller state, renew sample timestamps or satisfy watchdog progress. [Communications](COMMUNICATIONS.md) defines this read-only interface. TEST inhibition is reported separately from requested duties, which are not measured PWM or wheel speed.
 
 IrTrackingOutput retains validity, line condition, signed error, steering in [-1,1] and original acquisition ms. Its valid flag means a fresh calibrated visible-line steering result; it does not grant motion permission. A valid raw acquisition can still be lost or broad black and have invalid steering. P is calculated directly from the current reading; there is no separate PID update, derivative/integral history or steering timestamp. Latest samples are not made fresh by repeated reads.
 
