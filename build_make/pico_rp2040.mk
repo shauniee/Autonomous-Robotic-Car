@@ -213,7 +213,10 @@ endif
 # before any recipe executes.
 ################################################################################
 
-PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-nav$(NAVIGATION)
+# The optional header may appear/disappear between builds. A missing include
+# cannot be tracked by -MMD, so include its presence/content in profile identity.
+NAVIGATION_CONFIG_ID := $(shell if test -f ../config/navigation_config.h; then cksum < ../config/navigation_config.h | awk '{print $$1 "-" $$2}'; else echo absent; fi)
+PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-nav$(NAVIGATION)-navconfig$(NAVIGATION_CONFIG_ID)
 PROFILE_FILE := .build_profile
 
 ifneq ($(strip $(shell cat $(PROFILE_FILE) 2>/dev/null)),$(PROFILE_ID))
