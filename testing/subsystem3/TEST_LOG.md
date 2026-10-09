@@ -39,7 +39,7 @@ The current S3 service does not drive motors, feed a whole-system watchdog or pu
 
 S3 fixtures and assertions live here in `ir_self_test.c/.h` and `subsystem3_test.c/.h`. `firmware.mk` adds them only with TEST=1 through the shared Make include. Use the `subsystem3_test()` hook already called by `app_main.c`; the private production mutex retains only a TEST bridge, with its assertions defined here. Build profiles and pending integration are recorded in [TASKS](../../TASKS.md#s3-line-service); the intended calibration/data API is in [Line Tracking](../../docs/architecture/LINE_TRACKING.md).
 
-Capture console output before resetting the USB-only TEST board. Expect S3-U02/U06/U07/U10/U11/U12/U13 results and periodic `[IR] ... normalized_milli ... SENSOR_ONLY` observations. A build is not an executed self-test pass. The millivalues divide by 1000 to obtain the public −1…+1 sensor values; use the printed validity flags.
+In TEST builds, S1/S2/S4/S5 tasks start first while the S3 acquisition task remains stopped. Open the serial monitor, release GP20, then press and release GP20 to start the complete firmware self-test suite. The button gate requires about 30 ms stable release/press/release and prints a waiting message every second. S3 acquisition begins only after the suite finishes, so the start press is not treated as a calibration press and its periodic diagnostics are easy to capture. A build is not an executed self-test pass. The millivalues divide by 1000 to obtain the public −1…+1 sensor values; use the printed validity flags.
 
 For the manual calibration trial, release/press GP20 over black and hold the pose until one buzz; repeat over white until two buzzes. GP21 cancels and inhibits captures while held; three buzzes indicate cancellation/rejection. Check held/bouncing/simultaneous buttons and replacement captures. Record mounting, lighting, raw ranges, contrasts and timing. Sensors must remain stationary during capture; S3 does not measure stationarity.
 
@@ -63,3 +63,34 @@ Nine S3 C files also passed `-fsyntax-only -Wall -Wextra -Werror` with the wirel
 The S3 fixtures and runner now live in this testing directory. The source build includes `firmware.mk` only as S3 test rules; it selects test objects with TEST=1 and leaves other subsystem sources unchanged. The private snapshot mutex retains a tiny TEST bridge in production source; boundary assertions are here in `subsystem3_test.c`.
 
 All offline/wireless TEST and normal profiles compiled and linked. Symbol inspection confirmed `subsystem3_test` exists in TEST images and is absent from normal images; normal build logs contain no `testing/subsystem3` object compilation/linking. Runtime and test sources also passed strict compiler checks. [Evidence](logs/2026-10-09_s3-test-layout_evidence.json) records current source hashes, commands, image hashes and logs. Previous evidence is preserved; no Pico run is claimed.
+
+## 6. Startup test stack correction — 2026-10-09
+
+Nicholas's pre-fix firmware capture (retained locally, excluded from the PR)
+records S3-U12 FAIL: mutex creation/publication/start read ID 2, but the
+boundary test later read ID 0. Acquisition initially succeeded, followed by
+`[IR] task delay failed` and a core-1 hard fault. The flashed source identity
+was not independently established; retain this as operator-provided evidence.
+
+Inspection of the offline TEST ELF found a definite startup stack capacity
+defect: `subsystem1_test()` reserves 1268 local bytes plus 36 saved-register
+bytes (1304 bytes), before nested calls, on a 1024-byte initial-task stack.
+This overflow can corrupt adjacent memory and is consistent with the lost
+mutex handle and crash. Nicholas approved increasing the shared initial-task
+stack to 4096 bytes for APP_TEST only; normal startup retains 1024 bytes.
+No S1/S2 application implementation was changed.
+
+The TEST startup now calls the GP20 release/press/release gate before running
+the suite and starts S3 acquisition afterward. This connects the previously
+unused gate helper, keeps the start press out of calibration, and removes
+acquisition contention during the real snapshot boundary check. Normal
+startup ordering is unchanged. TEST mutex/task diagnostics remain available
+to establish whether startup IDs survive the suite.
+
+All four profiles were rebuilt sequentially. ELF inspection confirms 4096-byte
+startup stacks in TEST images and 1024-byte stacks in normal images. Build
+results and UF2 hashes are in [stack-fix evidence](logs/2026-10-09_startup-stack_evidence.json);
+individual build logs share its filename prefix. One interrupted overlapping
+build attempt was discarded before the sequential rebuilds recorded here.
+Post-fix S3-U12 execution and absence of a hard fault remain PENDING until
+Nicholas flashes the corrected image and records the full firmware output.

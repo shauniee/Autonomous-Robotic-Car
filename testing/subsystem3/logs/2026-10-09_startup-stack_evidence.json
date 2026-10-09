@@ -1,0 +1,47 @@
+{
+  "change": "TEST-only initial task stack 1024 to 4096 bytes",
+  "profiles": [
+    {
+      "profile": "offline-test",
+      "build_exit": 0,
+      "startup_stack_bytes": 4096,
+      "uf2": "build_make/mtk3pico_smp1_usb_cdc_wifi_test.uf2",
+      "sha256": "42740bc097db158a76b4040c0dbfc9a738a3290c5184abec279065eac3b08725"
+    },
+    {
+      "profile": "offline-normal",
+      "build_exit": 0,
+      "startup_stack_bytes": 1024,
+      "uf2": "build_make/mtk3pico_smp1_usb_cdc_wifi.uf2",
+      "sha256": "11eb11a645ff23bff785e67c3be1017e986683270bff823ab603c5703875a090"
+    },
+    {
+      "profile": "wireless-test",
+      "build_exit": 0,
+      "startup_stack_bytes": 4096,
+      "uf2": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2",
+      "sha256": "dbf3e4678bb2687cb46dd01a41bd4f9d55ba613506257ed737ec31d012645574"
+    },
+    {
+      "profile": "wireless-normal",
+      "build_exit": 0,
+      "startup_stack_bytes": 1024,
+      "uf2": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2",
+      "sha256": "3fec51bae8e7670ab364266adc628ad2a0643c0396cb60b0b9db6ff7d24b41fb"
+    }
+  ],
+  "pre_fix_evidence": "Operator-provided screenshot retained locally; excluded from Git commit and PR",
+  "pre_fix_subsystem1_test_stack_frame_bytes": 1304,
+  "post_fix_firmware_run": "PENDING",
+  "base_head": "849318f310a861da7a5ff48d3f80bccf56c03edf",
+  "source_sha256": {
+    "include/sys/inittask.h": "d2696fd385b149f4b78a0d5cd2aad135ce5a60de7b314a1c2ae6afac51315723",
+    "app_program/app_main.c": "ffce43bcfc5e9fda696853a930cd00dd7c880f20b7a315cb72166bb4592ffc5b",
+    "app_program/subsystem3/subsystem3.c": "e8e61fa4c834560518d17d02f836bb705897c9c16cb50261a6d9827ed8ca7750",
+    "testing/subsystem3/subsystem3_test.c": "184ee7c089d8bba66dca373878e58dfa65a9f842fab9eeb630775d27bbd22d70",
+    "testing/subsystem3/subsystem3_test.h": "bcec4bc5f6dba6a1d460482115128c0e6225db8e2f76cf4c5287839156e6f921",
+    "testing/subsystem3/TEST_LOG.md": "b79a03a30a62380fb57be86b08ae01ad48b7fcbc51b13f5828fca027e31f93bb",
+    "docs/TEAM.md": "d5b2d722b956c1b5ccbadd129c696eaa0c6af2646f1fd56b837e1b8ccee887b2"
+  },
+  "test_gate": "Fresh GP20 release/press/release before suite; S3 acquisition starts afterward"
+}
