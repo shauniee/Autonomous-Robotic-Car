@@ -30,7 +30,7 @@ IDs never change or get reused, including retired template cases. Retired defini
 
 Host tests and runners have been removed. The saved 2026-10-08 fake-kernel/hardware/network and laptop-loopback results remain historical software evidence; their recorded methods are not current run instructions. They do not establish GPIO performance, physical motion or an actual Pico connection.
 
-Firmware self-tests remain: S1-U04 (bounded encoding), S2-U03 (Motion policy), S3-U02 (normalization/progress) and S3-U06 (P guidance). S3-U03 remains the retired line-PID case; later P/capture/recovery cases retain their IDs. Network snapshots never count as sensor/watchdog progress.
+Firmware self-tests remain: S1-U04 (bounded encoding), S1-U06/U07 (status-only requests/network status), S2-U03 (Motion policy), S3-U02 (normalization/progress) and S3-U06 (P guidance). S3-U03 remains the retired line-PID case; later P/capture/recovery cases retain their IDs. Network snapshots never count as sensor/watchdog progress.
 
 Actual wireless checks are SYS-09/10 through [wireless setup](../docs/GETTING_STARTED.md#wireless-telemetry). Save Pico-originated subscriber output separately from synthetic/laptop transport evidence. A slow telemetry stream cannot prove short stop/recovery deadlines; use camera/scope measurements.
 

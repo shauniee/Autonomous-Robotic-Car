@@ -95,7 +95,7 @@ S2 releases PWM reset without resetting the block; each slice owner configures i
 
 ### WiFi and MQTT are special
 
-All CYW43, lwIP and MQTT operations run inside the kernel's `cyw43_utk_task`. Other tasks may read connection state through `cyw43_utk_get_status()`. The currentShaun bridge supplies read-onlyNicholas telemetry under its optional mutex; it starts no application task and accepts no network commands. Both snapshot writers and readers use nonblocking access. See [Communications](architecture/COMMUNICATIONS.md) for configuration, schema, publication and failure behavior.
+All CYW43, lwIP and MQTT operations run inside the kernel's `cyw43_utk_task`. Other tasks may read connection state through `cyw43_utk_get_status()`. The currentShaun bridge supplies read-onlyNicholas telemetry under its optional mutex; it starts no application task and accepts only bounded read-only status requests, with no actuation commands. Both snapshot writers and readers use nonblocking access. See [Communications](architecture/COMMUNICATIONS.md) for configuration, schema, publication and failure behavior.
 
 ## 4. Task priorities
 
