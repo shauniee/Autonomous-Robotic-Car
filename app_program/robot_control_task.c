@@ -237,12 +237,18 @@ static void control_task(INT stacd, void *exinf)
                     {
                         break;
                     }
-                    if ((policy.state == ROBOT_RUNNING) &&
-                        (navigation.phase == ROBOT_NAV_IDLE))
-                    {
-                        (void)robot_navigation_accept(&navigation, &event,
+                    bool accepted = (policy.state == ROBOT_RUNNING) &&
+                        (navigation.phase == ROBOT_NAV_IDLE) &&
+                        robot_navigation_accept(&navigation, &event,
                             barcode.generation, barcode_config.event_age_ms,
                             now);
+                    if (!accepted)
+                    {
+                        S3BarcodeResult reason =
+                            (uint32_t)(now - event.acquired_ms) >
+                                barcode_config.event_age_ms ?
+                                S3_BC_STALE : S3_BC_CONTEXT;
+                        (void)s3_nav_discard(reason);
                     }
                 }
                 if (navigation.phase != ROBOT_NAV_IDLE)
