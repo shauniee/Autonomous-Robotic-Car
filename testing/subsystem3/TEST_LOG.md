@@ -94,3 +94,7 @@ individual build logs share its filename prefix. One interrupted overlapping
 build attempt was discarded before the sequential rebuilds recorded here.
 Post-fix S3-U12 execution and absence of a hard fault remain PENDING until
 Nicholas flashes the corrected image and records the full firmware output.
+
+## Tracking integration control change — 2026-10-09
+
+The S3 acquisition/calibration/guidance algorithms are retained. The application coordinator now interprets runtime buttons and sends bounded captures/cancel; S3 owns GPIO setup, its tracker and buzzer. S3-U11 remains the preserved calibration-helper fixture, not validation of live start/reset policy. New runtime policy/cancellation/watchdog fixtures are INT-11 through INT-14 in [integration](../integration/TEST_LOG.md). All await recorded on-target execution for the integrated source.
