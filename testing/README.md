@@ -1,94 +1,60 @@
-# Testing
+# Testing and evidence
 
-All test records for the project live in this folder. A test only counts as
-done when it is **written down here with its result and a saved log**.
+Keep subsystem cases/results in `subsystemN/TEST_LOG.md`, cross-subsystem cases in `integration/TEST_LOG.md`, and physical/full-product cases in `system/TEST_LOG.md`. Saved evidence goes in the corresponding `logs/` directory.
 
-```
-testing/
-├── README.md              this guide
-├── subsystem1/            one folder per subsystem, kept by its owner
-│   ├── TEST_LOG.md        test cases + results
-│   └── logs/              saved console output, photos, scope captures
-├── ...
-├── subsystem5/
-├── integration/           tests across two or more subsystems (shared)
-└── system/                tests of the whole product against its requirements (shared)
-```
+| Level | Stable IDs | Ownership / contract |
+| --- | --- | --- |
+| Subsystem | `S1-U01`, `S2-U01`, … | Subsystem owner |
+| Integration | `INT-01`, … | Both interface owners; [system contracts](../docs/ARCHITECTURE.md#shared-contracts) and [IR handoff](../docs/architecture/IR_MOTION_HANDOFF.md) |
+| System | `SYS-01`, …; planned `T01`–`T16` | Team; [requirements](../docs/PROJECT_SPECS.md) |
 
-## Three levels of test
+IDs never change or get reused, including retired template cases. Retired definitions remain in the relevant log; placeholder template rows are not observations.
 
-| Level | ID format | Tests what | Written by | Where |
-|---|---|---|---|---|
-| Unit | `S1-U01`, `S2-U01`, … | one subsystem on its own | the subsystem owner | `subsystemN/TEST_LOG.md` |
-| Integration | `INT-01`, … | an interface between subsystems (TEAM.md section 5) | the owners on both sides | `integration/TEST_LOG.md` |
-| System | `SYS-01`, … | the finished product against a requirement | whole team | `system/TEST_LOG.md` |
+## Run and record
 
-Test IDs never change and are never reused, even if a test is dropped.
+1. Define the case, steps, expected result and acceptance measurements before the run. Record wiring, power, calibration and build profile.
+2. For an appropriate firmware self-test, use `TEST_CHECK` with the case ID in the owning `subsystemN_test.c`; see `app_program/test_report.h`. Manual cases need hardware/operator steps and measurement evidence.
+3. Use [GETTING_STARTED build/flash profiles](../docs/GETTING_STARTED.md#build-profiles). TEST firmware prints `[TEST] <ID> PASS|FAIL` at startup and always inhibits motor outputs. A compiled image is not an executed pass.
+4. Save actual console output/photos/scope records as `YYYY-MM-DD_<case>.txt` or appropriate image format. Start console capture before resetting the USB-only TEST board. Example from repository root, using the actual device name:
 
-## How to run and record a test
-
-1. **Define it first.** Add a row to the *Test cases* table in the right
-   `TEST_LOG.md`: ID, what it checks, how, and the expected result.
-2. **Automate it if you can.** Add a `TEST_CHECK` with the same ID to
-   `app_program/subsystemN/subsystemN_test.c` (see `app_program/test_report.h`).
-   A test that needs eyes or instruments (an LED blinks, a motor turns, a
-   scope shows 1 kHz) is a *manual* test. Write its steps in the table instead.
-3. **Build the test image and flash it.**
    ```sh
-   cd build_make
-   make TEST=1 -j8        # -> mtk3pico_smp1_usb_cdc_wifi_test.uf2
+   cat /dev/cu.usbmodem<device> | tee testing/subsystem3/logs/YYYY-MM-DD_self-tests.txt
+   # Linux: cat /dev/ttyACM0 | tee testing/subsystem3/logs/YYYY-MM-DD_self-tests.txt
    ```
-   The test image runs every subsystem's tests at power-up and prints one
-   `[TEST] <ID> PASS|FAIL` line per check. (A normal `make` leaves the tests out.)
-4. **Save the console output** to `logs/`, named `YYYY-MM-DD_<what>.txt`:
-   ```sh
-   # macOS (find the port name with: ls /dev/cu.usbmodem*)
-   cat /dev/cu.usbmodem1101 | tee ../testing/subsystem1/logs/2026-10-14_unit.txt
-   # Linux / WSL with usbipd
-   cat /dev/ttyACM0 | tee ../testing/subsystem1/logs/2026-10-14_unit.txt
-   ```
-   Start the command first, then reset the Pico. Press Ctrl-C when it is done.
-   On Windows with PuTTY, use *Session → Logging → All session output*.
-   For manual tests, save photos or scope screenshots in `logs/` the same way
-   (keep each file under a few MB). Videos go in `videos/` instead (see below).
-5. **Record the result.** Add a row to the *Results* table: date, test ID,
-   the commit you tested (`git rev-parse --short HEAD`), who ran it,
-   PASS/FAIL, and the log file. Commit the log and the table together.
 
-## Videos of tests and demos
+   Windows PuTTY supports Session → Logging → All session output. Observe the [power policy](../docs/GETTING_STARTED.md#power-and-flashing) during physical trials.
+5. Append a result row: date, ID, exact committed revision, tester, PASS/FAIL, measurements and evidence. Record the flashed-image checksum. Commit records and evidence together. Existing precommit checks instead identify the tested working tree through their source manifests plus base HEAD; base HEAD alone is insufficient.
+6. Record a failure and its reason; after a fix, append a new result. Never edit/delete a historical result or overwrite its evidence filename. Rerun affected subsystem/integration cases before merging, and the applicable full set before a demonstration.
 
-A manual test (an LED, a motor, a sensor reacting) is best shown with a short
-video. Record 15–60 s showing the test ID and the hardware, share it as an
-**unlisted YouTube** link (the only way videos are shared), list it in
-**`videos/README.md`**, and put the link in the *Log / evidence* column of
-the test's result row. `videos/README.md` explains how.
+## Preserved software evidence
 
-## Rules
+Host tests and runners have been removed. The saved 2026-10-08 fake-kernel/hardware/network and laptop-loopback results remain historical software evidence; their recorded methods are not current run instructions. They do not establish GPIO performance, physical motion or an actual Pico connection.
 
-- **Never edit or delete an old result.** If a test fails, record the FAIL,
-  fix the code, re-run, and add a new PASS row. The history is the evidence.
-- **Always record the commit.** A result is meaningless without the exact
-  code it was run on. Commit your work *before* testing.
-- **A FAIL needs a note** saying what went wrong and, later, which commit fixed it.
-- Before merging a change into `main`, re-run your subsystem's unit tests.
-  Before a demo or hand-in, run every test and record the full set.
+Firmware self-tests remain: S1-U04 (bounded encoding), S2-U03 (Motion policy), S3-U02 (normalization/progress) and S3-U06 (P guidance). S3-U03 remains the retired line-PID case; later P/capture/recovery cases retain their IDs. Network snapshots never count as sensor/watchdog progress.
 
-## S3 proportional bench workflow
+Actual wireless checks are SYS-09/10 through [wireless setup](../docs/GETTING_STARTED.md#wireless-telemetry). Save Pico-originated subscriber output separately from synthetic/laptop transport evidence. A slow telemetry stream cannot prove short stop/recovery deadlines; use camera/scope measurements.
 
-The [S3 guide](../docs/architecture/LINE_FOLLOWING.md) defines the current states and recovery policy; [future PID/barcode work](../docs/architecture/IR_FUTURE_PLANS.md) is deferred. Run sh scripts/check-ir-tracking.sh from code/ for host calculation/controller, fake ADC, real S3 loop with fake inputs/S2, and unchanged real S2 service with a fake kernel. Host checks do not establish physical GPIO/scheduler/motor performance. Record host and on-target runs separately even when they share a test ID.
+## Planned integrated trials
 
-S3-U03 belongs to the earlier PID bench and is retired after this override; keep its definition/results. S3-U06/U07/U08 cover the new P, capture/classification and recovery policies; INT-05 exercises the real S3 loop. TEST=1 contains S3-U02 and S3-U06 self-checks, but a compiled image is not an on-target PASS.
+All remain pending until actual measurements/results are recorded. This retains the integrated design's IDs without treating proposed checks as passes.
 
-Use the exact normal/TEST build options in [getting started](../docs/GETTINGS_STARTED.md). USB alone is used for inhibited TEST logging; disconnect USB before powering battery trials and recalibrate after reboot. Use camera/scope/operator evidence for battery trials, never simultaneous USB/power-bank logging.
+| ID | Scenario / evidence |
+| --- | --- |
+| T01 | Electrical release: markings, continuity, loaded rails/current, signal highs, shared contacts and jumper |
+| T02 | Boot/stop/reset in every motion mode; output-brake timing and physical stopping separately |
+| T03 | Straight/curve/junction tracking under lighting, surface and speed variation |
+| T04 | Known barcode scales/speeds, partial/unknown/reverse/duplicate frames and capture/event overflow |
+| T05 | Four encoder actions: repeated distance/angle accuracy, completion, timeout and obstacle cancellation |
+| T06 | Labelled stationary/acceleration/turn/climb/descent/impact traces; no raw gyro claim |
+| T07 | Measured reference humps, slip/dynamic/incomplete rejection and invalid estimate after valid maximum |
+| T08 | Known forward ranges/materials/angles; no/late/out-of-range echo and repeat timing |
+| T09 | Moving scan rejection, coarse/fine profile, separate front age and restored-center acquisition |
+| T10 | Vehicle envelope/course boundary, both bypass sides, blocked paths and original-line versus wrong-crossing recovery |
+| T11 | Controlled line loss, interrupted search, obstacle during search and bounded timeout |
+| T12 | Actual mission telemetry/status subscription, units/validity and rejection of prohibited/malformed commands |
+| T13 | WiFi/broker loss/reconnect under sensor/scan load; healthy local control and no stale replay |
+| T14 | Stale/frozen producers, encoder/stall faults, expired command and full diagnostic/navigation/capture buffers |
+| T15 | Concurrent load: releases/WCET, missed deadlines, stop latency, queue occupancy and stack/memory usage |
+| T16 | Repeated complete-course rehearsal with navigation, humps, obstacles, telemetry and recovery |
 
-The saved 2026-10-08 migration and proportional-control checks ran against an uncommitted working tree. Their SHA256 source manifests plus base HEAD identify the tested source; the base HEAD alone does not. Preserve original evidence and give later runs distinct filenames. Formal hardware trials record a committed source revision and flashed-image checksum.
-
-## Wireless telemetry workflow
-
-Run the same host script for S1-U04/U05, INT-06 and INT-07 as well as the existing S3/S2 cases. It exercises the actual store/encoder/adapter and real S3 loop with fake kernel/hardware/network calls; it does not connect a Pico. With Mosquitto installed, `python3 tests/test_mqtt_broker.py` separately runs INT-08 against a temporary **loopback-only** broker, then shuts it down. Its synthetic fixture cannot count as robot telemetry.
-
-Use [getting started section 5](../docs/GETTINGS_STARTED.md#5-wireless-telemetry-on-the-mac) for explicit normal/TEST MQTT build flags and the offline profile. INT-09 records those builds. TEST firmware includes S1-U04 without networking in the self-check; a built image is not an on-target PASS.
-
-Actual Pico connectivity is SYS-09, followed by bank-only trials SYS-10. Keep USB alone for inhibited console checks and disconnect it before powering from the bank. Save `mosquitto_sub -h 127.0.0.1 -p 1883 -t robot/s3/telemetry -v` output for wireless observations. Record source revision, image checksum, wiring/power source and network-test actions. The 500 ms stream cannot prove a 100 ms recovery deadline; camera/scope records are still needed.
-
-The distinct `2026-10-08_s3-mqtt-*` logs/manifests record this branch's precommit working-tree software checks. Historical logs remain intact. S1 snapshot failure and broker loss are diagnostics failures; they must never be counted as sensor progress or used to inhibit healthy local motion.
+Acceptance targets/unknown values are owned by [PROJECT_SPECS](../docs/PROJECT_SPECS.md#pending-decisions), not inferred from a case name. Demonstration links belong in [videos](../videos/README.md) and the corresponding result row.

@@ -1,6 +1,6 @@
 # System and physical test log
 
-Template example SYS-01/02 retired. Full mission report trials T01-T16 remain pending. No source commit or hardware result is fabricated.
+Retired template definitions: SYS-01 illustrative ten-second WiFi reading; SYS-02 unfilled manual placeholder. No template result was recorded. Full mission report trials T01-T16 remain pending. No source commit or hardware result is fabricated.
 
 ## 1. Test cases
 

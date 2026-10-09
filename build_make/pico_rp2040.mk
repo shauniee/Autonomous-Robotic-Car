@@ -97,7 +97,7 @@ endif
 # USB console can no longer send anything.  It needs a USB-serial adapter on
 # GP0/GP1 and takes those two pins.
 # CRASH_REPORT=0 (default): console on USB only; the boot code leaves GP0/GP1
-# alone, so a subsystem may claim them in TEAM.md.
+# alone, so a subsystem may claim them in docs/TEAM.md.
 # CONSOLE=uart always uses UART0 as the console, so it forces CRASH_REPORT=1.
 CRASH_REPORT ?= 0
 ifneq ($(filter $(CRASH_REPORT),0 1),$(CRASH_REPORT))

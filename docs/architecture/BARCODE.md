@@ -1,44 +1,80 @@
-> Runtime update, 8 October 2026: micro T-Kernel template imported. This subsystem remains a proposed full-mission feature and has no active driver/task in the IR bench. See [TEAM.md](../../TEAM.md) and [getting started](../GETTINGS_STARTED.md). Earlier scaffold file names below are historical and recoverable from the pre-migration snapshot.
+# Barcode
 
-# Barcode architecture: deferred S3 feature
+Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). The capture/decoder/navigation design is proposed; operational status is in [GETTING_STARTED](../GETTING_STARTED.md#current-capabilities). Course geometry, A/Z patterns and pending mapping decisions are owned by [PROJECT_SPECS](../PROJECT_SPECS.md#barcode-examples).
 
-Owner: Nicholas. Parent: [system architecture](../ARCHITECTURE.md). Wiring: [hardware](../HARDWARE.md). Review scope: FR2/FR3/FR9, Sections 3–6; trials T04/T05/T11/T14/T15.
+## Functionality
 
-## 1. Capture, decode and navigation contract
+The third IR sensor's comparator DOUT detects black/white transitions in the adjacent barcode lane. A bounded edge ISR records ordered timestamps and coherent encoder context independently of periodic line sampling. Task-level decoding measures **both black bars and white spaces**, validates a complete frame and emits one mapped navigation event. AOUT can aid difficult-surface diagnosis but is not required by this digital capture design.
 
-GP16 DOUT edge ISR captures bounded ordered transitions, timestamps and coherent encoder context independently of 20 ms line sampling. Decode **both black bars and white spaces**, using encoder distance or validated speed compensation. Calibrate comparator polarity/threshold, printed scale, traversal orientation and mounting. Identify complete frames and reject partial, unknown, malformed or overflowed captures rather than guessing a command.
+Mission, rather than the decoder, requests encoder-based navigation from Motion. Line observations continue concurrently; barcode capture cannot overwrite their snapshot or erase navigation events.
 
-Queue each mapped frame once in `Q_nav` with ID, symbol, action and acquisition time. Mission consumes only in valid mission context; reads during bypass/recovery may be logged but cannot silently redirect movement. Queue/capture overflow faults explicitly; purge obsolete events on reset/action completion.
+## State diagram
 
-Mission requests left/right/straight/U-turn as one ID-bound Motion action, with encoder completion and absolute timeout. Repeated lease renewal retains the action ID/deadline. Completion persists until acknowledged, then Mission reacquires the original line. Obstacle handling preempts navigation and cancels its prior action. Unknown course mapping/finish rules remain unresolved.
+```mermaid
+stateDiagram-v2
+    [*] --> Disabled
+    Disabled --> WaitQuietZone: Configured
+    WaitQuietZone --> CaptureFrame: Frame entry
+    CaptureFrame --> ValidateFrame: Complete capture
+    CaptureFrame --> WaitQuietZone: Partial or timeout
+    ValidateFrame --> QueueEvent: Known mapped frame
+    ValidateFrame --> WaitQuietZone: Reject frame
+    QueueEvent --> WaitRearm: Event copied once
+    WaitRearm --> WaitQuietZone: Rearmed
+    CaptureFrame --> Fault: Capture overflow
+    QueueEvent --> Fault: Queue overflow
+    Fault --> Disabled: Cause clear and reset
+```
 
-## 2. Current implementation and future states
+## States and responses
 
-The active two-sensor proportional IR bench has no GP16 barcode driver, capture ISR, decoder, navigation FIFO or encoder turns. The retired src/subsystems/line_barcode.c scaffold is historical, not a current file. U-turn and the other three encoder actions remain proposed Mission/S2 work. The later S3 refactor changes line steering only. Known A/Z captures, final course mapping, four-action accuracy, speed variation, duplicates and reverse/partial reads need tests before mission acceptance.
+| State | Response / actuation boundary |
+| --- | --- |
+| Disabled / unconfigured | No navigation event; movement is not authorized by decoder state |
+| Wait Quiet Zone | Observe measured polarity and wait for validated frame entry |
+| Capture Frame | Bounded ordered transition capture; reject missing/partial/time-out data |
+| Validate Frame | Check framing, ordered bar/space widths, orientation and known symbol/mapping |
+| Queue Event | Copy event ID, symbol, action and acquisition time once into `Q_nav` |
+| Wait Rearm | Suppress repeat events until confirmed rearm condition |
+| Fault | Report overflow independently of diagnostics; Mission/Safety apply the stop/fault response |
 
-Future decoder states are disabled/unconfigured, wait quiet zone, capture frame, validate frame, queue event, wait for rearm, and fault. Partial/malformed/unknown/time-out frames are rejected outcomes; capture/queue overflow faults explicitly. DOUT HIGH/LOW becomes black/white only after measured polarity. No command mapping or finish rule is guessed. [IR_FUTURE_PLANS.md](IR_FUTURE_PLANS.md) defines staged work and planned checks. Source-grounded geometry and A/Z transcription below are retained.
+No HIGH/LOW-to-black/white polarity, frame format or command table is guessed. Unknown/partial/malformed frames are rejected outcomes; capture/queue overflow is an explicit fault.
 
-## 3. Track geometry and sample technical reference
+## GPIO and peripherals
 
+Follow [TEAM's barcode and line wiring](../TEAM.md#2-pins), including disconnected barcode AOUT and shared contacts. Component electrical behavior belongs to [TECHNICAL_INFO](../TECHNICAL_INFO.md#tcrt5000-based-ir-modules).
 
+## Modules and drivers
 
-[Barcode & Line Specification.pdf p. 1](<../../../document/Barcode & Line Specification.pdf>) shows an **18 mm black line**, a **20 mm gap between the line edge and adjacent barcode**, and an **approximately 141 mm barcode length** along the illustrated direction. The measurements are on a photo; verify whether “gap” is from the line edge and whether 141 mm applies to all printed symbols on the physical track.
+| Module | Purpose / status |
+| --- | --- |
+| Existing S3 lifecycle and line modules | Keep line sampling/control separate from proposed decoding |
+| Suggested barcode edge driver | Short DOUT ISR, bounded ordered capture buffer and overflow flag |
+| Suggested frame decoder | Width normalization using encoder distance or validated speed compensation; framing and invalid-read rejection |
+| Suggested event publisher | One-shot bounded `Q_nav` FIFO with explicit lifetime and overflow handling |
+| Mission / Motion | Consume permitted events and perform unique encoder actions; [shared contract](../ARCHITECTURE.md#shared-contracts) |
 
-[Barcode Sample.pdf pp. 1–4](<../../../document/Barcode Sample.pdf>) visually contains examples labelled **A** and **Z** (two renderings each). It does not give a symbology name, start/stop rules, width tolerances, scale, printed decode table, or samples for B/C/D. Therefore do not hard-code an assumed Code 39/other standard or equate A/Z examples with the assignment's A/B/C/D command example without a verified specification.
+Historical scaffold filenames are not current modules. A decoder/capture ISR/navigation FIFO is not active in the bench.
 
-**Visual sample transcription, so the PDF need not be reopened for the bar structure:** raster inspection at 72 dpi found **15 black bars** on each page, arranged as three five-bar groups separated by narrow spaces. Reading across the bars, `n` means a narrow bar/space and `w` a wide bar/space. Each nine-element sequence below alternates **black bar, white space, black bar, ... , black bar**. The first and last groups are the same in A and Z, consistent with `*` start/stop framing in Code 39; that standard identification is an **inference from the shapes**, not a label printed in the source. The PDF's A/Z text and the run widths are directly observed. [Barcode Sample pp. 1–4]
+## Business logic
 
-| Sample pages | Relative printed scale | First group | Labelled middle group | Last group | Inter-character gap |
-| --- | --- | --- | --- | --- | --- |
-| 1 (A), 3 (Z) | Larger, about 2× the narrow width of pp. 2/4 | `nwnnwnwnn` | A: `wnnnnwnnw`; Z: `nwwnwnnnn` | `nwnnwnwnn` | Narrow |
-| 2 (A), 4 (Z) | Smaller | `nwnnwnwnn` | A: `wnnnnwnnw`; Z: `nwwnwnnnn` | `nwnnwnwnn` | Narrow |
+- Calibrate comparator threshold/polarity, sensor height/lateral offset, print scale and traversal orientation on the mounted car. The line and barcode lane need separate sensor placement.
+- Edge-to-edge time changes with speed. Prefer encoder travel or validate compensation across slow/normal speeds; do not identify a symbol from bar count alone.
+- Queue mapped frames once. Consume only in the correct mission context; reads during bypass/recovery may be logged but cannot redirect movement. Discard stale/context-mismatched events with a reason; purge obsolete events on reset/action completion.
+- Mission issues left/right/straight/U-turn as one Motion action ID with encoder completion and absolute timeout. Renewing a lease does not restart the action. Obstacle handling cancels/preempts navigation; completion leads to bounded original-line reacquisition.
 
-At the smaller scale, measured raster widths are approximately **10 px narrow** and **30 px wide** at 72 dpi; the larger pages show approximately 20 px and 60 px. These are PDF drawing/raster dimensions, **not guaranteed millimetres on the course**. The sample pages have quiet white margins, but no quiet-zone minimum or barcode tolerance is specified. The sample provides **A and Z only**; no printed B, C or D examples or final command mapping are supplied. Nicholas confirmed the examples are relevant to the actual track, while the chosen command symbols remain uncertain.
+Use known samples at both scales, varying speeds, broken/partial/reverse/unknown frames, duplicates and capture/event bursts in planned T04/T05/T11/T14/T15. Case/result evidence belongs to [testing](../../testing/README.md).
 
-**Geometry sketch in words:** looking down at the track image, the continuous **18 mm-wide** black line runs parallel to the barcode lane; a **20 mm white gap** separates the bottom of the barcode bars from the nearest edge of the line; the photographed barcode occupies about **141 mm along the travel direction**. The image does not specify the sensor mounting coordinate, barcode-to-junction distance, direction of travel, or whether every symbol has identical printed length. [Barcode & Line Specification p. 1]
+## Retained planning cases
 
-**`DOUT` versus `AOUT` for barcode decoding:** a correctly adjusted comparator `DOUT` is sufficient to observe the alternating black/white sequence. `AOUT` gives reflectance strength and can help calibrate a difficult surface or lighting condition, but a valid decoder does not require an analogue channel. **Counting only the black bars is insufficient:** both supplied A and Z samples contain 15 bars. Their identity is in the *ordered narrow/wide widths of bars and intervening white spaces*. In the current plan, use barcode `DOUT` on Grove 4 GP16 and leave barcode `AOUT` disconnected. [Barcode Sample pp. 1–4; Robo Pico p. 4]
+These labels from the former future-plan guide are planning labels, not permanent test IDs or run results. Allocate permanent S3/INT/SYS IDs before execution.
 
-For a moving single-sensor barcode read, each `DOUT` transition marks a black/white edge; the time or **wheel-encoder distance between edges** gives each bar/space width. Time alone changes with speed, so encoder distance or speed compensation is needed to distinguish narrow from wide. Record raw transitions over known A and Z samples, calibrate `DOUT` polarity and threshold on the actual print, confirm orientation/height and printed dimensions, define frame start/end and invalid-read rejection, then emit **one** navigation event per valid symbol. Test at both slow and normal speeds and reject broken or incomplete scans. Mount the line sensors over the line and the barcode sensor over the adjacent barcode lane; exact lateral offsets require a measured car drawing. Three sensors total may constrain simultaneous line-position estimation and independent barcode reading.
-
-The current plan uses analogue reflectance from the two line sensors on GP26/ADC0 and GP27/ADC1; the barcode sensor is digital on GP16. Pico W exposes only GP26–GP28 as external ADC channels, and GP28 is the left encoder A digital input here. There is therefore no third free onboard ADC channel for barcode AOUT without changing the pinout or adding hardware. Calibrate both analogue line channels on the actual surface, lighting, and mounting height; calibrate the barcode comparator separately. [Pico W p. 14; Robo Pico p. 5]
+| Label | Scenario |
+| --- | --- |
+| BC-P01 | Known A/Z at both scales, confirmed framing and symbology |
+| BC-P02 | Partial, malformed, unknown and reverse frames |
+| BC-P03 | Speed variation with distance/validated compensation |
+| BC-P04 | Exactly one event per encounter; later quiet-zone rearm |
+| BC-P05 | Capture/FIFO overflow and stale context |
+| BC-P06 | Concurrent ADC, local stop and barcode bursts |
+| BC-P07 | Four mapped encoder actions and original-line recovery |

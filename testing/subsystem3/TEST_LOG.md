@@ -1,6 +1,8 @@
 # S3 IR bench test log
 
-Owner Nicholas / 2501552. Template example S3-U01 retired, not reused.
+Owner Nicholas / 2501552. Retired template S3-U01 covered example statistics bounds/minimum/maximum; no template result was recorded and the ID is not reused.
+
+Host methods below describe historical checks whose runners are retired; saved results and firmware self-tests remain.
 
 ## 1. Test cases
 
