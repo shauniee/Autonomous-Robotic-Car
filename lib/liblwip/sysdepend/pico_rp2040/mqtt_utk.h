@@ -1,6 +1,7 @@
 #ifndef MQTT_UTK_H
 #define MQTT_UTK_H
-/* Call only from the kernel radio service while the link is up. Poll calls
-   cannot bypass a connection attempt or the 3-second retry backoff. */
+#include <stdbool.h>
+/* Kernel radio service only. Poll cannot bypass attempts or retry backoff. */
 void mqtt_utk_start(void);
+void mqtt_utk_poll(bool link_up);
 #endif

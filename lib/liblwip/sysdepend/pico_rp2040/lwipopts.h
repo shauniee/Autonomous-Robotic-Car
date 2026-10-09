@@ -51,7 +51,7 @@
  * sys_timeout() user above the stack has to be added here or the pool runs
  * dry and lwip_utk_assert() halts with "pool MEMP_SYS_TIMEOUT is empty":
  * mqtt.c arms its own cyclic keepalive timer per client, and mqtt_utk.c adds
- * the telemetry chain plus a connect-retry timer. Four covers those with
+ * one adapter timer (publish, attempt deadline or retry). Four covers those with
  * room to spare; each slot is only a few bytes. */
 #define MEMP_NUM_SYS_TIMEOUT        (LWIP_NUM_SYS_TIMEOUT_INTERNAL + 4)
 /* One bounded 768-byte telemetry frame plus topic/protocol overhead. */
