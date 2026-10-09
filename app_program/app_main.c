@@ -1,7 +1,13 @@
 #include "app.h"
+#include "gpio_capture.h"
+#include "robot_control_task.h"
 #include "subsystem2/subsystem2.h"
 #if APP_TEST
 #include "../testing/subsystem3/subsystem3_test.h"
+#include "../testing/subsystem3/barcode_fixtures.h"
+#include "../testing/subsystem2/navigation_fixtures.h"
+#include "../testing/subsystem1/navigation_fixtures.h"
+#include "../testing/integration/navigation_fixtures.h"
 #endif
 
 /*
@@ -42,7 +48,7 @@ EXPORT ID app_start_task(FP entry, PRI pri, UW prc, const char *name)
 }
 
 static void startup_error(void) {
-    s2_stop();
+    (void)s2_stop();
     tm_printf((UB*)"Startup failed: motor outputs remain inhibited.\n");
     for (;;) tk_slp_tsk(TMO_FEVR);
 }
@@ -78,11 +84,13 @@ EXPORT INT usermain(void)
 	app_timebase_init();
 
 	/* Phase 1: every subsystem creates its kernel objects */
+    REQUIRE(gpio_capture_init());
 	REQUIRE(subsystem1_init());
 	REQUIRE(subsystem2_init());
 	REQUIRE(subsystem3_init());
 	REQUIRE(subsystem4_init());
 	REQUIRE(subsystem5_init());
+	REQUIRE(robot_control_init());
 
 	/* Phase 2: every subsystem starts its tasks */
 	REQUIRE(subsystem1_start());
@@ -100,13 +108,22 @@ EXPORT INT usermain(void)
 	REQUIRE(subsystem3_test_wait_for_start());
 	tm_printf((UB*)"[TEST] === test run start ===\n");
 	subsystem1_test();
+    subsystem1_navigation_test();
 	subsystem2_test();
+    subsystem2_navigation_test();
 	subsystem3_test();
+    subsystem3_barcode_test();
+	robot_control_test();
+    robot_navigation_test();
 	subsystem4_test();
 	subsystem5_test();
 	tm_printf((UB*)"[TEST] === test run end ===\n");
 	REQUIRE(subsystem3_start());
 #endif
+	REQUIRE(robot_control_start());
+    tm_printf((UB *)"[BOOT] mode=%s; GP20 calibration/start, GP21 stop\n",
+        APP_NAVIGATION ? "barcode navigation (configuration required)" :
+        "line bench");
 	tm_printf((UB*)"all subsystems started\n\n");
 
 	/* Sleep forever.  Returning from usermain() would shut down. */
