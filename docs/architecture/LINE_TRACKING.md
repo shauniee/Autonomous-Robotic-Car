@@ -1,128 +1,158 @@
 # Line Tracking
 
-Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). Line guidance uses calibrated **proportional control**; planned measured wheel PID stays in [Motion](MOTION.md). Current bench operating steps/status are in [GETTING_STARTED](../GETTING_STARTED.md). The later P decision supersedes the older line-PID proposal.
+Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). This guide defines the intended independent S3 line service. Implementation status, integration gaps and physical validation belong in [TASKS](../../TASKS.md#s3-line-service). [Barcode](BARCODE.md) is a separate concurrent S3 feature.
 
-## Functionality
+## Functionality and ownership
 
-Two analogue IR sensors provide independent reflectance readings. Normalize each channel using its own black/white calibration, classify line visibility and calculate signed steering from the current reading. S3 publishes observations/steering; Motion alone actuates motors. Barcode capture is a separate concurrent [S3 feature](BARCODE.md).
+S3 acquires a complete pair of analogue IR readings, calibrates each sensor independently, classifies line visibility and calculates memoryless proportional guidance. It owns the calibration buttons and buzzer feedback. S3 provides portable typed observations through a read-only API; it neither controls motors nor formats or publishes network telemetry.
 
-In the full robot, Mission owns navigation and original-line search using these observations plus course/motion context. The implemented bench combines local controls, acquisition, tracking and a short last-direction recovery in one S3 task. That recovery does not establish original-line identification after a mission bypass.
+S1 reads S3 observations and owns telemetry encoding, transmission and reporting. Mission reads line guidance and owns movement decisions, including original-line search, bounded recovery and Motion requests. S2 alone actuates motors and owns measured wheel control. Safety owns independent whole-robot stop and watchdog policy. A line observation, requested steering or plausible ADC count does not establish movement permission, physical centering or sensor connectivity.
 
-## State diagram
+## Calibration workflow
 
-The bench controller states are implemented; full Mission coordination remains proposed. Calibration phases below are derived from existing flags/capture kind, not another stored controller state.
+Calibration is RAM-only and must use the mounted sensor height, lighting and surface for the trial. A completed pair survives normal observation and capture cancellation as described below; reboot loses it. The buzzer mute switch must permit audible feedback.
+
+| Phase | Action / response |
+| --- | --- |
+| Need black | Release GP20 for at least 30 ms, place both sensors on black, then make a fresh debounced GP20 press |
+| Capture black | Maintain the pose until completion: one 100 ms buzz |
+| Need white | Release GP20, place both sensors on white, then make another fresh press |
+| Capture white | Maintain the pose until valid completion: two 100 ms buzzes separated by 100 ms silence |
+| Calibrated | Sampling/guidance continues automatically; GP20 has no motor-start action |
+| Replace calibration | Another fresh GP20 press begins replacement black capture, immediately clearing the old pair |
+| Cancel / rejection | GP21 immediately cancels capture and inhibits new capture while held; cancellation/rejection produces three buzzes |
+
+GP20 requires a stable 30 ms release before arming and a stable 30 ms press before triggering. A held button, including one held at boot, cannot trigger repeated captures. GP21 dominates simultaneous inputs; releasing it does not replay a GP20 press made while it was held. Pressing GP20 during capture is rejected as busy. Buzzes are asynchronous; acquisition and button service do not wait for them.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> READY
-    READY --> FOLLOW_LINE: Fresh valid start
-    FOLLOW_LINE --> RECOVER_LINE: Valid loss with known direction
-    RECOVER_LINE --> FOLLOW_LINE: Two qualifying samples
-    RECOVER_LINE --> STOPPED: Stop fault or deadline
-    READY --> STOPPED: Local stop
-    FOLLOW_LINE --> STOPPED: Stop fault or unknown direction
-    STOPPED --> READY: Cause clear and fresh reset
-```
-
-```mermaid
-stateDiagram-v2
-    direction LR
     [*] --> NeedBlack
-    NeedBlack --> CaptureBlack: Capture
-    CaptureBlack --> NeedWhite: Complete
-    CaptureBlack --> NeedBlack: Cancel or invalid
-    NeedWhite --> CaptureWhite: Capture
-    CaptureWhite --> Calibrated: Contrast valid
-    CaptureWhite --> NeedWhite: Cancel or invalid
-    CaptureWhite --> NeedBlack: Contrast failed
-    Calibrated --> CaptureBlack: Replace black
+    NeedBlack --> CaptureBlack: Fresh GP20 press
+    CaptureBlack --> NeedWhite: Complete and one buzz
+    CaptureBlack --> NeedBlack: Cancel gap or invalid sample
+    NeedWhite --> CaptureWhite: Fresh GP20 press
+    CaptureWhite --> Calibrated: Valid contrast and two buzzes
+    CaptureWhite --> NeedWhite: Cancel gap or invalid sample
+    CaptureWhite --> NeedBlack: Failed contrast
+    Calibrated --> CaptureBlack: Fresh GP20 replacement press
 ```
 
-## States and responses
+These phases derive from calibration flags and capture kind rather than duplicate stored state. During capture, normalized readings and guidance are unavailable. Cancelling replacement black leaves the pair cleared; cancelling white retains completed black. Failed white contrast clears both references. Typed capture results distinguish waiting, pending, black/white completion, unsupported kind, busy, cancel held, sample gap, invalid sample, contrast failure, missing black and cancellation. Display strings are labels, not command IDs.
 
-| Controller state | Response / exit |
-| --- | --- |
-| READY | Zero demand; capture or start validation. Only fresh calibrated VISIBLE data permits FOLLOW_LINE |
-| FOLLOW_LINE | P guidance; broad black uses slow straight. Valid LOST data enters RECOVER_LINE only with known direction |
-| RECOVER_LINE | One-wheel last-direction turn; two consecutive distinct qualifying samples resume P alignment before deadline |
-| STOPPED | Zero demand and persistent S2 stop; reset goes to READY only, requiring another fresh start |
+## Acquisition and calibration bounds
 
-### Line classification
+- Acquire GP26/ADC0 left and GP27/ADC1 right every nominal 20 ms. After each mux change discard one conversion, then average eight.
+- Bound the complete pair by a 2 ms total budget and an independent finite 4096-poll cap, including stalled-timer failure. Publish either a complete pair or an explicit failed acquisition; never a partial/fabricated pair. Failed driver reads leave the caller's destination unchanged.
+- ADC data is 12-bit: 0–4095 counts. These bounds describe the converter, not sensor connectivity or module voltage ratings.
+- A capture requires at least 25 distinct acquisition timestamps spanning at least 500 ms **from its first collected sample**. The first sample must arrive within 60 ms of the request; subsequent gaps greater than 60 ms cancel capture. Duplicate timestamps do not count or replace a valid cached sample.
+- Each channel requires at least 300 counts of absolute black/white contrast. Independent spans and opposite electrical polarities are supported. Capture sums/counts are bounded.
+- Timestamp arithmetic uses unsigned wrap-safe elapsed subtraction. Acquisition time is paired-read completion time; copying or publishing cached data never refreshes it.
 
-| Condition | Guard / meaning |
-| --- | --- |
-| UNKNOWN | No usable fresh calibrated observation |
-| VISIBLE | Usable fractions outside LOST/BROAD_BLACK conditions |
-| LOST | Both fractions <0.15; remain lost while both <0.25 |
-| BROAD_BLACK | Both fractions >0.85; slow straight in normal following, never a recovery confirmation |
+## Normalization, classification and proportional guidance
 
-No sample, uncalibrated, capture-active, fresh acquisition, invalid acquisition and stale acquisition are separate data conditions. White means fraction <0.15; partial means 0.15–0.85 inclusive; black means >0.85. These are observation bands, not nine new controller states. The previous LOST hysteresis can override a partial-band observation.
-
-| Left | Right | Normal response with valid data |
-| --- | --- | --- |
-| White | White | Bounded recovery if direction known, otherwise stop |
-| White | Partial | Correct right |
-| White | Black | Correct right |
-| Partial | White | Correct left |
-| Partial | Partial | Signed difference; equal fractions give zero correction |
-| Partial | Black | Correct right |
-| Black | White | Correct left |
-| Black | Partial | Correct left |
-| Black | Black | Slow straight; no navigation event |
-
-Recovery takes precedence over normal steering. Both-white/both-black do not prove line position, junction, barcode or finish; equal fractions do not prove centering. Two sensors cannot identify every junction/orientation without validated context. Plausible ADC counts do not establish sensor connection.
-
-## GPIO and peripherals
-
-Use [TEAM's line/button/buzzer allocation](../TEAM.md#2-pins), [peripheral ownership](../TEAM.md#3-peripherals) and [task schedule](../TEAM.md#4-task-priorities). Electrical/module facts belong to [TECHNICAL_INFO](../TECHNICAL_INFO.md#tcrt5000-based-ir-modules).
-
-## Modules and drivers
-
-| Module | Purpose |
-| --- | --- |
-| `subsystem3.c/.h` | Lifecycle and task startup |
-| `task_ir.c/.h` | Single private task: inputs, acquisition, Motion calls, feedback and watchdog |
-| `drv_ir.c/.h` | Complete bounded ADC pair with explicit success/failure |
-| `ir_tracking.c/.h` | Calibration, normalization, classification/hysteresis and memoryless P output |
-| `robot_control.c/.h` | Bench state transitions, recovery and duty requests |
-| `drv_feedback.c/.h`, `watchdog_policy.c/.h` | Input/chirp/timebase I/O and meaningful progress gate |
-| `telemetry_s3.c/.h` | Optional nonblocking S1 adapter; no network calls |
-| Suggested full-robot observation publisher | Coherent `M_line` under the [shared contracts](../ARCHITECTURE.md#shared-contracts); Mission owns search movement |
-
-IF-04 `IrTrackingOutput` contains `valid`, `line`, signed `error`, `steering` in [−1,1] and original `sampled_ms`. Valid means fresh calibrated VISIBLE steering; it is not movement permission. A fresh valid raw acquisition can be LOST/BROAD_BLACK with invalid steering. There is no integral/derivative history or separate P update timestamp.
-
-Pipeline: complete ADC pair + acquisition result/time → tracker → controller → S2 request. S3 never writes motor PWM. [IR handoff](IR_MOTION_HANDOFF.md) preserves IF-01/02/03 and its publication example; [Communications](COMMUNICATIONS.md) owns optional IF-05.
-
-## Business logic
-
-### Acquisition and calibration
-
-- Sample the pair every nominal 20 ms. After each mux change, discard one conversion and average eight. Complete the pair within a 2 ms total budget plus finite poll cap, including a stalled timer; no partial/fabricated pair is accepted.
-- Each stopped capture needs at least 25 distinct sample timestamps spanning at least 500 ms. Each channel needs at least 300 ADC counts of black/white contrast; unequal spans and opposite polarities are supported.
-- A replacement black capture clears the previous pair. White requires completed black; failed white contrast clears both. Cancelling replacement black leaves the pair cleared; cancelling white preserves completed black. References survive eligible reset, not reboot.
-- `IrCaptureKind` selects none/black/white. Typed outcomes cover waiting/pending, completion, unsupported/busy/moving/stop-held, gap/invalid sample/contrast/missing black and stop cancellation. Strings are display labels, not command IDs or acknowledgements.
-
-### P guidance and bench duty mixing
+For each channel:
 
 ```text
-fraction   = clamp((raw - white) / (black - white), 0, 1)
-error      = right_fraction - left_fraction
-correction = clamp(0.10 * error, -0.10, +0.10)
-steering   = correction / 0.10
-left_duty  = clamp(0.10 + correction, 0, 0.35)
-right_duty = clamp(0.10 - correction, 0, 0.35)
+black_fraction = clamp((raw - white) / (black - white), 0, 1)
+normalized     = 2 * black_fraction - 1
+error          = right_black_fraction - left_black_fraction
+correction     = clamp(0.10 * error, -0.10, +0.10)
+steering       = correction / 0.10
 ```
 
-Negative error corrects left; positive corrects right. Normal base duty is 0.10; broad-black duty is 0.05 per wheel. Duties are requested fractions, not measured wheel speed. Full Motion uses calibrated wheel control while preserving the signed P guidance contract.
+The public sensor value is −1 for calibrated white and +1 for calibrated black. Values beyond captured references clamp to the endpoints. A zero sensor value is midpoint reflectance; equal sensor readings do not prove centering. Line error and steering are in [−1,1], negative left and positive right. No integral/derivative history or separate guidance timestamp is stored.
 
-### Freshness, recovery and stop
+Classification uses the internal 0–1 black fractions:
 
-Age <=60 ms is accepted; >60 ms invalidates steering/control. Recovery uses the last nonzero error direction, with one duty 0.10 and the other zero. No direction means stop. At elapsed **>=100 ms**, stop; a sample exactly on the deadline cannot revive the run. Two consecutive fresh VISIBLE samples, each with at least one fraction >=0.25 and distinct acquisition time, resume following. Broad black resets that streak; duplicate timestamps never count twice.
+| Condition | Meaning |
+| --- | --- |
+| UNKNOWN | Missing, invalid, stale, uncalibrated or capture-active usable observation |
+| LOST | Both fractions <0.15; remain lost while both remain <0.25 |
+| VISIBLE | Fresh calibrated observation outside LOST/BROAD_BLACK conditions |
+| BROAD_BLACK | Both fractions >0.85; an observation, not a junction/barcode/finish event |
 
-GP21 dominates every state and cancels capture. Fresh released presses are required for reset/start; the input debounce is 30 ms. Stop reasons include invalid acquisition/calibration/steering, late update, unknown direction, exhausted recovery and Motion inhibit/reset/start/publish failures. Invalid/stale data never authorize recovery.
+White is <0.15; partial is 0.15–0.85 inclusive; black is >0.85. LOST hysteresis may override partial observations. An acquisition age of 60 ms is accepted; 61 ms is stale. Only VISIBLE observations authorize **valid guidance**. Fresh LOST/BROAD_BLACK readings still expose normalized sensor values and observational error, with invalid guidance and zero steering.
 
-The watchdog freshness/progress policy is owned by [TEAM](../TEAM.md#3-peripherals). Telemetry copying/publication cannot change controller state, refresh sample time or count as watchdog progress.
+| Left / right band | Guidance interpretation with usable data |
+| --- | --- |
+| White / white | LOST; Mission decides whether/how to recover |
+| White / partial or black | Correct right |
+| Partial / white | Correct left |
+| Partial / partial | Signed difference; equal fractions give zero correction |
+| Partial / black | Correct right |
+| Black / white or partial | Correct left |
+| Black / black | BROAD_BLACK; Mission decides movement policy |
 
-### Establish a measured baseline
+No S3 motor duty mixing, run/start state, movement timeout or recovery actuation follows from this table. Mission must validate context and movement preconditions through its agreed interfaces.
 
-Record mounted height/spacing, calibration ranges, lighting, source/image, power, duties, lateral error, overshoot, losses and stopping. Repeat straight/curve trials at low duty before raising speed. Check calibration and motor asymmetry before tuning P; compare repeated runs with the same setup and agreed acceptance measures. Filtering or sensor-fault diagnostics require measured noise/latency and injected-fault evidence, retain acquisition time and preserve independent stop/freshness bounds.
+## Modules and public interface
+
+### Understanding the source files
+
+`subsystem3.c` is the entry point, but the repeated work happens in `task_ir.c`. At each acquisition release the task calls the ADC driver, passes the complete pair into the tracker, then publishes a snapshot through the subsystem. At input releases it reads buttons, applies calibration actions and services buzzer timing. S1 later calls `s3_ir_copy()` to obtain a coherent observation.
+
+| File | Why it is separate / what to change here |
+| --- | --- |
+| `subsystem3.c` | Initialize/start S3 and protect its public data copy; this is the interface used by other subsystems |
+| `task_ir.c` | Decide when to sample/service inputs and connect the modules; change scheduling/orchestration here |
+| `drv_ir.c` | Access ADC registers and obtain raw counts; change sensor acquisition here |
+| `ir_tracking.c` | Calculate references, normalized readings, visibility and P guidance; change the IR algorithm here |
+| `calibration_control.c` | Interpret debounced GP20/GP21 presses as capture/cancel actions; change the calibration button workflow here |
+| `drv_feedback.c` | Read physical buttons and drive the buzzer; change GPIO/PWM feedback here |
+| `ir_snapshot.c` | Package tracker results and invalidate stale copied data; change the fields/read semantics here |
+
+A `.c` file contains the implementation. Its `.h` file declares the functions and data types another file may use; it does not contain a second implementation. `subsystem3_internal.h` declares the private task-to-cache publication function, while `subsystem3.h` exposes the supported external S3 interface. Consumers should not call the private task or mutate its tracker.
+
+These divisions keep hardware access, calculations, scheduling and consumer data independent. Separate files are a modular organization choice; they do not create extra tasks. S3 still has exactly one running task.
+
+All S3 test fixtures and assertions live under `testing/subsystem3/`. Its `firmware.mk` adds only S3 test sources to TEST=1 builds through one shared Make include. A tiny TEST-only bridge in `subsystem3.c` supplies the private cache mutex to the boundary assertion without adding a production handle accessor. TEST-only periodic console diagnostics in `task_ir.c` remain observations of the running service, not self-test assertions.
+
+`IrTrackingOutput` retains IF-04's validity, line, signed error/steering and original `sampled_ms`. It is an internal typed value. The public reader is:
+
+```c
+bool s3_ir_copy(S3IrSnapshot *snapshot);
+```
+
+The function returns false immediately for null input, unavailable initialization, busy mutex or kernel error; ignore its destination on failure. Before any acquisition, an initialized service returns a coherent snapshot with `have_sample=false`. Reading requires task context; do not call kernel mutex APIs from an ISR.
+
+| Snapshot fields | Meaning |
+| --- | --- |
+| `raw` | Latest attempted raw pair; interpret only with `acquisition_valid` |
+| `calibration`, `contrast` | Black/white references and absolute spans; contrast meaningful only with `calibration_valid` |
+| `normalized_left/right` | Independent sensor values in [−1,1]; meaningful only with `normalized_valid` |
+| `line`, `error`, `steering` | Visibility, observational error and P guidance; steering meaningful only with `guidance_valid` |
+| `capture_kind`, `capture_result` | Current capture phase and typed outcome |
+| `have_sample`, `acquisition_valid` | Missing attempt versus failed/valid acquisition |
+| `calibration_valid`, `sample_fresh` | Independent reference validity and valid raw acquisition age <=60 ms |
+| `normalized_valid`, `guidance_valid` | Usable normalized data versus fresh VISIBLE steering |
+| `sampled_ms`, `sample_age_ms` | Original attempt time and wrap-safe age at copy; age is zero before a first sample and must use `have_sample` |
+| `sequence` | Advances on distinct acquisition attempts, including failed ones; wraps naturally as uint32_t |
+
+Invalid normalized/error/steering values are zero with explicit validity flags. Stale reads retain raw/references and acquisition time but invalidate normalized/guidance data and return UNKNOWN. An error is meaningful only with normalized data; read success alone does not mean valid sensing.
+
+S3 creates one priority-inheritance mutex during initialization. Its handle is published with C11 release/acquire atomics for cross-core readers. Both writer and reader use `TMO_POL`, copying coherent values. Contention skips a publication or read; no queue/network operation delays acquisition. Reads and status-only updates do not advance the acquisition sequence. Consumers cannot mutate the live tracker or refresh cached data into validity.
+
+Example for a future S1 adapter:
+
+```c
+S3IrSnapshot sensors;
+if (s3_ir_copy(&sensors))
+{
+    /* S1 maps these typed fields into its own telemetry format.
+       Use validity and age; do not treat read success as sensor validity. */
+}
+```
+
+This is an interface example, not an implemented S1 adapter. The struct is not a wire format and must not be serialized by native layout.
+
+## Task and hardware boundaries
+
+Use [TEAM](../TEAM.md#2-pins) for wiring and [TECHNICAL_INFO](../TECHNICAL_INFO.md#tcrt5000-based-ir-modules) for electrical facts. S3 retains one priority-12 task on core 1, with 10 ms input/feedback service and 20 ms acquisition. Deadline releases skip missed work rather than replaying a backlog. TEST builds report raw counts, normalized thousandths, calibration/capture status and validity every nominal 500 ms through the existing startup/test hooks.
+
+Shared application startup initializes the 1 µs TIMER timebase without resetting it. S3 configures only its ADC and buzzer PWM slice; it neither enables/feeds a whole-system watchdog nor accesses S2/S1 runtime interfaces. Critical system health/stop policy belongs to Safety and requires explicit integration; a data service is not a whole-robot safety controller.
+
+## Establish a measured baseline
+
+Record mounted height/spacing, calibration ranges, lighting, surface, power and reference lateral positions. Measure repeated straight/curve observations, noise, latency and loss classification before integrating actuation or tuning P. Physical tracking additionally requires Motion/Mission integration and measured motor asymmetry, lateral error, overshoot, losses and stopping.
+
+Firmware self-checks and builds are software evidence only. They do not establish GPIO/button behavior, audible timing, sensor connection, paired acquisition WCET, wheel movement or a successful tracking run. Permanent cases and evidence are in [S3 testing](../../testing/subsystem3/TEST_LOG.md).
