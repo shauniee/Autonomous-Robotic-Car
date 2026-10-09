@@ -1,79 +1,141 @@
-/* Nicholas: one RTOS task owns ADC, local inputs, feedback and health policy. */
 #include "task_ir.h"
-#include "robot_control.h"
+#include "subsystem3_internal.h"
+#include "calibration_control.h"
 #include "drv_ir.h"
 #include "drv_feedback.h"
-#include "watchdog_policy.h"
-#include "../subsystem2/subsystem2.h"
-#if TM_MQTT
-#include "telemetry_s3.h"
+
+#define INPUT_PERIOD_MS 10u
+#define REPORT_PERIOD_MS 500u
+
+static bool read_time(uint32_t *now)
+{
+    SYSTIM time;
+    if (tk_get_otm(&time) < E_OK)
+    {
+        return false;
+    }
+    *now = time.lo;
+    return true;
+}
+
+static void feedback(unsigned chirps, uint32_t now)
+{
+    if ((chirps > 0u) && !drv_feedback_chirps(chirps, now))
+    {
+        tm_printf((UB *)"[IR] buzzer request failed\n");
+    }
+}
+
+#if APP_TEST
+static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now)
+{
+    S3IrSnapshot snapshot = ir_snapshot_build(tracker, sequence, now);
+    /* Fixed-point display avoids floating-point console formatting. */
+    int left = (int)(snapshot.normalized_left * 1000.0f);
+    int right = (int)(snapshot.normalized_right * 1000.0f);
+    tm_printf((UB *)"[IR] seq=%u ADC L=%u R=%u acquired=%d fresh=%d "
+        "normalized_milli L=%d R=%d valid=%d calibrated=%d "
+        "line=%s capture=%s age_ms=%u SENSOR_ONLY\n",
+        (unsigned)sequence, (unsigned)snapshot.raw.left,
+        (unsigned)snapshot.raw.right, snapshot.acquisition_valid,
+        snapshot.sample_fresh, left, right, snapshot.normalized_valid,
+        snapshot.calibration_valid, ir_tracking_line_name(snapshot.line),
+        ir_tracking_capture_name(snapshot.capture_result),
+        (unsigned)snapshot.sample_age_ms);
+}
 #endif
 
-static uint32_t now_ms(void) { SYSTIM t; tk_get_otm(&t); return t.lo; }
-void ir_task(INT stacd, void *exinf) {
-    (void)stacd; (void)exinf;
-    RobotControl car; robot_control_init(&car);
-    WatchdogPolicy watchdog = {0};
-    drv_feedback_init();
-    bool adc_ok = drv_ir_init();
-    drv_watchdog_enable();
-    uint32_t next = now_ms(), sample_due = next;
+void task_ir_task(INT stacd, void *exinf)
+{
+    (void)stacd;
+    (void)exinf;
+    IrTracker tracker;
+    ir_tracking_init(&tracker);
+    calibration_control_t controls;
+    calibration_control_init(&controls);
+    bool adc_ready = drv_ir_init();
+    uint32_t now;
+    if (!read_time(&now))
+    {
+        tm_printf((UB *)"[IR] time unavailable; task stopped\n");
+        return;
+    }
+    uint32_t next = now;
+    uint32_t sample_due = now;
+    uint32_t sequence = 0u;
 #if APP_TEST
-    uint32_t report_due = next;
+    uint32_t report_due = now;
 #endif
-    for (;;) {
-        uint32_t now = now_ms();
-        bool stop = !gpio_get_val(21);
-        if (stop) s2_stop(); /* Independent of request mutex and capture. */
-        MotionHealth h = {0};
-        ER health_er = s2_health(&h);
-        if (health_er < E_OK || (h.stopped && robot_control_is_moving(&car)))
-            robot_control_stop(&car, "motion_inhibited");
-        RobotState before = car.state;
-        robot_control_inputs(&car, !gpio_get_val(20), stop, now);
-        if (before == ROBOT_STOPPED && car.state == ROBOT_READY && !stop) {
-            if (s2_reset_stop() < E_OK) robot_control_stop(&car, "reset_failed");
+    for (;;)
+    {
+        if (!read_time(&now))
+        {
+            tm_printf((UB *)"[IR] time unavailable; task stopped\n");
+            return;
         }
-        robot_control_check_time(&car, now);
-        if ((int32_t)(now - sample_due) >= 0) {
+        IrCaptureKind before = tracker.capture_kind;
+        ir_tracking_check_time(&tracker, now);
+        feedback(calibration_control_feedback(before, &tracker), now);
+        bool capture_down;
+        bool cancel_down;
+        drv_feedback_inputs(&capture_down, &cancel_down);
+        feedback(calibration_control_inputs(&controls, &tracker,
+            capture_down, cancel_down, now), now);
+        if ((int32_t)(now - sample_due) >= 0)
+        {
             IrRaw raw = {0};
-            bool acquired = adc_ok && drv_ir_read(&raw);
-            robot_control_sample(&car, raw, acquired, now_ms());
-            now = now_ms(); sample_due += IR_SAMPLE_MS;
-            if ((int32_t)(now - sample_due) >= 0) sample_due = now + IR_SAMPLE_MS;
+            bool acquired = adc_ready && drv_ir_read(&raw);
+            if (!read_time(&now))
+            {
+                tm_printf((UB *)"[IR] acquisition time unavailable\n");
+                return;
+            }
+            bool advancing = !tracker.have_sample || (now != tracker.sample_ms);
+            before = tracker.capture_kind;
+            ir_tracking_sample(&tracker, raw, acquired, now);
+            if (advancing)
+            {
+                ++sequence; /* Acquisition attempts, including invalid ones. */
+            }
+            feedback(calibration_control_feedback(before, &tracker), now);
+            sample_due += IR_SAMPLE_MS;
+            if ((int32_t)(now - sample_due) >= 0)
+            {
+                sample_due = now + IR_SAMPLE_MS;
+            }
         }
-        if (before == ROBOT_READY && car.state == ROBOT_RUNNING && !stop) {
-            if (s2_reset_stop() < E_OK) robot_control_stop(&car, "start_failed");
+        if (!drv_feedback_service(now))
+        {
+            tm_printf((UB *)"[IR] buzzer service failed; task stopped\n");
+            return;
         }
-        if (car.state == ROBOT_STOPPED) s2_stop();
-        MotionRequest r = {car.left_duty, car.right_duty, car.tracking.sample_ms,
-                           robot_control_is_moving(&car)};
-        if (s2_publish(r) < E_OK) {
-            robot_control_stop(&car, "publish_failed");
-            s2_stop();
+        /* Cache failure skips publication; local work still advances.
+           Readers invalidate the cached acquisition after 60 ms. */
+        if (!subsystem3_publish(&tracker, sequence, now))
+        {
+            /* Retry at the next input release, without a busy loop. */
         }
-        if (car.chirps) { drv_feedback_chirps(car.chirps, now); car.chirps = 0; }
-        drv_feedback_service(now);
-#if TM_MQTT
-        telemetry_s3_update(&car, now_ms(), APP_TEST != 0);
-#endif
 #if APP_TEST
-        if ((int32_t)(now - report_due) >= 0) {
-            tm_printf((UB*)"[BENCH] %s reason=%s ADC L=%u R=%u acquired=%d line=%s capture=%s black=%d white=%d MOTOR_INHIBITED\n",
-                robot_control_state_name(car.state), car.reason,
-                car.tracking.raw.left, car.tracking.raw.right, car.tracking.sample_valid,
-                ir_tracking_line_name(car.tracking.line),
-                ir_tracking_capture_name(car.tracking.capture_result),
-                car.tracking.calibration.black_set, car.tracking.calibration.white_set);
-            report_due = now + 500;
+        if ((int32_t)(now - report_due) >= 0)
+        {
+            report(&tracker, sequence, now);
+            report_due = now + REPORT_PERIOD_MS;
         }
 #endif
-        if (health_er >= E_OK && watchdog_progress(&watchdog,
-                car.tracking.have_sample && car.tracking.sample_valid,
-                car.tracking.sample_ms, h.serviced_ms, h.sequence, now)) drv_watchdog_feed();
-        /* Absolute release: skip missed releases without replaying a backlog. */
-        next += 10; now = now_ms();
-        if ((int32_t)(now - next) >= 0) next = now + 10;
-        tk_dly_tsk((RELTIM)(next - now));
+        next += INPUT_PERIOD_MS;
+        if (!read_time(&now))
+        {
+            tm_printf((UB *)"[IR] scheduling time unavailable\n");
+            return;
+        }
+        if ((int32_t)(now - next) >= 0)
+        {
+            next = now + INPUT_PERIOD_MS;
+        }
+        if (tk_dly_tsk((RELTIM)(next - now)) < E_OK)
+        {
+            tm_printf((UB *)"[IR] task delay failed\n");
+            return;
+        }
     }
 }

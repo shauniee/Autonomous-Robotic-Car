@@ -1,0 +1,9 @@
+{'source': '../app_program/subsystem3/calibration_control.c', 'exit': 0, 'diagnostics': ''}
+{'source': '../app_program/subsystem3/drv_feedback.c', 'exit': 0, 'diagnostics': ''}
+{'source': '../app_program/subsystem3/ir_self_test.c', 'exit': 0, 'diagnostics': ''}
+{'source': '../app_program/subsystem3/drv_ir.c', 'exit': 0, 'diagnostics': ''}
+{'source': '../app_program/subsystem3/ir_snapshot.c', 'exit': 0, 'diagnostics': ''}
+{'source': '../app_program/subsystem3/ir_tracking.c', 'exit': 0, 'diagnostics': ''}
+{'source': '../app_program/subsystem3/subsystem3.c', 'exit': 0, 'diagnostics': ''}
+{'source': '../app_program/subsystem3/subsystem3_test.c', 'exit': 0, 'diagnostics': ''}
+{'source': '../app_program/subsystem3/task_ir.c', 'exit': 0, 'diagnostics': ''}

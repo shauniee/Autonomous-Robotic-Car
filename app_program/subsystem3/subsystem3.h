@@ -1,12 +1,16 @@
-/* Nicholas: line/barcode ownership; current build implements the IR bench. */
 #ifndef SUBSYSTEM3_H
 #define SUBSYSTEM3_H
-#ifdef BENCH_KERNEL_HOST_TEST
-#include "kernel_io.h"
-#else
+
 #include "../app.h"
-#endif
-#define S3_PRI_BENCH 12
+#include "ir_snapshot.h"
+
+#define S3_PRI_LINE 12
+
 ER subsystem3_init(void);
 ER subsystem3_start(void);
+/* Nonblocking coherent copy. False means null, uninitialized, or busy/error;
+   Ignore the destination on failure; normalized zero is not validity.
+   This API is for task context, never an ISR. */
+bool s3_ir_copy(S3IrSnapshot *snapshot);
+
 #endif
