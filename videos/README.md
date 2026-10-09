@@ -10,9 +10,9 @@ the line. List **every** video in the table at the bottom of this page.
 - **Say what it is.** Show or say the test ID (e.g. `S2-U03`, `INT-01`) or
   the demo name at the start.
 - **Show the commit.** Before recording, run `git rev-parse --short HEAD` and
-  keep the terminal in shot for a moment, or put it in the table below.
+  put it in the table below and record the flashed-image checksum in the linked test result.
 - **Show the result.** Keep both the hardware and, if it matters, the
-  console output in view.
+  USB-only TEST console in view. Use camera/scope or wireless evidence during battery-only trials under the [power policy](../docs/GETTING_STARTED.md#power-and-flashing).
 - **Landscape**, steady, good light. No music needed.
 
 ## How to share it: unlisted YouTube only
@@ -30,11 +30,11 @@ slows every clone for the whole team. Video files are ignored by
 
 Then add a row to the table below. If the video is evidence for a test, also
 put its link in the *Log / evidence* column of that test's row in
-`testing/.../TEST_LOG.md`.
+[test records](../testing/README.md).
 
 ## Video index
 
-Newest at the bottom. Never delete a row.
+Newest at the bottom. Never delete a recorded row. The example row below is a template placeholder, not recorded evidence.
 
 | Date | Subsystem | Test ID / demo | Commit | Student ID | Link | Notes |
 |---|---|---|---|---|---|---|

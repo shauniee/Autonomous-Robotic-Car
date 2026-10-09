@@ -1,0 +1,66 @@
+{
+  "base_head": "052b62a93fd34f3c8fee34291b58709fc7433d92",
+  "branch": "feat/s3-mqtt-telemetry",
+  "build_log_format": "Trailing whitespace normalized; compiler messages and commands preserved",
+  "host_checks": "PASS",
+  "mac_loopback_broker": "PASS; actual C encoder fixture through CLI, not Pico",
+  "builds": {
+    "build-normal": {
+      "text": 344412,
+      "data": 96,
+      "bss": 82208,
+      "elf": "mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.elf"
+    },
+    "build-test": {
+      "text": 347408,
+      "data": 96,
+      "bss": 82208,
+      "elf": "mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.elf"
+    },
+    "build-offline": {
+      "text": 284400,
+      "data": 88,
+      "bss": 24448,
+      "elf": "mtk3pico_smp1_usb_cdc_wifi.elf"
+    }
+  },
+  "protected_files_checked": 488,
+  "protected_files_changed": [
+    "config/wifi_secrets.example.h",
+    "config/mosquitto-lab.conf",
+    "app_program/subsystem3/ir_tracking.h",
+    "app_program/subsystem3/ir_tracking.c",
+    "app_program/subsystem3/robot_control.h",
+    "app_program/subsystem3/drv_ir.c"
+  ],
+  "intentional_config_changes": [
+    "config/mosquitto-lab.conf",
+    "config/wifi_secrets.example.h"
+  ],
+  "unrelated_user_edits_token_equivalent_to_base": [
+    "app_program/subsystem3/drv_ir.c",
+    "app_program/subsystem3/ir_tracking.c",
+    "app_program/subsystem3/ir_tracking.h",
+    "app_program/subsystem3/robot_control.h",
+    "app_program/subsystem3/subsystem3.c",
+    "app_program/subsystem3/subsystem3.h"
+  ],
+  "unexpected_protected_changes": [],
+  "word_sha256": "f72011ff634490c5287504451cc232c04e480be153f25893621f7dd18621728f",
+  "active_local_markdown_links_checked": 160,
+  "missing_local_markdown_files_or_anchors": [],
+  "application_network_calls": [],
+  "credential_leaks_in_tracked_or_new_files": [],
+  "local_credentials_git_ignored": true,
+  "uf2_sha256": {
+    "mtk3pico_smp1_usb_cdc_wifi.uf2": "472a8aa220fd43eeb24d4e522e75ba59823b0406520a79a235d944b37e9183f7",
+    "mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2": "898ac0161c966a9172bb4987bdf50d7c8cc7f8deaf05622e48a72d3bbd534ecc",
+    "mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2": "fc4a2ed6574d16118e420a34554fe3086e0b8f5316169bcc39299805f3bc397f"
+  },
+  "on_target_connectivity": "PENDING; no flash or radio connection performed",
+  "physical_tracking_and_stop_timing": "PENDING",
+  "main_documentation_sync": "6e8e31f110ace72c32992925c1a0a49ce62aa57f; no runtime changes",
+  "post_validation_user_edits_token_equivalent_to_base": [
+    "app_program/subsystem3/drv_ir.c"
+  ]
+}

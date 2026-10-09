@@ -39,3 +39,8 @@ config/network_config.h
 config/network_config.example.h
 
 build/
+build-*/
+tmp/
+__pycache__/
+.env
+secrets.h

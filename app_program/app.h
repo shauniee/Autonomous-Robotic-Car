@@ -17,13 +17,13 @@
  *  Pins: free for projects are GP0..GP22 and GP26..GP28.  GP0/GP1 are
  *  taken by UART0 when built with "make CRASH_REPORT=1" (see README).
  *  Never use GP23/24/25/29: they are wired to the Pico W radio.
- *  Claim every pin in TEAM.md section 2 before using it.
+ *  Claim every pin in docs/TEAM.md section 2 (Pins) before using it.
  * --------------------------------------------------------------------- */
 
 /* ---------------------------------------------------------------------
  *  Task priorities: 1 is the highest; the kernel's USB console (3) and
  *  WiFi (4) tasks sit above every application task.  Each subsystem
- *  has its own band (TEAM.md section 4), defined in its own header.
+ *  records its priorities in docs/TEAM.md section 4 and its own header.
  * --------------------------------------------------------------------- */
 #define TASK_STACK_SIZE		2048	/* bytes; tm_printf needs ~1 KB */
 
