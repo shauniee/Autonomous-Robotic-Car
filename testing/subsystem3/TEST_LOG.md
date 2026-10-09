@@ -103,3 +103,16 @@ The S3 acquisition/calibration/guidance algorithms are retained. The application
 ## Integrated Pico execution follow-up — 2026-10-09
 
 The `37adc44` wireless TEST run passed all seven S3 fixtures, including S3-U12. The console records snapshot mutex ID 3 before and after the suite and successful task start. Live valid acquisition then continued during the saved 174.5-second telemetry span. This supersedes the earlier pending integrated execution status for this source only; it does not validate physical calibration/tracking or the older unknown-source image. Nicholas stopped further testing because the robot is unavailable.
+
+## S3 consolidation software cases
+
+These fixtures execute the actual pure algorithms with synthetic inputs. Firmware variants compile for TEST=1; new on-Pico execution remains pending. Temporary laptop execution is authorized for this consolidation only and adds no permanent host runner.
+
+| ID | Scope | Method | Expected |
+| --- | --- | --- | --- |
+| S3-U14 | Code 39 A/B/C/D/Z at two scales | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S3-U15 | Reverse, malformed width/gap and invalid configuration | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S3-U16 | Distance-based events, one-shot rearm and unmapped Z | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S3-U17 | Navigation queue overflow and ambiguous-edge capture loss | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S3-U18 | Encoder/timer wrap and incomplete-frame timeout | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S3-U19 | Actual SPSC ring capacity, order, overflow, purge and wrap | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |

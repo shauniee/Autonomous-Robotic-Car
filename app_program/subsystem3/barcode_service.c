@@ -1,4 +1,5 @@
 #include "subsystem3.h"
+#include "barcode_capture.h"
 #include "../gpio_capture.h"
 #include "../subsystem2/encoder.h"
 #include <stdatomic.h>
@@ -6,9 +7,9 @@
 #define BARCODE_PIN 16u
 #define BARCODE_PERIOD_MS 5u
 #define BARCODE_BATCH 64u
-static S3BarcodeEdge edges[S3_BARCODE_EDGE_CAPACITY];
-static atomic_uint written, consumed, context_value, epoch;
-static atomic_bool overflow, started;
+static S3BarcodeCapture capture;
+static atomic_uint context_value, epoch;
+static atomic_bool started;
 static atomic_int barcode_mutex;
 static S3BarcodeDecoder decoder;
 static S3BarcodeConfig configuration;
@@ -29,17 +30,9 @@ static void barcode_isr(uint32_t levels, uint32_t changed,
     uint32_t ambiguous, uint32_t timestamp)
 {
     (void)changed;
-    unsigned write = atomic_load_explicit(&written, memory_order_relaxed);
-    unsigned read = atomic_load_explicit(&consumed, memory_order_acquire);
-    if ((unsigned)(write - read) >= S3_BARCODE_EDGE_CAPACITY)
-    {
-        atomic_store_explicit(&overflow, true, memory_order_release);
-        return;
-    }
     S3BarcodeEdge edge = observation(levels, timestamp);
     edge.ambiguous = ambiguous != 0u;
-    edges[write % S3_BARCODE_EDGE_CAPACITY] = edge;
-    atomic_store_explicit(&written, write + 1u, memory_order_release);
+    (void)s3_barcode_capture_push_isr(&capture, &edge);
 }
 
 bool s3_barcode_configure(const S3BarcodeConfig *config)
@@ -136,16 +129,13 @@ static void barcode_task(INT stacd, void *exinf)
                    It is not a substitute for cross-core snapshot locking. */
                 UINT saved;
                 DI(saved);
-                atomic_store_explicit(&consumed,
-                    atomic_load_explicit(&written, memory_order_acquire),
-                    memory_order_release);
-                atomic_store_explicit(&overflow, false, memory_order_release);
+                s3_barcode_capture_reset_task(&capture);
                 EI(saved);
                 s3_barcode_decoder_init(&decoder, &configuration,
                     current_epoch);
                 serviced_epoch = current_epoch;
             }
-            if (atomic_load_explicit(&overflow, memory_order_acquire) &&
+            if (atomic_load_explicit(&capture.overflow, memory_order_acquire) &&
                 decoder.status.configured &&
                 (decoder.status.state != S3_BC_FAULT))
             {
@@ -153,23 +143,16 @@ static void barcode_task(INT stacd, void *exinf)
             }
             for (unsigned i = 0u; i < BARCODE_BATCH; ++i)
             {
-                unsigned read = atomic_load_explicit(&consumed,
-                    memory_order_relaxed);
-                unsigned write = atomic_load_explicit(&written,
-                    memory_order_acquire);
-                if (read == write)
+                S3BarcodeEdge edge;
+                if (!s3_barcode_capture_pop_task(&capture, &edge))
                 {
                     break;
                 }
-                S3BarcodeEdge edge = edges[read % S3_BARCODE_EDGE_CAPACITY];
-                atomic_store_explicit(&consumed, read + 1u,
-                    memory_order_release);
                 s3_barcode_decoder_edge(&decoder, &edge);
             }
             /* Poll only when the ring has drained: do not confirm a trailing
                quiet zone while older transitions are still pending. */
-            if (atomic_load_explicit(&consumed, memory_order_acquire) ==
-                atomic_load_explicit(&written, memory_order_acquire))
+            if (s3_barcode_capture_empty(&capture))
             {
                 UINT saved;
                 DI(saved);
@@ -188,6 +171,7 @@ static void barcode_task(INT stacd, void *exinf)
 }
 ER subsystem3_barcode_init(void)
 {
+    s3_barcode_capture_init(&capture);
     if (gpio_set_pin(BARCODE_PIN, GPIO_MODE_IN) < E_OK)
     {
         return E_SYS;

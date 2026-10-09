@@ -1,5 +1,6 @@
 #include "barcode.h"
 #include <math.h>
+#include "../float_math.h"
 #include <stddef.h>
 
 /* Standard Code 39 nine-element masks: MSB is the first black bar.
@@ -123,8 +124,8 @@ static S3BarcodeResult decode_forward(const uint32_t *widths,
     for (unsigned i = 0u; i < 2u; ++i)
     {
         float gap = (float)widths[9u + i * 10u];
-        float minimum = fminf(narrow[i], narrow[i + 1u]);
-        float maximum = fmaxf(narrow[i], narrow[i + 1u]);
+        float minimum = robot_float_min(narrow[i], narrow[i + 1u]);
+        float maximum = robot_float_max(narrow[i], narrow[i + 1u]);
         if ((gap < minimum / c->narrow_variation) ||
             (gap > maximum * c->narrow_variation))
         {
@@ -207,7 +208,12 @@ void s3_barcode_decoder_edge(S3BarcodeDecoder *d, const S3BarcodeEdge *e)
     {
         return;
     }
-    if ((e->generation != d->status.generation) || e->ambiguous ||
+    if (e->ambiguous)
+    {
+        s3_barcode_decoder_fault(d, S3_BC_CAPTURE_OVERFLOW);
+        return;
+    }
+    if ((e->generation != d->status.generation) ||
         !e->encoder_valid)
     {
         reject(d, S3_BC_ENCODER);
