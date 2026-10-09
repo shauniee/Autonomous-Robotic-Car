@@ -36,13 +36,14 @@ bool s1_telemetry_map(const S3IrSnapshot *ir,
     uint32_t now, S1Telemetry *out)
 {
     if ((ir == NULL) || (control == NULL) || (out == NULL) ||
+        ((uint32_t)(now - control->observed_ms) > IR_MAX_GAP_MS) ||
         !duty_valid(control->left_duty) ||
         !duty_valid(control->right_duty))
     {
         return false;
     }
     S1Telemetry snapshot = {0};
-    snapshot.observed_ms = now;
+    snapshot.observed_ms = control->observed_ms;
     snapshot.ir_sequence = ir->sequence;
     snapshot.sampled_ms = ir->sampled_ms;
     snapshot.have_sample = ir->have_sample;
@@ -123,6 +124,14 @@ bool s1_telemetry_refresh(uint32_t now)
         return false;
     }
     const MotionHealth *available = s2_motion_copy(&motion) ? &motion : NULL;
+    SYSTIM time;
+    if (tk_get_otm(&time) < E_OK)
+    {
+        return false;
+    }
+    /* A producer on the other core can advance during the copies. Validate
+       against collection completion, never an earlier entry timestamp. */
+    now = time.lo;
     return s1_telemetry_map(&ir, &control, available, now, &snapshot) &&
         s1_telemetry_update(&snapshot);
 #else

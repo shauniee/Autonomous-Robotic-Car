@@ -1,0 +1,14 @@
+{
+  "base_head": "27e5612cfe1720fa967c050322d252ca6275ae2e",
+  "date": "2026-10-09",
+  "method": "Actual pure C encoder size/capacity probe; firmware mapping fixtures extended but on-target execution pending",
+  "source_sha256": {
+    "app_program/subsystem1/telemetry_adapter.c": "19920c0066ad3fdf9a147ca21ab98fd804c651102f9e425467357c44e94280b6",
+    "app_program/subsystem1/subsystem1_test.c": "29d43e1e0706e17d3803de76fce0aec5dd4bcb1e5a29bcb6e70d0b883047a1d6",
+    "app_program/subsystem1/telemetry.c": "7ed5019cb49f8d59b2ddc6b630b0b46cb7f8a1eeb0360af3c4d20b08ebdb13ae",
+    "app_program/subsystem1/telemetry.h": "07bb62d849de82aa0809748b21fc4793e7bd8810a56c3d6dd5ce227f57694b74"
+  },
+  "max_full_label_payload_bytes": 725,
+  "payload_ceiling_bytes": 768,
+  "freshness_fix": "Reject coordinator age >60ms; retain producer observed_ms; reread current time after cross-core copies"
+}

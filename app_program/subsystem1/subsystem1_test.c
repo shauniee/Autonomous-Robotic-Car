@@ -67,6 +67,7 @@ static bool telemetry_adapter_test(void)
         .line = IR_LINE_VISIBLE, .capture_result = IR_CAPTURE_WHITE_DONE
     };
     RobotControlSnapshot control = {
+        .observed_ms = 110u,
         .left_duty = 0.1f, .right_duty = 0.2f, .motion_enabled = true,
         .state = "FOLLOW_LINE", .reason = "tracking"
     };
@@ -78,7 +79,7 @@ static bool telemetry_adapter_test(void)
     S1Telemetry snapshot;
     if (!s1_telemetry_map(&ir, &control, &motion, 120u, &snapshot) ||
         (snapshot.ir_sequence != 7u) || (snapshot.sampled_ms != 100u) ||
-        (snapshot.observed_ms != 120u) ||
+        (snapshot.observed_ms != 110u) ||
         (snapshot.left_fraction != 0) ||
         (snapshot.right_fraction != 1000) || (snapshot.error != 1000) ||
         (snapshot.left_duty != 100) || (snapshot.right_duty != 200) ||
@@ -92,6 +93,18 @@ static bool telemetry_adapter_test(void)
     {
         return false;
     }
+    control.observed_ms = 59u;
+    if (s1_telemetry_map(&ir, &control, &motion, 120u, &snapshot))
+    {
+        return false;
+    }
+    control.observed_ms = UINT32_MAX - 2u;
+    if (!s1_telemetry_map(&ir, &control, &motion, 2u, &snapshot) ||
+        (snapshot.observed_ms != UINT32_MAX - 2u))
+    {
+        return false;
+    }
+    control.observed_ms = 110u;
     ir.normalized_valid = false;
     if (!s1_telemetry_map(&ir, &control, &motion, 120u, &snapshot) ||
         snapshot.reading_valid)
