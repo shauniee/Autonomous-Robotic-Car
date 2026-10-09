@@ -19,7 +19,27 @@ static uint32_t pending_generation;
 
 static UW read_word(UW *word)
 {
+#if TK_SUPPORT_SMP
     return atomic_cmpxchg(word, 0u, 0u);
+#else
+    UINT saved;
+    DI(saved);
+    UW value = *word;
+    EI(saved);
+    return value;
+#endif
+}
+
+static void write_word(UW *word, UW value)
+{
+#if TK_SUPPORT_SMP
+    (void)atomic_xchg(word, value);
+#else
+    UINT saved;
+    DI(saved);
+    *word = value;
+    EI(saved);
+#endif
 }
 
 ER subsystem3_init(void)
@@ -126,12 +146,19 @@ bool s3_local_inputs(bool *start_down, bool *stop_down)
 
 void s3_capture_allow(bool allowed)
 {
-    (void)atomic_xchg(&capture_allowed, allowed ? 1u : 0u);
+    write_word(&capture_allowed, allowed ? 1u : 0u);
 }
 
 void s3_capture_cancel(void)
 {
+#if TK_SUPPORT_SMP
     (void)atomic_inc(&cancel_generation);
+#else
+    UINT saved;
+    DI(saved);
+    ++cancel_generation;
+    EI(saved);
+#endif
 }
 
 bool s3_capture_request(IrCaptureKind kind)
