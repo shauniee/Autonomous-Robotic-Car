@@ -1,5 +1,8 @@
 #include "app.h"
 #include "subsystem2/subsystem2.h"
+#if APP_TEST
+#include "../testing/subsystem3/subsystem3_test.h"
+#endif
 
 /*
  * Create and start one task (declared in app.h for every subsystem).
@@ -84,16 +87,17 @@ EXPORT INT usermain(void)
 	/* Phase 2: every subsystem starts its tasks */
 	REQUIRE(subsystem1_start());
 	REQUIRE(subsystem2_start());
+#if !APP_TEST
 	REQUIRE(subsystem3_start());
+#endif
 	REQUIRE(subsystem4_start());
 	REQUIRE(subsystem5_start());
 
-	tm_printf((UB*)"all subsystems started\n\n");
-
 #if APP_TEST
-	/* Test build (make TEST=1): run every subsystem's tests in turn,
-	   here in the initial task, while the system is running.  Tests may
-	   call tk_dly_tsk() to let the other tasks work for a while. */
+	tm_printf((UB*)"S1, S2, S4 and S5 started; S3 waits for the test gate.\n");
+	/* Defer acquisition so the gate press cannot begin calibration or
+	   contend with the live snapshot boundary check. */
+	REQUIRE(subsystem3_test_wait_for_start());
 	tm_printf((UB*)"[TEST] === test run start ===\n");
 	subsystem1_test();
 	subsystem2_test();
@@ -101,7 +105,9 @@ EXPORT INT usermain(void)
 	subsystem4_test();
 	subsystem5_test();
 	tm_printf((UB*)"[TEST] === test run end ===\n");
+	REQUIRE(subsystem3_start());
 #endif
+	tm_printf((UB*)"all subsystems started\n\n");
 
 	/* Sleep forever.  Returning from usermain() would shut down. */
 	for (;;) tk_slp_tsk(TMO_FEVR);

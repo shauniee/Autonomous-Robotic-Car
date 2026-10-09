@@ -24,7 +24,13 @@
  */
 #define INITTASK_EXINF		(0x0)
 #define INITTASK_ITSKPRI	(1)
-#define INITTASK_STKSZ		(1*1024)
+/* Firmware self-tests run here. Their local buffers and nested calls exceed
+ * 1 KB; keep test stack headroom separate from normal startup requirements. */
+#if defined(APP_TEST) && APP_TEST
+#define INITTASK_STKSZ        (4 * 1024)
+#else
+#define INITTASK_STKSZ        (1 * 1024)
+#endif
 #define INITTASK_DSNAME		"inittsk"
 
 #if USE_IMALLOC
