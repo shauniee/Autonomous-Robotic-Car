@@ -148,6 +148,16 @@ ER s2_publish(MotionRequest request)
         (void)s2_stop();
         return error;
     }
+    /* Gate under the mailbox mutex: an enabled target published between
+       reset's discard and its CAS must not survive into the armed state.
+       Even after the CAS, publication waits for Motion's reset snapshot. */
+    if (!motion_publication_allowed(request, state_read(),
+        progress.reset_ack_generation, progress.driver_ok))
+    {
+        ER unlock_error = tk_unl_mtx(mutex);
+        (void)s2_stop();
+        return unlock_error < E_OK ? unlock_error : E_OBJ;
+    }
     latest = request;
     error = tk_unl_mtx(mutex);
     if (error < E_OK)
