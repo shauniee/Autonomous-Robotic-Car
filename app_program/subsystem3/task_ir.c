@@ -5,6 +5,9 @@
 #include "drv_feedback.h"
 #include "watchdog_policy.h"
 #include "../subsystem2/subsystem2.h"
+#if TM_MQTT
+#include "telemetry_s3.h"
+#endif
 
 static uint32_t now_ms(void) { SYSTIM t; tk_get_otm(&t); return t.lo; }
 void ir_task(INT stacd, void *exinf) {
@@ -51,6 +54,9 @@ void ir_task(INT stacd, void *exinf) {
         }
         if (car.chirps) { drv_feedback_chirps(car.chirps, now); car.chirps = 0; }
         drv_feedback_service(now);
+#if TM_MQTT
+        telemetry_s3_update(&car, now_ms(), APP_TEST != 0);
+#endif
 #if APP_TEST
         if ((int32_t)(now - report_due) >= 0) {
             tm_printf((UB*)"[BENCH] %s reason=%s ADC L=%u R=%u acquired=%d line=%s capture=%s black=%d white=%d MOTOR_INHIBITED\n",
