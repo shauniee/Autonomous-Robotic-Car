@@ -27,6 +27,7 @@ Owner Mahesha / 2503973. Template example S2-U01/U02 are retired, not reused. Re
 | 2026-10-08 | S2-U03 | Not yet run on Pico | Pending operator | PENDING | none | Built only; no on-target pass |
 | 2026-10-09 | S2-U03/U06–U10/U13 | [source hashes](logs/2026-10-09_s2-stop-reset_source-sha256.json) | Codex static compile | BUILT ONLY | [strict compile](logs/2026-10-09_s2-stop-reset_strict-compile.txt) | All S2 C translation units compile with -Wall -Wextra -Werror for SMP 0/1 and TEST 0/1; no linking, flashing or executed test pass |
 | 2026-10-09 | S2-U03/U06–U13 | Commit/revision to record for trial | Pending operator | PENDING | none | Firmware self-tests and physical stop/reset/tracking acceptance remain unexecuted |
+| 2026-10-09 | S2-U03/U06/U07/U08/U09/U10/U13 | `37adc44`; [integrated source](../integration/logs/2026-10-09_tracking-r2-source.json) | Nicholas GP20 / Codex USB capture | PASS | [console](../integration/logs/2026-10-09_tracking-r2-pico-test-console.txt), [results](../integration/logs/2026-10-09_tracking-r2-pico-results.json) | Seven firmware checks executed, including live inhibited Motion service and checked zero PWM. Corrected GPIO readbacks pass on the Pico. Physical motion, brake latency and fault injection remain pending. |
 
 ## Current stop/reset contract
 

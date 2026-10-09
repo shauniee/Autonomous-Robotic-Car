@@ -1,0 +1,387 @@
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+[TEST] S3 snapshot mutex creation returned=3
+[TEST] S3 snapshot mutex published=3
+S1, S2, S4 and S5 started; S3 waits for the test gate.
+[TEST] Ready: release GP20, then press and release it to start.
+[TEST] Waiting for GP20 release...
+wifi: cyw43_utk_task starting (proc 1)
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+[TEST] Waiting for GP20 press...
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[TEST] Waiting for GP20 press...
+[TEST] Waiting for GP20 press...
+wifi: link status -> joined AP, no IP yet (2)
+[TEST] Waiting for GP20 press...
+[TEST] Waiting for GP20 press...
+[TEST] Waiting for GP20 press...
+wifi: link up, ip=192.168.0.2
+mqtt: telemetry and status subscription ready
+[TEST] Waiting for GP20 press...
+[TEST] Waiting for GP20 press...
+[TEST] Waiting for GP20 press...
+[TEST] Waiting for GP20 press...
+[TEST] Waiting for GP20 press...
+[TEST] Waiting for GP20 press...
+[TEST] Waiting for GP20 press...
+[TEST] Waiting for GP20 press...
+[TEST] Waiting for GP20 press...
+[TEST] Waiting for GP20 press...
+[TEST] GP20 press accepted; release it to run checks.
+[TEST] Waiting for GP20 release...
+[TEST] GP20 released; running checks now.
+[TEST] === test run start ===
+[TEST] S1-U04 PASS  bounded telemetry JSON and original age; no radio test
+[TEST] S1-U06 PASS  fragmented status only; malformed and movement requests rejected
+[TEST] S1-U07 PASS  bounded heartbeat/status JSON; exact capacity and max counters
+[TEST] S1-U09 PASS  real snapshot mapping; fractions preserved; no invented output
+[TEST] S1-U10 PASS  bounded additive schema; exact capacity, null motion and wrap
+[TEST] subsystem1 SUMMARY 5 passed, 0 failed
+[TEST] S2-U03 PASS  request freshness and stop gate; outputs inhibited
+[TEST] S2-U06 PASS  forward duty bounds reject NaN, infinity and invalid ranges
+[TEST] S2-U07 PASS  disabled request and 60/61 ms expiry across clock wrap
+[TEST] S2-U08 PASS  local CAS fixture: newer stop beats reset and stale commands
+[TEST] S2-U09 PASS  reset needs matching acknowledged brake; invalid copies refused
+[TEST] S2-U10 PASS  live TEST Motion progress and checked zero PWM; no wheel claim
+[TEST] S2-U13 PASS  enabled publication rejected while stopped or before reset ack
+[TEST] subsystem2 SUMMARY 7 passed, 0 failed
+[TEST] S3-U12 cache id=3 null=1 copy=1
+[TEST] S3-U12 cache refused=1 unlock=0
+[TEST] S3-U02 PASS  normalization; old watchdog part retired, no hardware claim
+[TEST] S3-U06 PASS  memoryless P direction, limits, freshness and wraparound
+[TEST] S3-U07 PASS  typed captures, distinct sample span, contrast and cancellation
+[TEST] S3-U10 PASS  nine observation bands, hysteresis and nonfinite rejection
+[TEST] S3-U11 PASS  calibration debounce, cancellation, replacement and buzz outcomes
+[TEST] S3-U12 details fixtures=1 cache=1
+[TEST] S3-U12 PASS  snapshot validity, original time and real nonblocking mutex boundary
+[TEST] S3-U13 PASS  null ADC destination rejected; physical protocol test separate
+[TEST] subsystem3 SUMMARY 7 passed, 0 failed
+[TEST] INT-11 PASS  direction, distinct reacquisition and fixed expiry precedence
+[TEST] INT-12 PASS  initial start acknowledgement, stop and separate reset/start
+[TEST] INT-13 PASS  cancel invalidates queued capture before consumption
+[TEST] INT-14 PASS  progress/freshness, invalid data and unsigned wrap
+[TEST] line integration SUMMARY 4 passed, 0 failed
+[TEST] S4: inactive; hardware checks PENDING
+[TEST] S5: inactive; hardware checks PENDING
+[TEST] === test run end ===
+[TEST] S3 snapshot mutex id before task start=3
+[TEST] S3 task start result=5
+all subsystems started
+
+[IR] seq=1 ADC L=135 R=136 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=26 ADC L=139 R=135 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=51 ADC L=138 R=135 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=76 ADC L=138 R=135 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=101 ADC L=139 R=136 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=126 ADC L=140 R=136 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=151 ADC L=140 R=135 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=176 ADC L=140 R=133 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=201 ADC L=136 R=131 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=226 ADC L=138 R=137 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=251 ADC L=138 R=138 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=276 ADC L=137 R=137 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=301 ADC L=136 R=136 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=326 ADC L=139 R=137 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=351 ADC L=135 R=135 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=376 ADC L=144 R=133 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=401 ADC L=143 R=137 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=426 ADC L=135 R=138 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=451 ADC L=153 R=146 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=476 ADC L=3218 R=3151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=501 ADC L=2351 R=2153 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=526 ADC L=2008 R=2033 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=551 ADC L=146 R=1863 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=576 ADC L=144 R=490 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=601 ADC L=142 R=283 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=626 ADC L=297 R=128 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=651 ADC L=767 R=142 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=676 ADC L=766 R=139 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=701 ADC L=764 R=133 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=726 ADC L=766 R=134 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=751 ADC L=758 R=136 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=776 ADC L=750 R=137 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=801 ADC L=775 R=137 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=826 ADC L=775 R=137 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=851 ADC L=775 R=136 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=876 ADC L=777 R=136 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=901 ADC L=775 R=134 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=926 ADC L=770 R=140 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=951 ADC L=778 R=135 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=976 ADC L=774 R=131 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1001 ADC L=778 R=134 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1026 ADC L=772 R=142 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1051 ADC L=770 R=133 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1076 ADC L=772 R=133 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1101 ADC L=771 R=134 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1126 ADC L=778 R=138 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1151 ADC L=768 R=134 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1176 ADC L=753 R=134 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1201 ADC L=154 R=153 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1226 ADC L=139 R=137 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1251 ADC L=137 R=147 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1276 ADC L=245 R=688 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1301 ADC L=1678 R=1576 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1326 ADC L=1807 R=1587 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1351 ADC L=1439 R=1041 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1376 ADC L=606 R=300 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1401 ADC L=623 R=351 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1426 ADC L=267 R=238 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1451 ADC L=1080 R=766 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1476 ADC L=1224 R=1034 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1501 ADC L=1233 R=1035 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1526 ADC L=1217 R=1027 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1551 ADC L=1206 R=1028 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1576 ADC L=1208 R=1027 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1601 ADC L=1212 R=1025 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1626 ADC L=1206 R=1027 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1651 ADC L=1211 R=1023 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1676 ADC L=1209 R=1022 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1701 ADC L=1206 R=1020 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1726 ADC L=1209 R=1016 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1751 ADC L=1208 R=1017 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1776 ADC L=1206 R=1017 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1801 ADC L=1207 R=1020 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1826 ADC L=1214 R=1021 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1851 ADC L=1207 R=1024 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1876 ADC L=1206 R=1016 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1901 ADC L=1203 R=1011 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1926 ADC L=1225 R=1034 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1951 ADC L=1203 R=1022 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=1976 ADC L=1205 R=1016 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2001 ADC L=1205 R=1013 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2026 ADC L=1203 R=1018 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2051 ADC L=1204 R=1012 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2076 ADC L=1201 R=1017 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2101 ADC L=1200 R=1015 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2126 ADC L=1204 R=1015 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2151 ADC L=1207 R=1014 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2176 ADC L=1201 R=1011 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2201 ADC L=1201 R=1017 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2226 ADC L=1201 R=1008 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2251 ADC L=1203 R=1015 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2276 ADC L=1202 R=1010 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2301 ADC L=1197 R=1011 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2326 ADC L=1205 R=1018 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2351 ADC L=1201 R=1010 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2376 ADC L=1197 R=1010 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2401 ADC L=1195 R=1010 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2426 ADC L=1200 R=1014 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2451 ADC L=1196 R=1009 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2476 ADC L=1199 R=1019 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2501 ADC L=1198 R=1009 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2526 ADC L=1194 R=1006 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2551 ADC L=1198 R=1008 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2576 ADC L=1204 R=1011 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2601 ADC L=1201 R=1014 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2626 ADC L=1201 R=1013 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2651 ADC L=1216 R=1024 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2676 ADC L=1215 R=1024 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2701 ADC L=1206 R=1021 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2726 ADC L=1212 R=1017 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2751 ADC L=1198 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2776 ADC L=1206 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2801 ADC L=1196 R=1005 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2826 ADC L=1205 R=1008 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2851 ADC L=1205 R=1014 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2876 ADC L=1204 R=1006 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2901 ADC L=1199 R=1010 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2926 ADC L=1200 R=1017 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2951 ADC L=1198 R=1012 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=2976 ADC L=1201 R=1015 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3001 ADC L=1205 R=1015 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3026 ADC L=1200 R=1016 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3051 ADC L=1200 R=1010 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3076 ADC L=1198 R=1009 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3101 ADC L=1197 R=1011 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3126 ADC L=1199 R=1008 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3151 ADC L=1202 R=1003 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3176 ADC L=1200 R=1009 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3201 ADC L=1201 R=1009 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3226 ADC L=1197 R=1010 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3251 ADC L=1197 R=1003 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3276 ADC L=1199 R=1012 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3301 ADC L=1196 R=1015 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3326 ADC L=1200 R=1008 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3351 ADC L=1200 R=1005 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3376 ADC L=1194 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3401 ADC L=1201 R=1014 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3426 ADC L=1199 R=1005 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3451 ADC L=1192 R=1008 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3476 ADC L=1193 R=1016 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3501 ADC L=1198 R=1011 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3526 ADC L=1196 R=1002 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3551 ADC L=1196 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3576 ADC L=1195 R=1003 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3601 ADC L=1197 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3626 ADC L=1198 R=998 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3651 ADC L=1194 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3676 ADC L=1192 R=1003 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3701 ADC L=1190 R=1008 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3726 ADC L=1199 R=1008 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3751 ADC L=1196 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3776 ADC L=1200 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3801 ADC L=1191 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3826 ADC L=1196 R=1006 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3851 ADC L=1194 R=1013 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3876 ADC L=1198 R=1011 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3901 ADC L=1194 R=1010 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3926 ADC L=1196 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3951 ADC L=1197 R=1003 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=3976 ADC L=1194 R=1014 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4001 ADC L=1195 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4026 ADC L=1194 R=1003 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4051 ADC L=1194 R=1003 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4076 ADC L=1195 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4101 ADC L=1194 R=1005 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4126 ADC L=1195 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4151 ADC L=1197 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4176 ADC L=1198 R=1005 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4201 ADC L=1195 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4226 ADC L=1196 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4251 ADC L=1193 R=1006 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4276 ADC L=1190 R=998 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4301 ADC L=1192 R=1010 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4326 ADC L=1190 R=1009 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4351 ADC L=1194 R=997 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4376 ADC L=1186 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4401 ADC L=1195 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4426 ADC L=1192 R=1009 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4451 ADC L=1196 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4476 ADC L=1197 R=1005 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4501 ADC L=1194 R=1006 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4526 ADC L=1195 R=1005 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4551 ADC L=1193 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4576 ADC L=1192 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4601 ADC L=1193 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4626 ADC L=1192 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4651 ADC L=1191 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4676 ADC L=1193 R=1012 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4701 ADC L=1198 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4726 ADC L=1195 R=1006 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4751 ADC L=1199 R=1002 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4776 ADC L=1193 R=1002 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4801 ADC L=1191 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4826 ADC L=1194 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4851 ADC L=1190 R=1005 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4876 ADC L=1195 R=1008 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4901 ADC L=1193 R=995 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4926 ADC L=1195 R=1008 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4951 ADC L=1192 R=997 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=4976 ADC L=1194 R=997 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5001 ADC L=1188 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5026 ADC L=1192 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5051 ADC L=1194 R=999 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5076 ADC L=1197 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5101 ADC L=1196 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5126 ADC L=1195 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5151 ADC L=1194 R=1006 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5176 ADC L=1195 R=1002 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5201 ADC L=1191 R=1006 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5226 ADC L=1198 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5251 ADC L=1186 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5276 ADC L=1198 R=1003 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5301 ADC L=1195 R=1002 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5326 ADC L=1190 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5351 ADC L=1192 R=999 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5376 ADC L=1197 R=1002 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5401 ADC L=1193 R=1002 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5426 ADC L=1189 R=1003 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5451 ADC L=1195 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5476 ADC L=1187 R=999 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5501 ADC L=1195 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5526 ADC L=1192 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5551 ADC L=1192 R=1002 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5576 ADC L=1195 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5601 ADC L=1188 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5626 ADC L=1191 R=994 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5651 ADC L=1193 R=998 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5676 ADC L=1195 R=1005 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5701 ADC L=1192 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5726 ADC L=1189 R=1002 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5751 ADC L=1189 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5776 ADC L=1189 R=998 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5801 ADC L=1195 R=997 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5826 ADC L=1186 R=998 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5851 ADC L=1187 R=1003 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5876 ADC L=1190 R=1002 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5901 ADC L=1190 R=995 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5926 ADC L=1190 R=999 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5951 ADC L=1191 R=995 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=5976 ADC L=1188 R=999 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6001 ADC L=1194 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6026 ADC L=1196 R=1002 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6051 ADC L=1191 R=1003 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6076 ADC L=1189 R=999 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6101 ADC L=1189 R=996 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6126 ADC L=1186 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6151 ADC L=1191 R=1004 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6176 ADC L=1190 R=999 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6201 ADC L=1187 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6226 ADC L=1185 R=996 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6251 ADC L=1188 R=994 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6276 ADC L=1188 R=995 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6301 ADC L=1188 R=996 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6326 ADC L=1188 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6351 ADC L=1189 R=1003 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6376 ADC L=1187 R=995 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6401 ADC L=1187 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6426 ADC L=1190 R=999 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6451 ADC L=1192 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6476 ADC L=1188 R=999 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6501 ADC L=1188 R=999 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6526 ADC L=1187 R=997 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6551 ADC L=1185 R=997 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6576 ADC L=1189 R=993 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6601 ADC L=1187 R=991 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6626 ADC L=1190 R=1002 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6651 ADC L=1188 R=999 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6676 ADC L=1192 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6701 ADC L=1191 R=995 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6726 ADC L=1184 R=994 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6751 ADC L=1188 R=997 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6776 ADC L=1184 R=995 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6801 ADC L=1189 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6826 ADC L=1186 R=990 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6851 ADC L=1192 R=996 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6876 ADC L=1189 R=1000 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6901 ADC L=1193 R=993 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6926 ADC L=1198 R=1011 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6951 ADC L=1210 R=1021 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=6976 ADC L=1212 R=1031 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7001 ADC L=1213 R=1018 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7026 ADC L=1212 R=1026 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7051 ADC L=1212 R=1015 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7076 ADC L=1212 R=1026 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7101 ADC L=1217 R=1023 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7126 ADC L=1210 R=1022 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7151 ADC L=1207 R=1022 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7176 ADC L=1204 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7201 ADC L=1204 R=1018 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7226 ADC L=1199 R=1009 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7251 ADC L=1198 R=1001 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7276 ADC L=1196 R=1011 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7301 ADC L=1201 R=1013 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7326 ADC L=1204 R=1005 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7351 ADC L=1199 R=1013 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7376 ADC L=1201 R=1008 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7401 ADC L=1203 R=1014 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7426 ADC L=1202 R=1010 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7451 ADC L=1204 R=1013 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7476 ADC L=1203 R=1006 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7501 ADC L=1204 R=1009 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7526 ADC L=1199 R=1014 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7551 ADC L=1201 R=1006 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7576 ADC L=1201 R=1016 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7601 ADC L=1202 R=1016 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7626 ADC L=1197 R=1010 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7651 ADC L=1202 R=1015 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7676 ADC L=1199 R=1005 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7701 ADC L=1199 R=1007 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GUIDANCE_ONLY
+[IR] seq=7726 ADC L=1197 R=1019 acquired=1 fresh=1 normalized_mi

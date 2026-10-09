@@ -10,15 +10,15 @@ Parallel branches: `feat/ir-tracking-movement` (S2), `feat/mqtt-html-dashboard` 
 
 | Validation | Status / evidence owner |
 | --- | --- |
-| Four sequential firmware profiles | PASS at `592123d`; [source manifest](testing/integration/logs/2026-10-09_tracking-source.json) and per-profile build logs/checksums |
-| On-target firmware self-tests | Pending actual TEST run; compilation alone is not a pass |
-| Pico-originated MQTT / dashboard | Pending integrated radio/server run |
+| Four sequential firmware profiles | PASS at `37adc44` after the GPIO-address correction; [source manifest](testing/integration/logs/2026-10-09_tracking-r2-source.json) and per-profile build logs/checksums |
+| On-target firmware self-tests | PASS: 23/23 at `37adc44`, USB-only wireless TEST; [console](testing/integration/logs/2026-10-09_tracking-r2-pico-test-console.txt) |
+| Pico-originated MQTT / dashboard | Pico MQTT PASS for uncalibrated inhibited observations: 350 telemetry frames; [results](testing/integration/logs/2026-10-09_tracking-r2-pico-results.json). Dashboard synthetic software/browser checks PASS; actual Pico live browser rendering remains pending |
 | Raised-wheel polarity/brake / output latency | Pending new-image measurement; Nicholas reports existing motor/encoder operation |
 | Three straight/curve tracking repetitions | Pending operator physical trials |
 | Recovery, GP21, separate reset/start, network loss | Pending recorded trials; use existing system IDs |
 | Timing/stack/resource margin | Pending measurement under concurrent load |
 
-Completion requires recorded new-image physical tracking plus actual live MQTT/dashboard acceptance. [Getting started](docs/GETTING_STARTED.md) owns operation; [testing](testing/README.md) owns stable IDs/evidence. Calibration is RAM-only and must be repeated after flashing/power changes.
+Software integration and saved firmware checks are complete. Nicholas stopped further testing on 2026-10-09 because the robot is unavailable; no normal-image flash or physical trials were performed. The last flashed image is motor-inhibited wireless TEST. Completion of the robot acceptance requires recorded new-image physical tracking plus actual live MQTT/dashboard acceptance. [Getting started](docs/GETTING_STARTED.md) owns operation; [testing](testing/README.md) owns stable IDs/evidence. Calibration is RAM-only and must be repeated after flashing/power changes.
 
 ## Deferred coursework
 

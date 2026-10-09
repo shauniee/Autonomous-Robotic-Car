@@ -1,6 +1,6 @@
 # Line Tracking
 
-Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). This guide defines the intended independent S3 line service. Implementation status, integration gaps and physical validation belong in [TASKS](../../TASKS.md#s3-line-service). [Barcode](BARCODE.md) is a separate concurrent S3 feature.
+Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). This guide defines the intended independent S3 line service. Implementation status, integration gaps and physical validation belong in [TASKS](../../TASKS.md#tracking-and-dashboard-integration). [Barcode](BARCODE.md) is a separate concurrent S3 feature.
 
 ## Functionality and ownership
 

@@ -1,0 +1,55 @@
+{
+  "revision": "37adc44d8b2ae351c64cd0853c8c47b2d18e0fcc",
+  "profile": "SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=1",
+  "uf2_sha256": "7deabf780049c73ded73a1ee9136111614fe5c48b01bd9279ac0c848b1529eea",
+  "power": "Nicholas confirmed USB only; battery disconnected",
+  "self_test_count": 23,
+  "passed": [
+    "S1-U04",
+    "S1-U06",
+    "S1-U07",
+    "S1-U09",
+    "S1-U10",
+    "S2-U03",
+    "S2-U06",
+    "S2-U07",
+    "S2-U08",
+    "S2-U09",
+    "S2-U10",
+    "S2-U13",
+    "S3-U02",
+    "S3-U06",
+    "S3-U07",
+    "S3-U10",
+    "S3-U11",
+    "S3-U12",
+    "S3-U13",
+    "INT-11",
+    "INT-12",
+    "INT-13",
+    "INT-14"
+  ],
+  "failed": [],
+  "mqtt_topic_counts": {
+    "robot/s3/status": 1,
+    "robot/s3/heartbeat": 180,
+    "robot/s3/telemetry": 350
+  },
+  "telemetry_span_ms": 174500,
+  "telemetry_interval_min_ms": 41,
+  "telemetry_interval_max_ms": 974,
+  "sample_age_max_ms": 10,
+  "all_acquisitions_valid": true,
+  "all_sample_fresh": true,
+  "all_test_inhibited": true,
+  "all_output_braked": true,
+  "all_applied_zero": true,
+  "states": [
+    "READY"
+  ],
+  "capture_results": [
+    "waiting"
+  ],
+  "calibration_any_valid": false,
+  "note": "Analysis of saved observations, no new test. Firmware fixtures and live inhibited output verified; no physical movement, live calibration capture, output latency, WiFi/broker interruption or watchdog fault injection performed."
+}
