@@ -11,7 +11,10 @@ static float clamp(float value)
 bool robot_policy_moving(const RobotPolicy *policy)
 {
     return (policy->state == ROBOT_RUNNING) ||
-        (policy->state == ROBOT_RECOVERING);
+        (policy->state == ROBOT_RECOVERING) ||
+        (policy->state == ROBOT_APPROACH) ||
+        (policy->state == ROBOT_NAVIGATING) ||
+        (policy->state == ROBOT_REACQUIRING);
 }
 
 void robot_policy_init(RobotPolicy *policy)
@@ -333,7 +336,8 @@ void robot_policy_tick(RobotPolicy *policy, const S3IrSnapshot *ir,
             }
         }
     }
-    if (robot_policy_moving(policy) && control_due)
+    if (((policy->state == ROBOT_RUNNING) ||
+         (policy->state == ROBOT_RECOVERING)) && control_due)
     {
         follow(policy, ir, now);
     }
@@ -348,6 +352,9 @@ const char *robot_policy_state_name(RobotState state)
         case ROBOT_RESET_PENDING: return "RESET_PENDING";
         case ROBOT_RUNNING: return "FOLLOW_LINE";
         case ROBOT_RECOVERING: return "RECOVER_LINE";
+        case ROBOT_APPROACH: return "APPROACH";
+        case ROBOT_NAVIGATING: return "NAVIGATE";
+        case ROBOT_REACQUIRING: return "REACQUIRE";
         case ROBOT_STOPPED: return "STOPPED";
         case ROBOT_FAULT: return "FAULT";
         default: return "FAULT";

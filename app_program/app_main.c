@@ -1,4 +1,5 @@
 #include "app.h"
+#include "gpio_capture.h"
 #include "robot_control_task.h"
 #include "subsystem2/subsystem2.h"
 #if APP_TEST
@@ -43,7 +44,7 @@ EXPORT ID app_start_task(FP entry, PRI pri, UW prc, const char *name)
 }
 
 static void startup_error(void) {
-    s2_stop();
+    (void)s2_stop();
     tm_printf((UB*)"Startup failed: motor outputs remain inhibited.\n");
     for (;;) tk_slp_tsk(TMO_FEVR);
 }
@@ -79,6 +80,7 @@ EXPORT INT usermain(void)
 	app_timebase_init();
 
 	/* Phase 1: every subsystem creates its kernel objects */
+    REQUIRE(gpio_capture_init());
 	REQUIRE(subsystem1_init());
 	REQUIRE(subsystem2_init());
 	REQUIRE(subsystem3_init());
@@ -111,6 +113,9 @@ EXPORT INT usermain(void)
 	REQUIRE(subsystem3_start());
 #endif
 	REQUIRE(robot_control_start());
+    tm_printf((UB *)"[BOOT] mode=%s; GP20 calibration/start, GP21 stop\n",
+        APP_NAVIGATION ? "barcode navigation (configuration required)" :
+        "line bench");
 	tm_printf((UB*)"all subsystems started\n\n");
 
 	/* Sleep forever.  Returning from usermain() would shut down. */

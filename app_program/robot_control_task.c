@@ -1,6 +1,7 @@
 #include "robot_control_task.h"
 #include "robot_control.h"
 #include "robot_control_policy.h"
+#include "robot_navigation.h"
 #include "subsystem2/subsystem2.h"
 #include "subsystem3/subsystem3.h"
 #include <stdatomic.h>
@@ -21,6 +22,10 @@
 static atomic_int reporting_mutex;
 static RobotControlSnapshot latest;
 static bool have_report;
+static bool navigation_ready;
+static RobotNavigationConfig route_config;
+static S2NavigationConfig wheel_config;
+static S3BarcodeConfig barcode_config;
 
 static bool read_time(uint32_t *now)
 {
@@ -104,6 +109,12 @@ static void control_task(INT stacd, void *exinf)
     bool have_ir = false;
     bool have_health = false;
     RobotWatchdogPolicy watchdog = {0};
+    RobotNavigation navigation;
+    robot_navigation_reset(&navigation, 0u);
+    uint32_t run_context = 0u;
+    bool was_moving = false;
+    S3BarcodeSnapshot barcode = {0};
+    bool have_barcode = false;
     uint32_t now;
     if (!read_time(&now))
     {
@@ -159,6 +170,111 @@ static void control_task(INT stacd, void *exinf)
         bool due = (int32_t)(now - control_due) >= 0;
         robot_policy_tick(&policy, have_ir ? &ir : NULL, &motion,
             start_down, stop_down, now, due);
+        if (APP_NAVIGATION && !navigation_ready && have_ir &&
+            ir.calibration_valid &&
+            ((policy.state == ROBOT_START_PENDING) ||
+             robot_policy_moving(&policy)))
+        {
+            policy.state = ROBOT_READY;
+            policy.left_duty = 0.0f;
+            policy.right_duty = 0.0f;
+            policy.request_reset = false;
+            policy.reason = "navigation_unconfigured";
+        }
+        bool moving = robot_policy_moving(&policy);
+        if (moving && !was_moving)
+        {
+            if (run_context == UINT32_MAX)
+            {
+                robot_policy_stop(&policy, "context_exhausted", true);
+                moving = false;
+            }
+            else
+            {
+                ++run_context;
+                robot_navigation_reset(&navigation, run_context);
+                s3_barcode_context(run_context, true);
+            }
+        }
+        if (!moving && was_moving)
+        {
+            s3_barcode_context(0u, true);
+            robot_navigation_reset(&navigation, 0u);
+        }
+        if (policy.request_reset)
+        {
+            s3_barcode_context(0u, true);
+        }
+        S3BarcodeSnapshot barcode_copy;
+        if (s3_barcode_copy(&barcode_copy))
+        {
+            barcode = barcode_copy;
+            have_barcode = true;
+        }
+        S2NavigationRequest navigation_request = {.kind = S2_SPEED};
+        if (APP_NAVIGATION && moving && due)
+        {
+            bool fresh_barcode = have_barcode &&
+                ((uint32_t)(now - barcode.serviced_ms) <= IR_MAX_GAP_MS);
+            if (!fresh_barcode || (barcode.state == S3_BC_FAULT) ||
+                !health.encoders.valid)
+            {
+                robot_policy_stop(&policy, "barcode_or_encoder_fault", true);
+            }
+            else
+            {
+                S3NavEvent event;
+                /* Bounded consumption; only FOLLOW_LINE may redirect motion. */
+                for (unsigned i = 0u; i < S3_NAV_CAPACITY; ++i)
+                {
+                    if (!s3_nav_take(&event))
+                    {
+                        break;
+                    }
+                    if ((policy.state == ROBOT_RUNNING) &&
+                        (navigation.phase == ROBOT_NAV_IDLE))
+                    {
+                        (void)robot_navigation_accept(&navigation, &event,
+                            barcode.generation, barcode_config.event_age_ms,
+                            now);
+                    }
+                }
+                if (navigation.phase != ROBOT_NAV_IDLE)
+                {
+                    if (!robot_navigation_tick(&navigation, &route_config,
+                            &wheel_config, have_ir ? &ir : NULL,
+                            &health.encoders, &health.navigation, now,
+                            &navigation_request))
+                    {
+                        robot_policy_stop(&policy, navigation.reason, true);
+                    }
+                    else
+                    {
+                        policy.state = navigation.phase == ROBOT_NAV_APPROACH ?
+                            ROBOT_APPROACH :
+                            (navigation.phase == ROBOT_NAV_ACTION ?
+                             ROBOT_NAVIGATING :
+                             (navigation.phase == ROBOT_NAV_REACQUIRE ?
+                              ROBOT_REACQUIRING : ROBOT_RUNNING));
+                        policy.reason = navigation.reason;
+                        if (navigation.completed)
+                        {
+                            s3_barcode_context(run_context, true);
+                            policy.have_ir_sequence = false;
+                        }
+                    }
+                }
+                else
+                {
+                    /* Preserve existing bounded line recovery, replacing
+                       only duty demands with configured speed demands. */
+                    navigation_request.left_mps = route_config.follow_mps *
+                        policy.left_duty / ROBOT_BASE_DUTY;
+                    navigation_request.right_mps = route_config.follow_mps *
+                        policy.right_duty / ROBOT_BASE_DUTY;
+                }
+            }
+        }
         if (policy.request_stop && !direct_stop)
         {
             (void)s2_stop();
@@ -190,7 +306,9 @@ static void control_task(INT stacd, void *exinf)
                 .right = policy.right_duty,
                 .sampled_ms = have_ir ? ir.sampled_ms : now,
                 .enabled = robot_policy_moving(&policy),
-                .generation = motion.generation
+                .generation = motion.generation,
+                .velocity_mode = APP_NAVIGATION && robot_policy_moving(&policy),
+                .navigation = navigation_request
             };
             if (s2_publish(request) < E_OK)
             {
@@ -206,6 +324,12 @@ static void control_task(INT stacd, void *exinf)
                 }
             }
         }
+        if (!robot_policy_moving(&policy) && moving)
+        {
+            s3_barcode_context(0u, true);
+            robot_navigation_reset(&navigation, 0u);
+        }
+        was_moving = robot_policy_moving(&policy);
         publish(&policy, now);
         if (robot_watchdog_progress(&watchdog,
                 have_ir && ir.acquisition_valid && ir.sample_fresh &&
@@ -235,6 +359,11 @@ static void control_task(INT stacd, void *exinf)
 
 ER robot_control_init(void)
 {
+    if (APP_NAVIGATION)
+    {
+        navigation_ready = robot_navigation_load(&route_config,
+            &wheel_config, &barcode_config);
+    }
     T_CMTX mutex = {0};
     mutex.mtxatr = TA_INHERIT;
     ID id = tk_cre_mtx(&mutex);

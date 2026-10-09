@@ -45,3 +45,5 @@ __pycache__/
 .venv-dashboard/
 .env
 secrets.h
+
+/config/navigation_config.h
