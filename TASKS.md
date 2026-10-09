@@ -10,7 +10,7 @@ Parallel branches: `feat/ir-tracking-movement` (S2), `feat/mqtt-html-dashboard` 
 
 | Validation | Status / evidence owner |
 | --- | --- |
-| Four sequential firmware profiles | To record in integration logs with source and UF2 checksums |
+| Four sequential firmware profiles | PASS at `592123d`; [source manifest](testing/integration/logs/2026-10-09_tracking-source.json) and per-profile build logs/checksums |
 | On-target firmware self-tests | Pending actual TEST run; compilation alone is not a pass |
 | Pico-originated MQTT / dashboard | Pending integrated radio/server run |
 | Raised-wheel polarity/brake / output latency | Pending new-image measurement; Nicholas reports existing motor/encoder operation |
