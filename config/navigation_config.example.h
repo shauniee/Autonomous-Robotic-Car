@@ -7,7 +7,11 @@ static const S2NavigationConfig robot_motion_configuration = {
     .configured = false,
     .diameter_m = 0, .track_m = 0, .counts_per_rev = 0,
     .left_polarity = 0, .right_polarity = 0,
-    .kp = 0, .ki = 0, .kd = 0, .feedforward = 0, .integral_limit = 0,
+    .left_motor_polarity = 0, .right_motor_polarity = 0,
+    .left_pid = {.kp = 0, .ki = 0, .kd = 0,
+        .feedforward = 0, .integral_limit = 0},
+    .right_pid = {.kp = 0, .ki = 0, .kd = 0,
+        .feedforward = 0, .integral_limit = 0},
     .max_speed_mps = 0, .tolerance_m = 0, .stall_duty = 0, .stall_ms = 0
 };
 static const S3BarcodeConfig robot_barcode_configuration = {

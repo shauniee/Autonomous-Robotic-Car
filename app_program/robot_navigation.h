@@ -18,7 +18,7 @@ typedef struct
 {
     RobotNavPhase phase;
     S3NavEvent event;
-    uint32_t context, started_ms, last_sequence;
+    uint32_t context, started_ms, last_sequence, action_id, next_action_id;
     unsigned visible_samples;
     float origin_left, origin_right;
     const char *reason;

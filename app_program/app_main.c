@@ -4,6 +4,10 @@
 #include "subsystem2/subsystem2.h"
 #if APP_TEST
 #include "../testing/subsystem3/subsystem3_test.h"
+#include "../testing/subsystem3/barcode_fixtures.h"
+#include "../testing/subsystem2/navigation_fixtures.h"
+#include "../testing/subsystem1/navigation_fixtures.h"
+#include "../testing/integration/navigation_fixtures.h"
 #endif
 
 /*
@@ -104,9 +108,13 @@ EXPORT INT usermain(void)
 	REQUIRE(subsystem3_test_wait_for_start());
 	tm_printf((UB*)"[TEST] === test run start ===\n");
 	subsystem1_test();
+    subsystem1_navigation_test();
 	subsystem2_test();
+    subsystem2_navigation_test();
 	subsystem3_test();
+    subsystem3_barcode_test();
 	robot_control_test();
+    robot_navigation_test();
 	subsystem4_test();
 	subsystem5_test();
 	tm_printf((UB*)"[TEST] === test run end ===\n");

@@ -1,5 +1,6 @@
 #include "robot_navigation.h"
 #include <math.h>
+#include "float_math.h"
 #include <stddef.h>
 
 #define PI_F 3.14159265358979323846f
@@ -39,6 +40,7 @@ bool robot_navigation_accept(RobotNavigation *n, const S3NavEvent *event,
     uint32_t generation, uint32_t max_age_ms, uint32_t now)
 {
     if ((n == NULL) || (event == NULL) || (n->phase != ROBOT_NAV_IDLE) ||
+        (n->next_action_id == UINT32_MAX) ||
         (event->context == 0u) || (event->context != n->context) ||
         (event->generation != generation) || (event->id == 0u) ||
         ((unsigned)event->action < S3_NAV_LEFT) ||
@@ -48,6 +50,7 @@ bool robot_navigation_accept(RobotNavigation *n, const S3NavEvent *event,
         return false;
     }
     n->event = *event;
+    n->action_id = ++n->next_action_id;
     n->phase = ROBOT_NAV_APPROACH;
     n->started_ms = now;
     n->reason = "approach_junction";
@@ -118,15 +121,15 @@ bool robot_navigation_tick(RobotNavigation *n,
         {
             return fail(n, "navigation_deadline");
         }
-        if ((feedback->action_id == n->event.id) &&
+        if ((feedback->action_id == n->action_id) &&
             (feedback->action_state == S2_ACTION_FAILED))
         {
             return fail(n, "navigation_action_failed");
         }
-        if ((feedback->action_id == n->event.id) &&
+        if ((feedback->action_id == n->action_id) &&
             (feedback->action_state == S2_ACTION_DONE))
         {
-            request->acknowledge_id = n->event.id;
+            request->acknowledge_id = n->action_id;
             n->acknowledge = true;
             n->phase = ROBOT_NAV_REACQUIRE;
             n->started_ms = now;
@@ -138,7 +141,7 @@ bool robot_navigation_tick(RobotNavigation *n,
         }
         else
         {
-            *request = (S2NavigationRequest){.id = n->event.id,
+            *request = (S2NavigationRequest){.id = n->action_id,
                 .kind = n->event.action == S3_NAV_STRAIGHT ?
                     S2_DISTANCE : S2_TURN,
                 .target = n->event.action == S3_NAV_STRAIGHT ? c->straight_m :
@@ -151,8 +154,8 @@ bool robot_navigation_tick(RobotNavigation *n,
     }
     if (n->phase == ROBOT_NAV_REACQUIRE)
     {
-        float travel = fmaxf(fabsf(feedback->left_m - n->origin_left),
-            fabsf(feedback->right_m - n->origin_right));
+        float travel = robot_float_max(robot_float_abs(feedback->left_m - n->origin_left),
+            robot_float_abs(feedback->right_m - n->origin_right));
         if (!isfinite(travel) || (travel > c->reacquire_max_m) ||
             ((uint32_t)(now - n->started_ms) >= c->reacquire_ms))
         {

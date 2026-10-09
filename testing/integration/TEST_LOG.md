@@ -41,3 +41,15 @@ Host methods below describe retained historical checks; their runners are retire
 | 2026-10-09 | INT-09 | `37adc44`; [source manifest](logs/2026-10-09_tracking-r2-source.json) | Codex build | PASS | [offline TEST](logs/2026-10-09_tracking-r2-build-offline-test.txt), [offline normal](logs/2026-10-09_tracking-r2-build-offline-normal.txt), [wireless normal](logs/2026-10-09_tracking-r2-build-wireless-normal.txt), [wireless TEST](logs/2026-10-09_tracking-r2-build-wireless-test.txt) | Sequential four-profile rebuild after the S2 GPIO macro fix; exact revision/profile/UF2 checksum in matching JSON files. |
 | 2026-10-09 | INT-11/12/13/14 | `37adc44`; [source manifest](logs/2026-10-09_tracking-r2-source.json) | Nicholas operated GP20; Codex captured USB console | PASS | [console](logs/2026-10-09_tracking-r2-pico-test-console.txt), [Pico results](logs/2026-10-09_tracking-r2-pico-results.json) | Four integration fixtures executed on USB-only Pico, after TEST gate and before live S3/coordinator/watchdog start. Recovery/reset races are fixtures; physical timing and fault injection remain pending. |
 | 2026-10-09 | INT-15 | S1 dashboard commits `27e5612`, `0029f24`, `1ed24b6` | Codex laptop/browser | PASS software / live Pico rendering PENDING | [dashboard observations](../subsystem1/logs/2026-10-09_dashboard-observations.txt), [recovery](../subsystem1/logs/2026-10-09_dashboard-recovery.txt), [overflow](../subsystem1/logs/2026-10-09_dashboard-overflow.txt) | Real localhost Paho/SSE/browser with synthetic topics; actual Pico MQTT data was captured separately. No post-telemetry browser/SSE observation was completed before Nicholas stopped further testing. |
+
+## S3 consolidation software cases
+
+These fixtures execute the actual pure algorithms with synthetic inputs. Firmware variants compile for TEST=1; new on-Pico execution remains pending. Temporary laptop execution is authorized for this consolidation only and adds no permanent host runner.
+
+| ID | Scope | Method | Expected |
+| --- | --- | --- | --- |
+| INT-16 | Barcode age, context/configuration generation and missing setup | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| INT-17 | Encoder junction window and expiry before fresh candidate | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| INT-18 | Four navigation targets, acknowledgement and unique Motion IDs | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| INT-19 | Two distinct observations, route bounds and wrap-safe timeout | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| INT-20 | Local stop dominates navigation; held start cannot replay | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
