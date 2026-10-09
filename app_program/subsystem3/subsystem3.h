@@ -14,6 +14,7 @@ ER subsystem3_start(void);
 bool s3_barcode_configure(const S3BarcodeConfig *config);
 bool s3_barcode_copy(S3BarcodeSnapshot *snapshot);
 bool s3_nav_take(S3NavEvent *event);
+bool s3_nav_discard(S3BarcodeResult reason);
 /* Coordinator is the sole context writer; purge invalidates pending work. */
 void s3_barcode_context(uint32_t context, bool purge);
 /* Nonblocking coherent copy. False means null, uninitialized, or busy/error;

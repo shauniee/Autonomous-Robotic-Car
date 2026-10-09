@@ -385,7 +385,7 @@ const char *s3_barcode_result_name(S3BarcodeResult result)
 {
     static const char *const names[] = {"ok", "unconfigured", "partial",
         "bad_width", "bad_frame", "reverse", "unmapped", "encoder",
-        "capture_overflow", "queue_overflow", "context"};
+        "capture_overflow", "queue_overflow", "context", "stale_event"};
     return (unsigned)result < sizeof(names) / sizeof(names[0]) ?
         names[result] : "invalid";
 }

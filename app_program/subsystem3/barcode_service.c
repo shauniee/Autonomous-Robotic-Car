@@ -98,17 +98,33 @@ bool s3_nav_take(S3NavEvent *event)
     return false;
 }
 
+bool s3_nav_discard(S3BarcodeResult reason)
+{
+    ID mutex = atomic_load_explicit(&barcode_mutex, memory_order_acquire);
+    if (((reason != S3_BC_CONTEXT) && (reason != S3_BC_STALE)) ||
+        (mutex <= 0) || (tk_loc_mtx(mutex, TMO_POL) < E_OK))
+    {
+        return false;
+    }
+    ++decoder.status.discarded;
+    if (decoder.status.state != S3_BC_FAULT)
+    {
+        decoder.status.result = reason;
+    }
+    return tk_unl_mtx(mutex) >= E_OK;
+}
+
 static void barcode_task(INT stacd, void *exinf)
 {
     (void)stacd;
     (void)exinf;
     /* This task runs on core 1 (core 0 in UP), after the TEST gate. */
+    s2_encoder_enable_context();
     if (gpio_capture_enable() < E_OK)
     {
         s3_barcode_decoder_fault(&decoder, S3_BC_ENCODER);
         return;
     }
-    s2_encoder_enable_context();
     uint32_t serviced_epoch = atomic_load_explicit(&epoch,
         memory_order_acquire);
     for (;;)
@@ -131,8 +147,14 @@ static void barcode_task(INT stacd, void *exinf)
                 DI(saved);
                 s3_barcode_capture_reset_task(&capture);
                 EI(saved);
+                uint32_t accepted = decoder.status.accepted;
+                uint32_t rejected = decoder.status.rejected;
+                uint32_t discarded = decoder.status.discarded + decoder.count;
                 s3_barcode_decoder_init(&decoder, &configuration,
                     current_epoch);
+                decoder.status.accepted = accepted;
+                decoder.status.rejected = rejected;
+                decoder.status.discarded = discarded;
                 serviced_epoch = current_epoch;
             }
             if (atomic_load_explicit(&capture.overflow, memory_order_acquire) &&
@@ -158,8 +180,14 @@ static void barcode_task(INT stacd, void *exinf)
                 DI(saved);
                 S3BarcodeEdge current = observation(in_w(0xd0000004u),
                     gpio_capture_time_us());
+                bool pending = (in_w(0x400140f8u) & 12u) != 0u;
                 EI(saved);
-                s3_barcode_decoder_poll(&decoder, &current, time.lo);
+                /* A pending GP16 edge must be captured before quiet-zone
+                   confirmation; do not overtake a deferred GPIO interrupt. */
+                if (!pending)
+                {
+                    s3_barcode_decoder_poll(&decoder, &current, time.lo);
+                }
             }
             (void)tk_unl_mtx(mutex);
         }

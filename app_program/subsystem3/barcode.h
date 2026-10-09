@@ -14,7 +14,7 @@ typedef enum { S3_BC_DISABLED, S3_BC_QUIET, S3_BC_CAPTURE,
 typedef enum { S3_BC_OK, S3_BC_UNCONFIGURED, S3_BC_PARTIAL,
     S3_BC_BAD_WIDTH, S3_BC_BAD_FRAME, S3_BC_REVERSE,
     S3_BC_UNMAPPED, S3_BC_ENCODER, S3_BC_CAPTURE_OVERFLOW,
-    S3_BC_QUEUE_OVERFLOW, S3_BC_CONTEXT } S3BarcodeResult;
+    S3_BC_QUEUE_OVERFLOW, S3_BC_CONTEXT, S3_BC_STALE } S3BarcodeResult;
 typedef struct
 {
     bool configured, black_high, allow_reverse;
