@@ -1,4 +1,5 @@
 #include "app.h"
+#include "robot_control_task.h"
 #include "subsystem2/subsystem2.h"
 #if APP_TEST
 #include "../testing/subsystem3/subsystem3_test.h"
@@ -83,6 +84,7 @@ EXPORT INT usermain(void)
 	REQUIRE(subsystem3_init());
 	REQUIRE(subsystem4_init());
 	REQUIRE(subsystem5_init());
+	REQUIRE(robot_control_init());
 
 	/* Phase 2: every subsystem starts its tasks */
 	REQUIRE(subsystem1_start());
@@ -102,11 +104,13 @@ EXPORT INT usermain(void)
 	subsystem1_test();
 	subsystem2_test();
 	subsystem3_test();
+	robot_control_test();
 	subsystem4_test();
 	subsystem5_test();
 	tm_printf((UB*)"[TEST] === test run end ===\n");
 	REQUIRE(subsystem3_start());
 #endif
+	REQUIRE(robot_control_start());
 	tm_printf((UB*)"all subsystems started\n\n");
 
 	/* Sleep forever.  Returning from usermain() would shut down. */

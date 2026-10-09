@@ -57,6 +57,7 @@ endif
 
 # Nicholas-owned S3 tests; other subsystem sources keep their existing rules.
 -include ../testing/subsystem3/firmware.mk
+include ../testing/integration/firmware.mk
 
 # Create every object directory up front.  Git does not store empty
 # directories, so a fresh clone lacks them, and not every compile rule

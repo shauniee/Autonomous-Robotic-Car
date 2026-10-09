@@ -87,7 +87,7 @@ Each driven peripheral has one owning task; other tasks use its interface. PWM s
 | Barcode GPIO IRQ |Nicholas, proposed | Line and Barcode; bounded ISR capture | GP16 |
 | Echo GPIO IRQ |Jia Jing, proposed | Obstacle; bounded ISR capture | GP2 |
 | Hardware TIMER / watchdog tick |Nicholas initialization; shared timebase | Enable 1 µs tick from 12 MHz reference without resetting TIMER; kernel WiFi also reads TIMER | Internal |
-| Watchdog |Nicholas | `ir_task`; 250 ms; feed only when valid IR and Motion progress both advance and are at most 60 ms old | Internal |
+| Watchdog |Nicholas / coordination | `robot_control_task`; 250 ms; feed only when valid IR and Motion progress both advance and are at most 60 ms old | Internal |
 | USB console | Kernel | USB service on core 0 | USB connector |
 | WiFi radio, TCP/IP, MQTT | Kernel | `cyw43_utk_task` on core 0 | GP23–GP25, GP29 |
 
@@ -105,9 +105,9 @@ Smaller numbers mean higher priority. Priorities 1–4 are reserved for the kern
 
 | Subsystem | Priority band | Tasks (name – priority – core) |
 | --- | --- | --- |
-|Shaun Communications | — | No application task; optional snapshot mutex only |
+|Shaun Communications | — | No application task; publication-time collector and optional snapshot mutex |
 |Mahesha Motion | 13 | `motion_task` – 13 – core 1; 20 ms or stop wake-up |
-|Nicholas Line and Barcode | 12 | `ir_task` – 12 – core 1; buttons 10 ms, paired ADC 20 ms |
+|Nicholas Line and coordination | 11–12 | `robot_control_task` – 11 – core 1, inputs 10 ms/control 20 ms; `ir_task` – 12 – core 1, paired ADC 20 ms |
 |Darrius Terrain | — | Inactive |
 |Jia Jing Obstacle | — | Inactive |
 
@@ -129,11 +129,11 @@ The provider creates and owns each shared object. Current objects stay private b
 
 | ID | From → To | Mechanism | Object ID name | Data / meaning | Agreed by |
 | --- | --- | --- | --- | --- | --- |
-| IF-01 |Nicholas → Mahesha | Latest value underMahesha priority-inheritance mutex | `request_mutex` (private); `s2_publish()` | `MotionRequest`: duties, enabled flag and original sample time; [limits and expiry](architecture/IR_MOTION_HANDOFF.md#current-interface-contract) | Team agreement not recorded |
-| IF-02 |Nicholas → Mahesha | Persistent event flag + task wake-up, independent of request mutex | `stop_flag`, `motion_tid` (private); `s2_stop()` / `s2_reset_stop()` | Stop latch; fresh local reset invalidates the old request; [ordering limitations](architecture/IR_MOTION_HANDOFF.md#verification-and-known-limits) | Team agreement not recorded |
-| IF-03 |Mahesha → Nicholas | Coherent health copy underMahesha mutex; stop flag read separately | `request_mutex`, `stop_flag` (private); `s2_health()` | `MotionHealth`: software service progress and latch; no physical brake/stationarity acknowledgement; [contract](architecture/IR_MOTION_HANDOFF.md#current-interface-contract) | Team agreement not recorded |
-| IF-04 | IR tracker → Nicholas coordinator | In-task typed value | —; `ir_tracking_output()` | `IrTrackingOutput`: validity, line condition, signed error/steering and sample time; [Line Tracking](architecture/LINE_TRACKING.md#modules-and-drivers) | Team agreement not recorded |
-| IF-05 |Nicholas → Shaun → kernel network service | Latest value under optional Shaun priority-inheritance mutex; `TMO_POL` both sides | `telemetry_mutex` (private); `s1_telemetry_update()` / `s1_telemetry_copy()` | `S1Telemetry`; busy/unavailable access skips diagnostics; [Communications contract](architecture/COMMUNICATIONS.md#modules-and-drivers) | Team agreement not recorded |
+| IF-01 |Nicholas → Mahesha | Latest value underMahesha priority-inheritance mutex | `request_mutex` (private); `s2_publish()` | `MotionRequest`: duties, enabled flag and original sample time; [limits and expiry](architecture/IR_MOTION_HANDOFF.md#current-interface-contract) | Nicholas authorized this tracking/dashboard integration on 2026-10-09 |
+| IF-02 |Nicholas → Mahesha | Persistent event flag + task wake-up, independent of request mutex | `stop_flag`, `motion_tid` (private); `s2_stop()` / `s2_request_reset()` | Stop latch; fresh local reset invalidates the old request; [generation acknowledgement](architecture/MOTION.md#current-duty-service-contract) | Nicholas authorized this tracking/dashboard integration on 2026-10-09 |
+| IF-03 |Mahesha → Nicholas | Coherent health copy underMahesha mutex; stop flag read separately | `request_mutex`, `stop_flag` (private); `s2_motion_copy()` | `MotionHealth`: checked output progress, generation/acknowledgement and latch; no physical stationarity; [contract](architecture/IR_MOTION_HANDOFF.md#current-interface-contract) | Nicholas authorized this tracking/dashboard integration on 2026-10-09 |
+| IF-04 | S3 → Nicholas coordinator / S1 | Nonblocking mutex copy | `snapshot_mutex` (private); `s3_ir_copy()` | `S3IrSnapshot`: validity, line condition, signed error/steering and sample time; [Line Tracking](architecture/LINE_TRACKING.md#modules-and-public-interface) | Nicholas authorized this tracking/dashboard integration on 2026-10-09 |
+| IF-05 |Nicholas → Shaun → kernel network service | Latest value under optional Shaun priority-inheritance mutex; `TMO_POL` both sides | `telemetry_mutex` (private); `s1_telemetry_update()` / `s1_telemetry_copy()` | `S1Telemetry`; busy/unavailable access skips diagnostics; [Communications contract](architecture/COMMUNICATIONS.md#modules-and-drivers) | Nicholas authorized this tracking/dashboard integration on 2026-10-09 |
 | IF-06 | Unclaimed | — | — | — | — |
 
 Full-robot message/queue contracts remain [proposed in ARCHITECTURE](ARCHITECTURE.md#shared-contracts), without allocated object IDs. Each cross-subsystem interface requires an [integration test record](../testing/integration/TEST_LOG.md); implementation or a saved software result does not establish physical acceptance.
@@ -144,17 +144,17 @@ Limits are set in [config/config.h](../config/config.h). The table shows current
 
 | Object | Limit |Shaun |Mahesha |Nicholas |Darrius |Jia Jing |
 | --- | --- | --- | --- | --- | --- | --- |
-| Task | 32 | 0 | 1 | 1 | 0 | 0 |
+| Task | 32 | 0 | 1 | 2 | 0 | 0 |
 | Semaphore | 16 | 0 | 0 | 0 | 0 | 0 |
 | Event flag | 16 | 0 | 1 | 0 | 0 | 0 |
 | Mailbox | 12 | 0 | 0 | 0 | 0 | 0 |
-| Mutex | 12 | 0 or 1 | 1 | 0 | 0 | 0 |
+| Mutex | 12 | 0 or 1 | 1 | 1 required + 1 optional | 0 | 0 |
 | Message buffer | 12 | 0 | 0 | 0 | 0 | 0 |
 | Fixed memory pool | 12 | 0 | 0 | 0 | 0 | 0 |
 | Variable memory pool | 12 | 0 | 0 | 0 | 0 | 0 |
 | Cyclic handler | 12 | 0 | 0 | 0 | 0 | 0 |
 | Alarm handler | 12 | 0 | 0 | 0 | 0 | 0 |
 
-Shaun attempts one mutex allocation with `MQTT=1`; none with `MQTT=0`. Allocation failure disables optional diagnostics and permits local startup. Mahesha's request and health copies share one mutex; its persistent stop uses one event flag. Nicholas's samples, calibration and controller state allocate no extra kernel objects. Both application tasks use the existing 2048-byte stack.
+Shaun attempts one mutex allocation with `MQTT=1`; none with `MQTT=0`. Allocation failure disables optional diagnostics and permits local startup. Mahesha's request and health copies share one mutex; its persistent stop uses one event flag. Nicholas owns the S3 cache mutex and optional coordinator reporting mutex. Capture uses a single slot plus atomic cancellation state, no queue object. All three application tasks use the existing 2048-byte stack.
 
 Create all required subsystem objects before starting application tasks. Required initialization/start failure prevents successful startup; optional telemetry failure may skip reporting. Measure stack margin and total object usage, including kernel services, before implementing the proposed task split.

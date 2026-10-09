@@ -1,6 +1,22 @@
 # Motion
 
-Owner: Mahesha / S2. Parent: [system architecture](../ARCHITECTURE.md). This guide preserves the full-robot encoder/PID proposal. The existing duty-only bench API is specified in the [IR handoff](IR_MOTION_HANDOFF.md#current-interface-contract); it is not an encoder-action implementation. Operational status is in [GETTING_STARTED](../GETTING_STARTED.md#current-capabilities).
+Owner: Mahesha / S2. Parent: [system architecture](../ARCHITECTURE.md). This guide preserves the full-robot encoder/PID proposal. The checked duty-only bench API is specified below; encoder/PID actions remain proposed. Operational status is in [GETTING_STARTED](../GETTING_STARTED.md#current-capabilities).
+
+## Current duty service contract
+
+S2 alone writes motor PWM, booting with a persistent stop generation. Driver initialization/apply/brake check errors and output register readback. Requested duties are forward fractions in [0,0.35], not measured wheel speed. TEST always applies zero output. An enabled request must be finite, use the current generation and retain its original acquisition time; unsigned age <=60 ms qualifies, 61 ms fails and latches stop.
+
+| API / type | Contract |
+| --- | --- |
+| `MotionRequest` / `s2_publish()` | Latest duties, enabled flag, original `sampled_ms` and generation; failures inhibit output |
+| `s2_stop()` | Atomically advances stop generation, latches stop and wakes Motion without the request mutex; success is acceptance, not braking |
+| `s2_request_reset(expected_generation)` | Asynchronous reset; Motion discards old requests, confirms zero output and clears only the matching acknowledged generation; a newer stop defeats reset |
+| `s2_motion_copy()` | Nonblocking coherent `MotionHealth`; ignore destination on false |
+| `MotionHealth` | Successful service sequence/time, stop generation/latch, brake/reset acknowledgement, applied PWM, TEST inhibition and driver fault status |
+
+Motion rechecks stop state before and after the bounded PWM transaction. An already-running transaction may complete before braking. A matching brake acknowledgement means checked zero-output writes/readback completed; it does not prove stationary wheels. No nonzero output follows that acknowledgement until successful reset and a fresh generation-tagged request. Use the public micro T-Kernel SMP atomics rather than local interrupt masking across cores.
+
+The request/health mutex is never part of accepting stop. Copying diagnostics cannot renew request age. Producer control and a separate new start are specified in [implemented coordination](../ARCHITECTURE.md#implemented-line-tracking-integration). The [handoff](IR_MOTION_HANDOFF.md) preserves historical evidence boundaries.
 
 ## Functionality
 
@@ -41,7 +57,7 @@ stateDiagram-v2
 | Completed | Brake at target; retain completed ID/status until acknowledged through the following command context |
 | Inhibited | Brake both channels, invalidate previous target and retain reason; reset alone cannot move |
 
-The diagram's unlabeled Speed Control → Idle Braked return means zero demand. The current bench services forward duty requests, not these full states. TEST firmware always brakes. Existing stop/reset serialization limitations remain explicitly preserved in the handoff.
+The diagram's unlabeled Speed Control → Idle Braked return means zero demand. The current bench services forward duty requests, not these full states. TEST firmware always brakes. The previous stop/reset limitations are historical; the current acknowledged generation contract is defined above.
 
 ## GPIO and peripherals
 

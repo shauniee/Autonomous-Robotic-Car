@@ -12,5 +12,12 @@ ER subsystem3_start(void);
    Ignore the destination on failure; normalized zero is not validity.
    This API is for task context, never an ISR. */
 bool s3_ir_copy(S3IrSnapshot *snapshot);
+/* Only the app coordinator interprets buttons. S3 owns GPIO setup. */
+bool s3_local_inputs(bool *start_down, bool *stop_down);
+/* Single pending capture, task context, never blocks. Cancel is independent
+   of the snapshot mutex and invalidates earlier queued captures. */
+bool s3_capture_request(IrCaptureKind kind);
+void s3_capture_cancel(void);
+void s3_capture_allow(bool allowed);
 
 #endif

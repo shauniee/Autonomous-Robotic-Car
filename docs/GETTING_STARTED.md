@@ -2,7 +2,7 @@
 
 ## Current capabilities
 
-The current firmware is a two-task IR bench: S3 reads/calibrates two IR sensors and produces P steering; S2 services bounded motor requests. Optional S1 reporting adds a snapshot and mutex, with telemetry, heartbeat and status-only subscription in the kernel service. S4/S5 are inactive. Encoder feedback, barcode decoding, IMU/sonar acquisition and full Mission/Safety coordination are **not implemented**. No successful physical tracking run or verified motor operation is established by the retained software evidence. The preserved [handoff](architecture/IR_MOTION_HANDOFF.md) records the reported motor problem and stop/reset limits.
+The integrated firmware has three application tasks: S3 paired IR/calibration/P guidance, S2 checked forward-duty output and an application Mission/Safety coordinator for local start/stop/recovery. S1 collects actual snapshots in the existing kernel MQTT publication path and supports a localhost HTML dashboard. Encoder PID/actions, barcode, IMU/sonar and full-course Mission/Safety remain deferred. Build/self-test/dashboard and physical results are recorded separately in [TASKS](../TASKS.md) and [testing](../testing/README.md). Nicholas reports existing IR, motor and encoder operation; new integrated physical following and timing require recorded trials.
 
 Use the steps below for the existing bench. Full-robot tasks are listed at the end. Requirements live in [PROJECT_SPECS](PROJECT_SPECS.md); wiring in [TEAM](TEAM.md#2-pins).
 
@@ -91,7 +91,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `TEST=1` | Includes firmware self-tests and forces S2 braking even when the controller enables motion |
 | `CRASH_REPORT=1` | Immediate crash/console copy on UART0; project uses `0` because of the [pin conflict](TEAM.md#wiring-conflicts) |
 
-`arm-none-eabi-gcc not found` means PATH is wrong. An unset SDK path or missing USB/radio/network headers means the SDK path/submodules need fixing. There is no active CMake target or dashboard build. For ordinary-Pico/Maker development, use the preserved [handoff profile](architecture/IR_MOTION_HANDOFF.md#reproducible-software-builds).
+`arm-none-eabi-gcc not found` means PATH is wrong. An unset SDK path or missing USB/radio/network headers means the SDK path/submodules need fixing. There is no active CMake target; the dashboard uses Python and static assets. For ordinary-Pico/Maker development, use the preserved [handoff profile](architecture/IR_MOTION_HANDOFF.md#reproducible-software-builds).
 
 ## Power and flashing
 
@@ -108,7 +108,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 
    Windows can use PuTTY or Serial Monitor on the assigned COM port. Quit screen with Ctrl-A, then K.
 4. Inspect startup, `[TEST] <ID> PASS|FAIL` and `[BENCH] ... MOTOR_INHIBITED`. Bench console output reports acquisition/calibration/state; it does not establish motor movement or measured duty. Record failures through [testing](../testing/README.md).
-5. Before normal physical use, resolve the reported motor problem and record a raised-wheel baseline, polarity and stop response. Flash the normal image, disconnect USB, then connect the agreed battery/power bank alone. Use camera/scope and optional wireless observations for physical evidence.
+5. Before floor use, record a raised-wheel baseline, polarity and stop response for the integrated image. Flash the normal image, disconnect USB, then connect the agreed battery/power bank alone. Use camera/scope and optional wireless observations for physical evidence.
 
 ## Calibration and local controls
 
@@ -116,14 +116,14 @@ Calibration is RAM-only. Use the sensor mounting and surface that will be used i
 
 | Step | Action | Expected response |
 | --- | --- | --- |
-| Black | Start stopped/Ready, release then press GP20 with both sensors over black; hold the pose through capture | One chirp on completed capture |
+| Black | Start READY, release then press GP20 with both sensors over black; hold the pose through capture | One chirp on completed capture |
 | White | Release then press GP20 with both sensors over white; hold the pose through capture | Two chirps for valid pair; three for rejection |
 | Start | Place sensors on a visible line, release then press GP20 | FOLLOW_LINE if calibration/data qualify; TEST still inhibits motors |
 | Stop | Press GP21 | Persistent stop and capture cancellation |
 | Reset | Clear the cause, release GP21, freshly press GP20 | STOPPED → READY; valid calibration retained |
 | Restart | Release GP20 and press again on a visible line | A separate fresh start; held buttons never restart |
 
-Capture duration/contrast, classification and recovery limits are defined once in [Line Tracking](architecture/LINE_TRACKING.md#business-logic). Starting on fully white or broad black is rejected. Replacing black invalidates the old pair; failed white contrast clears both references. A plausible raw ADC value does not prove the sensor is wired correctly. Calibration and motion controls are local; USB text commands and MQTT calibration/start/stop commands are retired.
+Capture duration/contrast and classification live in [Line Tracking](architecture/LINE_TRACKING.md#normalization-classification-and-proportional-guidance); start/reset/recovery policy lives in [Architecture](ARCHITECTURE.md#implemented-line-tracking-integration). Starting on fully white or broad black is rejected. Failed white contrast clears both references. A plausible ADC value does not prove correct wiring. Calibration and movement remain local; MQTT and USB text cannot start, stop, drive or recalibrate.
 
 If capture is rejected, keep the robot stopped and inspect sensor connection, height, lighting, surface and raw contrast. If the controller stops, record the reason before resetting. Correcting software state does not prove the wheels are stationary.
 
@@ -166,6 +166,18 @@ python3 scripts/mqtt_client.py status --broker <broker-lan-ip>
 Optional laptop authentication uses `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD` environment variables. Use `--root` / `--port` when configured differently. The helper subscribes before requesting status, ignores cached retained status as a live response, and times out when no live response arrives. Firmware accepts only `{"request":"status"}` on `robot/s3/request`; start, stop, drive and calibration messages are rejected. A status request never changes local control.
 
 [Communications](architecture/COMMUNICATIONS.md#mqtt-and-payload-contract) defines the topic, schema, fields, limits and reconnect behavior. Use validity/age flags when interpreting readings. Requested duty is not measured output; `motion_enabled` never overrides TEST inhibition. The slow telemetry stream cannot prove brief recovery or stop timing. Broker loss does not change healthy local control.
+
+## Local HTML dashboard
+
+From repository root, create the ignored environment once:
+
+```sh
+python3 -m venv .venv-dashboard
+.venv-dashboard/bin/python -m pip install -r scripts/requirements-mqtt.txt
+.venv-dashboard/bin/python scripts/mqtt_dashboard.py
+```
+
+Open [the local dashboard](http://127.0.0.1:8765). The default broker is the Mac's local `127.0.0.1:1883`; the Pico still needs the Mac's reachable LAN address. Use `--broker`, `--port` and `--root` for a different broker/topic root. Existing authentication environment variables are shared with the CLI. The website is display-only and never sends robot commands. It starts even if the broker is unavailable and reconnects automatically. [Communications](architecture/COMMUNICATIONS.md#local-dashboard) defines displays and freshness.
 
 ## Project tasks
 

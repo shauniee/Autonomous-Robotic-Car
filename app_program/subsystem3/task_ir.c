@@ -35,7 +35,7 @@ static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now)
     int right = (int)(snapshot.normalized_right * 1000.0f);
     tm_printf((UB *)"[IR] seq=%u ADC L=%u R=%u acquired=%d fresh=%d "
         "normalized_milli L=%d R=%d valid=%d calibrated=%d "
-        "line=%s capture=%s age_ms=%u SENSOR_ONLY\n",
+        "line=%s capture=%s age_ms=%u GUIDANCE_ONLY\n",
         (unsigned)sequence, (unsigned)snapshot.raw.left,
         (unsigned)snapshot.raw.right, snapshot.acquisition_valid,
         snapshot.sample_fresh, left, right, snapshot.normalized_valid,
@@ -51,8 +51,6 @@ void task_ir_task(INT stacd, void *exinf)
     (void)exinf;
     IrTracker tracker;
     ir_tracking_init(&tracker);
-    calibration_control_t controls;
-    calibration_control_init(&controls);
     bool adc_ready = drv_ir_init();
     uint32_t now;
     if (!read_time(&now))
@@ -76,11 +74,9 @@ void task_ir_task(INT stacd, void *exinf)
         IrCaptureKind before = tracker.capture_kind;
         ir_tracking_check_time(&tracker, now);
         feedback(calibration_control_feedback(before, &tracker), now);
-        bool capture_down;
-        bool cancel_down;
-        drv_feedback_inputs(&capture_down, &cancel_down);
-        feedback(calibration_control_inputs(&controls, &tracker,
-            capture_down, cancel_down, now), now);
+        before = tracker.capture_kind;
+        subsystem3_capture_service(&tracker, now);
+        feedback(calibration_control_feedback(before, &tracker), now);
         if ((int32_t)(now - sample_due) >= 0)
         {
             IrRaw raw = {0};

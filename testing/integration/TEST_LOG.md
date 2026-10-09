@@ -18,6 +18,13 @@ Host methods below describe retained historical checks; their runners are retire
 
 | INT-10 | Restored S1 kernel reporting transport | Wireless TEST Pico run with broker/operator fault injection; pending | Status subscription before Online; 1 s heartbeat, retained online/offline will, authenticated broker; latest S3 schema unchanged; malformed/drive/start/stop/calibration requests rejected; status response rate bounded; 15 s attempt deadline and 1..30 s retry; link loss clears fragments, no stale replay or control calls; measure timer/stack budget |
 
+| INT-11 | Coordinator P/recovery policy | On-target TEST fixture | Direction, two distinct visible acquisitions, fixed 100 ms expiry before new data |
+| INT-12 | Local start/stop/reset | On-target TEST fixture | Initial start acknowledgement; GP21 dominates; reset never starts |
+| INT-13 | Capture mailbox cancellation | On-target TEST fixture before S3 starts | A canceled pending capture cannot begin; no live tracker mutation |
+| INT-14 | Watchdog progress | On-target TEST fixture | Both producers advance, stale/invalid/duplicate observations fail, wrap-safe age |
+
+| INT-15 | Local HTML/SSE dashboard | Browser and MQTT software checks on separate synthetic topic root; actual Pico validation separately SYS-09/10 | Clear unavailable/stale display, bounded history, broker/SSE recovery and no publish endpoint |
+
 ## 2. Results
 
 | Date | ID | Source | Tester | Result | Evidence | Notes |
