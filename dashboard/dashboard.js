@@ -5,6 +5,7 @@
   const HEARTBEAT_STALE_MS = 3000;
   const IR_FRESH_MS = 60;
   const MAX_POINTS = 120;
+  const HISTORY_MS = 60000;
   const points = [];
   let observation = null;
   let observationAt = 0;
@@ -37,11 +38,10 @@
     lastSequence = data.sequence;
     const valid = data.sample_fresh === true && data.acquisition_valid === true;
     const fractions = valid ? data.fractions : null;
-    points.push({time: Date.now(), left: fractions && finite(fractions.left) ? 2 * fractions.left - 1 : null,
+    points.push({time: Date.now() - state.telemetry_age_ms, left: fractions && finite(fractions.left) ? 2 * fractions.left - 1 : null,
       right: fractions && finite(fractions.right) ? 2 * fractions.right - 1 : null,
       error: valid && finite(data.error) ? data.error : null});
     if (points.length > MAX_POINTS) points.shift();
-    drawChart();
   }
 
   function render() {
@@ -108,6 +108,7 @@
     text("ir-sequence", display(data.ir_sequence));
     const health = state.heartbeat || state.status || {};
     text("dropped-publish", display(health.dropped_publish));
+    drawChart();
   }
 
   function drawChart() {
@@ -130,20 +131,25 @@
     });
     context.fillText("Earlier", left, bottom + 19);
     context.fillText("Latest", right - 28, bottom + 19);
+    const now = Date.now();
+    while (points.length && points[0].time < now - HISTORY_MS) points.shift();
     const haveReadings = points.some(point => finite(point.left) || finite(point.right));
     element("chart-empty").hidden = haveReadings;
     if (!points.length) return;
-    const start = Math.min(points[0].time, points[points.length - 1].time - 60000);
-    const duration = Math.max(60000, points[points.length - 1].time - start);
+    const start = now - HISTORY_MS;
+    const duration = HISTORY_MS;
     [["left", "#24806b"], ["right", "#ad7338"], ["error", "#647ab8"]].forEach(([key, color]) => {
       context.beginPath();
       let continuing = false;
+      let previousTime = 0;
       points.forEach(point => {
         if (!finite(point[key]) || point[key] < -1 || point[key] > 1) { continuing = false; return; }
         const x = left + (point.time - start) / duration * width;
         const y = top + (1 - point[key]) * height / 2;
-        if (continuing) context.lineTo(x, y); else context.moveTo(x, y);
+        if (continuing && point.time - previousTime <= TELEMETRY_STALE_MS) context.lineTo(x, y);
+        else context.moveTo(x, y);
         continuing = true;
+        previousTime = point.time;
       });
       context.strokeStyle = color;
       context.lineWidth = key === "error" ? 1.2 : 1.8;

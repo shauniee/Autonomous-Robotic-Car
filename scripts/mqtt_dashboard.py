@@ -1,6 +1,7 @@
 """Display robot MQTT observations at http://127.0.0.1:8765. Python 3.9+."""
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 import threading
@@ -21,6 +22,13 @@ def uint32(value):
 
 def reject_constant(value):
     raise ValueError("Non-finite JSON number")
+
+
+def finite_float(value):
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("Non-finite JSON number")
+    return number
 
 
 class Observations:
@@ -172,7 +180,8 @@ def configure_mqtt(mqtt, args, observations):
             return
         try:
             payload = json.loads(message.payload.decode("utf-8"),
-                                 parse_constant=reject_constant)
+                                 parse_constant=reject_constant,
+                                 parse_float=finite_float)
         except (ValueError, UnicodeDecodeError):
             return
         if not isinstance(payload, dict) or type(payload.get("schema")) is not int:

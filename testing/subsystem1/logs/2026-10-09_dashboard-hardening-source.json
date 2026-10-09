@@ -1,0 +1,11 @@
+{
+  "base_head": "0029f24f072e09f32304a77c2f14f6455f8e038c",
+  "date": "2026-10-09",
+  "method": "Actual MQTT/SSE numeric-overflow rejection and same-stream valid follow-up; revised JavaScript loads in Chrome without warnings/errors; independent source review of 60s eviction and >1500ms trace gaps",
+  "source_sha256": {
+    "scripts/mqtt_dashboard.py": "27c508c98743a0fb48071387ad43ec017e15a27304cf4787a7eb6d6b6fce76a6",
+    "dashboard/dashboard.js": "4f6dca0d3ebac17c4516eb67063bab60888783709669aa6750eb882502fbfb32",
+    "dashboard/index.html": "6e290f174c62a1a895b5b0e03e7259f1fa8b9be93206560483e1450a1ea10986"
+  },
+  "firmware_source": "unchanged from 0029f24"
+}
