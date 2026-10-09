@@ -1,0 +1,6 @@
+{
+  "revision": "37adc44d8b2ae351c64cd0853c8c47b2d18e0fcc",
+  "profile": "SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=1",
+  "uf2_sha256": "7deabf780049c73ded73a1ee9136111614fe5c48b01bd9279ac0c848b1529eea",
+  "build_exit": 0
+}

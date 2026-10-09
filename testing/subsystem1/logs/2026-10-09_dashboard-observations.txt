@@ -1,0 +1,32 @@
+S1-U11 -- laptop/browser software evidence only
+Python 3.9.6; Paho MQTT 2.1.0.
+Actual scripts/mqtt_dashboard.py served localhost:8766.
+Synthetic topic root: robot/s1-dashboard-validation.
+The existing robot/s3 topics were not used for fixture publication.
+
+PASS Dashboard Python syntax
+PASS fixed HTML/CSS/JS routes
+PASS null/invalid sensor and unavailable motion payload reaches SSE unchanged
+PASS malformed/unsupported/oversized payloads do not replace last usable observation
+PASS telemetry freshness advances beyond 1500ms without MQTT messages
+PASS original schema1 payload remains accepted
+PASS retained status cannot refresh heartbeat age
+
+Chrome visual/DOM observations during synthetic live fixture:
+- Robot live; Broker connected; Following line.
+- Actual rendered requested/applied values changed with fixture publication.
+- IR age at publication: 15 ms.
+- Desktop view: paired sensor/motor cards, graph, calibration/reporting cards.
+- Responsive viewport 390x844: document width 390, no horizontal overflow.
+- Browser console warning/error entries: []
+- button/input/form element count: 0 (display-only view).
+
+Chrome observations after fixture removal/invalid data:
+- Heartbeat unavailable; Last observation stale.
+- Invalid normalized sensor and unavailable applied PWM both displayed as em dash.
+- TEST MOTORS INHIBITED label visible for test_inhibited=true.
+- Browser console warning/error entries: []
+
+Scope: synthetic localhost transport and browser UI only.
+No firmware build, Pico radio connection, calibration or physical motion pass
+is established by this evidence. S1-U09/U10 require integrated TEST execution.

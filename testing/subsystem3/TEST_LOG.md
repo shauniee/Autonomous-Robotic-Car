@@ -34,14 +34,15 @@ The current S3 service does not drive motors, feed a whole-system watchdog or pu
 | 2026-10-08 | S3-U09 | Future implementation | Pending | PENDING | none | Barcode deferred; no decode run |
 | 2026-10-09 | S3-U02/U06/U07/U10/U11/U12/U13 | Working tree source SHA-256 manifest in evidence | Pending Pico operator | PENDING | [service build evidence](logs/2026-10-09_s3-line-service_evidence.json) | All four profiles built; firmware checks compiled only, not executed |
 | 2026-10-09 | S3-U02/U06/U07/U10/U11/U12/U13 | Relocated test source manifest in evidence | Pending Pico operator | PENDING | [test-layout evidence](logs/2026-10-09_s3-test-layout_evidence.json) | Relocated fixtures compile in all TEST profiles; no on-board execution |
+| 2026-10-09 | S3-U02/U06/U07/U10/U11/U12/U13 | `37adc44`; [integrated source](../integration/logs/2026-10-09_tracking-r2-source.json) | Nicholas GP20 / Codex USB capture | PASS | [console](../integration/logs/2026-10-09_tracking-r2-pico-test-console.txt), [results](../integration/logs/2026-10-09_tracking-r2-pico-results.json) | Seven firmware checks executed; real cache mutex survived the suite and live S3 acquisition continued during the saved run. U11 is the legacy calibration-helper fixture. No live calibration capture, physical IR characterization or tracking trial was performed. |
 
 ## 3. Current firmware run instructions
 
-S3 fixtures and assertions live here in `ir_self_test.c/.h` and `subsystem3_test.c/.h`. `firmware.mk` adds them only with TEST=1 through the shared Make include. Use the `subsystem3_test()` hook already called by `app_main.c`; the private production mutex retains only a TEST bridge, with its assertions defined here. Build profiles and pending integration are recorded in [TASKS](../../TASKS.md#s3-line-service); the intended calibration/data API is in [Line Tracking](../../docs/architecture/LINE_TRACKING.md).
+S3 fixtures and assertions live here in `ir_self_test.c/.h` and `subsystem3_test.c/.h`. `firmware.mk` adds them only with TEST=1 through the shared Make include. Use the `subsystem3_test()` hook already called by `app_main.c`; the private production mutex retains only a TEST bridge, with its assertions defined here. Build profiles and pending integration are recorded in [TASKS](../../TASKS.md#tracking-and-dashboard-integration); the intended calibration/data API is in [Line Tracking](../../docs/architecture/LINE_TRACKING.md).
 
 In TEST builds, S1/S2/S4/S5 tasks start first while the S3 acquisition task remains stopped. Open the serial monitor, release GP20, then press and release GP20 to start the complete firmware self-test suite. The button gate requires about 30 ms stable release/press/release and prints a waiting message every second. S3 acquisition begins only after the suite finishes, so the start press is not treated as a calibration press and its periodic diagnostics are easy to capture. A build is not an executed self-test pass. The millivalues divide by 1000 to obtain the public −1…+1 sensor values; use the printed validity flags.
 
-For the manual calibration trial, release/press GP20 over black and hold the pose until one buzz; repeat over white until two buzzes. GP21 cancels and inhibits captures while held; three buzzes indicate cancellation/rejection. Check held/bouncing/simultaneous buttons and replacement captures. Record mounting, lighting, raw ranges, contrasts and timing. Sensors must remain stationary during capture; S3 does not measure stationarity.
+For a later manual calibration trial, follow the [integrated button/capture policy](../../docs/architecture/LINE_TRACKING.md). Capture black then white and record mounting, lighting, raw ranges, contrasts, cues and timing. GP21 persistently stops and cancels capture; reset and start require separate fresh presses. Reboot replaces calibration. Sensors must remain stationary during capture; S3 does not measure stationarity. Live held/bouncing/simultaneous-button checks remain pending.
 
 Verify ADC pair timing and failure bounds separately under S3-U04. Observe snapshot contention/cross-core timing under S3-U12 on the board after an agreed test reader is connected. Preserve all historical logs; append actual new measurements rather than reclassifying a prior source's PASS.
 
@@ -94,3 +95,33 @@ individual build logs share its filename prefix. One interrupted overlapping
 build attempt was discarded before the sequential rebuilds recorded here.
 Post-fix S3-U12 execution and absence of a hard fault remain PENDING until
 Nicholas flashes the corrected image and records the full firmware output.
+
+## Tracking integration control change — 2026-10-09
+
+The S3 acquisition/calibration/guidance algorithms are retained. The application coordinator now interprets runtime buttons and sends bounded captures/cancel; S3 owns GPIO setup, its tracker and buzzer. S3-U11 remains the preserved calibration-helper fixture, not validation of live start/reset policy. New runtime policy/cancellation/watchdog fixtures are INT-11 through INT-14 in [integration](../integration/TEST_LOG.md). All await recorded on-target execution for the integrated source.
+
+## Integrated Pico execution follow-up — 2026-10-09
+
+The `37adc44` wireless TEST run passed all seven S3 fixtures, including S3-U12. The console records snapshot mutex ID 3 before and after the suite and successful task start. Live valid acquisition then continued during the saved 174.5-second telemetry span. This supersedes the earlier pending integrated execution status for this source only; it does not validate physical calibration/tracking or the older unknown-source image. Nicholas stopped further testing because the robot is unavailable.
+
+## S3 consolidation software cases
+
+These fixtures execute the actual pure algorithms with synthetic inputs. Firmware variants compile for TEST=1; new on-Pico execution remains pending. Temporary laptop execution is authorized for this consolidation only and adds no permanent host runner.
+
+| ID | Scope | Method | Expected |
+| --- | --- | --- | --- |
+| S3-U14 | Code 39 A/B/C/D/Z at two scales | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S3-U15 | Reverse, malformed width/gap and invalid configuration | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S3-U16 | Distance-based events, one-shot rearm and unmapped Z | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S3-U17 | Navigation queue overflow and ambiguous-edge capture loss | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S3-U18 | Encoder/timer wrap and incomplete-frame timeout | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S3-U19 | Actual SPSC ring capacity, order, overflow, purge and wrap | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+
+### Consolidation results, 2026-10-09
+
+| Source | Cases | Execution | Result | Evidence |
+| --- | --- | --- | --- | --- |
+| `48cbb19` | S3-U14–U19 | Temporary laptop harness, actual pure production algorithms, ASan/UBSan | PASS software | [source/compiler manifest](../integration/logs/2026-10-09_consolidating-manifest.json), [fixture output](../integration/logs/2026-10-09_consolidating-software.txt) |
+| Same source | S3-U14–U19 | New firmware TEST images on Pico | **NOT EXECUTED** | [nine-profile sequential builds](../integration/logs/2026-10-09_consolidating-acceptance-builds.json); no new board log |
+
+These rows do not validate wiring, ISR ordering/WCET, motor output, mounted sensing, wheel geometry/PID, stopping or original-line recognition. Older on-target rows remain evidence for their recorded revisions only.

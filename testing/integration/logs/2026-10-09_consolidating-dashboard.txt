@@ -1,0 +1,12 @@
+Revision: cac5fae (runtime sources unchanged from c76e4bd; subsequent change is build configuration identity)
+Method: actual scripts/mqtt_dashboard.py, local Mosquitto on 127.0.0.1:18885,
+separate topic root consolidating-validation, browser http://127.0.0.1:8879.
+Synthetic telemetry was produced by actual s1_telemetry_encode; no Pico connected.
+Observed: NAVIGATE, symbol A, rearm/ok, encoder counts 100/200, estimates -0.20/+0.20 m/s,
+active action ID 2 and signed PWM -10%/+10%. Requested speed unavailable for an action target.
+Observed after elapsed time: last observation marked stale; producer age retained.
+Observed with additive navigation/barcode/encoder fields removed: following-line card remains,
+new fields display unavailable. No browser console errors in either observation.
+Collector accepts schema=1 synthetic payload through MQTT/SSE. No heartbeat compatibility
+claim: the minimal synthetic heartbeat was intentionally not a valid complete fixture.
+JavaScript syntax check and Python compile passed. No live firmware transport or physical result.

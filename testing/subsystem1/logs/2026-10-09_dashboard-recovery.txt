@@ -1,0 +1,12 @@
+S1-U12 -- isolated laptop software evidence only
+Actual dashboard on HTTP localhost:8767, MQTT localhost:18884.
+Separate topic root: robot/s1-dashboard-reconnect.
+Temporary Mosquitto process only; existing broker on port1883 unchanged.
+
+PASS HTTP/SSE starts while broker is initially absent
+PASS initial broker retry and subscription readiness
+PASS broker interruption remains visible without stopping HTTP
+PASS automatic reconnect and resubscription after broker restart
+
+Scope: temporary laptop broker recovery; no Pico/network-load or motor evidence.
+Temporary recovery dashboard/broker processes were terminated after the check.

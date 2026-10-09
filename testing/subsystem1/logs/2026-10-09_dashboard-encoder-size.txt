@@ -1,0 +1,3 @@
+Max full-label/counter encoder length: 725 / 768 bytes
+PASS exact capacity and undersized output rejection (actual pure C encoder; no firmware/hardware claim)
+Method: ad hoc compilation of actual pure telemetry.c with max counters and all character arrays filled to length-1; no host test runner restored. Firmware S1-U10 still requires on-target execution.

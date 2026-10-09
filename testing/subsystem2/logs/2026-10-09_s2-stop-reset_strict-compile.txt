@@ -1,0 +1,24 @@
+S2 strict translation-unit compilation only. No firmware self-test executed.
+
+SMP=1 APP_TEST=1
+arm-none-eabi-gcc -mcpu=cortex-m0plus -mthumb -ffreestanding -std=gnu11 -O2 -mfloat-abi=soft -D_PICO_RP2040_ -DBOARD_UART0_FREE=1 -Iinclude -Iconfig -Ikernel/knlinc -Wall -Wextra -Werror -fsyntax-only -DCNF_SMP=1 -DAPP_TEST=1 app_program/subsystem2/drv_motor.c app_program/subsystem2/motion_policy.c app_program/subsystem2/subsystem2.c app_program/subsystem2/subsystem2_test.c
+exit_code=0
+
+
+
+SMP=1 APP_TEST=0
+arm-none-eabi-gcc -mcpu=cortex-m0plus -mthumb -ffreestanding -std=gnu11 -O2 -mfloat-abi=soft -D_PICO_RP2040_ -DBOARD_UART0_FREE=1 -Iinclude -Iconfig -Ikernel/knlinc -Wall -Wextra -Werror -fsyntax-only -DCNF_SMP=1 -DAPP_TEST=0 app_program/subsystem2/drv_motor.c app_program/subsystem2/motion_policy.c app_program/subsystem2/subsystem2.c app_program/subsystem2/subsystem2_test.c
+exit_code=0
+
+
+
+SMP=0 APP_TEST=1
+arm-none-eabi-gcc -mcpu=cortex-m0plus -mthumb -ffreestanding -std=gnu11 -O2 -mfloat-abi=soft -D_PICO_RP2040_ -DBOARD_UART0_FREE=1 -Iinclude -Iconfig -Ikernel/knlinc -Wall -Wextra -Werror -fsyntax-only -DCNF_SMP=0 -DAPP_TEST=1 app_program/subsystem2/drv_motor.c app_program/subsystem2/motion_policy.c app_program/subsystem2/subsystem2.c app_program/subsystem2/subsystem2_test.c
+exit_code=0
+
+
+
+SMP=0 APP_TEST=0
+arm-none-eabi-gcc -mcpu=cortex-m0plus -mthumb -ffreestanding -std=gnu11 -O2 -mfloat-abi=soft -D_PICO_RP2040_ -DBOARD_UART0_FREE=1 -Iinclude -Iconfig -Ikernel/knlinc -Wall -Wextra -Werror -fsyntax-only -DCNF_SMP=0 -DAPP_TEST=0 app_program/subsystem2/drv_motor.c app_program/subsystem2/motion_policy.c app_program/subsystem2/subsystem2.c app_program/subsystem2/subsystem2_test.c
+exit_code=0
+
