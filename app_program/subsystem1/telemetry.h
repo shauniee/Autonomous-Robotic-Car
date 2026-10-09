@@ -24,6 +24,7 @@ typedef struct {
     uint32_t encoder_left_count, encoder_right_count, encoder_errors;
     uint32_t navigation_sampled_ms, action_id, action_state;
     uint32_t barcode_serviced_ms, barcode_sequence, barcode_queued;
+    uint32_t barcode_accepted, barcode_rejected, barcode_discarded;
     char barcode_state[12], barcode_result[24], barcode_symbol[2];
     char state[16], line[16], reason[40], capture[32];
 } S1Telemetry;

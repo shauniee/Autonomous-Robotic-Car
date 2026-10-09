@@ -177,6 +177,9 @@ bool s1_telemetry_refresh(uint32_t now)
         snapshot.barcode_serviced_ms = barcode.serviced_ms;
         snapshot.barcode_sequence = barcode.sequence;
         snapshot.barcode_queued = barcode.queued;
+        snapshot.barcode_accepted = barcode.accepted;
+        snapshot.barcode_rejected = barcode.rejected;
+        snapshot.barcode_discarded = barcode.discarded;
         snapshot.barcode_symbol[0] = barcode.symbol;
         if (!copy_label(snapshot.barcode_state, sizeof(snapshot.barcode_state),
                 s3_barcode_state_name(barcode.state),

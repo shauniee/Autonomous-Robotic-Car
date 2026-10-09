@@ -15,7 +15,9 @@ bool s1_navigation_fixture_encode(void)
         .velocity_mode = true, .speed_target_valid = true,
         .action_id = UINT32_MAX, .action_state = 3u,
         .barcode_available = true, .barcode_sequence = UINT32_MAX,
-        .barcode_queued = UINT32_MAX, .barcode_state = "fault",
+        .barcode_queued = UINT32_MAX,
+        .barcode_accepted = UINT32_MAX, .barcode_rejected = UINT32_MAX,
+        .barcode_discarded = UINT32_MAX, .barcode_state = "fault",
         .barcode_result = "capture_overflow", .barcode_symbol = "Z"};
     /* Static avoids putting two payload buffers on the startup stack. */
     static char json[S1_TELEMETRY_PAYLOAD_MAX + 1u];

@@ -171,6 +171,9 @@ unsigned s1_telemetry_encode(const S1Telemetry *s, uint32_t now,
         quoted(&j, s->barcode_symbol, sizeof(s->barcode_symbol));
         text(&j, ",\"sequence\":"); number(&j, s->barcode_sequence);
         text(&j, ",\"queued\":"); number(&j, s->barcode_queued);
+        text(&j, ",\"accepted\":"); number(&j, s->barcode_accepted);
+        text(&j, ",\"rejected\":"); number(&j, s->barcode_rejected);
+        text(&j, ",\"discarded\":"); number(&j, s->barcode_discarded);
         text(&j, ",\"age_ms\":");
         number(&j, (uint32_t)(now - s->barcode_serviced_ms));
         character(&j, '}');
