@@ -1,10 +1,10 @@
 # Line Tracking
 
-Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). This guide defines the intended independent S3 line service. Implementation status, integration gaps and physical validation belong in [TASKS](../../TASKS.md#s3-line-service). [Barcode](BARCODE.md) is a separate concurrent S3 feature.
+Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). This guide defines the intended independent S3 line service. Implementation status, integration gaps and physical validation belong in [TASKS](../../TASKS.md#tracking-and-dashboard-integration). [Barcode](BARCODE.md) is a separate concurrent S3 feature.
 
 ## Functionality and ownership
 
-S3 acquires a complete pair of analogue IR readings, calibrates each sensor independently, classifies line visibility and calculates memoryless proportional guidance. It owns the calibration buttons and buzzer feedback. S3 provides portable typed observations through a read-only API; it neither controls motors nor formats or publishes network telemetry.
+S3 acquires a complete pair of analogue IR readings, calibrates each sensor independently, classifies line visibility and calculates memoryless proportional guidance. It owns button GPIO setup, capture processing and buzzer feedback; the application coordinator alone interprets runtime button policy. S3 provides portable typed observations through a read-only API; it neither controls motors nor formats or publishes network telemetry.
 
 S1 reads S3 observations and owns telemetry encoding, transmission and reporting. Mission reads line guidance and owns movement decisions, including original-line search, bounded recovery and Motion requests. S2 alone actuates motors and owns measured wheel control. Safety owns independent whole-robot stop and watchdog policy. A line observation, requested steering or plausible ADC count does not establish movement permission, physical centering or sensor connectivity.
 
@@ -18,9 +18,9 @@ Calibration is RAM-only and must use the mounted sensor height, lighting and sur
 | Capture black | Maintain the pose until completion: one 100 ms buzz |
 | Need white | Release GP20, place both sensors on white, then make another fresh press |
 | Capture white | Maintain the pose until valid completion: two 100 ms buzzes separated by 100 ms silence |
-| Calibrated | Sampling/guidance continues automatically; GP20 has no motor-start action |
-| Replace calibration | Another fresh GP20 press begins replacement black capture, immediately clearing the old pair |
-| Cancel / rejection | GP21 immediately cancels capture and inhibits new capture while held; cancellation/rejection produces three buzzes |
+| Calibrated | Guidance continues; fresh local start is handled by the [coordinator](../ARCHITECTURE.md#implemented-line-tracking-integration) |
+| Replace calibration | Reboot, then capture black and white again |
+| Cancel / rejection | GP21 requests independent stop and capture cancellation; no new capture while held; cancellation/rejection produces three buzzes |
 
 GP20 requires a stable 30 ms release before arming and a stable 30 ms press before triggering. A held button, including one held at boot, cannot trigger repeated captures. GP21 dominates simultaneous inputs; releasing it does not replay a GP20 press made while it was held. Pressing GP20 during capture is rejected as busy. Buzzes are asynchronous; acquisition and button service do not wait for them.
 
@@ -34,7 +34,7 @@ stateDiagram-v2
     CaptureWhite --> Calibrated: Valid contrast and two buzzes
     CaptureWhite --> NeedWhite: Cancel gap or invalid sample
     CaptureWhite --> NeedBlack: Failed contrast
-    Calibrated --> CaptureBlack: Fresh GP20 replacement press
+    Calibrated --> NeedBlack: Reboot
 ```
 
 These phases derive from calibration flags and capture kind rather than duplicate stored state. During capture, normalized readings and guidance are unavailable. Cancelling replacement black leaves the pair cleared; cancelling white retains completed black. Failed white contrast clears both references. Typed capture results distinguish waiting, pending, black/white completion, unsupported kind, busy, cancel held, sample gap, invalid sample, contrast failure, missing black and cancellation. Display strings are labels, not command IDs.
@@ -89,7 +89,7 @@ No S3 motor duty mixing, run/start state, movement timeout or recovery actuation
 
 ### Understanding the source files
 
-`subsystem3.c` is the entry point, but the repeated work happens in `task_ir.c`. At each acquisition release the task calls the ADC driver, passes the complete pair into the tracker, then publishes a snapshot through the subsystem. At input releases it reads buttons, applies calibration actions and services buzzer timing. S1 later calls `s3_ir_copy()` to obtain a coherent observation.
+`subsystem3.c` is the entry point, but the repeated work happens in `task_ir.c`. At each acquisition release the task calls the ADC driver, passes the complete pair into the tracker, then publishes a snapshot through the subsystem. At service releases it processes bounded capture/cancel requests and services buzzer timing. The coordinator reads local inputs and requests captures. S1 later calls `s3_ir_copy()` to obtain a coherent observation.
 
 | File | Why it is separate / what to change here |
 | --- | --- |
@@ -97,13 +97,13 @@ No S3 motor duty mixing, run/start state, movement timeout or recovery actuation
 | `task_ir.c` | Decide when to sample/service inputs and connect the modules; change scheduling/orchestration here |
 | `drv_ir.c` | Access ADC registers and obtain raw counts; change sensor acquisition here |
 | `ir_tracking.c` | Calculate references, normalized readings, visibility and P guidance; change the IR algorithm here |
-| `calibration_control.c` | Interpret debounced GP20/GP21 presses as capture/cancel actions; change the calibration button workflow here |
+| `calibration_control.c` | Capture-result chirp mapping and preserved legacy debounce fixtures; live button policy is in application `robot_control_policy.c` |
 | `drv_feedback.c` | Read physical buttons and drive the buzzer; change GPIO/PWM feedback here |
 | `ir_snapshot.c` | Package tracker results and invalidate stale copied data; change the fields/read semantics here |
 
 A `.c` file contains the implementation. Its `.h` file declares the functions and data types another file may use; it does not contain a second implementation. `subsystem3_internal.h` declares the private task-to-cache publication function, while `subsystem3.h` exposes the supported external S3 interface. Consumers should not call the private task or mutate its tracker.
 
-These divisions keep hardware access, calculations, scheduling and consumer data independent. Separate files are a modular organization choice; they do not create extra tasks. S3 still has exactly one running task.
+These divisions keep hardware access, calculations, scheduling and consumer data independent. Separate files are a modular organization choice; they do not create extra tasks. The IR pipeline still has one task; the separate implemented barcode service adds a second S3 task without merging either data stream.
 
 All S3 test fixtures and assertions live under `testing/subsystem3/`. Its `firmware.mk` adds only S3 test sources to TEST=1 builds through one shared Make include. A tiny TEST-only bridge in `subsystem3.c` supplies the private cache mutex to the boundary assertion without adding a production handle accessor. TEST-only periodic console diagnostics in `task_ir.c` remain observations of the running service, not self-test assertions.
 
@@ -112,6 +112,8 @@ All S3 test fixtures and assertions live under `testing/subsystem3/`. Its `firmw
 ```c
 bool s3_ir_copy(S3IrSnapshot *snapshot);
 ```
+
+Runtime controls use `s3_local_inputs()`, `s3_capture_request(BLACK|WHITE)`, `s3_capture_cancel()` and `s3_capture_allow()`. The request is a single bounded slot under the cache mutex. A cancellation generation invalidates an older queued capture without that mutex; task processing checks it again and checks GP21/capture permission before capture. Only the S3 task mutates the tracker. All control calls are task context.
 
 The function returns false immediately for null input, unavailable initialization, busy mutex or kernel error; ignore its destination on failure. Before any acquisition, an initialized service returns a coherent snapshot with `have_sample=false`. Reading requires task context; do not call kernel mutex APIs from an ISR.
 
@@ -132,7 +134,7 @@ Invalid normalized/error/steering values are zero with explicit validity flags. 
 
 S3 creates one priority-inheritance mutex during initialization. Its handle is published with C11 release/acquire atomics for cross-core readers. Both writer and reader use `TMO_POL`, copying coherent values. Contention skips a publication or read; no queue/network operation delays acquisition. Reads and status-only updates do not advance the acquisition sequence. Consumers cannot mutate the live tracker or refresh cached data into validity.
 
-Example for a future S1 adapter:
+Example of the S1 collector boundary:
 
 ```c
 S3IrSnapshot sensors;
@@ -143,13 +145,15 @@ if (s3_ir_copy(&sensors))
 }
 ```
 
-This is an interface example, not an implemented S1 adapter. The struct is not a wire format and must not be serialized by native layout.
+The actual S1 adapter is owned by [Communications](COMMUNICATIONS.md#modules-and-drivers). The struct is not a wire format and must not be serialized by native layout.
 
 ## Task and hardware boundaries
 
-Use [TEAM](../TEAM.md#2-pins) for wiring and [TECHNICAL_INFO](../TECHNICAL_INFO.md#tcrt5000-based-ir-modules) for electrical facts. S3 retains one priority-12 task on core 1, with 10 ms input/feedback service and 20 ms acquisition. Deadline releases skip missed work rather than replaying a backlog. TEST builds report raw counts, normalized thousandths, calibration/capture status and validity every nominal 500 ms through the existing startup/test hooks.
+Use [TEAM](../TEAM.md#2-pins) for wiring and [TECHNICAL_INFO](../TECHNICAL_INFO.md#tcrt5000-based-ir-modules) for electrical facts. The IR pipeline retains its priority-12 task on core 1, with 10 ms capture/feedback service and 20 ms acquisition. Deadline releases skip missed work rather than replaying a backlog. TEST builds report raw counts, normalized thousandths, calibration/capture status and validity every nominal 500 ms through the existing startup/test hooks.
 
-Shared application startup initializes the 1 µs TIMER timebase without resetting it. S3 configures only its ADC and buzzer PWM slice; it neither enables/feeds a whole-system watchdog nor accesses S2/S1 runtime interfaces. Critical system health/stop policy belongs to Safety and requires explicit integration; a data service is not a whole-robot safety controller.
+Shared application startup initializes the 1 µs TIMER timebase without resetting it. S3 configures only its ADC and buzzer PWM slice; it neither enables/feeds a whole-system watchdog nor accesses S2/S1 runtime interfaces. Critical system health/stop policy belongs to the application coordinator; a data service is not a whole-robot safety controller.
+
+For the complete S3 pipeline, configuration and consumer examples, see [SUBSYSTEM3_GUIDE](../SUBSYSTEM3_GUIDE.md). Barcode task/capture ownership belongs to [Barcode](BARCODE.md).
 
 ## Establish a measured baseline
 

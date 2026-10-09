@@ -2,6 +2,20 @@
 
 The intended robot separates sensing, Mission decisions, Motion actuation, Safety and reporting. [PROJECT_SPECS](PROJECT_SPECS.md) owns required outcomes; [TEAM](TEAM.md) owns pins, priorities and resources. The full design below is proposed. [GETTING_STARTED](GETTING_STARTED.md#current-capabilities) identifies the implemented bench and remaining work.
 
+## Implemented line-tracking integration
+
+The tracking/dashboard extension uses the existing S3 sensor service, checked S2 forward-duty service and S1 collector. An application-level `robot_control_task` combines local Mission/Safety for this bench. This is smaller than the full-robot proposal below: the optional navigation profile adds configurable encoder PID/actions and barcode events; Terrain, Obstacle and full-course Mission remain deferred.
+
+The coordinator alone interprets GP20/GP21. It reads GP21 first every nominal 10 ms, requests persistent S2 stop independently of snapshot locks, and separately cancels S3 capture. GP20 needs stable 30 ms release/press and never repeats while held. Calibration uses bounded S3 capture requests; only the S3 task mutates its tracker. Cancellation invalidates older queued captures and movement disables capture.
+
+Operating states are READY, START_PENDING, FOLLOW_LINE, RECOVER_LINE, STOPPED, FAULT and RESET_PENDING. A calibrated READY press starts only on fresh visible guidance. START_PENDING waits for S2's current reset acknowledgement and revalidates visible data. Stop, invalid/stale data, changed stop generation or acknowledgement timeout cancels pending start. STOPPED/FAULT requires a fresh reset press, then another fresh start press; reset preserves calibration and discards prior movement. Calibration replacement requires reboot.
+
+The coordinator reads coherent S3/S2 snapshots without blocking and may retain a prior successful copy only within its original 60 ms budget. Control runs every nominal 20 ms without backlog. Initial following uses base 0.10 plus/minus S3's bounded correction; maximum duty is 0.35. Broad black requests 0.05 on both wheels without assigning junction/finish meaning. Line loss turns in the last known direction at 0.10/0 duty for at most 100 ms from the first LOST acquisition. Unknown direction stops. Two distinct fresh VISIBLE acquisitions are needed to resume; repeated copies do not advance confirmation or renew the deadline. Expiry is checked before new data.
+
+The coordinator owns a 250 ms hardware watchdog, enabled only after startup and the TEST gate/self-tests. Feed requires valid fresh IR acquisition and successful fresh S2 output service to both advance. Telemetry/network progress is irrelevant. A watchdog reboot returns to inhibited startup and clears RAM calibration. Output/physical timing and scheduling margins require measured acceptance in [testing](../testing/README.md).
+
+Current interfaces belong to [Line Tracking](architecture/LINE_TRACKING.md#modules-and-public-interface), [Motion](architecture/MOTION.md#current-duty-service-contract) and [Communications](architecture/COMMUNICATIONS.md#mqtt-and-payload-contract). [Getting started](GETTING_STARTED.md) owns operation and [TASKS](../TASKS.md) owns completion status.
+
 ## Data flow
 
 ```mermaid
@@ -52,7 +66,7 @@ These are logical full-robot contracts, not already allocated RTOS objects. Micr
 
 Use monotonic acquisition time and unsigned wrap-safe age calculations. Copying or publishing cached data never refreshes its time. Distances/heights are metres, speeds metres/second, angles degrees; line error/steering is negative left and positive right. Use deadline-based periodic releases, skipping missed releases rather than replaying a backlog. Bound storage, waits, retries and event processing; sonar settling and network reconnection must not block control.
 
-The implemented bench uses a narrower `MotionRequest`/`MotionHealth` contract. Its IF-01/02/03 behavior remains in the [IR handoff](architecture/IR_MOTION_HANDOFF.md#current-interface-contract); IF-04 is typed `IrTrackingOutput` in [Line Tracking](architecture/LINE_TRACKING.md#modules-and-drivers), and IF-05 is the [S1 snapshot](architecture/COMMUNICATIONS.md#modules-and-drivers). Requested duty and a stop latch are not measured speed/stationarity.
+The implemented bench uses a narrower `MotionRequest`/`MotionHealth` contract. Its IF-01/02/03 behavior is in [Motion](architecture/MOTION.md#current-duty-service-contract); IF-04 is the public snapshot in [Line Tracking](architecture/LINE_TRACKING.md#modules-and-public-interface), and IF-05 is the [S1 snapshot](architecture/COMMUNICATIONS.md#modules-and-drivers). Requested duty and a stop latch are not measured speed/stationarity.
 
 ## System state diagram
 
@@ -102,3 +116,13 @@ Active mission is a visual grouping of the existing operating states, not an add
 Arbitration: local stop/critical fault → required-data validity → obstacle handling → barcode/navigation → normal line guidance. Obstacle preemption cancels earlier navigation. Barcode reads during bypass/recovery may be logged but cannot redirect movement. Hump monitoring and telemetry run alongside control. Clear the retained hump maximum only on a fresh run, not on a stop.
 
 Design targets and unresolved limits are centralized in [PROJECT_SPECS](PROJECT_SPECS.md#design-targets-and-team-constraints). Record physical acceptance in [testing](../testing/README.md); proposed states, builds and software self-checks do not establish an operational mission.
+
+## Implemented configurable barcode navigation
+
+The default `NAVIGATION=0` profile preserves the calibrated duty bench. `NAVIGATION=1` requires explicit Motion/barcode/route configuration and refuses movement when setup is unavailable. [Barcode](architecture/BARCODE.md) owns frame/event logic; [Motion](architecture/MOTION.md#configurable-encoder-navigation) owns encoder/PID/action semantics. [S3 guide](SUBSYSTEM3_GUIDE.md) teaches startup and consumer usage.
+
+A separate priority-14 barcode task handles bounded GP16 capture concurrently with priority-12 IR. Shared GPIO interrupts run on the application core and dispatch encoder context before barcode edges. The coordinator remains priority 11, Motion 13; networking stays kernel-owned. S3 still has no motor/network writes.
+
+Fresh mapped events may enter APPROACH from FOLLOW_LINE. Barcode-exit-relative encoder spacing and a configured broad-black candidate select NAVIGATE; a unique Motion action then completes/acknowledges into REACQUIRE. Configured travel/time and two distinct visible acquisitions return to FOLLOW_LINE. Every deadline/data failure or independent local stop inhibits output. Purge invalidates encounter context; only a fresh local reset permits clearing latched barcode overflow. Encoder loss remains invalid until reboot after correcting its cause.
+
+These are implemented software context gates, not measured junction recognition or proof of original-line identity. Obstacle preemption, Terrain monitoring, bypass and finish detection remain proposed and inactive. Firmware builds/synthetic results and pending physical acceptance are recorded separately under [testing](../testing/README.md).
