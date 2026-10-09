@@ -143,7 +143,7 @@ static bool motion_telemetry_test(void)
     memset(snapshot.line, 'l', sizeof(snapshot.line) - 1u);
     memset(snapshot.reason, 'r', sizeof(snapshot.reason) - 1u);
     memset(snapshot.capture, 'c', sizeof(snapshot.capture) - 1u);
-    char json[S1_TELEMETRY_PAYLOAD_MAX + 1u];
+    static char json[S1_TELEMETRY_PAYLOAD_MAX + 1u];
     unsigned length = s1_telemetry_encode(&snapshot, UINT32_MAX,
         json, sizeof(json));
     if ((length == 0u) || (length > S1_TELEMETRY_PAYLOAD_MAX) ||
@@ -176,7 +176,7 @@ void subsystem1_test(void)
         .have_sample = true, .acquired = true, .sampled_ms = 100u,
         .state = "READY", .line = "unknown", .capture = "waiting"
     };
-    char json[S1_TELEMETRY_PAYLOAD_MAX + 1u];
+    static char json[S1_TELEMETRY_PAYLOAD_MAX + 1u];
     unsigned length = s1_telemetry_encode(&snapshot, 120u, json, sizeof(json));
     bool pass = length > 0u && strstr(json, "\"sample_age_ms\":20") &&
         strstr(json, "\"fractions\":null") &&

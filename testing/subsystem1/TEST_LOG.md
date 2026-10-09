@@ -31,3 +31,11 @@ Historical migration status: no S1 project results were recorded while this subs
 | 2026-10-09 | S1-U12 | Same manifest | Codex isolated laptop check | PASS | [recovery observations](logs/2026-10-09_dashboard-recovery.txt) | Temporary port-18884 broker, not the Pico transport or real-robot network-loss trial |
 | 2026-10-09 | S1-U11 supplement | [dashboard hardening manifest](logs/2026-10-09_dashboard-hardening-source.json) | Codex laptop/browser check | PASS | [numeric overflow](logs/2026-10-09_dashboard-overflow.txt) | Exponent overflow rejected before caching; same live SSE receives valid follow-up. Revised history script loaded in Chrome without warnings/errors; 60s eviction/gap break reviewed in source, not a timed hardware test |
 | 2026-10-09 | S1-U04/U06/U07/U09/U10 | `37adc44`; [integrated source](../integration/logs/2026-10-09_tracking-r2-source.json) | Nicholas GP20 / Codex USB capture | PASS | [console](../integration/logs/2026-10-09_tracking-r2-pico-test-console.txt), [results](../integration/logs/2026-10-09_tracking-r2-pico-results.json) | Five firmware fixtures executed. Pico MQTT transport additionally recorded 350 live telemetry frames; calibrated/live dashboard rendering and radio fault recovery remain pending. |
+
+## S3 consolidation software cases
+
+These fixtures execute the actual pure algorithms with synthetic inputs. Firmware variants compile for TEST=1; new on-Pico execution remains pending. Temporary laptop execution is authorized for this consolidation only and adds no permanent host runner.
+
+| ID | Scope | Method | Expected |
+| --- | --- | --- | --- |
+| S1-U13 | Signed speed/barcode JSON, exact capacity, unavailable sources | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |

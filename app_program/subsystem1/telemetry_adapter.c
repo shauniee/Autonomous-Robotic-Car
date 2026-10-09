@@ -1,6 +1,7 @@
 #define PROHIBIT_DEF_SIZE_T
 #include <stddef.h>
 #include <math.h>
+#include "../float_math.h"
 #include "telemetry_adapter.h"
 #include "../subsystem3/subsystem3.h"
 
@@ -84,8 +85,8 @@ bool s1_telemetry_map(const S3IrSnapshot *ir,
     if (control->speed_target_valid)
     {
         if (!isfinite(control->left_mps) || !isfinite(control->right_mps) ||
-            (fabsf(control->left_mps) > 2000000.0f) ||
-            (fabsf(control->right_mps) > 2000000.0f))
+            (robot_float_abs(control->left_mps) > 2000000.0f) ||
+            (robot_float_abs(control->right_mps) > 2000000.0f))
         {
             return false;
         }
@@ -124,8 +125,8 @@ bool s1_telemetry_map(const S3IrSnapshot *ir,
             motion->navigation.encoder_valid &&
             isfinite(motion->navigation.left_mps) &&
             isfinite(motion->navigation.right_mps) &&
-            (fabsf(motion->navigation.left_mps) <= 2000000.0f) &&
-            (fabsf(motion->navigation.right_mps) <= 2000000.0f);
+            (robot_float_abs(motion->navigation.left_mps) <= 2000000.0f) &&
+            (robot_float_abs(motion->navigation.right_mps) <= 2000000.0f);
         if (snapshot.encoder_calibrated)
         {
             snapshot.speed_left_milli =
