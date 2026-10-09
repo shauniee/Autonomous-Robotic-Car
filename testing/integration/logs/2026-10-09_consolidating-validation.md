@@ -35,3 +35,5 @@ Compiler stack reports record individual frames, including the TEST startup S1 f
 Earlier saved build rounds remain historical evidence and are superseded by the acceptance matrix for final-source claims. The initial wireless compilation failed because the isolated checkout lacked a local Wi-Fi header. Later builds used only the public example copied to an ignored header, then removed; private credentials were not copied or recorded. Final navigation configuration is absent deliberately: opt-in startup refuses movement until measured Motion, barcode and route settings exist.
 
 Pure fixtures exercise decision logic, including stop/reset ordering, action lifetime, expiry and simultaneous line/barcode context. They do not execute the actual kernel scheduler, physical IRQ arrival ordering or motor transport. Permanent firmware wrappers compile into TEST and retain stable IDs; their new on-Pico status is **NOT EXECUTED**. Historical physical/USB results apply only to their recorded revisions.
+
+Source/documentation whitespace checks and 254 local Markdown links pass. Verbatim compiler logs retain tool-generated spacing and are excluded from code whitespace checks.

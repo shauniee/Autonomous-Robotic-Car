@@ -841,7 +841,7 @@
   "checks": {
     "javascript_syntax": "PASS",
     "python_compile": "PASS",
-    "diff_whitespace": "PASS",
+    "diff_whitespace": "PASS for source/documentation; verbatim compiler logs excluded (tool-generated trailing spaces retained)",
     "markdown_links": {
       "checked_local_links": 254,
       "broken_links": []
