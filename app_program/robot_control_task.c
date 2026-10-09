@@ -121,6 +121,7 @@ static void control_task(INT stacd, void *exinf)
     bool was_moving = false;
     S3BarcodeSnapshot barcode = {0};
     bool have_barcode = false;
+    S2NavigationRequest navigation_request = {.kind = S2_SPEED};
     uint32_t now;
     if (!read_time(&now))
     {
@@ -217,7 +218,10 @@ static void control_task(INT stacd, void *exinf)
             barcode = barcode_copy;
             have_barcode = true;
         }
-        S2NavigationRequest navigation_request = {.kind = S2_SPEED};
+        if (due || !moving)
+        {
+            navigation_request = (S2NavigationRequest){.kind = S2_SPEED};
+        }
         if (APP_NAVIGATION && moving && due)
         {
             bool fresh_barcode = have_barcode &&
