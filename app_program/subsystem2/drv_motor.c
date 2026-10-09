@@ -23,6 +23,13 @@ static UW slice_register(unsigned pin, unsigned offset)
     return PWM_BASE + ((pin / 2u) * PWM_SLICE_STRIDE) + offset;
 }
 
+static UW gpio_control_register(unsigned pin)
+{
+    /* Imported GPIO_CTRL does not parenthesize its argument. A function
+       boundary prevents compound pin expressions corrupting the address. */
+    return GPIO_CTRL(pin);
+}
+
 static void report_init_failure(const char *stage, unsigned pin)
 {
     /* Startup failures only, before fallback changes the mux/readback.
@@ -47,8 +54,8 @@ static void report_init_failure(const char *stage, unsigned pin)
             (unsigned)in_w(slice_register(output, PWM_CHx_TOP)),
             (unsigned)in_w(slice_register(output, PWM_CHx_CC)));
         tm_printf((UB *)"[S2] pin=%u CTRL_A=%08x CTRL_B=%08x\n", output,
-            (unsigned)in_w(GPIO_CTRL(output)),
-            (unsigned)in_w(GPIO_CTRL(output + 1u)));
+            (unsigned)in_w(gpio_control_register(output)),
+            (unsigned)in_w(gpio_control_register(output + 1u)));
     }
 }
 
@@ -119,9 +126,9 @@ static bool configure_slice(unsigned pin)
         (in_w(slice_register(pin, PWM_CHx_TOP)) == MOTOR_WRAP) &&
         (in_w(slice_register(pin, PWM_CHx_CC)) == 0u) &&
         ((in_w(slice_register(pin, PWM_CHx_CSR)) & PWM_CH_CSR_EN) != 0u) &&
-        ((in_w(GPIO_CTRL(pin)) & PWM_FUNCTION_MASK) ==
+        ((in_w(gpio_control_register(pin)) & PWM_FUNCTION_MASK) ==
             GPIO_CTRL_FUNCSEL_PWM) &&
-        ((in_w(GPIO_CTRL(pin + 1u)) & PWM_FUNCTION_MASK) ==
+        ((in_w(gpio_control_register(pin + 1u)) & PWM_FUNCTION_MASK) ==
             GPIO_CTRL_FUNCSEL_PWM);
     if (!verified)
     {
@@ -217,9 +224,9 @@ static bool wheel_output(unsigned pin, bool forward_a, float *duty)
         ((in_w(slice_register(pin, PWM_CHx_CSR)) & PWM_CH_CSR_EN) == 0u) ||
         (in_w(slice_register(pin, PWM_CHx_TOP)) != MOTOR_WRAP) ||
         (in_w(slice_register(pin, PWM_CHx_DIV)) != MOTOR_DIV_8_4) ||
-        ((in_w(GPIO_CTRL(pin)) & PWM_FUNCTION_MASK) !=
+        ((in_w(gpio_control_register(pin)) & PWM_FUNCTION_MASK) !=
             GPIO_CTRL_FUNCSEL_PWM) ||
-        ((in_w(GPIO_CTRL(pin + 1u)) & PWM_FUNCTION_MASK) !=
+        ((in_w(gpio_control_register(pin + 1u)) & PWM_FUNCTION_MASK) !=
             GPIO_CTRL_FUNCSEL_PWM))
     {
         return false;
