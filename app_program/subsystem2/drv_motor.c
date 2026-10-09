@@ -1,6 +1,7 @@
 #include "drv_motor.h"
 #include "subsystem2.h"
 #include <stdatomic.h>
+#include <math.h>
 
 #define MOTOR_WRAP 999u
 #define MOTOR_DIV_8_4 100u
@@ -17,6 +18,7 @@
 #define RIGHT_FORWARD_A true
 
 static atomic_bool initialized;
+static int last_left_sign, last_right_sign;
 
 static UW slice_register(unsigned pin, unsigned offset)
 {
@@ -93,6 +95,8 @@ static bool checked_zero_output(void)
 
 bool drv_motor_brake(void)
 {
+    last_left_sign = 0;
+    last_right_sign = 0;
     bool success = checked_zero_output();
     if (!success)
     {
@@ -197,29 +201,52 @@ static bool wheel(unsigned pin, float duty, bool forward_a)
 
 bool drv_motor_apply(float left, float right)
 {
-    if (!atomic_load_explicit(&initialized, memory_order_acquire) ||
-        !motion_duties_valid(left, right))
+    if (!motion_duties_valid(left, right))
     {
         (void)drv_motor_brake();
         return false;
     }
-    if (!wheel(MOTOR_LEFT_PIN, left, LEFT_FORWARD_A) ||
-        !wheel(MOTOR_RIGHT_PIN, right, RIGHT_FORWARD_A))
+    return drv_motor_apply_signed(left, right);
+}
+
+bool drv_motor_apply_signed(float left, float right)
+{
+    if (!atomic_load_explicit(&initialized, memory_order_acquire) ||
+        !isfinite(left) || !isfinite(right) ||
+        (fabsf(left) > MOTION_MAX_DUTY) ||
+        (fabsf(right) > MOTION_MAX_DUTY))
+    {
+        (void)drv_motor_brake();
+        return false;
+    }
+    int ls = left > 0.0f ? 1 : (left < 0.0f ? -1 : 0);
+    int rs = right > 0.0f ? 1 : (right < 0.0f ? -1 : 0);
+    if (((ls * last_left_sign) < 0) || ((rs * last_right_sign) < 0))
+    {
+        return drv_motor_brake(); /* Apply the new sign at the next release. */
+    }
+    if (!wheel(MOTOR_LEFT_PIN, fabsf(left),
+            left < 0.0f ? !LEFT_FORWARD_A : LEFT_FORWARD_A) ||
+        !wheel(MOTOR_RIGHT_PIN, fabsf(right),
+            right < 0.0f ? !RIGHT_FORWARD_A : RIGHT_FORWARD_A))
     {
         atomic_store_explicit(&initialized, false, memory_order_release);
         (void)drv_motor_brake();
         fallback_low();
         return false;
     }
+    last_left_sign = ls;
+    last_right_sign = rs;
     return true;
 }
 
 static bool wheel_output(unsigned pin, bool forward_a, float *duty)
 {
     UW value = in_w(slice_register(pin, PWM_CHx_CC));
-    UW active = forward_a ? (value & 0xffffu) : (value >> 16);
-    UW inactive = forward_a ? (value >> 16) : (value & 0xffffu);
-    if ((inactive != 0u) ||
+    UW forward = forward_a ? (value & 0xffffu) : (value >> 16);
+    UW reverse = forward_a ? (value >> 16) : (value & 0xffffu);
+    UW active = forward != 0u ? forward : reverse;
+    if (((forward != 0u) && (reverse != 0u)) ||
         (active > (UW)(MOTION_MAX_DUTY * (float)(MOTOR_WRAP + 1u))) ||
         ((in_w(slice_register(pin, PWM_CHx_CSR)) & PWM_CH_CSR_EN) == 0u) ||
         (in_w(slice_register(pin, PWM_CHx_TOP)) != MOTOR_WRAP) ||
@@ -232,6 +259,10 @@ static bool wheel_output(unsigned pin, bool forward_a, float *duty)
         return false;
     }
     *duty = (float)active / (float)(MOTOR_WRAP + 1u);
+    if (reverse != 0u)
+    {
+        *duty = -*duty;
+    }
     return true;
 }
 

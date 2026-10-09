@@ -21,10 +21,15 @@ typedef struct
     bool test_inhibited;
     bool driver_ok;
     char reason[32];
+    S2EncoderSnapshot encoders;
+    S2NavigationFeedback navigation;
 } MotionHealth;
 
 ER subsystem2_init(void);
 ER subsystem2_start(void);
+/* Startup-only configuration; no guessed geometry or tuning defaults. */
+bool s2_navigation_configure(const S2NavigationConfig *config);
+bool s2_navigation_configuration(S2NavigationConfig *config);
 ER s2_publish(MotionRequest request);
 /* Independent of the request mutex. Each call invalidates prior generations.
    Acceptance is not a brake acknowledgement; an in-flight write may finish. */

@@ -1,6 +1,7 @@
 #ifndef MOTION_POLICY_H
 #define MOTION_POLICY_H
 
+#include "navigation.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -17,6 +18,8 @@ typedef struct
     uint32_t sampled_ms;
     bool enabled;
     uint32_t generation;
+    bool velocity_mode;
+    S2NavigationRequest navigation;
 } MotionRequest;
 
 bool motion_duties_valid(float left, float right);

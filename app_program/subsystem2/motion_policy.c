@@ -12,7 +12,8 @@ bool motion_request_valid(MotionRequest request, bool stopped, uint32_t now)
 {
     return !stopped && request.enabled &&
         ((uint32_t)(now - request.sampled_ms) <= MOTION_EXPIRY_MS) &&
-        motion_duties_valid(request.left, request.right);
+        (request.velocity_mode ||
+         motion_duties_valid(request.left, request.right));
 }
 
 uint32_t motion_stop_generation(uint32_t state)

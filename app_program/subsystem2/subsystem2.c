@@ -1,5 +1,6 @@
 #include "subsystem2.h"
 #include "drv_motor.h"
+#include "../gpio_capture.h"
 #include <tk/smp.h>
 #include <stdatomic.h>
 
@@ -15,6 +16,28 @@ static MotionRequest latest;
 static MotionHealth progress;
 static uint32_t pending_reset;
 static bool driver_ready;
+static S2NavigationConfig navigation_config;
+
+bool s2_navigation_configure(const S2NavigationConfig *config)
+{
+    if (!s2_navigation_config_valid(config) ||
+        (atomic_load_explicit(&motion_tid, memory_order_acquire) > 0))
+    {
+        return false;
+    }
+    navigation_config = *config;
+    return true;
+}
+
+bool s2_navigation_configuration(S2NavigationConfig *config)
+{
+    if (config == NULL)
+    {
+        return false;
+    }
+    *config = navigation_config;
+    return s2_navigation_config_valid(config);
+}
 
 /* M0+ C11 compare-exchange needs an unavailable libatomic helper. Use the
    public SMP kernel RMW primitive; local interrupt masking is only for UP. */
@@ -135,7 +158,9 @@ ER s2_publish(MotionRequest request)
         return E_OBJ;
     }
     if (request.enabled &&
-        (!motion_duties_valid(request.left, request.right) ||
+        ((request.velocity_mode ?
+          !s2_navigation_config_valid(&navigation_config) :
+          !motion_duties_valid(request.left, request.right)) ||
          (request.generation == 0u) ||
          (request.generation >= MOTION_MAX_GENERATION)))
     {
@@ -318,6 +343,8 @@ static void motion_task(INT stacd, void *exinf)
     {
         park_fault("clock_failed", &health);
     }
+    S2NavigationController navigation;
+    s2_navigation_reset(&navigation);
     uint32_t next = now + MOTION_PERIOD_MS;
     uint32_t observed_generation = 1u;
     const char *reason = "boot_stopped";
@@ -389,6 +416,32 @@ static void motion_task(INT stacd, void *exinf)
         {
             latch_fault("invalid_or_expired_request", &reason);
         }
+        S2EncoderSnapshot encoders = {0};
+        if (s2_encoder_copy(&encoders))
+        {
+            health.encoders = encoders;
+        }
+        else
+        {
+            health.encoders.valid = false;
+        }
+        float output_left = request.left;
+        float output_right = request.right;
+        if (apply && request.velocity_mode)
+        {
+            if (!s2_navigation_tick(&navigation, &navigation_config,
+                    &encoders, &request.navigation, now,
+                    &output_left, &output_right))
+            {
+                apply = false;
+                latch_fault(navigation.feedback.reason, &reason);
+            }
+        }
+        else if (motion_stop_latched(state_read()) || (reset != 0u))
+        {
+            s2_navigation_reset(&navigation);
+        }
+        health.navigation = navigation.feedback;
         /* Close the copy/validation window. A stop may still arrive during
            the bounded driver transaction; its post-check then brakes. */
         uint32_t before_output = state_read();
@@ -399,7 +452,7 @@ static void motion_task(INT stacd, void *exinf)
         output_ok = drv_motor_brake();
 #else
         output_ok = apply ?
-            drv_motor_apply(request.left, request.right) : drv_motor_brake();
+            drv_motor_apply_signed(output_left, output_right) : drv_motor_brake();
 #endif
         uint32_t after_output = state_read();
         if ((after_output != before_output) ||
@@ -478,7 +531,7 @@ ER subsystem2_init(void)
     {
         return E_OBJ;
     }
-    if (!drv_motor_init())
+    if (!s2_encoder_init() || !drv_motor_init())
     {
         return E_SYS;
     }

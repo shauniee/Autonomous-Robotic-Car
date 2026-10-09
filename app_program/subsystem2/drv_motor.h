@@ -6,6 +6,8 @@
 bool drv_motor_init(void);
 bool drv_motor_brake(void);
 bool drv_motor_apply(float left, float right);
+/* Signed navigation output; direction reversal inserts a braked release. */
+bool drv_motor_apply_signed(float left, float right);
 /* Checked PWM register snapshot; neither speed nor measured stationarity. */
 bool drv_motor_output_copy(float *left, float *right);
 
