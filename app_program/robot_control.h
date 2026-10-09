@@ -12,6 +12,8 @@ typedef struct
     float left_duty;
     float right_duty;
     bool motion_enabled;
+    bool velocity_mode, speed_target_valid;
+    float left_mps, right_mps;
     char state[16];
     char reason[40];
 } RobotControlSnapshot;

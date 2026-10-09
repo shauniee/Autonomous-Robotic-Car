@@ -61,7 +61,8 @@ static void label_copy(char *destination, unsigned capacity,
     destination[i] = '\0';
 }
 
-static void publish(const RobotPolicy *policy, uint32_t now)
+static void publish(const RobotPolicy *policy, uint32_t now,
+    const S2NavigationRequest *request)
 {
     ID id = atomic_load_explicit(&reporting_mutex, memory_order_acquire);
     if ((id <= 0) || (tk_loc_mtx(id, TMO_POL) < E_OK))
@@ -70,8 +71,13 @@ static void publish(const RobotPolicy *policy, uint32_t now)
     }
     latest.observed_ms = now;
     ++latest.sequence;
-    latest.left_duty = policy->left_duty;
-    latest.right_duty = policy->right_duty;
+    latest.velocity_mode = APP_NAVIGATION && robot_policy_moving(policy);
+    latest.speed_target_valid = latest.velocity_mode &&
+        (request->kind == S2_SPEED);
+    latest.left_mps = request->left_mps;
+    latest.right_mps = request->right_mps;
+    latest.left_duty = latest.velocity_mode ? 0.0f : policy->left_duty;
+    latest.right_duty = latest.velocity_mode ? 0.0f : policy->right_duty;
     latest.motion_enabled = robot_policy_moving(policy);
     label_copy(latest.state, sizeof(latest.state),
         robot_policy_state_name(policy->state));
@@ -330,7 +336,7 @@ static void control_task(INT stacd, void *exinf)
             robot_navigation_reset(&navigation, 0u);
         }
         was_moving = robot_policy_moving(&policy);
-        publish(&policy, now);
+        publish(&policy, now, &navigation_request);
         if (robot_watchdog_progress(&watchdog,
                 have_ir && ir.acquisition_valid && ir.sample_fresh &&
                 health_fresh && health.driver_ok,
