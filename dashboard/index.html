@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f6f1">
+  <title>Robot · Live tracking</title>
+  <link rel="stylesheet" href="/dashboard.css">
+  <script src="/dashboard.js" defer></script>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <a class="brand" href="/" aria-label="Robot tracking home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+        <span>ROBOT<span class="brand-divider"> / </span>TRACKING</span>
+      </a>
+      <span class="view-label">LIVE OBSERVATIONS</span>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div><p class="eyebrow">LINE FOLLOWER</p><h1>Track live.</h1>
+          <p class="subtitle">The robot’s sensors, decisions and motor outputs.</p></div>
+        <div class="connection-stack" aria-live="polite">
+          <span class="connection" id="live-status" data-tone="neutral"><i></i>Awaiting robot</span>
+          <span class="broker-status" id="broker-status">Connecting to dashboard…</span>
+        </div>
+      </section>
+
+      <section class="state-card" aria-labelledby="state-title">
+        <div class="state-main"><span class="state-symbol" id="state-symbol" aria-hidden="true">◌</span>
+          <div><p class="eyebrow light">ROBOT STATE</p><h2 id="state-title">Waiting for data</h2>
+            <p id="state-reason">Keep this page open while the robot connects.</p></div></div>
+        <div class="state-meta"><span id="test-status" class="test-tag" hidden>TEST · MOTORS INHIBITED</span>
+          <span class="meta-label">Latest telemetry</span><strong id="telemetry-age">—</strong>
+          <span class="meta-label" id="feed-status">No observations yet</span></div>
+      </section>
+
+      <div class="primary-grid">
+        <section class="card sensors" id="sensor-card" aria-labelledby="sensor-title">
+          <div class="card-heading"><div><p class="eyebrow">PERCEPTION</p><h2 id="sensor-title">Line sensors</h2></div>
+            <span class="tag" id="line-status" data-tone="neutral">Unknown</span></div>
+          <div class="sensor-pair">
+            <div class="sensor-reading"><div class="sensor-label"><i class="dot left-dot"></i>LEFT</div>
+              <strong class="sensor-value" id="left-value">—</strong><span class="raw-value" id="left-raw">ADC —</span>
+              <div class="meter" aria-hidden="true"><div class="meter-fill left-fill" id="left-fill"></div><i></i></div></div>
+            <div class="sensor-reading"><div class="sensor-label"><i class="dot right-dot"></i>RIGHT</div>
+              <strong class="sensor-value" id="right-value">—</strong><span class="raw-value" id="right-raw">ADC —</span>
+              <div class="meter" aria-hidden="true"><div class="meter-fill right-fill" id="right-fill"></div><i></i></div></div>
+          </div>
+          <div class="scale-label"><span>−1 white</span><span>0</span><span>+1 black</span></div>
+          <div class="sensor-footer"><div><span class="detail-label">Sensor error</span><strong id="sensor-error">—</strong></div>
+            <div><span class="detail-label">IR age at publication</span><strong id="sample-age">—</strong></div></div>
+          <p class="context" id="sample-validity">Waiting for a calibrated sensor observation.</p>
+        </section>
+
+        <section class="card motors" id="motor-card" aria-labelledby="motor-title">
+          <div class="card-heading"><div><p class="eyebrow">MOVEMENT</p><h2 id="motor-title">Motor outputs</h2></div>
+            <span class="tag" id="brake-status" data-tone="neutral">Unknown</span></div>
+          <div class="wheel-headings"><span></span><span>LEFT</span><span>RIGHT</span></div>
+          <div class="duty-row"><div><strong>Requested</strong><span>Controller’s PWM request</span></div>
+            <strong id="requested-left">—</strong><strong id="requested-right">—</strong></div>
+          <div class="duty-row applied"><div><strong>Applied</strong><span>S2’s recorded PWM output</span></div>
+            <strong id="applied-left">—</strong><strong id="applied-right">—</strong></div>
+          <div class="wheel-bars" aria-hidden="true"><div><i id="applied-left-bar"></i></div><div><i id="applied-right-bar"></i></div></div>
+          <div class="motion-detail"><span id="stop-latch">Stop latch: unknown</span><span id="motion-age">Output report: —</span></div>
+          <p class="context">PWM is a software output, not measured wheel speed. Brake output does not prove the wheels have stopped.</p>
+        </section>
+      </div>
+
+      <section class="card" aria-labelledby="navigation-title">
+        <h2 id="navigation-title">Barcode and encoder navigation</h2>
+        <p id="barcode-observation">Barcode: unavailable</p>
+        <p id="encoder-observation">Encoders: unavailable</p>
+        <p id="navigation-observation">Navigation: unavailable</p>
+        <p id="speed-request">Requested speed: unavailable</p>
+        <p class="context">Course mapping and geometry require configuration.
+          Encoder estimates and GPIO/PWM output still require hardware acceptance.</p>
+      </section>
+      <section class="card history" aria-labelledby="history-title">
+        <div class="card-heading"><div><p class="eyebrow">RECENT OBSERVATIONS</p><h2 id="history-title">Sensor history</h2></div>
+          <div class="legend"><span><i class="dot left-dot"></i>Left</span><span><i class="dot right-dot"></i>Right</span><span><i class="dot error-dot"></i>Error</span></div></div>
+        <div class="chart-wrap"><canvas id="history-chart" role="img" aria-label="Recent normalized left and right sensor readings and sensor error, from minus one to plus one"></canvas>
+          <p class="chart-empty" id="chart-empty">Sensor history appears when live readings arrive.</p></div>
+        <div class="chart-footer"><span>−1 white · +1 black · error &lt; 0 left / &gt; 0 right</span><span>Last 60 s · up to 120 observations</span></div>
+      </section>
+
+      <div class="secondary-grid">
+        <section class="card calibration" aria-labelledby="calibration-title">
+          <div class="card-heading"><div><p class="eyebrow">SENSOR SETUP</p><h2 id="calibration-title">Calibration</h2></div>
+            <span class="tag" id="calibration-status" data-tone="neutral">Unknown</span></div>
+          <table><thead><tr><th scope="col">ADC reference</th><th scope="col">Left</th><th scope="col">Right</th></tr></thead>
+            <tbody><tr><th scope="row">Black</th><td id="black-left">—</td><td id="black-right">—</td></tr>
+              <tr><th scope="row">White</th><td id="white-left">—</td><td id="white-right">—</td></tr>
+              <tr><th scope="row">Contrast</th><td id="contrast-left">—</td><td id="contrast-right">—</td></tr></tbody></table>
+          <p class="context" id="capture-status">Capture result: waiting for data.</p>
+        </section>
+
+        <section class="card health" aria-labelledby="health-title">
+          <div class="card-heading"><div><p class="eyebrow">CONNECTION HEALTH</p><h2 id="health-title">Reporting</h2></div></div>
+          <dl><div><dt>Live heartbeat</dt><dd id="heartbeat-age">—</dd></div>
+            <div><dt>Last reported status</dt><dd id="reported-status">—</dd></div>
+            <div><dt>IR acquisition sequence</dt><dd id="ir-sequence">—</dd></div>
+            <div><dt>Failed publications</dt><dd id="dropped-publish">—</dd></div></dl>
+          <p class="context">A cached status is historical. Live heartbeat and telemetry freshness show whether new data is arriving.</p>
+        </section>
+      </div>
+    </main>
+
+    <footer><span><i class="footer-dot"></i>OBSERVATION ONLY</span><p>Start and stop use the robot’s local buttons.</p><span id="dashboard-status">Local dashboard</span></footer>
+  </div>
+</body>
+</html>
