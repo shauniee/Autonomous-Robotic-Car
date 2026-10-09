@@ -6,11 +6,11 @@ Shaun / S1 owns the portable latest snapshot, mutex and JSON encoder. Nicholas /
 
 The full-robot plan publishes mission state/reason, requested versus measured wheel motion, encoder counts/distance, line/junction/barcode, terrain/maximum valid hump, obstacle profile and validity/age/connection health. Its bounded status subscription validates reporting requests and rejects malformed or drive/start/stop messages; an illustrative request is `{"request":"status"}`. No request clears Safety or authorizes movement. Final mission schema is pending in [PROJECT_SPECS](../PROJECT_SPECS.md#pending-decisions).
 
-The implemented bench stream has **no subscriptions, echo or remote commands**. Full mission telemetry/status requests remain deferred. [GETTING_STARTED](../GETTING_STARTED.md#current-capabilities) owns current capabilities and operating steps; [system architecture](../ARCHITECTURE.md) owns mission arbitration.
+The implemented bench publishes the existing S3 snapshot and now restores S1 heartbeat, retained connection status and a bounded **status-only subscription**. There are no drive/start/stop or calibration commands. Full mission measurements remain deferred until their producers and final schema are agreed. [GETTING_STARTED](../GETTING_STARTED.md#current-capabilities) owns current capabilities and operating steps; [system architecture](../ARCHITECTURE.md) owns mission arbitration.
 
 ## State diagram
 
-This connection state machine preserves the established kernel-service design. The bench implements connection/publication only; the proposed Online status-request path is deferred.
+This connection state machine preserves the established kernel-service design. The bench implements connection, status subscription and publication. Online status requests report diagnostics; they never reach motion policy.
 
 ```mermaid
 stateDiagram-v2
@@ -34,7 +34,7 @@ stateDiagram-v2
 | Initialize / Config Error | Load/validate configuration; invalid configuration stays offline |
 | WiFi Connecting | Kernel-owned bounded radio/IP connection; control tasks continue locally |
 | MQTT Connecting | One service-owned connection attempt |
-| Online | Publish newest snapshot; full plan additionally validates bounded status requests |
+| Online | Publish newest snapshot and heartbeat; validate bounded status requests |
 | Backoff | Bounded delayed retry, no offline backlog or motor-state change |
 
 No communications state calls Motion or authorizes actuation. Network loss preserves healthy local autonomy.
@@ -50,9 +50,11 @@ Use [TEAM's radio/peripheral ownership](../TEAM.md#3-peripherals) and [reserved 
 | app_program/subsystem1/telemetry.h | Portable S1Telemetry value type, update/copy/encode APIs; no RTOS/network headers |
 | app_program/subsystem1/subsystem1.c | One priority-inheritance mutex and latest value; no S1 task |
 | app_program/subsystem1/telemetry.c | Bounded JSON and integer-based decimal formatting |
+| app_program/subsystem1/status_protocol.c / .h | Bounded fragmented status-request validation and network diagnostic JSON |
 | app_program/subsystem3/telemetry_s3.c | Convert current tracker/controller results to thousandths and labels |
 | app_program/subsystem3/task_ir.c | Attempt snapshot update after each control cycle when MQTT=1 |
-| lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c | Connect, copy/encode and publish within the kernel network service |
+| lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c | Connect/subscribe, heartbeat/status, last will, bounded retry and latest publication in the kernel service |
+| scripts/mqtt_client.py | Laptop monitor and status-only request helper; Paho dependency in scripts/requirements-mqtt.txt |
 | lib/liblwip/sysdepend/pico_rp2040/lwipopts.h | MQTT output ring 1024 bytes |
 | config/wifi_secrets.h | Ignored local WiFi/broker credentials; example is tracked |
 
@@ -62,7 +64,7 @@ The latest value replaces the previous value; there is no offline queue. S3's fl
 
 ## MQTT and payload contract
 
-Topic `robot/s3/telemetry`, client ID `csc01-s3-pico`, TCP port 1883, QoS **0**, retain **false**, nominal period **500 ms**. An accepted connection attempts the latest snapshot immediately, then starts the periodic timer. The payload limit is **768 bytes** plus one local NUL byte; the MQTT output ring is **1024 bytes**. Oversized/unterminated input, unavailable snapshot or publication error skips that message. QoS 0 is observation without delivery guarantees.
+Topic `robot/s3/telemetry`, client-ID prefix `csc01-s3-pico` plus the radio MAC, TCP port 1883, QoS **0**, retain **false**, nominal period **500 ms**. After successful status subscription, the service attempts the latest snapshot immediately, then starts the periodic timer. Optional broker username/password are configured locally; empty values preserve anonymous access. Existing local headers remain compatible through transport defaults. When using different topics, configure all four explicitly; topics must be distinct, nonempty, under 96 bytes and contain no wildcards. An empty broker IP leaves WiFi available with MQTT disabled after a single configuration diagnostic. The payload limit is **768 bytes** plus one local NUL byte; the MQTT output ring is **1024 bytes**. Oversized/unterminated input, unavailable snapshot or publication error skips that message. QoS 0 is observation without delivery guarantees.
 
 | JSON field | Meaning / unavailable form |
 | --- | --- |
@@ -88,12 +90,50 @@ Topic `robot/s3/telemetry`, client ID `csc01-s3-pico`, TCP port 1883, QoS **0**,
 
 Stale historical fractions can still be present; assess them with `sample_fresh`, acquisition validity and age. Telemetry never renews acquisition time. `null` means unavailable, rather than a made-up zero reading. A plausible ADC value cannot establish sensor connection. The 500 ms stream can miss a whole 100 ms recovery turn and cannot prove stop/recovery timing.
 
+## Status and heartbeat contract
+
+These restore S1 reporting from `wifi_telemetry` for the current kernel-service layout. The existing S3 telemetry schema above is unchanged.
+
+| Topic | Behavior |
+| --- | --- |
+| `robot/s3/heartbeat` | Every 1000 ms, QoS 0, not retained; also attempted when subscription becomes ready |
+| `robot/s3/status` | Online status on subscription readiness and accepted status requests, QoS 1, retained; retained offline last will on unexpected connection loss |
+| `robot/s3/request` | Subscribe QoS 1; accept only `{"request":"status"}`, with optional JSON whitespace |
+
+Heartbeat and online status contain `schema:1`, `online:true`, boot `uptime_ms`, `connection_sequence` (successful subscriptions since boot), `rejected_requests`, `dropped_publish`, `have_snapshot` and the last successfully copied `telemetry_sequence`. Counters wrap as uint32 and reset at reboot. `have_snapshot:false` means the latest copy was unavailable/busy; a heartbeat still publishes even before a producer supplies data. The offline will is `{"schema":1,"online":false}`. These fields are reporting health, not acquisition or watchdog progress.
+
+Requests are capped at **64 bytes**, assembled only to the announced exact length, and reset on disconnect. Reject unknown/duplicate fields, malformed/unterminated/oversized payloads, embedded NUL, other topics and every movement/calibration request. No JSON escapes are accepted in the fixed request strings. Accept at most one status request per **1000 ms**, coalescing it into a single pending response at the next nominal 500 ms publication tick. This allocates no queue, task or kernel object. The response attempts current S3 telemetry plus retained status; no history is replayed. Publish requests with retain=false. lwIP does not expose the incoming retained flag; a retained status request can cause one harmless reporting response on reconnect.
+
+A broker QoS acknowledgement confirms broker receipt, not Pico processing. A retained online flag can be stale; interpret it with live heartbeat freshness. The laptop monitor flags >3 seconds without a live heartbeat; this observation threshold is not a motion/stop deadline. The last will uses a 10-second MQTT keepalive and cannot establish immediate loss detection.
+
 ## Business logic
 
-The service uses one periodic publish callback and one retry callback, with at most one of these adapter timers pending. Each connection status cancels old adapter timers. A refused/disconnected/immediately failed connect schedules retry after 3000 ms. The service's frequent polling does not bypass the retry delay or start a second connection; invalid IPv4 configuration is diagnosed once. Existing lwIP/MQTT protocol timers remain owned by the stack. Publish failures skip the message while the connected periodic stream continues; an asynchronous disconnect enters the retry path.
+The adapter maintains at most one timer: a 15-second connection/subscription attempt deadline, a periodic publish timer or a retry timer. Connection acceptance subscribes to the reporting topic; only subscription success declares Online. Failure/refusal/timeout cancels the old adapter timer, closes the client, discards partial requests and backs off from 1000 ms, doubling to 30000 ms. Successful subscription resets backoff. Frequent polling cannot bypass the delay. Every radio link edge is passed to S1 before servicing lwIP timeouts; no broker attempt starts while the link is down. Invalid configuration is diagnosed once. Existing protocol timers remain owned by lwIP. Publication errors increment a diagnostic counter and drop that message without growing an offline backlog.
 
-Reconnect sends the newest stored snapshot, not a backlog. No MQTT state transition calls S2 or S3 policy functions. Snapshot copying is nonblocking, the network stays on core 0, GP21 processing stays in the core-1 control loop, and the watchdog still requires advancing valid ADC and Motion progress. Healthy local following continues through network loss. Physical scheduling/stack margin under network load still needs measurement.
+The existing WiFi service now also retries an immediately rejected initial join and bounds DOWN/JOIN/NOIP waits to 20 seconds followed by a 5-second rejoin delay. An empty SSID disables joining; a failed radio interface stays unavailable. These are service timers, not measured radio-call or scheduling limits.
+
+Reconnect sends the newest stored snapshot, not a backlog, and restores the status subscription. No MQTT state transition calls S2 or S3 policy functions. Copying stays nonblocking, networking stays on core 0, and GP21 processing remains local. Healthy local control continues through network loss. Physical scheduling/stack margin under network load still needs measurement.
+
+## Restoration audit
+
+Compared `origin/wifi_telemetry` revision `828f6f9` with `main` revision `0546ea2` before this fix. The earlier S1 implementation used Pico SDK polling/CMake; current main uses micro T-Kernel/Make. Restoring obsolete paths verbatim would create a second network owner.
+
+| Earlier S1 work | Main before fix | Current disposition |
+| --- | --- | --- |
+| WiFi association and recovery | Kernel service present; rejected initial join and DOWN/NOIP stalls could remain offline indefinitely | Restore bounded join/recovery in the existing owner |
+| MQTT latest telemetry / coherent sensor age | S1 S3 snapshot and bounded encoder already present | Preserve current schema, timestamps, mutex and producer |
+| Heartbeat, retained online/offline status, last will | Missing | Restored in kernel transport and S1 portable encoder |
+| Subscription and bounded fragmented inbox | Missing | Restore reporting-only status subscription; remote actuation and stop-on-disconnect superseded by current autonomy policy |
+| Unique board client ID, broker credentials | Fixed ID; authentication absent | Append radio MAC; restore optional local broker authentication |
+| Reconnect backoff and attempt deadlines | Fixed 3-second retry; stack-dependent attempt timeout | Restore capped backoff, explicit deadline and subscription restoration |
+| Laptop MQTT helper/dependency | Removed | Restore monitor and status helper for current topics |
+| CMake/PowerShell build and fake-SDK runners | Replaced by Make; host runners retired | Preserve current build profiles and firmware self-tests |
+| Whole-mission telemetry fields | Earlier portable schema existed over stub sensor drivers; main supplies actual S3 bench fields only | Pending final mission contract/producer integration; do not fabricate S2/S4/S5 measurements or revive obsolete controller types |
+
+## Integration boundary
+
+S1 currently consumes main's existing `s1_telemetry_update()` producer interface. A later S3 sensor-service change that removes that writer will require an agreed adapter to its snapshot API; this restoration does not change S3 or invent a new cross-subsystem data contract.
 
 ## Evidence
 
-Use [wireless setup](../GETTING_STARTED.md#wireless-telemetry) for configuration/builds and [testing](../../testing/README.md) for evidence procedure. Existing S1-U04/U05 and INT-06/07 use real modules with host fakes; INT-08 is laptop loopback transport. Host runners are retired; saved results remain. Firmware S1-U04 is preserved. SYS-09/10 and planned T12/T13 require actual Pico/physical evidence; they remain pending. The 500 ms stream cannot prove short motor/stop timing.
+Use [wireless setup](../GETTING_STARTED.md#wireless-telemetry) for configuration/builds and [testing](../../testing/README.md) for evidence procedure. Existing S1-U04/U05 and INT-06/07 use real modules with host fakes; INT-08 is laptop loopback transport. Host runners are retired; saved results remain. Firmware S1-U04 is preserved; S1-U06/U07 add status parser and diagnostic encoding checks. They require on-target execution; compilation is not a pass. SYS-09/10 and planned T12/T13 require actual Pico/physical evidence; they remain pending. The 500 ms stream cannot prove short motor/stop timing.
