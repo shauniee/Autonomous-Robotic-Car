@@ -26,7 +26,10 @@ static void encoder_isr(uint32_t levels, uint32_t changed,
     right_phase = right;
     if ((dl == 2) || (dr == 2) || (ambiguous != 0u))
     {
-        ++errors;
+        if (errors != UINT32_MAX)
+        {
+            ++errors;
+        }
     }
     else
     {
