@@ -437,9 +437,17 @@ static void motion_task(INT stacd, void *exinf)
                 latch_fault(navigation.feedback.reason, &reason);
             }
         }
-        else if (motion_stop_latched(state_read()) || (reset != 0u))
+        else if (s2_navigation_config_valid(&navigation_config))
         {
-            s2_navigation_reset(&navigation);
+            if ((generation != observed_generation) || (reset != 0u))
+            {
+                s2_navigation_reset(&navigation);
+            }
+            S2NavigationRequest idle = {.kind = S2_SPEED};
+            float unused_left;
+            float unused_right;
+            (void)s2_navigation_tick(&navigation, &navigation_config,
+                &encoders, &idle, now, &unused_left, &unused_right);
         }
         health.navigation = navigation.feedback;
         /* Close the copy/validation window. A stop may still arrive during
