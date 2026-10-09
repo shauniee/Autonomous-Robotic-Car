@@ -202,7 +202,8 @@ bool barcode_fixture_capture_ring(void)
     }
     REQUIRE(s3_barcode_capture_empty(&c));
     REQUIRE(!s3_barcode_capture_pop_task(&c, &edge));
-    s3_barcode_capture_reset_task(&c);
+    REQUIRE(s3_barcode_capture_reset_task(&c));
     REQUIRE(!atomic_load(&c.overflow));
+    REQUIRE(!s3_barcode_capture_reset_task(&c));
     return true;
 }

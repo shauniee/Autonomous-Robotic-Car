@@ -17,5 +17,6 @@ bool s3_barcode_capture_push_isr(S3BarcodeCapture *capture,
 bool s3_barcode_capture_pop_task(S3BarcodeCapture *capture,
     S3BarcodeEdge *edge);
 bool s3_barcode_capture_empty(const S3BarcodeCapture *capture);
-void s3_barcode_capture_reset_task(S3BarcodeCapture *capture);
+/* Returns prior loss so a context purge cannot silently clear capture fault. */
+bool s3_barcode_capture_reset_task(S3BarcodeCapture *capture);
 #endif

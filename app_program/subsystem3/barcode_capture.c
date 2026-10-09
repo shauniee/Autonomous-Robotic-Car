@@ -45,10 +45,12 @@ bool s3_barcode_capture_empty(const S3BarcodeCapture *c)
     return atomic_load_explicit(&c->consumed, memory_order_acquire) ==
         atomic_load_explicit(&c->written, memory_order_acquire);
 }
-void s3_barcode_capture_reset_task(S3BarcodeCapture *c)
+bool s3_barcode_capture_reset_task(S3BarcodeCapture *c)
 {
+    bool lost = atomic_load_explicit(&c->overflow, memory_order_acquire);
     atomic_store_explicit(&c->consumed,
         atomic_load_explicit(&c->written, memory_order_acquire),
         memory_order_release);
     atomic_store_explicit(&c->overflow, false, memory_order_release);
+    return lost;
 }

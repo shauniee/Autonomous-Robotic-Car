@@ -151,13 +151,18 @@ static void barcode_task(INT stacd, void *exinf)
                    It is not a substitute for cross-core snapshot locking. */
                 UINT saved;
                 DI(saved);
-                s3_barcode_capture_reset_task(&capture);
+                bool lost = s3_barcode_capture_reset_task(&capture);
                 EI(saved);
                 bool clear = atomic_load_explicit(&reset_requested,
                     memory_order_acquire);
                 atomic_store_explicit(&reset_requested, false,
                     memory_order_release);
                 s3_barcode_decoder_context(&decoder, current_epoch, clear);
+                if (lost && !clear && decoder.status.configured)
+                {
+                    s3_barcode_decoder_fault(&decoder,
+                        S3_BC_CAPTURE_OVERFLOW);
+                }
                 serviced_epoch = current_epoch;
             }
             if (atomic_load_explicit(&capture.overflow, memory_order_acquire) &&
