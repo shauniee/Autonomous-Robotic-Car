@@ -20,7 +20,7 @@ static bool copy_label(char *out, unsigned capacity, const char *label,
 
 static bool duty_valid(float duty)
 {
-    return isfinite(duty) && (duty >= 0.0f) &&
+    return isfinite(duty) && (duty >= -MOTION_MAX_DUTY) &&
         (duty <= MOTION_MAX_DUTY);
 }
 
@@ -79,6 +79,19 @@ bool s1_telemetry_map(const S3IrSnapshot *ir,
     snapshot.left_duty = thousandths(control->left_duty);
     snapshot.right_duty = thousandths(control->right_duty);
     snapshot.motion_enabled = control->motion_enabled;
+    snapshot.velocity_mode = control->velocity_mode;
+    snapshot.speed_target_valid = control->speed_target_valid;
+    if (control->speed_target_valid)
+    {
+        if (!isfinite(control->left_mps) || !isfinite(control->right_mps) ||
+            (fabsf(control->left_mps) > 2000000.0f) ||
+            (fabsf(control->right_mps) > 2000000.0f))
+        {
+            return false;
+        }
+        snapshot.target_left_milli = (int32_t)(control->left_mps * 1000.0f);
+        snapshot.target_right_milli = (int32_t)(control->right_mps * 1000.0f);
+    }
     snapshot.test_inhibited = APP_TEST != 0;
     if (!copy_label(snapshot.state, sizeof(snapshot.state), control->state,
             sizeof(control->state)) ||
@@ -100,6 +113,26 @@ bool s1_telemetry_map(const S3IrSnapshot *ir,
         duty_valid(motion->applied_left) &&
         duty_valid(motion->applied_right))
     {
+        snapshot.encoder_valid = motion->encoders.valid;
+        snapshot.encoder_left_count = motion->encoders.left_count;
+        snapshot.encoder_right_count = motion->encoders.right_count;
+        snapshot.encoder_errors = motion->encoders.errors;
+        snapshot.action_id = motion->navigation.action_id;
+        snapshot.action_state = motion->navigation.action_state;
+        snapshot.navigation_sampled_ms = motion->navigation.sampled_ms;
+        snapshot.encoder_calibrated = motion->navigation.configured &&
+            motion->navigation.encoder_valid &&
+            isfinite(motion->navigation.left_mps) &&
+            isfinite(motion->navigation.right_mps) &&
+            (fabsf(motion->navigation.left_mps) <= 2000000.0f) &&
+            (fabsf(motion->navigation.right_mps) <= 2000000.0f);
+        if (snapshot.encoder_calibrated)
+        {
+            snapshot.speed_left_milli =
+                (int32_t)(motion->navigation.left_mps * 1000.0f);
+            snapshot.speed_right_milli =
+                (int32_t)(motion->navigation.right_mps * 1000.0f);
+        }
         snapshot.motion_available = true;
         snapshot.motion_serviced_ms = motion->serviced_ms;
         snapshot.motion_stopped = motion->stopped;
@@ -132,8 +165,30 @@ bool s1_telemetry_refresh(uint32_t now)
     /* A producer on the other core can advance during the copies. Validate
        against collection completion, never an earlier entry timestamp. */
     now = time.lo;
-    return s1_telemetry_map(&ir, &control, available, now, &snapshot) &&
-        s1_telemetry_update(&snapshot);
+    if (!s1_telemetry_map(&ir, &control, available, now, &snapshot))
+    {
+        return false;
+    }
+    S3BarcodeSnapshot barcode;
+    if (s3_barcode_copy(&barcode))
+    {
+        snapshot.barcode_available = true;
+        snapshot.barcode_serviced_ms = barcode.serviced_ms;
+        snapshot.barcode_sequence = barcode.sequence;
+        snapshot.barcode_queued = barcode.queued;
+        snapshot.barcode_symbol[0] = barcode.symbol;
+        if (!copy_label(snapshot.barcode_state, sizeof(snapshot.barcode_state),
+                s3_barcode_state_name(barcode.state),
+                sizeof(snapshot.barcode_state)) ||
+            !copy_label(snapshot.barcode_result,
+                sizeof(snapshot.barcode_result),
+                s3_barcode_result_name(barcode.result),
+                sizeof(snapshot.barcode_result)))
+        {
+            return false;
+        }
+    }
+    return s1_telemetry_update(&snapshot);
 #else
     (void)now;
     return false;

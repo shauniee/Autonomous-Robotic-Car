@@ -10,7 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
 
-TELEMETRY_MAX = 768
+TELEMETRY_MAX = 1536
 STATUS_MAX = 256
 MAX_VIEWERS = 8
 ASSET_ROOT = Path(__file__).resolve().parent.parent / "dashboard"

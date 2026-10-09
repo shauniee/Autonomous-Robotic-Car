@@ -16,7 +16,7 @@
   const finite = value => typeof value === "number" && Number.isFinite(value);
   const display = value => finite(value) ? String(value) : "—";
   const signed = value => finite(value) ? (value > 0 ? "+" : "") + value.toFixed(2) : "—";
-  const percent = value => finite(value) && value >= 0 && value <= 0.35 ? (value * 100).toFixed(1) + "%" : "—";
+  const percent = value => finite(value) && Math.abs(value) <= 0.35 ? (value * 100).toFixed(1) + "%" : "—";
   const human = value => typeof value === "string" && value ? value.toLowerCase().replaceAll("_", " ") : "unknown";
   const ageText = value => finite(value) ? (value < 1000 ? Math.round(value) + " ms ago" : (value / 1000).toFixed(1) + " s ago") : "—";
 
@@ -77,7 +77,28 @@
     element("sensor-card").dataset.stale = String(!freshFeed || !sampleUsable);
     text("sample-validity", !hasData ? "Waiting for a calibrated sensor observation." : !freshFeed ? "Feed is stale. Values above are the last reported observation." : !sampleUsable ? "IR acquisition is invalid or stale at publication." : !fractions ? "Calibration or capture is not yet providing a valid reading." : "Valid calibrated reading at publication.");
 
-    const requested = data.requested_duty || {};
+    const barcode = data.barcode || null;
+    const encoders = data.encoders || null;
+    const navigation = data.navigation || null;
+    text("barcode-observation", barcode ? "Barcode: " + human(barcode.state) +
+      " · " + human(barcode.result) + " · symbol " + (barcode.symbol || "—") +
+      " · age " + display(barcode.age_ms) + " ms" : "Barcode: unavailable");
+    text("encoder-observation", encoders ? "Encoders: " +
+      (encoders.valid === true ? "valid counts" : "invalid") +
+      " · left " + display(encoders.left_count) + " · right " +
+      display(encoders.right_count) + " · errors " + display(encoders.errors) +
+      " · speed " + (encoders.speed_mps ? signed(encoders.speed_mps.left) +
+      " / " + signed(encoders.speed_mps.right) + " m/s" : "unavailable") :
+      "Encoders: unavailable");
+    const actionNames = ["idle", "active", "done", "failed"];
+    text("navigation-observation", navigation ? "Navigation: ID " +
+      display(navigation.id) + " · " + (actionNames[navigation.state] || "unknown") +
+      " · age " + display(navigation.age_ms) + " ms" : "Navigation: unavailable");
+    text("speed-request", data.requested_speed_mps ? "Requested speed: " +
+      signed(data.requested_speed_mps.left) + " / " +
+      signed(data.requested_speed_mps.right) + " m/s" :
+      "Requested speed: unavailable (duty bench or action target)");
+    const requested = data.velocity_mode ? {} : (data.requested_duty || {});
     const motion = data.motion && typeof data.motion === "object" ? data.motion : null;
     const applied = motion && motion.applied_duty ? motion.applied_duty : {};
     text("requested-left", percent(requested.left));
@@ -85,7 +106,7 @@
     text("applied-left", percent(applied.left));
     text("applied-right", percent(applied.right));
     ["left", "right"].forEach(side => {
-      element("applied-" + side + "-bar").style.width = finite(applied[side]) && applied[side] >= 0 && applied[side] <= 0.35 ? (applied[side] / 0.35 * 100) + "%" : "0%";
+      element("applied-" + side + "-bar").style.width = finite(applied[side]) && Math.abs(applied[side]) <= 0.35 ? (Math.abs(applied[side]) / 0.35 * 100) + "%" : "0%";
     });
     const motionFresh = motion && finite(motion.age_ms) && motion.age_ms <= IR_FRESH_MS;
     tag("brake-status", !motion ? "Unknown" : !motionFresh ? "Report stale" : motion.braked === true ? "Brake output" : "PWM applied", motionFresh ? "good" : "neutral");
