@@ -42,5 +42,11 @@ build/
 build-*/
 tmp/
 __pycache__/
+.venv-dashboard/
 .env
 secrets.h
+
+/config/navigation_config.h
+
+# Compiler stack-usage artifacts (saved summaries belong under testing/logs).
+*.su

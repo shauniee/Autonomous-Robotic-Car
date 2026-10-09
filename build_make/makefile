@@ -56,7 +56,10 @@ endif
 -include mtkernel_3/app_program/subdir.mk
 
 # Nicholas-owned S3 tests; other subsystem sources keep their existing rules.
+include ../testing/subsystem1/firmware.mk
+include ../testing/subsystem2/firmware.mk
 -include ../testing/subsystem3/firmware.mk
+include ../testing/integration/firmware.mk
 
 # Create every object directory up front.  Git does not store empty
 # directories, so a fresh clone lacks them, and not every compile rule
