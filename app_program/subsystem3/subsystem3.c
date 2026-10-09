@@ -3,6 +3,7 @@
 #include "task_ir.h"
 #include "drv_feedback.h"
 #include <stdatomic.h>
+#include <tk/smp.h>
 #if APP_TEST
 #include "../../testing/subsystem3/subsystem3_test.h"
 #endif
@@ -10,6 +11,36 @@
 /* Consumers may call before startup, including from the other core. */
 static atomic_int snapshot_mutex;
 static S3IrSnapshot latest;
+static UW capture_allowed;
+static UW cancel_generation;
+static uint32_t serviced_cancel;
+static IrCaptureKind pending_capture;
+static uint32_t pending_generation;
+
+static UW read_word(UW *word)
+{
+#if TK_SUPPORT_SMP
+    return atomic_cmpxchg(word, 0u, 0u);
+#else
+    UINT saved;
+    DI(saved);
+    UW value = *word;
+    EI(saved);
+    return value;
+#endif
+}
+
+static void write_word(UW *word, UW value)
+{
+#if TK_SUPPORT_SMP
+    (void)atomic_xchg(word, value);
+#else
+    UINT saved;
+    DI(saved);
+    *word = value;
+    EI(saved);
+#endif
+}
 
 ER subsystem3_init(void)
 {
@@ -33,7 +64,7 @@ ER subsystem3_init(void)
     tm_printf((UB *)"[TEST] S3 snapshot mutex published=%d\n",
         atomic_load_explicit(&snapshot_mutex, memory_order_acquire));
 #endif
-    return E_OK;
+    return subsystem3_barcode_init();
 }
 
 ER subsystem3_start(void)
@@ -52,7 +83,7 @@ ER subsystem3_start(void)
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 task start result=%d\n", task_id);
 #endif
-    return task_id < E_OK ? task_id : E_OK;
+    return task_id < E_OK ? task_id : subsystem3_barcode_start();
 }
 
 bool subsystem3_publish(const IrTracker *tracker, uint32_t sequence,
@@ -101,3 +132,85 @@ bool subsystem3_snapshot_self_test(void)
     return subsystem3_test_snapshot_boundary(id);
 }
 #endif
+
+bool s3_local_inputs(bool *start_down, bool *stop_down)
+{
+    if ((start_down == NULL) || (stop_down == NULL) ||
+        (atomic_load_explicit(&snapshot_mutex, memory_order_acquire) <= 0))
+    {
+        return false;
+    }
+    drv_feedback_inputs(start_down, stop_down);
+    return true;
+}
+
+void s3_capture_allow(bool allowed)
+{
+    write_word(&capture_allowed, allowed ? 1u : 0u);
+}
+
+void s3_capture_cancel(void)
+{
+#if TK_SUPPORT_SMP
+    (void)atomic_inc(&cancel_generation);
+#else
+    UINT saved;
+    DI(saved);
+    ++cancel_generation;
+    EI(saved);
+#endif
+}
+
+bool s3_capture_request(IrCaptureKind kind)
+{
+    if (((kind != IR_CAPTURE_BLACK) && (kind != IR_CAPTURE_WHITE)) ||
+        (read_word(&capture_allowed) == 0u))
+    {
+        return false;
+    }
+    ID id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
+    if ((id <= 0) || (tk_loc_mtx(id, TMO_POL) < E_OK))
+    {
+        return false;
+    }
+    bool accepted = pending_capture == IR_CAPTURE_NONE;
+    if (accepted)
+    {
+        pending_capture = kind;
+        pending_generation = read_word(&cancel_generation);
+    }
+    return (tk_unl_mtx(id) >= E_OK) && accepted;
+}
+
+void subsystem3_capture_service(IrTracker *tracker, uint32_t now)
+{
+    uint32_t generation = read_word(&cancel_generation);
+    bool changed = generation != serviced_cancel;
+    serviced_cancel = generation;
+    if (changed || (read_word(&capture_allowed) == 0u))
+    {
+        ir_tracking_cancel_capture(tracker, IR_CAPTURE_CANCELLED);
+    }
+    ID id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
+    if ((id <= 0) || (tk_loc_mtx(id, TMO_POL) < E_OK))
+    {
+        return; /* Request remains pending; retry at next bounded release. */
+    }
+    IrCaptureKind kind = pending_capture;
+    uint32_t requested_generation = pending_generation;
+    pending_capture = IR_CAPTURE_NONE;
+    if (tk_unl_mtx(id) < E_OK)
+    {
+        return;
+    }
+    bool start_down;
+    bool stop_down;
+    drv_feedback_inputs(&start_down, &stop_down);
+    (void)start_down;
+    if ((kind != IR_CAPTURE_NONE) && !stop_down &&
+        (read_word(&capture_allowed) != 0u) &&
+        (requested_generation == read_word(&cancel_generation)))
+    {
+        (void)ir_tracking_capture(tracker, kind, now);
+    }
+}
