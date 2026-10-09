@@ -1,6 +1,6 @@
 # Phase 1: IR-to-Motion development handoff
 
-Status: software template available; physical motor operation is not verified and the owner reports that motors currently do not work. This handoff preserves the existing runtime. Motor fixes, stop serialization and reset acknowledgement belong to later approved phases.
+Recorded handoff status: software template available; physical motor operation is not verified and the owner reported that motors did not work. This handoff preserves the existing runtime. Motor fixes, stop serialization and reset acknowledgement belong to later approved phases.
 
 ## Where Nicholas should develop
 
@@ -21,7 +21,7 @@ S3 drv_ir -> ir_tracking -> robot_control -> task_ir
 | [motion_policy.h](../../app_program/subsystem2/motion_policy.h) | Current request type and limits |
 | [subsystem2.c](../../app_program/subsystem2/subsystem2.c) | Exclusive motor service, stop latch and request expiry |
 
-Start with the existing [line-following catalogue](LINE_FOLLOWING.md) and host checks. Keep one S3 producer and one S2 motor writer; do not add a second motor task or write PWM from the IR subsystem. The application initializes subsystem objects before starting tasks. The template already runs micro T-Kernel; no separate kernel installation into an application image is required.
+Start with the existing [line-tracking catalogue](LINE_TRACKING.md) and preserved firmware self-checks. Keep one S3 producer and one S2 motor writer; do not add a second motor task or write PWM from the IR subsystem. The application initializes subsystem objects before starting tasks. The template already runs micro T-Kernel; no separate kernel installation into an application image is required.
 
 ## Current interface contract
 
@@ -59,11 +59,10 @@ Preserve the existing health, stop and watchdog handling around this block. S3 o
 
 ## Reproducible software builds
 
-Run from the repository root `Project/Autonomous-Robotic-Car`, with `arm-none-eabi-gcc` on PATH. The full Pico SDK must include TinyUSB and, for the radio profile, CYW43 dependencies. The current make logic needs an SDK path without spaces. The Phase 1 guide recorded this temporary alias for Mahesha's workspace; it is not verified on Nicholas's Mac. Nicholas's installed SDK is `/Users/nicholasbay/Documents/school/INF2004/pico-sdk`; use that path for local builds or follow [getting started](../GETTINGS_STARTED.md). The original teammate alias example is:
+Run from the repository root `Project/Autonomous-Robotic-Car`, with `arm-none-eabi-gcc` on PATH. The full Pico SDK must include TinyUSB and, for the radio profile, CYW43 dependencies. The current make logic needs an SDK path without spaces. The Phase 1 guide recorded this temporary alias for Mahesha's workspace; it is not verified on Nicholas's Mac. Phase 1 recorded Nicholas's SDK at `/Users/nicholasbay/Documents/school/INF2004/pico-sdk`; verify your installation or follow [getting started](../GETTING_STARTED.md). The original teammate alias example is:
 
 ```sh
 export PICO_SDK_PATH=/private/tmp/inf2004-maker-sdk
-sh scripts/check-ir-tracking.sh
 ```
 
 If that temporary alias is absent after a reboot, recreate it only when the target path is free:
@@ -91,7 +90,7 @@ make -C build_make -j6 PICO_SDK_PATH=/private/tmp/inf2004-maker-sdk SMP=1 CONSOL
 ## Flash and use the template
 
 1. Use USB as the sole power source for development. Hold BOOTSEL while connecting, then copy the matching **TEST=1** UF2 to RPI-RP2. Open the USB serial port after reboot and inspect startup/self-test output and `[BENCH] ... MOTOR_INHIBITED`. The periodic bench output reports ADC/calibration/state, not left/right duty values. See [Raspberry Pi BOOTSEL instructions](https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html).
-2. On the Maker, develop IR calculation and state logic using host inputs first. Real ADC acquisition needs correctly connected sensors on GP26/27 with compatible electrical levels and common ground. Floating ADC readings or startup messages are not evidence that sensors work. Hardware calibration depends on mounted sensors and correct button/feedback wiring.
+2. On the Maker, develop IR calculation and state logic using controlled software inputs first. Real ADC acquisition needs correctly connected sensors on GP26/27 with compatible electrical levels and common ground. Floating ADC readings or startup messages are not evidence that sensors work. Hardware calibration depends on mounted sensors and correct button/feedback wiring.
 3. On the correctly wired Robo bench, begin stopped. Release then press GP20 with both sensors over black at mounted height; keep the pose for at least 500 ms. One chirp indicates black capture. Repeat over white; two chirps indicate valid white capture, three indicate rejection. Each channel requires >=300 ADC counts of contrast. Failed white contrast clears both references.
 4. Place the calibrated sensors on a visible line, release and freshly press GP20 to start. Fully white or broad black rejects start. TEST firmware can exercise the software state transitions while keeping motors inhibited.
 5. GP21 requests the independent persistent stop and cancels capture. Release GP21, then make a fresh GP20 press to reset STOPPED to READY. Release GP20 and press again to start. Holding a button cannot restart. Reset retains valid calibration; reboot loses it.
@@ -101,11 +100,11 @@ Recovery remains the existing proportional bench policy: both-white loss request
 
 ## Verification and known limits
 
-Run `sh scripts/check-ir-tracking.sh` after IR changes. The original Phase 1 checks cover pure tracking, paired ADC driver, robot state policy, combined policies, and real S3/S2 task code separately in normal and TEST configurations. The current script also checks the S1 snapshot/encoder and the MQTT service adapter; [wireless setup](../GETTINGS_STARTED.md#5-wireless-telemetry-on-the-mac) and [communications](COMMUNICATIONS.md) describe the later read-only extension. That extension reports requested duties over WiFi on Pico W/WH; it is separate from the inhibited ordinary-Pico development profile. S3 task tests use fake GPIO/ADC/S2; S2 service tests use a fake kernel/motor. These tests do not run the two real tasks together on the board. Existing [integration evidence](../../testing/integration/TEST_LOG.md) records the checks and the Phase 1 profile builds; [system tests](../../testing/system/TEST_LOG.md) remain physical gates.
+The original Phase 1 host checks covered tracking, paired ADC, robot policy and real S3/S2 task code separately in normal and TEST configurations. Later checks covered S1 encoding/snapshots and the MQTT adapter. Their runners are retired; saved [integration evidence](../../testing/integration/TEST_LOG.md) remains. Firmware self-tests are preserved; use [testing](../../testing/README.md) and [getting started](../GETTING_STARTED.md#build-profiles) for their current workflow. The [wireless extension](COMMUNICATIONS.md) reports requested duties, separately from the inhibited ordinary-Pico profile. Fake GPIO/ADC/S2/kernel/network checks did not run both real tasks together on the board. [System trials](../../testing/system/TEST_LOG.md) remain physical gates.
 
 Current stop/reset has ordering limits: a stop can arrive between S2's flag check and its PWM write; reset has no acknowledged-brake barrier or generation protection against concurrent stop/request activity. `MotionHealth.stopped` is a latch, not an acknowledgement that wheels are braked/stationary. Stop latency and physical braking are unmeasured. Do not present host checks as proof that these races are fixed. Planned Phases 3 and 4 address them; Phase 2 adds hardware-boundary validation/error propagation.
 
-This Phase 1 handoff treats Barr C compliance as required team guidance. Its original Project Write-up p. 1 citation differs from the supplied [local 11-page copy](<../../../document/Project Write-up.pdf>), which has no Barr reference; confirm the assignment version. [Architecture](../ARCHITECTURE.md#embedded-c-coding-reference) records this source difference and the current C11 atomic extension. This handoff does not claim the existing firmware has passed a complete Barr audit.
+Apply the adopted [project coding standard](../CODING_STANDARD.md), including the existing GNU C11 build and C11 atomics. The original handoff's mandatory-assignment attribution is not established by the supplied assignment text. No complete Barr compliance audit is claimed.
 
 ## Questions to settle before motor trials or interface changes
 
@@ -115,4 +114,4 @@ This Phase 1 handoff treats Barr C compliance as required team guidance. Its ori
 - What stop/reset ordering guarantee should the team require before physical acceptance? The existing latch is not a brake acknowledgement.
 - How will battery-only results be observed/recorded under the single-power-source policy, and what steering/stop acceptance thresholds will the team use?
 
-Stop at this handoff review boundary. No encoder/PID, IR algorithm replacement or motor-runtime hardening is included in Phase 1.
+Phase 1 covers this development handoff. Encoder/PID additions, IR algorithm replacement and motor-runtime hardening are outside its scope. Course/calibration decisions are tracked in [PROJECT_SPECS](../PROJECT_SPECS.md#pending-decisions).

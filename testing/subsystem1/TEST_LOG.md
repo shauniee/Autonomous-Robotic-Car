@@ -1,6 +1,6 @@
 # S1 test log
 
-Owner: Shaun / communications. S1 now owns the optional latest S3 snapshot and bounded encoder, with one mutex and no task. Template demonstration IDs S1-U01/U02/U03 remain retired and are preserved in [upstream history](../../docs/history/upstream-test-logs/subsystem1.md). No Pico hardware result is claimed.
+Owner: Shaun / communications. S1 now owns the optional latest S3 snapshot and bounded encoder, with one mutex and no task. Retired template IDs: S1-U01 cyclic handler, S1-U02 sleeping LED task, S1-U03 GP19 LED at 2 Hz. No template result was recorded. No Pico hardware result is claimed.
 
 ## 1. Test cases
 

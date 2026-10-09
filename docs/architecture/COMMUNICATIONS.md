@@ -1,12 +1,49 @@
-# Communications: simple wireless S3 telemetry
+# Communications
 
-## 1. Ownership and scope
+## Functionality
 
 Shaun / S1 owns the portable latest snapshot, mutex and JSON encoder. Nicholas / S3 supplies its local readings/control result. The existing kernel WiFi service, priority 4 on core 0, owns all CYW43, lwIP and MQTT calls. S2 remains the only motor writer. This later requested bench extension uses `SMP=1 WIFI=cyw43 NET=lwip MQTT=1`; `NET=none MQTT=0` remains available. No new application task exists.
 
-The unchanged Word report is the integrated design proposal; full mission telemetry and validated status-request subscriptions remain deferred. This stream has **no subscriptions, echo or remote commands**. Historical schema5/dashboard files and calibration commands are not part of the active contract; the [former guide](../history/pre-mtkernel/architecture/COMMUNICATIONS.md) preserves them. Original template ownership guidance remains in [UPSTREAM_TEAM.md](../UPSTREAM_TEAM.md); see [TEAM.md](../../TEAM.md) for the requested shared-library extension and IF-05.
+The full-robot plan publishes mission state/reason, requested versus measured wheel motion, encoder counts/distance, line/junction/barcode, terrain/maximum valid hump, obstacle profile and validity/age/connection health. Its bounded status subscription validates reporting requests and rejects malformed or drive/start/stop messages; an illustrative request is `{"request":"status"}`. No request clears Safety or authorizes movement. Final mission schema is pending in [PROJECT_SPECS](../PROJECT_SPECS.md#pending-decisions).
 
-## 2. Files and interfaces
+The implemented bench stream has **no subscriptions, echo or remote commands**. Full mission telemetry/status requests remain deferred. [GETTING_STARTED](../GETTING_STARTED.md#current-capabilities) owns current capabilities and operating steps; [system architecture](../ARCHITECTURE.md) owns mission arbitration.
+
+## State diagram
+
+This connection state machine preserves the established kernel-service design. The bench implements connection/publication only; the proposed Online status-request path is deferred.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Initialize
+    Initialize --> WiFiConnecting: Config valid
+    Initialize --> ConfigError: Config invalid
+    WiFiConnecting --> MQTTConnecting: WiFi ready
+    WiFiConnecting --> Backoff: Failed
+    MQTTConnecting --> Online: Connected
+    MQTTConnecting --> Backoff: Refused or failed
+    Online --> Backoff: Disconnected
+    Backoff --> MQTTConnecting: Retry with WiFi ready
+    Backoff --> WiFiConnecting: WiFi unavailable
+    ConfigError --> Initialize: Corrected and restarted
+```
+
+## States and responses
+
+| State | Response / actuation boundary |
+| --- | --- |
+| Initialize / Config Error | Load/validate configuration; invalid configuration stays offline |
+| WiFi Connecting | Kernel-owned bounded radio/IP connection; control tasks continue locally |
+| MQTT Connecting | One service-owned connection attempt |
+| Online | Publish newest snapshot; full plan additionally validates bounded status requests |
+| Backoff | Bounded delayed retry, no offline backlog or motor-state change |
+
+No communications state calls Motion or authorizes actuation. Network loss preserves healthy local autonomy.
+
+## GPIO and peripherals
+
+Use [TEAM's radio/peripheral ownership](../TEAM.md#3-peripherals) and [reserved GPIO](../TEAM.md#2-pins). No student task performs networking. Hardware radio details belong to [TECHNICAL_INFO](../TECHNICAL_INFO.md#raspberry-pi-pico-w--wh).
+
+## Modules and drivers
 
 | File | Responsibility |
 | --- | --- |
@@ -23,13 +60,13 @@ The unchanged Word report is the integrated design proposal; full mission teleme
 
 The latest value replaces the previous value; there is no offline queue. S3's float calculations are converted to signed thousandths in the adapter. The encoder emits three decimal places through bounded integer formatting, without `%f` or the T-Monitor formatter. The source of truth for motion remains the S3 controller and S2 request/health interfaces.
 
-## 3. MQTT and payload contract
+## MQTT and payload contract
 
 Topic `robot/s3/telemetry`, client ID `csc01-s3-pico`, TCP port 1883, QoS **0**, retain **false**, nominal period **500 ms**. An accepted connection attempts the latest snapshot immediately, then starts the periodic timer. The payload limit is **768 bytes** plus one local NUL byte; the MQTT output ring is **1024 bytes**. Oversized/unterminated input, unavailable snapshot or publication error skips that message. QoS 0 is observation without delivery guarantees.
 
 | JSON field | Meaning / unavailable form |
 | --- | --- |
-| schema | 1; separate from historical schema5 |
+| schema | 1 |
 | sequence | Successful S1 snapshot update count, wraps as uint32; reset at reboot; normally jumps between publications |
 | observed_ms | S3 snapshot time in boot milliseconds; it is not acquisition time |
 | sampled_ms | Original latest acquisition-attempt timestamp; null before first attempt |
@@ -41,7 +78,7 @@ Topic `robot/s3/telemetry`, client ID `csc01-s3-pico`, TCP port 1883, QoS **0**,
 | calibration.black / white | Paired ADC reference object, or null if its flag is false |
 | fractions | Calibrated left/right black fractions 0..1, or null without a valid calibrated reading |
 | error | Right fraction minus left fraction, or null without calibrated reading |
-| line | unknown, visible, lost or broad_black; see the complete [IR catalogue](LINE_FOLLOWING.md#5-complete-ir-state-catalogue) |
+| line | unknown, visible, lost or broad_black; see the complete [IR classification](LINE_TRACKING.md#states-and-responses) |
 | state | READY, FOLLOW_LINE, RECOVER_LINE or STOPPED |
 | reason | Current controller reason, including capture/start/stop/failure policy |
 | capture | Typed capture outcome's display name; not a remote acknowledgement or request ID |
@@ -51,26 +88,12 @@ Topic `robot/s3/telemetry`, client ID `csc01-s3-pico`, TCP port 1883, QoS **0**,
 
 Stale historical fractions can still be present; assess them with `sample_fresh`, acquisition validity and age. Telemetry never renews acquisition time. `null` means unavailable, rather than a made-up zero reading. A plausible ADC value cannot establish sensor connection. The 500 ms stream can miss a whole 100 ms recovery turn and cannot prove stop/recovery timing.
 
-## 4. Reconnection and control isolation
+## Business logic
 
 The service uses one periodic publish callback and one retry callback, with at most one of these adapter timers pending. Each connection status cancels old adapter timers. A refused/disconnected/immediately failed connect schedules retry after 3000 ms. The service's frequent polling does not bypass the retry delay or start a second connection; invalid IPv4 configuration is diagnosed once. Existing lwIP/MQTT protocol timers remain owned by the stack. Publish failures skip the message while the connected periodic stream continues; an asynchronous disconnect enters the retry path.
 
 Reconnect sends the newest stored snapshot, not a backlog. No MQTT state transition calls S2 or S3 policy functions. Snapshot copying is nonblocking, the network stays on core 0, GP21 processing stays in the core-1 control loop, and the watchdog still requires advancing valid ADC and Motion progress. Healthy local following continues through network loss. Physical scheduling/stack margin under network load still needs measurement.
 
-## 5. Mac operation and evidence
+## Evidence
 
-Use [getting started section 5](../GETTINGS_STARTED.md#5-wireless-telemetry-on-the-mac) for the ignored credentials, broker/subscriber commands and exact normal/TEST build flags. USB alone is supported by [Cytron](https://my.cytron.io/tutorial/get-started-robo-pico-circuitpython-power-up-robo-pico). Verify wireless TEST connectivity over USB alone first; unplug USB before power-bank normal trials, then recalibrate using GP20/21 and GP22 cues. Keep the Mac on the reachable private 2.4 GHz network; this anonymous non-TLS bench broker is not an internet service.
-
-## 6. Test cases
-
-| IDs | Scope | Evidence level |
-| --- | --- | --- |
-| S1-U04/U05 | Encoding bounds, nulls, signed decimals, original age/wrap, coherent snapshots and skipped access | Host fakes; U04 also compiled into TEST image |
-| INT-06 | Broker refusal, disconnect/reconnect, publish failures, latest snapshot, timer count | Real adapter with fake lwIP/kernel/clock |
-| INT-07 | S3 controls/watchdog/timestamps with available or failing telemetry, both TEST profiles | Real S3 loop with fake hardware/S2/kernel |
-| INT-08 | Encoded fixture through actual Mosquitto CLI subscriber; broker restart and no retention | Mac loopback transport only |
-| SYS-09/10 | Actual Pico USB-alone TEST then bank-alone normal telemetry and network loss | On-target/physical; pending |
-
-## 7. Results
-
-Results and saved logs live in [S1](../../testing/subsystem1/TEST_LOG.md), [integration](../../testing/integration/TEST_LOG.md) and [system](../../testing/system/TEST_LOG.md). Host/build/local broker evidence is recorded separately from actual Pico WiFi and motor trials. Report T12/T13 full mission telemetry/reconnect trials remain pending.
+Use [wireless setup](../GETTING_STARTED.md#wireless-telemetry) for configuration/builds and [testing](../../testing/README.md) for evidence procedure. Existing S1-U04/U05 and INT-06/07 use real modules with host fakes; INT-08 is laptop loopback transport. Host runners are retired; saved results remain. Firmware S1-U04 is preserved. SYS-09/10 and planned T12/T13 require actual Pico/physical evidence; they remain pending. The 500 ms stream cannot prove short motor/stop timing.

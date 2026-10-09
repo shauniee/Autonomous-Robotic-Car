@@ -45,7 +45,6 @@ bool ir_tracking_capture(IrTracker *f, IrCaptureKind kind, uint32_t now) {
     if (kind == IR_CAPTURE_WHITE && !f->calibration.black_set) {
         f->capture_result = IR_CAPTURE_NEED_BLACK; return false;
     }
-    /* Replacing black invalidates the old pair even if capture is cancelled. */
     if (kind == IR_CAPTURE_BLACK) f->calibration = (IrCalibration){0};
     f->capture_kind = kind; f->capture_ms = now;
     f->capture_count = f->capture_left = f->capture_right = 0;
