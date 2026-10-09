@@ -1,0 +1,189 @@
+{
+  "base_head": "8bd3f0383de6f20047acdac81b38668a2e73df80",
+  "source_state": "Working tree; source hashes identify current application, S3 tests and build files",
+  "source_sha256": {
+    "app_program/app_main.c": "e0b6883bdce438aaff2f5612c2c7a149a0d4fba4a94b5c5b6d9918b769ca2f1e",
+    "app_program/subsystem1/subsystem1.c": "c0576b8f06955d1cc8d90816343552fa6dbce06a2664a47ce8537288b4de8bad",
+    "app_program/subsystem1/subsystem1_test.c": "d16f4681b53effd1c58c1e0a49fd2948779c0d4b739df4b35b23e7a30a022618",
+    "app_program/subsystem1/telemetry.c": "323ed6c67191508fe67479341065c00d8eb13659c4fb68468a8b5a2cd82cdbf5",
+    "app_program/subsystem2/drv_motor.c": "5625de0a6d20471f670430d4018a78be2f82a837f07048210f0e139e616afbfb",
+    "app_program/subsystem2/motion_policy.c": "20e65a850e1c8dd3a83492d25b34cff2e241ede304744a3d779029f5f1cc60ba",
+    "app_program/subsystem2/subsystem2.c": "821335e9bca5345aec06b0dcb121d7b2aa19adfa5d8f49178f8e20bbc4ec7759",
+    "app_program/subsystem2/subsystem2_test.c": "fdd12817372a593086203df83dd31af2f6da028a107810f802fe2190e30ac8bf",
+    "app_program/subsystem3/calibration_control.c": "4531bd5e3ab9387db61ac020cfc2ab2192462565fc9c2206dbf5e47af1365454",
+    "app_program/subsystem3/drv_feedback.c": "46fc1d4e60e0fbf82e87e24c473dc1f56d7b40049ce1c57f0ede9fb875c5112c",
+    "app_program/subsystem3/drv_ir.c": "ae07c187f43e78a467b4bceedf3a507b602acbc8a12902494bdbf4a2c5a828bc",
+    "app_program/subsystem3/ir_snapshot.c": "1f3cbce76a5c93447a7a79db618bd4efbca94e2a64c517509e65640d9abc1fdc",
+    "app_program/subsystem3/ir_tracking.c": "9ceadfd8056508ecc8281d64a7ff114e290fbf9b27cfb819eca4668d35b89083",
+    "app_program/subsystem3/subsystem3.c": "b9c1c4875fdf4e78050cfd416f98bca433ac33b787fd94f2897b0622a4b3155e",
+    "app_program/subsystem3/task_ir.c": "b08758ea8347dba10b0349ebdbdc1899a726ab26aedf857a5baeefe395f76aa3",
+    "app_program/subsystem4/subsystem4.c": "d94f4564dbe56d5a0da2a1678cff2b8dc94d0466a325fa7b14656a77dc019c17",
+    "app_program/subsystem4/subsystem4_test.c": "7e0f6466f7aafc4c0ff39e0ecf6f0ea1babb78945bffb98dccefedf0694e7812",
+    "app_program/subsystem5/subsystem5.c": "97e19826ed29ee8fe24fddf3fb8027c98277d2983dc55cda38b5e2cfd5217c80",
+    "app_program/subsystem5/subsystem5_test.c": "e4a2b99b344e852cff8460da14987c23bc1dfa15505162b6c89817c277ffb62c",
+    "app_program/app.h": "b807db6dc29bf37260b016a1814b6d1f04ae94dfc4a93f3a16fc2f79c9dbeda6",
+    "app_program/subsystem1/subsystem1.h": "583e48a7292db57d26b7c46334964790c9e7be42cd0c782bfe25466e58458cc4",
+    "app_program/subsystem1/telemetry.h": "81f5464179f56d9f2923876bd4b23c371d7e79a08dbd4b079875575a551dc926",
+    "app_program/subsystem2/drv_motor.h": "d57d4fb39c335b3cb739780c019a943d7b0981430c470a62c3626a66c8e88356",
+    "app_program/subsystem2/motion_policy.h": "11eae699269e0b354c13ad420b9f52c18171274f46915343eb06b56b880bd585",
+    "app_program/subsystem2/subsystem2.h": "272b53eb61eeeae8e1f3ae1f1c1e76026640d710b4f44bf88538739ca936dc46",
+    "app_program/subsystem3/calibration_control.h": "2ebbd27f0f991bdbeb8577ea429dfff22af59f01b2b8c618da82c3290b2cd686",
+    "app_program/subsystem3/drv_feedback.h": "cda3a92ef8b04409f4b0bb0f05b51372d377061025097d46aacf0b4d718ad83e",
+    "app_program/subsystem3/drv_ir.h": "97f9f304f99c1a13e15cd0cc4059905d1bc14590f02714ed0e5608bd4c80be4b",
+    "app_program/subsystem3/ir_snapshot.h": "8c5ab9ccf4123dd0e3080ae9d85314a4b381a6bbc2f43b791b43c6703ca1e0d3",
+    "app_program/subsystem3/ir_tracking.h": "516d5ef76d577e41fb61b669c867563269c2ebf6940967ba582994b1d29a8fd8",
+    "app_program/subsystem3/subsystem3.h": "90c6ddc32ca7f486d7e406777c7edce3be96152b4ecb8db1f4477c45695ab056",
+    "app_program/subsystem3/subsystem3_internal.h": "0fe704ffaa15ae91d15179241fb9e654070cb07447dbcecc631670934c975424",
+    "app_program/subsystem3/task_ir.h": "dc5fff70ed561013dc2dc9d2e7a1cbdbf97bd8b4344a06a85c2b8bb2e44b6250",
+    "app_program/subsystem4/subsystem4.h": "753c3bbd8ed56b486197d15fedea98ec95a0e383d9cfe357fec6d95d0edc8414",
+    "app_program/subsystem5/subsystem5.h": "f7ec253fd3d9827b78cdfc702f6309cf5d59139036b73b699473d0ab8c2dcf43",
+    "app_program/test_report.h": "0b658b7121e3c8d142c631f0732af8026001293ec5be10f160653337afb7ee35",
+    "testing/subsystem3/ir_self_test.c": "fbd13c3268b478f6554f82b5f29b0c54ef8af2a26ef63b5d96aee28880eef77a",
+    "testing/subsystem3/ir_self_test.h": "45f4bbcae1c2c3641e4a148b7e89d1ea0fdd931fc8728741b9fcbec76ad158cc",
+    "testing/subsystem3/subsystem3_test.c": "7b832899f6d70e6ce534c4df2cb0c6b30a6453c92887d9fcd82ed804b79bda6c",
+    "testing/subsystem3/subsystem3_test.h": "ced8f85d3a52003e4bf7808f0fb3bd71a1e676ad07e03928a63e74aca0cbc856",
+    "build_make/Makefile": "b9458d65cdaede7ce8d55cc059ee6dab7bfd84dce4f246a3d94a1395f94f5066",
+    "build_make/pico_rp2040.mk": "8cfe6a5dc9752e9b6962b302bf44d88d54db474b8b843363d950d58b889f5e14",
+    "build_make/mtkernel_3/app_program/subdir.mk": "fa9987188bd2957d9a704333193bbeb8c23781eadd5f6d1f8ad40356c14d9bff",
+    "testing/subsystem3/firmware.mk": "0284b2ceb56d516630dec90a5dfb5d584b4cd04fec198dfd9bfe51a0513f2b09"
+  },
+  "profiles": [
+    {
+      "profile": "offline-test",
+      "exit": 0,
+      "command": [
+        "make",
+        "-C",
+        "/Users/nicholasbay/Documents/Resume/projects/sit-es-project/code/build_make",
+        "-j8",
+        "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+        "SMP=1",
+        "CONSOLE=usb_cdc",
+        "WIFI=cyw43",
+        "CRASH_REPORT=0",
+        "NET=none",
+        "MQTT=0",
+        "TEST=1"
+      ],
+      "test_symbol_present": true,
+      "uf2": "build_make/mtk3pico_smp1_usb_cdc_wifi_test.uf2",
+      "sha256": "022720c69e813f2f05366a38835906eb0c6c00aa2046c8be0e089eae2f6c0f87",
+      "log": "testing/subsystem3/logs/2026-10-09_s3-test-layout_offline-test.txt"
+    },
+    {
+      "profile": "offline-normal",
+      "exit": 0,
+      "command": [
+        "make",
+        "-C",
+        "/Users/nicholasbay/Documents/Resume/projects/sit-es-project/code/build_make",
+        "-j8",
+        "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+        "SMP=1",
+        "CONSOLE=usb_cdc",
+        "WIFI=cyw43",
+        "CRASH_REPORT=0",
+        "NET=none",
+        "MQTT=0",
+        "TEST=0"
+      ],
+      "test_symbol_present": false,
+      "uf2": "build_make/mtk3pico_smp1_usb_cdc_wifi.uf2",
+      "sha256": "98604dc652501ebde2ed1dea27861f94d63c9467e79cd8f56621bc664eba4bd5",
+      "log": "testing/subsystem3/logs/2026-10-09_s3-test-layout_offline-normal.txt"
+    },
+    {
+      "profile": "wireless-test",
+      "exit": 0,
+      "command": [
+        "make",
+        "-C",
+        "/Users/nicholasbay/Documents/Resume/projects/sit-es-project/code/build_make",
+        "-j8",
+        "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+        "SMP=1",
+        "CONSOLE=usb_cdc",
+        "WIFI=cyw43",
+        "CRASH_REPORT=0",
+        "NET=lwip",
+        "MQTT=1",
+        "TEST=1"
+      ],
+      "test_symbol_present": true,
+      "uf2": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2",
+      "sha256": "80742bfd8baa081e89c7fb7c6d945396fdb9af494b198b732a50dde56454be53",
+      "log": "testing/subsystem3/logs/2026-10-09_s3-test-layout_wireless-test.txt"
+    },
+    {
+      "profile": "wireless-normal",
+      "exit": 0,
+      "command": [
+        "make",
+        "-C",
+        "/Users/nicholasbay/Documents/Resume/projects/sit-es-project/code/build_make",
+        "-j8",
+        "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+        "SMP=1",
+        "CONSOLE=usb_cdc",
+        "WIFI=cyw43",
+        "CRASH_REPORT=0",
+        "NET=lwip",
+        "MQTT=1",
+        "TEST=0"
+      ],
+      "test_symbol_present": false,
+      "uf2": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2",
+      "sha256": "07640d690b089999b83c7ed738aab7adf343554cd8ad35ce5abea1621679cf4a",
+      "log": "testing/subsystem3/logs/2026-10-09_s3-test-layout_wireless-normal.txt"
+    }
+  ],
+  "strict_compile": [
+    {
+      "source": "../app_program/subsystem3/calibration_control.c",
+      "exit": 0,
+      "diagnostics": ""
+    },
+    {
+      "source": "../app_program/subsystem3/drv_feedback.c",
+      "exit": 0,
+      "diagnostics": ""
+    },
+    {
+      "source": "../app_program/subsystem3/drv_ir.c",
+      "exit": 0,
+      "diagnostics": ""
+    },
+    {
+      "source": "../app_program/subsystem3/ir_snapshot.c",
+      "exit": 0,
+      "diagnostics": ""
+    },
+    {
+      "source": "../app_program/subsystem3/ir_tracking.c",
+      "exit": 0,
+      "diagnostics": ""
+    },
+    {
+      "source": "../app_program/subsystem3/task_ir.c",
+      "exit": 0,
+      "diagnostics": ""
+    },
+    {
+      "source": "../app_program/subsystem3/subsystem3.c",
+      "exit": 0,
+      "diagnostics": ""
+    },
+    {
+      "source": "../testing/subsystem3/ir_self_test.c",
+      "exit": 0,
+      "diagnostics": ""
+    },
+    {
+      "source": "../testing/subsystem3/subsystem3_test.c",
+      "exit": 0,
+      "diagnostics": ""
+    }
+  ],
+  "executed_on_pico": false,
+  "scope": "S3 test relocation with one S3-only shared Make include; other subsystem code untouched"
+}
