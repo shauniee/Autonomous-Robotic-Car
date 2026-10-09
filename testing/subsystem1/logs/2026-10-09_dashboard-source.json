@@ -1,0 +1,25 @@
+{
+  "base_head": "c3c4ee2afd702c4cd5e610a1839a12835ad7b643",
+  "branch": "feat/mqtt-html-dashboard",
+  "date": "2026-10-09",
+  "method": "Actual Python/Paho/SSE and Chrome checks with separate synthetic topics; no host runner framework added",
+  "firmware_execution": "pending integrated build and on-target self-tests",
+  "source_sha256": {
+    "app_program/subsystem1/status_protocol.c": "f21b2ed68aa7932cc2f47357fcc52a11bfd7bded91dceb597b1535774b73d49f",
+    "app_program/subsystem1/status_protocol.h": "e186d660b8c4e74cd229a2a35f85fb6a621f3ac81e66603da3624da68d4312e4",
+    "app_program/subsystem1/subsystem1.c": "c0576b8f06955d1cc8d90816343552fa6dbce06a2664a47ce8537288b4de8bad",
+    "app_program/subsystem1/subsystem1.h": "583e48a7292db57d26b7c46334964790c9e7be42cd0c782bfe25466e58458cc4",
+    "app_program/subsystem1/subsystem1_test.c": "1a21671a9a1cbe60b474fba7b443dfc1ba31642bc2d5ec207a7046287267990a",
+    "app_program/subsystem1/telemetry.c": "7ed5019cb49f8d59b2ddc6b630b0b46cb7f8a1eeb0360af3c4d20b08ebdb13ae",
+    "app_program/subsystem1/telemetry.h": "07bb62d849de82aa0809748b21fc4793e7bd8810a56c3d6dd5ce227f57694b74",
+    "app_program/subsystem1/telemetry_adapter.c": "9589d33754d822c21027e7605eb75604a04abc6c150933a623710035a099fb07",
+    "app_program/subsystem1/telemetry_adapter.h": "4333094d40807598d8f1168e4a3cacdc6a60f0e04af9f6ab806b02de49d8be0d",
+    "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c": "cb675477f028001ff7c81d937159557315c6d79cf81e49df07c147a97a4ecdcb",
+    "scripts/mqtt_dashboard.py": "91cdc0b060f2599327e21a067a29709c50db33f50b91e4675adfebb95fd026d8",
+    "scripts/requirements-mqtt.txt": "df88c624182b4b44cfc2da8ffb2f3ef55efe6ffa53c6daa61b6658171d3f7590",
+    ".gitignore": "9806c109b913ff450206b01bf987131e1e5c8229c578c7a70b3d258d59e78f3b",
+    "dashboard/dashboard.css": "5b15eb4593c725166f2aae694e6ea6b46d4775e4f5cde421772c0ca2c592f3fc",
+    "dashboard/dashboard.js": "dd47afa3446417111f69e384f0f5f7a607dd300ab03a49fcb376c377908b689c",
+    "dashboard/index.html": "c17ef3120d62a72bc2612fb18fa35e8e5efc2eb305c2cd6dd32e29a5603ea9e8"
+  }
+}

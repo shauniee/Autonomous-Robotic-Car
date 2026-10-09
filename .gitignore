@@ -42,5 +42,6 @@ build/
 build-*/
 tmp/
 __pycache__/
+.venv-dashboard/
 .env
 secrets.h

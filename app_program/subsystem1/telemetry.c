@@ -48,6 +48,8 @@ unsigned s1_telemetry_encode(const S1Telemetry *s, uint32_t now,
     if (capacity > S1_TELEMETRY_PAYLOAD_MAX + 1) capacity = S1_TELEMETRY_PAYLOAD_MAX + 1;
     Json j = {destination, 0, capacity, true};
     text(&j, "{\"schema\":1,\"sequence\":"); number(&j, s->sequence);
+    text(&j, ",\"ir_sequence\":");
+    number(&j, s->ir_sequence);
     text(&j, ",\"observed_ms\":"); number(&j, s->observed_ms);
     text(&j, ",\"sampled_ms\":");
     if (s->have_sample) number(&j, s->sampled_ms); else text(&j, "null");
@@ -75,7 +77,28 @@ unsigned s1_telemetry_encode(const S1Telemetry *s, uint32_t now,
     text(&j, ",\"requested_duty\":{\"left\":"); decimal(&j, s->left_duty);
     text(&j, ",\"right\":"); decimal(&j, s->right_duty);
     text(&j, "},\"motion_enabled\":"); boolean(&j, s->motion_enabled);
-    text(&j, ",\"test_inhibited\":"); boolean(&j, s->test_inhibited); character(&j, '}');
+    text(&j, ",\"test_inhibited\":");
+    boolean(&j, s->test_inhibited);
+    text(&j, ",\"motion\":");
+    if (s->motion_available)
+    {
+        text(&j, "{\"age_ms\":");
+        number(&j, (uint32_t)(now - s->motion_serviced_ms));
+        text(&j, ",\"stopped\":");
+        boolean(&j, s->motion_stopped);
+        text(&j, ",\"braked\":");
+        boolean(&j, s->motion_braked);
+        text(&j, ",\"applied_duty\":{\"left\":");
+        decimal(&j, s->applied_left);
+        text(&j, ",\"right\":");
+        decimal(&j, s->applied_right);
+        text(&j, "}}");
+    }
+    else
+    {
+        text(&j, "null");
+    }
+    character(&j, '}');
     if (!j.ok) { destination[0] = '\0'; return 0; }
     destination[j.length] = '\0'; return j.length;
 }
