@@ -63,6 +63,9 @@ bool s2_encoder_init(void)
 
 void s2_encoder_enable_context(void)
 {
+    uint32_t levels = in_w(0xd0000004u);
+    left_phase = phase(levels, 28u, 7u);
+    right_phase = phase(levels, 1u, 0u);
     atomic_store_explicit(&ready, true, memory_order_release);
 }
 
