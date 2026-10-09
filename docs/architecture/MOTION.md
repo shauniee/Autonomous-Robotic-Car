@@ -1,6 +1,6 @@
 # Motion
 
-Owner: Mahesha / S2. Parent: [system architecture](../ARCHITECTURE.md). This guide preserves the full-robot encoder/PID proposal. The checked duty-only bench API is specified below; encoder/PID actions remain proposed. Operational status is in [GETTING_STARTED](../GETTING_STARTED.md#current-capabilities).
+Owner: Mahesha / S2. Parent: [system architecture](../ARCHITECTURE.md). This guide preserves the full-robot encoder/PID proposal. The checked duty-only bench API is specified below; configurable encoder/PID actions are implemented in the opt-in navigation profile; physical tuning/acceptance remains pending. Operational status is in [GETTING_STARTED](../GETTING_STARTED.md#current-capabilities).
 
 ## Current duty service contract
 
@@ -70,18 +70,30 @@ Use [TEAM's motor/encoder allocations](../TEAM.md#2-pins) and [PWM ownership](..
 | `subsystem2.c/.h` | Existing lifecycle, motor service, request/health mutex, persistent stop event and public `MotionHealth` |
 | `motion_policy.c/.h` | Existing duty/freshness/stop validation and `MotionRequest` |
 | `drv_motor.c/.h` | Existing exclusive PWM/H-bridge boundary |
-| Suggested encoder driver | Bounded quadrature edge capture; coherent counts, direction and acquisition time |
-| Suggested speed estimator / wheel controller | Count-window speed/distance conversion and separate per-wheel PID |
-| Suggested action controller | Unique action IDs, lease/deadline validation, completion retention, acknowledgement and stall detection |
+| `encoder.c` / `encoder_policy.c` | Implemented bounded quadrature capture and coherent raw context; hardware acceptance pending |
+| `navigation.c/.h` | Implemented configurable count-window estimation and independent wheel PID; tuning pending |
+| `navigation.c/.h` action controller | Implemented unique IDs, fixed deadlines, retained completion/ack and stall rejection; physical accuracy pending |
 
 Use [shared `M_motion_cmd` / feedback contracts](../ARCHITECTURE.md#shared-contracts) for full integration. Feedback must expose measured counts/speeds/distance, validity/time, readiness/stationarity and active/done/failed action ID/reason. The existing bench's software health sequence is insufficient for scan stationarity.
 
 ## Business logic
 
-- Calibrate decoded counts per wheel revolution, geometry, polarity and speed before implementing physical actions; unresolved values are in [PROJECT_SPECS](../PROJECT_SPECS.md#pending-decisions).
+- Calibrate decoded counts per wheel revolution, geometry, polarity and speed before enabling physical actions; unresolved values are in [PROJECT_SPECS](../PROJECT_SPECS.md#pending-decisions).
 - Run measured wheel-speed PID separately from memoryless P line guidance. Bound requested speed/output and handle stalled encoders, saturation and invalid feedback explicitly.
 - A renewed lease preserves the action ID and absolute deadline; repeated commands cannot restart or duplicate a turn. An expired/unconfigured target brakes locally.
 - Boot, local stop, collision, stall, critical fault and deadline failure inhibit output. Reset discards prior targets; a new Mission command is required afterward.
 - Measure commanded brake at outputs and physical stopping separately. LOW/LOW is the selected electrical brake; it does not establish stopped wheels.
 
 Verification belongs to [S2](../../testing/subsystem2/TEST_LOG.md), [integration](../../testing/integration/TEST_LOG.md) and [system](../../testing/system/TEST_LOG.md) records. Planned T02/T05/T14/T15 cover stop/actions/fault/load; no encoder action or physical PID acceptance is claimed.
+
+## Configurable encoder navigation
+
+`encoder.c` owns GP0/GP1/GP7/GP28 quadrature capture through the shared micro T-Kernel GPIO dispatcher; `encoder_policy.c` owns the pure transition table. Coherent raw uint32 counts wrap naturally; invalid/missed transitions latch invalid encoder context. Diagnostic errors saturate so wrap cannot make that context valid. Lost ordering requires corrected wiring/load and reboot; a Motion reset does not invent missing counts.
+
+`navigation.c/.h` provides explicit geometry, independent left/right PID tuning, encoder and motor polarities, bounded speed targets and unique straight/turn actions. Configuration is startup-only through `s2_navigation_configure()`; no calibration defaults are guessed. One wheel diameter and decoded counts/revolution apply to both wheels and must match measured hardware. SI units and yaw calculation follow [Technical information](../TECHNICAL_INFO.md#motors-and-encoders).
+
+`MotionRequest.velocity_mode` selects `S2NavigationRequest`: S2_SPEED targets signed m/s; S2_DISTANCE targets signed metres; S2_TURN targets degrees (positive left/CCW). IDs are positive and increase within the armed context. A renewed action must keep kind, target, speed and absolute timeout unchanged. Same-ID mutation, replay, invalid configuration, stale service, stall or deadline faults. A completed action stays braked until a matching `acknowledge_id`; stop/reset discards old actions.
+
+Measured per-wheel speed feeds independently configured PID plus feedforward, conditional integration and the existing maximum 0.35 magnitude duty cap. Motor polarity maps controller output to wiring; `drv_motor_apply_signed()` inserts one braked release before a direction reversal. TEST always brakes regardless of controller output. `MotionHealth` separately includes raw encoder context and estimated navigation feedback; output brake/readback still is not measured stationarity.
+
+The default duty bench remains forward-only and uses the original MotionRequest contract. Navigation is opt-in, requires explicit setup and remains physically unvalidated. See [S3 guide](../SUBSYSTEM3_GUIDE.md#7-configure-navigation-without-inventing-measurements) and S2-U14–U17 in [test records](../../testing/subsystem2/TEST_LOG.md).

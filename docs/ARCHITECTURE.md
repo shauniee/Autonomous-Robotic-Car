@@ -4,7 +4,7 @@ The intended robot separates sensing, Mission decisions, Motion actuation, Safet
 
 ## Implemented line-tracking integration
 
-The tracking/dashboard extension uses the existing S3 sensor service, checked S2 forward-duty service and S1 collector. An application-level `robot_control_task` combines local Mission/Safety for this bench. This is smaller than the full-robot proposal below: encoder PID/actions, barcode, Terrain and Obstacle remain deferred.
+The tracking/dashboard extension uses the existing S3 sensor service, checked S2 forward-duty service and S1 collector. An application-level `robot_control_task` combines local Mission/Safety for this bench. This is smaller than the full-robot proposal below: the optional navigation profile adds configurable encoder PID/actions and barcode events; Terrain, Obstacle and full-course Mission remain deferred.
 
 The coordinator alone interprets GP20/GP21. It reads GP21 first every nominal 10 ms, requests persistent S2 stop independently of snapshot locks, and separately cancels S3 capture. GP20 needs stable 30 ms release/press and never repeats while held. Calibration uses bounded S3 capture requests; only the S3 task mutates its tracker. Cancellation invalidates older queued captures and movement disables capture.
 
@@ -116,3 +116,13 @@ Active mission is a visual grouping of the existing operating states, not an add
 Arbitration: local stop/critical fault → required-data validity → obstacle handling → barcode/navigation → normal line guidance. Obstacle preemption cancels earlier navigation. Barcode reads during bypass/recovery may be logged but cannot redirect movement. Hump monitoring and telemetry run alongside control. Clear the retained hump maximum only on a fresh run, not on a stop.
 
 Design targets and unresolved limits are centralized in [PROJECT_SPECS](PROJECT_SPECS.md#design-targets-and-team-constraints). Record physical acceptance in [testing](../testing/README.md); proposed states, builds and software self-checks do not establish an operational mission.
+
+## Implemented configurable barcode navigation
+
+The default `NAVIGATION=0` profile preserves the calibrated duty bench. `NAVIGATION=1` requires explicit Motion/barcode/route configuration and refuses movement when setup is unavailable. [Barcode](architecture/BARCODE.md) owns frame/event logic; [Motion](architecture/MOTION.md#configurable-encoder-navigation) owns encoder/PID/action semantics. [S3 guide](SUBSYSTEM3_GUIDE.md) teaches startup and consumer usage.
+
+A separate priority-14 barcode task handles bounded GP16 capture concurrently with priority-12 IR. Shared GPIO interrupts run on the application core and dispatch encoder context before barcode edges. The coordinator remains priority 11, Motion 13; networking stays kernel-owned. S3 still has no motor/network writes.
+
+Fresh mapped events may enter APPROACH from FOLLOW_LINE. Barcode-exit-relative encoder spacing and a configured broad-black candidate select NAVIGATE; a unique Motion action then completes/acknowledges into REACQUIRE. Configured travel/time and two distinct visible acquisitions return to FOLLOW_LINE. Every deadline/data failure or independent local stop inhibits output. Purge invalidates encounter context; only a fresh local reset permits clearing latched barcode overflow. Encoder loss remains invalid until reboot after correcting its cause.
+
+These are implemented software context gates, not measured junction recognition or proof of original-line identity. Obstacle preemption, Terrain monitoring, bypass and finish detection remain proposed and inactive. Firmware builds/synthetic results and pending physical acceptance are recorded separately under [testing](../testing/README.md).

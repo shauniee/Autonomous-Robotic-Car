@@ -83,8 +83,8 @@ Each driven peripheral has one owning task; other tasks use its interface. PWM s
 | PWM slices 4 and 5 |Mahesha | `motion_task`; 20 kHz at the template's 125 MHz clock | GP8–GP11 |
 | PWM slice 3 |Nicholas | `ir_task`; asynchronous 2 kHz buzzer chirps | GP22 |
 | PWM slice 6 |Jia Jing, proposed | Obstacle servo control; PWM inactive in bench | GP12 |
-| Encoder GPIO IRQs |Mahesha, proposed | Motion; bounded ISR capture | GP0/GP1/GP7/GP28 |
-| Barcode GPIO IRQ |Nicholas, proposed | Line and Barcode; bounded ISR capture | GP16 |
+| Encoder GPIO IRQs |Mahesha | Shared dispatcher; S2 coherent quadrature counts | GP0/GP1/GP7/GP28 |
+| Barcode GPIO IRQ |Nicholas | Shared dispatcher; bounded S3 edge ring | GP16 |
 | Echo GPIO IRQ |Jia Jing, proposed | Obstacle; bounded ISR capture | GP2 |
 | Hardware TIMER / watchdog tick |Nicholas initialization; shared timebase | Enable 1 µs tick from 12 MHz reference without resetting TIMER; kernel WiFi also reads TIMER | Internal |
 | Watchdog |Nicholas / coordination | `robot_control_task`; 250 ms; feed only when valid IR and Motion progress both advance and are at most 60 ms old | Internal |
@@ -107,7 +107,7 @@ Smaller numbers mean higher priority. Priorities 1–4 are reserved for the kern
 | --- | --- | --- |
 |Shaun Communications | — | No application task; publication-time collector and optional snapshot mutex |
 |Mahesha Motion | 13 | `motion_task` – 13 – core 1; 20 ms or stop wake-up |
-|Nicholas Line and coordination | 11–12 | `robot_control_task` – 11 – core 1, inputs 10 ms/control 20 ms; `ir_task` – 12 – core 1, paired ADC 20 ms |
+|Nicholas Line and coordination | 11–14 | `robot_control_task` – 11 – core 1, inputs 10 ms/control 20 ms; `ir_task` – 12 – core 1, paired ADC 20 ms; `barcode_task` – 14 – core 1, 5 ms bounded drain |
 |Darrius Terrain | — | Inactive |
 |Jia Jing Obstacle | — | Inactive |
 
@@ -134,7 +134,9 @@ The provider creates and owns each shared object. Current objects stay private b
 | IF-03 |Mahesha → Nicholas | Coherent health copy underMahesha mutex; stop flag read separately | `request_mutex`, `stop_flag` (private); `s2_motion_copy()` | `MotionHealth`: checked output progress, generation/acknowledgement and latch; no physical stationarity; [contract](architecture/IR_MOTION_HANDOFF.md#current-interface-contract) | Nicholas authorized this tracking/dashboard integration on 2026-10-09 |
 | IF-04 | S3 → Nicholas coordinator / S1 | Nonblocking mutex copy | `snapshot_mutex` (private); `s3_ir_copy()` | `S3IrSnapshot`: validity, line condition, signed error/steering and sample time; [Line Tracking](architecture/LINE_TRACKING.md#modules-and-public-interface) | Nicholas authorized this tracking/dashboard integration on 2026-10-09 |
 | IF-05 |Nicholas → Shaun → kernel network service | Latest value under optional Shaun priority-inheritance mutex; `TMO_POL` both sides | `telemetry_mutex` (private); `s1_telemetry_update()` / `s1_telemetry_copy()` | `S1Telemetry`; busy/unavailable access skips diagnostics; [Communications contract](architecture/COMMUNICATIONS.md#modules-and-drivers) | Nicholas authorized this tracking/dashboard integration on 2026-10-09 |
-| IF-06 | Unclaimed | — | — | — | — |
+| IF-07 | Mahesha → S3 / Mission / S1 | Bounded coherent encoder snapshot | `s2_encoder_copy()`; no shared object ID | Quadrature counts, validity and error count; [Motion](architecture/MOTION.md#configurable-encoder-navigation) | Nicholas explicitly authorized S2 support for S3 consolidation |
+| IF-06 | S3 → Mission | Copied four-entry FIFO, nonblocking consumer | `s3_nav_take()`; barcode mutex private | Framed symbol, action, acquisition time, ID and context/epoch; [Barcode](architecture/BARCODE.md) | Nicholas explicitly authorized S3 consolidation |
+| IF-08 | Mission → Mahesha → S1 | Existing Motion mailbox/health copy | `s2_publish()` / `s2_motion_copy()` | Configured speeds and ID-based actions, retained outcome and acknowledgement | Nicholas explicitly authorized S2/Mission/S1 support for S3 consolidation |
 
 Full-robot message/queue contracts remain [proposed in ARCHITECTURE](ARCHITECTURE.md#shared-contracts), without allocated object IDs. Each cross-subsystem interface requires an [integration test record](../testing/integration/TEST_LOG.md); implementation or a saved software result does not establish physical acceptance.
 
@@ -144,17 +146,23 @@ Limits are set in [config/config.h](../config/config.h). The table shows current
 
 | Object | Limit |Shaun |Mahesha |Nicholas |Darrius |Jia Jing |
 | --- | --- | --- | --- | --- | --- | --- |
-| Task | 32 | 0 | 1 | 2 | 0 | 0 |
+| Task | 32 | 0 | 1 | 3 | 0 | 0 |
 | Semaphore | 16 | 0 | 0 | 0 | 0 | 0 |
 | Event flag | 16 | 0 | 1 | 0 | 0 | 0 |
 | Mailbox | 12 | 0 | 0 | 0 | 0 | 0 |
-| Mutex | 12 | 0 or 1 | 1 | 1 required + 1 optional | 0 | 0 |
+| Mutex | 12 | 0 or 1 | 1 | 2 required + 1 optional | 0 | 0 |
 | Message buffer | 12 | 0 | 0 | 0 | 0 | 0 |
 | Fixed memory pool | 12 | 0 | 0 | 0 | 0 | 0 |
 | Variable memory pool | 12 | 0 | 0 | 0 | 0 | 0 |
 | Cyclic handler | 12 | 0 | 0 | 0 | 0 | 0 |
 | Alarm handler | 12 | 0 | 0 | 0 | 0 | 0 |
 
-Shaun attempts one mutex allocation with `MQTT=1`; none with `MQTT=0`. Allocation failure disables optional diagnostics and permits local startup. Mahesha's request and health copies share one mutex; its persistent stop uses one event flag. Nicholas owns the S3 cache mutex and optional coordinator reporting mutex. Capture uses a single slot plus atomic cancellation state, no queue object. All three application tasks use the existing 2048-byte stack.
+Shaun attempts one mutex allocation with `MQTT=1`; none with `MQTT=0`. Allocation failure disables optional diagnostics and permits local startup. Mahesha's request and health copies share one mutex; its persistent stop uses one event flag. Nicholas owns the S3 IR cache mutex, separate barcode decoder/event mutex and optional coordinator reporting mutex. Capture uses a single slot plus atomic cancellation state, no queue object. All four application tasks use the existing 2048-byte stack.
 
 Create all required subsystem objects before starting application tasks. Required initialization/start failure prevents successful startup; optional telemetry failure may skip reporting. Measure stack margin and total object usage, including kernel services, before implementing the proposed task split.
+
+## Consolidation authorization and interfaces
+
+Nicholas explicitly authorized necessary S1/S2/shared changes for S3 consolidation on 2026-10-09, with separate commits naming the affected owner. This is task authorization, not a record of physical acceptance or other owners' independent review.
+
+Shared GPIO dispatcher registration happens before tasks. Its bounded callbacks are encoder first, barcode second; core-1 enabling occurs after TEST fixtures (core 0 in UP). No SDK vector registration or kernel networking ownership is changed. Barcode buffers stay independent of IR snapshots and encoder storage.

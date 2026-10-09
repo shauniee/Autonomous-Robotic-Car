@@ -103,7 +103,7 @@ No S3 motor duty mixing, run/start state, movement timeout or recovery actuation
 
 A `.c` file contains the implementation. Its `.h` file declares the functions and data types another file may use; it does not contain a second implementation. `subsystem3_internal.h` declares the private task-to-cache publication function, while `subsystem3.h` exposes the supported external S3 interface. Consumers should not call the private task or mutate its tracker.
 
-These divisions keep hardware access, calculations, scheduling and consumer data independent. Separate files are a modular organization choice; they do not create extra tasks. S3 still has exactly one running task.
+These divisions keep hardware access, calculations, scheduling and consumer data independent. Separate files are a modular organization choice; they do not create extra tasks. The IR pipeline still has one task; the separate implemented barcode service adds a second S3 task without merging either data stream.
 
 All S3 test fixtures and assertions live under `testing/subsystem3/`. Its `firmware.mk` adds only S3 test sources to TEST=1 builds through one shared Make include. A tiny TEST-only bridge in `subsystem3.c` supplies the private cache mutex to the boundary assertion without adding a production handle accessor. TEST-only periodic console diagnostics in `task_ir.c` remain observations of the running service, not self-test assertions.
 
@@ -149,9 +149,11 @@ The actual S1 adapter is owned by [Communications](COMMUNICATIONS.md#modules-and
 
 ## Task and hardware boundaries
 
-Use [TEAM](../TEAM.md#2-pins) for wiring and [TECHNICAL_INFO](../TECHNICAL_INFO.md#tcrt5000-based-ir-modules) for electrical facts. S3 retains one priority-12 task on core 1, with 10 ms capture/feedback service and 20 ms acquisition. Deadline releases skip missed work rather than replaying a backlog. TEST builds report raw counts, normalized thousandths, calibration/capture status and validity every nominal 500 ms through the existing startup/test hooks.
+Use [TEAM](../TEAM.md#2-pins) for wiring and [TECHNICAL_INFO](../TECHNICAL_INFO.md#tcrt5000-based-ir-modules) for electrical facts. The IR pipeline retains its priority-12 task on core 1, with 10 ms capture/feedback service and 20 ms acquisition. Deadline releases skip missed work rather than replaying a backlog. TEST builds report raw counts, normalized thousandths, calibration/capture status and validity every nominal 500 ms through the existing startup/test hooks.
 
 Shared application startup initializes the 1 µs TIMER timebase without resetting it. S3 configures only its ADC and buzzer PWM slice; it neither enables/feeds a whole-system watchdog nor accesses S2/S1 runtime interfaces. Critical system health/stop policy belongs to the application coordinator; a data service is not a whole-robot safety controller.
+
+For the complete S3 pipeline, configuration and consumer examples, see [SUBSYSTEM3_GUIDE](../SUBSYSTEM3_GUIDE.md). Barcode task/capture ownership belongs to [Barcode](BARCODE.md).
 
 ## Establish a measured baseline
 

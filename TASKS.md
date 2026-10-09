@@ -23,3 +23,9 @@ Software integration and saved firmware checks are complete. Nicholas stopped fu
 ## Deferred coursework
 
 Encoder acquisition/PID/distance/angle actions, barcode decoder/navigation, junction/finish interpretation, IMU/terrain, sonar/obstacle and full-course mission remain separate work. Existing S3 ADC/timing/lighting/calibration physical characterization also remains evidence work. No remote motion/control is added.
+
+## S3 consolidation
+
+Implemented on `feat/consolidating-s3`: existing movement/integration consolidated, independent Code 39 capture/decoder/event FIFO, configurable S2 encoder/PID/navigation actions, Mission junction/reacquisition context gates, additive S1/dashboard observations and [S3 learning guide](docs/SUBSYSTEM3_GUIDE.md). Terrain/Obstacle/full-course behavior remains deferred.
+
+Software fixtures and build evidence are recorded under testing. No robot was available: new on-target tests, electrical release, mounted polarity/geometry, PID tuning, physical line/barcode following, turn/stop accuracy and course acceptance remain pending. Required local navigation configuration has no guessed defaults.

@@ -1,80 +1,60 @@
 # Barcode
 
-Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). The capture/decoder/navigation design is proposed; operational status is in [GETTING_STARTED](../GETTING_STARTED.md#current-capabilities). Course geometry, A/Z patterns and pending mapping decisions are owned by [PROJECT_SPECS](../PROJECT_SPECS.md#barcode-examples).
+Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). The configurable software capture/decoder/event implementation is active on the consolidation branch. Physical acceptance and final course decisions remain pending. See [S3 learning guide](../SUBSYSTEM3_GUIDE.md), [operation](../GETTING_STARTED.md#current-capabilities) and [specifications](../PROJECT_SPECS.md#barcode-examples).
 
 ## Functionality
 
-The third IR sensor's comparator DOUT detects black/white transitions in the adjacent barcode lane. A bounded edge ISR records ordered timestamps and coherent encoder context independently of periodic line sampling. Task-level decoding measures **both black bars and white spaces**, validates a complete frame and emits one mapped navigation event. AOUT can aid difficult-surface diagnosis but is not required by this digital capture design.
+GP16 comparator DOUT supplies digital transitions independently of periodic line ADC acquisition. The shared micro T-Kernel GPIO dispatcher processes S2 encoder changes before S3 capture. The ISR copies levels, original hardware microsecond time, coherent wheel counts, run context and epoch into a 256-entry SPSC ring. A separate priority-14/core-1 barcode task drains at most 64 edges per nominal 5 ms release; decoding, mutex access and event publication never run in the ISR.
 
-Mission, rather than the decoder, requests encoder-based navigation from Motion. Line observations continue concurrently; barcode capture cannot overwrite their snapshot or erase navigation events.
+S3 line and barcode snapshots stay separate. S3 does not drive motors or publish telemetry. Mission consumes navigation events and requests S2 actions. GPIO timing, encoder count resolution and interrupt latency require physical validation.
 
-## State diagram
+## Frame and distance contract
+
+The selected implementation format is provisional standard Code 39 `*<one symbol>*`, consistent with the supplied A/Z patterns; course confirmation remains D01. Each character uses nine alternating bar/space widths, three wide and six narrow. Three characters and two narrow inter-character gaps require 29 widths. Both leading and trailing white quiet zones are checked using encoder travel.
+
+Width identification sorts each character's widths into six narrow and three wide entries, validates configured count/range/cluster ratios, and matches the complete nine-element mask. Inter-character gaps must fit adjacent narrow widths. Unknown patterns, absent framing, zero/invalid widths, missing encoder context, changed encounter context, reverse wheel travel and partial/expired captures reject the frame.
+
+All count-based barcode settings use **left signed-forward travel plus right signed-forward travel**, twice average decoded quadrature counts. Count subtraction wraps safely; a frame's directed travel must be positive and below INT32_MAX. Hardware timestamps wrap in microseconds; the configured frame deadline must be below INT32_MAX microseconds. Time is diagnostic/timeout information, never a guessed distance conversion.
+
+Configuration explicitly sets measured DOUT polarity, matching encoder polarity, narrow count limits, wide:narrow bounds, narrow variation, quiet/rearm travel, frame timeout, event age, orientation and symbol/action mapping. Reversed print ordering is rejected by default; opt-in support does not authorize reverse car traversal.
+
+The example maps A/B/C/D to left/right/straight/U-turn and leaves Z unmapped. These are examples, not confirmed course commands. Unmapped known symbols remain observable without an action.
+
+## States and event lifetime
 
 ```mermaid
 stateDiagram-v2
     [*] --> Disabled
-    Disabled --> WaitQuietZone: Configured
-    WaitQuietZone --> CaptureFrame: Frame entry
-    CaptureFrame --> ValidateFrame: Complete capture
-    CaptureFrame --> WaitQuietZone: Partial or timeout
-    ValidateFrame --> QueueEvent: Known mapped frame
-    ValidateFrame --> WaitQuietZone: Reject frame
-    QueueEvent --> WaitRearm: Event copied once
-    WaitRearm --> WaitQuietZone: Rearmed
-    CaptureFrame --> Fault: Capture overflow
-    QueueEvent --> Fault: Queue overflow
-    Fault --> Disabled: Cause clear and reset
+    Disabled --> WaitQuiet: Valid startup configuration
+    WaitQuiet --> Capture: Leading quiet and black entry
+    Capture --> WaitQuiet: Invalid or partial capture
+    Capture --> WaitRearm: Complete known or rejected frame
+    WaitRearm --> WaitQuiet: Confirmed white quiet and rearm travel
+    Capture --> Fault: Lost edge ordering or capture overflow
+    WaitRearm --> Fault: Event FIFO overflow
+    Fault --> WaitQuiet: Cause addressed and fresh local reset
 ```
 
-## States and responses
+A validated mapped frame queues one copied `S3NavEvent`: encounter ID, symbol, action, original final-bar capture time, encoder position, run context and epoch. The four-entry FIFO consumes once; it never overwrites earlier events. Quiet/rearm travel suppresses duplicate encounters.
 
-| State | Response / actuation boundary |
-| --- | --- |
-| Disabled / unconfigured | No navigation event; movement is not authorized by decoder state |
-| Wait Quiet Zone | Observe measured polarity and wait for validated frame entry |
-| Capture Frame | Bounded ordered transition capture; reject missing/partial/time-out data |
-| Validate Frame | Check framing, ordered bar/space widths, orientation and known symbol/mapping |
-| Queue Event | Copy event ID, symbol, action and acquisition time once into `Q_nav` |
-| Wait Rearm | Suppress repeat events until confirmed rearm condition |
-| Fault | Report overflow independently of diagnostics; Mission/Safety apply the stop/fault response |
+Capture overflow, simultaneously pending rising/falling edges, FIFO overflow and encounter-ID exhaustion explicitly latch faults. Context purge discards obsolete frames/events but **does not clear a fault**. The coordinator's fresh local reset invokes `s3_barcode_reset()`; resetting the decoder does not establish corrected hardware or valid lost encoder history.
 
-No HIGH/LOW-to-black/white polarity, frame format or command table is guessed. Unknown/partial/malformed frames are rejected outcomes; capture/queue overflow is an explicit fault.
+Readers/consumers use the private nonblocking mutex through `s3_barcode_copy()` and `s3_nav_take()`. The coordinator alone writes `s3_barcode_context()` and records stale/context discards through `s3_nav_discard()`. Epoch changes immediately invalidate pending reads; task processing resets the ring on its owning core. Accepted/rejected/discarded totals survive context changes.
 
-## GPIO and peripherals
+A pending GP16 edge or a nonempty ring prevents task polling from confirming a trailing quiet zone ahead of deferred capture. Service age remains original progress; stale cached status cannot authorize navigation.
 
-Follow [TEAM's barcode and line wiring](../TEAM.md#2-pins), including disconnected barcode AOUT and shared contacts. Component electrical behavior belongs to [TECHNICAL_INFO](../TECHNICAL_INFO.md#tcrt5000-based-ir-modules).
+## Mission integration
 
-## Modules and drivers
+`NAVIGATION=0` preserves the calibrated line bench. `NAVIGATION=1` requires all explicit barcode, Motion and route configuration before movement starts. Setup and examples are in [S3 guide](../SUBSYSTEM3_GUIDE.md#7-configure-navigation-without-inventing-measurements).
 
-| Module | Purpose / status |
-| --- | --- |
-| Existing S3 lifecycle and line modules | Keep line sampling/control separate from proposed decoding |
-| Suggested barcode edge driver | Short DOUT ISR, bounded ordered capture buffer and overflow flag |
-| Suggested frame decoder | Width normalization using encoder distance or validated speed compensation; framing and invalid-read rejection |
-| Suggested event publisher | One-shot bounded `Q_nav` FIFO with explicit lifetime and overflow handling |
-| Mission / Motion | Consume permitted events and perform unique encoder actions; [shared contract](../ARCHITECTURE.md#shared-contracts) |
+Mission consumes fresh mapped events only during permitted following context. It approaches a junction window measured from the frame's final black-to-white edge. A broad-black candidate confirms the intended junction only inside that configured barcode/encoder context. Window/deadline failure stops; both-black alone has no navigation meaning.
 
-Historical scaffold filenames are not current modules. A decoder/capture ISR/navigation FIFO is not active in the bench.
+Mission assigns a separate monotonically increasing Motion action ID, preserves target/deadline on renewal, acknowledges retained completion, then performs bounded expected-route reacquisition. Two distinct fresh visible acquisitions and configured travel/time bounds are required. These software guards do not prove physical original-line identity.
 
-## Business logic
+Local stop/critical fault outranks barcode navigation. Reads during recovery/navigation are discarded with a reason. Stop/reset/action completion purge obsolete events. Terrain/Obstacle preemption and full-course bypass remain deferred.
 
-- Calibrate comparator threshold/polarity, sensor height/lateral offset, print scale and traversal orientation on the mounted car. The line and barcode lane need separate sensor placement.
-- Edge-to-edge time changes with speed. Prefer encoder travel or validate compensation across slow/normal speeds; do not identify a symbol from bar count alone.
-- Queue mapped frames once. Consume only in the correct mission context; reads during bypass/recovery may be logged but cannot redirect movement. Discard stale/context-mismatched events with a reason; purge obsolete events on reset/action completion.
-- Mission issues left/right/straight/U-turn as one Motion action ID with encoder completion and absolute timeout. Renewing a lease does not restart the action. Obstacle handling cancels/preempts navigation; completion leads to bounded original-line reacquisition.
+## Modules, wiring and validation
 
-Use known samples at both scales, varying speeds, broken/partial/reverse/unknown frames, duplicates and capture/event bursts in planned T04/T05/T11/T14/T15. Case/result evidence belongs to [testing](../../testing/README.md).
+`barcode_capture.c/.h` owns the ring, `barcode_decoder.c` the pure frame/event algorithms, `barcode_service.c` the ISR/task/public boundary, and `barcode.h` portable types. Existing line modules remain independent. [TEAM](../TEAM.md#2-pins) owns pins/priorities; [TECHNICAL_INFO](../TECHNICAL_INFO.md#tcrt5000-based-ir-modules) owns electrical facts. Barcode AOUT remains disconnected.
 
-## Retained planning cases
-
-These labels from the former future-plan guide are planning labels, not permanent test IDs or run results. Allocate permanent S3/INT/SYS IDs before execution.
-
-| Label | Scenario |
-| --- | --- |
-| BC-P01 | Known A/Z at both scales, confirmed framing and symbology |
-| BC-P02 | Partial, malformed, unknown and reverse frames |
-| BC-P03 | Speed variation with distance/validated compensation |
-| BC-P04 | Exactly one event per encounter; later quiet-zone rearm |
-| BC-P05 | Capture/FIFO overflow and stale context |
-| BC-P06 | Concurrent ADC, local stop and barcode bursts |
-| BC-P07 | Four mapped encoder actions and original-line recovery |
+[S3 test records](../../testing/subsystem3/TEST_LOG.md) own S3-U14–U19. Synthetic software tests and firmware builds do not prove mounted scale/speed tolerance, GPIO capture WCET, successful traversal or physical navigation. Retained BC-P01–BC-P07 labels are historical planning labels; permanent tests and planned T04/T05/T11/T14/T15 remain the evidence authority.

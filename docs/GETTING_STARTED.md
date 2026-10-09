@@ -2,7 +2,9 @@
 
 ## Current capabilities
 
-The integrated firmware has three application tasks: S3 paired IR/calibration/P guidance, S2 checked forward-duty output and an application Mission/Safety coordinator for local start/stop/recovery. S1 collects actual snapshots in the existing kernel MQTT publication path and supports a localhost HTML dashboard. Encoder PID/actions, barcode, IMU/sonar and full-course Mission/Safety remain deferred. Build/self-test/dashboard and physical results are recorded separately in [TASKS](../TASKS.md) and [testing](../testing/README.md). Nicholas reports existing IR, motor and encoder operation; new integrated physical following and timing require recorded trials.
+The consolidated firmware has four application tasks: S3 paired IR and separate barcode processing, S2 Motion, and the Mission/Safety coordinator. The default `NAVIGATION=0` profile preserves calibrated duty following. Opt-in `NAVIGATION=1` adds configurable encoder/PID actions, Code 39 navigation events and context-gated junction/reacquisition behavior; missing required setup refuses start. S1 collects typed snapshots in the existing kernel MQTT path and supports the display-only dashboard. Terrain, Obstacle and full-course Mission remain deferred. No robot was available for this new revision; software checks and physical acceptance remain separate in [testing](../testing/README.md).
+
+Start with [SUBSYSTEM3_GUIDE](SUBSYSTEM3_GUIDE.md) for the complete source walkthrough, configuration, APIs and expected `app_main.c` behavior.
 
 Use the steps below for the existing bench. Full-robot tasks are listed at the end. Requirements live in [PROJECT_SPECS](PROJECT_SPECS.md); wiring in [TEAM](TEAM.md#2-pins).
 
@@ -63,24 +65,24 @@ Build profiles **sequentially**: they share `build_make/`. Give every flag on ea
 
 ```sh
 # USB-only development; motors always inhibited
-make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=1
+make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=1 NAVIGATION=0
 
 # Normal offline bench
-make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=0
+make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=0 NAVIGATION=0
 
 # Wireless development; motors always inhibited
-make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=1
+make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=1 NAVIGATION=0
 
 # Normal wireless bench
-make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0
+make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0 NAVIGATION=0
 ```
 
 | Profile | Output under `build_make/` |
 | --- | --- |
-| Offline TEST | `mtk3pico_smp1_usb_cdc_wifi_test.uf2` |
-| Offline normal | `mtk3pico_smp1_usb_cdc_wifi.uf2` |
-| Wireless TEST | `mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2` |
-| Wireless normal | `mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2` |
+| Offline TEST | `mtk3pico_smp1_usb_cdc_wifi_test_nav0.uf2` |
+| Offline normal | `mtk3pico_smp1_usb_cdc_wifi_nav0.uf2` |
+| Wireless TEST | `mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test_nav0.uf2` |
+| Wireless normal | `mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_nav0.uf2` |
 
 | Option | Meaning |
 | --- | --- |
@@ -88,6 +90,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `CONSOLE=usb_cdc` / `uart` | USB serial / UART0; UART uses encoder pins and is unsuitable with encoders attached |
 | `WIFI=cyw43` / `none` | W/WH radio / no radio; ordinary Pico must use `none` |
 | `NET=none` / `lwip`, `MQTT=0` / `1` | Offline / TCP-IP; MQTT requires lwIP and WiFi |
+| `NAVIGATION=1` | Configured encoder/barcode navigation; defaults to 0, setup required before start |
 | `TEST=1` | Includes firmware self-tests and forces S2 braking even when the controller enables motion |
 | `CRASH_REPORT=1` | Immediate crash/console copy on UART0; project uses `0` because of the [pin conflict](TEAM.md#wiring-conflicts) |
 
@@ -109,6 +112,8 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
    Windows can use PuTTY or Serial Monitor on the assigned COM port. Quit screen with Ctrl-A, then K.
 4. Inspect startup, `[TEST] <ID> PASS|FAIL` and `[BENCH] ... MOTOR_INHIBITED`. Bench console output reports acquisition/calibration/state; it does not establish motor movement or measured duty. Record failures through [testing](../testing/README.md).
 5. Before floor use, record a raised-wheel baseline, polarity and stop response for the integrated image. Flash the normal image, disconnect USB, then connect the agreed battery/power bank alone. Use camera/scope and optional wireless observations for physical evidence.
+
+Opt-in barcode setup and `_nav0`/`_nav1` image naming are described in [S3 guide](SUBSYSTEM3_GUIDE.md#7-configure-navigation-without-inventing-measurements). The example configuration deliberately contains no measured defaults.
 
 ## Calibration and local controls
 

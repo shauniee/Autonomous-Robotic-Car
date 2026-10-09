@@ -64,7 +64,7 @@ The latest value replaces the previous value; there is no offline queue. S3's fl
 
 ## MQTT and payload contract
 
-Topic `robot/s3/telemetry`, client-ID prefix `csc01-s3-pico` plus the radio MAC, TCP port 1883, QoS **0**, retain **false**, nominal period **500 ms**. After successful status subscription, the service attempts the latest snapshot immediately, then starts the periodic timer. Optional broker username/password are configured locally; empty values preserve anonymous access. Existing local headers remain compatible through transport defaults. When using different topics, configure all four explicitly; topics must be distinct, nonempty, under 96 bytes and contain no wildcards. An empty broker IP leaves WiFi available with MQTT disabled after a single configuration diagnostic. The payload limit is **768 bytes** plus one local NUL byte; the MQTT output ring is **1024 bytes**. Oversized/unterminated input, unavailable snapshot or publication error skips that message. QoS 0 is observation without delivery guarantees.
+Topic `robot/s3/telemetry`, client-ID prefix `csc01-s3-pico` plus the radio MAC, TCP port 1883, QoS **0**, retain **false**, nominal period **500 ms**. After successful status subscription, the service attempts the latest snapshot immediately, then starts the periodic timer. Optional broker username/password are configured locally; empty values preserve anonymous access. Existing local headers remain compatible through transport defaults. When using different topics, configure all four explicitly; topics must be distinct, nonempty, under 96 bytes and contain no wildcards. An empty broker IP leaves WiFi available with MQTT disabled after a single configuration diagnostic. The payload limit is **1536 bytes** plus one local NUL byte; the MQTT output ring is **1024 bytes**. Oversized/unterminated input, unavailable snapshot or publication error skips that message. QoS 0 is observation without delivery guarantees.
 
 | JSON field | Meaning / unavailable form |
 | --- | --- |
@@ -80,7 +80,7 @@ Topic `robot/s3/telemetry`, client-ID prefix `csc01-s3-pico` plus the radio MAC,
 | calibration.black / white | Paired ADC reference object, or null if its flag is false |
 | fractions | Calibrated left/right black fractions 0..1, or null without a valid calibrated reading |
 | error | Right fraction minus left fraction, or null without calibrated reading |
-| line | unknown, visible, lost or broad_black; see the complete [IR classification](LINE_TRACKING.md#states-and-responses) |
+| line | unknown, visible, lost or broad_black; see the complete [IR classification](LINE_TRACKING.md#calibration-workflow) |
 | ir_sequence | Original S3 acquisition-attempt sequence, including failed acquisitions |
 | state | READY, START_PENDING, FOLLOW_LINE, RECOVER_LINE, STOPPED, FAULT or RESET_PENDING |
 | reason | Current controller reason, including capture/start/stop/failure policy |
@@ -145,3 +145,9 @@ The page shows broker connection, live Pico heartbeat, state/reason, reference c
 ## Evidence
 
 Use [wireless setup](../GETTING_STARTED.md#wireless-telemetry) for configuration/builds and [testing](../../testing/README.md) for evidence procedure. Existing S1-U04/U05 and INT-06/07 use real modules with host fakes; INT-08 is laptop loopback transport. Host runners are retired; saved results remain. Firmware S1-U04 is preserved; S1-U06/U07 add status parser and diagnostic encoding checks. They require on-target execution; compilation is not a pass. SYS-09/10 and planned T12/T13 require actual Pico/physical evidence; they remain pending. The 500 ms stream cannot prove short motor/stop timing.
+
+## Consolidated navigation observations
+
+Schema 1 gains additive `velocity_mode`, `requested_speed_mps`, `encoders`, `navigation` and `barcode` objects. Duty requests remain separate from speed/action targets. Applied PWM is signed for configured navigation; it is neither requested speed nor proof of movement. Unavailable sources/speed estimates are null, and original source age is retained. Barcode reports last symbol/result, service age, queued count and accepted/rejected/discarded totals. Navigation state numbers are idle=0, active=1, done=2, failed=3.
+
+Telemetry payload capacity is 1536 bytes and the MQTT output ring is 2048 bytes including topic/protocol headroom. S1-U13 covers synthetic bounded encoding; test buffers are static to preserve the startup stack. The dashboard handles absent extension objects for earlier schema-1 producers, shows separate requested speed and encoder estimates, and remains display-only. Status requests cannot change calibration or local control.

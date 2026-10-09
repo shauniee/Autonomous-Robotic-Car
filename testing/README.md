@@ -58,3 +58,7 @@ All remain pending until actual measurements/results are recorded. This retains 
 | T16 | Repeated complete-course rehearsal with navigation, humps, obstacles, telemetry and recovery |
 
 Acceptance targets/unknown values are owned by [PROJECT_SPECS](../docs/PROJECT_SPECS.md#pending-decisions), not inferred from a case name. Demonstration links belong in [videos](../videos/README.md) and the corresponding result row.
+
+## Authorized S3 consolidation software validation
+
+For `feat/consolidating-s3`, Nicholas explicitly authorized temporary laptop harnesses for the actual pure firmware algorithms because no robot is available. New permanent cases/fixtures live in their subsystem/integration folders and compile into TEST only; no permanent host runner is reintroduced. Saved sanitized software results, source manifests, compiler stack frames and build/image hashes are evidence of software execution/builds, not new Pico or physical passes. Temporary wireless build configuration copies only the public example; it is never flashed.

@@ -27,3 +27,5 @@ Each fact has one owning guide; other guides link to it. Assignment requirements
 | `docs/` | Six project guides, seven architecture guides and preserved drawings |
 | [testing/](testing/README.md) | Stable test IDs, result tables and saved evidence |
 | [videos/](videos/README.md) | Unlisted demonstration links |
+
+Learn Nicholas’s complete implementation through [SUBSYSTEM3_GUIDE](docs/SUBSYSTEM3_GUIDE.md), including configuration, public APIs, barcode navigation and startup behavior.

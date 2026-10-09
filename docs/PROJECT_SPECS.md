@@ -55,13 +55,13 @@ Each sequence alternates black bar / white space, starting and ending with a bla
 | A | `nwnnwnwnn` | `wnnnnwnnw` | `nwnnwnwnn` |
 | Z | `nwnnwnwnn` | `nwwnwnnnn` | `nwnnwnwnn` |
 
-The patterns are consistent with Code 39 `*A*` and `*Z*`; this is an inference, not a confirmed symbology specification. No final decode table, B/C/D samples, width tolerances, quiet-zone minimum, mounting coordinate, junction offset or traversal direction is established. Use [Barcode](architecture/BARCODE.md) for capture/decode behavior.
+The patterns are consistent with Code 39 `*A*` and `*Z*`; this is an inference, not a confirmed symbology specification. No final decode table, B/C/D samples, width tolerances, quiet-zone minimum, mounting coordinate, junction offset or traversal direction is established. Code 39 is now the explicitly selected configurable software implementation; this does not confirm the course symbology or mappings. Use [Barcode](architecture/BARCODE.md) for capture/decode behavior.
 
 ## Design targets and team constraints
 
 These are engineering proposals/project decisions, separate from assessment requirements:
 
-- Safety release 10 ms; Motion/Mission/line/Terrain release 20 ms; initial required-data age limit 250 ms; commanded brake within 50 ms. Measure and tune per signal. The implemented bench's stricter limits are in [Line Tracking](architecture/LINE_TRACKING.md#business-logic) and the [handoff](architecture/IR_MOTION_HANDOFF.md#current-interface-contract).
+- Safety release 10 ms; Motion/Mission/line/Terrain release 20 ms; initial required-data age limit 250 ms; commanded brake within 50 ms. Measure and tune per signal. The implemented bench's stricter limits are in [Line Tracking](architecture/LINE_TRACKING.md#normalization-classification-and-proportional-guidance) and the [handoff](architecture/IR_MOTION_HANDOFF.md#current-interface-contract).
 - Network loss must not stop otherwise healthy local autonomy. Status requests cannot override Safety.
 - Use calibrated proportional line guidance and separate planned encoder wheel PID. This later decision supersedes the older line-PID proposal; Motion's PID plan remains.
 - Adopt [CODING_STANDARD](CODING_STANDARD.md) for application development. GNU C11 and atomic startup publication are retained. A complete Barr compliance audit is not claimed; the supplied assignment text does not establish a mandatory Barr citation.
@@ -73,7 +73,7 @@ Record answers and measured values here once, then link from other guides.
 
 | ID | Decision / missing evidence | Owner |
 | --- | --- | --- |
-| D01 | Final barcode symbology, symbol/action mapping, framing, quiet zones, width tolerances, direction and duplicate rearm condition | S3 / team |
+| D01 | Code 39 is the configurable implementation choice; final course barcode symbology, symbol/action mapping, framing, quiet zones, width tolerances, direction and duplicate rearm condition | S3 / team |
 | D02 | Finish, junction/crossing rules, barcode-to-junction spacing, print scale and permitted bypass/reverse boundaries | Team |
 | D03 | Motor/encoder ratings and logic levels, decoded counts per wheel revolution, polarity, wheel diameter, track width and car envelope | S2 |
 | D04 | Mounted TCRT module voltage/current/output levels, polarity, height, contrast/noise and lighting range | S3 |
