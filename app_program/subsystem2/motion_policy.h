@@ -24,6 +24,9 @@ bool motion_duties_valid(float left, float right);
 bool motion_request_valid(MotionRequest request, bool stopped, uint32_t now);
 bool motion_request_current(MotionRequest request, uint32_t state,
     uint32_t now);
+/* An enabled target cannot queue while stopped or before reset is observed. */
+bool motion_publication_allowed(MotionRequest request, uint32_t state,
+    uint32_t reset_ack_generation, bool driver_ok);
 uint32_t motion_stop_generation(uint32_t state);
 bool motion_stop_latched(uint32_t state);
 /* Generation exhaustion remains stopped until reboot; tokens never wrap. */

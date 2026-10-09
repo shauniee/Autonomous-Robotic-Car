@@ -141,6 +141,15 @@ void subsystem2_test(void)
         "reset needs matching acknowledged brake; invalid copies refused");
     TEST_CHECK("S2-U10", live_inhibited_output(),
         "live TEST Motion progress and checked zero PWM; no wheel claim");
+    request.sampled_ms = 100u;
+    request.generation = 1u;
+    TEST_CHECK("S2-U13",
+        !motion_publication_allowed(request, MOTION_BOOT_STATE, 1u, true) &&
+        !motion_publication_allowed(request, 2u, 0u, true) &&
+        !motion_publication_allowed(request, 4u, 2u, true) &&
+        !motion_publication_allowed(request, 2u, 1u, false) &&
+        motion_publication_allowed(request, 2u, 1u, true),
+        "enabled publication rejected while stopped or before reset ack");
     TEST_SUMMARY("subsystem2");
 }
 #endif

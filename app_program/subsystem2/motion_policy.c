@@ -52,3 +52,16 @@ bool motion_reset_allowed(uint32_t state, uint32_t expected_generation,
         (expected_generation == motion_stop_generation(state)) &&
         (expected_generation == brake_ack_generation);
 }
+
+bool motion_publication_allowed(MotionRequest request, uint32_t state,
+    uint32_t reset_ack_generation, bool driver_ok)
+{
+    if (!request.enabled)
+    {
+        return true;
+    }
+    return driver_ok && !motion_stop_latched(state) &&
+        (request.generation > 0u) &&
+        (request.generation == motion_stop_generation(state)) &&
+        (request.generation == reset_ack_generation);
+}
