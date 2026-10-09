@@ -2,7 +2,7 @@
 
 ## Current capabilities
 
-The current firmware is a two-task IR bench: S3 reads/calibrates two IR sensors and produces P steering; S2 services bounded motor requests. Optional S1 telemetry adds a snapshot and mutex, with networking in the kernel service. S4/S5 are inactive. Encoder feedback, barcode decoding, IMU/sonar acquisition and full Mission/Safety coordination are **not implemented**. No successful physical tracking run or verified motor operation is established by the retained software evidence. The preserved [handoff](architecture/IR_MOTION_HANDOFF.md) records the reported motor problem and stop/reset limits.
+The current firmware is a two-task IR bench: S3 reads/calibrates two IR sensors and produces P steering; S2 services bounded motor requests. Optional S1 reporting adds a snapshot and mutex, with telemetry, heartbeat and status-only subscription in the kernel service. S4/S5 are inactive. Encoder feedback, barcode decoding, IMU/sonar acquisition and full Mission/Safety coordination are **not implemented**. No successful physical tracking run or verified motor operation is established by the retained software evidence. The preserved [handoff](architecture/IR_MOTION_HANDOFF.md) records the reported motor problem and stop/reset limits.
 
 Use the steps below for the existing bench. Full-robot tasks are listed at the end. Requirements live in [PROJECT_SPECS](PROJECT_SPECS.md); wiring in [TEAM](TEAM.md#2-pins).
 
@@ -137,7 +137,7 @@ Use a reachable private 2.4 GHz LAN. The supplied lab broker allows anonymous ac
    test -e config/wifi_secrets.h || cp config/wifi_secrets.example.h config/wifi_secrets.h
    ```
 
-   Edit `WIFI_SSID`, `WIFI_PASSWORD` and `MQTT_BROKER_IP` locally. The broker IP is the laptop's LAN IPv4 address, not `127.0.0.1` or `0.0.0.0`. The file is ignored; do not commit or print its contents.
+   Edit `WIFI_SSID`, `WIFI_PASSWORD` and `MQTT_BROKER_IP` locally. For a broker that requires authentication, also set `MQTT_USERNAME` and `MQTT_PASSWORD`. The client-ID prefix receives a radio-MAC suffix. Existing local headers can omit new settings and use defaults. The broker IP is the laptop's LAN IPv4 address, not `127.0.0.1` or `0.0.0.0`. The file is ignored; do not commit or print its contents.
 2. Install/start Mosquitto. On macOS:
 
    ```sh
@@ -150,10 +150,20 @@ Use a reachable private 2.4 GHz LAN. The supplied lab broker allows anonymous ac
 3. In a second terminal:
 
    ```sh
-   mosquitto_sub -h 127.0.0.1 -p 1883 -t robot/s3/telemetry -v
+   mosquitto_sub -h 127.0.0.1 -p 1883 -t 'robot/s3/#' -v
    ```
 
 4. Build/flash wireless TEST, using USB alone, and confirm messages actually originate from the Pico. After physical readiness is established, use normal firmware with battery alone and recalibrate.
+
+The restored laptop helper can monitor heartbeat freshness and request read-only status:
+
+```sh
+python3 -m pip install -r scripts/requirements-mqtt.txt
+python3 scripts/mqtt_client.py monitor --broker <broker-lan-ip>
+python3 scripts/mqtt_client.py status --broker <broker-lan-ip>
+```
+
+Optional laptop authentication uses `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD` environment variables. Use `--root` / `--port` when configured differently. The helper subscribes before requesting status, ignores cached retained status as a live response, and times out when no live response arrives. Firmware accepts only `{"request":"status"}` on `robot/s3/request`; start, stop, drive and calibration messages are rejected. A status request never changes local control.
 
 [Communications](architecture/COMMUNICATIONS.md#mqtt-and-payload-contract) defines the topic, schema, fields, limits and reconnect behavior. Use validity/age flags when interpreting readings. Requested duty is not measured output; `motion_enabled` never overrides TEST inhibition. The slow telemetry stream cannot prove brief recovery or stop timing. Broker loss does not change healthy local control.
 
@@ -168,7 +178,7 @@ Use a reachable private 2.4 GHz LAN. The supplied lab broker allows anonymous ac
 | 5 | Restore IMU wiring; calibrate axes and validate hump detection/height against measured references | S4 |
 | 6 | Verify sonar/servo; implement bounded coarse/fine profiles with independent forward freshness | S5 |
 | 7 | Integrate proposed Mission/Safety contracts, action leases, scan preconditions, bypass and original-line recovery |  All |
-| 8 | Add final mission telemetry and validated status subscription, then measure network-load isolation | S1 / All |
+| 8 | Integrate final mission telemetry; validate restored status subscription/recovery on Pico and measure network-load isolation | S1 / All |
 | 9 | Record subsystem, integration and full mission acceptance; rehearse demonstration and confirm instructor access | All |
 
 Resolve unknown values in [PROJECT_SPECS](PROJECT_SPECS.md#pending-decisions). Use [testing](../testing/README.md) for stable cases/results and [videos](../videos/README.md) for real-hardware evidence.
