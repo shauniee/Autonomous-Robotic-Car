@@ -27,18 +27,26 @@ static void report_init_failure(const char *stage, unsigned pin)
 {
     /* Startup failures only, before fallback changes the mux/readback.
        No formatting/logging runs in the periodic motor output path. */
-    tm_printf((UB *)"[S2] motor init failed stage=%s pin=%u "
-        "RESET_DONE=%08x\n", stage, pin,
-        (unsigned)in_w(RESETS_RESET_DONE));
+    UW reset_done = in_w(RESETS_RESET_DONE);
+    tm_printf((UB *)"[S2] motor init failed stage=%s pin=%u\n", stage, pin);
+    tm_printf((UB *)"[S2] RESET_DONE=%08x\n", (unsigned)reset_done);
+    if ((reset_done & RESETS_RESET_PWM) == 0u)
+    {
+        /* Do not read a peripheral whose reset has not completed. Keeping
+           diagnostics on the live RESETS block lets startup park safely. */
+        tm_printf((UB *)"[S2] PWM reset incomplete; register dump skipped\n");
+        return;
+    }
     for (unsigned output = MOTOR_LEFT_PIN; output <= MOTOR_RIGHT_PIN;
         output += 2u)
     {
-        tm_printf((UB *)"[S2] pin=%u CSR=%08x DIV=%08x TOP=%08x "
-            "CC=%08x CTRL_A=%08x CTRL_B=%08x\n", output,
+        tm_printf((UB *)"[S2] pin=%u CSR=%08x DIV=%08x\n", output,
             (unsigned)in_w(slice_register(output, PWM_CHx_CSR)),
-            (unsigned)in_w(slice_register(output, PWM_CHx_DIV)),
+            (unsigned)in_w(slice_register(output, PWM_CHx_DIV)));
+        tm_printf((UB *)"[S2] pin=%u TOP=%08x CC=%08x\n", output,
             (unsigned)in_w(slice_register(output, PWM_CHx_TOP)),
-            (unsigned)in_w(slice_register(output, PWM_CHx_CC)),
+            (unsigned)in_w(slice_register(output, PWM_CHx_CC)));
+        tm_printf((UB *)"[S2] pin=%u CTRL_A=%08x CTRL_B=%08x\n", output,
             (unsigned)in_w(GPIO_CTRL(output)),
             (unsigned)in_w(GPIO_CTRL(output + 1u)));
     }
