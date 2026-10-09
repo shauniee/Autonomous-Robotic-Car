@@ -64,7 +64,7 @@ ER subsystem3_init(void)
     tm_printf((UB *)"[TEST] S3 snapshot mutex published=%d\n",
         atomic_load_explicit(&snapshot_mutex, memory_order_acquire));
 #endif
-    return E_OK;
+    return subsystem3_barcode_init();
 }
 
 ER subsystem3_start(void)
@@ -83,7 +83,7 @@ ER subsystem3_start(void)
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 task start result=%d\n", task_id);
 #endif
-    return task_id < E_OK ? task_id : E_OK;
+    return task_id < E_OK ? task_id : subsystem3_barcode_start();
 }
 
 bool subsystem3_publish(const IrTracker *tracker, uint32_t sequence,

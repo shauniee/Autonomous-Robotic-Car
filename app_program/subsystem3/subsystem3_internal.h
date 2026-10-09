@@ -9,6 +9,12 @@ bool subsystem3_publish(const IrTracker *tracker, uint32_t sequence,
 void subsystem3_capture_service(IrTracker *tracker, uint32_t now);
 #if APP_TEST
 bool subsystem3_snapshot_self_test(void);
+ER subsystem3_barcode_init(void);
+ER subsystem3_barcode_start(void);
+
 #endif
+
+ER subsystem3_barcode_init(void);
+ER subsystem3_barcode_start(void);
 
 #endif
