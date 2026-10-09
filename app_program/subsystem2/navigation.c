@@ -1,6 +1,7 @@
 #include "navigation.h"
 #include "motion_policy.h"
 #include <math.h>
+#include "../float_math.h"
 #include <stddef.h>
 
 #define PI_F 3.14159265358979323846f
@@ -10,7 +11,14 @@ static bool positive(float value)
 }
 static float limit(float value, float bound)
 {
-    return fminf(bound, fmaxf(-bound, value));
+    return robot_float_min(bound, robot_float_max(-bound, value));
+}
+static bool pid_valid(const S2WheelPidConfig *pid)
+{
+    return positive(pid->kp) && isfinite(pid->ki) && (pid->ki >= 0.0f) &&
+        isfinite(pid->kd) && (pid->kd >= 0.0f) &&
+        isfinite(pid->feedforward) && (pid->feedforward >= 0.0f) &&
+        positive(pid->integral_limit);
 }
 bool s2_navigation_config_valid(const S2NavigationConfig *c)
 {
@@ -18,10 +26,10 @@ bool s2_navigation_config_valid(const S2NavigationConfig *c)
         positive(c->track_m) && positive(c->counts_per_rev) &&
         ((c->left_polarity == 1) || (c->left_polarity == -1)) &&
         ((c->right_polarity == 1) || (c->right_polarity == -1)) &&
-        positive(c->kp) && isfinite(c->ki) && (c->ki >= 0.0f) &&
-        isfinite(c->kd) && (c->kd >= 0.0f) &&
-        isfinite(c->feedforward) && (c->feedforward >= 0.0f) &&
-        positive(c->integral_limit) && positive(c->max_speed_mps) &&
+        ((c->left_motor_polarity == 1) || (c->left_motor_polarity == -1)) &&
+        ((c->right_motor_polarity == 1) || (c->right_motor_polarity == -1)) &&
+        pid_valid(&c->left_pid) && pid_valid(&c->right_pid) &&
+        positive(c->max_speed_mps) &&
         positive(c->tolerance_m) && positive(c->stall_duty) &&
         (c->stall_duty <= MOTION_MAX_DUTY) && (c->stall_ms > 60u) &&
         (c->stall_ms < INT32_MAX) &&
@@ -46,14 +54,16 @@ static float pid(S2NavigationController *c, const S2NavigationConfig *config,
         c->previous_error[wheel] = 0.0f;
         return 0.0f;
     }
+    const S2WheelPidConfig *tuning = wheel == 0u ?
+        &config->left_pid : &config->right_pid;
     float error = target - measured;
     float integral = limit(c->integral[wheel] + error * dt,
-        config->integral_limit);
-    float output = config->kp * error + config->ki * integral +
-        config->kd * (error - c->previous_error[wheel]) / dt +
-        config->feedforward * target;
+        tuning->integral_limit);
+    float output = tuning->kp * error + tuning->ki * integral +
+        tuning->kd * (error - c->previous_error[wheel]) / dt +
+        tuning->feedforward * target;
     /* Conditional integration prevents accumulating into saturation. */
-    if ((fabsf(output) <= MOTION_MAX_DUTY) || (output * error < 0.0f))
+    if ((robot_float_abs(output) <= MOTION_MAX_DUTY) || (output * error < 0.0f))
     {
         c->integral[wheel] = integral;
     }
@@ -95,8 +105,13 @@ bool s2_navigation_tick(S2NavigationController *c,
         c->last_move_left = now;
         c->last_move_right = now;
         c->have_previous = true;
+        c->feedback.action_state = S2_ACTION_IDLE;
         c->feedback.reason = "encoder_baseline";
         return true;
+    }
+    if (c->feedback.action_state == S2_ACTION_FAILED)
+    {
+        return false; /* A fault cannot be cleared by a new speed request. */
     }
     uint32_t elapsed = now - c->previous_ms;
     if (elapsed == 0u)
@@ -203,20 +218,36 @@ bool s2_navigation_tick(S2NavigationController *c,
             return true;
         }
         target_left = done_left ? 0.0f :
-            copysignf(r->speed_mps, c->goal_left);
+            robot_float_signed(r->speed_mps, c->goal_left);
         target_right = done_right ? 0.0f :
-            copysignf(r->speed_mps, c->goal_right);
+            robot_float_signed(r->speed_mps, c->goal_right);
     }
     else if (c->feedback.action_state == S2_ACTION_ACTIVE)
     {
         return fail(c, "action_preempted_without_stop");
     }
+    if ((r->kind == S2_SPEED) &&
+        (c->feedback.action_state == S2_ACTION_DONE))
+    {
+        c->feedback.reason = "await_action_ack";
+        return true;
+    }
     if (!isfinite(target_left) || !isfinite(target_right) ||
-        (fabsf(target_left) > config->max_speed_mps) ||
-        (fabsf(target_right) > config->max_speed_mps))
+        (robot_float_abs(target_left) > config->max_speed_mps) ||
+        (robot_float_abs(target_right) > config->max_speed_mps))
     {
         return fail(c, "speed_target_invalid");
     }
+    if ((target_left != 0.0f) && (c->previous_target[0] == 0.0f))
+    {
+        c->last_move_left = now;
+    }
+    if ((target_right != 0.0f) && (c->previous_target[1] == 0.0f))
+    {
+        c->last_move_right = now;
+    }
+    c->previous_target[0] = target_left;
+    c->previous_target[1] = target_right;
     *left = pid(c, config, 0u, target_left, c->feedback.left_mps, dt);
     *right = pid(c, config, 1u, target_right, c->feedback.right_mps, dt);
     if (!isfinite(*left) || !isfinite(*right))
@@ -226,9 +257,9 @@ bool s2_navigation_tick(S2NavigationController *c,
         return fail(c, "pid_numeric_fault");
     }
     bool stall = ((target_left != 0.0f) &&
-        (fabsf(*left) >= config->stall_duty) &&
+        (robot_float_abs(*left) >= config->stall_duty) &&
         ((uint32_t)(now - c->last_move_left) >= config->stall_ms)) ||
-        ((target_right != 0.0f) && (fabsf(*right) >= config->stall_duty) &&
+        ((target_right != 0.0f) && (robot_float_abs(*right) >= config->stall_duty) &&
         ((uint32_t)(now - c->last_move_right) >= config->stall_ms));
     if (stall)
     {

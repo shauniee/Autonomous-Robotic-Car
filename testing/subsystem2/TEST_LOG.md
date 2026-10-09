@@ -56,3 +56,14 @@ clock/wait failure parks the service braked without advancing healthy progress.
 No encoder, wheel PID, distance or angle action is introduced by this change.
 Historical S2-U04/U05 results predate this implementation and do not establish
 its runtime or hardware acceptance. Host runners remain retired.
+
+## S3 consolidation software cases
+
+These fixtures execute the actual pure algorithms with synthetic inputs. Firmware variants compile for TEST=1; new on-Pico execution remains pending. Temporary laptop execution is authorized for this consolidation only and adds no permanent host runner.
+
+| ID | Scope | Method | Expected |
+| --- | --- | --- | --- |
+| S2-U14 | Quadrature transitions and configuration validation | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S2-U15 | Straight/left/right/U-turn, completion retention, ack and mutation | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S2-U16 | Absolute deadline renewal, count/time wrap and sample gap | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+| S2-U17 | Separate wheel PID bounds, idle-to-motion stall clock and invalid feedback | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |

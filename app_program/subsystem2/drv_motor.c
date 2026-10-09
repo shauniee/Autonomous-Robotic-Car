@@ -1,7 +1,10 @@
+#define PROHIBIT_DEF_SIZE_T
+#include <stddef.h>
 #include "drv_motor.h"
 #include "subsystem2.h"
 #include <stdatomic.h>
 #include <math.h>
+#include "../float_math.h"
 
 #define MOTOR_WRAP 999u
 #define MOTOR_DIV_8_4 100u
@@ -213,8 +216,8 @@ bool drv_motor_apply_signed(float left, float right)
 {
     if (!atomic_load_explicit(&initialized, memory_order_acquire) ||
         !isfinite(left) || !isfinite(right) ||
-        (fabsf(left) > MOTION_MAX_DUTY) ||
-        (fabsf(right) > MOTION_MAX_DUTY))
+        (robot_float_abs(left) > MOTION_MAX_DUTY) ||
+        (robot_float_abs(right) > MOTION_MAX_DUTY))
     {
         (void)drv_motor_brake();
         return false;
@@ -225,9 +228,9 @@ bool drv_motor_apply_signed(float left, float right)
     {
         return drv_motor_brake(); /* Apply the new sign at the next release. */
     }
-    if (!wheel(MOTOR_LEFT_PIN, fabsf(left),
+    if (!wheel(MOTOR_LEFT_PIN, robot_float_abs(left),
             left < 0.0f ? !LEFT_FORWARD_A : LEFT_FORWARD_A) ||
-        !wheel(MOTOR_RIGHT_PIN, fabsf(right),
+        !wheel(MOTOR_RIGHT_PIN, robot_float_abs(right),
             right < 0.0f ? !RIGHT_FORWARD_A : RIGHT_FORWARD_A))
     {
         atomic_store_explicit(&initialized, false, memory_order_release);

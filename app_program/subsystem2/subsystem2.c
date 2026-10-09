@@ -454,6 +454,11 @@ static void motion_task(INT stacd, void *exinf)
            the bounded driver transaction; its post-check then brakes. */
         uint32_t before_output = state_read();
         apply = apply && (before_output == state);
+        if (request.velocity_mode)
+        {
+            output_left *= (float)navigation_config.left_motor_polarity;
+            output_right *= (float)navigation_config.right_motor_polarity;
+        }
         bool output_ok;
 #if APP_TEST
         (void)apply;
