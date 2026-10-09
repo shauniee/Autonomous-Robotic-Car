@@ -1,0 +1,3 @@
+PASS numeric exponent overflow (1e999) rejected before caching
+PASS same SSE stream remains open and receives valid follow-up payload
+Scope: actual dashboard/Paho/localhost broker with separate robot/s1-dashboard-overflow topic; no firmware/hardware claim.
