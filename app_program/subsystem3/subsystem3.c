@@ -20,23 +20,38 @@ ER subsystem3_init(void)
     T_CMTX mutex = {0};
     mutex.mtxatr = TA_INHERIT;
     ID id = tk_cre_mtx(&mutex);
-    if (id < E_OK)
+#if APP_TEST
+    tm_printf((UB *)"[TEST] S3 snapshot mutex creation returned=%d\n", id);
+#endif
+    if (id <= 0)
     {
-        return id;
+        return id < E_OK ? id : E_SYS;
     }
     latest = (S3IrSnapshot){.capture_result = IR_CAPTURE_WAITING};
     atomic_store_explicit(&snapshot_mutex, id, memory_order_release);
+#if APP_TEST
+    tm_printf((UB *)"[TEST] S3 snapshot mutex published=%d\n",
+        atomic_load_explicit(&snapshot_mutex, memory_order_acquire));
+#endif
     return E_OK;
 }
 
 ER subsystem3_start(void)
 {
-    if (atomic_load_explicit(&snapshot_mutex, memory_order_acquire) <= 0)
+    ID mutex_id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
+#if APP_TEST
+    tm_printf((UB *)"[TEST] S3 snapshot mutex id before task start=%d\n",
+        mutex_id);
+#endif
+    if (mutex_id <= 0)
     {
         return E_OBJ;
     }
     ID task_id = app_start_task((FP)task_ir_task, S3_PRI_LINE,
         TP_PRC2, "IR line");
+#if APP_TEST
+    tm_printf((UB *)"[TEST] S3 task start result=%d\n", task_id);
+#endif
     return task_id < E_OK ? task_id : E_OK;
 }
 
