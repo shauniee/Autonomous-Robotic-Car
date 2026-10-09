@@ -108,7 +108,8 @@ static void publish_latest(void)
 {
     S1Telemetry snapshot;
     char payload[S1_TELEMETRY_PAYLOAD_MAX + 1u];
-    diagnostics.have_snapshot = s1_telemetry_copy(&snapshot);
+    diagnostics.have_snapshot = s1_telemetry_refresh(sys_now()) &&
+        s1_telemetry_copy(&snapshot);
     if (!diagnostics.have_snapshot)
     {
         return;
