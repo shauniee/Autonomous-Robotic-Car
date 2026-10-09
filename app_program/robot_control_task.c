@@ -209,7 +209,7 @@ static void control_task(INT stacd, void *exinf)
         }
         if (policy.request_reset)
         {
-            s3_barcode_context(0u, true);
+            s3_barcode_reset();
         }
         S3BarcodeSnapshot barcode_copy;
         if (s3_barcode_copy(&barcode_copy))
