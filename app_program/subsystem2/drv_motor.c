@@ -1,5 +1,6 @@
 #include "drv_motor.h"
 #include "subsystem2.h"
+#include <stdatomic.h>
 
 #define MOTOR_WRAP 999u
 #define MOTOR_DIV_8_4 100u
@@ -15,7 +16,7 @@
 #define LEFT_FORWARD_A true
 #define RIGHT_FORWARD_A true
 
-static bool initialized;
+static atomic_bool initialized;
 
 static UW slice_register(unsigned pin, unsigned offset)
 {
@@ -47,12 +48,13 @@ bool drv_motor_brake(void)
         (in_w(slice_register(MOTOR_RIGHT_PIN, PWM_CHx_CC)) == 0u);
     float left;
     float right;
-    success = success && initialized &&
+    success = success &&
+        atomic_load_explicit(&initialized, memory_order_acquire) &&
         drv_motor_output_copy(&left, &right) &&
         (left == 0.0f) && (right == 0.0f);
     if (!success)
     {
-        initialized = false;
+        atomic_store_explicit(&initialized, false, memory_order_release);
         fallback_low();
     }
     return success;
@@ -87,7 +89,7 @@ static bool configure_slice(unsigned pin)
 
 bool drv_motor_init(void)
 {
-    initialized = false;
+    atomic_store_explicit(&initialized, false, memory_order_release);
     for (unsigned pin = MOTOR_LEFT_PIN; pin <= MOTOR_LAST_PIN; ++pin)
     {
         if ((gpio_set_val(pin, 0u) < E_OK) ||
@@ -114,7 +116,7 @@ bool drv_motor_init(void)
         fallback_low();
         return false;
     }
-    initialized = true;
+    atomic_store_explicit(&initialized, true, memory_order_release);
     return drv_motor_brake();
 }
 
@@ -131,7 +133,8 @@ static bool wheel(unsigned pin, float duty, bool forward_a)
 
 bool drv_motor_apply(float left, float right)
 {
-    if (!initialized || !motion_duties_valid(left, right))
+    if (!atomic_load_explicit(&initialized, memory_order_acquire) ||
+        !motion_duties_valid(left, right))
     {
         (void)drv_motor_brake();
         return false;
@@ -139,7 +142,7 @@ bool drv_motor_apply(float left, float right)
     if (!wheel(MOTOR_LEFT_PIN, left, LEFT_FORWARD_A) ||
         !wheel(MOTOR_RIGHT_PIN, right, RIGHT_FORWARD_A))
     {
-        initialized = false;
+        atomic_store_explicit(&initialized, false, memory_order_release);
         (void)drv_motor_brake();
         fallback_low();
         return false;
@@ -170,7 +173,8 @@ static bool wheel_output(unsigned pin, bool forward_a, float *duty)
 
 bool drv_motor_output_copy(float *left, float *right)
 {
-    if (!initialized || (left == NULL) || (right == NULL))
+    if (!atomic_load_explicit(&initialized, memory_order_acquire) ||
+        (left == NULL) || (right == NULL))
     {
         return false;
     }
