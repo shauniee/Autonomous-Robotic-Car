@@ -73,6 +73,8 @@ void s3_barcode_decoder_edge(S3BarcodeDecoder *decoder,
 void s3_barcode_decoder_poll(S3BarcodeDecoder *decoder,
     const S3BarcodeEdge *observation, uint32_t now_ms);
 bool s3_barcode_decoder_take(S3BarcodeDecoder *decoder, S3NavEvent *event);
+void s3_barcode_decoder_context(S3BarcodeDecoder *decoder,
+    uint32_t generation, bool clear_fault);
 void s3_barcode_decoder_fault(S3BarcodeDecoder *decoder,
     S3BarcodeResult result);
 const char *s3_barcode_state_name(S3BarcodeState state);

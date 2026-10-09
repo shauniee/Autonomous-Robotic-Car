@@ -141,10 +141,14 @@ bool barcode_fixture_overflow(void)
     }
     REQUIRE(d.status.state == S3_BC_FAULT);
     REQUIRE(d.status.result == S3_BC_QUEUE_OVERFLOW);
+    s3_barcode_decoder_context(&d, 2u, false);
+    REQUIRE(d.status.state == S3_BC_FAULT); /* Purge is not fault reset. */
+    REQUIRE(d.status.result == S3_BC_QUEUE_OVERFLOW);
     S3NavEvent event;
     REQUIRE(!s3_barcode_decoder_take(&d, &event));
-    s3_barcode_decoder_init(&d, &config, 2u);
-    edge.generation = 2u;
+    s3_barcode_decoder_context(&d, 3u, true);
+    REQUIRE(d.status.state == S3_BC_QUIET);
+    edge.generation = 3u;
     edge.ambiguous = true;
     s3_barcode_decoder_edge(&d, &edge);
     REQUIRE(d.status.result == S3_BC_CAPTURE_OVERFLOW);

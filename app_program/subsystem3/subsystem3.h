@@ -17,6 +17,8 @@ bool s3_nav_take(S3NavEvent *event);
 bool s3_nav_discard(S3BarcodeResult reason);
 /* Coordinator is the sole context writer; purge invalidates pending work. */
 void s3_barcode_context(uint32_t context, bool purge);
+/* Fresh local reset only: purge and permit clearing a latched barcode fault. */
+void s3_barcode_reset(void);
 /* Nonblocking coherent copy. False means null, uninitialized, or busy/error;
    Ignore the destination on failure; normalized zero is not validity.
    This API is for task context, never an ISR. */

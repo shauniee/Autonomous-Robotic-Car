@@ -185,6 +185,26 @@ void s3_barcode_decoder_init(S3BarcodeDecoder *d,
     d->status.state = d->status.configured ? S3_BC_QUIET : S3_BC_DISABLED;
     d->status.result = d->status.configured ? S3_BC_OK : S3_BC_UNCONFIGURED;
 }
+void s3_barcode_decoder_context(S3BarcodeDecoder *d, uint32_t generation,
+    bool clear_fault)
+{
+    uint32_t accepted = d->status.accepted;
+    uint32_t rejected = d->status.rejected;
+    uint32_t discarded = d->status.discarded + d->count;
+    bool fault = d->status.state == S3_BC_FAULT;
+    S3BarcodeResult result = d->status.result;
+    S3BarcodeConfig configuration = d->config;
+    s3_barcode_decoder_init(d, &configuration, generation);
+    d->status.accepted = accepted;
+    d->status.rejected = rejected;
+    d->status.discarded = discarded;
+    if (fault && !clear_fault)
+    {
+        d->status.state = S3_BC_FAULT;
+        d->status.result = result;
+    }
+}
+
 void s3_barcode_decoder_fault(S3BarcodeDecoder *d, S3BarcodeResult result)
 {
     d->status.result = result;

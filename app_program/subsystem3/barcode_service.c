@@ -9,7 +9,7 @@
 #define BARCODE_BATCH 64u
 static S3BarcodeCapture capture;
 static atomic_uint context_value, epoch;
-static atomic_bool started;
+static atomic_bool started, reset_requested;
 static atomic_int barcode_mutex;
 static S3BarcodeDecoder decoder;
 static S3BarcodeConfig configuration;
@@ -58,6 +58,12 @@ void s3_barcode_context(uint32_t context, bool purge)
         atomic_store_explicit(&epoch, value + 1u, memory_order_release);
     }
 }
+void s3_barcode_reset(void)
+{
+    atomic_store_explicit(&reset_requested, true, memory_order_release);
+    s3_barcode_context(0u, true);
+}
+
 bool s3_barcode_copy(S3BarcodeSnapshot *snapshot)
 {
     ID mutex = atomic_load_explicit(&barcode_mutex, memory_order_acquire);
@@ -147,14 +153,11 @@ static void barcode_task(INT stacd, void *exinf)
                 DI(saved);
                 s3_barcode_capture_reset_task(&capture);
                 EI(saved);
-                uint32_t accepted = decoder.status.accepted;
-                uint32_t rejected = decoder.status.rejected;
-                uint32_t discarded = decoder.status.discarded + decoder.count;
-                s3_barcode_decoder_init(&decoder, &configuration,
-                    current_epoch);
-                decoder.status.accepted = accepted;
-                decoder.status.rejected = rejected;
-                decoder.status.discarded = discarded;
+                bool clear = atomic_load_explicit(&reset_requested,
+                    memory_order_acquire);
+                atomic_store_explicit(&reset_requested, false,
+                    memory_order_release);
+                s3_barcode_decoder_context(&decoder, current_epoch, clear);
                 serviced_epoch = current_epoch;
             }
             if (atomic_load_explicit(&capture.overflow, memory_order_acquire) &&
