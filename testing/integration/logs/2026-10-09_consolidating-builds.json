@@ -1,0 +1,1914 @@
+[
+  {
+    "profile": "smp1-nav0-wireless0-test0",
+    "command": [
+      "make",
+      "-C",
+      "build_make",
+      "-j8",
+      "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+      "SMP=1",
+      "CONSOLE=usb_cdc",
+      "WIFI=cyw43",
+      "NET=none",
+      "MQTT=0",
+      "CRASH_REPORT=0",
+      "TEST=0",
+      "NAVIGATION=0"
+    ],
+    "exit_code": 0,
+    "uf2": "mtk3pico_smp1_usb_cdc_wifi_nav0.uf2",
+    "sha256": "7b34e8e1b2d8b1ea552584e4e795bb46b82962cf72ee2184247865e756b8ce17",
+    "stack_frames": [
+      {
+        "function": "../app_program/robot_control_task.c:107:13:control_task",
+        "bytes": 696,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:153:6:barcode_fixture_wrap",
+        "bytes": 624,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:100:6:barcode_fixture_events",
+        "bytes": 608,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:125:6:barcode_fixture_overflow",
+        "bytes": 608,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:331:13:motion_task",
+        "bytes": 544,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_fixtures.c:82:6:robot_navigation_fixture_actions",
+        "bytes": 536,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_fixtures.c:47:6:robot_navigation_fixture_windows",
+        "bytes": 480,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_fixtures.c:117:6:robot_navigation_fixture_reacquire",
+        "bytes": 456,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem2/navigation_fixtures.c:35:6:navigation_fixture_actions",
+        "bytes": 344,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem2/navigation_fixtures.c:123:6:navigation_fixture_stall",
+        "bytes": 328,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem2/navigation_fixtures.c:92:6:navigation_fixture_deadlines",
+        "bytes": 320,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:52:6:barcode_fixture_rejection",
+        "bytes": 320,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry_adapter.c:35:6:s1_telemetry_map",
+        "bytes": 312,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/ir_self_test.c:284:6:ir_self_test_snapshot",
+        "bytes": 304,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem1/navigation_fixtures.c:5:6:s1_navigation_fixture_encode",
+        "bytes": 288,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/ir_self_test.c:56:6:ir_self_test_guidance",
+        "bytes": 248,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/robot_control_test.c:18:13:recovery_check",
+        "bytes": 248,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_fixtures.c:28:6:robot_navigation_fixture_context",
+        "bytes": 248,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:34:6:barcode_fixture_symbols",
+        "bytes": 240,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/ir_self_test.c:25:6:ir_self_test_normalization",
+        "bytes": 232,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/robot_control_test.c:145:6:robot_control_test",
+        "bytes": 208,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_snapshot.c:28:14:ir_snapshot_build",
+        "bytes": 208,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_fixtures.c:151:6:robot_navigation_fixture_stop",
+        "bytes": 176,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem2/navigation_fixtures.c:15:6:navigation_fixture_quadrature",
+        "bytes": 168,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/ir_self_test.c:170:6:ir_self_test_classification",
+        "bytes": 168,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:228:4:s2_health",
+        "bytes": 152,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:84:13:encounter",
+        "bytes": 144,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:145:17:s3_code39_decode",
+        "bytes": 144,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/ir_self_test.c:89:6:ir_self_test_capture",
+        "bytes": 136,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/task_ir.c:48:6:task_ir_task",
+        "bytes": 136,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/ir_self_test.c:219:6:ir_self_test_buttons",
+        "bytes": 120,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:108:24:decode_forward",
+        "bytes": 120,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_task.c:89:6:robot_control_copy",
+        "bytes": 104,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/subsystem3_test.c:69:6:subsystem3_test_snapshot_boundary",
+        "bytes": 88,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/navigation.c:85:6:s2_navigation_tick",
+        "bytes": 80,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:199:6:ir_tracking_sample",
+        "bytes": 80,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:153:4:s2_publish",
+        "bytes": 72,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:89:6:subsystem3_publish",
+        "bytes": 72,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry.c:56:10:s1_telemetry_encode",
+        "bytes": 72,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:101:13:barcode_task",
+        "bytes": 64,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:61:6:s3_barcode_copy",
+        "bytes": 64,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:230:18:ir_tracking_output",
+        "bytes": 64,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/status_protocol.c:121:10:s1_status_encode",
+        "bytes": 64,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/app_main.c:17:11:app_start_task",
+        "bytes": 56,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/encoder.c:69:6:s2_encoder_copy",
+        "bytes": 56,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:272:6:s3_barcode_decoder_poll",
+        "bytes": 56,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:30:11:ir_tracking_reading",
+        "bytes": 56,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_navigation.c:65:6:robot_navigation_tick",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/gpio_capture.c:28:13:capture_isr",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:541:4:subsystem2_init",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:17:22:observation",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:80:6:s3_nav_take",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:177:8:ir_tracking_classify",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry.c:11:13:number",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/subsystem3_test.c:13:11:wait_for_button_state",
+        "bytes": 40,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:18:6:barcode_fixture_widths",
+        "bytes": 40,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:179:6:barcode_fixture_capture_ring",
+        "bytes": 40,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:29:13:barcode_isr",
+        "bytes": 40,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:204:6:s3_barcode_decoder_edge",
+        "bytes": 40,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:185:6:subsystem3_capture_service",
+        "bytes": 40,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/subsystem3_test.c:94:6:subsystem3_test",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:38:13:report_init_failure",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:215:6:drv_motor_apply_signed",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/navigation.c:48:14:pid.part.0",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/encoder.c:17:13:encoder_isr",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/encoder.c:48:6:s2_encoder_init",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:17:6:s3_barcode_config_valid",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:48:6:s3_barcode_travel",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_ir.c:70:13:channel",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_ir.c:94:6:drv_ir_read",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/status_protocol.c:49:6:s1_status_request_data",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_ir.c:33:13:ready",
+        "bytes": 28,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem2/navigation_test.c:5:6:subsystem2_navigation_test",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_test.c:5:6:subsystem3_barcode_test",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_test.c:5:6:robot_navigation_test",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/app_main.c:69:12:usermain",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_navigation.c:15:6:robot_navigation_config_valid",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/gpio_capture.c:106:4:gpio_capture_enable",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:106:13:follow",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:189:6:robot_policy_tick",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_task.c:366:4:robot_control_init",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:86:11:advance_stop",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:309:13:park_fault",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:194:13:wheel",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:112:13:configure_slice",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:246:13:wheel_output.constprop",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:272:6:drv_motor_output_copy",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:77:13:checked_zero_output",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/navigation.c:23:6:s2_navigation_config_valid",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:11:6:motion_request_valid",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:39:6:motion_request_current",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:172:4:subsystem3_barcode_init",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:45:4:subsystem3_init",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:106:6:s3_ir_copy",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_feedback.c:68:6:drv_feedback_service",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/calibration_control.c:28:10:calibration_control_inputs",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_ir.c:46:6:drv_ir_init",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry.c:38:13:quoted",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry.c:51:13:reference",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_navigation.c:39:6:robot_navigation_accept",
+        "bytes": 20,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:359:6:s3_barcode_decoder_take",
+        "bytes": 20,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem1/navigation_test.c:7:6:subsystem1_navigation_test",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_navigation_config.c:16:6:robot_navigation_load",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_navigation.c:35:6:robot_navigation_reset",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/gpio_capture.c:70:4:gpio_capture_init",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:300:13:latch_fault",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:21:6:s2_navigation_configure",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:132:4:s2_stop",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:195:4:s2_request_reset",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:99:6:drv_motor_brake",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:147:6:drv_motor_init",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:205:6:drv_motor_apply",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/navigation.c:16:13:pid_valid",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:4:6:motion_duties_valid",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:38:6:s3_barcode_configure",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:175:6:s3_barcode_decoder_init",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:164:6:s3_capture_request",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_feedback.c:50:6:drv_feedback_inputs",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:72:6:ir_tracking_capture",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_capture.c:9:6:s3_barcode_capture_push_isr",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_capture.c:27:6:s3_barcode_capture_pop_task",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/status_protocol.c:37:13:token",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/status_protocol.c:12:6:s1_status_request_begin",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry.c:17:13:decimal",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry.c:25:13:signed_milli",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/subsystem1.c:22:6:s1_telemetry_update",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/subsystem1.c:30:6:s1_telemetry_copy",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/gpio_capture.c:84:4:gpio_capture_register",
+        "bytes": 12,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:47:6:motion_reset_allowed",
+        "bytes": 12,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem2/navigation_fixtures.c:5:20:navigation_fixture_config",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/subsystem3_test.c:45:4:subsystem3_test_wait_for_start",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:7:17:barcode_fixture_config",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_fixtures.c:7:23:robot_navigation_fixture_config",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/app_main.c:50:13:startup_error",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:20:6:robot_policy_init",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:26:6:robot_policy_stop",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:364:6:robot_watchdog_progress",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_task.c:384:4:robot_control_start",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:32:6:s2_navigation_configuration",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:264:6:s2_motion_copy",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:582:4:subsystem2_start",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/navigation.c:38:6:s2_navigation_reset",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:191:4:subsystem3_barcode_start",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:70:4:subsystem3_start",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:136:6:s3_local_inputs",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:147:6:s3_capture_allow",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:152:6:s3_capture_cancel",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_feedback.c:19:6:drv_feedback_init",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_feedback.c:56:6:drv_feedback_chirps",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/calibration_control.c:4:6:calibration_control_init",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:55:6:ir_tracking_init",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/status_protocol.c:4:6:s1_status_request_reset",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/gpio_capture.c:23:10:gpio_capture_time_us",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:49:13:start_valid",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:11:6:robot_policy_moving",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:346:13:robot_policy_state_name",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/encoder_policy.c:3:5:s2_encoder_transition",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:19:10:motion_stop_generation",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:24:6:motion_stop_latched",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:29:10:motion_stop_next",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:57:6:motion_publication_allowed",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/encoder.c:64:6:s2_encoder_enable_context",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem5/subsystem5.c:2:4:subsystem5_init",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem5/subsystem5.c:3:4:subsystem5_start",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem4/subsystem4.c:2:4:subsystem4_init",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem4/subsystem4.c:3:4:subsystem4_start",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:48:6:s3_barcode_context",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:188:6:s3_barcode_decoder_fault",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:372:13:s3_barcode_state_name",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:384:13:s3_barcode_result_name",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/calibration_control.c:12:10:calibration_control_feedback",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_snapshot.c:5:6:ir_snapshot_refresh",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:63:6:ir_tracking_cancel_capture",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:110:6:ir_tracking_check_time",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:254:13:ir_tracking_line_name",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:265:13:ir_tracking_capture_name",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_capture.c:3:6:s3_barcode_capture_init",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_capture.c:43:6:s3_barcode_capture_empty",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_capture.c:48:6:s3_barcode_capture_reset_task",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry_adapter.c:149:6:s1_telemetry_refresh",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/subsystem1.c:9:4:subsystem1_init",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/subsystem1.c:20:4:subsystem1_start",
+        "bytes": 0,
+        "kind": "static"
+      }
+    ],
+    "revision": "76d403c6893a6ef3777526f336d8d37b7d0bf94b"
+  },
+  {
+    "profile": "smp1-nav0-wireless0-test1",
+    "command": [
+      "make",
+      "-C",
+      "build_make",
+      "-j8",
+      "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+      "SMP=1",
+      "CONSOLE=usb_cdc",
+      "WIFI=cyw43",
+      "NET=none",
+      "MQTT=0",
+      "CRASH_REPORT=0",
+      "TEST=1",
+      "NAVIGATION=0"
+    ],
+    "exit_code": 0,
+    "uf2": "mtk3pico_smp1_usb_cdc_wifi_test_nav0.uf2",
+    "sha256": "38d7ea0acb2bc163197fecd7d2366efa9bac982122ddda33b47b285da1d606d8",
+    "stack_frames": [
+      {
+        "function": "../app_program/subsystem1/subsystem1_test.c:173:6:subsystem1_test",
+        "bytes": 856,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_task.c:107:13:control_task",
+        "bytes": 696,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:153:6:barcode_fixture_wrap",
+        "bytes": 624,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:100:6:barcode_fixture_events",
+        "bytes": 608,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:125:6:barcode_fixture_overflow",
+        "bytes": 608,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_fixtures.c:82:6:robot_navigation_fixture_actions",
+        "bytes": 560,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:331:13:motion_task",
+        "bytes": 536,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_fixtures.c:47:6:robot_navigation_fixture_windows",
+        "bytes": 512,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_fixtures.c:131:6:robot_navigation_fixture_reacquire",
+        "bytes": 488,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem2/navigation_fixtures.c:39:6:navigation_fixture_actions",
+        "bytes": 368,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem2/navigation_fixtures.c:127:6:navigation_fixture_stall",
+        "bytes": 352,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem2/navigation_fixtures.c:96:6:navigation_fixture_deadlines",
+        "bytes": 344,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:52:6:barcode_fixture_rejection",
+        "bytes": 320,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry_adapter.c:35:6:s1_telemetry_map",
+        "bytes": 312,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/ir_self_test.c:284:6:ir_self_test_snapshot",
+        "bytes": 304,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem1/navigation_fixtures.c:5:6:s1_navigation_fixture_encode",
+        "bytes": 288,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_fixtures.c:28:6:robot_navigation_fixture_context",
+        "bytes": 280,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2_test.c:100:6:subsystem2_test",
+        "bytes": 280,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/ir_self_test.c:56:6:ir_self_test_guidance",
+        "bytes": 248,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/robot_control_test.c:18:13:recovery_check",
+        "bytes": 248,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/task_ir.c:48:6:task_ir_task",
+        "bytes": 248,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:34:6:barcode_fixture_symbols",
+        "bytes": 240,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/ir_self_test.c:25:6:ir_self_test_normalization",
+        "bytes": 232,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem2/navigation_fixtures.c:19:6:navigation_fixture_quadrature",
+        "bytes": 224,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/robot_control_test.c:145:6:robot_control_test",
+        "bytes": 208,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_snapshot.c:28:14:ir_snapshot_build",
+        "bytes": 208,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_fixtures.c:165:6:robot_navigation_fixture_stop",
+        "bytes": 176,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/ir_self_test.c:170:6:ir_self_test_classification",
+        "bytes": 168,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:228:4:s2_health",
+        "bytes": 152,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:84:13:encounter",
+        "bytes": 144,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:145:17:s3_code39_decode",
+        "bytes": 144,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/ir_self_test.c:89:6:ir_self_test_capture",
+        "bytes": 136,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/ir_self_test.c:219:6:ir_self_test_buttons",
+        "bytes": 120,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:108:24:decode_forward",
+        "bytes": 120,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_task.c:89:6:robot_control_copy",
+        "bytes": 104,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/subsystem3_test.c:69:6:subsystem3_test_snapshot_boundary",
+        "bytes": 88,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/navigation.c:85:6:s2_navigation_tick",
+        "bytes": 80,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:199:6:ir_tracking_sample",
+        "bytes": 80,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:153:4:s2_publish",
+        "bytes": 72,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:89:6:subsystem3_publish",
+        "bytes": 72,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry.c:56:10:s1_telemetry_encode",
+        "bytes": 72,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:101:13:barcode_task",
+        "bytes": 64,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:61:6:s3_barcode_copy",
+        "bytes": 64,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:230:18:ir_tracking_output",
+        "bytes": 64,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/status_protocol.c:121:10:s1_status_encode",
+        "bytes": 64,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/app_main.c:17:11:app_start_task",
+        "bytes": 56,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/encoder.c:69:6:s2_encoder_copy",
+        "bytes": 56,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:272:6:s3_barcode_decoder_poll",
+        "bytes": 56,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:30:11:ir_tracking_reading",
+        "bytes": 56,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_navigation.c:65:6:robot_navigation_tick",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/gpio_capture.c:28:13:capture_isr",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:541:4:subsystem2_init",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:17:22:observation",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:80:6:s3_nav_take",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:177:8:ir_tracking_classify",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry.c:11:13:number",
+        "bytes": 48,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/subsystem3_test.c:13:11:wait_for_button_state",
+        "bytes": 40,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:18:6:barcode_fixture_widths",
+        "bytes": 40,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:179:6:barcode_fixture_capture_ring",
+        "bytes": 40,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:29:13:barcode_isr",
+        "bytes": 40,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:204:6:s3_barcode_decoder_edge",
+        "bytes": 40,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:185:6:subsystem3_capture_service",
+        "bytes": 40,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/subsystem3_test.c:94:6:subsystem3_test",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:38:13:report_init_failure",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:215:6:drv_motor_apply_signed",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/navigation.c:48:14:pid.part.0",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/encoder.c:17:13:encoder_isr",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/encoder.c:48:6:s2_encoder_init",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:17:6:s3_barcode_config_valid",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:48:6:s3_barcode_travel",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_ir.c:70:13:channel",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_ir.c:94:6:drv_ir_read",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/status_protocol.c:49:6:s1_status_request_data",
+        "bytes": 32,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_ir.c:33:13:ready",
+        "bytes": 28,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem2/navigation_test.c:5:6:subsystem2_navigation_test",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_test.c:5:6:subsystem3_barcode_test",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_test.c:5:6:robot_navigation_test",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/app_main.c:69:12:usermain",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_navigation.c:15:6:robot_navigation_config_valid",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/gpio_capture.c:106:4:gpio_capture_enable",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:106:13:follow",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:189:6:robot_policy_tick",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_task.c:366:4:robot_control_init",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:86:11:advance_stop",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:309:13:park_fault",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:194:13:wheel",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:112:13:configure_slice",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:246:13:wheel_output.constprop",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:272:6:drv_motor_output_copy",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:77:13:checked_zero_output",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/navigation.c:23:6:s2_navigation_config_valid",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:11:6:motion_request_valid",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:39:6:motion_request_current",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:172:4:subsystem3_barcode_init",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:45:4:subsystem3_init",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:106:6:s3_ir_copy",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_feedback.c:68:6:drv_feedback_service",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/calibration_control.c:28:10:calibration_control_inputs",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_ir.c:46:6:drv_ir_init",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry.c:38:13:quoted",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry.c:51:13:reference",
+        "bytes": 24,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_navigation.c:39:6:robot_navigation_accept",
+        "bytes": 20,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:359:6:s3_barcode_decoder_take",
+        "bytes": 20,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem1/navigation_test.c:7:6:subsystem1_navigation_test",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_navigation_config.c:16:6:robot_navigation_load",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_navigation.c:35:6:robot_navigation_reset",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/gpio_capture.c:70:4:gpio_capture_init",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:300:13:latch_fault",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:21:6:s2_navigation_configure",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:132:4:s2_stop",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:195:4:s2_request_reset",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:99:6:drv_motor_brake",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:147:6:drv_motor_init",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/drv_motor.c:205:6:drv_motor_apply",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/navigation.c:16:13:pid_valid",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:4:6:motion_duties_valid",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:38:6:s3_barcode_configure",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:175:6:s3_barcode_decoder_init",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:164:6:s3_capture_request",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_feedback.c:50:6:drv_feedback_inputs",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:72:6:ir_tracking_capture",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_capture.c:9:6:s3_barcode_capture_push_isr",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_capture.c:27:6:s3_barcode_capture_pop_task",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/status_protocol.c:37:13:token",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/status_protocol.c:12:6:s1_status_request_begin",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry.c:17:13:decimal",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry.c:25:13:signed_milli",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/subsystem1.c:22:6:s1_telemetry_update",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/subsystem1.c:30:6:s1_telemetry_copy",
+        "bytes": 16,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/gpio_capture.c:84:4:gpio_capture_register",
+        "bytes": 12,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:47:6:motion_reset_allowed",
+        "bytes": 12,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem2/navigation_fixtures.c:5:20:navigation_fixture_config",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/subsystem3_test.c:45:4:subsystem3_test_wait_for_start",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/subsystem3/barcode_fixtures.c:7:17:barcode_fixture_config",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../testing/integration/navigation_fixtures.c:7:23:robot_navigation_fixture_config",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/app_main.c:50:13:startup_error",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:20:6:robot_policy_init",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:26:6:robot_policy_stop",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:364:6:robot_watchdog_progress",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_task.c:384:4:robot_control_start",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:32:6:s2_navigation_configuration",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:264:6:s2_motion_copy",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/subsystem2.c:582:4:subsystem2_start",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/navigation.c:38:6:s2_navigation_reset",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem5/subsystem5_test.c:3:6:subsystem5_test",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem4/subsystem4_test.c:3:6:subsystem4_test",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:191:4:subsystem3_barcode_start",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:70:4:subsystem3_start",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:128:6:subsystem3_snapshot_self_test",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:136:6:s3_local_inputs",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:147:6:s3_capture_allow",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/subsystem3.c:152:6:s3_capture_cancel",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_feedback.c:19:6:drv_feedback_init",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/drv_feedback.c:56:6:drv_feedback_chirps",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/calibration_control.c:4:6:calibration_control_init",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:55:6:ir_tracking_init",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/status_protocol.c:4:6:s1_status_request_reset",
+        "bytes": 8,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/gpio_capture.c:23:10:gpio_capture_time_us",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:49:13:start_valid",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:11:6:robot_policy_moving",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/robot_control_policy.c:346:13:robot_policy_state_name",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/encoder_policy.c:3:5:s2_encoder_transition",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:19:10:motion_stop_generation",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:24:6:motion_stop_latched",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:29:10:motion_stop_next",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/motion_policy.c:57:6:motion_publication_allowed",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem2/encoder.c:64:6:s2_encoder_enable_context",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem5/subsystem5.c:2:4:subsystem5_init",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem5/subsystem5.c:3:4:subsystem5_start",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem4/subsystem4.c:2:4:subsystem4_init",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem4/subsystem4.c:3:4:subsystem4_start",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_service.c:48:6:s3_barcode_context",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:188:6:s3_barcode_decoder_fault",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:372:13:s3_barcode_state_name",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_decoder.c:384:13:s3_barcode_result_name",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/calibration_control.c:12:10:calibration_control_feedback",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_snapshot.c:5:6:ir_snapshot_refresh",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:63:6:ir_tracking_cancel_capture",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:110:6:ir_tracking_check_time",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:254:13:ir_tracking_line_name",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/ir_tracking.c:265:13:ir_tracking_capture_name",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_capture.c:3:6:s3_barcode_capture_init",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_capture.c:43:6:s3_barcode_capture_empty",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem3/barcode_capture.c:48:6:s3_barcode_capture_reset_task",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/telemetry_adapter.c:149:6:s1_telemetry_refresh",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/subsystem1.c:9:4:subsystem1_init",
+        "bytes": 0,
+        "kind": "static"
+      },
+      {
+        "function": "../app_program/subsystem1/subsystem1.c:20:4:subsystem1_start",
+        "bytes": 0,
+        "kind": "static"
+      }
+    ],
+    "revision": "76d403c6893a6ef3777526f336d8d37b7d0bf94b"
+  },
+  {
+    "profile": "smp1-nav0-wireless1-test0",
+    "command": [
+      "make",
+      "-C",
+      "build_make",
+      "-j8",
+      "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+      "SMP=1",
+      "CONSOLE=usb_cdc",
+      "WIFI=cyw43",
+      "NET=lwip",
+      "MQTT=1",
+      "CRASH_REPORT=0",
+      "TEST=0",
+      "NAVIGATION=0"
+    ],
+    "exit_code": 2
+  }
+]

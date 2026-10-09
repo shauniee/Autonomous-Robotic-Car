@@ -1,0 +1,12 @@
+{
+  "revision": "cac5faeb598bb735231be146f1b48d7a180922a5",
+  "configured_fixture": "compile only: synthesized from permanent fixture structures, not hardware calibration",
+  "configuration_sha256": "bae8d868bb0fe54381ce9b5b8b1655417d7d1abd0ee046a22ec70bd9dbe3341a",
+  "configuration": "/* Synthetic compile-only fixture. NOT robot calibration; never flashed. */\nstatic const S2NavigationConfig robot_motion_configuration = {.configured = true,\n        .diameter_m = 0.3183098862f, .track_m = 0.2f, .counts_per_rev = 100.0f,\n        .left_polarity = 1, .right_polarity = 1,\n        .left_motor_polarity = 1, .right_motor_polarity = 1,\n        .left_pid = {.kp = 1.0f, .ki = 0.1f, .kd = 0.0f,\n            .feedforward = 0.1f, .integral_limit = 1.0f},\n        .right_pid = {.kp = 1.0f, .ki = 0.1f, .kd = 0.0f,\n            .feedforward = 0.1f, .integral_limit = 1.0f},\n        .max_speed_mps = 2.0f,\n        .tolerance_m = 0.001f, .stall_duty = 0.05f, .stall_ms = 200u};\nstatic const S3BarcodeConfig robot_barcode_configuration = {.configured = true, .black_high = false,\n        .left_polarity = 1, .right_polarity = 1,\n        .narrow_min_counts = 8u, .narrow_max_counts = 24u,\n        .wide_ratio_min = 2.5f, .wide_ratio_max = 3.5f,\n        .narrow_variation = 1.5f, .quiet_counts = 80u, .rearm_counts = 100u,\n        .frame_timeout_ms = 1000u, .event_age_ms = 500u,\n        .mapping = {[0] = S3_NAV_LEFT, [1] = S3_NAV_RIGHT,\n            [2] = S3_NAV_STRAIGHT, [3] = S3_NAV_UTURN}};\nstatic const RobotNavigationConfig robot_route_configuration = {.configured = true,\n        .follow_mps = 0.2f, .action_mps = 0.2f, .search_mps = 0.1f,\n        .junction_min_m = 0.02f, .junction_max_m = 0.1f,\n        .straight_m = 0.02f, .turn_deg = 90.0f, .uturn_deg = 180.0f,\n        .reacquire_min_m = 0.01f, .reacquire_max_m = 0.1f,\n        .approach_ms = 500u, .action_ms = 500u, .reacquire_ms = 200u};\n",
+  "uf2": "mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_nav1.uf2",
+  "uf2_sha256": "dc8eb0001a6736d4781a4902a7d6cdd28f3385ffa6a58f57d1fa6839c81e2cd2",
+  "exit_code": 0,
+  "profile": "smp1-usb_cdc-wificyw43-netlwip-mqtt1-crash0-test0-nav1-navconfig3907447371-1604",
+  "log": "2026-10-09_consolidating-configured-build.txt",
+  "flashed": false
+}

@@ -67,3 +67,12 @@ These fixtures execute the actual pure algorithms with synthetic inputs. Firmwar
 | S2-U15 | Straight/left/right/U-turn, completion retention, ack and mutation | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
 | S2-U16 | Absolute deadline renewal, count/time wrap and sample gap | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
 | S2-U17 | Separate wheel PID bounds, idle-to-motion stall clock and invalid feedback | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+
+### Consolidation results, 2026-10-09
+
+| Source | Cases | Execution | Result | Evidence |
+| --- | --- | --- | --- | --- |
+| `48cbb19` | S2-U14–U17 | Temporary laptop harness, actual pure production algorithms, ASan/UBSan | PASS software | [source/compiler manifest](../integration/logs/2026-10-09_consolidating-manifest.json), [fixture output](../integration/logs/2026-10-09_consolidating-software.txt) |
+| Same source | S2-U14–U17 | New firmware TEST images on Pico | **NOT EXECUTED** | [nine-profile sequential builds](../integration/logs/2026-10-09_consolidating-acceptance-builds.json); no new board log |
+
+These rows do not validate wiring, ISR ordering/WCET, motor output, mounted sensing, wheel geometry/PID, stopping or original-line recognition. Older on-target rows remain evidence for their recorded revisions only.

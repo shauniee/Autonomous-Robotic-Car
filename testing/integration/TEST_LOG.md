@@ -53,3 +53,14 @@ These fixtures execute the actual pure algorithms with synthetic inputs. Firmwar
 | INT-18 | Four navigation targets, acknowledgement and unique Motion IDs | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
 | INT-19 | Two distinct observations, route bounds and wrap-safe timeout | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
 | INT-20 | Local stop dominates navigation; held start cannot replay | Pure firmware fixture / temporary sanitized laptop harness | All guards and bounded outcomes hold; no hardware claim |
+
+### Consolidation results, 2026-10-09
+
+| Source | Cases | Execution | Result | Evidence |
+| --- | --- | --- | --- | --- |
+| `48cbb19` | INT-16–INT-20 | Temporary laptop harness, actual pure production algorithms, ASan/UBSan | PASS software | [source/compiler manifest](logs/2026-10-09_consolidating-manifest.json), [fixture output](logs/2026-10-09_consolidating-software.txt) |
+| Same source | INT-16–INT-20 | New firmware TEST images on Pico | **NOT EXECUTED** | [nine-profile sequential builds](logs/2026-10-09_consolidating-acceptance-builds.json); no new board log |
+
+All nine requested firmware variants compiled successfully, including SMP=0 compatibility; both operating modes are covered. The final matrix used intentionally absent navigation configuration. A separate synthetic configured-header compile passed, recorded against its own earlier revision. [Dashboard compatibility](logs/2026-10-09_consolidating-dashboard.txt) used actual collector/browser and a private localhost topic root with synthetic data; it is not Pico transport proof. [Twenty extra spacing/polarity/scale cases](logs/2026-10-09_consolidating-spacing.txt) supplement the permanent fixtures.
+
+These rows do not validate wiring, ISR ordering/WCET, motor output, mounted sensing, wheel geometry/PID, stopping or original-line recognition. Older on-target rows remain evidence for their recorded revisions only.
