@@ -45,6 +45,18 @@ static void startup_error(void) {
 }
 #define REQUIRE(call) do { ER er=(call); CHECK(er,#call); if (er<E_OK) startup_error(); } while (0)
 
+/* Shared 1 us hardware TIMER tick from the 12 MHz reference. Scheduling uses
+   SysTick. Release TIMER without resetting a timebase also read by WiFi. */
+static void app_timebase_init(void)
+{
+    const UW watchdog_tick_register = 0x4005802cu;
+    const UW tick_enable = 1u << 9;
+    const UW reference_cycles_per_us = 12u;
+
+    out_w(watchdog_tick_register, tick_enable | reference_cycles_per_us);
+    clr_w(RESETS_RESET, RESETS_RESET_TIMER);
+}
+
 EXPORT INT usermain(void)
 {
 	T_RVER	ver;
@@ -59,6 +71,8 @@ EXPORT INT usermain(void)
 #else
 	tm_printf((UB*)"single-core build\n");
 #endif
+
+	app_timebase_init();
 
 	/* Phase 1: every subsystem creates its kernel objects */
 	REQUIRE(subsystem1_init());
