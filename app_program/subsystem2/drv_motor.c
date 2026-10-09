@@ -23,6 +23,27 @@ static UW slice_register(unsigned pin, unsigned offset)
     return PWM_BASE + ((pin / 2u) * PWM_SLICE_STRIDE) + offset;
 }
 
+static void report_init_failure(const char *stage, unsigned pin)
+{
+    /* Startup failures only, before fallback changes the mux/readback.
+       No formatting/logging runs in the periodic motor output path. */
+    tm_printf((UB *)"[S2] motor init failed stage=%s pin=%u "
+        "RESET_DONE=%08x\n", stage, pin,
+        (unsigned)in_w(RESETS_RESET_DONE));
+    for (unsigned output = MOTOR_LEFT_PIN; output <= MOTOR_RIGHT_PIN;
+        output += 2u)
+    {
+        tm_printf((UB *)"[S2] pin=%u CSR=%08x DIV=%08x TOP=%08x "
+            "CC=%08x CTRL_A=%08x CTRL_B=%08x\n", output,
+            (unsigned)in_w(slice_register(output, PWM_CHx_CSR)),
+            (unsigned)in_w(slice_register(output, PWM_CHx_DIV)),
+            (unsigned)in_w(slice_register(output, PWM_CHx_TOP)),
+            (unsigned)in_w(slice_register(output, PWM_CHx_CC)),
+            (unsigned)in_w(GPIO_CTRL(output)),
+            (unsigned)in_w(GPIO_CTRL(output + 1u)));
+    }
+}
+
 static void fallback_low(void)
 {
     /* Best effort if setup/readback fails; do not reset shared PWM. */
@@ -33,7 +54,7 @@ static void fallback_low(void)
     }
 }
 
-bool drv_motor_brake(void)
+static bool checked_zero_output(void)
 {
     bool success = true;
     for (unsigned pin = MOTOR_LEFT_PIN; pin <= MOTOR_LAST_PIN; ++pin)
@@ -52,6 +73,12 @@ bool drv_motor_brake(void)
         atomic_load_explicit(&initialized, memory_order_acquire) &&
         drv_motor_output_copy(&left, &right) &&
         (left == 0.0f) && (right == 0.0f);
+    return success;
+}
+
+bool drv_motor_brake(void)
+{
+    bool success = checked_zero_output();
     if (!success)
     {
         atomic_store_explicit(&initialized, false, memory_order_release);
@@ -64,6 +91,7 @@ static bool configure_slice(unsigned pin)
 {
     if (pwm_set_enabled(pin, FALSE) < E_OK)
     {
+        report_init_failure("slice_disable", pin);
         return false;
     }
     out_w(slice_register(pin, PWM_CHx_DIV), MOTOR_DIV_8_4);
@@ -75,9 +103,11 @@ static bool configure_slice(unsigned pin)
         (pwm_set_pin(pin + 1u) < E_OK) ||
         (pwm_set_enabled(pin, TRUE) < E_OK))
     {
+        report_init_failure("slice_setup", pin);
         return false;
     }
-    return (in_w(slice_register(pin, PWM_CHx_DIV)) == MOTOR_DIV_8_4) &&
+    bool verified =
+        (in_w(slice_register(pin, PWM_CHx_DIV)) == MOTOR_DIV_8_4) &&
         (in_w(slice_register(pin, PWM_CHx_TOP)) == MOTOR_WRAP) &&
         (in_w(slice_register(pin, PWM_CHx_CC)) == 0u) &&
         ((in_w(slice_register(pin, PWM_CHx_CSR)) & PWM_CH_CSR_EN) != 0u) &&
@@ -85,6 +115,11 @@ static bool configure_slice(unsigned pin)
             GPIO_CTRL_FUNCSEL_PWM) &&
         ((in_w(GPIO_CTRL(pin + 1u)) & PWM_FUNCTION_MASK) ==
             GPIO_CTRL_FUNCSEL_PWM);
+    if (!verified)
+    {
+        report_init_failure("slice_readback", pin);
+    }
+    return verified;
 }
 
 bool drv_motor_init(void)
@@ -95,6 +130,7 @@ bool drv_motor_init(void)
         if ((gpio_set_val(pin, 0u) < E_OK) ||
             (gpio_set_pin(pin, GPIO_MODE_OUT) < E_OK))
         {
+            report_init_failure("gpio_low", pin);
             fallback_low();
             return false;
         }
@@ -110,14 +146,27 @@ bool drv_motor_init(void)
             break;
         }
     }
-    if (!released || !configure_slice(MOTOR_LEFT_PIN) ||
+    if (!released)
+    {
+        report_init_failure("reset_release", MOTOR_LEFT_PIN);
+        fallback_low();
+        return false;
+    }
+    if (!configure_slice(MOTOR_LEFT_PIN) ||
         !configure_slice(MOTOR_RIGHT_PIN))
     {
         fallback_low();
         return false;
     }
     atomic_store_explicit(&initialized, true, memory_order_release);
-    return drv_motor_brake();
+    if (!checked_zero_output())
+    {
+        report_init_failure("initial_brake", MOTOR_LEFT_PIN);
+        atomic_store_explicit(&initialized, false, memory_order_release);
+        fallback_low();
+        return false;
+    }
+    return true;
 }
 
 static bool wheel(unsigned pin, float duty, bool forward_a)
