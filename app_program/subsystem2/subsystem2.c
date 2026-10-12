@@ -42,19 +42,38 @@ static void motion_task(INT stacd, void *exinf) {
         MotionRequest r={0}; T_RFLG f={0};
         ER er=tk_loc_mtx(request_mutex,2);
         if (er>=E_OK) { r=latest; tk_unl_mtx(request_mutex); }
-        bool stopped=tk_ref_flg(stop_flag,&f)<E_OK || (f.flgptn&1)!=0;
-        bool valid=er>=E_OK && motion_request_valid(r,stopped,now);
+        /* Runtime stop callers must share Motion's core 1. Masking its IRQs
+           excludes task dispatch through the final stop check and output.
+           Only nonwaiting flag/time reads and bounded BSP writes belong here;
+           never acquire a mutex, sleep, or wake a task in this section. */
+        UW interrupt_state;
+        DI(interrupt_state);
+        /* The port's PRIMASK helpers have no compiler memory clobber. */
+        __asm__ volatile ("" ::: "memory");
+        bool stopped = tk_ref_flg(stop_flag, &f) < E_OK ||
+                       (f.flgptn & 1u) != 0u;
+        bool valid = er >= E_OK &&
+                     motion_request_valid(r, stopped, now_ms());
         ER output_er;
-        if (!valid) {
-            output_er=drv_motor_brake();
-            /* Expiry/bad active request is latched, even if the producer recovers. */
-            if (r.enabled || er<E_OK) tk_set_flg(stop_flag,1);
-        } else {
+        if (!valid)
+        {
+            output_er = drv_motor_brake();
+        }
+        else
+        {
 #if APP_TEST
-            output_er=drv_motor_brake(); /* TEST never permits movement. */
+            output_er = drv_motor_brake(); /* TEST never permits movement. */
 #else
-            output_er=drv_motor_apply(r.left,r.right);
+            output_er = drv_motor_apply(r.left, r.right);
 #endif
+        }
+        __asm__ volatile ("" ::: "memory");
+        EI(interrupt_state);
+        __asm__ volatile ("" ::: "memory");
+        /* Latching and wake-ups occur after restoring the caller's IRQ state. */
+        if (!valid && (r.enabled || er < E_OK))
+        {
+            s2_stop();
         }
         if (output_er < E_OK)
         {
