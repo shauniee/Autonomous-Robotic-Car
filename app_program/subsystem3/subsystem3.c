@@ -1,8 +1,9 @@
 #include "subsystem3.h"
 #include "subsystem3_internal.h"
-#include "task_ir.h"
-#include "drv_feedback.h"
+#include "task_s3.h"
 #include <stdatomic.h>
+#include "../common/drv_buttons.h"
+#include "../common/buzzer.h"
 #if APP_TEST
 #include "../../testing/subsystem3/subsystem3_test.h"
 #endif
@@ -13,7 +14,7 @@ static S3IrSnapshot latest;
 
 ER subsystem3_init(void)
 {
-    if (!drv_feedback_init())
+    if (!drv_buttons_init() || !buzzer_init())
     {
         return E_SYS;
     }
@@ -45,7 +46,7 @@ ER subsystem3_start(void)
     {
         return E_OBJ;
     }
-    ID task_id = app_start_task((FP)task_ir_task, S3_PRI_LINE, TP_PRC2, "IR line");
+    ID task_id = app_start_task((FP)task_s_task, S3_PRI_LINE, TP_PRC2, "IR line");
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 task start result=%d\n", task_id);
 #endif

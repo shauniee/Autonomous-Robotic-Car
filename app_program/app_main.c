@@ -81,13 +81,13 @@ EXPORT INT usermain(void)
 	REQUIRE(subsystem5_init());
 
 	// every subsystem starts its tasks
+	REQUIRE(subsystem1_start());
+	REQUIRE(subsystem2_start());
 #if !APP_TEST
-	// REQUIRE(subsystem1_start());
-	// REQUIRE(subsystem2_start());
 	REQUIRE(subsystem3_start());
-	// REQUIRE(subsystem4_start());
-	// REQUIRE(subsystem5_start());
 #endif
+	REQUIRE(subsystem4_start());
+	REQUIRE(subsystem5_start());
 
 #if APP_TEST
 	tm_printf((UB*)"S1, S2, S4 and S5 started; S3 waits for the test gate.\n");
