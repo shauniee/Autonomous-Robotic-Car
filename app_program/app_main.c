@@ -62,36 +62,32 @@ static void app_timebase_init(void)
 
 EXPORT INT usermain(void)
 {
-	T_RVER	ver;
-
-	/* tk_ref_ver: ask the kernel who it is */
-	tk_ref_ver(&ver);
-	tm_printf((UB*)"\n=== micro T-Kernel on Raspberry Pi Pico W"
-		  " (spec 0x%04x, product 0x%04x) ===\n", ver.spver, ver.prver);
-#if TK_SUPPORT_SMP
-	tm_printf((UB*)"dual-core (SMP) build, usermain on core %d\n",
-		  tk_get_prc() - 1);	/* tk_get_prc() counts from 1 */
+	T_RVER ver; // version information from kernel
+	tk_ref_ver(&ver); // request version information
+	tm_printf((UB*)"\n=== micro T-Kernel on Raspberry Pi Pico W (spec 0x%04x, product 0x%04x) ===\n", ver.spver, ver.prver);
+#if TK_SUPPORT_SMP // SMP -> symmetric multiprocessing
+	tm_printf((UB*)"dual-core (SMP) build, usermain on core %d\n", tk_get_prc() - 1);
 #else
 	tm_printf((UB*)"single-core build\n");
 #endif
 
-	app_timebase_init();
+	app_timebase_init(); // time in ms
 
-	/* Phase 1: every subsystem creates its kernel objects */
+	// every subsystem creates its kernel objects
 	REQUIRE(subsystem1_init());
 	REQUIRE(subsystem2_init());
 	REQUIRE(subsystem3_init());
 	REQUIRE(subsystem4_init());
 	REQUIRE(subsystem5_init());
 
-	/* Phase 2: every subsystem starts its tasks */
-	REQUIRE(subsystem1_start());
-	REQUIRE(subsystem2_start());
+	// every subsystem starts its tasks
 #if !APP_TEST
+	// REQUIRE(subsystem1_start());
+	// REQUIRE(subsystem2_start());
 	REQUIRE(subsystem3_start());
+	// REQUIRE(subsystem4_start());
+	// REQUIRE(subsystem5_start());
 #endif
-	REQUIRE(subsystem4_start());
-	REQUIRE(subsystem5_start());
 
 #if APP_TEST
 	tm_printf((UB*)"S1, S2, S4 and S5 started; S3 waits for the test gate.\n");
@@ -109,6 +105,6 @@ EXPORT INT usermain(void)
 #endif
 	tm_printf((UB*)"all subsystems started\n\n");
 
-	/* Sleep forever.  Returning from usermain() would shut down. */
-	for (;;) tk_slp_tsk(TMO_FEVR);
+	// sleep forever, returning from usermain() would shut down.
+	for (;;) tk_slp_tsk(TMO_FEVR); 
 }
