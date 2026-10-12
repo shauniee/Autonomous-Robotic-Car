@@ -1,11 +1,11 @@
-#ifndef DRV_IR_H
-#define DRV_IR_H
+#ifndef DRV_IR_TRACKING_H
+#define DRV_IR_TRACKING_H
 
 #include "ir_tracking.h"
 
 /* Called only by S3; shared timebase must already be initialized. */
-bool drv_ir_init(void);
+bool drv_ir_tracking_init(void);
 /* False leaves *raw unchanged. No connectivity inference from ADC counts. */
-bool drv_ir_read(IrRaw *raw);
+bool drv_ir_tracking_read(IrRaw *raw);
 
 #endif

@@ -8,9 +8,11 @@
 
 ER subsystem3_init(void);
 ER subsystem3_start(void);
-/* Nonblocking coherent copy. False means null, uninitialized, or busy/error;
-   Ignore the destination on failure; normalized zero is not validity.
-   This API is for task context, never an ISR. */
+/* 
+ * Nonblocking coherent copy. False means null, uninitialized, or busy/error;
+ * Ignore the destination on failure; normalized zero is not validity.
+ * This API is for task context, never an ISR.
+*/
 bool s3_ir_copy(S3IrSnapshot *snapshot);
 
 #endif
