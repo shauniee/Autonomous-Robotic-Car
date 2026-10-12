@@ -1,5 +1,8 @@
 # Phase 1: IR-to-Motion development handoff
 
+**Current checkout note (12 October 2026):** S3 now publishes IR snapshots and no longer calls `s2_publish()`/`s2_stop()` for line control. The older S3 publication example below describes the previous integration, not a block available in the current IR task. Restore a snapshot-to-Motion producer through a separately approved change before motor trials. Phase 3 does not restore it.
+
+Status: historical integration template available; physical motor operation is not verified and the owner reports that motors currently do not work. The Phase 1 handoff preserved the existing runtime. Phase 2 now validates driver input and handles reported BSP errors; stop serialization and reset acknowledgement remain later phases.
 Recorded handoff status: software template available; physical motor operation is not verified and the owner reported that motors did not work. This handoff preserves the existing runtime. Motor fixes, stop serialization and reset acknowledgement belong to later approved phases.
 
 ## Where Nicholas should develop
@@ -34,7 +37,7 @@ Start with the existing [line-tracking catalogue](LINE_TRACKING.md) and preserve
 | Expiry | Unsigned age <=60 ms is accepted; age >60 ms is rejected. For a sample at 100 ms, service at 160 ms may accept it and at 161 ms must reject it. An enabled invalid/expired request brakes and latches stop. |
 | `s2_stop()` | Sets a persistent event flag and independently wakes S2, without acquiring the request mutex. S2 boots with this latch set. |
 | `s2_reset_stop()` | Clears the latch and discards the previous request. Use only through the existing fresh local start/reset transitions. Do not call it every sample or automatically after a fault. |
-| `s2_health(&health)` | Software service progress: sequence and cycle-entry `serviced_ms`, plus the current stop latch. Check its return value before consuming it. It does not prove successful PWM writes, measured speed or physical stationarity. |
+| `s2_health(&health)` | Software service progress: sequence and `serviced_ms` recorded after successful output processing, plus the current stop latch. Failed output cycles do not advance these fields. Check its return value before consuming it. BSP success does not prove physical output, measured speed or stationarity. |
 
 S3 services inputs every 10 ms and paired IR acquisition every 20 ms. S2 normally services every 20 ms and can wake for stop. Preserve the acquisition timestamp even when S3 republishes between samples; using publication time would hide stale sensing. Invalid acquisition must not become an enabled request with refreshed time.
 
@@ -102,7 +105,7 @@ Recovery remains the existing proportional bench policy: both-white loss request
 
 The original Phase 1 host checks covered tracking, paired ADC, robot policy and real S3/S2 task code separately in normal and TEST configurations. Later checks covered S1 encoding/snapshots and the MQTT adapter. Their runners are retired; saved [integration evidence](../../testing/integration/TEST_LOG.md) remains. Firmware self-tests are preserved; use [testing](../../testing/README.md) and [getting started](../GETTING_STARTED.md#build-profiles) for their current workflow. The [wireless extension](COMMUNICATIONS.md) reports requested duties, separately from the inhibited ordinary-Pico profile. Fake GPIO/ADC/S2/kernel/network checks did not run both real tasks together on the board. [System trials](../../testing/system/TEST_LOG.md) remain physical gates.
 
-Current stop/reset has ordering limits: a stop can arrive between S2's flag check and its PWM write; reset has no acknowledged-brake barrier or generation protection against concurrent stop/request activity. `MotionHealth.stopped` is a latch, not an acknowledgement that wheels are braked/stationary. Stop latency and physical braking are unmeasured. Do not present host checks as proof that these races are fixed. Planned Phases 3 and 4 address them; Phase 2 adds hardware-boundary validation/error propagation.
+Phase 3 serializes S2's final stop-flag read and output against core-1 runtime stop callers using saved/restored PRIMASK and compiler barriers. A completed core-1 stop cannot interleave between that check and a later positive PWM write while the stop latch remains set. A caller/interrupt arriving during output is deferred until the section ends, then uses the existing stop/wake path. This does not guarantee a measured stop latency or support cross-core runtime stop producers. Reset still has no acknowledged-brake barrier or generation protection against concurrent stop/request activity. `MotionHealth.stopped` is a latch, not an acknowledgement that wheels are braked/stationary. Stop latency and physical braking are unmeasured. Do not present host checks as proof that these races are fixed. Phase 3 addresses same-core check/write interleaving; Phase 4 still needs to address reset acknowledgement and copied-work invalidation; Phase 2 now provides hardware-boundary validation/error propagation. Driver setup/apply/brake return BSP errors; failures attempt braking, and the service latches inhibition without advancing failed-cycle health. A brake-write failure attempts LOW/LOW SIO fallback. Braking is best effort when the BSP itself fails; direct register writes and electrical failures are not detectable through this interface. Reinitialise the firmware after a driver fault before further motor trials, because the fallback may have changed GPIO muxes.
 
 Apply the adopted [project coding standard](../CODING_STANDARD.md), including the existing GNU C11 build and C11 atomics. The original handoff's mandatory-assignment attribution is not established by the supplied assignment text. No complete Barr compliance audit is claimed.
 
@@ -115,3 +118,7 @@ Apply the adopted [project coding standard](../CODING_STANDARD.md), including th
 - How will battery-only results be observed/recorded under the single-power-source policy, and what steering/stop acceptance thresholds will the team use?
 
 Phase 1 covers this development handoff. Encoder/PID additions, IR algorithm replacement and motor-runtime hardening are outside its scope. Course/calibration decisions are tracked in [PROJECT_SPECS](../PROJECT_SPECS.md#pending-decisions).
+
+## Phase 3 review boundary
+
+The protected section contains only nonwaiting `tk_ref_flg()`/`tk_get_otm()` calls and the bounded motor driver path. Kernel flag/time reads use the existing SMP lock; no measured worst-case mask duration is claimed. Request mutex operations, latching/waking and sleeping stay outside. The 20 ms release schedule and inhibited TEST behavior are preserved. No test cases or on-target self-tests were run; only source review and firmware compilation were performed. Brake acknowledgement/reset remains Phase 4, and the current snapshot-only S3 integration must be restored before the Phase 5 physical baseline.
