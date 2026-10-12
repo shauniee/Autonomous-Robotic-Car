@@ -13,7 +13,9 @@ ER subsystem2_start(void);
 /* Progress records successful output processing, not measured motion. */
 typedef struct { uint32_t serviced_ms, sequence; bool stopped; } MotionHealth;
 ER s2_publish(MotionRequest request);
-ER s2_stop(void); /* Persistent event flag plus independent wake-up. */
+/* Core-1 callers only: persistent flag plus independent wake-up.
+   Motion serializes its final flag check/output against same-core stops. */
+ER s2_stop(void);
 ER s2_reset_stop(void); /* Called only on a fresh local reset, while braked. */
 ER s2_health(MotionHealth *health);
 #endif
