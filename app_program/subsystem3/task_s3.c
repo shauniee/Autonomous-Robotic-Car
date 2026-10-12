@@ -1,8 +1,9 @@
-#include "task_ir.h"
+#include "task_s3.h"
 #include "subsystem3_internal.h"
-#include "calibration_control.h"
-#include "drv_ir.h"
-#include "drv_feedback.h"
+#include "ir_tracking_calibration.h"
+#include "drv_ir_tracking.h"
+#include "../common/drv_buttons.h"
+#include "../common/buzzer.h"
 
 #define INPUT_PERIOD_MS 10u
 #define REPORT_PERIOD_MS 500u
@@ -18,11 +19,15 @@ static bool read_time(uint32_t *now)
     return true;
 }
 
-static void feedback(unsigned chirps, uint32_t now)
+static void request_buzzer_chirps(unsigned chirps, uint32_t now)
 {
-    if ((chirps > 0u) && !drv_feedback_chirps(chirps, now))
+    if (chirps == 0u)
     {
-        tm_printf((UB *)"[IR] buzzer request failed\n");
+        return;
+    }
+    if (!buzzer_request(chirps, now))
+    {
+        tm_printf((UB *)"[IR] buzzer busy or request failed\n");
     }
 }
 
@@ -45,21 +50,21 @@ static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now)
 }
 #endif
 
-void task_ir_task(INT stacd, void *exinf)
+void task_s_task(INT stacd, void *exinf)
 {
-    (void)stacd;
-    (void)exinf;
+    (void)stacd; //? might not need to be used
+    (void)exinf; //? might not need to be used
     IrTracker tracker;
     ir_tracking_init(&tracker);
-    calibration_control_t controls;
-    calibration_control_init(&controls);
-    bool adc_ready = drv_ir_init();
+    bool adc_ready = drv_ir_tracking_init();
     uint32_t now;
     if (!read_time(&now))
     {
         tm_printf((UB *)"[IR] time unavailable; task stopped\n");
         return;
     }
+    calibration_control_t controls;
+    calibration_control_init(&controls, now);
     uint32_t next = now;
     uint32_t sample_due = now;
     uint32_t sequence = 0u;
@@ -75,16 +80,15 @@ void task_ir_task(INT stacd, void *exinf)
         }
         IrCaptureKind before = tracker.capture_kind;
         ir_tracking_check_time(&tracker, now);
-        feedback(calibration_control_feedback(before, &tracker), now);
-        bool capture_down;
-        bool cancel_down;
-        drv_feedback_inputs(&capture_down, &cancel_down);
-        feedback(calibration_control_inputs(&controls, &tracker,
-            capture_down, cancel_down, now), now);
+        request_buzzer_chirps(calibration_control_feedback(before, &tracker), now);
+
+        ButtonInputs inputs = drv_buttons_read();
+        unsigned chirps = calibration_handle_buttons(&controls, &tracker, inputs.gp20_down, inputs.gp21_down, now);
+        request_buzzer_chirps(chirps, now);
         if ((int32_t)(now - sample_due) >= 0)
         {
             IrRaw raw = {0};
-            bool acquired = adc_ready && drv_ir_read(&raw);
+            bool acquired = adc_ready && drv_ir_tracking_read(&raw);
             if (!read_time(&now))
             {
                 tm_printf((UB *)"[IR] acquisition time unavailable\n");
@@ -97,14 +101,14 @@ void task_ir_task(INT stacd, void *exinf)
             {
                 ++sequence; /* Acquisition attempts, including invalid ones. */
             }
-            feedback(calibration_control_feedback(before, &tracker), now);
+            request_buzzer_chirps(calibration_control_feedback(before, &tracker), now);
             sample_due += IR_SAMPLE_MS;
             if ((int32_t)(now - sample_due) >= 0)
             {
                 sample_due = now + IR_SAMPLE_MS;
             }
         }
-        if (!drv_feedback_service(now))
+        if (!buzzer_service(now))
         {
             tm_printf((UB *)"[IR] buzzer service failed; task stopped\n");
             return;
