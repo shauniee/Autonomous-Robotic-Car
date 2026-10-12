@@ -83,7 +83,7 @@ No application networking task exists. Future full mission split: Safety 12, Mot
 | ID | Producer -> consumer | Owner / object | Contract |
 |---|---|---|---|
 | IF-01 | S3 -> S2 | S2 priority-inheritance mutex + latest MotionRequest | Bounded duties 0..0.35, acquisition ms, enabled. Expired >60 ms or invalid active request brakes and latches stop |
-| IF-02 | S3 -> S2 | S2 persistent event flag + tk_wup_tsk | Stop independent of request mutex. Separate local reset clears flag and invalidates old request; reset alone cannot move |
+| IF-02 | S3 -> S2 | S2 persistent event flag + tk_wup_tsk | Runtime stop callers must share Motion core 1; final stop check/output serialized with IRQ masking. Stop independent of request mutex. Separate local reset clears flag and invalidates old request; reset alone cannot move |
 | IF-03 | S2 -> S3 | S2 mutex-protected MotionHealth | Successful software output-service sequence and completion timestamp; stopped is the latch, not brake acknowledgement or measured stationarity |
 | IF-04 | IR calculations -> S3 coordinator | In-task IrTrackingOutput | Fresh visible-steering validity, condition, signed error, memoryless P steering [-1,1], original acquisition time |
 
@@ -114,3 +114,7 @@ Create all subsystem objects before starting any task. Initialization failure pr
 The [IR-to-Motion handoff](docs/architecture/IR_MOTION_HANDOFF.md) freezes the existing IF-01/02/03 bench interface, shows the S3 publication template and lists inhibited Maker/Pico and radio build profiles. Motor operation is unverified and currently reported not working. Stop serialization and acknowledged reset remain future phases; no new shared runtime/interface or teammate approval is asserted.
 
 Phase 2 makes driver init/apply/brake return available BSP errors. S2 rejects failed initialization and latches stop on output errors; failed cycles do not advance IF-03 health. Driver input remains forward-only 0..0.35. This is software error handling, not electrical fault sensing or a stop/reset race fix.
+
+Phase 3 protects the final stop-flag reference, acquisition-age validation and motor output with saved/restored local PRIMASK and compiler barriers. Only nonwaiting kernel flag/time reads and bounded driver/BSP operations execute inside it; mutex acquisition, stop latching, wake-ups and sleep are outside. The kernel reads still use the port's SMP lock, so core-0 contention and mask duration need physical measurement. This is a core-1 runtime contract, not cross-core stop synchronization. The existing startup-error stop occurs while the boot latch inhibits output.
+
+At Phase 3 review (12 October 2026), S3 publishes IR snapshots and no longer calls S2 to publish motor duties. Restoring that producer/consumer integration requires a separately approved scope before physical motor trials. S3 code is unchanged here.
