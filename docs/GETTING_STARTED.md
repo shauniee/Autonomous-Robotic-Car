@@ -2,7 +2,7 @@
 
 ## Current capabilities
 
-S3 reads/calibrates two IR sensors and produces P steering. A separate line-following task now uses the existing S2 request/stop/health interface; its physical baseline remains pending. Optional S1 reporting provides telemetry, heartbeat and status-only subscription through the kernel service, but its current S3 adapter is pending. S3 barcode buffering, provisional A–Z decoding and mapping/event APIs are implemented in software and **boot disabled** without measured configuration and an encoder/GPIO provider. See [Barcode](architecture/BARCODE.md). Encoder feedback, physical barcode capture, IMU/sonar acquisition and full Mission/Safety coordination remain pending. No successful physical tracking run, barcode scan or verified motor operation is established by compilation or retained software evidence.
+S3 reads/calibrates two IR sensors and produces P steering. A separate line-following task now uses the existing S2 request/stop/health interface; its physical baseline remains pending. Optional S1 reporting provides telemetry, heartbeat and status-only subscription through the kernel service, but its current S3 adapter is pending. S3 barcode buffering, provisional A–Z decoding and mapping/event APIs are implemented in software and **boot disabled** without measured configuration and an encoder/GPIO provider. See [Barcode](architecture/BARCODE.md). Encoder feedback, physical barcode capture, IMU physical validation, sonar scanning and full Mission/Safety coordination remain pending. S5 now runs a stationary repeating USB serial range bench; physical range validation remains pending. No successful physical tracking run, barcode scan or verified motor operation is established by compilation or retained software evidence.
 
 Use the steps below for the existing bench. Full-robot tasks are listed at the end. Requirements live in [PROJECT_SPECS](PROJECT_SPECS.md); wiring in [TEAM](TEAM.md#2-pins).
 
@@ -97,7 +97,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 
 **One power source at a time.** USB alone is for flashing and inhibited desktop checks. Disconnect USB before battery/power-bank operation; never add USB to collect logs during a powered trial. Reboot clears calibration, so calibrate again after changing power.
 
-1. Check the [allocation and conflicts](TEAM.md#2-pins) and [electrical limits](TECHNICAL_INFO.md). The current bench uses motors, two line sensors, buttons and buzzer; barcode/IMU/sonar are not active and the servo signal is held low.
+1. Check the [allocation and conflicts](TEAM.md#2-pins) and [electrical limits](TECHNICAL_INFO.md). The current bench uses motors, two line sensors, buttons and buzzer; barcode capture is boot disabled; S4 attempts IMU acquisition and S5 attempts sonar acquisition. Check their wiring before flashing; the servo signal is held low.
 2. Hold BOOTSEL while connecting USB, release it when **RPI-RP2** appears, and copy the matching **TEST** UF2 onto the drive. On WSL, `explorer.exe build_make` exposes the files to Windows. The Pico reboots automatically.
 3. Open the USB serial port at 115200 baud. List `/dev/tty.usbmodem*` on macOS or `/dev/ttyACM*` on Linux, then use the actual port:
 

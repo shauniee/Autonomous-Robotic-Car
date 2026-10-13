@@ -52,7 +52,7 @@ Use [TEAM's sonar/servo allocation](../TEAM.md#2-pins) and [peripheral ownership
 
 | Module | Purpose / status |
 | --- | --- |
-| S5 lifecycle | Existing inactive placeholder; historical stationary-bench sources are not an active target |
+| S5 lifecycle | Active stationary serial range bench: GP3 trigger, GP2 echo, 30 ms bounded waits, 250 ms delay after each acquisition; scanning/integration pending |
 | Suggested sonar driver | Trigger scheduling, bounded echo ISR/timeouts, timestamped range/validity |
 | Suggested servo driver | Calibrated PWM angle mapping and nonblocking settling state |
 | Suggested scan coordinator | Scan ID/deadline, coarse/fine plan, duplicates/cancellation and center restoration |
@@ -68,3 +68,16 @@ Use [TEAM's sonar/servo allocation](../TEAM.md#2-pins) and [peripheral ownership
 - A five-reading scan spaced above the conservative initial interval already spans more than 240 ms from first to last trigger, before settling. Account for this in the stationary scan deadline rather than treating side readings as current front data.
 
 Calibration/limits are in [PROJECT_SPECS](../PROJECT_SPECS.md#pending-decisions). Planned T08–T10/T14/T15 and [S5/system records](../../testing/README.md) cover no echo, scan freshness, cancellation, bypass and load.
+
+## Stationary serial range bench
+
+The current S5 task runs on core 1 at priority 17 and repeatedly prints `[S5]`
+range and pulse duration. It polls Echo using the shared microsecond timer;
+it is a diagnostic bench, not the proposed interrupt-based scan driver.
+No echo rise, Echo remaining HIGH, or HIGH before triggering is unknown/invalid,
+not clear space. Acquisition failure does not abort application startup.
+A completed reading is nominal whole centimetres, not a calibrated accuracy claim.
+The servo is not swept. Use USB-only TEST firmware for this bench.
+
+Build/flash and serial instructions are in [GETTING_STARTED](../GETTING_STARTED.md#build-profiles).
+Manual measurements and evidence belong to [S5 tests](../../testing/subsystem5/TEST_LOG.md).
