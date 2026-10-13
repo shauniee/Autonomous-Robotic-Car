@@ -18,8 +18,8 @@ Calibration is RAM-only and must use the mounted sensor height, lighting and sur
 | Capture black | Maintain the pose until completion: one 100 ms buzz |
 | Need white | Release GP20, place both sensors on white, then make another fresh press |
 | Capture white | Maintain the pose until valid completion: two 100 ms buzzes separated by 100 ms silence |
-| Calibrated | Sampling/guidance continues automatically; GP20 has no motor-start action |
-| Replace calibration | Another fresh GP20 press begins replacement black capture, immediately clearing the old pair |
+| Calibrated | Sampling/guidance continues; GP20 is handled by application start/reset control |
+| Replace calibration | Reboot clears RAM calibration; repeat black then white before a new start |
 | Cancel / rejection | GP21 immediately cancels capture and inhibits new capture while held; cancellation/rejection produces three buzzes |
 
 GP20 requires a stable 30 ms release before arming and a stable 30 ms press before triggering. A held button, including one held at boot, cannot trigger repeated captures. GP21 dominates simultaneous inputs; releasing it does not replay a GP20 press made while it was held. Pressing GP20 during capture is rejected as busy. Buzzes are asynchronous; acquisition and button service do not wait for them.
@@ -34,10 +34,10 @@ stateDiagram-v2
     CaptureWhite --> Calibrated: Valid contrast and two buzzes
     CaptureWhite --> NeedWhite: Cancel gap or invalid sample
     CaptureWhite --> NeedBlack: Failed contrast
-    Calibrated --> CaptureBlack: Fresh GP20 replacement press
+    Calibrated --> NeedBlack: Reboot
 ```
 
-These phases derive from calibration flags and capture kind rather than duplicate stored state. During capture, normalized readings and guidance are unavailable. Cancelling replacement black leaves the pair cleared; cancelling white retains completed black. Failed white contrast clears both references. Typed capture results distinguish waiting, pending, black/white completion, unsupported kind, busy, cancel held, sample gap, invalid sample, contrast failure, missing black and cancellation. Display strings are labels, not command IDs.
+These phases derive from calibration flags and capture kind rather than duplicate stored state. During capture, normalized readings and guidance are unavailable. Cancelling black leaves the pair cleared; cancelling white retains completed black. GP20 cannot replace a completed valid pair. Failed white contrast clears both references. Typed capture results distinguish waiting, pending, black/white completion, unsupported kind, busy, cancel held, sample gap, invalid sample, contrast failure, missing black and cancellation. Display strings are labels, not command IDs.
 
 ## Acquisition and calibration bounds
 
@@ -153,6 +153,6 @@ Shared application startup initializes the 1 µs TIMER timebase without resettin
 
 ## Establish a measured baseline
 
-Record mounted height/spacing, calibration ranges, lighting, surface, power and reference lateral positions. Measure repeated straight/curve observations, noise, latency and loss classification before integrating actuation or tuning P. Physical tracking additionally requires Motion/Mission integration and measured motor asymmetry, lateral error, overshoot, losses and stopping.
+Record mounted height/spacing, calibration ranges, lighting, surface, power and reference lateral positions. Measure repeated straight/curve observations, noise, latency and loss classification before integrating actuation or tuning P. The application bench integration is described in the [IR-to-Motion handoff](IR_MOTION_HANDOFF.md). Physical tracking still requires measured motor asymmetry, lateral error, overshoot, losses and stopping.
 
 Firmware self-checks and builds are software evidence only. They do not establish GPIO/button behavior, audible timing, sensor connection, paired acquisition WCET, wheel movement or a successful tracking run. Permanent cases and evidence are in [S3 testing](../../testing/subsystem3/TEST_LOG.md).

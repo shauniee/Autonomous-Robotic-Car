@@ -1,12 +1,10 @@
 #include "subsystem3.h"
 #include "subsystem3_internal.h"
 #include "task_s3.h"
+#include "line_follow.h"
 #include <stdatomic.h>
 #include "../common/drv_buttons.h"
 #include "../common/buzzer.h"
-#if APP_TEST
-#include "../../testing/subsystem3/subsystem3_test.h"
-#endif
 
 // consumers may call before startup, including from the other core
 static atomic_int snapshot_mutex;
@@ -33,7 +31,7 @@ ER subsystem3_init(void)
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 snapshot mutex published=%d\n", atomic_load_explicit(&snapshot_mutex, memory_order_acquire));
 #endif
-    return E_OK;
+    return barcode_runtime_init();
 }
 
 ER subsystem3_start(void)
@@ -50,7 +48,7 @@ ER subsystem3_start(void)
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 task start result=%d\n", task_id);
 #endif
-    return task_id < E_OK ? task_id : E_OK;
+    return task_id < E_OK ? task_id : line_follow_start();
 }
 
 bool subsystem3_publish(const IrTracker *tracker, uint32_t sequence, uint32_t now)
@@ -89,12 +87,3 @@ bool s3_ir_copy(S3IrSnapshot *snapshot)
     ir_snapshot_refresh(snapshot, time.lo);
     return true;
 }
-
-#if APP_TEST
-bool subsystem3_snapshot_self_test(void)
-{
-    // test assertions live in testing/; retain private handle ownership here
-    ID id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
-    return subsystem3_test_snapshot_boundary(id);
-}
-#endif
