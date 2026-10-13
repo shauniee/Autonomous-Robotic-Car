@@ -84,7 +84,7 @@ Each driven peripheral has one owning task; other tasks use its interface. PWM s
 | PWM slice 3 |Nicholas | `ir_task`; asynchronous 2 kHz buzzer chirps | GP22 |
 | PWM slice 6 |Jia Jing, proposed | Obstacle servo control; PWM inactive in bench | GP12 |
 | Encoder GPIO IRQs |Mahesha, proposed | Motion; bounded ISR capture | GP0/GP1/GP7/GP28 |
-| Barcode GPIO IRQ |Nicholas, proposed | Line and Barcode; bounded ISR capture | GP16 |
+| Barcode GPIO IRQ |Nicholas | S3 bounded capture entry; agreed shared dispatcher/encoder adapter pending | GP16 |
 | Echo GPIO IRQ |Jia Jing, proposed | Obstacle; bounded ISR capture | GP2 |
 | Hardware TIMER / watchdog tick |Nicholas initialization; shared timebase | Enable 1 µs tick from 12 MHz reference without resetting TIMER; kernel WiFi also reads TIMER | Internal |
 | Watchdog |Nicholas | `ir_task`; 250 ms; feed only when valid IR and Motion progress both advance and are at most 60 ms old | Internal |
@@ -107,7 +107,8 @@ Smaller numbers mean higher priority. Priorities 1–4 are reserved for the kern
 | --- | --- | --- |
 |Shaun Communications | — | No application task; optional snapshot mutex only |
 |Mahesha Motion | 13 | `motion_task` – 13 – core 1; 20 ms or stop wake-up |
-|Nicholas Line and Barcode | 12 | `ir_task` – 12 – core 1; buttons 10 ms, paired ADC 20 ms |
+|Nicholas Line and Barcode | 12 | `task_s_task` – 12 – core 1; buttons 10 ms, paired ADC 20 ms |
+|Nicholas bench coordination | 14 | `line_follow_task` – 14 – core 1; local controls and snapshot-to-Motion requests every 10 ms |
 |Darrius Terrain | — | Inactive |
 |Jia Jing Obstacle | — | Inactive |
 
@@ -148,13 +149,13 @@ Limits are set in [config/config.h](../config/config.h). The table shows current
 | Semaphore | 16 | 0 | 0 | 0 | 0 | 0 |
 | Event flag | 16 | 0 | 1 | 0 | 0 | 0 |
 | Mailbox | 12 | 0 | 0 | 0 | 0 | 0 |
-| Mutex | 12 | 0 or 1 | 1 | 0 | 0 | 0 |
+| Mutex | 12 | 0 or 1 | 1 | 2 | 0 | 0 |
 | Message buffer | 12 | 0 | 0 | 0 | 0 | 0 |
 | Fixed memory pool | 12 | 0 | 0 | 0 | 0 | 0 |
 | Variable memory pool | 12 | 0 | 0 | 0 | 0 | 0 |
 | Cyclic handler | 12 | 0 | 0 | 0 | 0 | 0 |
 | Alarm handler | 12 | 0 | 0 | 0 | 0 | 0 |
 
-Shaun attempts one mutex allocation with `MQTT=1`; none with `MQTT=0`. Allocation failure disables optional diagnostics and permits local startup. Mahesha's request and health copies share one mutex; its persistent stop uses one event flag. Nicholas's samples, calibration and controller state allocate no extra kernel objects. Both application tasks use the existing 2048-byte stack.
+Shaun attempts one mutex allocation with `MQTT=1`; none with `MQTT=0`. Allocation failure disables optional diagnostics and permits local startup. Mahesha's request and health copies share one mutex; its persistent stop uses one event flag. Nicholas owns two private mutexes: the line snapshot and barcode service/configuration/event FIFO. Barcode uses static 64-edge and eight-event storage, no kernel message buffer or extra task. Both subsystem tasks use the existing 2048-byte stack; barcode stack/timing margins remain unmeasured.
 
 Create all required subsystem objects before starting application tasks. Required initialization/start failure prevents successful startup; optional telemetry failure may skip reporting. Measure stack margin and total object usage, including kernel services, before implementing the proposed task split.
