@@ -13,9 +13,6 @@
 typedef struct {
     uint32_t     timestamp_ms;
     bool         terrain_valid;
-    float        accel_x_g;
-    float        accel_y_g;
-    float        accel_z_g;
     float        pitch_deg;
     float        roll_deg;
     TerrainState state;

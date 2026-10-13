@@ -3,9 +3,6 @@
 
 #define ECHO_PIN 2
 #define TRIGGER_PIN 3
-#define ECHO_TIMEOUT_US 30000u
-#define SAMPLE_DELAY_MS 250u
-#define SONAR_TASK_PRIORITY 17
 
 ER subsystem5_init(void)
 {
@@ -31,7 +28,7 @@ ER subsystem5_init(void)
 
     return E_OK;
 }
-/* Trigger and Echo timing use the shared 1 us hardware timebase. */
+/*ULTRASONIC FUNCTIONS!!!!! :)*/
 static ER ultrasonic_trigger(void)
 {
     ER error;
@@ -56,13 +53,14 @@ static ER ultrasonic_trigger(void)
 static ER ultrasonic_wait_for_echo(void)
 {
     ER error;
-    UW wait_start;
+    SYSTIM start; // record the time
+    SYSTIM now;
 
-    /* A pre-existing HIGH is not a new response to this trigger. */
-    if (gpio_get_val(ECHO_PIN) != 0u)
+    /* Record when we started waiting. */
+    error = tk_get_otm(&start);
+    if (error < E_OK)
     {
-        tm_printf((UB *)"[S5] INVALID: Echo HIGH before trigger\n");
-        return E_TMOUT;
+        return error;
     }
 
     error = ultrasonic_trigger();
@@ -71,12 +69,18 @@ static ER ultrasonic_wait_for_echo(void)
         return error;
     }
 
-    wait_start = in_w(TIMER_TIMERAWL);
-    while (gpio_get_val(ECHO_PIN) == 0u)
+    /* Keep checking while Echo is LOW. */
+    while (gpio_get_val(ECHO_PIN) == 0)
     {
-        if ((UW)(in_w(TIMER_TIMERAWL) - wait_start) >= ECHO_TIMEOUT_US)
+        error = tk_get_otm(&now);
+        if (error < E_OK)
         {
-            tm_printf((UB *)"[S5] TIMEOUT: no Echo rise; distance unknown\n");
+            return error;
+        }
+
+        /* Stop waiting after 30 milliseconds. */
+        if ((UW)(now.lo - start.lo) >= 30u)
+        {
             return E_TMOUT;
         }
     }
@@ -88,9 +92,8 @@ static ER ultrasonic_wait_for_echo(void)
     /* Wait for Echo to become LOW. */
     while (gpio_get_val(ECHO_PIN) == 1)
     {
-        if ((UW)(in_w(TIMER_TIMERAWL) - pulse_start) >= ECHO_TIMEOUT_US)
+        if ((UW)(in_w(TIMER_TIMERAWL) - pulse_start) >= 30000u)
         {
-            tm_printf((UB *)"[S5] TIMEOUT: Echo stayed HIGH; distance unknown\n");
             return E_TMOUT;
         }
     }
@@ -101,40 +104,22 @@ static ER ultrasonic_wait_for_echo(void)
     /* Approximate distance in whole centimetres. */
     UW distance_cm = duration_us / 58u;
 
-    if (duration_us >= ECHO_TIMEOUT_US)
+    if (duration_us >= 30000u)
     {
         return E_TMOUT;
     }
 
-    tm_printf((UB *)"[S5] Distance: %u cm\n",
+    tm_printf((UB *)"Distance: %u cm\n",
               (unsigned int)distance_cm);
 
-    tm_printf((UB *)"[S5] Echo duration: %u us\n",
+    tm_printf((UB *)"Echo duration: %u us\n",
               (unsigned int)duration_us);
 
     return E_OK;
 }
 
-static void sonar_task(INT stacd, void *exinf)
-{
-    (void)stacd;
-    (void)exinf;
-    tm_printf((UB *)"[S5] Serial range bench: TRIG=GP3 ECHO=GP2\n");
-    for (;;)
-    {
-        ER error = ultrasonic_wait_for_echo();
-        if (error < E_OK && error != E_TMOUT)
-        {
-            tm_printf((UB *)"[S5] acquisition error: %d\n", (int)error);
-        }
-        /* Delay after completion also keeps trigger spacing above 60 ms. */
-        tk_dly_tsk(SAMPLE_DELAY_MS);
-    }
-}
-
 ER subsystem5_start(void)
 {
-    ID task = app_start_task((FP)sonar_task, SONAR_TASK_PRIORITY,
-                             TP_PRC2, "sonar_task");
-    return task < E_OK ? task : E_OK;
+
+    return ultrasonic_wait_for_echo();
 }
