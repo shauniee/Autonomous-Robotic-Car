@@ -244,8 +244,10 @@ TINYUSB_OBJS := $(addprefix ./mtkernel_3/tinyusb/,$(TINYUSB_SRCS:.c=.o))
 
 USB_INCLUDES := -I"$(USBDIR)" \
                 -I"$(TINYUSB_PATH)/src" \
+                -I"$(PICO_SDK_PATH)/src/common/pico_base/include" \
                 -I"$(PICO_SDK_PATH)/src/common/pico_base_headers/include" \
                 -I"$(PICO_SDK_PATH)/src/common/pico_binary_info/include" \
+                -I"$(PICO_SDK_PATH)/src/rp2_common/pico_platform/include" \
                 -I"$(PICO_SDK_PATH)/src/rp2040/pico_platform/include" \
                 -I"$(PICO_SDK_PATH)/src/rp2_common/pico_platform_compiler/include" \
                 -I"$(PICO_SDK_PATH)/src/rp2_common/pico_platform_sections/include" \
@@ -316,10 +318,13 @@ WIFI_INCLUDES := -I"$(WIFIDIR)" \
                  -I"$(CYW43_DRIVER_PATH)/firmware" \
                  -I"$(CYW43_PICO_PATH)/include" \
                  -I"$(PICO_SDK_PATH)/src/boards/include" \
+                 -I"$(PICO_SDK_PATH)/src/common/pico_base/include" \
                  -I"$(PICO_SDK_PATH)/src/common/pico_base_headers/include" \
                  -I"$(PICO_SDK_PATH)/src/common/hardware_claim/include" \
+                 -I"$(PICO_SDK_PATH)/src/rp2_common/hardware_claim/include" \
                  -I"$(PICO_SDK_PATH)/src/common/pico_binary_info/include" \
                  -I"$(PICO_SDK_PATH)/src/common/pico_util/include" \
+                 -I"$(PICO_SDK_PATH)/src/rp2_common/pico_platform/include" \
                  -I"$(PICO_SDK_PATH)/src/rp2040/pico_platform/include" \
                  -I"$(PICO_SDK_PATH)/src/rp2040/hardware_regs/include" \
                  -I"$(PICO_SDK_PATH)/src/rp2040/hardware_structs/include" \
