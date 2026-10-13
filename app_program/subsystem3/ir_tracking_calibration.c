@@ -94,6 +94,12 @@ unsigned calibration_handle_buttons(
         return chirps;
     }
 
+    /* Once calibrated, GP20 belongs to the bench start/reset controller. */
+    if (tracker->calibration.black_set && tracker->calibration.white_set)
+    {
+        return chirps;
+    }
+
     IrCaptureKind kind = next_capture_kind(tracker);
 
     if (!ir_tracking_capture(tracker, kind, now))

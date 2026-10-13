@@ -3,6 +3,7 @@
 
 #include "../app.h"
 #include "ir_snapshot.h"
+#include "barcode_runtime.h"
 
 #define S3_PRI_LINE 12
 

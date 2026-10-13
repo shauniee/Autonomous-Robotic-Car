@@ -18,8 +18,8 @@ Calibration is RAM-only and must use the mounted sensor height, lighting and sur
 | Capture black | Maintain the pose until completion: one 100 ms buzz |
 | Need white | Release GP20, place both sensors on white, then make another fresh press |
 | Capture white | Maintain the pose until valid completion: two 100 ms buzzes separated by 100 ms silence |
-| Calibrated | Sampling/guidance continues automatically; GP20 has no motor-start action |
-| Replace calibration | Another fresh GP20 press begins replacement black capture, immediately clearing the old pair |
+| Calibrated | Sampling/guidance continues; GP20 is handled by application start/reset control |
+| Replace calibration | Reboot clears RAM calibration; repeat black then white before a new start |
 | Cancel / rejection | GP21 immediately cancels capture and inhibits new capture while held; cancellation/rejection produces three buzzes |
 
 GP20 requires a stable 30 ms release before arming and a stable 30 ms press before triggering. A held button, including one held at boot, cannot trigger repeated captures. GP21 dominates simultaneous inputs; releasing it does not replay a GP20 press made while it was held. Pressing GP20 during capture is rejected as busy. Buzzes are asynchronous; acquisition and button service do not wait for them.
@@ -34,10 +34,10 @@ stateDiagram-v2
     CaptureWhite --> Calibrated: Valid contrast and two buzzes
     CaptureWhite --> NeedWhite: Cancel gap or invalid sample
     CaptureWhite --> NeedBlack: Failed contrast
-    Calibrated --> CaptureBlack: Fresh GP20 replacement press
+    Calibrated --> NeedBlack: Reboot
 ```
 
-These phases derive from calibration flags and capture kind rather than duplicate stored state. During capture, normalized readings and guidance are unavailable. Cancelling replacement black leaves the pair cleared; cancelling white retains completed black. Failed white contrast clears both references. Typed capture results distinguish waiting, pending, black/white completion, unsupported kind, busy, cancel held, sample gap, invalid sample, contrast failure, missing black and cancellation. Display strings are labels, not command IDs.
+These phases derive from calibration flags and capture kind rather than duplicate stored state. During capture, normalized readings and guidance are unavailable. Cancelling black leaves the pair cleared; cancelling white retains completed black. GP20 cannot replace a completed valid pair. Failed white contrast clears both references. Typed capture results distinguish waiting, pending, black/white completion, unsupported kind, busy, cancel held, sample gap, invalid sample, contrast failure, missing black and cancellation. Display strings are labels, not command IDs.
 
 ## Acquisition and calibration bounds
 
@@ -103,9 +103,9 @@ No S3 motor duty mixing, run/start state, movement timeout or recovery actuation
 
 A `.c` file contains the implementation. Its `.h` file declares the functions and data types another file may use; it does not contain a second implementation. `subsystem3_internal.h` declares the private task-to-cache publication function, while `subsystem3.h` exposes the supported external S3 interface. Consumers should not call the private task or mutate its tracker.
 
-These divisions keep hardware access, calculations, scheduling and consumer data independent. Separate files are a modular organization choice; they do not create extra tasks. S3 still has exactly one running task.
+These divisions keep hardware access, calculations, scheduling and consumer data independent. The sensing service uses one task; the separate bench line-following task uses existing S2 APIs, as recorded in [TEAM](../TEAM.md#4-task-priorities).
 
-All S3 test fixtures and assertions live under `testing/subsystem3/`. Its `firmware.mk` adds only S3 test sources to TEST=1 builds through one shared Make include. A tiny TEST-only bridge in `subsystem3.c` supplies the private cache mutex to the boundary assertion without adding a production handle accessor. TEST-only periodic console diagnostics in `task_ir.c` remain observations of the running service, not self-test assertions.
+Nicholas requested preserving removal of the S3 firmware fixtures, runner and startup hooks, with no testing added yet. Historical evidence remains under `testing/subsystem3/`. TEST-only periodic console diagnostics in `task_s3.c` remain observations of the running service, not self-test assertions.
 
 `IrTrackingOutput` retains IF-04's validity, line, signed error/steering and original `sampled_ms`. It is an internal typed value. The public reader is:
 
@@ -149,10 +149,10 @@ This is an interface example, not an implemented S1 adapter. The struct is not a
 
 Use [TEAM](../TEAM.md#2-pins) for wiring and [TECHNICAL_INFO](../TECHNICAL_INFO.md#tcrt5000-based-ir-modules) for electrical facts. S3 retains one priority-12 task on core 1, with 10 ms input/feedback service and 20 ms acquisition. Deadline releases skip missed work rather than replaying a backlog. TEST builds report raw counts, normalized thousandths, calibration/capture status and validity every nominal 500 ms through the existing startup/test hooks.
 
-Shared application startup initializes the 1 µs TIMER timebase without resetting it. S3 configures only its ADC and buzzer PWM slice; it neither enables/feeds a whole-system watchdog nor accesses S2/S1 runtime interfaces. Critical system health/stop policy belongs to Safety and requires explicit integration; a data service is not a whole-robot safety controller.
+Shared application startup initializes the 1 µs TIMER timebase without resetting it. The sensing service owns its ADC and buzzer PWM slice; barcode configuration additionally sets GP16 input mode. The separate bench line-following task calls S2 APIs. S3 does not enable/feed a whole-system watchdog. Critical system health/stop policy belongs to Safety and requires explicit integration; a data service is not a whole-robot safety controller.
 
 ## Establish a measured baseline
 
-Record mounted height/spacing, calibration ranges, lighting, surface, power and reference lateral positions. Measure repeated straight/curve observations, noise, latency and loss classification before integrating actuation or tuning P. Physical tracking additionally requires Motion/Mission integration and measured motor asymmetry, lateral error, overshoot, losses and stopping.
+Record mounted height/spacing, calibration ranges, lighting, surface, power and reference lateral positions. Measure repeated straight/curve observations, noise, latency and loss classification before integrating actuation or tuning P. The application bench integration is described in the [IR-to-Motion handoff](IR_MOTION_HANDOFF.md). Physical tracking still requires measured motor asymmetry, lateral error, overshoot, losses and stopping.
 
 Firmware self-checks and builds are software evidence only. They do not establish GPIO/button behavior, audible timing, sensor connection, paired acquisition WCET, wheel movement or a successful tracking run. Permanent cases and evidence are in [S3 testing](../../testing/subsystem3/TEST_LOG.md).
