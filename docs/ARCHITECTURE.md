@@ -34,6 +34,12 @@ Drivers acquire bounded samples. Processing modules publish coherent observation
 | [Terrain](architecture/TERRAIN.md) | Motion classification, impact reporting and validated maximum hump height |
 | [Communications](architecture/COMMUNICATIONS.md) | Kernel-owned networking, telemetry and proposed status requests |
 
+## Implemented line-following bench
+
+`app_main` starts S3 sensing and S2 Motion, then the application line-following task. `line_control` owns bench start/reset, duty mixing and bounded recovery; `task_line_follow` reads local buttons and `s3_ir_copy()`, checks S2 health and calls the existing S2 request/stop/reset APIs. S3 remains a sensor service and S2 remains the only motor writer. This narrow controller does not implement full Mission/Safety, navigation or obstacle handling.
+
+Runtime stop/reset calls execute on core 1, matching S2's serialization contract. GP21 is delivered before snapshot/health reads. Requests retain original acquisition time; stale/invalid observations or failed interfaces while operating latch stop. Details and the local state transitions belong to the [IR-to-Motion handoff](architecture/IR_MOTION_HANDOFF.md).
+
 ## Shared contracts
 
 These are logical full-robot contracts, not already allocated RTOS objects. Micro T-Kernel mailboxes pass linked pointers; they do not provide copied length-one overwrite semantics. Use mutex copies for snapshots and bounded message buffers or explicitly pooled messages for FIFO events.

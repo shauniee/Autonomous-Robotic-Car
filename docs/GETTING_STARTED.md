@@ -2,7 +2,7 @@
 
 ## Current capabilities
 
-The current firmware is a two-task IR bench: S3 reads/calibrates two IR sensors and produces P steering; S2 services bounded motor requests. Optional S1 reporting adds a snapshot and mutex, with telemetry, heartbeat and status-only subscription in the kernel service. S4/S5 are inactive. Encoder feedback, barcode decoding, IMU/sonar acquisition and full Mission/Safety coordination are **not implemented**. No successful physical tracking run or verified motor operation is established by the retained software evidence. The preserved [handoff](architecture/IR_MOTION_HANDOFF.md) records the reported motor problem and stop/reset limits.
+S3 reads/calibrates two IR sensors and produces P steering. A separate line-following task now uses the existing S2 request/stop/health interface; its physical baseline remains pending. Optional S1 reporting provides telemetry, heartbeat and status-only subscription through the kernel service, but its current S3 adapter is pending. S3 barcode buffering, provisional A–Z decoding and mapping/event APIs are implemented in software and **boot disabled** without measured configuration and an encoder/GPIO provider. See [Barcode](architecture/BARCODE.md). Encoder feedback, physical barcode capture, IMU/sonar acquisition and full Mission/Safety coordination remain pending. No successful physical tracking run, barcode scan or verified motor operation is established by compilation or retained software evidence.
 
 Use the steps below for the existing bench. Full-robot tasks are listed at the end. Requirements live in [PROJECT_SPECS](PROJECT_SPECS.md); wiring in [TEAM](TEAM.md#2-pins).
 
@@ -107,7 +107,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
    ```
 
    Windows can use PuTTY or Serial Monitor on the assigned COM port. Quit screen with Ctrl-A, then K.
-4. Inspect startup, `[TEST] <ID> PASS|FAIL` and `[BENCH] ... MOTOR_INHIBITED`. Bench console output reports acquisition/calibration/state; it does not establish motor movement or measured duty. Record failures through [testing](../testing/README.md).
+4. Inspect startup, `[TEST] <ID> PASS|FAIL` and `[IR] ... SENSOR_ONLY` / `[LINE] ... MOTOR_INHIBITED`. Bench console output reports acquisition/calibration/state; it does not establish motor movement or measured duty. Record failures through [testing](../testing/README.md).
 5. Before normal physical use, resolve the reported motor problem and record a raised-wheel baseline, polarity and stop response. Flash the normal image, disconnect USB, then connect the agreed battery/power bank alone. Use camera/scope and optional wireless observations for physical evidence.
 
 ## Calibration and local controls
@@ -123,7 +123,7 @@ Calibration is RAM-only. Use the sensor mounting and surface that will be used i
 | Reset | Clear the cause, release GP21, freshly press GP20 | STOPPED → READY; valid calibration retained |
 | Restart | Release GP20 and press again on a visible line | A separate fresh start; held buttons never restart |
 
-Capture duration/contrast, classification and recovery limits are defined once in [Line Tracking](architecture/LINE_TRACKING.md#business-logic). Starting on fully white or broad black is rejected. Replacing black invalidates the old pair; failed white contrast clears both references. A plausible raw ADC value does not prove the sensor is wired correctly. Calibration and motion controls are local; USB text commands and MQTT calibration/start/stop commands are retired.
+Capture duration/contrast and classification are defined in [Line Tracking](architecture/LINE_TRACKING.md#calibration-workflow); movement/recovery rules are in the [handoff](architecture/IR_MOTION_HANDOFF.md#tracking-and-recovery). Starting on fully white or broad black is rejected. Reboot to replace a completed calibration; failed white contrast clears both references. A plausible raw ADC value does not prove the sensor is wired correctly. Calibration and motion controls are local; USB text commands and MQTT calibration/start/stop commands are retired.
 
 If capture is rejected, keep the robot stopped and inspect sensor connection, height, lighting, surface and raw contrast. If the controller stops, record the reason before resetting. Correcting software state does not prove the wheels are stationary.
 

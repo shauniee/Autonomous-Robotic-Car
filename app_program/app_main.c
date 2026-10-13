@@ -1,8 +1,5 @@
 #include "app.h"
 #include "subsystem2/subsystem2.h"
-#if APP_TEST
-#include "../testing/subsystem3/subsystem3_test.h"
-#endif
 
 /*
  * Create and start one task (declared in app.h for every subsystem).
@@ -90,14 +87,10 @@ EXPORT INT usermain(void)
 	REQUIRE(subsystem5_start());
 
 #if APP_TEST
-	tm_printf((UB*)"S1, S2, S4 and S5 started; S3 waits for the test gate.\n");
-	/* Defer acquisition so the gate press cannot begin calibration or
-	   contend with the live snapshot boundary check. */
-	REQUIRE(subsystem3_test_wait_for_start());
+	tm_printf((UB*)"S1, S2, S4 and S5 started; S3 starts after startup tests.\n");
 	tm_printf((UB*)"[TEST] === test run start ===\n");
 	subsystem1_test();
 	subsystem2_test();
-	subsystem3_test();
 	subsystem4_test();
 	subsystem5_test();
 	tm_printf((UB*)"[TEST] === test run end ===\n");

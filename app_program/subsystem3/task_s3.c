@@ -32,7 +32,8 @@ static void request_buzzer_chirps(unsigned chirps, uint32_t now)
 }
 
 #if APP_TEST
-static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now)
+static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now,
+    ButtonInputs inputs)
 {
     S3IrSnapshot snapshot = ir_snapshot_build(tracker, sequence, now);
     /* Fixed-point display avoids floating-point console formatting. */
@@ -40,13 +41,15 @@ static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now)
     int right = (int)(snapshot.normalized_right * 1000.0f);
     tm_printf((UB *)"[IR] seq=%u ADC L=%u R=%u acquired=%d fresh=%d "
         "normalized_milli L=%d R=%d valid=%d calibrated=%d "
-        "line=%s capture=%s age_ms=%u SENSOR_ONLY\n",
+        "line=%s capture=%s age_ms=%u GP20_down=%d GP21_down=%d "
+        "SENSOR_ONLY\n",
         (unsigned)sequence, (unsigned)snapshot.raw.left,
         (unsigned)snapshot.raw.right, snapshot.acquisition_valid,
         snapshot.sample_fresh, left, right, snapshot.normalized_valid,
         snapshot.calibration_valid, ir_tracking_line_name(snapshot.line),
         ir_tracking_capture_name(snapshot.capture_result),
-        (unsigned)snapshot.sample_age_ms);
+        (unsigned)snapshot.sample_age_ms, inputs.gp20_down,
+        inputs.gp21_down);
 }
 #endif
 
@@ -76,6 +79,7 @@ void task_s_task(INT stacd, void *exinf)
         if (!read_time(&now))
         {
             tm_printf((UB *)"[IR] time unavailable; task stopped\n");
+            barcode_runtime_shutdown();
             return;
         }
         IrCaptureKind before = tracker.capture_kind;
@@ -83,6 +87,18 @@ void task_s_task(INT stacd, void *exinf)
         request_buzzer_chirps(calibration_control_feedback(before, &tracker), now);
 
         ButtonInputs inputs = drv_buttons_read();
+#if APP_TEST
+        static bool have_inputs;
+        static ButtonInputs previous_inputs;
+        if (!have_inputs || inputs.gp20_down != previous_inputs.gp20_down ||
+            inputs.gp21_down != previous_inputs.gp21_down)
+        {
+            tm_printf((UB *)"[IR] buttons GP20_down=%d GP21_down=%d\n",
+                inputs.gp20_down, inputs.gp21_down);
+            previous_inputs = inputs;
+            have_inputs = true;
+        }
+#endif
         unsigned chirps = calibration_handle_buttons(&controls, &tracker, inputs.gp20_down, inputs.gp21_down, now);
         request_buzzer_chirps(chirps, now);
         if ((int32_t)(now - sample_due) >= 0)
@@ -92,6 +108,7 @@ void task_s_task(INT stacd, void *exinf)
             if (!read_time(&now))
             {
                 tm_printf((UB *)"[IR] acquisition time unavailable\n");
+                barcode_runtime_shutdown();
                 return;
             }
             bool advancing = !tracker.have_sample || (now != tracker.sample_ms);
@@ -108,9 +125,13 @@ void task_s_task(INT stacd, void *exinf)
                 sample_due = now + IR_SAMPLE_MS;
             }
         }
+        /* Service after due ADC work, with a fixed edge budget. GP21 is
+           delivered each release; barcode never owns motor/line policy. */
+        barcode_runtime_service(inputs.gp21_down);
         if (!buzzer_service(now))
         {
             tm_printf((UB *)"[IR] buzzer service failed; task stopped\n");
+            barcode_runtime_shutdown();
             return;
         }
         /* Cache failure skips publication; local work still advances.
@@ -122,7 +143,7 @@ void task_s_task(INT stacd, void *exinf)
 #if APP_TEST
         if ((int32_t)(now - report_due) >= 0)
         {
-            report(&tracker, sequence, now);
+            report(&tracker, sequence, now, inputs);
             report_due = now + REPORT_PERIOD_MS;
         }
 #endif
@@ -130,6 +151,7 @@ void task_s_task(INT stacd, void *exinf)
         if (!read_time(&now))
         {
             tm_printf((UB *)"[IR] scheduling time unavailable\n");
+            barcode_runtime_shutdown();
             return;
         }
         if ((int32_t)(now - next) >= 0)
@@ -139,6 +161,7 @@ void task_s_task(INT stacd, void *exinf)
         if (tk_dly_tsk((RELTIM)(next - now)) < E_OK)
         {
             tm_printf((UB *)"[IR] task delay failed\n");
+            barcode_runtime_shutdown();
             return;
         }
     }
