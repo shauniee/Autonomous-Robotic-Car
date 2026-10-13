@@ -7,8 +7,8 @@
 #define FOLLOW_PERIOD_MS 10u
 #define FOLLOW_PRIORITY 14
 #define RECOVERY_MS 500u
-#define BASE_DUTY 0.10f
-#define BROAD_DUTY 0.05f
+#define BASE_DUTY 0.50f
+#define BROAD_DUTY 0.20f
 
 typedef enum
 {
@@ -214,6 +214,23 @@ static void follow_task(INT stacd, void *exinf)
                     }
                     request.enabled = state == FOLLOW_LINE ||
                         state == RECOVER_LINE;
+                    /* User tuning must stay within the existing S2 contract. */
+                    if (request.left < 0.0f)
+                    {
+                        request.left = 0.0f;
+                    }
+                    else if (request.left > MOTION_MAX_DUTY)
+                    {
+                        request.left = MOTION_MAX_DUTY;
+                    }
+                    if (request.right < 0.0f)
+                    {
+                        request.right = 0.0f;
+                    }
+                    else if (request.right > MOTION_MAX_DUTY)
+                    {
+                        request.right = MOTION_MAX_DUTY;
+                    }
                     if (request.enabled && s2_publish(request) < E_OK)
                     {
                         stop(&state);

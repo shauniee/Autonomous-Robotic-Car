@@ -145,7 +145,7 @@ Limits are set in [config/config.h](../config/config.h). The table shows current
 
 | Object | Limit |Shaun |Mahesha |Nicholas |Darrius |Jia Jing |
 | --- | --- | --- | --- | --- | --- | --- |
-| Task | 32 | 0 | 1 | 1 | 0 | 0 |
+| Task | 32 | 0 | 1 | 2 | 0 | 0 |
 | Semaphore | 16 | 0 | 0 | 0 | 0 | 0 |
 | Event flag | 16 | 0 | 1 | 0 | 0 | 0 |
 | Mailbox | 12 | 0 | 0 | 0 | 0 | 0 |

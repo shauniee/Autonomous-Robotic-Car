@@ -103,9 +103,9 @@ No S3 motor duty mixing, run/start state, movement timeout or recovery actuation
 
 A `.c` file contains the implementation. Its `.h` file declares the functions and data types another file may use; it does not contain a second implementation. `subsystem3_internal.h` declares the private task-to-cache publication function, while `subsystem3.h` exposes the supported external S3 interface. Consumers should not call the private task or mutate its tracker.
 
-These divisions keep hardware access, calculations, scheduling and consumer data independent. Separate files are a modular organization choice; they do not create extra tasks. S3 still has exactly one running task.
+These divisions keep hardware access, calculations, scheduling and consumer data independent. The sensing service uses one task; the separate bench line-following task uses existing S2 APIs, as recorded in [TEAM](../TEAM.md#4-task-priorities).
 
-All S3 test fixtures and assertions live under `testing/subsystem3/`. Its `firmware.mk` adds only S3 test sources to TEST=1 builds through one shared Make include. A tiny TEST-only bridge in `subsystem3.c` supplies the private cache mutex to the boundary assertion without adding a production handle accessor. TEST-only periodic console diagnostics in `task_ir.c` remain observations of the running service, not self-test assertions.
+Nicholas requested preserving removal of the S3 firmware fixtures, runner and startup hooks, with no testing added yet. Historical evidence remains under `testing/subsystem3/`. TEST-only periodic console diagnostics in `task_s3.c` remain observations of the running service, not self-test assertions.
 
 `IrTrackingOutput` retains IF-04's validity, line, signed error/steering and original `sampled_ms`. It is an internal typed value. The public reader is:
 
@@ -149,7 +149,7 @@ This is an interface example, not an implemented S1 adapter. The struct is not a
 
 Use [TEAM](../TEAM.md#2-pins) for wiring and [TECHNICAL_INFO](../TECHNICAL_INFO.md#tcrt5000-based-ir-modules) for electrical facts. S3 retains one priority-12 task on core 1, with 10 ms input/feedback service and 20 ms acquisition. Deadline releases skip missed work rather than replaying a backlog. TEST builds report raw counts, normalized thousandths, calibration/capture status and validity every nominal 500 ms through the existing startup/test hooks.
 
-Shared application startup initializes the 1 µs TIMER timebase without resetting it. S3 configures only its ADC and buzzer PWM slice; it neither enables/feeds a whole-system watchdog nor accesses S2/S1 runtime interfaces. Critical system health/stop policy belongs to Safety and requires explicit integration; a data service is not a whole-robot safety controller.
+Shared application startup initializes the 1 µs TIMER timebase without resetting it. The sensing service owns its ADC and buzzer PWM slice; barcode configuration additionally sets GP16 input mode. The separate bench line-following task calls S2 APIs. S3 does not enable/feed a whole-system watchdog. Critical system health/stop policy belongs to Safety and requires explicit integration; a data service is not a whole-robot safety controller.
 
 ## Establish a measured baseline
 
