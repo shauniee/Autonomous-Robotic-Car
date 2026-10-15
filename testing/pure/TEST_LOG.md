@@ -4,7 +4,7 @@ These supplemental checks compile and execute the production's deterministic C m
 
 | Check | Production behavior | Result |
 | --- | --- | --- |
-| S1-MAPPING | Mapping parser accepts max request ID across fragments and rejects leading-zero ID | Pending individual case run |
+| S1-MAPPING | Mapping parser accepts max request ID across fragments and rejects leading-zero ID | PASS on harness-identical `8f74f2d`: `sh testing/pure/run.sh` (2026-10-15) |
 | S1-TELEMETRY | Fresh telemetry retains independent producer values through clock wrap | Pending individual case run |
 | S2-MOTION | Distance command renewal preserves origin/deadline, waits for both wheels, and accepts completion ACK | Pending individual case run |
 | S3-BARCODE-AZ | A-Z vectors decode at two scales and both orientations | Pending individual case run |
