@@ -3,6 +3,63 @@
 Architecture Defence & Integration Readiness | AI ideation, live update, AI-vetted gap check
 The core objective of this tribunal is to assess the engineering reasoning and see how the team responds to a sudden change in embedded system requirements.
 
+
+## Quick guide — what you are doing
+
+Your job is to explain how the new requirement affects the robot, compare practical responses and agree what must change. This is a technical discussion, not a coding session. The change has not been announced; the points below are preparation, not live findings or team agreement.
+
+### What to know before the change
+
+| Area | What we need to understand |
+| --- | --- |
+| Original plan | W6 records our initial ideas, including mistakes and untested assumptions. Explain why a proposal made sense and what evidence could change it. |
+| Current architecture | Use dual-core micro T-Kernel: networking on core 0, application tasks on core 1. W6's single-core wording is an initial-plan error.  |
+| Ownership | Motion alone writes motor outputs. Mission requests actions; Safety can inhibit movement. Sensors provide observations, not direct motor commands. |
+| Data flow | Know each module's inputs, outputs, units, validity and sample age. Identify who depends on the data and what happens when it is missing or late. |
+| Timing and capacity | Current configured periods: Safety/line 10 ms; Motion/Mission/Terrain 20 ms; reporting cache 20 ms; telemetry 500 ms. Barcode storage: 64 edges and eight events. These are configured values, not proven timing or load margins. |
+| Evidence | Builds and inhibited Pico logic checks exist. Stopped MQTT mapping/reload was observed. Powered motion, braking, real barcode reading, hump accuracy and bypass acceptance remain pending. |
+| Course uncertainties | Barcode framing/spacing, junction/finish rules, bypass boundaries and numerical acceptance limits remain unresolved. Do not invent values to make a solution appear complete. |
+
+### Everyone's focus
+
+| Buddy | What to explain | What to challenge or negotiate |
+| --- | --- | --- |
+| Shaun — communications | Telemetry, request validation, mapping acknowledgement and reconnect. | Can extra messages or retries delay control? Agree data age and mapping acknowledgement with Nicholas. |
+| Mahesha — motion | Encoders, wheel PID, bounded actions, completion and stopping. | Can the real car meet the new speed/accuracy demand? Agree stationary feedback and command expiry with Nicholas/Jia Jing. |
+| Nicholas — line/barcode and Mission/Safety | Line guidance, retained barcode command, junction action and stop/reset. | Can decoding keep up, and can the correct junction/route be identified? Agree encoder travel, mapping revision and obstacle interruption handling. |
+| Darrius — terrain/humps | IMU calibration, movement classification and highest valid hump height. | Does changed speed or motion invalidate height estimates? Agree useful travel/speed data with Mahesha. |
+| Jia Jing — obstacle sensing | Stationary scans, obstacle width, clearance and fresh forward range. | Is there enough stopping/scan time and space for the whole car? Agree braking feedback and bypass/recovery limits. |
+
+### How to tackle the announced change
+
+| Step | What to do | What to write down |
+| --- | --- | --- |
+| 1. Capture the change | Record the professor's exact wording. Ask about ambiguous limits, units, conditions and expected outcomes. | Old requirement, new requirement and clarification still needed. |
+| 2. Trace the effects | Each buddy explains direct effects and dependencies on other modules. Follow sensor input through processing, decision, action and telemetry. | Affected modules and who must coordinate. |
+| 3. Check feasibility | Compare required rates, memory, processing time and hardware capability with available capacity. Include safety and shared-resource conflicts. | Known values, calculations and missing measurements. |
+| 4. Compare options | Discuss at least two feasible approaches where alternatives exist. Challenge AI suggestions and explain benefits, costs and limitations. | Selected/rejected options and reasons. |
+| 5. Agree the response | Decide what changes, what stays and what must wait for clarification/testing. Give every action an owner. | Decision, trade-off, dependent interface changes and follow-up owner. |
+| 6. Plan verification | Define cross-subsystem tests with a clear success condition and evidence to collect. Set unknown limits before testing. | Setup, expected result, measurement/evidence and owner. |
+
+### Checks to make before accepting an answer
+
+| Check | Question to ask |
+| --- | --- |
+| Processing and timing | Can the task finish before its next required update? What happens under simultaneous capture, scans and network retries? |
+| Memory and queues | How many extra records/bytes are needed? Can bursts fill the buffer before the consumer catches up? |
+| Shared resources | Do tasks compete for GPIO interrupts, PWM, locks or copied state? Could a delayed owner block a more urgent task? |
+| Interfaces and dependencies | Do units, validity, message size, sample rate or completion rules change? Which consumers must adapt? |
+| Hardware and safety | Can the installed sensors/actuators meet the demand? What happens on stale data, no echo, command expiry or failed recovery? |
+| No-change claim | Why can the existing design meet the new demand? Show capacity and interface reasoning; mark unmeasured margins as pending. |
+
+**Hypothetical example — higher travel speed:** barcode edges arrive faster, there is less time before the junction, and stopping distance may increase. Nicholas checks capture/service capacity and junction context; Mahesha checks tracking and braking; Jia Jing checks detection distance and scan timing; Darrius checks height accuracy; Shaun checks reporting load. Compare faster service, less noncritical work or another permitted approach. Do not assume the hardware can meet the new speed.
+
+Useful calculations: update frequency = 1000 / period in milliseconds; task CPU share ≈ execution time / period; extra buffer memory = extra records × bytes per record; travel during delay = speed × delay. Use consistent units and actual measurements where available. These estimates alone do not prove schedulability or physical stopping distance.
+
+### Recording and completing the live tables
+
+- Start recording when the team discussion begins. Keep cameras on and make shared prompts, responses and evidence readable. Every buddy should explain and challenge technical points.
+
 # Breakdown
 - Live Zoom-updated version. Design decisions are updated during the Zoom discussion through challenge, negotiation, and constraint response.
 > Marks are not awarded for blindly following AI. Marks are awarded for critical evaluation and human engineering judgement
@@ -71,6 +128,7 @@ Enter at least 4 cross-subsystem tests. Each test must involve the work of at le
 
 Example:
 | Subsystem | Test Case | Success Criteria | Evidence Required | Owner | Status |
+| --- | --- | --- | --- | --- | --- |
 | Example: sensor input	| Detect line, barcode, or obstacle. | Correct reading appears in serial log | Screenshot or log | Buddy 3 | Open |
 
 ## Constraint Injection / Curveball Response

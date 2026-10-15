@@ -237,30 +237,45 @@ Use the five passes in [testing](testing/README.md). Required cases include all 
 
 On mission day change only the four assignments in the laptop data file, verify the live applied acknowledgement/revision, then start locally. Keep the frozen firmware unchanged. Save real results and video links under [testing](testing/README.md); the [video guide](videos/README.md) is preserved unchanged.
 
-### Remaining release gates, excluding video
+### Release gates: mission and submission readiness
 
-The current branch is software-integrated; it is not a certified completed mission. [The readiness audit](testing/integration/logs/2026-10-15_mission-readiness.json) records the current evidence. Complete each gate before declaring mission/submission readiness:
+The current branch is software-integrated, but it is not mission-ready or submission-ready. The dated [readiness record](testing/integration/logs/2026-10-15_available-readiness.json) and [test logs](testing/README.md) own evidence and status. Complete and record every applicable gate below. A build, fixture PASS, dashboard check, or hardware capability is not a physical mission PASS.
 
-| Gate | What to do | Expected result |
-| --- | --- | --- |
-| Measured configuration | Resolve D03-D08 in the [pending register](docs/donotsubmit/PROJECT_SPECS.md#pending-decisions); enter recorded values, not confirmation flags alone | Motion/sonar/terrain/electrical configuration validates against real installed hardware |
-| Course rules/freeze | Resolve D01/D02/D09/D10, including issued barcode format, junction/finish and supported bypass depth/boundaries | The final image supports the actual course before the four letters are announced |
-| Startup and controls | Execute the inhibited fixtures, T01/T02 and raised-wheel measurements | Recorded fixture results, successful black+IMU then white calibration, independent brake and separate reset/start |
-| Navigation and sensing | Execute T03-T11, including all alphabet/scales/orientations, four motions, reference/one-wheel humps and both bypass sides | Agreed accuracy/clearance criteria met; original route confirmed; uncertainty stops |
-| Failure handling and course | Execute T12-T16, including stale/encoder/deadline/network/load faults and repeated full-course runs | Correct fault/reset behavior, measured timing/stack margin and complete autonomous runs on the frozen image |
-| Submission evidence | Save configuration/image identities, complete Motion tuning/accuracy and Terrain analysis from measurements, and confirm instructor access/artifacts | Required reports and traceable acceptance records exist; video can be handled separately |
+#### 1. Resolve inputs and measured configuration
 
-Missing sensors or unconfirmed measurements remain unavailable/pending. Successful compiler checks and a live MQTT dashboard do not replace these gates.
+- [ ] Resolve D01-D10 in the single [pending-decision register](docs/donotsubmit/PROJECT_SPECS.md#pending-decisions). Record the answer, measurement, evidence source, owner and acceptance threshold; do not replace evidence with a confirmation flag alone.
+- [ ] D03/electrical: identify motor rated voltage/current (or obtain traceable part data), measure actual supply, and verify motor, driver, encoder supply/output levels and wiring compatibility. Confirm GP28 battery-sensing jumper state. Keep powered motor trials inhibited until this check passes. The carrier ratings in [TECHNICAL_INFO](docs/donotsubmit/TECHNICAL_INFO.md) are not the motor ratings.
+- [ ] D03/D07, Motion: repeat marked left/right encoder counts and measure ground travel; confirm counts per wheel revolution, direction, effective distance per count, wheel diameter, track and car envelope. Tune and measure wheel PID, straight distance, turns, speed/saturation, stall handling, obstacle clearance and stopping/braking headroom.
+- [ ] D04, Line/Barcode: verify installed IR module supply/output levels, polarity, height, contrast/noise and lighting range; calibrate thresholds and validate the issued barcode print, scale, direction, framing/quiet-zone/tolerance and mounting/traversal setup.
+- [ ] D06, Terrain: install the IMU; verify supply, pull-ups/I2C and mounted axes; calibrate bias/filter/impact inputs and validate the height method against measured reference humps, including a one-wheel encounter.
+- [ ] D05, Obstacle: the operator reports the professor confirmed the 3.3 V ultrasonic model. After the sensor is available, verify the installed marking and Pico-safe Echo level, measured range/repeat timing/missing-Echo handling. Calibrate servo supply/current, center/endpoints/settling, sonar offsets and scan geometry. The servo is present; IMU and ultrasonic hardware are currently unavailable for this team's testing, per operator update on 2026-10-15.
+- [ ] D07/D08, Safety/Motion: measure brake command and physical stopping separately; verify stop/reset serialization, brake acknowledgement, stationary feedback, sensor/action deadlines, retries/leases, queue capacities and permitted recovery limits.
+- [ ] D01/D02/D09/D10: confirm issued symbology and four mission-day letters procedure, barcode-to-junction spacing, crossing/finish/action-count convention, obstacle depth/bypass/reverse boundaries, broker/network settings, shared configuration/task-priority approval, agreed numeric acceptance limits, demonstration schedule, instructor access and submission evidence schedule.
 
-## Remaining acceptance tasks
+#### 2. Close software and integrated verification
 
-[Current readiness record](testing/integration/logs/2026-10-15_available-readiness.json) owns the dated status. Use this order:
+- [ ] Build the final frozen normal offline/wireless profiles and relevant inhibited TEST profiles; run strict changed-code checks, confirm fixtures are excluded from normal images, record configuration/source revision and UF2 hashes. Repeat if application code changes after the recorded software evidence.
+- [ ] Execute all current firmware fixture IDs on the appropriate inhibited TEST image(s) built from the final source and retain actual console output; separately build and identify the final normal mission image. The recorded 45-check pass at `33ea475` used USB-only IR-only TEST with motors inhibited; it does not establish normal mission image behavior or physical acceptance.
+- [ ] Complete INT-18/S1 transport tests: stopped/live mapping replacement and revision acknowledgement, moving/busy/invalid/backpressure rejection, failed QoS1 acknowledgement/reconnect/stale callback, overlapping requests/result-queue full, retained-message policy, reboot/reload on unchanged image, broker/Wi-Fi loss and recovery. The recorded reboot/reload and two-table checks are a passing subset; full transport/recovery remains partial.
+- [ ] Complete INT-19 end-to-end controller integration: joint calibration, fresh local start, leased four-action execution, barcode capture/rearm and junction association, scan/cancel/center restoration, bypass and original-route recovery, finish and reset. Current unit/guard fixtures do not close this integration case.
+- [ ] Complete T14/T15 fault and load checks: stale/missing/failed producer data, encoder faults/stall, expired actions, partial acquisition, ring/FIFO/ack queue saturation, network/reporting/console load, watchdog, release timing, lock contention, stack margin and measured stop latency. Confirm faults brake independently of telemetry and reset cannot replay commands.
+- [ ] Recheck dashboard and telemetry under the final source/image and approved broker. Synthetic broker/browser checks are useful UI evidence; confirm current robot values/events and status requests on the demonstration network.
 
-1. Identify the motor rating and measure the supply; verify wiring under the power policy. Expected: documented compatible electrical setup before powered trials. GP28 sensing jumper is operator-confirmed disconnected.
-2. Repeat marked wheel counts and measured ground travel, then raised-wheel direction/PID checks and short distance/turn/brake trials. Expected: stable fault-free counts, correct directions and agreed accuracy/stop limits; accept configuration only after measurements.
-3. Run physical line/barcode trials and all four actions using the system definitions. Expected: one correct encounter/action, no guessed unassigned action, qualified junctions and bounded line recovery. Synthetic A–Z fixture PASS does not replace printed barcode trials.
-4. Confirm course/junction/finish/bypass rules in PROJECT_SPECS and enter measured limits. Expected: no unresolved required configuration; MQTT four-letter changes still require no firmware change and never start motion.
-5. When IMU/sonar are available, complete joint calibration, reference humps, range/servo scans and both bypass sides. Expected: reliable data or a safe stop, greatest valid hump retained and original line confirmed.
-6. Execute fault/network/load checks and repeated complete courses on the frozen normal image, with different four-letter assignments. Expected: all required physical results recorded, finish braked and unchanged firmware across mission-day mapping rehearsals.
+#### 3. Pass physical mission acceptance
+
+- [ ] Execute T01-T02: combined black+IMU then white calibration; early/repeated/cancel/failure cases; GP21 stop in every mission phase; reset never starts motion; fresh local start requires qualified readiness.
+- [ ] Execute T03-T05 and T11: line/curve/light/speed/junction tests; all A-Z at both scales and directions (104 combinations); invalid/unknown/duplicate/overflow cases; left/right/straight/U-turn at the correct junction; short/permanent line loss and bounded recovery.
+- [ ] Execute T06-T07: labelled stationary/turn/climb/descent/impact motion and measured reference hump trials, including one-wheel and equal-height repeats; verify height error against agreed criteria and last/max/count/history across stop, reset and new run.
+- [ ] Execute T08-T10: known obstacle range/material/angle and Echo fault trials; coarse/fine scans and cancellation; both bypass sides, blocked/unknown/tie cases, body clearance, confirmed depth/bounds, passed-obstacle strategy, wrong-crossing rejection and original-line reacquisition. Do not claim rear-edge observation unless the course method actually observes it or accepted course bounds explicitly support the strategy.
+- [ ] Execute T12-T16 with the final normal wireless image: full robot telemetry/configuration/network recovery, required-data failure handling, concurrent load, and complete autonomous courses from calibration/mapping to confirmed finish. Meet agreed accuracy, clearance, reliability and time criteria; finish braked; retain failures and reruns. Rehearse different four-letter mappings and reboot/reload without changing the frozen image. Three clean rehearsals is a team target only, not an instructor rule.
+
+#### 4. Complete submission evidence
+
+- [ ] Prepare Motion tuning/accuracy and Terrain analysis reports from accepted measurements; include methods, references, results, error and limitations.
+- [ ] Save final configuration, firmware/source revision, UF2 checksum, mapping request/revision, calibration, wiring/power, tester, test results and supporting console/MQTT/video/scope evidence. Every result must identify the image and distinguish firmware, software-integration and physical evidence.
+- [ ] Confirm required artifact list, naming/format, repository or upload access, instructor access and due dates from course instructions. Exclude `docs/donotsubmit/` references from submission packaging; include demonstration video or link if required by the course.
+- [ ] Obtain subsystem owner review and confirm the submission package contains the required reports, traceable acceptance records and final demonstration artifacts.
+
+Declare **mission-ready** only when all applicable configuration/course decisions are resolved and physical M1-M10 acceptance passes on the frozen normal image. Declare **submission-ready** only when mission readiness is met and all required reports, evidence and artifacts are complete and accessible. If any required hardware, rule, threshold, or result is unavailable, mark the affected gate PENDING and do not claim readiness.
 
 The diagnostic image remains motor inhibited. Do not use its IR-only calibration as evidence of full mission calibration or course readiness.

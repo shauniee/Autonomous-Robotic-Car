@@ -63,7 +63,7 @@ Each sequence alternates black bar / white space, starting and ending with a bla
 | A | `nwnnwnwnn` | `wnnnnwnnw` | `nwnnwnwnn` |
 | Z | `nwnnwnwnn` | `nwwnwnnnn` | `nwnnwnwnn` |
 
-The patterns are consistent with Code 39 `*A*` and `*Z*`; this is an inference, not a confirmed symbology specification. No instructor-confirmed decode specification, B/C/D samples, width tolerances, quiet-zone minimum, mounting coordinate, junction offset or traversal direction is established. Use [Barcode](../architecture/SUBSYSTEM3.md) for capture/decode behavior.
+The patterns are consistent with `*A*` and `*Z*`; this is an inference, not a confirmed symbology specification. No instructor-confirmed decode specification, B/C/D samples, width tolerances, quiet-zone minimum, mounting coordinate, junction offset or traversal direction is established. Use [Barcode](../architecture/SUBSYSTEM3.md) for capture/decode behavior.
 
 ## Design targets and team constraints
 
@@ -85,7 +85,7 @@ Record answers and measured values here once, then link from other guides.
 | D02 | Finish, junction/crossing rules, barcode-to-junction spacing, print scale and permitted bypass/reverse boundaries | Team |
 | D03 | [Provisional wheel observations](../../testing/subsystem2/logs/2026-10-15_wheel-measurements.json) and [electrical status](../../testing/subsystem2/logs/2026-10-15_electrical-status.json) recorded; acceptance pending. Motor/encoder ratings and logic levels, decoded counts per wheel revolution, polarity, wheel diameter, track width and car envelope | S2 |
 | D04 | Mounted TCRT module voltage/current/output levels, polarity, height, contrast/noise and lighting range | S3 |
-| D05 | Actual sonar variant/Echo level, range, repeat interval, missing-echo behavior; servo supply/current, endpoints, center and settling | S5 |
+| D05 | Professor-confirmed 3.3 V ultrasonic model (operator report); verify installed marking/Echo level, range, repeat interval and missing-echo behavior when available; servo supply/current, endpoints, center and settling | S5 |
 | D06 | IMU supply/pull-ups, axes/bias, filters, impact thresholds and valid height method against reference humps | S4 |
 | D07 | Wheel PID, speed/turn accuracy, stall/clearance/stopping thresholds, measured worst-case braking headroom and sonar mounting offsets, scan/reacquisition deadlines, retries, leases and queue capacities | Owners / team |
 | D08 | Stop/reset serialization, brake acknowledgement, measured stop latency and stationary feedback acceptance | S2 / Safety |
