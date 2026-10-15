@@ -1,127 +1,126 @@
-/*
- * terrain_algo.c - Math and state machine implementation for Buddy 4.
- */
-
-#include <math.h>
 #include "terrain_algo.h"
-
-#define ACCEL_MG_PER_LSB        0.001f          /* 1 mg/digit at +/- 2g */
-#define LPF_ALPHA               0.20f           /* IIR filter weight */
-#define RAD_TO_DEG              57.2957795f
-#define DEG_TO_RAD              0.0174532925f
-
-#define PITCH_CLIMB_THRESH_DEG   3.5f           /* Pitch elevation indicating climb */
-#define PITCH_DESC_THRESH_DEG   -3.5f           /* Negative pitch indicating descent */
-#define IMPACT_THRESHOLD_G       2.5f           /* Collision acceleration limit (FR11) */
-#define HUMP_CALIB_FACTOR        1.15f          /* Wheelbase geometric scale factor */
-
-void terrain_algo_init(TerrainContext *ctx) {
-    ctx->accel_offset = (Vec3f){0.0f, 0.0f, 0.0f};
-    ctx->filtered_accel = (Vec3f){0.0f, 0.0f, 1.0f};
-    ctx->pitch_deg = 0.0f;
-    ctx->roll_deg = 0.0f;
-    ctx->state = TERRAIN_STATE_FLAT;
-    ctx->height_valid = false;
-    ctx->current_hump_rise_m = 0.0f;
-    ctx->last_hump_height_m = 0.0f;
-    ctx->max_hump_peak_m = 0.0f;
-    ctx->is_calibrated = false;
-    ctx->calib_count = 0;
-    ctx->calib_sum = (Vec3f){0.0f, 0.0f, 0.0f};
+#include <math.h>
+#include <string.h>
+static Vec3f mapped(const Gy511RawAxes *raw)
+{
+    float axes[3] = {(float)raw->x * 0.001f, (float)raw->y * 0.001f,
+        (float)raw->z * 0.001f};
+    return (Vec3f){axes[robot_config.lateral_axis] * robot_config.lateral_sign,
+        axes[robot_config.forward_axis] * robot_config.forward_sign,
+        axes[robot_config.vertical_axis] * robot_config.vertical_sign};
 }
-
-bool terrain_algo_calibrate_sample(TerrainContext *ctx, const Gy511RawAxes *raw) {
-    if (ctx->is_calibrated) return true;
-
-    ctx->calib_sum.x += (float)raw->x * ACCEL_MG_PER_LSB;
-    ctx->calib_sum.y += (float)raw->y * ACCEL_MG_PER_LSB;
-    ctx->calib_sum.z += (float)raw->z * ACCEL_MG_PER_LSB;
-    ctx->calib_count++;
-
-    if (ctx->calib_count >= 100) {
-        ctx->accel_offset.x = ctx->calib_sum.x / 100.0f;
-        ctx->accel_offset.y = ctx->calib_sum.y / 100.0f;
-        ctx->accel_offset.z = (ctx->calib_sum.z / 100.0f) - 1.0f; /* Normalize Z to 1g */
-        ctx->is_calibrated = true;
-        return true;
+void terrain_algo_init(TerrainContext *c)
+{
+    memset(c, 0, sizeof(*c));
+    c->filtered_accel.z = 1.0f;
+}
+bool terrain_algo_calibrate_sample(TerrainContext *c,
+    const Gy511RawAxes *raw)
+{
+    Vec3f v = mapped(raw);
+    float g = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+    if (!isfinite(g) || fabsf(g - 1.0f) > 0.15f)
+    {
+        c->calib_count = 0u;
+        c->calib_sum = (Vec3f){0};
+        return false;
     }
-    return false;
+    if (c->is_calibrated) { return true; }
+    c->calib_sum.x += v.x;
+    c->calib_sum.y += v.y;
+    c->calib_sum.z += v.z;
+    if (++c->calib_count >= 100u)
+    {
+        c->accel_offset = (Vec3f){c->calib_sum.x / 100.0f,
+            c->calib_sum.y / 100.0f, c->calib_sum.z / 100.0f - 1.0f};
+        c->is_calibrated = true;
+    }
+    return c->is_calibrated;
 }
-
-void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float delta_dist_m) {
-    if (!ctx->is_calibrated) return;
-
-    /* 1. Convert to physical g with bias removal */
-    Vec3f cur;
-    cur.x = ((float)raw->x * ACCEL_MG_PER_LSB) - ctx->accel_offset.x;
-    cur.y = ((float)raw->y * ACCEL_MG_PER_LSB) - ctx->accel_offset.y;
-    cur.z = ((float)raw->z * ACCEL_MG_PER_LSB) - ctx->accel_offset.z;
-
-    /* 2. Low-pass filter (IIR) to strip chassis vibration */
-    ctx->filtered_accel.x = (ctx->filtered_accel.x * (1.0f - LPF_ALPHA)) + (cur.x * LPF_ALPHA);
-    ctx->filtered_accel.y = (ctx->filtered_accel.y * (1.0f - LPF_ALPHA)) + (cur.y * LPF_ALPHA);
-    ctx->filtered_accel.z = (ctx->filtered_accel.z * (1.0f - LPF_ALPHA)) + (cur.z * LPF_ALPHA);
-
-    /* 3. Compute pitch and roll angles */
-    ctx->pitch_deg = atan2f(ctx->filtered_accel.y,
-                            sqrtf((ctx->filtered_accel.x * ctx->filtered_accel.x) + 
-                                  (ctx->filtered_accel.z * ctx->filtered_accel.z))) * RAD_TO_DEG;
-    ctx->roll_deg  = atan2f(-ctx->filtered_accel.x, ctx->filtered_accel.z) * RAD_TO_DEG;
-
-    /* 4. Impact detection (FR11): check horizontal deceleration */
-    float shock_horiz = sqrtf((cur.x * cur.x) + (cur.y * cur.y));
-    if (shock_horiz > IMPACT_THRESHOLD_G && fabsf(ctx->pitch_deg) < 3.0f) {
-        ctx->state = TERRAIN_STATE_IMPACT;
+void terrain_algo_invalidate_window(TerrainContext *c)
+{
+    if (c->state != TERRAIN_STATE_IMPACT) { c->state = TERRAIN_STATE_FLAT; }
+    c->window_valid = false;
+    c->height_valid = false;
+    c->current_hump_rise_m = c->roll_rise_m = 0.0f;
+}
+void terrain_algo_process(TerrainContext *c, const Gy511RawAxes *raw,
+    float travel, bool travel_valid, uint32_t now)
+{
+    if (!c->is_calibrated) { return; }
+    Vec3f v = mapped(raw);
+    v.x -= c->accel_offset.x;
+    v.y -= c->accel_offset.y;
+    v.z -= c->accel_offset.z;
+    c->filtered_accel.x += 0.2f * (v.x - c->filtered_accel.x);
+    c->filtered_accel.y += 0.2f * (v.y - c->filtered_accel.y);
+    c->filtered_accel.z += 0.2f * (v.z - c->filtered_accel.z);
+    Vec3f f = c->filtered_accel;
+    c->pitch_deg = atan2f(f.y, sqrtf(f.x * f.x + f.z * f.z)) * 57.2957795f;
+    c->roll_deg = atan2f(-f.x, f.z) * 57.2957795f;
+    if (robot_config_terrain_valid() &&
+        hypotf(v.x, v.y) > robot_config.impact_g)
+    {
+        c->state = TERRAIN_STATE_IMPACT;
+        c->height_valid = false;
         return;
     }
-
-    /* 5. Hump progression state machine (Figure 7) */
-    switch (ctx->state) {
-        case TERRAIN_STATE_FLAT:
-            if (ctx->pitch_deg > PITCH_CLIMB_THRESH_DEG) {
-                ctx->state = TERRAIN_STATE_CLIMBING;
-                ctx->current_hump_rise_m = 0.0f;
-                ctx->height_valid = false;
-            }
-            break;
-
-        case TERRAIN_STATE_CLIMBING:
-            if (delta_dist_m > 0.0f) {
-                ctx->current_hump_rise_m += sinf(ctx->pitch_deg * DEG_TO_RAD) * delta_dist_m;
-            }
-            if (ctx->pitch_deg < PITCH_CLIMB_THRESH_DEG && ctx->pitch_deg > PITCH_DESC_THRESH_DEG) {
-                ctx->state = TERRAIN_STATE_CRESTING;
-            }
-            break;
-
-        case TERRAIN_STATE_CRESTING:
-            if (ctx->pitch_deg < PITCH_DESC_THRESH_DEG) {
-                ctx->state = TERRAIN_STATE_DESCENDING;
-            } else if (fabsf(ctx->pitch_deg) < 2.0f) {
-                /* Premature flatten without descent */
-                ctx->state = TERRAIN_STATE_FLAT;
-            }
-            break;
-
-        case TERRAIN_STATE_DESCENDING:
-            if (fabsf(ctx->pitch_deg) < 2.0f) {
-                /* Complete climb-crest-descent window finished! */
-                ctx->last_hump_height_m = ctx->current_hump_rise_m * HUMP_CALIB_FACTOR;
-                ctx->height_valid = (ctx->last_hump_height_m > 0.005f); /* >5mm minimum threshold */
-                
-                if (ctx->height_valid && (ctx->last_hump_height_m > ctx->max_hump_peak_m)) {
-                    ctx->max_hump_peak_m = ctx->last_hump_height_m;
-                }
-                ctx->state = TERRAIN_STATE_FLAT;
-            }
-            break;
-
-        case TERRAIN_STATE_IMPACT:
-            /* Latch state until system reset */
-            break;
+    if (c->state == TERRAIN_STATE_IMPACT) { return; }
+    float g = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+    bool usable = robot_config_terrain_valid() && travel_valid &&
+        isfinite(travel) && travel >= 0.0f &&
+        fabsf(g - 1.0f) <= robot_config.gravity_tolerance_g;
+    if (!usable || (c->state != TERRAIN_STATE_FLAT &&
+        (uint32_t)(now - c->hump_started_ms) >= robot_config.hump_ms))
+    {
+        terrain_algo_invalidate_window(c);
+        return;
+    }
+    float pitch_limit = robot_config.hump_pitch_deg;
+    bool raised = c->pitch_deg > pitch_limit ||
+        fabsf(c->roll_deg) > robot_config.hump_roll_deg;
+    bool baseline = fabsf(c->pitch_deg) < pitch_limit * 0.5f &&
+        fabsf(c->roll_deg) < robot_config.hump_roll_deg * 0.5f;
+    if (c->state == TERRAIN_STATE_FLAT && raised)
+    {
+        c->state = TERRAIN_STATE_CLIMBING;
+        c->window_valid = true;
+        c->height_valid = false;
+        c->hump_started_ms = now;
+        c->current_hump_rise_m = c->roll_rise_m = 0.0f;
+    }
+    if (c->state == TERRAIN_STATE_CLIMBING)
+    {
+        c->current_hump_rise_m += fmaxf(0.0f,
+            sinf(c->pitch_deg * 0.0174532925f) * travel);
+        c->roll_rise_m = fmaxf(c->roll_rise_m,
+            robot_config.track_m * 0.5f *
+            sinf(fabsf(c->roll_deg) * 0.0174532925f));
+        if (!raised) { c->state = TERRAIN_STATE_CRESTING; }
+    }
+    else if (c->state == TERRAIN_STATE_CRESTING)
+    {
+        if (c->pitch_deg < -pitch_limit ||
+            (c->roll_rise_m > 0.0f && baseline))
+        {
+            c->state = TERRAIN_STATE_DESCENDING;
+        }
+    }
+    else if (c->state == TERRAIN_STATE_DESCENDING && baseline)
+    {
+        float height = robot_config.height_factor * c->current_hump_rise_m +
+            robot_config.roll_height_factor * c->roll_rise_m;
+        c->height_valid = c->window_valid && isfinite(height) && height > 0.0f;
+        if (c->height_valid)
+        {
+            c->last_hump_height_m = height;
+            c->max_hump_peak_m = fmaxf(c->max_hump_peak_m, height);
+        }
+        c->state = TERRAIN_STATE_FLAT;
     }
 }
-
-void terrain_algo_reset_run_peak(TerrainContext *ctx) {
-    ctx->max_hump_peak_m = 0.0f;
+void terrain_algo_reset_run_peak(TerrainContext *c)
+{
+    c->max_hump_peak_m = c->last_hump_height_m = 0.0f;
+    terrain_algo_invalidate_window(c);
 }

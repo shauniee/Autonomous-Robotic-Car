@@ -24,6 +24,8 @@ typedef struct
     int servo_right_sign;
     uint32_t servo_settle_ms, sonar_repeat_ms, scan_ms;
     float sonar_min_m, sonar_max_m;
+    uint8_t lateral_axis, forward_axis, vertical_axis;
+    int lateral_sign, forward_sign, vertical_sign;
     float height_factor, roll_height_factor, gravity_tolerance_g;
     float impact_g, hump_pitch_deg, hump_roll_deg;
     uint32_t hump_ms;

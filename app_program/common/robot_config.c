@@ -8,6 +8,8 @@
 const RobotConfig robot_config = {
     .left_encoder_sign = 1, .right_encoder_sign = 1,
     .left_forward_a = true, .right_forward_a = true,
+    .lateral_axis = 0u, .forward_axis = 1u, .vertical_axis = 2u,
+    .lateral_sign = 1, .forward_sign = 1, .vertical_sign = 1,
     .sonar_repeat_ms = 60u, .servo_settle_ms = 300u,
     .scan_ms = 6000u, .action_ms = 5000u, .hump_ms = 6000u
 };
@@ -54,7 +56,15 @@ bool robot_config_sonar_valid(void)
 bool robot_config_terrain_valid(void)
 {
     const RobotConfig *c = &robot_config;
-    return c->terrain_confirmed && positive(c->height_factor) &&
+    return c->terrain_confirmed && c->lateral_axis < 3u &&
+        c->forward_axis < 3u && c->vertical_axis < 3u &&
+        c->lateral_axis != c->forward_axis &&
+        c->forward_axis != c->vertical_axis &&
+        c->lateral_axis != c->vertical_axis &&
+        (c->lateral_sign == 1 || c->lateral_sign == -1) &&
+        (c->forward_sign == 1 || c->forward_sign == -1) &&
+        (c->vertical_sign == 1 || c->vertical_sign == -1) &&
+        positive(c->height_factor) &&
         isfinite(c->roll_height_factor) && c->roll_height_factor >= 0.0f &&
         positive(c->gravity_tolerance_g) && c->gravity_tolerance_g < 0.5f &&
         positive(c->impact_g) && c->impact_g <= 2.0f &&

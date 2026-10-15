@@ -1,84 +1,117 @@
-/*
- * task_terrain.c - 20 ms periodic task executing under micro T-Kernel.
- */
-
 #include "task_terrain.h"
-#include "drv_gy511.h"
-#include "terrain_algo.h"
 #include "subsystem4.h"
 #include "../subsystem2/subsystem2.h"
-
-#define TERRAIN_PERIOD_MS   20u
-
-static TerrainContext s_ctx;
-
-void terrain_task(INT stacd, void *exinf) {
-    (void)stacd; (void)exinf;
-
-    terrain_algo_init(&s_ctx);
-    bool hw_ok = drv_gy511_init();
-
-    /* Startup calibration: collect 100 samples while resting (2.0s timeout guard) */
-    uint32_t calib_attempts = 0;
-    while (!s_ctx.is_calibrated && calib_attempts < 200) {
+#include "../common/robot_time.h"
+#include <math.h>
+void terrain_task(INT stacd, void *exinf)
+{
+    (void)stacd;
+    (void)exinf;
+    TerrainContext context;
+    terrain_algo_init(&context);
+    bool hardware = drv_gy511_init();
+    TerrainSnapshot snapshot = {0};
+    uint32_t next = 0u, calibration_started = 0u;
+    float previous_distance = 0.0f, previous_yaw = 0.0f;
+    uint32_t previous_sequence = 0u, previous_time = 0u;
+    for (;;)
+    {
+        uint32_t now;
+        if (!robot_now_ms(&now)) { (void)s2_stop(); return; }
+        MotionFeedback motion = {0};
+        bool motion_ok = s2_feedback_copy(&motion) >= E_OK &&
+            motion.valid && now - motion.sampled_ms <= 60u;
+        uint32_t epoch;
+        bool new_run;
+        if (s4_take_reset(&epoch, &new_run))
+        {
+            float maximum = context.max_hump_peak_m;
+            if (context.state == TERRAIN_STATE_IMPACT)
+            {
+                terrain_algo_init(&context);
+                if (!new_run) { context.max_hump_peak_m = maximum; }
+                calibration_started = now;
+            }
+            if (new_run) { terrain_algo_reset_run_peak(&context); }
+            snapshot.run_epoch = epoch;
+            previous_sequence = 0u;
+        }
         Gy511RawAxes raw = {0};
-        if (hw_ok && drv_gy511_read_accel(&raw)) {
-            terrain_algo_calibrate_sample(&s_ctx, &raw);
-        }
-        calib_attempts++;
-        tk_dly_tsk(10);
-    }
-
-    for (;;) {
-        Gy511RawAxes raw_accel = {0};
-        bool read_ok = hw_ok && drv_gy511_read_accel(&raw_accel);
-
-        if (read_ok) {
-            /* Estimate incremental forward travel (at 0.20 m/s cruise, 20ms = 0.004 m) */
-            float delta_d = 0.004f; 
-            terrain_algo_process(&s_ctx, &raw_accel, delta_d);
-
-            /* If collision detected, directly invoke Safety Stop on Buddy 2 */
-            if (s_ctx.state == TERRAIN_STATE_IMPACT) {
-                s2_stop();
+        Gy511Result result = hardware ? drv_gy511_poll_accel(&raw) : GY511_ERROR;
+        if (result == GY511_NEW)
+        {
+            if (!context.is_calibrated)
+            {
+                if (calibration_started == 0u) { calibration_started = now; }
+                if (motion_ok && motion.stationary)
+                {
+                    (void)terrain_algo_calibrate_sample(&context, &raw);
+                }
+                else
+                {
+                    context.calib_count = 0u;
+                    context.calib_sum = (Vec3f){0};
+                }
             }
-
-            /* Update shared snapshot for Mission and Telemetry */
-            TerrainSnapshot snap;
-            snap.timestamp_ms = (uint32_t)in_w(TIMER_TIMERAWL) / 1000u;
-            snap.terrain_valid = true;
-            snap.accel_x_g = s_ctx.filtered_accel.x;
-            snap.accel_y_g = s_ctx.filtered_accel.y;
-            snap.accel_z_g = s_ctx.filtered_accel.z;
-            snap.pitch_deg = s_ctx.pitch_deg;
-            snap.roll_deg = s_ctx.roll_deg;
-            snap.state = s_ctx.state;
-            snap.height_valid = s_ctx.height_valid;
-            snap.last_hump_height_m = s_ctx.last_hump_height_m;
-            snap.max_hump_peak_m = s_ctx.max_hump_peak_m;
-
-            s4_publish_snapshot(&snap);
-
-            /* Telemetry stream (every 200 ms / 10 cycles) for serial monitor & MQTT */
-            static uint32_t s_telemetry_counter = 0;
-            if ((++s_telemetry_counter % 10u) == 0u) {
-                int x_mg = (int)(s_ctx.filtered_accel.x * 1000.0f);
-                int y_mg = (int)(s_ctx.filtered_accel.y * 1000.0f);
-                int z_mg = (int)(s_ctx.filtered_accel.z * 1000.0f);
-                int pitch_x10 = (int)(s_ctx.pitch_deg * 10.0f);
-                int roll_x10 = (int)(s_ctx.roll_deg * 10.0f);
-                int hump_mm = (int)(s_ctx.max_hump_peak_m * 1000.0f);
-                tm_printf((UB*)"[MQTT_XYZ] X=%d Y=%d Z=%d PITCH=%d ROLL=%d STATE=%d HUMP=%d\n",
-                          x_mg, y_mg, z_mg, pitch_x10, roll_x10, (int)s_ctx.state, hump_mm);
-            }
-        } else {
-            /* Mark sensor invalid if I2C timed out */
-            TerrainSnapshot snap = {0};
-            snap.terrain_valid = false;
-            s4_publish_snapshot(&snap);
+            float distance = (motion.left_m + motion.right_m) * 0.5f;
+            float travel = previous_sequence != 0u ?
+                distance - previous_distance : 0.0f;
+            bool travel_ok = motion_ok && previous_sequence != 0u &&
+                motion.sequence != previous_sequence &&
+                now - previous_time <= 60u &&
+                fabsf(motion.left_mps - motion.right_mps) <=
+                    robot_config.search_mps;
+            terrain_algo_process(&context, &raw, travel, travel_ok, now);
+            snapshot.timestamp_ms = now;
+            ++snapshot.sequence;
+            snapshot.calibrated = context.is_calibrated;
+            snapshot.terrain_valid = context.is_calibrated;
+            snapshot.accel_x_g = context.filtered_accel.x;
+            snapshot.accel_y_g = context.filtered_accel.y;
+            snapshot.accel_z_g = context.filtered_accel.z;
+            snapshot.pitch_deg = context.pitch_deg;
+            snapshot.roll_deg = context.roll_deg;
+            snapshot.state = context.state;
+            snapshot.height_valid = context.height_valid;
+            snapshot.last_hump_height_m = context.last_hump_height_m;
+            snapshot.max_hump_peak_m = context.max_hump_peak_m;
+            snapshot.turn_rate_deg_s = travel_ok ?
+                (motion.yaw_deg - previous_yaw) * 1000.0f /
+                    (float)(now - previous_time) : 0.0f;
+            snapshot.movement = motion.stationary ? TERRAIN_STATIONARY :
+                fabsf(snapshot.turn_rate_deg_s) > 5.0f ? TERRAIN_TURNING :
+                context.state == TERRAIN_STATE_CLIMBING ? TERRAIN_CLIMB :
+                context.state == TERRAIN_STATE_DESCENDING ? TERRAIN_DESCENT :
+                context.state == TERRAIN_STATE_IMPACT ? TERRAIN_IMPACT :
+                TERRAIN_ACCELERATING;
+            previous_distance = distance;
+            previous_yaw = motion.yaw_deg;
+            previous_sequence = motion.sequence;
+            previous_time = now;
+            if (context.state == TERRAIN_STATE_IMPACT) { (void)s2_stop(); }
         }
-
-        /* Periodic sleep: block for 20 ms */
-        tk_dly_tsk(TERRAIN_PERIOD_MS);
+        else if (result == GY511_ERROR)
+        {
+            snapshot.terrain_valid = false;
+            terrain_algo_invalidate_window(&context);
+            snapshot.height_valid = false;
+        }
+        Gy511Result mag = hardware ? drv_gy511_poll_mag(&raw) : GY511_ERROR;
+        if (mag == GY511_NEW)
+        {
+            snapshot.magnetic_ms = now;
+            snapshot.magnetic_valid = true;
+            snapshot.magnetic_x_gauss = (float)raw.x / 1100.0f;
+            snapshot.magnetic_y_gauss = (float)raw.y / 1100.0f;
+            snapshot.magnetic_z_gauss = (float)raw.z / 980.0f;
+        }
+        else if (mag == GY511_ERROR) { snapshot.magnetic_valid = false; }
+        if (now - snapshot.timestamp_ms > 250u) { snapshot.terrain_valid = false; }
+        if (now - snapshot.magnetic_ms > 250u) { snapshot.magnetic_valid = false; }
+        (void)s4_publish_snapshot(&snapshot);
+        if (next == 0u) { next = now; }
+        next += 20u;
+        if (robot_due(now, next)) { next = now + 20u; }
+        if (tk_dly_tsk(next - now) < E_OK) { (void)s2_stop(); return; }
     }
 }

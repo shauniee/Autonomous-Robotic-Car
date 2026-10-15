@@ -17,6 +17,8 @@
 #define REG_MR_REG_M        0x02u
 #define REG_OUT_X_H_M       0x03u
 
+static uint32_t transaction_started;
+
 /* Microsecond timer helper */
 static inline uint32_t get_time_us(void) {
     return in_w(TIMER_TIMERAWL);
@@ -31,7 +33,8 @@ static bool wait_i2c_status(uint32_t mask, bool match_set, uint32_t timeout_us) 
         if (condition == match_set) {
             return true;
         }
-        if ((uint32_t)(get_time_us() - start) >= timeout_us) {
+        if ((uint32_t)(get_time_us() - start) >= timeout_us ||
+            (get_time_us() - transaction_started) >= GY511_TIMEOUT_US) {
             return false;
         }
     }
@@ -49,6 +52,7 @@ static bool i2c0_write_byte(uint8_t byte, bool stop_bit) {
 
 /* Write single register to slave */
 static bool i2c0_write_reg(uint8_t slave_addr, uint8_t reg, uint8_t val) {
+    transaction_started = get_time_us();
     out_w(I2C0_BASE + I2Cx_ENABLE, 0);                 /* Disable to set target */
     out_w(I2C0_BASE + I2Cx_TAR, slave_addr);
     out_w(I2C0_BASE + I2Cx_ENABLE, 1);                 /* Enable */
@@ -62,6 +66,7 @@ static bool i2c0_write_reg(uint8_t slave_addr, uint8_t reg, uint8_t val) {
 
 /* Read multi-byte buffer from slave */
 static bool i2c0_read_buffer(uint8_t slave_addr, uint8_t reg, uint8_t *buf, uint8_t len) {
+    transaction_started = get_time_us();
     out_w(I2C0_BASE + I2Cx_ENABLE, 0);
     out_w(I2C0_BASE + I2Cx_TAR, slave_addr);
     out_w(I2C0_BASE + I2Cx_ENABLE, 1);
@@ -106,6 +111,7 @@ bool drv_gy511_init(void) {
     }
 
     /* 3. Configure Synopsys I2C0 controller (400 kHz Fast Mode at 125 MHz sys_clk) */
+    transaction_started = get_time_us();
     out_w(I2C0_BASE + I2Cx_ENABLE, 0);
     out_w(I2C0_BASE + I2Cx_CON, I2C_CON_MASTER_MODE | I2C_CON_SPEED_FAST | 
                                 I2C_CON_RESTART_EN | I2C_CON_SLAVE_DISABLE | I2C_CON_TX_EMPTY_CTRL);
@@ -117,18 +123,19 @@ bool drv_gy511_init(void) {
     out_w(I2C0_BASE + I2Cx_ENABLE, 1);
 
     /* 4. Configure Accelerometer: 100 Hz, all axes enabled, +/- 2g High Res */
-    if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG1_A, 0x57u)) return false;
-    if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG4_A, 0x08u)) return false;
+    if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG1_A, 0x47u)) return false;
+    if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG4_A, 0x88u)) return false;
 
     /* 5. Configure Magnetometer: 30 Hz, continuous mode */
-    i2c0_write_reg(GY511_I2C_ADDR_MAG, REG_CRA_REG_M, 0x14u);
-    i2c0_write_reg(GY511_I2C_ADDR_MAG, REG_CRB_REG_M, 0x20u);
-    i2c0_write_reg(GY511_I2C_ADDR_MAG, REG_MR_REG_M, 0x00u);
+    if (!i2c0_write_reg(GY511_I2C_ADDR_MAG, REG_CRA_REG_M, 0x14u)) return false;
+    if (!i2c0_write_reg(GY511_I2C_ADDR_MAG, REG_CRB_REG_M, 0x20u)) return false;
+    if (!i2c0_write_reg(GY511_I2C_ADDR_MAG, REG_MR_REG_M, 0x00u)) return false;
 
     return true;
 }
 
 bool drv_gy511_read_accel(Gy511RawAxes *out_raw) {
+    if (out_raw == NULL) { return false; }
     uint8_t buf[6] = {0};
     /* Auto-increment bit 7 required on LSM303 */
     if (!i2c0_read_buffer(GY511_I2C_ADDR_ACCEL, REG_OUT_X_L_A | REG_AUTO_INC_A, buf, 6)) {
@@ -141,6 +148,7 @@ bool drv_gy511_read_accel(Gy511RawAxes *out_raw) {
 }
 
 bool drv_gy511_read_mag(Gy511RawAxes *out_raw) {
+    if (out_raw == NULL) { return false; }
     uint8_t buf[6] = {0};
     if (!i2c0_read_buffer(GY511_I2C_ADDR_MAG, REG_OUT_X_H_M, buf, 6)) {
         return false;
@@ -149,4 +157,24 @@ bool drv_gy511_read_mag(Gy511RawAxes *out_raw) {
     out_raw->z = (int16_t)((buf[2] << 8) | buf[3]);
     out_raw->y = (int16_t)((buf[4] << 8) | buf[5]);
     return true;
+}
+
+Gy511Result drv_gy511_poll_accel(Gy511RawAxes *out)
+{
+    uint8_t status;
+    if (out == NULL || !i2c0_read_buffer(GY511_I2C_ADDR_ACCEL,
+        0x27u, &status, 1u)) { return GY511_ERROR; }
+    if ((status & 0x80u) != 0u) { return GY511_ERROR; }
+    if ((status & 8u) == 0u) { return GY511_WAIT; }
+    return drv_gy511_read_accel(out) ? GY511_NEW : GY511_ERROR;
+}
+Gy511Result drv_gy511_poll_mag(Gy511RawAxes *out)
+{
+    uint8_t status;
+    if (out == NULL || !i2c0_read_buffer(GY511_I2C_ADDR_MAG,
+        0x09u, &status, 1u)) { return GY511_ERROR; }
+    if ((status & 1u) == 0u) { return GY511_WAIT; }
+    if (!drv_gy511_read_mag(out) || out->x == -4096 ||
+        out->y == -4096 || out->z == -4096) { return GY511_ERROR; }
+    return GY511_NEW;
 }
