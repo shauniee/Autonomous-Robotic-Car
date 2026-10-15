@@ -52,7 +52,7 @@ void subsystem5_test(void)
     profile_rejects = !s5_profile_build_config(&malformed, &cfg) && profile_rejects;
     malformed.rays[2].angle_deg = 60.0f;
     TEST_CHECK("S5-U07", profile_rejects && s5_profile_build_config(&malformed, &cfg),
-               "profile rejects insufficient/oversized scans, invalid Echo range and out-of-envelope angle");
+               "profile rejects insufficient/oversized scans, invalid Echo range and angles beyond its +/-60 degree bound");
     bool lifecycle = true;
     for (unsigned cancel = 0u; cancel < 2u; ++cancel)
         for (unsigned expired = 0u; expired < 2u; ++expired)
