@@ -266,14 +266,21 @@ void subsystem2_test(void)
     TEST_CHECK("S2-U18", bench_valid,
                "bounded bench command runs only before its exact deadline then brakes");
 
-    MotionCommand invalid_mode = fresh;
+    MotionCommand mode_base = {.action_id = 1u,
+                               .run_epoch = 4u,
+                               .mode = MOTION_SPEED,
+                               .sampled_ms = 100u,
+                               .issued_ms = 100u,
+                               .expires_ms = 160u};
+    bool modes = motion_command_valid(&mode_base, 100u, 4u, &cfg);
+    MotionCommand invalid_mode = mode_base;
     invalid_mode.mode = (MotionMode)99;
-    bool modes = !motion_command_valid(&invalid_mode, 100u, 4u, &cfg);
-    invalid_mode = fresh;
+    modes = modes && !motion_command_valid(&invalid_mode, 100u, 4u, &cfg);
+    invalid_mode = mode_base;
     invalid_mode.mode = MOTION_SPEED;
     invalid_mode.left_mps = cfg.speed_max_mps + 0.01f;
     modes = modes && !motion_command_valid(&invalid_mode, 100u, 4u, &cfg);
-    invalid_mode = fresh;
+    invalid_mode = mode_base;
     invalid_mode.mode = MOTION_DISTANCE;
     invalid_mode.target = 5.01f;
     invalid_mode.speed_mps = 0.1f;
