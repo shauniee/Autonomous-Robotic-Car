@@ -260,6 +260,32 @@ static bool calibration_fault_test(void)
     return pass && reverse.valid && reverse.error < 0.0f;
 }
 
+static bool ir_line_classification_test(void)
+{
+    IrCalibration cal = {.black = {3000u, 3000u}, .white = {500u, 500u},
+                         .black_set = true, .white_set = true};
+    IrReading white = ir_tracking_reading((IrRaw){500u, 500u}, &cal);
+    IrReading black = ir_tracking_reading((IrRaw){3000u, 3000u}, &cal);
+    IrReading center = ir_tracking_reading((IrRaw){1750u, 1750u}, &cal);
+    IrReading invalid = ir_tracking_reading((IrRaw){4096u, 1000u}, &cal);
+    bool pass = white.valid && white.left_fraction == 0.0f &&
+                black.valid && black.left_fraction == 1.0f &&
+                center.valid && center.left_fraction > 0.49f &&
+                center.left_fraction < 0.51f && !invalid.valid;
+    pass = ir_tracking_classify(white, IR_LINE_VISIBLE) == IR_LINE_LOST && pass;
+    pass = ir_tracking_classify(white, IR_LINE_LOST) == IR_LINE_LOST && pass;
+    pass = ir_tracking_classify(center, IR_LINE_LOST) == IR_LINE_VISIBLE && pass;
+    pass = ir_tracking_classify(black, IR_LINE_VISIBLE) == IR_LINE_BROAD_BLACK && pass;
+    pass = ir_tracking_classify(invalid, IR_LINE_VISIBLE) == IR_LINE_UNKNOWN && pass;
+    IrTracker tracker;
+    ir_tracking_init(&tracker);
+    tracker.calibration = cal;
+    ir_tracking_sample(&tracker, (IrRaw){4096u, 1000u}, true, 20u);
+    IrTrackingOutput output = ir_tracking_output(&tracker, 20u);
+    return pass && !output.valid && output.steering == 0.0f &&
+           output.line == IR_LINE_UNKNOWN;
+}
+
 static bool mission_guard_test(void)
 {
     RobotConfig cfg = fixture_config();
@@ -389,6 +415,8 @@ void subsystem3_test(void)
                "barcode mapping validation, replacement admission, rejection, fault and reset lifecycle");
     TEST_CHECK("S3-U21", mission_guard_test(),
                "mission freshness, stopped mapping gate, dwell sequence and confirmed course safety predicates");
+    TEST_CHECK("S3-U22", ir_line_classification_test(),
+               "IR normalization endpoints/midpoint, hysteresis classes, invalid raw rejection and zero guidance");
     TEST_SUMMARY("subsystem3");
 }
 #endif
