@@ -131,6 +131,38 @@ void subsystem4_test(void)
                    c.roll_deg > 1.0f && c.roll_deg < 1.4f,
                "axis/sign mapping converts raw milli-g into calibrated pitch and roll");
 
+    S4Calibration identity_cal;
+    terrain_calibration_begin(&identity_cal, &c, 41u, 5000u, 0u);
+    terrain_calibration_step(&identity_cal, &c, &raw, GY511_NEW, false, 20u);
+    bool calibration_lifecycle =
+        identity_cal.request_id == 41u &&
+        identity_cal.reason == S4_CAL_MOVING &&
+        identity_cal.status == S4_CAL_FAILED;
+    terrain_calibration_begin(&identity_cal, &c, 42u, 5000u, 0u);
+    Gy511RawAxes bad_gravity = {0, 0, 1200};
+    terrain_calibration_step(&identity_cal, &c, &bad_gravity, GY511_NEW, true,
+                             20u);
+    calibration_lifecycle =
+        calibration_lifecycle && identity_cal.request_id == 42u &&
+        identity_cal.reason == S4_CAL_GRAVITY && !c.is_calibrated;
+    terrain_calibration_begin(&identity_cal, &c, 43u, 5000u, 0u);
+    terrain_calibration_step(&identity_cal, &c, &raw, GY511_NEW, true, 20u);
+    terrain_calibration_cancel(&identity_cal, &c);
+    calibration_lifecycle =
+        calibration_lifecycle && identity_cal.request_id == 43u &&
+        identity_cal.status == S4_CAL_CANCELLED &&
+        identity_cal.reason == S4_CAL_STOP && !c.is_calibrated;
+    terrain_calibration_begin(&identity_cal, &c, 44u, 5000u, 0u);
+    for (unsigned i = 1u; i <= 100u; ++i)
+    {
+        terrain_calibration_step(&identity_cal, &c, &raw, GY511_NEW, true,
+                                 i * 20u);
+    }
+    TEST_CHECK("S4-U12",
+               calibration_lifecycle && identity_cal.request_id == 44u &&
+                   identity_cal.status == S4_CAL_DONE && c.is_calibrated,
+               "request identity, stationarity/gravity rejection, abort and fresh-request recovery");
+
     TEST_SUMMARY("subsystem4");
 }
 #endif
