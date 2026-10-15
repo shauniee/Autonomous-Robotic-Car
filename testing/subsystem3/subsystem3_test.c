@@ -4,6 +4,7 @@
 #include "../../app_program/subsystem3/joint_calibration.h"
 #include "../../app_program/subsystem3/ir_tracking_calibration.h"
 #include "../../app_program/subsystem3/barcode_service.h"
+#include "../../app_program/subsystem3/mission_guards.h"
 #include "../fixture_config.h"
 #include "code39_vectors.h"
 #include <math.h>
@@ -259,6 +260,56 @@ static bool calibration_fault_test(void)
     return pass && reverse.valid && reverse.error < 0.0f;
 }
 
+static bool mission_guard_test(void)
+{
+    RobotConfig cfg = fixture_config();
+    S3IrSnapshot ir = {.sampled_ms = 100u, .sequence = 1u,
+                       .normalized_valid = true, .line = IR_LINE_BROAD_BLACK,
+                       .capture_kind = IR_CAPTURE_NONE};
+    MotionFeedback motion = {.sampled_ms = 100u, .sequence = 1u, .run_epoch = 4u,
+                             .valid = true, .encoder = {.valid = true},
+                             .encoder_quiet = true};
+    MotionHealth health = {.serviced_ms = 100u, .sequence = 1u, .run_epoch = 4u,
+                           .stopped = true, .brake_acknowledged = true};
+    TerrainSnapshot terrain = {.timestamp_ms = 100u, .terrain_valid = true,
+                                .calibrated = true, .state = TERRAIN_STATE_FLAT};
+    bool pass = mission_sensors_ready(100u, &ir, &motion, &terrain) &&
+                mission_mapping_stopped(100u, &motion, &health);
+    pass = !mission_sensors_ready(161u, &ir, &motion, &terrain) &&
+           mission_sensors_ready(100u, &ir, &motion, &terrain) && pass;
+    ir.capture_kind = IR_CAPTURE_BLACK;
+    pass = !mission_sensors_ready(100u, &ir, &motion, &terrain) && pass;
+    ir.capture_kind = IR_CAPTURE_NONE;
+    terrain.state = TERRAIN_STATE_IMPACT;
+    pass = !mission_sensors_ready(100u, &ir, &motion, &terrain) && pass;
+    terrain.state = TERRAIN_STATE_FLAT;
+    health.brake_acknowledged = false;
+    pass = !mission_mapping_stopped(100u, &motion, &health) && pass;
+    health.brake_acknowledged = true;
+    health.run_epoch++;
+    pass = !mission_mapping_stopped(100u, &motion, &health) && pass;
+    MissionDwell dwell = {0};
+    uint32_t first = mission_broad_observe(&dwell, &ir, 100u);
+    uint32_t repeated = mission_broad_observe(&dwell, &ir, 110u);
+    ir.sampled_ms = 120u; ir.sequence = 2u;
+    uint32_t held = mission_broad_observe(&dwell, &ir, 120u);
+    pass = first == 0u && repeated == 0u && held == 20u && pass;
+    ir.sequence = 4u; ir.sampled_ms = 140u;
+    pass = mission_broad_observe(&dwell, &ir, 140u) == 0u && dwell.count == 1u && pass;
+    cfg.course_confirmed = false;
+    pass = !mission_junction_check(&cfg, 0.1f, 1000u) &&
+           !mission_finish_check(&cfg, cfg.finish_after_actions, 1.0f, 10000u) && pass;
+    cfg.course_confirmed = true;
+    pass = mission_junction_check(&cfg, cfg.junction_min_m, cfg.junction_hold_ms) &&
+           !mission_junction_check(&cfg, cfg.junction_max_m + 0.01f, cfg.junction_hold_ms) &&
+           mission_finish_check(&cfg, cfg.finish_after_actions, cfg.finish_min_m, cfg.finish_black_ms) &&
+           !mission_finish_check(&cfg, cfg.finish_after_actions - 1u, cfg.finish_min_m, cfg.finish_black_ms) &&
+           mission_pivot_radius(&cfg) > cfg.clearance_m &&
+           mission_obstacle_trigger(&cfg) > mission_pivot_radius(&cfg) && pass;
+    ir.normalized_valid = false;
+    return pass && mission_broad_observe(&dwell, &ir, 140u) == 0u && dwell.count == 0u;
+}
+
 void subsystem3_test(void)
 {
     TEST_INIT();
@@ -336,6 +387,8 @@ void subsystem3_test(void)
                "IR calibration admission, wrapped timeout, duplicate/invalid samples and polarity");
     TEST_CHECK("S3-U20", barcode_mapping_test(),
                "barcode mapping validation, replacement admission, rejection, fault and reset lifecycle");
+    TEST_CHECK("S3-U21", mission_guard_test(),
+               "mission freshness, stopped mapping gate, dwell sequence and confirmed course safety predicates");
     TEST_SUMMARY("subsystem3");
 }
 #endif
