@@ -326,6 +326,7 @@ static bool barcode_rejection_test(void)
     pass = barcode_decode(widths, &cfg.barcode, &symbol, &orientation) == BARCODE_BAD_WIDTH && pass;
     alphabet_frame(0u, 1u, false, widths);
     widths[9] = 3000u;
+    widths[1] = 1000u; /* Preserve nine-wide population to isolate the separator rule. */
     pass = barcode_decode(widths, &cfg.barcode, &symbol, &orientation) == BARCODE_BAD_FRAME && pass;
     cfg.barcode.width_tolerance_milli = 500u;
     pass = barcode_decode(widths, &cfg.barcode, &symbol, &orientation) == BARCODE_BAD_CONFIG && pass;
