@@ -1,0 +1,108 @@
+{
+  "date": "2026-10-15",
+  "tester": "Codex automated compiler/build/repository inspection",
+  "source_revision": "c5e1832d2c8c6d1206feaae1ff58f0da83f240e8",
+  "branch": "uat",
+  "main_revision": "c6c4ef978da606ca913a79d58bd99e3187eb108e",
+  "main_unchanged": true,
+  "all_development_branches_included": true,
+  "methods": {
+    "four_sequential_target_builds": "PASS",
+    "normal_fixture_exclusion": "PASS",
+    "strict_target_object_checks": {
+      "count": 54,
+      "result": "PASS"
+    },
+    "portable_json_encoder_on_laptop": {
+      "cases": 11,
+      "result": "PASS",
+      "source_revision": "8592a1bf860cd245264cdb6bf2d6d7a14fb129fe",
+      "module_bytes_unchanged_at_final_revision": true,
+      "pico_execution": false
+    },
+    "helper_local_input_validation": {
+      "cases": 12,
+      "result": "PASS",
+      "source_revision": "8592a1bf860cd245264cdb6bf2d6d7a14fb129fe",
+      "module_bytes_unchanged_at_final_revision": true,
+      "mqtt_or_pico_execution": false
+    },
+    "compiler_frame_estimates": "RECORDED; runtime stack margin PENDING T15",
+    "firmware_checks_on_pico": {
+      "compiled_ids": 37,
+      "executed_ids": 0,
+      "result": "PENDING"
+    },
+    "physical_scenarios_T01_T16": "PENDING"
+  },
+  "configuration": {
+    "robot_config_sha256": "db801f4f63b4a9b4af4fa49b85c84fb5ffdbf0b75a84b54ccb4d4c4c4452e01e",
+    "motion_confirmed": false,
+    "terrain_confirmed": false,
+    "sonar_confirmed": false,
+    "course_confirmed": false,
+    "electrical_confirmed": false,
+    "commissioning": "disabled",
+    "joint_calibration_deadline_ms": 5000,
+    "joint_imu_distinct_samples": 100,
+    "short_loss_recovery_ms": 500,
+    "ir_motion_freshness_ms": 60,
+    "terrain_front_freshness_ms": 250,
+    "telemetry_max_bytes": 1536,
+    "mqtt_output_ring_bytes": 2048,
+    "mapping": "4 distinct letters / 4 distinct actions, other 22 unmapped, stopped-only MQTT replacement, RAM-only",
+    "measured_hardware_calibration": "PENDING; synthetic fixture values are not robot settings"
+  },
+  "hardware": {
+    "pico_detection": {
+      "usb_serial": [],
+      "bootsel_volumes": []
+    },
+    "power_during_checks": "Pico not connected; software tools ran on laptop",
+    "robot_measurements": null,
+    "mapping_request_or_live_revision": null
+  },
+  "images": {
+    "offline-test": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_test.uf2",
+      "sha256": "ef60a3b3fa2dc37f31699145cfd789541eb8fbb5fe23bd28a5aea403dcb49405",
+      "bytes": 730112
+    },
+    "offline-normal": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi.uf2",
+      "sha256": "1bd0adb04881f8b378a8f640acac64fd9f2c07bc88516c688cfe83277eff8a6a",
+      "bytes": 649728
+    },
+    "wireless-test": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2",
+      "sha256": "3109c3c441642ef08cea4cc33153be0952830267b695aef4c97a2329a1539773",
+      "bytes": 848384
+    },
+    "wireless-normal": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2",
+      "sha256": "dcdf00d888f5bafb613f48f74f26f9b2be17c962419ef17138cae88bb326fbbd",
+      "bytes": 812544
+    }
+  },
+  "evidence_files": [
+    "2026-10-15_fresh-acceptance_builds.json",
+    "2026-10-15_fresh-acceptance_strict.json",
+    "2026-10-15_fresh-acceptance_stack.json",
+    "2026-10-15_fresh-acceptance_repository.json",
+    "2026-10-15_fresh-acceptance_links.json",
+    "2026-10-15_fresh-release_codec.json",
+    "2026-10-15_fresh-release_helper.json"
+  ],
+  "known_remaining_gates": [
+    "Execute all inhibited firmware fixtures on actual Pico; capture complete console output",
+    "Measure and approve electrical wiring, encoder/motor/IMU/IR/sonar/servo/body/braking configuration",
+    "Confirm issued barcode framing, junction spacing, finish rule, supported obstacle depth/boundaries and original-route assumptions before firmware freeze",
+    "Execute T01-T16 feature/fault trials and repeated complete courses; agree numerical acceptance thresholds first",
+    "Verify live MQTT mapping acknowledgement/revision, reboot/reload and changed four-letter assignments on identical frozen UF2",
+    "Complete evidence-based motion tuning/accuracy and terrain analysis reports, owner review and submission packaging"
+  ],
+  "mission_ready": false,
+  "submission_ready": false,
+  "completion_check": "Clean worktree and unchanged main are checked after the documentation/evidence commit",
+  "historical_attempt_note": "Fresh attempts and a strict failure are retained. f971a0d build metadata did not include the then-uncommitted MQTT transport diff; final reference is the accepted source/images identified here."
+}

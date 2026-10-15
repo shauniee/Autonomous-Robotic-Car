@@ -128,6 +128,12 @@ static void latch(MissionReason reason)
     DI(irq_state);
     bool already_latched =
         atomic_load_explicit(&safety_latched, memory_order_acquire);
+    if (!already_latched || reason == REASON_LOCAL_STOP ||
+        atomic_load_explicit(&safety_reason, memory_order_acquire) !=
+            REASON_LOCAL_STOP)
+    {
+        atomic_store_explicit(&safety_reason, reason, memory_order_release);
+    }
     atomic_store_explicit(&safety_latched, true, memory_order_release);
     EI(irq_state);
     if (!already_latched)
@@ -135,7 +141,6 @@ static void latch(MissionReason reason)
         (void)s2_stop();
         s5_scan_cancel();
     }
-    atomic_store_explicit(&safety_reason, reason, memory_order_release);
     atomic_store_explicit(&moving, false, memory_order_release);
 }
 static bool sensors_ok(uint32_t now, const S3IrSnapshot *ir,
@@ -251,23 +256,15 @@ static void safety_task(INT stacd, void *exinf)
 }
 static void change(MissionSnapshot *s, MissionState state, MissionReason reason)
 {
-    bool wants_motion = state == MISSION_FOLLOW_LINE ||
-                        state == MISSION_NAVIGATION ||
-                        state == MISSION_BYPASS || state == MISSION_REACQUIRE ||
-                        state == MISSION_COMMISSIONING;
-    if (wants_motion &&
-        atomic_load_explicit(&safety_latched, memory_order_acquire))
+    UW irq_state;
+    DI(irq_state);
+    if (atomic_load_explicit(&safety_latched, memory_order_acquire))
     {
         reason = (MissionReason)atomic_load_explicit(&safety_reason,
                                                      memory_order_acquire);
         state = reason == REASON_LOCAL_STOP ? MISSION_STOPPED : MISSION_FAULT;
     }
-    if (s->state != state || s->reason != reason)
-    {
-        tm_printf((UB *)"[MISSION] %s reason=%s%s\n", mission_state_name(state),
-                  mission_reason_name(reason),
-                  APP_TEST ? " MOTOR_INHIBITED" : "");
-    }
+    bool changed = s->state != state || s->reason != reason;
     s->state = state;
     s->reason = reason;
     s->moving = state == MISSION_FOLLOW_LINE || state == MISSION_NAVIGATION ||
@@ -275,9 +272,24 @@ static void change(MissionSnapshot *s, MissionState state, MissionReason reason)
                 state == MISSION_COMMISSIONING;
     atomic_store_explicit(&current_mode, state, memory_order_release);
     atomic_store_explicit(&moving, s->moving, memory_order_release);
+    EI(irq_state);
+    if (changed)
+    {
+        tm_printf((UB *)"[MISSION] %s reason=%s%s\n", mission_state_name(state),
+                  mission_reason_name(reason),
+                  APP_TEST ? " MOTOR_INHIBITED" : "");
+    }
 }
 static bool enable_motion(MotionHealth *health)
 {
+    if (drv_buttons_read().gp21_down)
+    {
+        latch(REASON_LOCAL_STOP);
+    }
+    if (atomic_load_explicit(&safety_latched, memory_order_acquire))
+    {
+        return false;
+    }
     if (health->stopped)
     {
         if (!health->brake_acknowledged || s2_reset_stop() < E_OK ||
@@ -285,6 +297,16 @@ static bool enable_motion(MotionHealth *health)
         {
             return false;
         }
+    }
+    if (drv_buttons_read().gp21_down)
+    {
+        latch(REASON_LOCAL_STOP);
+    }
+    if (atomic_load_explicit(&safety_latched, memory_order_acquire))
+    {
+        /* A stop preempting the acknowledged reset must remain stopped. */
+        (void)s2_stop();
+        return false;
     }
     return !health->stopped;
 }
@@ -422,8 +444,14 @@ static void mission_task(INT stacd, void *exinf)
                 visible_count = 0u;
                 visible_sequence = 0u;
                 s5_reset_request();
-                atomic_store_explicit(&safety_latched, false,
-                                      memory_order_release);
+                UW irq_state;
+                DI(irq_state);
+                if (!drv_buttons_read().gp21_down)
+                {
+                    atomic_store_explicit(&safety_latched, false,
+                                          memory_order_release);
+                }
+                EI(irq_state);
                 change(&s, MISSION_CALIBRATING, REASON_CONFIGURATION);
                 button_init(&button, now);
                 event = BUTTON_EVENT_NONE;
@@ -882,6 +910,7 @@ static void mission_task(INT stacd, void *exinf)
             await_mapping_revision = false;
         }
         s.mapping_revision = barcode.mapping_revision;
+        change(&s, s.state, s.reason);
         s.safety_latched =
             atomic_load_explicit(&safety_latched, memory_order_acquire);
         s.sampled_ms = now;

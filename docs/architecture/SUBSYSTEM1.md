@@ -37,3 +37,9 @@ Event replies contain schema, kind, run, after_id, count, dropped, overflow and 
 Initialize -> WiFi -> MQTT subscriptions -> Online; failure uses a 15-second attempt deadline and bounded 1-30-second backoff. Disconnect discards incomplete requests, retries outstanding acknowledgements and publishes newest observations after recovery. Healthy local autonomy continues through network loss.
 
 Modules: `telemetry_robot`, `telemetry`, `status_protocol`, `mapping_protocol`, `mapping_ack`, lifecycle `subsystem1`, and kernel `mqtt_utk`. [GUIDE](../../GUIDE.md) owns operator commands; [S1 tests](../../testing/subsystem1/TEST_LOG.md) own cases. A compiler/helper check is not Pico-originated MQTT evidence.
+
+## Laptop dashboard
+
+`scripts/mqtt_dashboard.py` subscribes to the five reporting topics and serves the buildless HTML/CSS/JavaScript under `scripts/dashboard/` over loopback HTTP. The browser polls a bounded latest-snapshot API every 500 ms. It uses the existing [Paho client](https://eclipse.dev/paho/clients/python/docs/) dependency and Python's standard HTTP server; Mosquitto does not need a WebSocket listener. Broker reconnect is automatic. The bridge never publishes MQTT messages and cannot start/reset the robot or change mappings.
+
+Retained presence is context only. A new broker session requires a fresh nonretained schema-3 snapshot and heartbeat before Robot live. Malformed/non-finite/oversized messages are rejected; current values expire in the display while accepted peaks/last scan remain historical. Browser history is bounded to 60 speed updates and 16 received encounters, reset with run identity. Numeric movement/scan/action/calibration labels follow the firmware enums. [GUIDE](../../GUIDE.md#browser-dashboard) owns setup; [web checks](../../testing/subsystem1/TEST_LOG.md#dashboard-checks) use an isolated synthetic topic root and do not replace robot acceptance.

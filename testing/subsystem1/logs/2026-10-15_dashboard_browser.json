@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-15",
+  "case": "S1-W07",
+  "tester": "Codex / in-app browser",
+  "base_revision": "67878c775d080f46ed575ab33cb6c430e07a77e9",
+  "source_sha256": {
+    "scripts/mqtt_dashboard.py": "7922d45b31b3a43fe5a95b20442221dfdf4b2484dd18d007ef0cc7bfd885d61d",
+    "scripts/dashboard/index.html": "37cb7cf74c76c90e64a60505013e578d1c7fd80e4b603ef64fec6ed20f384ea5",
+    "scripts/dashboard/style.css": "f2a15bb499a99a2f53b9c7f65cc7239f37d74d40f12d0e866471d3bbd112bfa3",
+    "scripts/dashboard/app.js": "60a340331f20a7c16a060f3d165d86e93fdc54c2df01fe407cfe32294005a779",
+    "testing/subsystem1/data/dashboard-sample.json": "99f54eb70798568f1efd7964dd1f212e03146706b5160d0d54aca8179c4fcd4c"
+  },
+  "synthetic_feed": {
+    "root": "robot/dashboard-check/3f131ad2cac8",
+    "clearly_labelled": true,
+    "values_observed": {
+      "speed_mm_s": "118",
+      "left_mm_s": "120",
+      "right_mm_s": "116",
+      "front_mm": "470",
+      "accepted_max_height_mm": "38",
+      "pitch": "5.3 degrees",
+      "roll": "-1.2 degrees",
+      "movement": "Climbing",
+      "barcode": "Z / U-turn",
+      "mapping_revision": "2"
+    },
+    "speed_chart_paths_drawn": true,
+    "desktop": {
+      "viewport_width": 1280,
+      "document_width": 1280,
+      "horizontal_overflow": false
+    },
+    "mobile": {
+      "viewport_width": 390,
+      "document_width": 390,
+      "horizontal_overflow": false
+    },
+    "payload_disclosure_expands": true,
+    "browser_errors_or_warnings": [],
+    "result": "PASS"
+  },
+  "configured_robot_topic_observation": {
+    "url": "http://127.0.0.1:8080",
+    "root": "robot/s3",
+    "broker": "127.0.0.1:1883",
+    "broker_connected": true,
+    "robot_feed": "live nonretained snapshots and heartbeat",
+    "mission_state": "CALIBRATING",
+    "reason": "configuration_pending",
+    "test_inhibited": true,
+    "run": 0,
+    "imu_calibration": "not started",
+    "samples": 0,
+    "unavailable_current_measurements": "displayed as dashes",
+    "physical_acceptance_claimed": false,
+    "note": "Observed configured-topic delivery in browser, not proof of motor/sensor accuracy or complete mission acceptance"
+  },
+  "result": "PASS"
+}

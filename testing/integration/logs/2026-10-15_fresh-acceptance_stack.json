@@ -1,0 +1,2213 @@
+{
+  "date": "2026-10-15",
+  "source_revision": "c5e1832d2c8c6d1206feaae1ff58f0da83f240e8",
+  "method": "Individual compiler stack frame estimates; not call-chain, interrupt or runtime proof",
+  "configured_stack_bytes": {
+    "application_tasks": 4096,
+    "initial_task": 4096,
+    "wireless_task": 8192
+  },
+  "largest_frames": [
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "publish_latest",
+      "bytes": 2440,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "publish_latest",
+      "bytes": 2440,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry_robot.c",
+      "TEST": 0,
+      "function": "s1_reporting_task",
+      "bytes": 1912,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry_robot.c",
+      "TEST": 1,
+      "function": "s1_reporting_task",
+      "bytes": 1912,
+      "classification": "static"
+    },
+    {
+      "source": "testing/subsystem1/subsystem1_test.c",
+      "TEST": 1,
+      "function": "subsystem1_test",
+      "bytes": 1768,
+      "classification": "static"
+    },
+    {
+      "source": "testing/subsystem3/subsystem3_test.c",
+      "TEST": 1,
+      "function": "subsystem3_test",
+      "bytes": 1704,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "mission_task",
+      "bytes": 1376,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "mission_task",
+      "bytes": 1376,
+      "classification": "static"
+    },
+    {
+      "source": "testing/subsystem4/subsystem4_test.c",
+      "TEST": 1,
+      "function": "subsystem4_test",
+      "bytes": 1000,
+      "classification": "static"
+    },
+    {
+      "source": "testing/subsystem2/subsystem2_test.c",
+      "TEST": 1,
+      "function": "subsystem2_test",
+      "bytes": 928,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/task_terrain.c",
+      "TEST": 1,
+      "function": "terrain_task",
+      "bytes": 752,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/task_terrain.c",
+      "TEST": 0,
+      "function": "terrain_task",
+      "bytes": 744,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "safety_task",
+      "bytes": 736,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "safety_task",
+      "bytes": 736,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/task_s3.c",
+      "TEST": 1,
+      "function": "task_s_task",
+      "bytes": 648,
+      "classification": "static"
+    },
+    {
+      "source": "testing/subsystem5/subsystem5_test.c",
+      "TEST": 1,
+      "function": "subsystem5_test",
+      "bytes": 552,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/task_s3.c",
+      "TEST": 0,
+      "function": "task_s_task",
+      "bytes": 520,
+      "classification": "static"
+    },
+    {
+      "source": "testing/integration/mission_test.c",
+      "TEST": 1,
+      "function": "integration_test",
+      "bytes": 480,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 1,
+      "function": "obstacle_task",
+      "bytes": 424,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 0,
+      "function": "obstacle_task",
+      "bytes": 408,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "publish_status",
+      "bytes": 296,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "publish_status",
+      "bytes": 296,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "publish_timeout",
+      "bytes": 216,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "publish_timeout",
+      "bytes": 216,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 0,
+      "function": "barcode_service_observe",
+      "bytes": 152,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 1,
+      "function": "barcode_service_observe",
+      "bytes": 152,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 0,
+      "function": "s4_calibration_request",
+      "bytes": 128,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 1,
+      "function": "s4_calibration_request",
+      "bytes": 128,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 0,
+      "function": "barcode_runtime_service",
+      "bytes": 104,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 0,
+      "function": "s5_scan_request",
+      "bytes": 104,
+      "classification": "static"
+    }
+  ],
+  "frames": [
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 0,
+      "function": "motion_valid",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 0,
+      "function": "terrain_valid",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 0,
+      "function": "sonar_valid",
+      "bytes": 32,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 0,
+      "function": "mission_valid",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 0,
+      "function": "robot_config_validate",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 0,
+      "function": "robot_config_motion_valid",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 0,
+      "function": "robot_config_sonar_valid",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 0,
+      "function": "robot_config_terrain_valid",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 0,
+      "function": "robot_config_mission_valid",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 0,
+      "function": "robot_config_terrain_check",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/run_history.c",
+      "TEST": 0,
+      "function": "run_history_reset",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/run_history.c",
+      "TEST": 0,
+      "function": "run_history_append",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 0,
+      "function": "s1_ack_reserve",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 0,
+      "function": "s1_ack_ready",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 0,
+      "function": "s1_ack_reserved",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 0,
+      "function": "s1_ack_send",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 0,
+      "function": "s1_ack_complete",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 0,
+      "function": "s1_ack_reconnect",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 0,
+      "function": "s1_topics_valid",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 0,
+      "function": "skip_space",
+      "bytes": 12,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 0,
+      "function": "token",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 0,
+      "function": "s1_status_request_reset",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 0,
+      "function": "s1_status_request_begin",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 0,
+      "function": "s1_status_request_data",
+      "bytes": 40,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 0,
+      "function": "s1_status_encode",
+      "bytes": 64,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 0,
+      "function": "s1_mapping_ack_encode",
+      "bytes": 56,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 0,
+      "function": "number",
+      "bytes": 48,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 0,
+      "function": "decimal",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 0,
+      "function": "event_record",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 0,
+      "function": "optional",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 0,
+      "function": "quoted",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 0,
+      "function": "reference",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 0,
+      "function": "integer_triple",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 0,
+      "function": "integer_pair",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 0,
+      "function": "s1_telemetry_encode",
+      "bytes": 88,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 0,
+      "function": "s1_robot_status_encode",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 0,
+      "function": "s1_events_encode",
+      "bytes": 64,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry_robot.c",
+      "TEST": 0,
+      "function": "s1_reporting_task",
+      "bytes": 1912,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 0,
+      "function": "disable_capture",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 0,
+      "function": "barcode_runtime_init",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 0,
+      "function": "s3_barcode_configure",
+      "bytes": 72,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 0,
+      "function": "s3_barcode_reset",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 0,
+      "function": "s3_barcode_begin_run",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 0,
+      "function": "s3_barcode_mapping_replace",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 0,
+      "function": "s3_barcode_faults",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 0,
+      "function": "s3_barcode_copy",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 0,
+      "function": "s3_barcode_pop",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 0,
+      "function": "barcode_runtime_service",
+      "bytes": 104,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 0,
+      "function": "barcode_runtime_shutdown",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 0,
+      "function": "reject",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 0,
+      "function": "barcode_service_init",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 0,
+      "function": "barcode_service_reset",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 0,
+      "function": "barcode_service_configure",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 0,
+      "function": "barcode_service_mapping",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 0,
+      "function": "barcode_service_reject",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 0,
+      "function": "barcode_service_fault",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 0,
+      "function": "barcode_service_check_time",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 0,
+      "function": "barcode_service_observe",
+      "bytes": 152,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 0,
+      "function": "barcode_service_pop",
+      "bytes": 20,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/ir_tracking_calibration.c",
+      "TEST": 0,
+      "function": "calibration_control_init",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/ir_tracking_calibration.c",
+      "TEST": 0,
+      "function": "calibration_control_feedback",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/ir_tracking_calibration.c",
+      "TEST": 0,
+      "function": "calibration_handle_buttons",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/joint_calibration.c",
+      "TEST": 0,
+      "function": "joint_calibration_result",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "commissioning_ready",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "change",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "latch",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "enable_motion",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "sensors_ok.isra",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "safety_task",
+      "bytes": 736,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "mission_task",
+      "bytes": 1376,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "mission_state_name",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "mission_reason_name",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "mission_copy",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "mission_mapping_valid",
+      "bytes": 12,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "mission_mapping_submit",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "mission_junction_guard",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "mission_finish_guard",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "mission_init",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "mission_start",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 0,
+      "function": "mission_release",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission_guards.c",
+      "TEST": 0,
+      "function": "mission_broad_observe",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission_guards.c",
+      "TEST": 0,
+      "function": "mission_junction_check",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission_guards.c",
+      "TEST": 0,
+      "function": "mission_finish_check",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission_guards.c",
+      "TEST": 0,
+      "function": "mission_pivot_radius",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission_guards.c",
+      "TEST": 0,
+      "function": "mission_obstacle_trigger",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/task_s3.c",
+      "TEST": 0,
+      "function": "task_s_task",
+      "bytes": 520,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 0,
+      "function": "subsystem4_init",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 0,
+      "function": "subsystem4_start",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 0,
+      "function": "s4_publish_snapshot",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 0,
+      "function": "s4_get_terrain",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 0,
+      "function": "s4_reset_request",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 0,
+      "function": "s4_take_reset",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 0,
+      "function": "s4_calibration_request",
+      "bytes": 128,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 0,
+      "function": "s4_calibration_cancel",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 0,
+      "function": "s4_take_calibration",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 0,
+      "function": "s4_snapshot_run_reset",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/task_terrain.c",
+      "TEST": 0,
+      "function": "terrain_task",
+      "bytes": 744,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 0,
+      "function": "mapped",
+      "bytes": 56,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 0,
+      "function": "terrain_algo_process_config.part.0",
+      "bytes": 64,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 0,
+      "function": "terrain_algo_init",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 0,
+      "function": "terrain_algo_calibrate_sample",
+      "bytes": 56,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 0,
+      "function": "terrain_algo_invalidate_window",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 0,
+      "function": "terrain_algo_process_config",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 0,
+      "function": "terrain_algo_reset_run_peak",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 0,
+      "function": "terrain_algo_process",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_calibration.c",
+      "TEST": 0,
+      "function": "terrain_calibration_begin",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_calibration.c",
+      "TEST": 0,
+      "function": "terrain_calibration_step",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_calibration.c",
+      "TEST": 0,
+      "function": "terrain_calibration_cancel",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_motion.c",
+      "TEST": 0,
+      "function": "terrain_motion_measure",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_motion.c",
+      "TEST": 0,
+      "function": "terrain_movement_classify",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/obstacle_profile.c",
+      "TEST": 0,
+      "function": "s5_profile_build_config",
+      "bytes": 80,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/obstacle_profile.c",
+      "TEST": 0,
+      "function": "s5_profile_build",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/obstacle_profile.c",
+      "TEST": 0,
+      "function": "s5_scan_guard",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 0,
+      "function": "servo_angle",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 0,
+      "function": "hardware_init",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 0,
+      "function": "echo_edge",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 0,
+      "function": "obstacle_task",
+      "bytes": 408,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 0,
+      "function": "s5_obstacle_copy",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 0,
+      "function": "s5_scan_request",
+      "bytes": 104,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 0,
+      "function": "s5_scan_cancel",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 0,
+      "function": "s5_reset_request",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 0,
+      "function": "subsystem5_init",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 0,
+      "function": "subsystem5_start",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "incoming_data",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "incoming_publish",
+      "bytes": 32,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "schedule_retry",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "attempt_timeout",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "publish_status",
+      "bytes": 296,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "connection_cb",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "mapping_subscribed",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "publish_done",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "acknowledgement_done",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "publish_latest",
+      "bytes": 2440,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "subscribed",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "publish_timeout",
+      "bytes": 216,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "mqtt_utk_start",
+      "bytes": 72,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "retry_timeout",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 0,
+      "function": "mqtt_utk_poll",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 1,
+      "function": "motion_valid",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 1,
+      "function": "terrain_valid",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 1,
+      "function": "sonar_valid",
+      "bytes": 32,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 1,
+      "function": "mission_valid",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 1,
+      "function": "robot_config_validate",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 1,
+      "function": "robot_config_motion_valid",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 1,
+      "function": "robot_config_sonar_valid",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 1,
+      "function": "robot_config_terrain_valid",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 1,
+      "function": "robot_config_mission_valid",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/robot_config.c",
+      "TEST": 1,
+      "function": "robot_config_terrain_check",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/run_history.c",
+      "TEST": 1,
+      "function": "run_history_reset",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/common/run_history.c",
+      "TEST": 1,
+      "function": "run_history_append",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 1,
+      "function": "s1_ack_reserve",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 1,
+      "function": "s1_ack_ready",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 1,
+      "function": "s1_ack_reserved",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 1,
+      "function": "s1_ack_send",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 1,
+      "function": "s1_ack_complete",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 1,
+      "function": "s1_ack_reconnect",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/mapping_ack.c",
+      "TEST": 1,
+      "function": "s1_topics_valid",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 1,
+      "function": "skip_space",
+      "bytes": 12,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 1,
+      "function": "token",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 1,
+      "function": "s1_status_request_reset",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 1,
+      "function": "s1_status_request_begin",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 1,
+      "function": "s1_status_request_data",
+      "bytes": 40,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 1,
+      "function": "s1_status_encode",
+      "bytes": 64,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/status_protocol.c",
+      "TEST": 1,
+      "function": "s1_mapping_ack_encode",
+      "bytes": 56,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 1,
+      "function": "number",
+      "bytes": 48,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 1,
+      "function": "decimal",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 1,
+      "function": "event_record",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 1,
+      "function": "optional",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 1,
+      "function": "quoted",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 1,
+      "function": "reference",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 1,
+      "function": "integer_triple",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 1,
+      "function": "integer_pair",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 1,
+      "function": "s1_telemetry_encode",
+      "bytes": 88,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 1,
+      "function": "s1_robot_status_encode",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry.c",
+      "TEST": 1,
+      "function": "s1_events_encode",
+      "bytes": 64,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem1/telemetry_robot.c",
+      "TEST": 1,
+      "function": "s1_reporting_task",
+      "bytes": 1912,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 1,
+      "function": "disable_capture",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 1,
+      "function": "barcode_runtime_init",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 1,
+      "function": "s3_barcode_configure",
+      "bytes": 72,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 1,
+      "function": "s3_barcode_reset",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 1,
+      "function": "s3_barcode_begin_run",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 1,
+      "function": "s3_barcode_mapping_replace",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 1,
+      "function": "s3_barcode_faults",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 1,
+      "function": "s3_barcode_copy",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 1,
+      "function": "s3_barcode_pop",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 1,
+      "function": "barcode_runtime_service",
+      "bytes": 104,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_runtime.c",
+      "TEST": 1,
+      "function": "barcode_runtime_shutdown",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 1,
+      "function": "reject",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 1,
+      "function": "barcode_service_init",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 1,
+      "function": "barcode_service_reset",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 1,
+      "function": "barcode_service_configure",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 1,
+      "function": "barcode_service_mapping",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 1,
+      "function": "barcode_service_reject",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 1,
+      "function": "barcode_service_fault",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 1,
+      "function": "barcode_service_check_time",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 1,
+      "function": "barcode_service_observe",
+      "bytes": 152,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/barcode_service.c",
+      "TEST": 1,
+      "function": "barcode_service_pop",
+      "bytes": 20,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/ir_tracking_calibration.c",
+      "TEST": 1,
+      "function": "calibration_control_init",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/ir_tracking_calibration.c",
+      "TEST": 1,
+      "function": "calibration_control_feedback",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/ir_tracking_calibration.c",
+      "TEST": 1,
+      "function": "calibration_handle_buttons",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/joint_calibration.c",
+      "TEST": 1,
+      "function": "joint_calibration_result",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "commissioning_ready",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "change",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "latch",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "enable_motion",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "sensors_ok.isra",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "safety_task",
+      "bytes": 736,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "mission_task",
+      "bytes": 1376,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "mission_state_name",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "mission_reason_name",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "mission_copy",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "mission_mapping_valid",
+      "bytes": 12,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "mission_mapping_submit",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "mission_junction_guard",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "mission_finish_guard",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "mission_init",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "mission_start",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission.c",
+      "TEST": 1,
+      "function": "mission_release",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission_guards.c",
+      "TEST": 1,
+      "function": "mission_broad_observe",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission_guards.c",
+      "TEST": 1,
+      "function": "mission_junction_check",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission_guards.c",
+      "TEST": 1,
+      "function": "mission_finish_check",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission_guards.c",
+      "TEST": 1,
+      "function": "mission_pivot_radius",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/mission_guards.c",
+      "TEST": 1,
+      "function": "mission_obstacle_trigger",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem3/task_s3.c",
+      "TEST": 1,
+      "function": "task_s_task",
+      "bytes": 648,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 1,
+      "function": "subsystem4_init",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 1,
+      "function": "subsystem4_start",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 1,
+      "function": "s4_publish_snapshot",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 1,
+      "function": "s4_get_terrain",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 1,
+      "function": "s4_reset_request",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 1,
+      "function": "s4_take_reset",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 1,
+      "function": "s4_calibration_request",
+      "bytes": 128,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 1,
+      "function": "s4_calibration_cancel",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 1,
+      "function": "s4_take_calibration",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/subsystem4.c",
+      "TEST": 1,
+      "function": "s4_snapshot_run_reset",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/task_terrain.c",
+      "TEST": 1,
+      "function": "terrain_task",
+      "bytes": 752,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 1,
+      "function": "mapped",
+      "bytes": 56,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 1,
+      "function": "terrain_algo_process_config.part.0",
+      "bytes": 64,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 1,
+      "function": "terrain_algo_init",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 1,
+      "function": "terrain_algo_calibrate_sample",
+      "bytes": 56,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 1,
+      "function": "terrain_algo_invalidate_window",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 1,
+      "function": "terrain_algo_process_config",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 1,
+      "function": "terrain_algo_reset_run_peak",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_algo.c",
+      "TEST": 1,
+      "function": "terrain_algo_process",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_calibration.c",
+      "TEST": 1,
+      "function": "terrain_calibration_begin",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_calibration.c",
+      "TEST": 1,
+      "function": "terrain_calibration_step",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_calibration.c",
+      "TEST": 1,
+      "function": "terrain_calibration_cancel",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_motion.c",
+      "TEST": 1,
+      "function": "terrain_motion_measure",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem4/terrain_motion.c",
+      "TEST": 1,
+      "function": "terrain_movement_classify",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/obstacle_profile.c",
+      "TEST": 1,
+      "function": "s5_profile_build_config",
+      "bytes": 80,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/obstacle_profile.c",
+      "TEST": 1,
+      "function": "s5_profile_build",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/obstacle_profile.c",
+      "TEST": 1,
+      "function": "s5_scan_guard",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 1,
+      "function": "servo_angle",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 1,
+      "function": "hardware_init",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 1,
+      "function": "echo_edge",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 1,
+      "function": "obstacle_task",
+      "bytes": 424,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 1,
+      "function": "s5_obstacle_copy",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 1,
+      "function": "s5_scan_request",
+      "bytes": 104,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 1,
+      "function": "s5_scan_cancel",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 1,
+      "function": "s5_reset_request",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 1,
+      "function": "subsystem5_init",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "app_program/subsystem5/subsystem5.c",
+      "TEST": 1,
+      "function": "subsystem5_start",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "incoming_data",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "incoming_publish",
+      "bytes": 32,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "schedule_retry",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "attempt_timeout",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "publish_status",
+      "bytes": 296,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "connection_cb",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "mapping_subscribed",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "publish_done",
+      "bytes": 0,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "acknowledgement_done",
+      "bytes": 16,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "publish_latest",
+      "bytes": 2440,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "subscribed",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "publish_timeout",
+      "bytes": 216,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "mqtt_utk_start",
+      "bytes": 72,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "retry_timeout",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "TEST": 1,
+      "function": "mqtt_utk_poll",
+      "bytes": 8,
+      "classification": "static"
+    },
+    {
+      "source": "testing/integration/mission_test.c",
+      "TEST": 1,
+      "function": "fixture_config",
+      "bytes": 24,
+      "classification": "static"
+    },
+    {
+      "source": "testing/integration/mission_test.c",
+      "TEST": 1,
+      "function": "integration_test",
+      "bytes": 480,
+      "classification": "static"
+    },
+    {
+      "source": "testing/subsystem1/subsystem1_test.c",
+      "TEST": 1,
+      "function": "subsystem1_test",
+      "bytes": 1768,
+      "classification": "static"
+    },
+    {
+      "source": "testing/subsystem2/subsystem2_test.c",
+      "TEST": 1,
+      "function": "subsystem2_test",
+      "bytes": 928,
+      "classification": "static"
+    },
+    {
+      "source": "testing/subsystem3/subsystem3_test.c",
+      "TEST": 1,
+      "function": "alphabet_frame",
+      "bytes": 40,
+      "classification": "static"
+    },
+    {
+      "source": "testing/subsystem3/subsystem3_test.c",
+      "TEST": 1,
+      "function": "subsystem3_test",
+      "bytes": 1704,
+      "classification": "static"
+    },
+    {
+      "source": "testing/subsystem4/subsystem4_test.c",
+      "TEST": 1,
+      "function": "subsystem4_test",
+      "bytes": 1000,
+      "classification": "static"
+    },
+    {
+      "source": "testing/subsystem5/subsystem5_test.c",
+      "TEST": 1,
+      "function": "subsystem5_test",
+      "bytes": 552,
+      "classification": "static"
+    }
+  ],
+  "runtime_stack_margin": "PENDING T15"
+}

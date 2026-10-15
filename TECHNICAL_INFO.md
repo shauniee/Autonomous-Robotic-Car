@@ -1,6 +1,6 @@
 # Technical and hardware information
 
-Project allocations are in [TEAM](TEAM.md#2-pins); operating power/flash steps are in [GETTING_STARTED](GUIDE.md#power-and-flashing). This guide owns component facts and driver reference data. Chip absolute maxima, module ratings and measured system limits are different. Unverified installed-part/calibration values are tracked once in [PROJECT_SPECS](docs/donotsubmit/PROJECT_SPECS.md#pending-decisions).
+Project allocations are in [TEAM](TEAM.md#2-pins); operating power/flash steps are in [GUIDE](GUIDE.md#power-and-flashing). This guide owns component facts and driver reference data. Chip absolute maxima, module ratings and measured system limits are different. Unverified installed-part/calibration values are tracked once in [PROJECT_SPECS](docs/donotsubmit/PROJECT_SPECS.md#pending-decisions).
 
 ## Raspberry Pi Pico W / WH
 

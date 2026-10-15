@@ -80,7 +80,25 @@ python3 scripts/mqtt_client.py monitor --broker <broker-ip>
 
 Replace `<broker-ip>` with the actual configured address. Add `--port` / `--root` for configured alternatives. Laptop authentication uses `ROBOT_MQTT_USERNAME` and `ROBOT_MQTT_PASSWORD` environment variables.
 
-Expect live text/JSON, not a graphical dashboard. Telemetry is nominally every 500 ms and heartbeat every second. The helper marks retained messages and reports missing heartbeat after three seconds. Networking does not authorize movement.
+The terminal monitor prints live text/JSON. Telemetry is nominally every 500 ms and heartbeat every second. The helper marks retained messages and reports missing heartbeat after three seconds. Networking does not authorize movement.
+
+### Browser dashboard
+
+With Mosquitto running on this Mac, start the website from `code/`:
+
+```sh
+python3 scripts/mqtt_dashboard.py
+```
+
+Open [the robot monitor](http://127.0.0.1:8080) in your browser. Keep its terminal open; Ctrl+C closes it. It uses the same MQTT dependency installed above. If another program uses port 8080, add `--web-port 8081` and open the printed address.
+
+The default broker address `127.0.0.1` means Mosquitto on this Mac. The Pico still connects to the Mac's actual LAN address configured in its firmware. If your broker is on another computer, start with `python3 scripts/mqtt_dashboard.py --broker <broker-ip>`. Topic-root/port alternatives use `--root` and `--port`, matching the terminal helper. Authentication uses the same environment variables.
+
+Expect mission state, wheel-speed traces, line sensor fractions/raw values, IMU calibration/tilt, sonar clearance, last scan, highest accepted hump and barcode encounters. The page updates automatically and has no movement or configuration controls. No firmware change is needed to use it with the existing schema-3 telemetry.
+
+Broker connected and Robot live are separate indicators. Retained presence cannot make a robot live; fresh nonretained snapshots and heartbeat are required. The page displays the latest reported values between MQTT updates, respects each payload's validity/acquisition age, and hides current readings when the live feed expires after three seconds. Accepted run maximum and last scan remain labelled historical results. A dash means unavailable, not zero. Reloading the page clears its local speed/encounter history; producer counts come from the robot.
+
+A TEST image can show `CALIBRATING` / configuration pending with blank uncalibrated readings. This confirms data delivery, not completed sensor calibration or mission readiness. [Dashboard checks](testing/subsystem1/TEST_LOG.md#dashboard-checks) distinguish synthetic broker/browser trials from observed robot-topic data.
 
 ## Every power-on: calibrate, map, start
 

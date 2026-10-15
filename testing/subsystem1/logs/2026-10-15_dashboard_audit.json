@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-15",
+  "source_revision": "327cdb2d78f9d80991898c6dee75b1e9eeffce52",
+  "result": "PASS",
+  "broker_checks": 6,
+  "browser_check": "S1-W07 PASS; see browser observation",
+  "markdown_files": 24,
+  "local_links_checked": 189,
+  "link_findings": [],
+  "main_unchanged": true,
+  "video_unchanged": true,
+  "branch": "uat",
+  "preexisting_robot_config_change_untouched": true,
+  "source_hashes_match_committed_check": true,
+  "local_url": "http://127.0.0.1:8080",
+  "firmware_changes_by_this_task": false,
+  "physical_acceptance_claimed": false
+}

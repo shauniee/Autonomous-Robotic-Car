@@ -396,7 +396,12 @@ unsigned s1_robot_status_encode(const S1Telemetry *s, uint32_t now, char *out,
 {
     static const char prefix[] = "{\"online\":true,";
     unsigned extra = sizeof(prefix) - 2u;
-    if (out == NULL || capacity <= extra + 1u)
+    if (out == NULL || capacity == 0u)
+    {
+        return 0u;
+    }
+    out[0] = '\0';
+    if (capacity <= extra + 1u)
     {
         return 0u;
     }

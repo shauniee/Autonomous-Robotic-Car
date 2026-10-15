@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-15",
+  "kind": "Laptop HTTP + real MQTT broker checks; synthetic data, no Pico proof",
+  "base_revision": "67878c775d080f46ed575ab33cb6c430e07a77e9",
+  "broker": "127.0.0.1",
+  "topic_root": "robot/dashboard-check/3f131ad2cac8",
+  "synthetic": true,
+  "source_sha256": {
+    "scripts/mqtt_dashboard.py": "7922d45b31b3a43fe5a95b20442221dfdf4b2484dd18d007ef0cc7bfd885d61d",
+    "testing/subsystem1/dashboard_check.py": "c205c8d3acbe356306e75b4e13cfc859096c6d79c91abf365b26417db94bb891"
+  },
+  "checks": [
+    {
+      "id": "S1-W01",
+      "description": "page/assets served; repository and credential paths unavailable",
+      "result": "PASS"
+    },
+    {
+      "id": "S1-W02",
+      "description": "retained presence/telemetry cannot become a live robot snapshot",
+      "result": "PASS"
+    },
+    {
+      "id": "S1-W03",
+      "description": "real broker delivery updates readings and accepted event history",
+      "result": "PASS"
+    },
+    {
+      "id": "S1-W04",
+      "description": "malformed/oversized/non-finite data cannot replace valid readings",
+      "result": "PASS"
+    },
+    {
+      "id": "S1-W05",
+      "description": "missing heartbeat/snapshots expire; offline presence wins; accepted peak retained",
+      "result": "PASS"
+    },
+    {
+      "id": "S1-W06",
+      "description": "reconnected client requires fresh telemetry and heartbeat",
+      "result": "PASS"
+    }
+  ],
+  "result": "PASS"
+}

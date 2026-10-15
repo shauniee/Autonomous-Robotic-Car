@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Live MQTT readings from the CSC01 autonomous robot.">
+  <title>CSC01 · Robot monitor</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="/" aria-label="CSC01 robot monitor home"><span class="brand-mark" aria-hidden="true">C<span>01</span></span><span>CSC01<span class="brand-sub">AUTONOMOUS ROBOT</span></span></a>
+    <div class="header-right"><span class="readonly">LIVE TELEMETRY</span><span class="status" id="robot-status" role="status">Connecting</span></div>
+  </header>
+  <main>
+    <section class="intro">
+      <div><p class="eyebrow">THE LIVE OVERVIEW</p><h1>Your robot, at a glance.</h1><p class="subtitle">From the line ahead to the highest hump. Every reading, in one place.</p></div>
+      <div class="connection"><span id="broker-status" class="connection-label">Connecting to broker</span><span id="broker-address">—</span><span id="updated">Waiting for readings</span></div>
+    </section>
+    <div class="notice" id="notice" role="status"><span class="notice-dot" aria-hidden="true"></span><span id="notice-text">Connecting to the local MQTT broker…</span></div>
+    <section class="metrics" aria-label="Mission highlights">
+      <article class="metric"><p class="label">MISSION STATE <span class="metric-icon">↗</span></p><div class="metric-value state-value" id="mission-state">Waiting</div><p id="mission-reason">The first reading will appear here.</p></article>
+      <article class="metric"><p class="label">TRAVEL SPEED <span class="metric-icon">↠</span></p><div class="metric-value"><span id="travel-speed">—</span><span class="unit">mm/s</span></div><p>Average of both encoder wheel speeds</p></article>
+      <article class="metric"><p class="label">FRONT CLEARANCE <span class="metric-icon">⌁</span></p><div class="metric-value"><span id="front-distance">—</span><span class="unit">mm</span></div><p id="front-note">Waiting for a fresh sonar reading</p></article>
+      <article class="metric accent-metric"><p class="label">HIGHEST HUMP <span class="metric-icon">⌃</span></p><div class="metric-value"><span id="max-height">—</span><span class="unit">mm</span></div><p>Greatest accepted height in this run</p></article>
+    </section>
+    <div class="main-grid">
+      <section class="panel speed-panel" aria-labelledby="speed-title"><div class="panel-heading"><div><p class="eyebrow">MOTION</p><h2 id="speed-title">Wheel speed</h2></div><div class="legend"><span class="left-key">Left <b id="left-speed">—</b></span><span class="right-key">Right <b id="right-speed">—</b></span></div></div>
+        <div class="chart"><svg id="speed-chart" viewBox="0 0 680 190" role="img" aria-label="Left and right encoder wheel speed over the last 60 updates"><g class="grid-lines"><path d="M42 24H666 M42 95H666 M42 166H666"/></g><g class="axis-labels"><text id="axis-max" x="0" y="29">—</text><text x="14" y="100">0</text><text id="axis-min" x="0" y="171">—</text></g><path id="left-trace" class="trace left-trace"/><path id="right-trace" class="trace right-trace"/></svg><div class="chart-empty" id="chart-empty">A live trace will appear when encoder data arrives.</div></div>
+        <div class="chart-caption"><span>ENCODER SPEED · mm/s</span><span>Last 60 received updates</span></div>
+        <div class="motion-details"><div><span>Distance · L / R</span><strong id="wheel-distance">—</strong></div><div><span>Heading</span><strong id="heading">—</strong></div><div><span>Action</span><strong id="motion-action">—</strong></div></div>
+      </section>
+      <section class="panel line-panel" aria-labelledby="line-title"><div class="panel-heading"><div><p class="eyebrow">LINE TRACKING</p><h2 id="line-title">Eyes on the track</h2></div><span class="small-badge" id="line-condition">Waiting</span></div>
+        <div class="sensor"><div class="sensor-heading"><span>Left sensor</span><strong id="ir-left">—</strong></div><meter id="ir-left-meter" min="0" max="1" value="0" aria-label="Left sensor black fraction"></meter><div class="sensor-scale"><span>White</span><span>Black</span></div></div>
+        <div class="sensor"><div class="sensor-heading"><span>Right sensor</span><strong id="ir-right">—</strong></div><meter id="ir-right-meter" min="0" max="1" value="0" aria-label="Right sensor black fraction"></meter><div class="sensor-scale"><span>White</span><span>Black</span></div></div>
+        <dl class="readings"><div><dt>Line error</dt><dd id="line-error">—</dd></div><div><dt>Raw · L / R</dt><dd id="ir-raw">—</dd></div><div><dt>IR calibration</dt><dd id="ir-calibration">Waiting</dd></div></dl>
+      </section>
+      <section class="panel" aria-labelledby="terrain-title"><div class="panel-heading"><div><p class="eyebrow">TERRAIN</p><h2 id="terrain-title">Under the wheels</h2></div><span class="small-badge" id="movement">Waiting</span></div>
+        <div class="angle-pair"><div><span>Pitch</span><strong id="pitch">—</strong></div><div><span>Roll</span><strong id="roll">—</strong></div></div>
+        <dl class="readings"><div><dt>Current hump</dt><dd id="current-height">—</dd></div><div><dt>Turning rate</dt><dd id="turn-rate">—</dd></div><div><dt>IMU calibration</dt><dd id="imu-calibration">Waiting</dd></div><div><dt>Samples collected</dt><dd id="imu-samples">—</dd></div></dl>
+      </section>
+      <section class="panel" aria-labelledby="obstacle-title"><div class="panel-heading"><div><p class="eyebrow">OBSTACLES</p><h2 id="obstacle-title">Space ahead</h2></div><span class="small-badge" id="scan-status">Waiting</span></div>
+        <div class="clearance-display" aria-hidden="true"><div class="clearance-line"></div><div class="robot-symbol"><span></span><i></i></div><span class="sonar-arc arc-one"></span><span class="sonar-arc arc-two"></span><span class="sonar-arc arc-three"></span></div>
+        <dl class="readings"><div><dt>Last scan width</dt><dd id="obstacle-width">—</dd></div><div><dt>Closest scan point</dt><dd id="obstacle-closest">—</dd></div><div><dt>Scan left / right clearance</dt><dd id="obstacle-gaps">—</dd></div></dl>
+      </section>
+      <section class="panel event-panel" aria-labelledby="events-title"><div class="panel-heading"><div><p class="eyebrow">ENCOUNTERS</p><h2 id="events-title">Along the way</h2></div><span class="small-badge" id="run-id">No run yet</span></div>
+        <div class="encounter-counts"><div><strong id="barcode-count">—</strong><span>barcodes</span></div><div><strong id="hump-count">—</strong><span>humps</span></div><div><strong id="mapping-revision">—</strong><span>mapping revision</span></div></div>
+        <div class="event-list" id="event-list"><p class="empty-copy">Accepted barcode and hump encounters will appear here.</p></div><p class="event-note" id="event-note">Latest accepted encounters in the current run</p>
+      </section>
+    </div>
+    <details class="payload"><summary><span>Look closer</span> Latest MQTT payload <span class="payload-arrow">↗</span></summary><pre id="raw-payload">Waiting for the first live robot snapshot.</pre></details>
+    <footer><span>CSC01 <span class="footer-separator">/</span> ROBOT MONITOR</span><span id="feed-info">Readings update automatically</span><span id="message-count">0 messages received</span></footer>
+  </main>
+</body>
+</html>

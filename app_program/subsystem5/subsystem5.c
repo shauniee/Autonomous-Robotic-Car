@@ -231,13 +231,17 @@ static void obstacle_task(INT stacd, void *exinf)
         MotionFeedback motion = {0};
         bool stationary = s2_feedback_copy(&motion) >= E_OK && motion.valid &&
                           motion.stationary && now - motion.sampled_ms <= 60u;
-        if ((scanning || (restoring && s.scan_status == SCAN_RUNNING)) &&
-            (atomic_load_explicit(&cancelled, memory_order_acquire) ||
-             robot_due(now, deadline) || !stationary))
+        bool cancel_scan =
+            atomic_load_explicit(&cancelled, memory_order_acquire);
+        bool active_scan =
+            scanning || (restoring && s.scan_status != SCAN_IDLE &&
+                         s.scan_status != SCAN_CANCELLED);
+        if (active_scan &&
+            (cancel_scan || (s.scan_status == SCAN_RUNNING &&
+                             (robot_due(now, deadline) || !stationary))))
         {
-            s.scan_status = s5_scan_guard(
-                atomic_load_explicit(&cancelled, memory_order_acquire),
-                robot_due(now, deadline), stationary);
+            s.scan_status = s5_scan_guard(cancel_scan, robot_due(now, deadline),
+                                          stationary);
             s.profile_valid = false;
             scanning = false;
             restoring = true;

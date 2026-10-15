@@ -101,7 +101,8 @@ void subsystem1_test(void)
                             .state = "READY",
                             .line = "unknown",
                             .capture = "waiting"};
-    char json[S1_TELEMETRY_PAYLOAD_MAX + 1u];
+    /* Fixtures run sequentially before services; avoid a large init stack. */
+    static char json[S1_TELEMETRY_PAYLOAD_MAX + 1u];
     unsigned length = s1_telemetry_encode(&snapshot, 120u, json, sizeof(json));
     bool pass = length > 0u && strstr(json, "\"age_ms\":20") &&
                 strstr(json, "\"fraction\":null") &&
@@ -153,17 +154,32 @@ void subsystem1_test(void)
     length = s1_robot_status_encode(&snapshot, 120u, json, sizeof(json));
     bool summary = length > 0u && strstr(json, "\"online\":true") &&
                    strstr(json, "\"mission\":") && strstr(json, "\"schema\":3");
+    json[0] = 'X';
+    summary = summary &&
+              s1_robot_status_encode(&snapshot, 120u, json, 1u) == 0u &&
+              json[0] == '\0';
     RunHistory history = {0};
     for (unsigned i = 0u; i < 10u; ++i)
     {
         (void)run_history_append(&history, (RunEvent){.value = (int32_t)i});
     }
     length = s1_events_encode(&history, false, 8u, json, sizeof(json));
+    bool history_valid = length > 0u && strstr(json, "\"count\":10") &&
+                         strstr(json, "\"dropped\":2") && strstr(json, "[9,") &&
+                         !strstr(json, "[8,");
+    history.dropped = UINT32_MAX;
+    history_valid = run_history_append(&history, (RunEvent){0}) &&
+                    history.overflow && history.dropped == UINT32_MAX &&
+                    history_valid;
+    history.count = UINT32_MAX;
+    history_valid = !run_history_append(&history, (RunEvent){0}) &&
+                    history.count == UINT32_MAX && history_valid;
+    run_history_reset(&history, 9u);
+    history_valid = history.run_epoch == 9u && history.count == 0u &&
+                    history.length == 0u && !history.overflow && history_valid;
     TEST_CHECK("S1-U12",
-               summary && length > 0u && strstr(json, "\"count\":10") &&
-                   strstr(json, "\"dropped\":2") && strstr(json, "[9,") &&
-                   !strstr(json, "[8,"),
-               "robot summary and bounded event history/cursor");
+               summary && history_valid,
+               "robot summary and bounded history/cursor/reset/saturation");
     const char event_request[] =
         "{\"request\":\"events\",\"kind\":\"barcode\",\"after_id\":4294967295}";
     S1StatusRequest query;

@@ -17,7 +17,7 @@ The robot must navigate autonomously using onboard sensing and embedded software
 | M9 | Reacquire the original line after bypass and continue tracking |
 | M10 | Report robot/mission telemetry through WiFi and implement MQTT communication |
 
-Buddy 1 also implements command subscription, recovery and heartbeat/status reporting. The proposed design permits validated status requests only; movement stays autonomous. Buddy 3's shorter command list omits U-turn, but M3 retains all four mission commands. Junction detection is in Buddy 3's scope; two-sensor ambiguity needs validated course context.
+Buddy 1 also implements command subscription, recovery and heartbeat/status reporting. The implementation accepts read-only status/events requests and stopped barcode configuration; movement stays autonomous. Buddy 3's shorter command list omits U-turn, but M3 retains all four mission commands. Junction detection is in Buddy 3's scope; two-sensor ambiguity needs validated course context.
 
 ## Deliverables and assessment
 
@@ -69,11 +69,11 @@ The patterns are consistent with Code 39 `*A*` and `*Z*`; this is an inference, 
 
 These are engineering proposals/project decisions, separate from assessment requirements:
 
-- Safety release 10 ms; Motion/Mission/line/Terrain release 20 ms; initial required-data age limit 250 ms; commanded brake within 50 ms. Measure and tune per signal. The implemented bench's stricter limits are in [Line Tracking](../architecture/SUBSYSTEM3.md) and the [Subsystem 3](../architecture/SUBSYSTEM3.md).
+- Safety release 10 ms; Motion/Mission/line/Terrain release 20 ms; initial required-data age limit 250 ms; commanded brake within 50 ms. Measure and tune per signal. [ARCHITECTURE](../ARCHITECTURE.md#safety-and-acceptance) owns the implemented freshness and watchdog defaults.
 - Network loss must not stop otherwise healthy local autonomy. Status requests cannot override Safety.
 - Use calibrated proportional line guidance and separate encoder wheel PID. This later decision supersedes the older line-PID proposal; Motion's wheel PID remains.
 - Adopt [CODING_STANDARD](CODING_STANDARD.md) for application development. GNU C11 and atomic startup publication are retained. A complete Barr compliance audit is not claimed; the supplied assignment text does not establish a mandatory Barr citation.
-- Operating power policy belongs to [GETTING_STARTED](../../GUIDE.md#power-and-flashing); hardware ratings belong to [TECHNICAL_INFO](../../TECHNICAL_INFO.md).
+- Operating power policy belongs to [GUIDE](../../GUIDE.md#power-and-flashing); hardware ratings belong to [TECHNICAL_INFO](../../TECHNICAL_INFO.md).
 
 ## Pending decisions
 
@@ -92,7 +92,7 @@ Record answers and measured values here once, then link from other guides.
 | D09 | Final mission telemetry/status envelope, network/stack load, instructor network/broker settings available before program freeze, and shared configuration/task-priority approval | S1 / team |
 | D10 | Numerical acceptance thresholds, demonstration date, instructor repository access and evidence schedule | Team |
 
-Implementation gaps and project sequence belong to [GETTING_STARTED](../../GUIDE.md#acceptance-and-submission). Existing T01–T16 IDs remain physical/integrated acceptance trials, grouped into five UAT passes; [test records](../../testing/README.md) own case definitions and results.
+Project sequence and readiness gates belong to [GUIDE](../../GUIDE.md#acceptance-and-submission). Existing T01–T16 IDs remain physical/integrated acceptance trials, grouped into five UAT passes; [test records](../../testing/README.md) own case definitions and results.
 
 ## Requirements traceability
 

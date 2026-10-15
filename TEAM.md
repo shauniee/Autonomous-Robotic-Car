@@ -14,7 +14,7 @@ Nicholas explicitly authorized the current all-subsystem completion. Request eac
 | 4 | **Darrius — Terrain:** IMU processing, motion classification and hump measurement | 2500360 | Not recorded | [app_program/subsystem4/](app_program/subsystem4) | [testing/subsystem4/](testing/subsystem4) |
 | 5 | **Jia Jing — Obstacle:** sonar, servo scanning and obstacle profiling | 2502825 | Not recorded | [app_program/subsystem5/](app_program/subsystem5) | [testing/subsystem5/](testing/subsystem5) |
 
-Use development branches and commit prefixes `feat:`, `chore:` or `fix:`. Follow [CODING_STANDARD](docs/donotsubmit/CODING_STANDARD.md), record stable test IDs and measurements in [testing](testing/README.md), and demonstrations in [videos](videos/README.md). Record course/calibration decisions once in [PROJECT_SPECS](docs/donotsubmit/PROJECT_SPECS.md#pending-decisions), then update the owning guide.
+Use development branches and commit prefixes `feat:`, `chore:`, `fix:` or `docs:`. Follow [CODING_STANDARD](docs/donotsubmit/CODING_STANDARD.md), record stable test IDs and measurements in [testing](testing/README.md), and demonstrations in [videos](videos/README.md). Record course/calibration decisions once in [PROJECT_SPECS](docs/donotsubmit/PROJECT_SPECS.md#pending-decisions), then update the owning guide.
 
 ## 2. Pins
  [TECHNICAL_INFO](TECHNICAL_INFO.md) owns electrical limits and connector definitions; [GETTING_STARTED](GUIDE.md#one-time-preparation) identifies active hardware.

@@ -1,0 +1,14 @@
+{
+  "schema": 3,
+  "sequence": 1,
+  "observed_ms": 10000,
+  "mission": {"state": "FOLLOW_LINE", "reason": "none", "run": 7, "action": 3, "completed": 2, "configured": true, "moving": true, "stopped": false, "test_inhibited": true},
+  "line": {"ms": 9990, "age_ms": 10, "valid": true, "raw": {"left": 2800, "right": 1400}, "black": {"left": 3200, "right": 3200}, "white": {"left": 450, "right": 450}, "fraction": [0.85, 0.35], "error": -0.5, "condition": "visible", "capture": "white_captured"},
+  "motion": {"ms": 9990, "age_ms": 10, "valid": true, "stationary": false, "encoder_valid": true, "count": [123400, 123200], "distance_mm": [1250, 1248], "speed_mm_s": [120, 116], "xy_mm": [1250, 20], "yaw_mdeg": 2300, "duty": [0.45, 0.44], "status": 1, "reason": 0},
+  "terrain": {"ms": 9980, "age_ms": 20, "valid": true, "calibrated": true, "pitch_mdeg": 5300, "roll_mdeg": -1200, "turn_mdeg_s": 2500, "state": 1, "movement": 3, "run": 7, "height_mm": 32, "max_height_mm": 38},
+  "obstacle": {"ms": 9980, "age_ms": 20, "front_mm": 470, "profile_ms": 9000, "profile_valid": true, "width_mm": 120, "closest_mm": 420, "gap_mm": [360, 440], "scan_id": 1, "scan_status": 2},
+  "barcode": {"symbol": "Z", "action": 4, "orientation": 1, "revision": 2, "epoch": 1, "faults": 0},
+  "events": {"humps": 2, "barcodes": 3, "latest_hump": [2, 9500, 0, 1100, 20, 38, 0], "latest_barcode": [3, 9000000, 2, 123400, 123200, 90, 9], "dropped": [0, 0], "overflow": false},
+  "calibration": {"status": 2, "samples": 100, "reason": 0},
+  "mapping": {"request_id": 45, "result": 2}
+}

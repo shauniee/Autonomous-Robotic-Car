@@ -1,6 +1,7 @@
 #define PROHIBIT_DEF_SIZE_T
 /* S1 reporting transport; every call runs in the existing core-0 service. */
 #include "mqtt_utk.h"
+#include "../../../../app_program/subsystem1/mapping_ack.h"
 #include "lwip/apps/mqtt.h"
 #include "lwip/ip_addr.h"
 #include "lwip/timeouts.h"
@@ -18,6 +19,10 @@
 #endif
 #ifndef MQTT_MAPPING_STATUS_TOPIC
 #define MQTT_MAPPING_STATUS_TOPIC "robot/s3/mapping_status"
+#endif
+
+#ifndef MQTT_EVENTS_TOPIC
+#define MQTT_EVENTS_TOPIC "robot/s3/events"
 #endif
 
 /* Defaults also support existing ignored wifi_secrets.h files. */
@@ -54,7 +59,9 @@ static bool have_request;
 static S1StatusRequest request;
 static S1MappingRequest mapping_request;
 static bool receiving_mapping;
-static uint32_t mapping_ack_id;
+static S1AckQueue acknowledgements;
+static bool events_pending, events_barcode;
+static uint32_t events_after;
 static S1NetworkStatus diagnostics;
 static void publish_timeout(void *arg);
 static void retry_timeout(void *arg);
@@ -76,6 +83,8 @@ static void schedule_retry(void)
     s1_status_request_reset(&request);
     s1_mapping_reset(&mapping_request);
     receiving_mapping = false;
+    events_pending = false;
+    s1_ack_reconnect(&acknowledgements);
     /* Close failed attempts, including TCP attempts that never completed. */
     if (client)
     {
@@ -109,9 +118,9 @@ static void publish(const char *topic, const char *payload, unsigned length,
     {
         return;
     }
-    err_t result = mqtt_publish(client, topic, payload, (u16_t)length,
-                               retained ? 1u : 0u, retained ? 1u : 0u,
-                               publish_done, NULL);
+    err_t result =
+        mqtt_publish(client, topic, payload, (u16_t)length, retained ? 1u : 0u,
+                     retained ? 1u : 0u, publish_done, NULL);
     if (result != ERR_OK)
     {
         ++diagnostics.dropped_publish;
@@ -128,8 +137,8 @@ static void publish_latest(void)
         return;
     }
     diagnostics.telemetry_sequence = snapshot.sequence;
-    unsigned length = s1_telemetry_encode(&snapshot, sys_now(), payload,
-                                         sizeof(payload));
+    unsigned length =
+        s1_telemetry_encode(&snapshot, sys_now(), payload, sizeof(payload));
     if (length == 0u)
     {
         ++diagnostics.dropped_publish;
@@ -143,10 +152,54 @@ static void publish_status(bool retained)
     char payload[S1_STATUS_MAX + 1u];
     diagnostics.uptime_ms = sys_now();
     unsigned length = s1_status_encode(&diagnostics, payload, sizeof(payload));
-    publish(retained ? MQTT_STATUS_TOPIC : MQTT_HEARTBEAT_TOPIC,
-            payload, length, retained);
+    publish(retained ? MQTT_STATUS_TOPIC : MQTT_HEARTBEAT_TOPIC, payload,
+            length, retained);
 }
 
+static void acknowledgement_done(void *arg, err_t result)
+{
+    s1_ack_complete(&acknowledgements, (uint32_t)(uintptr_t)arg,
+                    result == ERR_OK);
+    if (result != ERR_OK)
+    {
+        ++diagnostics.dropped_publish;
+    }
+}
+static void publish_acknowledgements(void)
+{
+    MissionSnapshot mission;
+    bool have_mission = mission_copy(&mission);
+    for (unsigned i = 0u; i < S1_ACK_CAPACITY; ++i)
+    {
+        S1Ack *ack = &acknowledgements.slots[i];
+        if (ack->state == ACK_RESERVED && have_mission &&
+            mission.mapping_request_id == ack->id &&
+            mission.mapping_result != MAP_PENDING &&
+            mission.mapping_result != MAP_NONE)
+        {
+            s1_ack_ready(&acknowledgements, i, mission.mapping_result,
+                         mission.mapping_revision);
+        }
+        if (ack->state == ACK_READY)
+        {
+            char payload[128];
+            unsigned length = s1_mapping_ack_encode(
+                ack->id, ack->result, ack->revision, payload, sizeof(payload));
+            if (length != 0u)
+            {
+                uint32_t token = s1_ack_send(&acknowledgements, i);
+                if (token != 0u &&
+                    mqtt_publish(client, MQTT_MAPPING_STATUS_TOPIC, payload,
+                                 (u16_t)length, 1u, 0u, acknowledgement_done,
+                                 (void *)(uintptr_t)token) != ERR_OK)
+                {
+                    s1_ack_complete(&acknowledgements, token, false);
+                    ++diagnostics.dropped_publish;
+                }
+            }
+        }
+    }
+}
 static void publish_timeout(void *arg)
 {
     (void)arg;
@@ -154,31 +207,33 @@ static void publish_timeout(void *arg)
     {
         return;
     }
+    publish_acknowledgements();
     publish_latest();
-    MissionSnapshot mission;
-    if (mission_copy(&mission) && mission.mapping_request_id != 0u &&
-        mission.mapping_request_id != mapping_ack_id &&
-        mission.mapping_result != MAP_PENDING)
-    {
-        char payload[160];
-        unsigned n = s1_mapping_ack_encode(mission.mapping_request_id,
-            mission.mapping_result, mission.mapping_revision, payload, sizeof(payload));
-        if (n > 0 && (unsigned)n < sizeof(payload))
-        {
-            publish(MQTT_MAPPING_STATUS_TOPIC, payload, (unsigned)n, false);
-            mapping_ack_id = mission.mapping_request_id;
-        }
-    }
     uint32_t now = sys_now();
     if ((uint32_t)(now - heartbeat_ms) >= S1_HEARTBEAT_PERIOD_MS)
     {
         heartbeat_ms = now;
         publish_status(false);
     }
-    if (status_pending)
+    if (status_pending || events_pending)
     {
-        status_pending = false;
-        publish_status(true);
+        /* Static storage belongs solely to the kernel network owner. */
+        static S1Telemetry snapshot;
+        static char payload[S1_TELEMETRY_PAYLOAD_MAX + 1u];
+        if (s1_telemetry_copy(&snapshot))
+        {
+            unsigned length =
+                events_pending
+                    ? s1_events_encode(events_barcode ? &snapshot.barcodes
+                                                      : &snapshot.humps,
+                                       events_barcode, events_after, payload,
+                                       sizeof(payload))
+                    : s1_robot_status_encode(&snapshot, now, payload,
+                                             sizeof(payload));
+            publish(events_pending ? MQTT_EVENTS_TOPIC : MQTT_STATUS_TOPIC,
+                    payload, length, false);
+        }
+        status_pending = events_pending = false;
     }
     sys_timeout(S1_TELEMETRY_PERIOD_MS, publish_timeout, NULL);
 }
@@ -187,13 +242,15 @@ static void retry_timeout(void *arg)
 {
     (void)arg;
     retry_pending = false;
-    mqtt_utk_start(); /* The link guard prevents broker attempts while offline. */
+    mqtt_utk_start(); /* The link guard prevents broker attempts while offline.
+                       */
 }
 
 static void attempt_timeout(void *arg)
 {
     (void)arg;
-    tm_printf((UB*)"mqtt: connection/subscription deadline; retry scheduled\n");
+    tm_printf(
+        (UB *)"mqtt: connection/subscription deadline; retry scheduled\n");
     schedule_retry();
 }
 
@@ -206,7 +263,10 @@ static void incoming_publish(void *arg, const char *topic, u32_t length)
     if (online && strcmp(topic, MQTT_MAPPING_TOPIC) == 0)
     {
         receiving_mapping = s1_mapping_begin(&mapping_request, length);
-        if (!receiving_mapping) { ++diagnostics.rejected_requests; }
+        if (!receiving_mapping)
+        {
+            ++diagnostics.rejected_requests;
+        }
         return;
     }
     if (!online || (strcmp(topic, MQTT_REQUEST_TOPIC) != 0))
@@ -235,22 +295,29 @@ static void incoming_data(void *arg, const u8_t *data, u16_t length, u8_t flags)
         if (last)
         {
             receiving_mapping = false;
-            MappingResult result = mission_mapping_submit(mapping_request.request_id,
-                mapping_request.mapping);
+            bool pending = s1_ack_reserved(&acknowledgements);
+            int slot =
+                s1_ack_reserve(&acknowledgements, mapping_request.request_id);
+            if (slot < 0)
+            {
+                ++diagnostics.rejected_requests;
+                return; /* Full result storage never applies configuration. */
+            }
+            MappingResult result =
+                pending ? MAP_BUSY
+                        : mission_mapping_submit(mapping_request.request_id,
+                                                 mapping_request.mapping);
             if (result != MAP_PENDING)
             {
-                char payload[128];
-                unsigned n = s1_mapping_ack_encode(mapping_request.request_id,
-                    result, 0u, payload, sizeof(payload));
-                if (n > 0 && (unsigned)n < sizeof(payload))
-                {
-                    publish(MQTT_MAPPING_STATUS_TOPIC, payload, (unsigned)n, false);
-                }
+                s1_ack_ready(&acknowledgements, (unsigned)slot, result, 0u);
             }
         }
         return;
     }
-    if (!request.receiving) { return; }
+    if (!request.receiving)
+    {
+        return;
+    }
     bool last = (flags & MQTT_DATA_FLAG_LAST) != 0u;
     if (!s1_status_request_data(&request, data, length, last))
     {
@@ -268,7 +335,10 @@ static void incoming_data(void *arg, const u8_t *data, u16_t length, u8_t flags)
         }
         request_ms = now;
         have_request = true;
-        status_pending = true; /* Coalesce; the periodic service publishes it. */
+        events_pending = request.events;
+        status_pending = !request.events;
+        events_barcode = request.barcode;
+        events_after = request.after_id;
     }
 }
 
@@ -294,13 +364,18 @@ static void subscribed(void *arg, err_t result)
     publish_status(false);
     heartbeat_ms = sys_now();
     sys_timeout(S1_TELEMETRY_PERIOD_MS, publish_timeout, NULL);
-    tm_printf((UB*)"mqtt: telemetry and status subscription ready\n");
+    tm_printf((UB *)"mqtt: telemetry and status subscription ready\n");
 }
 
 static void mapping_subscribed(void *arg, err_t result)
 {
-    if (result != ERR_OK) { schedule_retry(); return; }
-    if (mqtt_subscribe(client, MQTT_MAPPING_TOPIC, 1u, subscribed, arg) != ERR_OK)
+    if (result != ERR_OK)
+    {
+        schedule_retry();
+        return;
+    }
+    if (mqtt_subscribe(client, MQTT_MAPPING_TOPIC, 1u, subscribed, arg) !=
+        ERR_OK)
     {
         schedule_retry();
     }
@@ -317,44 +392,29 @@ static void connection_cb(mqtt_client_t *c, void *arg,
         return;
     }
     mqtt_set_inpub_callback(client, incoming_publish, incoming_data, NULL);
-    if (mqtt_subscribe(client, MQTT_REQUEST_TOPIC, 1u, mapping_subscribed, NULL) != ERR_OK)
+    if (mqtt_subscribe(client, MQTT_REQUEST_TOPIC, 1u, mapping_subscribed,
+                       NULL) != ERR_OK)
     {
         schedule_retry();
     }
 }
 
-static bool valid_topic(const char *topic)
-{
-    unsigned length = (unsigned)strlen(topic);
-    return (length > 0u) && (length < MQTT_TOPIC_MAX) &&
-           !strchr(topic, '+') && !strchr(topic, '#');
-}
-
 static bool configure(void)
 {
-    const char *topics[] = {MQTT_TOPIC, MQTT_HEARTBEAT_TOPIC,
-                            MQTT_STATUS_TOPIC, MQTT_REQUEST_TOPIC,
-                            MQTT_MAPPING_TOPIC, MQTT_MAPPING_STATUS_TOPIC};
+    const char *topics[] = {MQTT_TOPIC,         MQTT_HEARTBEAT_TOPIC,
+                            MQTT_STATUS_TOPIC,  MQTT_REQUEST_TOPIC,
+                            MQTT_MAPPING_TOPIC, MQTT_MAPPING_STATUS_TOPIC,
+                            MQTT_EVENTS_TOPIC};
     if (!ip4addr_aton(MQTT_BROKER_IP, ip_2_ip4(&broker_addr)) ||
-        ip4_addr_isany(ip_2_ip4(&broker_addr)) ||
-        (MQTT_BROKER_PORT < 1) || (MQTT_BROKER_PORT > 65535) ||
-        (MQTT_CLIENT_ID[0] == '\0') || (strlen(MQTT_CLIENT_ID) > 40u))
+        ip4_addr_isany(ip_2_ip4(&broker_addr)) || (MQTT_BROKER_PORT < 1) ||
+        (MQTT_BROKER_PORT > 65535) || (MQTT_CLIENT_ID[0] == '\0') ||
+        (strlen(MQTT_CLIENT_ID) > 40u))
     {
         return false;
     }
-    for (unsigned i = 0u; i < 4u; ++i)
+    if (!s1_topics_valid(topics, sizeof(topics) / sizeof(topics[0])))
     {
-        if (!valid_topic(topics[i]))
-        {
-            return false;
-        }
-        for (unsigned j = 0u; j < i; ++j)
-        {
-            if (strcmp(topics[i], topics[j]) == 0)
-            {
-                return false; /* A retained response must never become a request. */
-            }
-        }
+        return false;
     }
     uint8_t mac[6];
     if (cyw43_wifi_get_mac(&cyw43_state, CYW43_ITF_STA, mac) != 0)
@@ -384,7 +444,7 @@ void mqtt_utk_start(void)
     if (!configure())
     {
         bad_configuration = true;
-        tm_printf((UB*)"mqtt: invalid broker/client/topic configuration\n");
+        tm_printf((UB *)"mqtt: invalid broker/client/topic configuration\n");
         return;
     }
     if (!client)
@@ -399,7 +459,8 @@ void mqtt_utk_start(void)
     struct mqtt_connect_client_info_t info = {0};
     info.client_id = client_id;
     info.client_user = MQTT_USERNAME[0] ? MQTT_USERNAME : NULL;
-    info.client_pass = (MQTT_USERNAME[0] && MQTT_PASSWORD[0]) ? MQTT_PASSWORD : NULL;
+    info.client_pass =
+        (MQTT_USERNAME[0] && MQTT_PASSWORD[0]) ? MQTT_PASSWORD : NULL;
     info.keep_alive = MQTT_KEEPALIVE_S;
     info.will_topic = MQTT_STATUS_TOPIC;
     info.will_msg = "{\"schema\":1,\"online\":false}";
@@ -420,7 +481,8 @@ void mqtt_utk_poll(bool link_up)
     link_ready = link_up;
     if (lost && active)
     {
-        schedule_retry(); /* Discard fragments; never call a motion interface. */
+        schedule_retry(); /* Discard fragments; never call a motion interface.
+                           */
     }
     mqtt_utk_start();
 }

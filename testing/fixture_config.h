@@ -1,6 +1,7 @@
 #ifndef FIXTURE_CONFIG_H
 #define FIXTURE_CONFIG_H
 #include "../app_program/common/robot_config.h"
+#if APP_TEST
 /* Synthetic positive configuration for predicates; NEVER hardware defaults. */
 static RobotConfig fixture_config(void)
 {
@@ -85,4 +86,5 @@ static RobotConfig fixture_config(void)
                                      .max_frame_us = 2000000,
                                      .black_high = true}};
 }
+#endif
 #endif

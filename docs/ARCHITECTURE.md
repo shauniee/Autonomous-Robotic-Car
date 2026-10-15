@@ -56,6 +56,8 @@ Use kernel millisecond time for freshness/control and hardware TIMER microsecond
 
 Required IR/Motion freshness is 60 ms; Terrain/forward sonar freshness is 250 ms. Normal firmware supervises local progress with a 250 ms watchdog after services qualify. TEST always inhibits motors and does not enable that watchdog. Networking is excluded from local health.
 
+GP21's latched local-stop reason dominates later faults. Mission rechecks inhibition around acknowledged Motion reset and serializes state updates with Safety; an arriving stop cannot become READY, moving or COMPLETE through that transition. Releasing GP21 alone never clears the latch.
+
 The dogleg uses measured sonar offsets, pivot envelope and braking headroom, supported side clearance (left on a tie), confirmed depth/departure bounds and encoder actions. Reacquisition needs expected pose/heading/corridor and two fresh visible observations. Sensor geometry, slip and between-ray clearance require physical/course acceptance.
 
 Optional raised-wheel commissioning is locally selected, limited to two seconds and excludes mission readiness. Power policy and release steps are in GUIDE. [Fresh test records](../testing/README.md) distinguish source/build checks, executed fixtures and physical results.

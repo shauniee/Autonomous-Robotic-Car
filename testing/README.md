@@ -33,3 +33,5 @@ A-Z vectors are independent standard-pattern positions checked against [ZXing's 
 ## Current evidence
 
 [Integration results](integration/TEST_LOG.md) record current compiler/build/helper evidence. Firmware execution and physical passes remain PENDING until the board/operator supplies observations. [System definitions](system/TEST_LOG.md) own the actual scenarios; [videos](../videos/README.md) owns demonstration links.
+
+The final software check on 2026-10-15 built all four profiles at `c5e1832`, excluded fixtures from normal images and passed 54 strict target-compiler checks. All 37 firmware check IDs are compiled, with execution PENDING. Portable JSON encoding and helper input validation executed on the laptop; these do not establish MQTT delivery or robot behavior. [Evidence index](integration/logs/2026-10-15_fresh-acceptance_evidence.json) records identities and remaining gates.

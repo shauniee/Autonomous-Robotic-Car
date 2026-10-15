@@ -4,6 +4,8 @@ Pico WH / Robo Pico firmware using micro T-Kernel 3.0 for autonomous line/barcod
 
 Start with [GUIDE](GUIDE.md) for setup and operation. [TEAM](TEAM.md) owns wiring/resources; [TECHNICAL_INFO](TECHNICAL_INFO.md) owns hardware facts; [ARCHITECTURE](docs/ARCHITECTURE.md) owns coordination and links to the five subsystem guides.
 
+For live MQTT readings in your browser, use the [robot dashboard](GUIDE.md#browser-dashboard).
+
 [Testing](testing/README.md) owns current cases/results. [Videos](videos/README.md) owns demonstration links. Development references are under `docs/donotsubmit/`.
 
 Use `uat`; do not merge into `main`. Measured/course settings remain unconfirmed and physical acceptance remains pending. A successful build does not establish mission completion.
