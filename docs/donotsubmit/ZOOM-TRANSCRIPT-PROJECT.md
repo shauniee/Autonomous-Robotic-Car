@@ -1,9 +1,5 @@
 # Zoom briefing: consolidated mission and requirements
 
-Source: [formatted project briefing transcript](ZOOM-TRANSCRIPT-RAW.md), speaker Muhamed Fauzi Bin Abbas. The export records 31 August 2026 and a duration of 35 minutes.
-
-This is a source summary, not a verbatim transcript, implementation plan or record of completed work. It consolidates the professor's spoken expectations for the default autonomous-car project. The source was checked against supplied text, not the recording; recognition errors remain possible. Requirements, assessment preferences, advice and unresolved details are distinguished below.
-
 The consolidated [project specifications](PROJECT_SPECS.md) remain the current project authority. This document preserves briefing evidence without changing subsystem ownership, current bench decisions or implemented capabilities.
 
 ## 1. Overall project
@@ -15,8 +11,6 @@ Design, develop, integrate and test an **autonomous robotic car that completes a
 - Combine line following, directional barcode navigation, hump measurement, static-obstacle avoidance and Wi-Fi/MQTT telemetry into one demonstrable system.
 - Demonstrate reliable behaviour across repeated runs, rather than isolated working functions.
 - Use **Micro-T-Kernel on Raspberry Pi Pico**. The professor stated that using FreeRTOS instead would attract a penalty; no penalty amount was supplied.
-
-Source sections: [autonomous mission](ZOOM-TRANSCRIPT-RAW.md#welcome-and-autonomous-mission), [RTOS](ZOOM-TRANSCRIPT-RAW.md#required-real-time-operating-system).
 
 ## 2. Complete mission behaviour
 
@@ -34,8 +28,6 @@ The course contains a line, barcodes before cross junctions, humps of different 
 | Throughout the run | Publish useful movement, barcode, hump and obstacle telemetry through MQTT; respond to a requested current snapshot/summary. |
 
 The transcript does not define the finish marker, end-of-mission stopping condition, feature counts, complete route or the handling of multiple barcodes before a junction.
-
-Source sections: [autonomous mission](ZOOM-TRANSCRIPT-RAW.md#welcome-and-autonomous-mission), [junction commands](ZOOM-TRANSCRIPT-RAW.md#mission-assessment-and-configurable-barcode-commands), [obstacle bypass](ZOOM-TRANSCRIPT-RAW.md#subsystem-5-ultrasonic-scanning-and-obstacle-avoidance).
 
 ## 3. Subsystem requirements
 
@@ -58,7 +50,6 @@ Telemetry described by the professor includes:
 
 The professor described building an approximate picture of the route from movement/events. No map visualisation, coordinate system, localisation algorithm or message schema was prescribed. Two-way configuration does not imply permission for remote driving.
 
-Source sections: [Wi-Fi and telemetry](ZOOM-TRANSCRIPT-RAW.md#subsystem-1-wi-fi-mqtt-and-telemetry), [mapping changes](ZOOM-TRANSCRIPT-RAW.md#mission-assessment-and-configurable-barcode-commands), [navigation telemetry](ZOOM-TRANSCRIPT-RAW.md#navigation-telemetry-and-changing-barcode-mappings).
 
 ### Subsystem 2: Motion control and PID
 
@@ -70,8 +61,6 @@ Source sections: [Wi-Fi and telemetry](ZOOM-TRANSCRIPT-RAW.md#subsystem-1-wi-fi-
 - Provide accurate motion for obstacle bypass and line reacquisition.
 
 **Advice:** Finalise the wheels/mechanical setup before tuning PID.
-
-Source: [motion control and PID](ZOOM-TRANSCRIPT-RAW.md#subsystem-2-motion-control-and-pid).
 
 ### Subsystem 3: Line following and barcode decoding
 
@@ -93,8 +82,6 @@ The transcript gives this example default:
 
 This is **not the final demo mapping**. The written assignment example recorded in [PROJECT_SPECS](PROJECT_SPECS.md#barcode-examples) differs: A → left, B → right, C → straight, D → U-turn. Preserve both as source examples; neither establishes the final mapping.
 
-Source sections: [IR and barcode decoding](ZOOM-TRANSCRIPT-RAW.md#subsystem-3-line-following-and-barcode-decoding), [junction commands](ZOOM-TRANSCRIPT-RAW.md#mission-assessment-and-configurable-barcode-commands), [A–Z and no recompilation](ZOOM-TRANSCRIPT-RAW.md#navigation-telemetry-and-changing-barcode-mappings).
-
 ### Subsystem 4: IMU and hump measurement
 
 - Implement the GY-511 driver.
@@ -107,8 +94,6 @@ Source sections: [IR and barcode decoding](ZOOM-TRANSCRIPT-RAW.md#subsystem-3-li
 
 No height formula, numerical tolerance, sensor-fusion algorithm or calibrated threshold was specified.
 
-Source: [IMU and hump measurement](ZOOM-TRANSCRIPT-RAW.md#subsystem-4-imu-and-hump-measurement).
-
 ### Subsystem 5: Ultrasonic scanning and obstacle avoidance
 
 - Use a servo-mounted ultrasonic sensor to scan left and right.
@@ -117,8 +102,6 @@ Source: [IMU and hump measurement](ZOOM-TRANSCRIPT-RAW.md#subsystem-4-imu-and-hu
 - Continue observing the obstacle to determine when it has been passed; depth observation was described.
 - Leave the line to bypass the obstacle, then rejoin the original line.
 - Report obstacle width through Wi-Fi telemetry.
-
-Source: [ultrasonic scanning and obstacle avoidance](ZOOM-TRANSCRIPT-RAW.md#subsystem-5-ultrasonic-scanning-and-obstacle-avoidance).
 
 ## 4. Course constraints stated verbally
 
@@ -131,8 +114,6 @@ Source: [ultrasonic scanning and obstacle avoidance](ZOOM-TRANSCRIPT-RAW.md#subs
 | Final map | Undetermined at briefing time and described as a surprise for the final day. |
 
 These statements do not establish measured course geometry, junction spacing, bypass boundaries or the eventual issued layout.
-
-Source sections: [mission](ZOOM-TRANSCRIPT-RAW.md#welcome-and-autonomous-mission), [obstacle/course placement](ZOOM-TRANSCRIPT-RAW.md#subsystem-5-ultrasonic-scanning-and-obstacle-avoidance), [junction sequence](ZOOM-TRANSCRIPT-RAW.md#mission-assessment-and-configurable-barcode-commands).
 
 ## 5. Final demonstration and assessment
 
@@ -158,8 +139,6 @@ Source sections: [mission](ZOOM-TRANSCRIPT-RAW.md#welcome-and-autonomous-mission
 
 No exact score weights, penalty amounts or hard five-minute cutoff were supplied. The written-source Week 10 demonstration reference belongs to [PROJECT_SPECS](PROJECT_SPECS.md#deliverables-and-assessment); it is not added here as a transcript statement.
 
-Source sections: [mission assessment](ZOOM-TRANSCRIPT-RAW.md#mission-assessment-and-configurable-barcode-commands), [completion time and attempts](ZOOM-TRANSCRIPT-RAW.md#completion-time-and-demo-attempts), [mapping changes](ZOOM-TRANSCRIPT-RAW.md#navigation-telemetry-and-changing-barcode-mappings).
-
 ## 6. Development, ownership and individual understanding
 
 - The default project has five members, each owning one subsystem: communications, motion, line/barcode, terrain and obstacle.
@@ -172,8 +151,6 @@ Source sections: [mission assessment](ZOOM-TRANSCRIPT-RAW.md#mission-assessment-
 
 These are briefing expectations and advice, not proof of current implementation or hardware success.
 
-Source sections: [ownership](ZOOM-TRANSCRIPT-RAW.md#team-size-and-subsystem-ownership), [code understanding](ZOOM-TRANSCRIPT-RAW.md#ai-generated-code-and-individual-understanding), [integration advice](ZOOM-TRANSCRIPT-RAW.md#development-and-integration-advice), [RTOS support](ZOOM-TRANSCRIPT-RAW.md#required-real-time-operating-system).
-
 ## 7. Group grades and contribution evidence
 
 - The professor first grades the project holistically.
@@ -185,8 +162,6 @@ Source sections: [ownership](ZOOM-TRANSCRIPT-RAW.md#team-size-and-subsystem-owne
 
 The illustrative grade changes in the transcript are examples, not a fixed adjustment formula.
 
-Source: [group grades, peer evaluation and contribution evidence](ZOOM-TRANSCRIPT-RAW.md#group-grades-peer-evaluation-and-contribution-evidence).
-
 ## 8. Requirements changes and tribunals
 
 | Milestone | Spoken expectation |
@@ -196,7 +171,6 @@ Source: [group grades, peer evaluation and contribution evidence](ZOOM-TRANSCRIP
 
 The professor described these exercises as training students to use AI to identify challenges and pivot the design when requirements change. The actual changes were not supplied in this transcript.
 
-Source: [requirements changes and tribunals](ZOOM-TRANSCRIPT-RAW.md#requirements-changes-and-tribunals).
 
 ## 9. Unresolved details and current-guide differences
 
@@ -213,11 +187,3 @@ The transcript does not settle:
 - Exact time penalties, assessment weights or individual adjustment formula.
 - Demo broker address, credentials, topics or payload schema.
 - Requirements-change contents and dated assessment schedule.
-
-The UAT [Communications guide](../architecture/SUBSYSTEM1.md#mqtt-contract) now implements stopped-only WiFi barcode-mapping configuration after Nicholas explicitly authorized all-subsystem completion. Physical verification remains pending. The mapping-example discrepancy is recorded in Section 3. Current capability and physical-validation claims remain owned by [GETTING_STARTED](../../GUIDE.md#one-time-preparation) and [testing](../../testing/README.md).
-
-## 10. Alternative-project advice
-
-The requirements above concern the default robotic-car project. For alternative projects, the professor described the published descriptions as general starting points with room to pivot. Interested students should read the description, research it, and approach him with specific questions and the description available on their laptop, or ask through the discussion forum.
-
-Source: [alternative projects and closing](ZOOM-TRANSCRIPT-RAW.md#alternative-projects-and-closing).

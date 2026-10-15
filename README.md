@@ -6,8 +6,6 @@ Start with [GUIDE](GUIDE.md) for setup and operation. [TEAM](docs/TEAM.md) owns 
 
 For live MQTT readings in your browser, use the [robot dashboard](GUIDE.md#browser-dashboard).
 
-[Testing](testing/README.md) owns current cases/results. [Videos](videos/README.md) owns demonstration links. Development references are under `docs/donotsubmit/`.
-
-Use `uat`; do not merge into `main`. Measured/course settings remain unconfirmed and physical acceptance remains pending. A successful build does not establish mission completion.
+[Testing](testing/README.md) owns current cases/results. [Videos](videos/README.md) owns demonstration links.
 
 The imported micro T-Kernel runtime retains the TRON Forum/template licenses and original attribution. Application changes do not imply full Barr compliance certification.
