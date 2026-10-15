@@ -57,3 +57,25 @@ Each of the four fault subruns must produce the expected local stop/fault reason
 | | E2E02 / stale sensor | | | | PENDING | Injection method and freshness/stop limits unresolved | |
 | | E2E02 / line-loss deadline | | | | PENDING | Recovery/stop limits unresolved | |
 | | E2E02 / scan timeout or unusable clearance | | | | PENDING | Scan/clearance/stop limits and injection method unresolved | |
+
+## E2E03 — Broker recovery and reboot requalification
+
+**Status: PENDING.** This case checks that network loss does not control local motion, that telemetry/history can be recovered after reconnection, and that a power cycle requires fresh mission qualification and mapping.
+
+### Procedure
+
+1. Resolve the common electrical, course, network, history-retention and acceptance preconditions. Record the normal image revision/profile/UF2 SHA-256, broker and Wi-Fi configuration, approved mapping file, mapping request ID/revision, run epoch, history cursors, and the retention/replay policy for configuration topics. Start continuous video and broker/status/event captures before boot.
+2. Boot the frozen normal image on the approved battery supply. Complete black/IMU and white calibration, load the valid four-letter mapping while stopped, verify the matching applied acknowledgement/revision, wait for `READY`, and start locally with a separate GP20 press. Confirm telemetry, run epoch and bounded history before entering the test segment.
+3. During a confirmed safe midmission segment with fresh local sensors and a clear route, interrupt only the approved broker/Wi-Fi path while preserving robot power and local sensors. Record the exact disconnect time and last received sequence/time. Observe the robot directly and on video while it continues its approved local mission behavior. Do not issue movement commands from the laptop during the outage. Record physical route progress, local state if available, barcodes/actions, humps, obstacle decisions, and finish/stop behavior.
+4. Restore the broker/network without rebooting the robot. Capture reconnection, new telemetry sequence/sample times, current mission state/run epoch, mapping revision and request ID, and event-history responses using the pre-outage cursors. Reconcile every physically observed event across the gap: accepted event IDs and values must be valid for the same run, counts and eviction/drop/overflow fields must explain bounded-history limits, and reconnect must not replay a barcode action or an obsolete mapping command. Continue the course to its confirmed finish and record the final accepted state/history.
+5. After the run has reached a braked, safe terminal state, power down and power-cycle under the approved single-source procedure. Keep the same frozen UF2 and record its hash again. On reboot, keep GP20/GP21 released and confirm no movement, no prior calibration readiness, no active run, and no runtime mapping acknowledgement/revision restored from RAM. Attempting the ordinary local start before readiness must not begin motion.
+6. Complete fresh black/IMU and white calibration after reboot. Revalidate and resend the four-letter mapping using a new request ID; require a matching live applied acknowledgement and revision from the rebooted robot. Check that no retained broker configuration was applied automatically and that the old run's commands/events cannot start or replay. Wait for fresh `READY`, then release/press GP20 as a separate local start. Confirm the new run context is distinct and captures only the new run's history, while the previous run's saved evidence remains available to the operator.
+
+### Pass oracle
+
+During broker loss, the robot remains locally safe and follows the approved autonomous behavior using fresh required sensors; network loss alone neither introduces motion nor prevents a required local safety stop. On reconnection, telemetry and valid bounded event history resume for the same run without duplicate action, stale command replay, or silent event loss beyond explicitly reported eviction/overflow. The post-run power cycle leaves the same firmware image installed but clears RAM calibration, run readiness, and runtime mapping; no movement or retained-configuration replay occurs before fresh calibration, acknowledged mapping, readiness, and a separate local start. Pass only when the physical route and captured telemetry/history reconcile and all approved network, stop, recovery, and course limits are met. Until those limits and the broker retention policy are confirmed, keep the result PENDING.
+
+| Date | Case / phase | Revision / UF2 SHA-256 | Power, network, calibration and mapping | Tester | Result | Measurements / elapsed time | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| | E2E03 / broker loss and reconnect | | | | PENDING | Network recovery and event-history acceptance limits unresolved; no physical run recorded | |
+| | E2E03 / post-run power cycle | | | | PENDING | Reboot/readiness and retained-configuration policy unresolved; no physical run recorded | |
