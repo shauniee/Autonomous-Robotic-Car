@@ -251,14 +251,14 @@ static bool calibration_fault_test(void)
     ir_tracking_init(&tracker);
     bool pass = !ir_tracking_capture(&tracker, IR_CAPTURE_WHITE, 100u) &&
                 tracker.capture_result == IR_CAPTURE_NEED_BLACK;
-    pass = ir_tracking_capture(&tracker, IR_CAPTURE_BLACK, UINT32_MAX - 200u) && pass;
-    ir_tracking_sample(&tracker, (IrRaw){1000u, 1100u}, true, UINT32_MAX - 200u);
+    pass = ir_tracking_capture(&tracker, IR_CAPTURE_BLACK, UINT32_MAX - 20u) && pass;
+    ir_tracking_sample(&tracker, (IrRaw){1000u, 1100u}, true, UINT32_MAX - 20u);
     uint32_t count = tracker.capture_count;
-    ir_tracking_sample(&tracker, (IrRaw){1000u, 1100u}, true, UINT32_MAX - 200u);
+    ir_tracking_sample(&tracker, (IrRaw){1000u, 1100u}, true, UINT32_MAX - 20u);
     pass = tracker.capture_count == count && pass;
-    ir_tracking_check_time(&tracker, 100u);
+    ir_tracking_check_time(&tracker, 20u);
     pass = tracker.capture_kind == IR_CAPTURE_BLACK && pass;
-    ir_tracking_check_time(&tracker, 500u);
+    ir_tracking_check_time(&tracker, 50u);
     pass = tracker.capture_kind == IR_CAPTURE_NONE &&
            tracker.capture_result == IR_CAPTURE_GAP && pass;
 
