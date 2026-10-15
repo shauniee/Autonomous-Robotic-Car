@@ -21,6 +21,7 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | S4-U12 | calibration identity, stationarity/gravity rejection, abort and fresh-request recovery | Inhibited firmware fixture |
 | S4-U13 | motion derivation wraps yaw and rejects duplicate, zero-dt and cross-epoch samples | Inhibited firmware fixture |
 | S4-U14 | impact/stationary/turn/terrain/acceleration classification priority | Inhibited firmware fixture |
+| S4-U15 | roll-only hump height, negative-travel invalidation and maximum retention | Inhibited firmware fixture |
 ## Results
 
 | Date | IDs | Revision / image SHA-256 | Profile/configuration | Tester | Result | Measurements / evidence |
@@ -33,7 +34,8 @@ Physical coverage and procedures: [system cases](../system/TEST_LOG.md), [GUIDE]
 
 Latest executed image: `33ea475`, UF2 `f554c1f1280098cfc6c3278992c0d5877f744dab0f07a1ef84d02e6b674318b0`; USB-only IR-only TEST, motors inhibited, tester Nicholas/Codex. **Firmware PASS** for S4-U03, S4-U04, S4-U05, S4-U06, S4-U07, S4-U08, S4-U09, S4-U10; [complete 45-check capture](../integration/logs/2026-10-15_152409_309541_pico-console.txt), [summary](../integration/logs/2026-10-15_152409_309541_pico-console.json). Physical acceptance remains pending.
 
-S4-U11–S4-U14 are new definitions and have not run on the Pico. USB-only firmware execution is pending. Physical calibration reference, motion validity, pitch/roll height accuracy, and coherent live snapshot publication remain T01/T06/T07 acceptance gates. No physical acceptance or fixture PASS is inferred from compilation.
+S4-U11–S4-U15 are new definitions and have not run on the Pico. USB-only firmware execution is pending. Physical calibration reference, motion validity, pitch/roll height accuracy, and coherent live snapshot publication remain T01/T06/T07 acceptance gates. No physical acceptance or fixture PASS is inferred from compilation.
+
 
 
 

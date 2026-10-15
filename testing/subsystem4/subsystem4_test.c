@@ -222,6 +222,30 @@ void subsystem4_test(void)
     TEST_CHECK("S4-U14", priority,
                "impact, stationary, turn, terrain phase and acceleration classification priority");
 
+    terrain_algo_init(&c);
+    c.is_calibrated = true;
+    Gy511RawAxes roll = {300, 0, 954};
+    for (unsigned i = 0u; i < 50u; ++i)
+    {
+        terrain_algo_process_config(&c, &roll, 0.005f, true, i * 20u,
+                                    &classify_cfg);
+    }
+    bool roll_hump = c.state == TERRAIN_STATE_CLIMBING ||
+                     c.state == TERRAIN_STATE_CRESTING;
+    Gy511RawAxes flat = {0, 0, 1000};
+    for (unsigned i = 50u; i < 160u; ++i)
+    {
+        terrain_algo_process_config(&c, &flat, 0.005f, true, i * 20u,
+                                    &classify_cfg);
+    }
+    float roll_peak = c.max_hump_peak_m;
+    terrain_algo_process_config(&c, &flat, -0.01f, true, 3200u,
+                                &classify_cfg);
+    TEST_CHECK("S4-U15",
+               roll_hump && roll_peak > 0.005f && c.height_valid == false &&
+                   c.max_hump_peak_m == roll_peak,
+               "roll-only hump yields height; negative travel invalidates later window and preserves maximum");
+
     TEST_SUMMARY("subsystem4");
 }
 #endif
