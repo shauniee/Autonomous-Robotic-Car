@@ -163,6 +163,35 @@ void subsystem4_test(void)
                    identity_cal.status == S4_CAL_DONE && c.is_calibrated,
                "request identity, stationarity/gravity rejection, abort and fresh-request recovery");
 
+    MotionFeedback before = {.valid = true,
+                             .sequence = 1u,
+                             .sampled_ms = 100u,
+                             .run_epoch = 5u,
+                             .yaw_deg = 179.0f};
+    MotionFeedback after = {.valid = true,
+                            .sequence = 2u,
+                            .sampled_ms = 160u,
+                            .run_epoch = 5u,
+                            .yaw_deg = -179.0f,
+                            .left_mps = 0.2f};
+    bool timing = terrain_motion_measure(&after, &before, true, 160u, &turn,
+                                         &acceleration) &&
+                  turn > 33.0f && turn < 34.0f;
+    MotionFeedback invalid_motion = after;
+    invalid_motion.sequence = before.sequence;
+    timing = timing && !terrain_motion_measure(&invalid_motion, &before, true,
+                                               160u, &turn, &acceleration);
+    invalid_motion = after;
+    invalid_motion.sampled_ms = before.sampled_ms;
+    timing = timing && !terrain_motion_measure(&invalid_motion, &before, true,
+                                               160u, &turn, &acceleration);
+    invalid_motion = after;
+    invalid_motion.run_epoch++;
+    timing = timing && !terrain_motion_measure(&invalid_motion, &before, true,
+                                               160u, &turn, &acceleration);
+    TEST_CHECK("S4-U13", timing,
+               "motion derivation wraps yaw and rejects duplicate, zero-dt and cross-epoch samples");
+
     TEST_SUMMARY("subsystem4");
 }
 #endif
