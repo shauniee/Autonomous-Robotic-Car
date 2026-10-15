@@ -11,6 +11,7 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | S5-U04 | valid profile nearest point; missing Echo cannot grant clearance | Inhibited firmware fixture |
 | S5-U05 | cancel dominates timeout/movement including center restore | Inhibited firmware fixture |
 | S5-U06 | profile geometry includes measured sensor mounting offset | Inhibited firmware fixture |
+| S5-U07 | Profile validation rejects insufficient/oversized scans, missing/invalid Echo range and angles outside the servo envelope; boundary angle remains accepted | Inhibited firmware fixture |
 
 ## Results
 

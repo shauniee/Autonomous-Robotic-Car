@@ -1,6 +1,7 @@
 #include "../../app_program/subsystem5/subsystem5.h"
 #include "../../app_program/test_report.h"
 #include "../fixture_config.h"
+#include <math.h>
 #if APP_TEST
 void subsystem5_test(void)
 {
@@ -31,6 +32,27 @@ void subsystem5_test(void)
                s5_profile_build_config(&s, &cfg) && s.closest_m > 0.21f &&
                    s.obstacle_forward_m > 0.21f,
                "profile geometry includes measured sensor mounting offset");
+    ObstacleSnapshot malformed = {.ray_count = 4u};
+    bool profile_rejects = !s5_profile_build_config(NULL, &cfg) &&
+                           !s5_profile_build_config(&malformed, &cfg);
+    malformed.ray_count = S5_SCAN_CAPACITY + 1u;
+    profile_rejects = !s5_profile_build_config(&malformed, &cfg) && profile_rejects;
+    malformed.ray_count = 5u;
+    for (unsigned i = 0u; i < 5u; ++i)
+        malformed.rays[i] = (ObstacleRay){.angle_deg = (float)((int)i - 2) * 30.0f,
+                                          .range_m = 1.0f, .valid = true};
+    malformed.rays[2].range_m = NAN;
+    profile_rejects = !s5_profile_build_config(&malformed, &cfg) && profile_rejects;
+    malformed.rays[2].range_m = INFINITY;
+    profile_rejects = !s5_profile_build_config(&malformed, &cfg) && profile_rejects;
+    malformed.rays[2].range_m = 0.0f;
+    profile_rejects = !s5_profile_build_config(&malformed, &cfg) && profile_rejects;
+    malformed.rays[2].range_m = 1.0f;
+    malformed.rays[2].angle_deg = 60.1f;
+    profile_rejects = !s5_profile_build_config(&malformed, &cfg) && profile_rejects;
+    malformed.rays[2].angle_deg = 60.0f;
+    TEST_CHECK("S5-U07", profile_rejects && s5_profile_build_config(&malformed, &cfg),
+               "profile rejects insufficient/oversized scans, invalid Echo range and out-of-envelope angle");
     TEST_SUMMARY("subsystem5");
 }
 #endif
