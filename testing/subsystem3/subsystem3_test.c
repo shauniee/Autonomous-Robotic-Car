@@ -380,6 +380,7 @@ static bool barcode_encoder_deadline_test(void)
 
     barcode_service_reset(&service, BARCODE_CANCELLED);
     pass = barcode_service_configure(&service, &cfg.barcode) && pass;
+    uint32_t rejected_before_deadline = service.status.rejected_reads;
     e = (barcode_encoder_t){.epoch = 3u, .valid = true};
     barcode_service_observe(&service, false, &e, 0u, false);
     e.left_count = 600u; e.right_count = 600u; e.sampled_us = 1000u;
@@ -387,7 +388,8 @@ static bool barcode_encoder_deadline_test(void)
     pass = service.status.state == BARCODE_CAPTURE && pass;
     barcode_service_check_time(&service, service.frame_started_us + cfg.barcode.max_frame_us);
     return pass && service.status.state == BARCODE_WAIT_QUIET &&
-           service.status.result == BARCODE_TIMEOUT && service.status.rejected_reads == 1u;
+           service.status.result == BARCODE_TIMEOUT &&
+           service.status.rejected_reads == rejected_before_deadline + 1u;
 }
 
 static bool mission_guard_test(void)
