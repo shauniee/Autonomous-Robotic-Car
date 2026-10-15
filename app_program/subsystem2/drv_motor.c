@@ -7,8 +7,7 @@
 #define MOTOR_WRAP 999u
 #define MOTOR_DIV_8_4 100u
 /* Verify motor lead polarity on the actual robot, wheels raised. */
-#define LEFT_FORWARD_A 1
-#define RIGHT_FORWARD_A 1
+#include "../common/robot_config.h"
 
 static ER motor_gpio_low(void)
 {
@@ -113,7 +112,11 @@ ER drv_motor_init(void)
 static ER motor_wheel(unsigned pin, float duty, int forward_a)
 {
     /* Validated duty 0..0.35 gives compare 0..350, within MOTOR_WRAP. */
-    UW compare = (UW)(duty * (MOTOR_WRAP + 1u));
+    UW compare = (UW)(fabsf(duty) * (MOTOR_WRAP + 1u));
+    if (duty < 0.0f) { forward_a = !forward_a; }
+    ER brake = pwm_set_cc(pin, 0u);
+    if (brake >= E_OK) { brake = pwm_set_cc(pin + 1u, 0u); }
+    if (brake < E_OK) { return brake; }
     ER er = pwm_set_cc(pin, forward_a ? compare : 0u);
     if (er >= E_OK)
     {
@@ -127,13 +130,13 @@ ER drv_motor_apply(float left, float right)
     ER er = E_PAR;
     /* Validate both wheels before converting or writing either duty. */
     if (isfinite(left) && isfinite(right) &&
-        (left >= 0.0f) && (right >= 0.0f) &&
-        (left <= MOTION_MAX_DUTY) && (right <= MOTION_MAX_DUTY))
+        (fabsf(left) <= MOTION_MAX_DUTY) &&
+        (fabsf(right) <= MOTION_MAX_DUTY))
     {
-        er = motor_wheel(8u, left, LEFT_FORWARD_A);
+        er = motor_wheel(8u, left, robot_config.left_forward_a);
         if (er >= E_OK)
         {
-            er = motor_wheel(10u, right, RIGHT_FORWARD_A);
+            er = motor_wheel(10u, right, robot_config.right_forward_a);
         }
     }
     if (er < E_OK)

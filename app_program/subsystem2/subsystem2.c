@@ -1,194 +1,258 @@
 #include "subsystem2.h"
 #include "drv_motor.h"
+#include "../common/robot_time.h"
+#include <math.h>
 static ID request_mutex, stop_flag, motion_tid;
-static MotionRequest latest;
+static MotionCommand latest;
+static uint32_t request_sequence, copied_sequence;
+static MotionController control;
+static MotionFeedback feedback;
 static MotionHealth progress;
-/* All runtime accesses are serialized by core-1 PRIMASK sections. */
 static uint32_t control_epoch = 1u, brake_epoch;
 static bool brake_acknowledged;
 
-static UW control_enter(void)
+ER s2_stop(void)
 {
+    if (stop_flag <= 0) { return E_OBJ; }
     UW state;
     DI(state);
-    __asm__ volatile ("" ::: "memory");
-    return state;
-}
-
-static void control_leave(UW state)
-{
-    __asm__ volatile ("" ::: "memory");
-    EI(state);
-    __asm__ volatile ("" ::: "memory");
-}
-
-/* Nonwaiting flag operation only; callers wake Motion after restoring IRQs. */
-static ER latch_stop(void)
-{
     ++control_epoch;
     brake_acknowledged = false;
-    return tk_set_flg(stop_flag, 1u);
-}
-static uint32_t now_ms(void) { SYSTIM t; tk_get_otm(&t); return t.lo; }
-ER s2_stop(void) {
-    if (stop_flag<=0) return E_OBJ;
-    UW state = control_enter();
-    ER er = latch_stop();
-    control_leave(state);
-    if (motion_tid>0) tk_wup_tsk(motion_tid);
+    ER er = tk_set_flg(stop_flag, 1u);
+    EI(state);
+    if (motion_tid > 0) { (void)tk_wup_tsk(motion_tid); }
     return er;
 }
-ER s2_publish(MotionRequest request) {
-    ER er=tk_loc_mtx(request_mutex,2);
-    if (er<E_OK) { s2_stop(); return er; }
-    latest=request;
+ER s2_publish(MotionRequest request)
+{
+    (void)request;
+    return E_NOSPT;
+}
+ER s2_command(const MotionCommand *request)
+{
+    if (request == NULL || tk_get_prc() != 2) { return E_PAR; }
+    uint32_t now;
+    if (!robot_now_ms(&now) || !robot_config_motion_valid() ||
+        !motion_command_valid(request, now, control_epoch, &robot_config))
+    {
+        return E_PAR;
+    }
+    ER er = tk_loc_mtx(request_mutex, TMO_POL);
+    if (er < E_OK) { return er; }
+    latest = *request;
+    ++request_sequence;
     return tk_unl_mtx(request_mutex);
+}
+ER s2_feedback_copy(MotionFeedback *out)
+{
+    if (out == NULL || request_mutex <= 0) { return E_PAR; }
+    ER er = tk_loc_mtx(request_mutex, TMO_POL);
+    if (er < E_OK) { return er; }
+    *out = feedback;
+    return tk_unl_mtx(request_mutex);
+}
+ER s2_health(MotionHealth *out)
+{
+    if (out == NULL || request_mutex <= 0) { return E_PAR; }
+    ER er = tk_loc_mtx(request_mutex, TMO_POL);
+    if (er < E_OK) { return er; }
+    *out = progress;
+    er = tk_unl_mtx(request_mutex);
+    UW state;
+    DI(state);
+    T_RFLG flag = {0};
+    ER flag_er = tk_ref_flg(stop_flag, &flag);
+    out->stopped = flag_er < E_OK || (flag.flgptn & 1u) != 0u;
+    out->brake_acknowledged = out->stopped && brake_acknowledged &&
+        brake_epoch == control_epoch;
+    out->run_epoch = control_epoch;
+    EI(state);
+    return er < E_OK ? er : flag_er;
+}
+ER s2_ack(uint32_t id)
+{
+    if (tk_get_prc() != 2) { return E_CTX; }
+    return motion_control_ack(&control, id) ? E_OK : E_OBJ;
 }
 ER s2_reset_stop(void)
 {
-    ER er = tk_loc_mtx(request_mutex, 2);
-    if (er < E_OK)
-    {
-        return er;
-    }
-    UW state = control_enter();
+    if (tk_get_prc() != 2) { return E_CTX; }
+    ER er = tk_loc_mtx(request_mutex, TMO_POL);
+    if (er < E_OK) { return er; }
+    UW state;
+    DI(state);
     T_RFLG flag = {0};
     er = tk_ref_flg(stop_flag, &flag);
     if (er >= E_OK)
     {
-        if (((flag.flgptn & 1u) == 0u) || !brake_acknowledged ||
-            (brake_epoch != control_epoch))
-        {
-            er = E_OBJ;
-        }
+        if ((flag.flgptn & 1u) == 0u || !brake_acknowledged ||
+            brake_epoch != control_epoch) { er = E_OBJ; }
         else
         {
             er = tk_clr_flg(stop_flag, 0u);
             if (er >= E_OK)
             {
-                latest = (MotionRequest){0};
-                ++control_epoch; /* Invalidate work copied before this reset. */
+                ++control_epoch;
+                latest = (MotionCommand){0};
+                copied_sequence = request_sequence;
+                motion_control_init(&control, control_epoch);
                 brake_acknowledged = false;
             }
         }
     }
-    control_leave(state);
-    ER unlock_er = tk_unl_mtx(request_mutex);
-    return er < E_OK ? er : unlock_er;
+    EI(state);
+    ER unlock = tk_unl_mtx(request_mutex);
+    return er < E_OK ? er : unlock;
 }
-ER s2_health(MotionHealth *h) {
-    ER er=tk_loc_mtx(request_mutex,2);
-    if (er<E_OK) return er;
-    *h=progress;
-    tk_unl_mtx(request_mutex);
-    UW state = control_enter();
-    T_RFLG f;
-    er=tk_ref_flg(stop_flag,&f);
-    h->stopped=er<E_OK || (f.flgptn&1)!=0;
-    h->brake_acknowledged = er >= E_OK && h->stopped &&
-        brake_acknowledged && (brake_epoch == control_epoch);
-    control_leave(state);
-    return er;
-}
-static void motion_task(INT stacd, void *exinf) {
-    (void)stacd; (void)exinf;
-    uint32_t next=now_ms();
-    for (;;) {
-        uint32_t now=now_ms();
-        MotionRequest r={0}; T_RFLG f={0};
-        ER er=tk_loc_mtx(request_mutex,2);
-        uint32_t request_epoch;
-        UW copy_state = control_enter();
-        request_epoch = control_epoch;
-        if (er >= E_OK)
+static void motion_task(INT stacd, void *exinf)
+{
+    (void)stacd;
+    (void)exinf;
+    bool encoder_ready = drv_encoder_init();
+    uint32_t previous_ms = 0u, next = 0u, stationary_since = 0u;
+    uint32_t previous_left = 0u, previous_right = 0u;
+    MotionFeedback sample = {0};
+    bool have_previous = false;
+    for (;;)
+    {
+        uint32_t now;
+        if (!robot_now_ms(&now)) { (void)s2_stop(); return; }
+        EncoderCapture encoder = {0};
+        bool acquired = encoder_ready && drv_encoder_copy(&encoder);
+        uint32_t elapsed = have_previous ? now - previous_ms : 20u;
+        if (elapsed == 0u) { elapsed = 1u; }
+        float dt = (float)elapsed / 1000.0f;
+        float dl = have_previous ? (float)(int32_t)(encoder.left_count -
+            previous_left) * robot_config.left_m_per_count : 0.0f;
+        float dr = have_previous ? (float)(int32_t)(encoder.right_count -
+            previous_right) * robot_config.right_m_per_count : 0.0f;
+        previous_left = encoder.left_count;
+        previous_right = encoder.right_count;
+        previous_ms = now;
+        have_previous = true;
+        sample.left_m += dl;
+        sample.right_m += dr;
+        sample.left_mps = dl / dt;
+        sample.right_mps = dr / dt;
+        if (robot_config.track_m > 0.0f)
         {
-            r = latest;
+            float yaw = (dr - dl) / robot_config.track_m;
+            float heading = sample.yaw_deg * 0.0174532925f + yaw * 0.5f;
+            sample.x_m += (dl + dr) * 0.5f * cosf(heading);
+            sample.y_m += (dl + dr) * 0.5f * sinf(heading);
+            sample.yaw_deg += yaw * 57.2957795f;
         }
-        control_leave(copy_state);
-        if (er >= E_OK)
+        sample.valid = acquired && robot_config_motion_valid() && elapsed <= 60u;
+        bool quiet = acquired && dl == 0.0f && dr == 0.0f;
+        if (!quiet) { stationary_since = now; }
+        sample.stationary = sample.valid && quiet && now - stationary_since >= 60u;
+        sample.encoder = encoder;
+        sample.sampled_ms = now;
+        ++sample.sequence;
+        MotionCommand request = {0};
+        uint32_t sequence = copied_sequence;
+        ER locked = tk_loc_mtx(request_mutex, TMO_POL);
+        if (locked >= E_OK)
         {
-            er = tk_unl_mtx(request_mutex);
+            request = latest;
+            sequence = request_sequence;
+            (void)tk_unl_mtx(request_mutex);
         }
-        /* Runtime stop callers must share Motion's core 1. Masking its IRQs
-           excludes task dispatch through the final stop check and output.
-           Only nonwaiting flag/time reads and bounded BSP writes belong here;
-           never acquire a mutex, sleep, or wake a task in this section. */
-        UW interrupt_state;
-        interrupt_state = control_enter();
-        ER flag_er = tk_ref_flg(stop_flag, &f);
-        bool stopped = flag_er < E_OK ||
-                       (f.flgptn & 1u) != 0u;
-        bool same_epoch = request_epoch == control_epoch;
-        bool valid = er >= E_OK && same_epoch &&
-                     motion_request_valid(r, stopped, now_ms());
-        ER output_er;
-        if (!valid)
+        UW state;
+        DI(state);
+        T_RFLG flag = {0};
+        bool stopped = tk_ref_flg(stop_flag, &flag) < E_OK ||
+            (flag.flgptn & 1u) != 0u;
+        float left = 0.0f, right = 0.0f;
+        if (!stopped)
         {
-            /* Old copied work is discarded; it must not stop a new run. */
-            if (!stopped && ((er < E_OK) || (same_epoch && r.enabled)))
+            if (!sample.valid || locked < E_OK)
             {
-                (void)latch_stop();
+                control.status = MOTION_FAILED;
+                control.reason = MOTION_ENCODER_FAULT;
+            }
+            else
+            {
+                if (sequence != copied_sequence)
+                {
+                    copied_sequence = sequence;
+                    if (!motion_control_accept(&control, &request,
+                        sample.left_m, sample.right_m, now, &robot_config))
+                    {
+                        control.status = MOTION_FAILED;
+                        control.reason = MOTION_BAD_COMMAND;
+                    }
+                }
+                motion_control_step(&control, sample.left_m, sample.right_m,
+                    sample.left_mps, sample.right_mps, dt, now,
+                    &robot_config, &left, &right);
+            }
+            if (control.status == MOTION_FAILED)
+            {
+                (void)tk_set_flg(stop_flag, 1u);
+                ++control_epoch;
                 stopped = true;
             }
-            output_er = drv_motor_brake();
         }
-        else
-        {
+        ER output;
 #if APP_TEST
-            output_er = drv_motor_brake(); /* TEST never permits movement. */
+        output = drv_motor_brake();
 #else
-            output_er = drv_motor_apply(r.left, r.right);
+        output = stopped ? drv_motor_brake() : drv_motor_apply(left, right);
 #endif
-        }
-        if (output_er < E_OK)
+        if (output < E_OK)
         {
-            (void)latch_stop();
+            (void)tk_set_flg(stop_flag, 1u);
+            stopped = true;
+            brake_acknowledged = false;
             (void)drv_motor_brake();
         }
         else
         {
-            brake_acknowledged = !valid && stopped && flag_er >= E_OK;
+            brake_acknowledged = stopped;
             brake_epoch = control_epoch;
         }
-        control_leave(interrupt_state);
-        if (output_er >= E_OK)
+        EI(state);
+        sample.left_duty = APP_TEST || stopped ? 0.0f : left;
+        sample.right_duty = APP_TEST || stopped ? 0.0f : right;
+        sample.run_epoch = control_epoch;
+        sample.action_id = control.command.action_id;
+        sample.status = control.status;
+        sample.reason = control.reason;
+        if (tk_loc_mtx(request_mutex, TMO_POL) >= E_OK)
         {
-            uint32_t serviced_ms = now_ms();
-            er = tk_loc_mtx(request_mutex, 2);
-            if (er >= E_OK)
+            feedback = sample;
+            if (output >= E_OK)
             {
-                progress.serviced_ms = serviced_ms;
+                progress.serviced_ms = now;
                 ++progress.sequence;
-                tk_unl_mtx(request_mutex);
             }
-            else
-            {
-                (void)drv_motor_brake();
-                s2_stop();
-            }
+            (void)tk_unl_mtx(request_mutex);
         }
-        /* Fixed deadline; stop wake-ups service immediately without shifting it. */
-        now=now_ms();
-        if ((int32_t)(now-next)>=0) {
-            next+=20;
-            if ((int32_t)(now-next)>=0) next=now+20;
-        }
-        tk_slp_tsk((TMO)(next-now));
-        tk_can_wup(TSK_SELF);
+        else { (void)s2_stop(); }
+        if (next == 0u) { next = now; }
+        if (robot_due(now, next)) { next = now + 20u; }
+        (void)tk_slp_tsk((TMO)(next - now));
+        (void)tk_can_wup(TSK_SELF);
     }
 }
-ER subsystem2_init(void) {
+ER subsystem2_init(void)
+{
     ER er = drv_motor_init();
-    if (er < E_OK)
-    {
-        return er;
-    }
-    T_CMTX m={0}; m.mtxatr=TA_INHERIT;
-    request_mutex=tk_cre_mtx(&m); if (request_mutex<E_OK) return request_mutex;
-    T_CFLG f={0}; f.iflgptn=1;
-    stop_flag=tk_cre_flg(&f); return stop_flag<E_OK ? stop_flag : E_OK;
+    if (er < E_OK) { return er; }
+    T_CMTX mutex = {0};
+    mutex.mtxatr = TA_INHERIT;
+    request_mutex = tk_cre_mtx(&mutex);
+    if (request_mutex <= 0) { return request_mutex; }
+    T_CFLG flag = {0};
+    flag.iflgptn = 1u;
+    stop_flag = tk_cre_flg(&flag);
+    motion_control_init(&control, control_epoch);
+    return stop_flag < E_OK ? stop_flag : E_OK;
 }
-ER subsystem2_start(void) {
-    motion_tid=app_start_task((FP)motion_task,S2_PRI_MOTION,TP_PRC2,"Motion");
-    return motion_tid<E_OK ? motion_tid : E_OK;
+ER subsystem2_start(void)
+{
+    motion_tid = app_start_task((FP)motion_task, S2_PRI_MOTION,
+        TP_PRC2, "Motion");
+    return motion_tid < E_OK ? motion_tid : E_OK;
 }

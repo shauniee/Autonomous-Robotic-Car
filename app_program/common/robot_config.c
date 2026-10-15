@@ -1,0 +1,83 @@
+#include "robot_config.h"
+#include "../subsystem3/barcode_decode.h"
+#include <math.h>
+
+/* Intentionally unconfigured. Replace zeros only with recorded measurements.
+   finish_black_ms selects a CONFIRMED sustained-black finish marker after
+   the configured action count and distance; unsupported finish rules inhibit. */
+const RobotConfig robot_config = {
+    .left_encoder_sign = 1, .right_encoder_sign = 1,
+    .left_forward_a = true, .right_forward_a = true,
+    .sonar_repeat_ms = 60u, .servo_settle_ms = 300u,
+    .scan_ms = 6000u, .action_ms = 5000u, .hump_ms = 6000u
+};
+
+static bool positive(float value)
+{
+    return isfinite(value) && value > 0.0f;
+}
+
+bool robot_config_motion_valid(void)
+{
+    const RobotConfig *c = &robot_config;
+    return c->motion_confirmed && positive(c->left_m_per_count) &&
+        positive(c->right_m_per_count) && positive(c->track_m) &&
+        (c->left_encoder_sign == 1 || c->left_encoder_sign == -1) &&
+        (c->right_encoder_sign == 1 || c->right_encoder_sign == -1) &&
+        positive(c->speed_max_mps) && positive(c->cruise_mps) &&
+        positive(c->search_mps) && c->cruise_mps <= c->speed_max_mps &&
+        c->search_mps <= c->cruise_mps && positive(c->kp) &&
+        isfinite(c->ki) && c->ki >= 0.0f &&
+        isfinite(c->kd) && c->kd >= 0.0f &&
+        positive(c->distance_tolerance_m) && positive(c->angle_tolerance_deg) &&
+        positive(c->stationary_mps) && c->stationary_mps < c->search_mps &&
+        c->stall_ms > 60u && c->stall_ms < 10000u &&
+        c->action_ms > 60u && c->action_ms < 60000u;
+}
+
+bool robot_config_sonar_valid(void)
+{
+    const RobotConfig *c = &robot_config;
+    return c->sonar_confirmed && c->servo_min_us >= 500u &&
+        c->servo_min_us < c->servo_center_us &&
+        c->servo_center_us < c->servo_max_us && c->servo_max_us <= 2500u &&
+        positive(c->servo_us_per_deg) &&
+        (c->servo_right_sign == 1 || c->servo_right_sign == -1) &&
+        c->servo_settle_ms >= 20u && c->servo_settle_ms <= 1000u &&
+        c->sonar_repeat_ms >= 60u && c->sonar_repeat_ms <= 200u &&
+        c->scan_ms >= 1000u && c->scan_ms < 30000u &&
+        positive(c->sonar_min_m) && c->sonar_max_m > c->sonar_min_m &&
+        c->sonar_max_m <= 5.0f && positive(c->body_width_m) &&
+        positive(c->body_length_m) && positive(c->clearance_m);
+}
+
+bool robot_config_terrain_valid(void)
+{
+    const RobotConfig *c = &robot_config;
+    return c->terrain_confirmed && positive(c->height_factor) &&
+        isfinite(c->roll_height_factor) && c->roll_height_factor >= 0.0f &&
+        positive(c->gravity_tolerance_g) && c->gravity_tolerance_g < 0.5f &&
+        positive(c->impact_g) && c->impact_g <= 2.0f &&
+        positive(c->hump_pitch_deg) && c->hump_pitch_deg < 45.0f &&
+        positive(c->hump_roll_deg) && c->hump_roll_deg < 45.0f &&
+        c->hump_ms >= 500u && c->hump_ms < 60000u;
+}
+
+bool robot_config_mission_valid(void)
+{
+    const RobotConfig *c = &robot_config;
+    return c->course_confirmed && robot_config_motion_valid() &&
+        robot_config_sonar_valid() && robot_config_terrain_valid() &&
+        barcode_config_valid(&c->barcode) &&
+        c->barcode.left_um_per_count ==
+            (uint32_t)(c->left_m_per_count * 1000000.0f + 0.5f) &&
+        c->barcode.right_um_per_count ==
+            (uint32_t)(c->right_m_per_count * 1000000.0f + 0.5f) &&
+        positive(c->junction_min_m) && c->junction_max_m > c->junction_min_m &&
+        positive(c->junction_exit_m) && c->junction_hold_ms >= 20u &&
+        c->junction_hold_ms <= 500u && positive(c->bypass_max_m) &&
+        positive(c->reacquire_max_m) && positive(c->reacquire_heading_deg) &&
+        c->reacquire_heading_deg <= 45.0f && positive(c->finish_min_m) &&
+        c->finish_after_actions > 0u && c->finish_black_ms > c->junction_hold_ms &&
+        c->finish_black_ms <= 2000u;
+}
