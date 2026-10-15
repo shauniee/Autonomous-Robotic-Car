@@ -5,12 +5,20 @@
 void subsystem2_test(void)
 {
     TEST_INIT();
-    bool encoder = drv_encoder_transition(0u, 1u) == 1 &&
-                   drv_encoder_transition(1u, 3u) == 1 &&
-                   drv_encoder_transition(3u, 2u) == 1 &&
-                   drv_encoder_transition(2u, 0u) == 1 &&
-                   drv_encoder_transition(0u, 2u) == -1 &&
-                   drv_encoder_transition(0u, 3u) == 2;
+    static const int8_t quadrature[16] = {
+        0, 1, -1, 2, -1, 0, 2, 1, 1, 2, 0, -1, 2, -1, 1, 0};
+    bool encoder = true;
+    for (unsigned previous = 0u; previous < 4u; ++previous)
+    {
+        for (unsigned current = 0u; current < 4u; ++current)
+        {
+            encoder = encoder &&
+                      drv_encoder_transition(previous, current) ==
+                          quadrature[previous * 4u + current];
+        }
+    }
+    encoder = encoder && drv_encoder_transition(4u, 0u) == 2 &&
+              drv_encoder_transition(0u, 4u) == 2;
     TEST_CHECK("S2-U06", encoder,
                "quadrature direction and illegal transition");
     RobotConfig cfg = {
