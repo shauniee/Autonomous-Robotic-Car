@@ -18,6 +18,7 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 
 | INT-28 | Fresh matching-epoch quiet raw encoders plus stop/brake acknowledgement; reject stale, moving, faulted or unacknowledged | Inhibited firmware fixture |
 | INT-29 | Shared hardware TIMER delay completes, zero delay accepted, excessive duration rejected | Actual inhibited firmware timer fixture |
+| IT06 | Actual `mission_mapping_submit` accepts a valid request and rejects invalid, replay and pending-busy requests | Inhibited firmware fixture using the initialized T-Kernel mission mutex |
 
 ## Build and integrated cases
 

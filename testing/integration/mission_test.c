@@ -4,6 +4,7 @@
 #include "../../app_program/common/robot_time.h"
 #include "../fixture_config.h"
 #include "../../app_program/test_report.h"
+#include <string.h>
 #if APP_TEST
 static bool polling_mutex_test(void)
 {
@@ -71,6 +72,27 @@ static bool four_letter_mapping_test(void)
     mapping[5] = (barcode_action_t)99; /* Invalid enum. */
     return !mission_mapping_valid(mapping) && valid;
 }
+
+static bool mapping_submit_api_test(void)
+{
+    barcode_action_t mapping[BARCODE_ALPHABET] = {BARCODE_UNMAPPED};
+    mapping[20] = BARCODE_LEFT;
+    mapping[21] = BARCODE_RIGHT;
+    mapping[22] = BARCODE_STRAIGHT;
+    mapping[23] = BARCODE_U_TURN;
+    const uint32_t request_id = 0x1eafu;
+    barcode_action_t invalid[BARCODE_ALPHABET];
+    memcpy(invalid, mapping, sizeof(invalid));
+    invalid[23] = BARCODE_UNMAPPED;
+    bool rejected = mission_mapping_submit(request_id, invalid) == MAP_INVALID &&
+                    mission_mapping_submit(0u, mapping) == MAP_INVALID;
+    MappingResult accepted = mission_mapping_submit(request_id, mapping);
+    MappingResult replay = mission_mapping_submit(request_id, mapping);
+    MappingResult busy = mission_mapping_submit(request_id + 1u, mapping);
+    return rejected && accepted == MAP_PENDING && replay == MAP_INVALID &&
+           busy == MAP_BUSY;
+}
+
 void integration_test(void)
 {
     TEST_INIT();
@@ -177,6 +199,8 @@ void integration_test(void)
                    robot_pulse_wait_us(0u) && !robot_pulse_wait_us(101u),
                "shared hardware TIMER bounds pulse waits; live core-1 "
                "acquisition/report progress also needs observation");
+    TEST_CHECK("IT06", mapping_submit_api_test(),
+               "mission_mapping_submit accepts one valid stopped request and rejects invalid, replay and busy requests");
     TEST_SUMMARY("integration");
 }
 #endif
