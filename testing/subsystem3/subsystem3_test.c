@@ -339,6 +339,31 @@ static bool unmapped_observation_test(void)
            !barcode_service_pop(&service, &event);
 }
 
+static bool barcode_encoder_deadline_test(void)
+{
+    RobotConfig cfg = fixture_config();
+    barcode_service_t service;
+    barcode_service_init(&service);
+    bool pass = barcode_service_configure(&service, &cfg.barcode);
+    barcode_encoder_t e = {.epoch = 1u, .valid = true};
+    barcode_service_observe(&service, false, &e, 0u, false);
+    e.sampled_us = 1000u; e.epoch = 2u;
+    barcode_service_observe(&service, false, &e, 1000u, false);
+    pass = service.status.result == BARCODE_BAD_ENCODER &&
+           service.status.rejected_reads == 1u && pass;
+
+    barcode_service_reset(&service, BARCODE_CANCELLED);
+    pass = barcode_service_configure(&service, &cfg.barcode) && pass;
+    e = (barcode_encoder_t){.epoch = 3u, .valid = true};
+    barcode_service_observe(&service, false, &e, 0u, false);
+    e.left_count = 600u; e.right_count = 600u; e.sampled_us = 1000u;
+    barcode_service_observe(&service, true, &e, 1000u, true);
+    pass = service.status.state == BARCODE_CAPTURE && pass;
+    barcode_service_check_time(&service, service.frame_started_us + cfg.barcode.max_frame_us);
+    return pass && service.status.state == BARCODE_WAIT_QUIET &&
+           service.status.result == BARCODE_TIMEOUT && service.status.rejected_reads == 1u;
+}
+
 static bool mission_guard_test(void)
 {
     RobotConfig cfg = fixture_config();
@@ -474,6 +499,8 @@ void subsystem3_test(void)
                "Code39 valid decode, noisy overlapping-width rejection, malformed frame rejection and config validation");
     TEST_CHECK("S3-U24", unmapped_observation_test(),
                "unmapped symbol is retained as observation and never enters action queue");
+    TEST_CHECK("S3-U25", barcode_encoder_deadline_test(),
+               "encoder epoch change rejects a read and frame deadline returns scanner to quiet admission");
     TEST_SUMMARY("subsystem3");
 }
 #endif
