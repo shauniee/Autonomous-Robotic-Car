@@ -1,0 +1,81 @@
+# End-to-end mission tests
+
+These are physical acceptance scenarios on the normal, motor-enabled mission image. No case has been executed or accepted. A build, an inhibited firmware fixture, source review, or dashboard simulation is not an end-to-end result.
+
+## Common preconditions and evidence
+
+Before any powered movement, resolve the electrical release, installed sensor compatibility, course rules, and numerical pass limits in [PROJECT_SPECS](../../docs/donotsubmit/PROJECT_SPECS.md#pending-decisions). Confirm motor/driver/supply ratings, Pico-safe sensor levels, barcode format, junction and finish conventions, obstacle bounds, and stopping requirements. Record the agreed numeric limits and their approving source here before execution. Until then, every E2E case remains **PENDING**; do not substitute guessed timing, distance, accuracy, clearance, or height thresholds.
+
+Use the exact confirmed course and a normal `TEST=0`, `IR_ONLY_TEST=0` mission image. Record source revision, build profile, UF2 SHA-256, robot identity, date, tester, wiring, battery/power, broker address, sensor/calibration state, configuration revision, mapping request ID, run epoch, and route layout. Keep the firmware image identical whenever a case says the mapping changes without a rebuild. Follow the single-power-source and calibration sequence in [GUIDE](../../GUIDE.md); use battery power for normal movement and disconnect USB before applying battery power.
+
+Start one timestamped status/MQTT capture and one continuous video capture before the run; include the console capture where the approved setup provides it. Align clocks or record the offset. For each event, retain raw evidence for barcode symbol/action, action ID and completion, encoder reference/observed distance and angle, IR acquisition sequence/time, terrain/hump status/history, scan profile, mission state/reason, stop/brake acknowledgement, mapping revision, and elapsed time. Append failures and reruns; never overwrite them. Compare measurements only with the limits resolved above.
+
+## E2E01 — Complete course with runtime mapping
+
+**Status: PENDING.** This is one complete mission from boot through confirmed finish. Do not start if any common precondition, electrical limit, course rule, or acceptance threshold remains unresolved.
+
+### Procedure
+
+1. Confirm the approved course is clear and marked. Install the frozen normal image. Record its source revision, complete build profile, and UF2 SHA-256. Start the broker and evidence captures, then boot on the approved battery supply with GP20 and GP21 released. Verify the robot remains braked and reports no active run.
+2. Perform combined black/IMU calibration exactly as in the GUIDE: place both line sensors over the black reference at their installed height, press/release GP20 once, hold the robot level and still, and wait for the one-beep completion. Confirm telemetry reports successful black and IMU calibration. Move both sensors to the white reference, press/release GP20 separately, and wait for the two-beep completion. Confirm accepted contrast and fresh line guidance. Any timeout, failure beep, stale sensor, or movement invalidates this attempt; resolve the cause and restart the required calibration sequence.
+3. Prepare a complete four-letter mapping with one distinct letter assigned to each of left, right, straight, and U-turn; leave all other letters unmapped. Validate the file locally, send it through the documented mapping helper while stopped, and retain the request and acknowledgement. Require a matching request ID, successful applied result, and applied revision. Confirm the UF2 hash is unchanged and no build/reflash occurred. Do not infer that editing the file installed the map.
+4. Wait for fresh `READY` telemetry showing the required calibration, settings, sensors, and mapping revision. Position the robot at the approved start line, clear the movement area, release both buttons, then press/release GP20 as a separate local start. Require a fresh run epoch and `FOLLOW_LINE` before the robot advances.
+5. Traverse the confirmed course and present the four assigned markers in the approved sequence. For each marker, retain the decoded symbol/orientation, mapped action, run epoch, junction qualification, generated Motion action ID, encoder progress, matching completion acknowledgement, and next mission transition. Verify each of the four actions executes exactly once at its intended junction and that both wheel targets meet the approved completion rule. Record measured distance and angle error against the agreed limits.
+6. Traverse each approved reference hump, including the required one-wheel reference if the confirmed route includes it. Save the terrain event, raw/reference measurement, accepted height, current-run count, last height, and maximum height. Continue to the approved static obstacle. Verify fresh forward detection, stopped/brake acknowledgement before scan, the selected permitted bypass, and reacquisition of the original line using fresh line/pose/heading context. Record the actual route and clearance references against the approved bounds.
+7. Continue to the confirmed finish marker after the agreed action count and minimum travel. Verify the configured finish condition, `COMPLETE` state, and acknowledged brake. Record total elapsed time, route/markers visited, action/hump counts, last/max height, mapping revision, and all final status/event snapshots.
+
+### Pass oracle
+
+Pass only when the same unchanged firmware image boots, calibrates, accepts the runtime four-action map, starts only from the separate local GP20 press, completes all four distinct actions at qualified junctions, records the reference hump evidence, safely bypasses and reacquires the original line around the approved static obstacle, and reaches the confirmed finish braked. Physical route, event history, action IDs, terrain peak, and telemetry must agree with the observed run and meet every previously agreed accuracy, clearance, stopping, and time limit. Any unresolved threshold, missing reference, unexpected action, stale evidence, intervention, non-fresh reacquisition, or unconfirmed finish leaves the case PENDING or FAILED and must be recorded.
+
+## Results
+
+| Date | Case | Revision / UF2 SHA-256 | Power, wiring, calibration and mapping | Tester | Result | Measurements / elapsed time | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| | E2E01 | | | | PENDING | Numeric/course acceptance limits unresolved; no physical run recorded | |
+
+## E2E02 — Independent safety-fault runs and deliberate recovery
+
+**Status: PENDING.** Run each fault below independently from a fresh, calibrated, mapped, locally started mission. Use the approved safe test area and fault-injection method. Do not disconnect wiring, obstruct moving hardware, or create a fault during motion unless the electrical and physical safety review explicitly authorizes that exact method. If no safe stale-data or scan-fault injection method exists, leave that subrun pending.
+
+### Procedure
+
+1. For each subrun, record the normal image revision and UF2 SHA-256, current mapping revision, fresh calibration/readiness, starting run epoch, battery/wiring, route position, sensor sequences/timestamps, and pre-fault mission/Motion state. Start continuous video and status/MQTT capture. Use a separate fresh run for each fault so no prior latch or recovery state affects the next result.
+2. **GP21 stop:** on a confirmed safe straight section during active line following, press GP21 and record the electrical edge time, mission reason/state, stop flag, brake acknowledgement, Motion duty/velocity feedback, encoder counts, and physical displacement until rest. Keep GP21 down through the measured stop, then release it. Observe the stopped state and verify that release, GP20, recovered sensor readings, an old command/action ID, and repeated start attempts cannot resume movement. Record status and physical observations for each attempt.
+3. **Stale required sensor:** on a safe section, use only the approved mechanism to freeze or age one required sensor publication beyond its approved freshness limit. Record the last valid sequence/time, the stale interval, mission fault reason, stop/brake acknowledgement, and physical stopping response. Restore the sensor connection/publication while still latched; confirm freshness recovery alone does not restart motion. If no approved injection method is available, record the method as unavailable and do not improvise.
+4. **Line-loss deadline:** use the approved controlled line-loss method and safe recovery area. Remove valid line guidance without disturbing the robot, then capture the last fresh IR sequence/time, line state, current-run recovery direction/context, elapsed loss time, mission reason, stop/brake acknowledgement, and physical displacement. Confirm that exceeding the approved recovery deadline causes a latched stop and that stale direction or previous-run guidance does not continue motion.
+5. **Scan timeout or unusable clearance:** approach only the approved static obstacle at the confirmed safe position. Capture fresh stopped/stationary and brake-acknowledgement evidence before scan. Use the approved scan-fault method to produce a deadline or a missing/invalid/blocked clearance result. Record every servo/sonar angle, sample time, Echo validity/range, scan ID/status, profile validity, selected side, mission reason, and stop/brake output. Confirm bypass does not start on timeout or unknown/unusable clearance. Keep motion inhibited while checking center restoration and any forward-reading recovery.
+6. After each subrun, release GP21 if held, clear the fault cause, and press/release GP20 once for the documented local reset. Confirm reset does not move the robot and advances/reinitializes the run context only as specified. Wait for fresh `READY`, complete any calibration or mapping step required by the reset, then release and press GP20 again as a distinct local start. Confirm only this fresh sequence starts a new run. Retry a command/action ID from the prior epoch and verify it remains rejected. Retain separate before/fault/after captures for reset, readiness, and start.
+
+### Pass oracle
+
+Each of the four fault subruns must produce the expected local stop/fault reason and an acknowledged brake; physical stopping time and distance must meet the limits approved before the trial. The safety response must not depend on broker availability. GP21 release, sensor reconnection, line recovery, scan completion, old/stale commands, or a held/repeated GP20 press must not resume the interrupted run. A cause-cleared, qualified reset and a separate fresh start are required. Scan cancellation/timeout or unusable clearance must remain stopped and cannot fall through to bypass. Pass E2E02 only when every independent subrun meets its oracle; unavailable fault injection, unknown stop limits, or incomplete physical evidence keeps the affected subrun pending.
+
+| Date | Case / subrun | Revision / UF2 SHA-256 | Fault method and starting state | Tester | Result | Stop time/distance and other measurements | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| | E2E02 / GP21 | | | | PENDING | Stop limit unresolved; no physical run recorded | |
+| | E2E02 / stale sensor | | | | PENDING | Injection method and freshness/stop limits unresolved | |
+| | E2E02 / line-loss deadline | | | | PENDING | Recovery/stop limits unresolved | |
+| | E2E02 / scan timeout or unusable clearance | | | | PENDING | Scan/clearance/stop limits and injection method unresolved | |
+
+## E2E03 — Broker recovery and reboot requalification
+
+**Status: PENDING.** This case checks that network loss does not control local motion, that telemetry/history can be recovered after reconnection, and that a power cycle requires fresh mission qualification and mapping.
+
+### Procedure
+
+1. Resolve the common electrical, course, network, history-retention and acceptance preconditions. Record the normal image revision/profile/UF2 SHA-256, broker and Wi-Fi configuration, approved mapping file, mapping request ID/revision, run epoch, history cursors, and the retention/replay policy for configuration topics. Start continuous video and broker/status/event captures before boot.
+2. Boot the frozen normal image on the approved battery supply. Complete black/IMU and white calibration, load the valid four-letter mapping while stopped, verify the matching applied acknowledgement/revision, wait for `READY`, and start locally with a separate GP20 press. Confirm telemetry, run epoch and bounded history before entering the test segment.
+3. During a confirmed safe midmission segment with fresh local sensors and a clear route, interrupt only the approved broker/Wi-Fi path while preserving robot power and local sensors. Record the exact disconnect time and last received sequence/time. Observe the robot directly and on video while it continues its approved local mission behavior. Do not issue movement commands from the laptop during the outage. Record physical route progress, local state if available, barcodes/actions, humps, obstacle decisions, and finish/stop behavior.
+4. Restore the broker/network without rebooting the robot. Capture reconnection, new telemetry sequence/sample times, current mission state/run epoch, mapping revision and request ID, and event-history responses using the pre-outage cursors. Reconcile every physically observed event across the gap: accepted event IDs and values must be valid for the same run, counts and eviction/drop/overflow fields must explain bounded-history limits, and reconnect must not replay a barcode action or an obsolete mapping command. Continue the course to its confirmed finish and record the final accepted state/history.
+5. After the run has reached a braked, safe terminal state, power down and power-cycle under the approved single-source procedure. Keep the same frozen UF2 and record its hash again. On reboot, keep GP20/GP21 released and confirm no movement, no prior calibration readiness, no active run, and no runtime mapping acknowledgement/revision restored from RAM. Attempting the ordinary local start before readiness must not begin motion.
+6. Complete fresh black/IMU and white calibration after reboot. Revalidate and resend the four-letter mapping using a new request ID; require a matching live applied acknowledgement and revision from the rebooted robot. Check that no retained broker configuration was applied automatically and that the old run's commands/events cannot start or replay. Wait for fresh `READY`, then release/press GP20 as a separate local start. Confirm the new run context is distinct and captures only the new run's history, while the previous run's saved evidence remains available to the operator.
+
+### Pass oracle
+
+During broker loss, the robot remains locally safe and follows the approved autonomous behavior using fresh required sensors; network loss alone neither introduces motion nor prevents a required local safety stop. On reconnection, telemetry and valid bounded event history resume for the same run without duplicate action, stale command replay, or silent event loss beyond explicitly reported eviction/overflow. The post-run power cycle leaves the same firmware image installed but clears RAM calibration, run readiness, and runtime mapping; no movement or retained-configuration replay occurs before fresh calibration, acknowledged mapping, readiness, and a separate local start. Pass only when the physical route and captured telemetry/history reconcile and all approved network, stop, recovery, and course limits are met. Until those limits and the broker retention policy are confirmed, keep the result PENDING.
+
+| Date | Case / phase | Revision / UF2 SHA-256 | Power, network, calibration and mapping | Tester | Result | Measurements / elapsed time | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| | E2E03 / broker loss and reconnect | | | | PENDING | Network recovery and event-history acceptance limits unresolved; no physical run recorded | |
+| | E2E03 / post-run power cycle | | | | PENDING | Reboot/readiness and retained-configuration policy unresolved; no physical run recorded | |

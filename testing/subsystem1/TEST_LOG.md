@@ -16,6 +16,8 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | S1-U11 | every topic rejects wildcards and duplicates | Inhibited firmware fixture |
 | S1-U12 | robot summary, capacity rejection, bounded history/cursor/reset/saturation | Inhibited firmware fixture |
 | S1-U13 | bounded read-only event retrieval request | Inhibited firmware fixture |
+| S1-U14 | mapping request identity rejects zero, leading zero, overflow, duplicate ID, unknown action and mismatched fragment length; max ID accepted | Inhibited firmware fixture |
+| S1-U15 | independent line/motion 60 ms and terrain/magnetic/sonar 250 ms freshness boundaries across clock wrap; stale values serialize as null | Inhibited firmware fixture |
 
 ## Results
 
@@ -55,3 +57,6 @@ Latest executed image: `33ea475`, UF2 `f554c1f1280098cfc6c3278992c0d5877f744dab0
 `33ea475` actual MQTT follow-up: [12 live samples](logs/2026-10-15_available-release_mqtt-live.json) PASS, IR ages 20–40 ms and Motion ages 10–30 ms, raw encoders valid and motors inhibited. [Two mapping changes](logs/2026-10-15_available-release_mapping.json) accepted revisions 1/2 without reflashing. [Passive retained-topic check](logs/2026-10-15_available-release_retained-mapping.json) found no retained mapping; broker permits retention, so this is an observation rather than an enforcement guarantee.
 
 INT-18 reboot/reload subset PASS at `33ea475`: [normal reboot and reload](logs/2026-10-15_available-release_reboot-reload.json) observed fresh revision 0 before reload and matching revision 1 acknowledgement afterward, with no recompile/reflash and motors inhibited. The [earlier BOOTSEL attempt](logs/2026-10-15_available-release_reboot-attempt.json) is retained as incomplete. Full INT-18 busy/backpressure/moving transport checks and T12/T13 remain partial.
+
+
+Exact target fixture host run at `1bd0ffd`: PASS, 10 checks (S1-U04, S1-U06, S1-U07, S1-U09–S1-U15); full output in [host fixture log](../pure/logs/2026-10-15_fixture-suite.txt). The runner compiles the existing `subsystemN_test.c` unchanged and real production algorithm sources with the host compiler; only the test report output is adapted. It does not provide T-Kernel, GPIO, timer, firmware or physical-hardware evidence.

@@ -17,6 +17,13 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | S3-U17 | busy white press ignored, fresh later press accepted, GP21 cancels | Inhibited firmware fixture |
 
 | S3-U18 | Black/white capture, opposite polarity, stale guidance and low-contrast reset | Inhibited firmware fixture |
+| S3-U19 | IR calibration admission, wrapped capture timeout, duplicate/invalid sample handling and opposite polarity | Inhibited firmware fixture |
+| S3-U20 | Service mapping enum/revision lifecycle and mission mapping's exactly-four-distinct-action validation (missing, duplicate and invalid values rejected) | Inhibited firmware fixture |
+| S3-U21 | Mission sensor freshness, stopped mapping admission, broad-black dwell continuity, confirmed junction/finish thresholds and geometry guards | Inhibited firmware fixture |
+| S3-U22 | IR normalization endpoints/midpoint, exact white-enter/white-exit threshold behavior and strict hysteresis, invalid raw rejection and zero guidance | Inhibited firmware fixture |
+| S3-U23 | Code 39 valid decode, ambiguous width rejection, malformed frame rejection and invalid configuration rejection | Inhibited firmware fixture |
+| S3-U24 | Unmapped symbol remains a recorded observation and is excluded from the action event queue | Inhibited firmware fixture |
+| S3-U25 | Encoder epoch change rejects capture input; bounded frame deadline returns service to quiet admission | Inhibited firmware fixture |
 
 ## Results
 
@@ -29,3 +36,6 @@ Actual inhibited firmware execution is recorded above. Physical acceptance remai
 Physical coverage and procedures: [system cases](../system/TEST_LOG.md), [GUIDE](../../GUIDE.md), [testing policy](../README.md). Include source, image, power/wiring, calibration, mapping request/revision, reference/observed measurements, time and evidence for every real run.
 
 Latest executed image: `33ea475`, UF2 `f554c1f1280098cfc6c3278992c0d5877f744dab0f07a1ef84d02e6b674318b0`; USB-only IR-only TEST, motors inhibited, tester Nicholas/Codex. **Firmware PASS** for S3-U06, S3-U09, S3-U12, S3-U14, S3-U15, S3-U16, S3-U17, S3-U18; [complete 45-check capture](../integration/logs/2026-10-15_152409_309541_pico-console.txt), [summary](../integration/logs/2026-10-15_152409_309541_pico-console.json). Physical acceptance remains pending.
+
+
+Exact target fixture host run at `1bd0ffd`: PASS, 15 checks (S3-U06, S3-U09, S3-U12, S3-U14–S3-U25); full output in [host fixture log](../pure/logs/2026-10-15_fixture-suite.txt). The runner compiles the existing `subsystemN_test.c` unchanged and real production algorithm sources with the host compiler; only the test report output is adapted. It does not provide T-Kernel, GPIO, timer, firmware or physical-hardware evidence.

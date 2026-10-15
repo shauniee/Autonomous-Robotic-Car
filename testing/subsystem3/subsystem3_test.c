@@ -4,6 +4,8 @@
 #include "../../app_program/subsystem3/joint_calibration.h"
 #include "../../app_program/subsystem3/ir_tracking_calibration.h"
 #include "../../app_program/subsystem3/barcode_service.h"
+#include "../../app_program/subsystem3/mission_guards.h"
+#include "../../app_program/subsystem3/mission_status.h"
 #include "../fixture_config.h"
 #include "code39_vectors.h"
 #include <math.h>
@@ -198,6 +200,249 @@ static bool ir_capture_test(void)
            !tracker.calibration.black_set && !tracker.calibration.white_set;
 }
 
+static bool barcode_mapping_test(void)
+{
+    RobotConfig cfg = fixture_config();
+    barcode_service_t service;
+    barcode_service_init(&service);
+    barcode_action_t actions[BARCODE_ALPHABET];
+    for (unsigned i = 0; i < BARCODE_ALPHABET; ++i)
+        actions[i] = (barcode_action_t)(i % 5u);
+    bool pass = !barcode_config_valid(NULL) && barcode_config_valid(&cfg.barcode) &&
+                barcode_service_mapping(&service, actions) &&
+                service.status.mapping_revision == 1u;
+    barcode_action_t invalid[BARCODE_ALPHABET];
+    memcpy(invalid, actions, sizeof invalid);
+    invalid[4] = (barcode_action_t)99;
+    pass = !barcode_service_mapping(&service, invalid) &&
+           service.status.mapping_revision == 1u && pass;
+    pass = barcode_service_configure(&service, &cfg.barcode) && pass;
+    pass = !barcode_service_mapping(&service, invalid) && pass;
+    barcode_service_reject(&service, BARCODE_SHORT_QUIET);
+    pass = service.status.result == BARCODE_SHORT_QUIET &&
+           service.status.rejected_reads == 1u &&
+           service.status.state == BARCODE_WAIT_QUIET && pass;
+    barcode_service_fault(&service, BARCODE_CAPTURE_OVERFLOW);
+    pass = service.status.state == BARCODE_FAULT &&
+           (service.status.fault_bits & BARCODE_FAULT_CAPTURE) != 0u && pass;
+    barcode_service_reset(&service, BARCODE_CANCELLED);
+    bool lifecycle = pass && service.status.state == BARCODE_DISABLED &&
+           service.status.result == BARCODE_CANCELLED && service.status.fault_bits == 0u;
+    barcode_action_t mission_map[BARCODE_ALPHABET];
+    for (unsigned i = 0; i < BARCODE_ALPHABET; ++i)
+        mission_map[i] = BARCODE_UNMAPPED;
+    mission_map[0] = BARCODE_LEFT;
+    mission_map[1] = BARCODE_RIGHT;
+    mission_map[2] = BARCODE_STRAIGHT;
+    mission_map[3] = BARCODE_U_TURN;
+    bool unique = mission_mapping_valid(mission_map);
+    mission_map[3] = BARCODE_UNMAPPED;
+    bool missing = !mission_mapping_valid(mission_map);
+    mission_map[3] = BARCODE_LEFT;
+    bool duplicate = !mission_mapping_valid(mission_map);
+    mission_map[3] = (barcode_action_t)99;
+    bool invalid_action = !mission_mapping_valid(mission_map);
+    return lifecycle && unique && missing && duplicate && invalid_action;
+}
+
+static bool calibration_fault_test(void)
+{
+    IrTracker tracker;
+    ir_tracking_init(&tracker);
+    bool pass = !ir_tracking_capture(&tracker, IR_CAPTURE_WHITE, 100u) &&
+                tracker.capture_result == IR_CAPTURE_NEED_BLACK;
+    pass = ir_tracking_capture(&tracker, IR_CAPTURE_BLACK, UINT32_MAX - 20u) && pass;
+    ir_tracking_sample(&tracker, (IrRaw){1000u, 1100u}, true, UINT32_MAX - 20u);
+    uint32_t count = tracker.capture_count;
+    ir_tracking_sample(&tracker, (IrRaw){1000u, 1100u}, true, UINT32_MAX - 20u);
+    pass = tracker.capture_count == count && pass;
+    ir_tracking_check_time(&tracker, 20u);
+    pass = tracker.capture_kind == IR_CAPTURE_BLACK && pass;
+    ir_tracking_check_time(&tracker, 50u);
+    pass = tracker.capture_kind == IR_CAPTURE_NONE &&
+           tracker.capture_result == IR_CAPTURE_GAP && pass;
+
+    ir_tracking_init(&tracker);
+    pass = ir_tracking_capture(&tracker, IR_CAPTURE_BLACK, 0u) && pass;
+    ir_tracking_sample(&tracker, (IrRaw){1200u, 1300u}, false, 20u);
+    pass = tracker.capture_kind == IR_CAPTURE_NONE &&
+           tracker.capture_result == IR_CAPTURE_INVALID_SAMPLE && pass;
+    tracker.calibration = (IrCalibration){.black = {3000u, 3000u},
+                                          .white = {500u, 500u},
+                                          .black_set = true,
+                                          .white_set = true};
+    pass = ir_tracking_reading((IrRaw){500u, 3000u}, &tracker.calibration).valid && pass;
+    IrReading reverse = ir_tracking_reading((IrRaw){3000u, 500u}, &tracker.calibration);
+    return pass && reverse.valid && reverse.error < 0.0f;
+}
+
+static bool ir_line_classification_test(void)
+{
+    IrCalibration cal = {.black = {3000u, 3000u}, .white = {500u, 500u},
+                         .black_set = true, .white_set = true};
+    IrReading white = ir_tracking_reading((IrRaw){500u, 500u}, &cal);
+    IrReading black = ir_tracking_reading((IrRaw){3000u, 3000u}, &cal);
+    IrReading center = ir_tracking_reading((IrRaw){1750u, 1750u}, &cal);
+    IrReading invalid = ir_tracking_reading((IrRaw){4096u, 1000u}, &cal);
+    bool pass = white.valid && white.left_fraction == 0.0f &&
+                black.valid && black.left_fraction == 1.0f &&
+                center.valid && center.left_fraction > 0.49f &&
+                center.left_fraction < 0.51f && !invalid.valid;
+    pass = ir_tracking_classify(white, IR_LINE_VISIBLE) == IR_LINE_LOST && pass;
+    pass = ir_tracking_classify(white, IR_LINE_LOST) == IR_LINE_LOST && pass;
+    pass = ir_tracking_classify(center, IR_LINE_LOST) == IR_LINE_VISIBLE && pass;
+    IrReading threshold = {.valid = true, .error = 0.0f,
+                           .left_fraction = IR_WHITE_ENTER,
+                           .right_fraction = IR_WHITE_ENTER};
+    pass = ir_tracking_classify(threshold, IR_LINE_VISIBLE) == IR_LINE_VISIBLE && pass;
+    threshold.left_fraction = threshold.right_fraction = IR_WHITE_ENTER - 0.01f;
+    pass = ir_tracking_classify(threshold, IR_LINE_VISIBLE) == IR_LINE_LOST && pass;
+    threshold.left_fraction = threshold.right_fraction = IR_WHITE_EXIT - 0.01f;
+    pass = ir_tracking_classify(threshold, IR_LINE_LOST) == IR_LINE_LOST && pass;
+    threshold.left_fraction = threshold.right_fraction = IR_WHITE_EXIT;
+    pass = ir_tracking_classify(threshold, IR_LINE_LOST) == IR_LINE_VISIBLE && pass;
+    pass = ir_tracking_classify(black, IR_LINE_VISIBLE) == IR_LINE_BROAD_BLACK && pass;
+    pass = ir_tracking_classify(invalid, IR_LINE_VISIBLE) == IR_LINE_UNKNOWN && pass;
+    IrTracker tracker;
+    ir_tracking_init(&tracker);
+    tracker.calibration = cal;
+    ir_tracking_sample(&tracker, (IrRaw){4096u, 1000u}, true, 20u);
+    IrTrackingOutput output = ir_tracking_output(&tracker, 20u);
+    return pass && !output.valid && output.steering == 0.0f &&
+           output.line == IR_LINE_UNKNOWN;
+}
+
+static bool barcode_rejection_test(void)
+{
+    RobotConfig cfg = fixture_config();
+    uint32_t widths[BARCODE_ELEMENTS];
+    alphabet_frame(0u, 1u, false, widths);
+    char symbol = 'Q';
+    barcode_orientation_t orientation = BARCODE_REVERSE;
+    bool pass = barcode_decode(widths, &cfg.barcode, &symbol, &orientation) == BARCODE_DECODED &&
+                symbol == 'A' && orientation == BARCODE_FORWARD;
+    alphabet_frame(0u, 1u, false, widths);
+    widths[0] = 2000u;
+    pass = barcode_decode(widths, &cfg.barcode, &symbol, &orientation) == BARCODE_BAD_WIDTH && pass;
+    alphabet_frame(0u, 1u, false, widths);
+    widths[9] = 3000u;
+    widths[1] = 1000u; /* Preserve nine-wide population to isolate the separator rule. */
+    pass = barcode_decode(widths, &cfg.barcode, &symbol, &orientation) == BARCODE_BAD_FRAME && pass;
+    cfg.barcode.width_tolerance_milli = 500u;
+    pass = barcode_decode(widths, &cfg.barcode, &symbol, &orientation) == BARCODE_BAD_CONFIG && pass;
+    return pass;
+}
+
+static bool unmapped_observation_test(void)
+{
+    RobotConfig cfg = fixture_config();
+    barcode_service_t service;
+    barcode_service_init(&service);
+    bool pass = barcode_service_configure(&service, &cfg.barcode);
+    barcode_action_t map[BARCODE_ALPHABET] = {BARCODE_UNMAPPED};
+    pass = barcode_service_mapping(&service, map) && pass;
+    uint32_t widths[BARCODE_ELEMENTS];
+    alphabet_frame(0u, 1u, false, widths);
+    barcode_encoder_t e = {.left_count = 0u, .right_count = 0u,
+                           .epoch = 2u, .valid = true};
+    barcode_service_observe(&service, false, &e, 0u, false);
+    e.left_count += 600u; e.right_count += 600u;
+    e.sampled_us = 1000u;
+    barcode_service_observe(&service, true, &e, e.sampled_us, true);
+    for (unsigned i = 0u; i < BARCODE_ELEMENTS; ++i)
+    {
+        e.left_count += widths[i] / 10u;
+        e.right_count += widths[i] / 10u;
+        e.sampled_us += 1000u;
+        barcode_service_observe(&service, (i & 1u) != 0u, &e, e.sampled_us, true);
+    }
+    e.left_count += 600u; e.right_count += 600u;
+    e.sampled_us += 1000u;
+    barcode_service_observe(&service, false, &e, e.sampled_us, false);
+    barcode_event_t event;
+    return pass && service.status.have_decode && service.status.latest.symbol == 'A' &&
+           service.status.latest.action == BARCODE_UNMAPPED &&
+           service.status.encounters.count == 1u &&
+           !barcode_service_pop(&service, &event);
+}
+
+static bool barcode_encoder_deadline_test(void)
+{
+    RobotConfig cfg = fixture_config();
+    barcode_service_t service;
+    barcode_service_init(&service);
+    bool pass = barcode_service_configure(&service, &cfg.barcode);
+    barcode_encoder_t e = {.epoch = 1u, .valid = true};
+    barcode_service_observe(&service, false, &e, 0u, false);
+    e.sampled_us = 1000u; e.epoch = 2u;
+    barcode_service_observe(&service, false, &e, 1000u, false);
+    pass = service.status.result == BARCODE_BAD_ENCODER &&
+           service.status.rejected_reads == 1u && pass;
+
+    barcode_service_reset(&service, BARCODE_CANCELLED);
+    pass = barcode_service_configure(&service, &cfg.barcode) && pass;
+    uint32_t rejected_before_deadline = service.status.rejected_reads;
+    e = (barcode_encoder_t){.epoch = 3u, .valid = true};
+    barcode_service_observe(&service, false, &e, 0u, false);
+    e.left_count = 600u; e.right_count = 600u; e.sampled_us = 1000u;
+    barcode_service_observe(&service, true, &e, 1000u, true);
+    pass = service.status.state == BARCODE_CAPTURE && pass;
+    barcode_service_check_time(&service, service.frame_started_us + cfg.barcode.max_frame_us);
+    return pass && service.status.state == BARCODE_WAIT_QUIET &&
+           service.status.result == BARCODE_TIMEOUT &&
+           service.status.rejected_reads == rejected_before_deadline + 1u;
+}
+
+static bool mission_guard_test(void)
+{
+    RobotConfig cfg = fixture_config();
+    S3IrSnapshot ir = {.sampled_ms = 100u, .sequence = 1u,
+                       .normalized_valid = true, .line = IR_LINE_BROAD_BLACK,
+                       .capture_kind = IR_CAPTURE_NONE};
+    MotionFeedback motion = {.sampled_ms = 100u, .sequence = 1u, .run_epoch = 4u,
+                             .valid = true, .encoder = {.valid = true},
+                             .encoder_quiet = true};
+    MotionHealth health = {.serviced_ms = 100u, .sequence = 1u, .run_epoch = 4u,
+                           .stopped = true, .brake_acknowledged = true};
+    TerrainSnapshot terrain = {.timestamp_ms = 100u, .terrain_valid = true,
+                                .calibrated = true, .state = TERRAIN_STATE_FLAT};
+    bool pass = mission_sensors_ready(100u, &ir, &motion, &terrain) &&
+                mission_mapping_stopped(100u, &motion, &health);
+    pass = !mission_sensors_ready(161u, &ir, &motion, &terrain) &&
+           mission_sensors_ready(100u, &ir, &motion, &terrain) && pass;
+    ir.capture_kind = IR_CAPTURE_BLACK;
+    pass = !mission_sensors_ready(100u, &ir, &motion, &terrain) && pass;
+    ir.capture_kind = IR_CAPTURE_NONE;
+    terrain.state = TERRAIN_STATE_IMPACT;
+    pass = !mission_sensors_ready(100u, &ir, &motion, &terrain) && pass;
+    terrain.state = TERRAIN_STATE_FLAT;
+    health.brake_acknowledged = false;
+    pass = !mission_mapping_stopped(100u, &motion, &health) && pass;
+    health.brake_acknowledged = true;
+    health.run_epoch++;
+    pass = !mission_mapping_stopped(100u, &motion, &health) && pass;
+    MissionDwell dwell = {0};
+    uint32_t first = mission_broad_observe(&dwell, &ir, 100u);
+    uint32_t repeated = mission_broad_observe(&dwell, &ir, 110u);
+    ir.sampled_ms = 120u; ir.sequence = 2u;
+    uint32_t held = mission_broad_observe(&dwell, &ir, 120u);
+    pass = first == 0u && repeated == 0u && held == 20u && pass;
+    ir.sequence = 4u; ir.sampled_ms = 140u;
+    pass = mission_broad_observe(&dwell, &ir, 140u) == 0u && dwell.count == 1u && pass;
+    cfg.course_confirmed = false;
+    pass = !mission_junction_check(&cfg, 0.1f, 1000u) &&
+           !mission_finish_check(&cfg, cfg.finish_after_actions, 1.0f, 10000u) && pass;
+    cfg.course_confirmed = true;
+    pass = mission_junction_check(&cfg, cfg.junction_min_m, cfg.junction_hold_ms) &&
+           !mission_junction_check(&cfg, cfg.junction_max_m + 0.01f, cfg.junction_hold_ms) &&
+           mission_finish_check(&cfg, cfg.finish_after_actions, cfg.finish_min_m, cfg.finish_black_ms) &&
+           !mission_finish_check(&cfg, cfg.finish_after_actions - 1u, cfg.finish_min_m, cfg.finish_black_ms) &&
+           mission_pivot_radius(&cfg) > cfg.clearance_m &&
+           mission_obstacle_trigger(&cfg) > mission_pivot_radius(&cfg) && pass;
+    ir.normalized_valid = false;
+    return pass && mission_broad_observe(&dwell, &ir, 140u) == 0u && dwell.count == 0u;
+}
+
 void subsystem3_test(void)
 {
     TEST_INIT();
@@ -271,6 +516,20 @@ void subsystem3_test(void)
     TEST_CHECK("S3-U18", ir_capture_test(),
                "black/white capture, opposite polarities, stale guidance and "
                "low-contrast reference reset");
+    TEST_CHECK("S3-U19", calibration_fault_test(),
+               "IR calibration admission, wrapped timeout, duplicate/invalid samples and polarity");
+    TEST_CHECK("S3-U20", barcode_mapping_test(),
+               "service mapping enum/revision lifecycle plus mission exactly-four-distinct-action validation");
+    TEST_CHECK("S3-U21", mission_guard_test(),
+               "mission freshness, stopped mapping gate, dwell sequence and confirmed course safety predicates");
+    TEST_CHECK("S3-U22", ir_line_classification_test(),
+               "IR normalization endpoints/midpoint, exact white enter/exit thresholds and strict hysteresis, invalid raw and zero guidance");
+    TEST_CHECK("S3-U23", barcode_rejection_test(),
+               "Code39 valid decode, noisy overlapping-width rejection, malformed frame rejection and config validation");
+    TEST_CHECK("S3-U24", unmapped_observation_test(),
+               "unmapped symbol is retained as observation and never enters action queue");
+    TEST_CHECK("S3-U25", barcode_encoder_deadline_test(),
+               "encoder epoch change rejects a read and frame deadline returns scanner to quiet admission");
     TEST_SUMMARY("subsystem3");
 }
 #endif
