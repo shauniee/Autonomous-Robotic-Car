@@ -265,6 +265,22 @@ void subsystem2_test(void)
     TEST_CHECK("S2-U18", bench_valid,
                "bounded bench command runs only before its exact deadline then brakes");
 
+    MotionCommand invalid_mode = fresh;
+    invalid_mode.mode = (MotionMode)99;
+    bool modes = !motion_command_valid(&invalid_mode, 100u, 4u, &cfg);
+    invalid_mode = fresh;
+    invalid_mode.mode = MOTION_SPEED;
+    invalid_mode.left_mps = cfg.speed_max_mps + 0.01f;
+    modes = modes && !motion_command_valid(&invalid_mode, 100u, 4u, &cfg);
+    invalid_mode = fresh;
+    invalid_mode.mode = MOTION_DISTANCE;
+    invalid_mode.target = 5.01f;
+    invalid_mode.speed_mps = 0.1f;
+    invalid_mode.deadline_ms = 1100u;
+    modes = modes && !motion_command_valid(&invalid_mode, 100u, 4u, &cfg);
+    TEST_CHECK("S2-U19", modes,
+               "unknown mode and out-of-range speed/distance requests reject");
+
     TEST_SUMMARY("subsystem2");
 }
 #endif
