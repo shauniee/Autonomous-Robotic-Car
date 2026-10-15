@@ -85,7 +85,8 @@ bool robot_config_mission_valid(void)
             (uint32_t)(c->right_m_per_count * 1000000.0f + 0.5f) &&
         positive(c->junction_min_m) && c->junction_max_m > c->junction_min_m &&
         positive(c->junction_exit_m) && c->junction_hold_ms >= 20u &&
-        c->junction_hold_ms <= 500u && positive(c->bypass_max_m) &&
+        c->junction_hold_ms <= 500u && positive(c->obstacle_depth_bound_m) &&
+        positive(c->bypass_max_m) &&
         positive(c->reacquire_max_m) && positive(c->reacquire_heading_deg) &&
         c->reacquire_heading_deg <= 45.0f && positive(c->finish_min_m) &&
         c->finish_after_actions > 0u && c->finish_black_ms > c->junction_hold_ms &&

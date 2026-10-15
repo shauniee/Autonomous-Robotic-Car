@@ -31,6 +31,7 @@ typedef struct
     uint32_t hump_ms;
     float junction_min_m, junction_max_m, junction_exit_m;
     uint32_t junction_hold_ms;
+    float obstacle_depth_bound_m;
     float bypass_max_m, reacquire_max_m, reacquire_heading_deg;
     float finish_min_m;
     uint32_t finish_after_actions, finish_black_ms;
