@@ -291,6 +291,16 @@ static bool ir_line_classification_test(void)
     pass = ir_tracking_classify(white, IR_LINE_VISIBLE) == IR_LINE_LOST && pass;
     pass = ir_tracking_classify(white, IR_LINE_LOST) == IR_LINE_LOST && pass;
     pass = ir_tracking_classify(center, IR_LINE_LOST) == IR_LINE_VISIBLE && pass;
+    IrReading threshold = {.valid = true, .error = 0.0f,
+                           .left_fraction = IR_WHITE_ENTER,
+                           .right_fraction = IR_WHITE_ENTER};
+    pass = ir_tracking_classify(threshold, IR_LINE_VISIBLE) == IR_LINE_VISIBLE && pass;
+    threshold.left_fraction = threshold.right_fraction = IR_WHITE_ENTER - 0.01f;
+    pass = ir_tracking_classify(threshold, IR_LINE_VISIBLE) == IR_LINE_LOST && pass;
+    threshold.left_fraction = threshold.right_fraction = IR_WHITE_EXIT - 0.01f;
+    pass = ir_tracking_classify(threshold, IR_LINE_LOST) == IR_LINE_LOST && pass;
+    threshold.left_fraction = threshold.right_fraction = IR_WHITE_EXIT;
+    pass = ir_tracking_classify(threshold, IR_LINE_LOST) == IR_LINE_VISIBLE && pass;
     pass = ir_tracking_classify(black, IR_LINE_VISIBLE) == IR_LINE_BROAD_BLACK && pass;
     pass = ir_tracking_classify(invalid, IR_LINE_VISIBLE) == IR_LINE_UNKNOWN && pass;
     IrTracker tracker;
@@ -510,7 +520,7 @@ void subsystem3_test(void)
     TEST_CHECK("S3-U21", mission_guard_test(),
                "mission freshness, stopped mapping gate, dwell sequence and confirmed course safety predicates");
     TEST_CHECK("S3-U22", ir_line_classification_test(),
-               "IR normalization endpoints/midpoint, hysteresis classes, invalid raw rejection and zero guidance");
+               "IR normalization endpoints/midpoint, exact white enter/exit thresholds and strict hysteresis, invalid raw and zero guidance");
     TEST_CHECK("S3-U23", barcode_rejection_test(),
                "Code39 valid decode, noisy overlapping-width rejection, malformed frame rejection and config validation");
     TEST_CHECK("S3-U24", unmapped_observation_test(),
