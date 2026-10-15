@@ -252,3 +252,15 @@ The current branch is software-integrated; it is not a certified completed missi
 
 Missing sensors or unconfirmed measurements remain unavailable/pending. Successful compiler checks and a live MQTT dashboard do not replace these gates.
 
+## Remaining acceptance tasks
+
+[Current readiness record](testing/integration/logs/2026-10-15_available-readiness.json) owns the dated status. Use this order:
+
+1. Identify the motor rating and measure the supply; verify wiring under the power policy. Expected: documented compatible electrical setup before powered trials. GP28 sensing jumper is operator-confirmed disconnected.
+2. Repeat marked wheel counts and measured ground travel, then raised-wheel direction/PID checks and short distance/turn/brake trials. Expected: stable fault-free counts, correct directions and agreed accuracy/stop limits; accept configuration only after measurements.
+3. Run physical line/barcode trials and all four actions using the system definitions. Expected: one correct encounter/action, no guessed unassigned action, qualified junctions and bounded line recovery. Synthetic A–Z fixture PASS does not replace printed barcode trials.
+4. Confirm course/junction/finish/bypass rules in PROJECT_SPECS and enter measured limits. Expected: no unresolved required configuration; MQTT four-letter changes still require no firmware change and never start motion.
+5. When IMU/sonar are available, complete joint calibration, reference humps, range/servo scans and both bypass sides. Expected: reliable data or a safe stop, greatest valid hump retained and original line confirmed.
+6. Execute fault/network/load checks and repeated complete courses on the frozen normal image, with different four-letter assignments. Expected: all required physical results recorded, finish braked and unchanged firmware across mission-day mapping rehearsals.
+
+The diagnostic image remains motor inhibited. Do not use its IR-only calibration as evidence of full mission calibration or course readiness.
