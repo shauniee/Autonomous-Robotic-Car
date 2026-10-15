@@ -286,6 +286,26 @@ static bool ir_line_classification_test(void)
            output.line == IR_LINE_UNKNOWN;
 }
 
+static bool barcode_rejection_test(void)
+{
+    RobotConfig cfg = fixture_config();
+    uint32_t widths[BARCODE_ELEMENTS];
+    alphabet_frame(0u, 1u, false, widths);
+    char symbol = 'Q';
+    barcode_orientation_t orientation = BARCODE_REVERSE;
+    bool pass = barcode_decode(widths, &cfg.barcode, &symbol, &orientation) == BARCODE_DECODED &&
+                symbol == 'A' && orientation == BARCODE_FORWARD;
+    alphabet_frame(0u, 1u, false, widths);
+    widths[0] = 2000u;
+    pass = barcode_decode(widths, &cfg.barcode, &symbol, &orientation) == BARCODE_BAD_WIDTH && pass;
+    alphabet_frame(0u, 1u, false, widths);
+    widths[9] = 3000u;
+    pass = barcode_decode(widths, &cfg.barcode, &symbol, &orientation) == BARCODE_BAD_FRAME && pass;
+    cfg.barcode.width_tolerance_milli = 500u;
+    pass = barcode_decode(widths, &cfg.barcode, &symbol, &orientation) == BARCODE_BAD_CONFIG && pass;
+    return pass;
+}
+
 static bool mission_guard_test(void)
 {
     RobotConfig cfg = fixture_config();
@@ -417,6 +437,8 @@ void subsystem3_test(void)
                "mission freshness, stopped mapping gate, dwell sequence and confirmed course safety predicates");
     TEST_CHECK("S3-U22", ir_line_classification_test(),
                "IR normalization endpoints/midpoint, hysteresis classes, invalid raw rejection and zero guidance");
+    TEST_CHECK("S3-U23", barcode_rejection_test(),
+               "Code39 valid decode, noisy overlapping-width rejection, malformed frame rejection and config validation");
     TEST_SUMMARY("subsystem3");
 }
 #endif
