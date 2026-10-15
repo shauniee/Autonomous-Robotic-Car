@@ -158,18 +158,17 @@ void subsystem2_test(void)
                            .run_epoch = 4u,
                            .mode = MOTION_SPEED,
                            .sampled_ms = 100u,
-                           .issued_ms = 100u,
-                           .expires_ms = 200u};
+                           .issued_ms = 160u,
+                           .expires_ms = 220u};
     bool freshness = motion_command_valid(&fresh, 160u, 4u, &cfg);
-    freshness = freshness && !motion_command_valid(&fresh, 161u, 4u, &cfg);
-    fresh.sampled_ms = 101u;
-    fresh.issued_ms = 101u;
-    fresh.expires_ms = 161u;
-    freshness = freshness && !motion_command_valid(&fresh, 100u, 4u, &cfg);
-    fresh.sampled_ms = fresh.issued_ms = 100u;
-    fresh.expires_ms = 200u;
+    MotionCommand stale = fresh;
+    stale.sampled_ms = 99u;
+    freshness = freshness && !motion_command_valid(&stale, 160u, 4u, &cfg);
+    MotionCommand future = fresh;
+    future.sampled_ms = 161u;
+    freshness = freshness && !motion_command_valid(&future, 160u, 4u, &cfg);
     TEST_CHECK("S2-U15", freshness,
-               "freshness accepts exact age bound and rejects stale/future samples");
+               "sample age 60 ms is accepted while stale and future samples reject");
 
     motion_control_init(&control, 4u);
     fresh.mode = MOTION_DISTANCE;
