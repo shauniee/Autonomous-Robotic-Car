@@ -207,6 +207,33 @@ void subsystem2_test(void)
     TEST_CHECK("S2-U16", identity,
                "same-action lease renewal retains identity origin/deadline; mutation and replay reject");
 
+    motion_control_init(&control, 4u);
+    MotionCommand stalled = {.action_id = 1u,
+                             .run_epoch = 4u,
+                             .mode = MOTION_DISTANCE,
+                             .target = 0.2f,
+                             .speed_mps = 0.1f,
+                             .sampled_ms = 600u,
+                             .issued_ms = 600u,
+                             .expires_ms = 660u,
+                             .deadline_ms = 2100u};
+    bool stalled_accept = motion_control_accept(&control, &stalled, 0, 0,
+                                                600u, &cfg);
+    stalled.sampled_ms = stalled.issued_ms = 1100u;
+    stalled.expires_ms = 1160u;
+    stalled_accept = stalled_accept &&
+                     motion_control_accept(&control, &stalled, 0, 0, 1100u,
+                                           &cfg);
+    motion_control_step(&control, 0, 0, 0, 0, 0.02f, 1100u, &cfg, &left,
+                        &right);
+    bool stall_terminal = stalled_accept && control.status == MOTION_FAILED &&
+                          control.reason == MOTION_STALLED && left == 0 &&
+                          right == 0 && motion_control_ack(&control, 1u) &&
+                          control.status == MOTION_IDLE &&
+                          !motion_control_ack(&control, 1u);
+    TEST_CHECK("S2-U17", stall_terminal,
+               "stalled action brakes, acknowledges once, and returns idle");
+
     TEST_SUMMARY("subsystem2");
 }
 #endif
