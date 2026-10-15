@@ -1,6 +1,8 @@
 #include "../../app_program/common/robot_config.h"
 #include "../../app_program/subsystem3/mission.h"
 #include "../../app_program/subsystem3/mission_guards.h"
+#include "../../app_program/subsystem3/subsystem3.h"
+#include "../../app_program/subsystem4/subsystem4.h"
 #include "../../app_program/common/robot_time.h"
 #include "../fixture_config.h"
 #include "../../app_program/test_report.h"
@@ -91,6 +93,22 @@ static bool mapping_submit_api_test(void)
     MappingResult busy = mission_mapping_submit(request_id + 1u, mapping);
     return rejected && accepted == MAP_PENDING && replay == MAP_INVALID &&
            busy == MAP_BUSY;
+}
+
+static bool initialized_snapshots_test(void)
+{
+    MissionSnapshot mission = {0};
+    S3IrSnapshot ir = {0};
+    TerrainSnapshot terrain = {0};
+    bool copied = mission_copy(&mission) && s3_ir_copy(&ir) &&
+                  s4_get_terrain(&terrain) >= E_OK;
+    bool initial = copied && mission.sequence == 0u && !mission.moving &&
+                   mission.mapping_result == MAP_NONE &&
+                   ir.capture_result == IR_CAPTURE_WAITING &&
+                   !ir.normalized_valid && terrain.sequence == 0u &&
+                   !terrain.terrain_valid && !terrain.calibrated;
+    return initial && !mission_copy(NULL) && !s3_ir_copy(NULL) &&
+           s4_get_terrain(NULL) == E_PAR;
 }
 
 void integration_test(void)
@@ -199,6 +217,9 @@ void integration_test(void)
                    robot_pulse_wait_us(0u) && !robot_pulse_wait_us(101u),
                "shared hardware TIMER bounds pulse waits; live core-1 "
                "acquisition/report progress also needs observation");
+    TEST_CHECK("IT01", initialized_snapshots_test(),
+               "initialized mission, IR and terrain snapshot APIs expose "
+               "not-ready state and reject null destinations before tasks");
     TEST_CHECK("IT06", mapping_submit_api_test(),
                "mission_mapping_submit accepts one valid stopped request and rejects invalid, replay and busy requests");
     TEST_SUMMARY("integration");
