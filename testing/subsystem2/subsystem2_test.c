@@ -154,6 +154,23 @@ void subsystem2_test(void)
                    control.reason == MOTION_ENCODER_FAULT && left == 0 &&
                    right == 0 && !motion_command_valid(&cmd, 120, 7, NULL),
                "non-finite distance and missing configuration reject safely");
+    MotionCommand fresh = {.action_id = 1u,
+                           .run_epoch = 4u,
+                           .mode = MOTION_SPEED,
+                           .sampled_ms = 100u,
+                           .issued_ms = 100u,
+                           .expires_ms = 200u};
+    bool freshness = motion_command_valid(&fresh, 160u, 4u, &cfg);
+    freshness = freshness && !motion_command_valid(&fresh, 161u, 4u, &cfg);
+    fresh.sampled_ms = 101u;
+    fresh.issued_ms = 101u;
+    fresh.expires_ms = 161u;
+    freshness = freshness && !motion_command_valid(&fresh, 100u, 4u, &cfg);
+    fresh.sampled_ms = fresh.issued_ms = 100u;
+    fresh.expires_ms = 200u;
+    TEST_CHECK("S2-U15", freshness,
+               "freshness accepts exact age bound and rejects stale/future samples");
+
     TEST_SUMMARY("subsystem2");
 }
 #endif
