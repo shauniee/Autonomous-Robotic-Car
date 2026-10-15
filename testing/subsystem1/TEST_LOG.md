@@ -16,6 +16,7 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | S1-U11 | every topic rejects wildcards and duplicates | Inhibited firmware fixture |
 | S1-U12 | robot summary, capacity rejection, bounded history/cursor/reset/saturation | Inhibited firmware fixture |
 | S1-U13 | bounded read-only event retrieval request | Inhibited firmware fixture |
+| S1-U14 | mapping request identity rejects zero, leading zero, overflow, duplicate ID, unknown action and mismatched fragment length; max ID accepted | Inhibited firmware fixture |
 
 ## Results
 

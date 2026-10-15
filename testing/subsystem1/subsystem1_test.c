@@ -93,6 +93,37 @@ static bool mapping_test(void)
            !s1_mapping_data(&request, bad, sizeof(bad) - 1u, true);
     return pass;
 }
+
+static bool mapping_identity_test(void)
+{
+    static S1MappingRequest request;
+    static const char *const invalid[] = {
+        "{\"request\":\"barcode_mapping\",\"request_id\":0,\"mapping\":[]}",
+        "{\"request\":\"barcode_mapping\",\"request_id\":01,\"mapping\":[]}",
+        "{\"request\":\"barcode_mapping\",\"request_id\":4294967296,\"mapping\":[]}",
+        "{\"request\":\"barcode_mapping\",\"request_id\":1,\"request_id\":2,\"mapping\":[]}",
+        "{\"request\":\"barcode_mapping\",\"request_id\":1,\"mapping\":[\"bad\"]}",
+        "{\"request\":\"barcode_mapping\",\"request_id\":1,\"mapping\":[],\"extra\":0}"};
+    bool pass = true;
+    for (unsigned i = 0u; i < sizeof(invalid) / sizeof(invalid[0]); ++i)
+    {
+        unsigned length = (unsigned)strlen(invalid[i]);
+        pass = s1_mapping_begin(&request, length) &&
+               !s1_mapping_data(&request, invalid[i], length, true) && pass;
+    }
+    static const char request_text[] =
+        "{\"request\":\"barcode_mapping\",\"request_id\":4294967295,\"mapping\":[\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\"]}";
+    unsigned length = sizeof(request_text) - 1u;
+    pass = s1_mapping_begin(&request, length) &&
+           s1_mapping_data(&request, request_text, 19u, false) &&
+           s1_mapping_data(&request, request_text + 19u, length - 19u, true) &&
+           request.request_id == UINT32_MAX &&
+           s1_mapping_begin(&request, length) &&
+           s1_mapping_data(&request, request_text, 19u, false) &&
+           !s1_mapping_data(&request, request_text + 19u, length - 20u, true) &&
+           pass;
+    return pass;
+}
 void subsystem1_test(void)
 {
     S1Telemetry snapshot = {.have_sample = true,
@@ -118,6 +149,8 @@ void subsystem1_test(void)
         "bounded heartbeat/status JSON; exact capacity and max counters");
     TEST_CHECK("S1-U09", mapping_test(),
                "26-entry fragmented mapping and bounded rejection");
+    TEST_CHECK("S1-U14", mapping_identity_test(),
+               "mapping request ID bounds, duplicates, action values and exact fragments");
     S1AckQueue queue = {0};
     int slot = s1_ack_reserve(&queue, 17u);
     bool ack = slot >= 0 && s1_ack_reserved(&queue);
