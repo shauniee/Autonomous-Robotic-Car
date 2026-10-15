@@ -171,6 +171,8 @@ void subsystem2_test(void)
                "sample age 60 ms is accepted while stale and future samples reject");
 
     motion_control_init(&control, 4u);
+    fresh.sampled_ms = fresh.issued_ms = 100u;
+    fresh.expires_ms = 160u;
     fresh.mode = MOTION_DISTANCE;
     fresh.target = 0.2f;
     fresh.speed_mps = 0.1f;
