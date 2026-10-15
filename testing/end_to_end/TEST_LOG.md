@@ -33,3 +33,27 @@ Pass only when the same unchanged firmware image boots, calibrates, accepts the 
 | Date | Case | Revision / UF2 SHA-256 | Power, wiring, calibration and mapping | Tester | Result | Measurements / elapsed time | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | | E2E01 | | | | PENDING | Numeric/course acceptance limits unresolved; no physical run recorded | |
+
+## E2E02 — Independent safety-fault runs and deliberate recovery
+
+**Status: PENDING.** Run each fault below independently from a fresh, calibrated, mapped, locally started mission. Use the approved safe test area and fault-injection method. Do not disconnect wiring, obstruct moving hardware, or create a fault during motion unless the electrical and physical safety review explicitly authorizes that exact method. If no safe stale-data or scan-fault injection method exists, leave that subrun pending.
+
+### Procedure
+
+1. For each subrun, record the normal image revision and UF2 SHA-256, current mapping revision, fresh calibration/readiness, starting run epoch, battery/wiring, route position, sensor sequences/timestamps, and pre-fault mission/Motion state. Start continuous video and status/MQTT capture. Use a separate fresh run for each fault so no prior latch or recovery state affects the next result.
+2. **GP21 stop:** on a confirmed safe straight section during active line following, press GP21 and record the electrical edge time, mission reason/state, stop flag, brake acknowledgement, Motion duty/velocity feedback, encoder counts, and physical displacement until rest. Keep GP21 down through the measured stop, then release it. Observe the stopped state and verify that release, GP20, recovered sensor readings, an old command/action ID, and repeated start attempts cannot resume movement. Record status and physical observations for each attempt.
+3. **Stale required sensor:** on a safe section, use only the approved mechanism to freeze or age one required sensor publication beyond its approved freshness limit. Record the last valid sequence/time, the stale interval, mission fault reason, stop/brake acknowledgement, and physical stopping response. Restore the sensor connection/publication while still latched; confirm freshness recovery alone does not restart motion. If no approved injection method is available, record the method as unavailable and do not improvise.
+4. **Line-loss deadline:** use the approved controlled line-loss method and safe recovery area. Remove valid line guidance without disturbing the robot, then capture the last fresh IR sequence/time, line state, current-run recovery direction/context, elapsed loss time, mission reason, stop/brake acknowledgement, and physical displacement. Confirm that exceeding the approved recovery deadline causes a latched stop and that stale direction or previous-run guidance does not continue motion.
+5. **Scan timeout or unusable clearance:** approach only the approved static obstacle at the confirmed safe position. Capture fresh stopped/stationary and brake-acknowledgement evidence before scan. Use the approved scan-fault method to produce a deadline or a missing/invalid/blocked clearance result. Record every servo/sonar angle, sample time, Echo validity/range, scan ID/status, profile validity, selected side, mission reason, and stop/brake output. Confirm bypass does not start on timeout or unknown/unusable clearance. Keep motion inhibited while checking center restoration and any forward-reading recovery.
+6. After each subrun, release GP21 if held, clear the fault cause, and press/release GP20 once for the documented local reset. Confirm reset does not move the robot and advances/reinitializes the run context only as specified. Wait for fresh `READY`, complete any calibration or mapping step required by the reset, then release and press GP20 again as a distinct local start. Confirm only this fresh sequence starts a new run. Retry a command/action ID from the prior epoch and verify it remains rejected. Retain separate before/fault/after captures for reset, readiness, and start.
+
+### Pass oracle
+
+Each of the four fault subruns must produce the expected local stop/fault reason and an acknowledged brake; physical stopping time and distance must meet the limits approved before the trial. The safety response must not depend on broker availability. GP21 release, sensor reconnection, line recovery, scan completion, old/stale commands, or a held/repeated GP20 press must not resume the interrupted run. A cause-cleared, qualified reset and a separate fresh start are required. Scan cancellation/timeout or unusable clearance must remain stopped and cannot fall through to bypass. Pass E2E02 only when every independent subrun meets its oracle; unavailable fault injection, unknown stop limits, or incomplete physical evidence keeps the affected subrun pending.
+
+| Date | Case / subrun | Revision / UF2 SHA-256 | Fault method and starting state | Tester | Result | Stop time/distance and other measurements | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| | E2E02 / GP21 | | | | PENDING | Stop limit unresolved; no physical run recorded | |
+| | E2E02 / stale sensor | | | | PENDING | Injection method and freshness/stop limits unresolved | |
+| | E2E02 / line-loss deadline | | | | PENDING | Recovery/stop limits unresolved | |
+| | E2E02 / scan timeout or unusable clearance | | | | PENDING | Scan/clearance/stop limits and injection method unresolved | |
