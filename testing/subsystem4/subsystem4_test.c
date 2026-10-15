@@ -192,6 +192,36 @@ void subsystem4_test(void)
     TEST_CHECK("S4-U13", timing,
                "motion derivation wraps yaw and rejects duplicate, zero-dt and cross-epoch samples");
 
+    RobotConfig classify_cfg = fixture_config();
+    motion = (MotionFeedback){.valid = true, .stationary = true};
+    c.state = TERRAIN_STATE_IMPACT;
+    bool priority = terrain_movement_classify(&c, &motion, true, 100, 100,
+                                              &classify_cfg) == TERRAIN_IMPACT;
+    c.state = TERRAIN_STATE_FLAT;
+    priority = priority &&
+               terrain_movement_classify(&c, &motion, true, 100, 100,
+                                         &classify_cfg) == TERRAIN_STATIONARY;
+    motion.stationary = false;
+    priority = priority &&
+               terrain_movement_classify(&c, &motion, true, 100, 100,
+                                         &classify_cfg) == TERRAIN_TURNING;
+    c.state = TERRAIN_STATE_CLIMBING;
+    priority = priority &&
+               terrain_movement_classify(&c, &motion, true, 0, 100,
+                                         &classify_cfg) == TERRAIN_CLIMB;
+    c.state = TERRAIN_STATE_DESCENDING;
+    priority = priority &&
+               terrain_movement_classify(&c, &motion, true, 0, 100,
+                                         &classify_cfg) == TERRAIN_DESCENT;
+    c.state = TERRAIN_STATE_FLAT;
+    priority = priority &&
+               terrain_movement_classify(&c, &motion, true, 0, 1,
+                                         &classify_cfg) == TERRAIN_ACCELERATING &&
+               terrain_movement_classify(&c, &motion, false, 0, 0,
+                                         &classify_cfg) == TERRAIN_MOVING;
+    TEST_CHECK("S4-U14", priority,
+               "impact, stationary, turn, terrain phase and acceleration classification priority");
+
     TEST_SUMMARY("subsystem4");
 }
 #endif
