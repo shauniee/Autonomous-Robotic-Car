@@ -8,11 +8,26 @@ import time
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("monitor", "status"))
+    parser.add_argument("action", choices=("monitor", "status", "mapping"))
     parser.add_argument("--broker", required=True, help="Broker LAN IPv4 address")
     parser.add_argument("--port", type=int, default=1883)
     parser.add_argument("--root", default="robot/s3")
+    parser.add_argument("--file", help="JSON object containing exactly A-Z action names")
     args = parser.parse_args()
+    request_id = (time.time_ns() // 1000000) % 4294967295 or 1
+    mapping = None
+    if args.action == "mapping":
+        if not args.file:
+            parser.error("mapping requires --file")
+        with open(args.file, encoding="utf-8") as source:
+            values = json.load(source)
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        actions = {"left", "right", "straight", "u_turn", "unmapped"}
+        if not isinstance(values, dict) or set(values) != set(alphabet) or any(
+            values[key] not in actions for key in alphabet
+        ):
+            parser.error("File must contain exactly A-Z and valid action names")
+        mapping = [values[key] for key in alphabet]
     if not 1 <= args.port <= 65535:
         parser.error("Port must be 1..65535")
     if not args.root or any(c in args.root for c in "+#\0") or len(args.root.encode()) > 80:
@@ -40,7 +55,8 @@ def main():
         if reason_code.is_failure:
             fail(f"Broker refused connection: {reason_code}")
             return
-        topic = args.root + ("/#" if args.action == "monitor" else "/status")
+        topic = args.root + ("/#" if args.action == "monitor" else
+            "/mapping_status" if args.action == "mapping" else "/status")
         result, _ = client.subscribe(topic, qos=1)
         if result != mqtt.MQTT_ERR_SUCCESS:
             fail("Could not subscribe")
@@ -63,6 +79,14 @@ def main():
         try:
             payload = json.loads(message.payload)
         except (ValueError, UnicodeDecodeError):
+            return
+        if args.action == "mapping" and isinstance(payload, dict) and not message.retain and \
+            payload.get("request_id") == request_id:
+            state["status"] = text
+            if payload.get("result") != 2:
+                fail("Pico rejected mapping: " + text)
+            else:
+                received.set()
             return
         if not isinstance(payload, dict) or payload.get("online") is not True:
             return
@@ -96,8 +120,10 @@ def main():
                     print("Heartbeat unavailable for >3 s; retained status may be stale.", flush=True)
                 stale_reported = stale
                 time.sleep(0.25)
-        result = client.publish(args.root + "/request", '{"request":"status"}',
-                                qos=1, retain=False)
+        payload = json.dumps({"request": "barcode_mapping", "request_id": request_id,
+            "mapping": mapping}, separators=(",", ":")) if mapping is not None else '{"request":"status"}'
+        result = client.publish(args.root + ("/mapping" if mapping is not None else "/request"),
+            payload, qos=1, retain=False)
         if result.rc != mqtt.MQTT_ERR_SUCCESS:
             raise RuntimeError("Could not publish status request")
         result.wait_for_publish(timeout=5)
@@ -108,7 +134,8 @@ def main():
         if state["error"]:
             raise RuntimeError(state["error"])
         print(state["status"])
-        print("Live status observed; broker acknowledgement alone is not a Pico response.")
+        print("Pico acknowledgement observed; mapping is RAM-only." if mapping is not None else
+            "Live status observed; broker acknowledgement alone is not a Pico response.")
     except KeyboardInterrupt:
         return 0
     except (OSError, RuntimeError, ValueError) as error:

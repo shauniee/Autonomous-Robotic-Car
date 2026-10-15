@@ -9,4 +9,5 @@
 #include "telemetry.h"
 ER subsystem1_init(void);
 ER subsystem1_start(void);
+void s1_reporting_task(INT stacd, void *exinf);
 #endif

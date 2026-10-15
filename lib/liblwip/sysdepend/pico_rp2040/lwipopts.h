@@ -55,7 +55,7 @@
  * room to spare; each slot is only a few bytes. */
 #define MEMP_NUM_SYS_TIMEOUT        (LWIP_NUM_SYS_TIMEOUT_INTERNAL + 4)
 /* One bounded 768-byte telemetry frame plus topic/protocol overhead. */
-#define MQTT_OUTPUT_RINGBUF_SIZE    1024
+#define MQTT_OUTPUT_RINGBUF_SIZE    2048
 
 #define LWIP_ARP                    1
 #define LWIP_ETHERNET               1

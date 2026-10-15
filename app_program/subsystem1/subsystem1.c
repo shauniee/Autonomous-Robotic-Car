@@ -17,7 +17,20 @@ ER subsystem1_init(void) {
 #endif
     return E_OK; /* Optional diagnostics must not inhibit the local bench. */
 }
-ER subsystem1_start(void) { return E_OK; }
+ER subsystem1_start(void)
+{
+#if TM_MQTT
+    if (atomic_load_explicit(&telemetry_mutex, memory_order_acquire) > 0)
+    {
+        ID tid = app_start_task((FP)s1_reporting_task, 20, TP_PRC2, "Reporting");
+        if (tid < E_OK)
+        {
+            tm_printf((UB *)"reporting task unavailable; local autonomy continues\n");
+        }
+    }
+#endif
+    return E_OK;
+}
 
 bool s1_telemetry_update(const S1Telemetry *snapshot) {
     ID id = atomic_load_explicit(&telemetry_mutex, memory_order_acquire);
