@@ -198,6 +198,37 @@ static bool ir_capture_test(void)
            !tracker.calibration.black_set && !tracker.calibration.white_set;
 }
 
+static bool calibration_fault_test(void)
+{
+    IrTracker tracker;
+    ir_tracking_init(&tracker);
+    bool pass = !ir_tracking_capture(&tracker, IR_CAPTURE_WHITE, 100u) &&
+                tracker.capture_result == IR_CAPTURE_NEED_BLACK;
+    pass = ir_tracking_capture(&tracker, IR_CAPTURE_BLACK, UINT32_MAX - 200u) && pass;
+    ir_tracking_sample(&tracker, (IrRaw){1000u, 1100u}, true, UINT32_MAX - 200u);
+    uint32_t count = tracker.capture_count;
+    ir_tracking_sample(&tracker, (IrRaw){1000u, 1100u}, true, UINT32_MAX - 200u);
+    pass = tracker.capture_count == count && pass;
+    ir_tracking_check_time(&tracker, 100u);
+    pass = tracker.capture_kind == IR_CAPTURE_BLACK && pass;
+    ir_tracking_check_time(&tracker, 500u);
+    pass = tracker.capture_kind == IR_CAPTURE_NONE &&
+           tracker.capture_result == IR_CAPTURE_GAP && pass;
+
+    ir_tracking_init(&tracker);
+    pass = ir_tracking_capture(&tracker, IR_CAPTURE_BLACK, 0u) && pass;
+    ir_tracking_sample(&tracker, (IrRaw){1200u, 1300u}, false, 20u);
+    pass = tracker.capture_kind == IR_CAPTURE_NONE &&
+           tracker.capture_result == IR_CAPTURE_INVALID_SAMPLE && pass;
+    tracker.calibration = (IrCalibration){.black = {3000u, 3000u},
+                                          .white = {500u, 500u},
+                                          .black_set = true,
+                                          .white_set = true};
+    pass = ir_tracking_reading((IrRaw){500u, 3000u}, &tracker.calibration).valid && pass;
+    IrReading reverse = ir_tracking_reading((IrRaw){3000u, 500u}, &tracker.calibration);
+    return pass && reverse.valid && reverse.error < 0.0f;
+}
+
 void subsystem3_test(void)
 {
     TEST_INIT();
@@ -271,6 +302,8 @@ void subsystem3_test(void)
     TEST_CHECK("S3-U18", ir_capture_test(),
                "black/white capture, opposite polarities, stale guidance and "
                "low-contrast reference reset");
+    TEST_CHECK("S3-U19", calibration_fault_test(),
+               "IR calibration admission, wrapped timeout, duplicate/invalid samples and polarity");
     TEST_SUMMARY("subsystem3");
 }
 #endif
