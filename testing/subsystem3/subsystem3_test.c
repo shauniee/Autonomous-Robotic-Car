@@ -5,6 +5,7 @@
 #include "../../app_program/subsystem3/ir_tracking_calibration.h"
 #include "../../app_program/subsystem3/barcode_service.h"
 #include "../../app_program/subsystem3/mission_guards.h"
+#include "../../app_program/subsystem3/mission_status.h"
 #include "../fixture_config.h"
 #include "code39_vectors.h"
 #include <math.h>
@@ -225,8 +226,23 @@ static bool barcode_mapping_test(void)
     pass = service.status.state == BARCODE_FAULT &&
            (service.status.fault_bits & BARCODE_FAULT_CAPTURE) != 0u && pass;
     barcode_service_reset(&service, BARCODE_CANCELLED);
-    return pass && service.status.state == BARCODE_DISABLED &&
+    bool lifecycle = pass && service.status.state == BARCODE_DISABLED &&
            service.status.result == BARCODE_CANCELLED && service.status.fault_bits == 0u;
+    barcode_action_t mission_map[BARCODE_ALPHABET];
+    for (unsigned i = 0; i < BARCODE_ALPHABET; ++i)
+        mission_map[i] = BARCODE_UNMAPPED;
+    mission_map[0] = BARCODE_LEFT;
+    mission_map[1] = BARCODE_RIGHT;
+    mission_map[2] = BARCODE_STRAIGHT;
+    mission_map[3] = BARCODE_U_TURN;
+    bool unique = mission_mapping_valid(mission_map);
+    mission_map[3] = BARCODE_UNMAPPED;
+    bool missing = !mission_mapping_valid(mission_map);
+    mission_map[3] = BARCODE_LEFT;
+    bool duplicate = !mission_mapping_valid(mission_map);
+    mission_map[3] = (barcode_action_t)99;
+    bool invalid_action = !mission_mapping_valid(mission_map);
+    return lifecycle && unique && missing && duplicate && invalid_action;
 }
 
 static bool calibration_fault_test(void)
@@ -490,7 +506,7 @@ void subsystem3_test(void)
     TEST_CHECK("S3-U19", calibration_fault_test(),
                "IR calibration admission, wrapped timeout, duplicate/invalid samples and polarity");
     TEST_CHECK("S3-U20", barcode_mapping_test(),
-               "barcode mapping validation, replacement admission, rejection, fault and reset lifecycle");
+               "service mapping enum/revision lifecycle plus mission exactly-four-distinct-action validation");
     TEST_CHECK("S3-U21", mission_guard_test(),
                "mission freshness, stopped mapping gate, dwell sequence and confirmed course safety predicates");
     TEST_CHECK("S3-U22", ir_line_classification_test(),
