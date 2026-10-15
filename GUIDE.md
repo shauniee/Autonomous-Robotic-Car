@@ -2,8 +2,6 @@
 
 The robot drives itself. You power it, calibrate it, load four barcode assignments over MQTT, then start it locally. The laptop displays readings and supplies configuration; it does not drive the wheels.
 
-The software is integrated on `uat`. Measured configuration and physical acceptance are still required. Do not treat compilation or a confirmation flag as a successful hardware trial. [Current results](testing/integration/TEST_LOG.md) own the exact validation level.
-
 ## Buttons and sounds
 
 | Control | Meaning |
@@ -19,7 +17,7 @@ Release GP20 before each new press. While combined calibration is running, extra
 
 ## One-time preparation
 
-Use the pin/resource map in [TEAM](TEAM.md) and electrical facts in [TECHNICAL_INFO](TECHNICAL_INFO.md). Establish actual motor/encoder polarity, counts/geometry, PID/tolerances, IMU mounting/reference model, sonar mounting offsets, servo endpoints, worst-case braking headroom and course bounds. Populate `app_program/common/robot_config.c` only from recorded measurements. Confirmation flags default false and deliberately inhibit movement.
+Use the pin/resource map in [TEAM](docs/TEAM.md) and electrical facts in [TECHNICAL_INFO](docs/donotsubmit/TECHNICAL_INFO.md). Establish actual motor/encoder polarity, counts/geometry, PID/tolerances, IMU mounting/reference model, sonar mounting offsets, servo endpoints, worst-case braking headroom and course bounds. Populate `app_program/common/robot_config.c` only from recorded measurements. Confirmation flags default false and deliberately inhibit movement.
 
 The pending-decision register is [PROJECT_SPECS](docs/donotsubmit/PROJECT_SPECS.md#pending-decisions). Confirm issued barcode format, junction spacing, finish/action-count convention, obstacle-depth bounds and WiFi/broker access before program freeze. Current runtime configuration changes barcode assignments only; other settings are compiled.
 
@@ -99,6 +97,60 @@ Expect mission state, wheel-speed traces, line sensor fractions/raw values, IMU 
 Broker connected and Robot live are separate indicators. Retained presence cannot make a robot live; fresh nonretained snapshots and heartbeat are required. The page displays the latest reported values between MQTT updates, respects each payload's validity/acquisition age, and hides current readings when the live feed expires after three seconds. Accepted run maximum and last scan remain labelled historical results. A dash means unavailable, not zero. Reloading the page clears its local speed/encounter history; producer counts come from the robot.
 
 A TEST image can show `CALIBRATING` / configuration pending with blank uncalibrated readings. This confirms data delivery, not completed sensor calibration or mission readiness. [Dashboard checks](testing/subsystem1/TEST_LOG.md#dashboard-checks) distinguish synthetic broker/browser trials from observed robot-topic data.
+
+## Checks while IMU and ultrasonic are unavailable
+
+Use the **IR-only TEST image** for these checks. It always inhibits motor
+outputs, skips IMU calibration and cannot enter mission READY or powered
+commissioning. Missing terrain/obstacle capability remains unavailable.
+
+```sh
+make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=1 IR_ONLY_TEST=1
+```
+
+Its image is `build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test_ir_only.uf2`.
+For offline inspection use `NET=none MQTT=0`; the name then omits `_lwip_mqtt`.
+`IR_ONLY_TEST=1 TEST=0` is rejected. Ordinary builds default to
+`IR_ONLY_TEST=0` and retain combined black+IMU mission calibration.
+
+1. Follow USB-only flashing above. At startup release GP20, then press/release
+   it once to execute the firmware checks. Capture every PASS/FAIL between the
+   run-start and run-end markers. Synthetic S4/S5 fixtures do not test missing
+   physical sensors.
+2. After services start, put both line sensors over black and press/release
+   GP20: **one beep means IR black only in this image**. Put both over white
+   and press/release again: two beeps confirm contrast. IMU stays uncalibrated.
+3. Without more button presses, move black under left only, right only, both,
+   then neither. Expect visible/visible/broad-black/lost readings. Keep mounting
+   height unchanged. Actual tracking still needs a powered course trial.
+4. Inspect raw encoder counts with wheels raised. Use a marked tyre and count
+   full, slow forward turns while the other wheel stays still. Never force a
+   stiff wheel. Record start/end counts and require zero faults. Uncertain turn
+   counts or invalid edges cannot establish calibration.
+
+```sh
+python3 testing/capture_console.py --port /dev/cu.usbmodemMTK3PICO1 --seconds 90 --image build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test_ir_only.uf2
+# After fixtures, capture sensor observations without grading another test run:
+python3 testing/capture_console.py --port /dev/cu.usbmodemMTK3PICO1 --seconds 120 --observe
+```
+
+Use the actual port and one reader. The standard-library helper sends no serial
+commands and saves new raw output/metadata under `testing/integration/logs/`.
+Its image hash identifies the expected file, not a device readback. Raw counts
+can work while calibrated Motion remains invalid because tuning is unfinished.
+Counts wrap as unsigned values; negative travel can display near 4294967295.
+[Wheel trials](testing/subsystem2/logs/2026-10-15_wheel-measurements.json) own the
+preliminary geometry, rejected trial and remaining accuracy checks.
+
+Stopped MQTT mapping can be checked before PID setup: fresh matching Motion
+health, acknowledged brake and at least 60 ms of valid quiet raw encoder
+feedback are required. A mapping never starts movement.
+
+Existing two-second raised-wheel commissioning modes also use IR-only
+calibration, allowing later motor tuning without the missing sensors. They need
+explicit electrical release and reviewed duty/speed settings under the normal
+power policy. They remain disabled in the current configuration. Disable
+commissioning before freezing the full mission image.
 
 ## Every power-on: calibrate, map, start
 
@@ -199,3 +251,4 @@ The current branch is software-integrated; it is not a certified completed missi
 | Submission evidence | Save configuration/image identities, complete Motion tuning/accuracy and Terrain analysis from measurements, and confirm instructor access/artifacts | Required reports and traceable acceptance records exist; video can be handled separately |
 
 Missing sensors or unconfirmed measurements remain unavailable/pending. Successful compiler checks and a live MQTT dashboard do not replace these gates.
+

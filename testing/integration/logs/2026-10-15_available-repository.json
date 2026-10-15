@@ -1,0 +1,57 @@
+{
+  "source_revision": "33ea47505f2ef197cad8d9a76715b922d644d758",
+  "active_markdown_reviewed": [
+    "GUIDE.md",
+    "README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/GETTING_STARTED.md",
+    "docs/architecture/SUBSYSTEM1.md",
+    "docs/architecture/SUBSYSTEM2.md",
+    "docs/architecture/SUBSYSTEM3.md",
+    "docs/architecture/SUBSYSTEM4.md",
+    "docs/architecture/SUBSYSTEM5.md",
+    "docs/donotsubmit/CODING_STANDARD.md",
+    "docs/donotsubmit/PROJECT_SPECS.md",
+    "testing/README.md",
+    "testing/integration/TEST_LOG.md",
+    "testing/subsystem1/TEST_LOG.md",
+    "testing/subsystem2/TEST_LOG.md",
+    "testing/subsystem3/TEST_LOG.md",
+    "testing/subsystem4/TEST_LOG.md",
+    "testing/subsystem5/TEST_LOG.md",
+    "testing/system/TEST_LOG.md",
+    "docs/TEAM.md",
+    "docs/donotsubmit/TECHNICAL_INFO.md"
+  ],
+  "broken_local_links": [],
+  "lowercase_stems": [],
+  "main_revision": "c6c4ef978da606ca913a79d58bd99e3187eb108e",
+  "video_sha256": "e9fcddba4622c7cf4f68edf2ad4b9dd720fa1793289377a127b24a60c5576274",
+  "branches": [
+    {
+      "branch": "feat/project-mission",
+      "included_in_uat": true
+    },
+    {
+      "branch": "feat/s2-mission-motion",
+      "included_in_uat": true
+    },
+    {
+      "branch": "feat/s4-mission-terrain",
+      "included_in_uat": true
+    },
+    {
+      "branch": "feat/s5-mission-obstacle",
+      "included_in_uat": true
+    },
+    {
+      "branch": "feat/s3-mission-navigation",
+      "included_in_uat": true
+    },
+    {
+      "branch": "feat/s1-mission-comms",
+      "included_in_uat": true
+    }
+  ],
+  "scope_note": "User is independently editing tribunal/transcript documents. Those changes are excluded from this agent commit; original raw history remains in Git. No new claim of their byte identity is made."
+}

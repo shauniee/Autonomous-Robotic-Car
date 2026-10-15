@@ -17,6 +17,13 @@
 #include <tm/tmonitor.h> /* T-Monitor API: tm_printf() console output */
 #include <bsp/libbsp.h>  /* Board helpers: gpio_set_pin/val, pwm_... */
 
+#ifndef APP_IR_ONLY_TEST
+#define APP_IR_ONLY_TEST 0
+#endif
+#if APP_IR_ONLY_TEST && !APP_TEST
+#error "IR-only calibration requires inhibited TEST firmware"
+#endif
+
 /* ---------------------------------------------------------------------
  *  Pins: free for projects are GP0..GP22 and GP26..GP28.  GP0/GP1 are
  *  taken by UART0 when built with "make CRASH_REPORT=1" (see README).

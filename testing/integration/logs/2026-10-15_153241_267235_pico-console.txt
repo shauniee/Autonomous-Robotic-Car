@@ -1,0 +1,309 @@
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+[TEST] S3 snapshot mutex creation returned=3
+[TEST] S3 snapshot mutex published=3
+[TEST] release GP20, press and release to run inhibited fixtures
+wifi: cyw43_utk_task starting (proc 1)
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> joined AP, no IP yet (2)
+[TEST] === test run start ===
+[TEST] S1-U04 PASS  bounded telemetry JSON and original age; no radio test
+[TEST] S1-U06 PASS  fragmented status only; malformed and movement requests rejected
+[TEST] S1-U07 PASS  bounded heartbeat/status JSON; exact capacity and max counters
+[TEST] S1-U09 PASS  26-entry fragmented mapping and bounded rejection
+[TEST] S1-U10 PASS  ack failure/reconnect retry, stale callback, bounded backpressure
+[TEST] S1-U11 PASS  every topic rejects wildcards and duplicates
+[TEST] S1-U12 PASS  robot summary and bounded history/cursor/reset/saturation
+[TEST] S1-U13 PASS  bounded read-only event retrieval request
+[TEST] subsystem1 SUMMARY 8 passed, 0 failed
+[TEST] S2-U06 PASS  quadrature direction and illegal transition
+[TEST] S2-U07 PASS  renewal preserves origin/deadline; completion requires both wheels
+[TEST] S2-U08 PASS  old run command cannot replay after reset
+[TEST] S2-U09 PASS  bounded local commissioning requires explicit electrical release
+[TEST] S2-U10 PASS  exact expiry brakes; no one-wheel premature completion
+[TEST] S2-U11 PASS  lease wrap and deadline boundary
+[TEST] S2-U12 PASS  left/right/U-turn use signed encoder travel
+[TEST] S2-U13 PASS  signed wheel PID respects independent output bounds
+[TEST] S2-U14 PASS  non-finite distance and missing configuration reject safely
+[TEST] subsystem2 SUMMARY 9 passed, 0 failed
+[TEST] S3-U06 PASS  P guidance sign, bound and stale inhibition
+[TEST] S3-U12 PASS  age across wrap never refreshes acquisition
+[TEST] S3-U09 PASS  printed A/Z forward/reverse and invalid element
+[TEST] S3-U14 PASS  one beep only for joint completion; stop/failure/deadline dominates
+[TEST] S3-U15 PASS  A-Z both scales/orientations and zero-width rejection
+[TEST] S3-U16 PASS  real capture engine, count wrap, single queue event and retained report
+[TEST] S3-U17 PASS  busy white press ignored, fresh later press accepted, GP21 cancels
+[TEST] S3-U18 PASS  black/white capture, opposite polarities, stale guidance and low-contrast reference reset
+[TEST] subsystem3 SUMMARY 8 passed, 0 failed
+[TEST] S4-U03 PASS  invalid window preserves accepted peak
+[TEST] S4-U04 PASS  new-run snapshot clears before WAIT/error poll
+[TEST] S4-U05 PASS  100 fresh samples; repeated acquisition cannot count twice
+[TEST] S4-U06 PASS  movement, stale acquisition, exact deadline and cancellation
+[TEST] S4-U07 PASS  pivot telemetry independent of straight-travel hump filter
+[TEST] S4-U08 PASS  valid climb/crest/descent/baseline then invalid-after-valid
+[TEST] S4-U09 PASS  acquisition failure requires calibration and retains results
+[TEST] S4-U10 PASS  reinitialize preserves stop results and clears a new run
+[TEST] subsystem4 SUMMARY 8 passed, 0 failed
+[TEST] S5-U04 PASS  valid profile nearest point; missing Echo cannot grant clearance
+[TEST] S5-U05 PASS  cancel dominates timeout/movement including center restore
+[TEST] S5-U06 PASS  profile geometry includes measured sensor mounting offset
+[TEST] subsystem5 SUMMARY 3 passed, 0 failed
+[TEST] INT-15 PASS  valid complete settings accepted; missing headroom/course rejected
+[TEST] INT-16 PASS  positive junction/finish and travel/action/dwell boundaries
+[TEST] INT-22 PASS  distinct consecutive acquisitions, cache and wrap
+[TEST] INT-23 PASS  braking begins outside center-based pivot envelope
+[TEST] INT-21 PASS  any four letters, one per motion; 22 remain unmapped
+[TEST] INT-24 PASS  start/scan resume requires all required producers healthy
+[TEST] INT-25 PASS  real kernel ceiling raises and restores polling lock priority
+[TEST] INT-28 PASS  mapping before PID setup needs fresh matching stopped/braked quiet encoder feedback; stale/moving/faulted input rejects
+[TEST] INT-29 PASS  shared hardware TIMER bounds pulse waits; live core-1 acquisition/report progress also needs observation
+[T[IR] seq=1076 ADC L=268 R=151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1101 ADC L=261 R=151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1123 motion_seq=1123 observed_ms=27610
+[IR] seq=1126 ADC L=258 R=151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1151 ADC L=259 R=155 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1174 motion_seq=1174 observed_ms=28630
+[IR] seq=1176 ADC L=264 R=151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1201 ADC L=259 R=152 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1225 motion_seq=1225 observed_ms=29650
+[IR] seq=1226 ADC L=261 R=151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1251 ADC L=259 R=151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1276 ADC L=262 R=151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[REPORT] updated=1 mission_seq=1276 motion_seq=1276 observed_ms=30670
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1301 ADC L=261 R=151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1326 ADC L=262 R=145 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1327 motion_seq=1327 observed_ms=31690
+[IR] seq=1351 ADC L=265 R=152 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1376 ADC L=261 R=156 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1378 motion_seq=1378 observed_ms=32710
+[IR] seq=1401 ADC L=257 R=148 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1426 ADC L=269 R=153 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1429 motion_seq=1429 observed_ms=33730
+[IR] seq=1451 ADC L=259 R=150 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1476 ADC L=264 R=150 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1480 motion_seq=1480 observed_ms=34750
+[IR] seq=1501 ADC L=262 R=155 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1526 ADC L=259 R=150 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1531 motion_seq=1531 observed_ms=35770
+[IR] seq=1551 ADC L=265 R=153 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1576 ADC L=265 R=147 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1582 motion_seq=1582 observed_ms=36790
+[IR] seq=1601 ADC L=255 R=152 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1626 ADC L=259 R=155 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1633 motion_seq=1633 observed_ms=37810
+[IR] seq=1651 ADC L=260 R=146 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1676 ADC L=261 R=152 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1684 motion_seq=1684 observed_ms=38830
+[IR] seq=1701 ADC L=263 R=147 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1726 ADC L=261 R=152 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1735 motion_seq=1735 observed_ms=39850
+[IR] seq=1751 ADC L=263 R=154 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1776 ADC L=263 R=150 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1786 motion_seq=1786 observed_ms=40870
+[IR] seq=1801 ADC L=258 R=155 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1826 ADC L=267 R=153 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1837 motion_seq=1837 observed_ms=41890
+[IR] seq=1851 ADC L=260 R=152 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1876 ADC L=258 R=152 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1888 motion_seq=1888 observed_ms=42910
+[IR] seq=1901 ADC L=260 R=150 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1926 ADC L=263 R=150 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1939 motion_seq=1939 observed_ms=43930
+[IR] seq=1951 ADC L=261 R=149 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=1976 ADC L=265 R=149 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=1990 motion_seq=1990 observed_ms=44950
+[IR] seq=2001 ADC L=266 R=153 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=2026 ADC L=262 R=151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=2041 motion_seq=2041 observed_ms=45970
+[IR] seq=2051 ADC L=266 R=151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=2076 ADC L=260 R=154 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=2092 motion_seq=2092 observed_ms=46990
+[IR] seq=2101 ADC L=267 R=150 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=2126 ADC L=257 R=152 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=2143 motion_seq=2143 observed_ms=48010
+[IR] seq=2151 ADC L=255 R=146 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=2176 ADC L=261 R=155 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=2194 motion_seq=2194 observed_ms=49030
+[IR] seq=2201 ADC L=265 R=153 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=2226 ADC L=264 R=154 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=2245 motion_seq=2245 observed_ms=50050
+[IR] seq=2251 ADC L=267 R=150 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=2276 ADC L=266 R=151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=2296 motion_seq=2296 observed_ms=51070
+[IR] seq=2301 ADC L=261 R=150 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=2326 ADC L=264 R=151 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=2347 motion_seq=2347 observed_ms=52090
+[IR] seq=2351 ADC L=266 R=152 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[IR] seq=2376 ADC L=263 R=149 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0
+[REPORT] updated=1 mission_seq=2398 motion_seq=2398 observed_ms=53110
+[IR] seq=2401 ADC L=265 R=153 acquired=1 fresh=1 normalized_milli L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[MOTION] count L=0 R=0 faults=0 valid=0 stationary=0 MOTOR_INHIBITED
+[S5] echo_us=0 echo_available=0 front_valid=0 configured=0 scan=0
+[TERRAIN] raw x=0 y=0 z=0 sample=0 calibrated=0 height_valid=0

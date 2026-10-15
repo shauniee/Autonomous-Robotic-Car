@@ -8,16 +8,16 @@ Nicholas explicitly authorized the current all-subsystem completion. Request eac
 
 | # | Subsystem (what it does) | Student ID | GitHub username | Code | Tests |
 | --- | --- | --- | --- | --- | --- |
-| 1 | **Shaun — Communications:** WiFi/MQTT integration, telemetry and reporting | 2500629 | Not recorded | [app_program/subsystem1/](app_program/subsystem1) | [testing/subsystem1/](testing/subsystem1) |
-| 2 | **Mahesha — Motion:** motors, encoders, wheel PID and motion APIs | 2503973 | Not recorded | [app_program/subsystem2/](app_program/subsystem2) | [testing/subsystem2/](testing/subsystem2) |
-| 3 | **Nicholas — Line and Barcode:** IR, barcode, Mission/Safety coordination and integration | 2501552 | Not recorded | [app_program/subsystem3/](app_program/subsystem3) | [testing/subsystem3/](testing/subsystem3) |
-| 4 | **Darrius — Terrain:** IMU processing, motion classification and hump measurement | 2500360 | Not recorded | [app_program/subsystem4/](app_program/subsystem4) | [testing/subsystem4/](testing/subsystem4) |
-| 5 | **Jia Jing — Obstacle:** sonar, servo scanning and obstacle profiling | 2502825 | Not recorded | [app_program/subsystem5/](app_program/subsystem5) | [testing/subsystem5/](testing/subsystem5) |
+| 1 | **Shaun — Communications:** WiFi/MQTT integration, telemetry and reporting | 2500629 | Not recorded | [app_program/subsystem1/](../app_program/subsystem1) | [testing/subsystem1/](../testing/subsystem1) |
+| 2 | **Mahesha — Motion:** motors, encoders, wheel PID and motion APIs | 2503973 | Not recorded | [app_program/subsystem2/](../app_program/subsystem2) | [testing/subsystem2/](../testing/subsystem2) |
+| 3 | **Nicholas — Line and Barcode:** IR, barcode, Mission/Safety coordination and integration | 2501552 | Not recorded | [app_program/subsystem3/](../app_program/subsystem3) | [testing/subsystem3/](../testing/subsystem3) |
+| 4 | **Darrius — Terrain:** IMU processing, motion classification and hump measurement | 2500360 | Not recorded | [app_program/subsystem4/](../app_program/subsystem4) | [testing/subsystem4/](../testing/subsystem4) |
+| 5 | **Jia Jing — Obstacle:** sonar, servo scanning and obstacle profiling | 2502825 | Not recorded | [app_program/subsystem5/](../app_program/subsystem5) | [testing/subsystem5/](../testing/subsystem5) |
 
-Use development branches and commit prefixes `feat:`, `chore:`, `fix:` or `docs:`. Follow [CODING_STANDARD](docs/donotsubmit/CODING_STANDARD.md), record stable test IDs and measurements in [testing](testing/README.md), and demonstrations in [videos](videos/README.md). Record course/calibration decisions once in [PROJECT_SPECS](docs/donotsubmit/PROJECT_SPECS.md#pending-decisions), then update the owning guide.
+Use development branches and commit prefixes `feat:`, `chore:`, `fix:` or `docs:`. Follow [CODING_STANDARD](donotsubmit/CODING_STANDARD.md), record stable test IDs and measurements in [testing](../testing/README.md), and demonstrations in [videos](../videos/README.md). Record course/calibration decisions once in [PROJECT_SPECS](donotsubmit/PROJECT_SPECS.md#pending-decisions), then update the owning guide.
 
 ## 2. Pins
- [TECHNICAL_INFO](TECHNICAL_INFO.md) owns electrical limits and connector definitions; [GETTING_STARTED](GUIDE.md#one-time-preparation) identifies active hardware.
+ [TECHNICAL_INFO](donotsubmit/TECHNICAL_INFO.md) owns electrical limits and connector definitions; [GETTING_STARTED](../GUIDE.md#one-time-preparation) identifies active hardware.
 
 | Pin | Owner | Used for |
 | --- | --- | --- |
@@ -51,7 +51,7 @@ Use development branches and commit prefixes `feat:`, `chore:`, `fix:` or `docs:
 
 ### Supply and disconnected wires
 
-- Power bank: red → green terminal VIN+, black → VIN−. Verify polarity and follow [power and flashing](GUIDE.md#power-and-flashing).
+- Power bank: red → green terminal VIN+, black → VIN−. Verify polarity and follow [power and flashing](../GUIDE.md#power-and-flashing).
 - Encoders: white → 3V3, blue → GND. Line/barcode IR: VCC → 3V3, GND → GND; both line DOUT wires stay disconnected.
 - GY-511: Vin → 3V3, GND → GND; separate `3.3`, INT1, INT2 and DRDY stay disconnected. Reported HC-SR04P: VCC → 3V3, GND → GND; verify the installed variant and Echo HIGH before connection.
 - SG90: red → +, brown → −; verify carrier silkscreen and supply rail.
@@ -95,7 +95,7 @@ S2 releases PWM reset without resetting the block; each slice owner configures i
 
 ### WiFi and MQTT are special
 
-All CYW43, lwIP and MQTT operations run inside the kernel's `cyw43_utk_task`. Other tasks may read connection state through `cyw43_utk_get_status()`. The current S1 reporting task supplies read-only subsystem/Mission snapshots under its optional mutex. Kernel subscription supports bounded status and stopped-only mapping configuration, with no actuation commands. Snapshot access is nonblocking. See [Communications](docs/architecture/SUBSYSTEM1.md) for configuration, schema, publication and failure behavior.
+All CYW43, lwIP and MQTT operations run inside the kernel's `cyw43_utk_task`. Other tasks may read connection state through `cyw43_utk_get_status()`. The current S1 reporting task supplies read-only subsystem/Mission snapshots under its optional mutex. Kernel subscription supports bounded status and stopped-only mapping configuration, with no actuation commands. Snapshot access is nonblocking. See [Communications](architecture/SUBSYSTEM1.md) for configuration, schema, publication and failure behavior.
 
 ## 4. Task priorities
 
@@ -117,11 +117,11 @@ Application stacks are 4096 bytes. TEST startup retains its separate 4096-byte s
 
 ## 5. Interfaces between subsystems
 
-Providers own private objects and public snapshot APIs. See [Architecture](docs/ARCHITECTURE.md#shared-contracts) for current data flow and [Motion](docs/architecture/SUBSYSTEM2.md#control-and-contracts) for command/feedback semantics. Legacy IF-01 duty publication is retired; IF-02 stop/reset, IF-03 health, IF-04 IR guidance and IF-05 reporting remain recognizable boundaries. Encoder actions and measured feedback extend them; no direct foreign PWM access is allowed.
+Providers own private objects and public snapshot APIs. See [Architecture](ARCHITECTURE.md#shared-contracts) for current data flow and [Motion](architecture/SUBSYSTEM2.md#control-and-contracts) for command/feedback semantics. Legacy IF-01 duty publication is retired; IF-02 stop/reset, IF-03 health, IF-04 IR guidance and IF-05 reporting remain recognizable boundaries. Encoder actions and measured feedback extend them; no direct foreign PWM access is allowed.
 
 S3's Mission is the sole command producer. Core-0 configuration is a bounded copied handoff, revalidated by Mission on core 1. Shared GPIO dispatch services encoder pins before GP16 and acknowledges owned bits only; the USB SDK shim is not a general dispatcher.
 
-S2 command/feedback, S3 IR/barcode, S4 and S5 polling mutexes use priority ceiling 1. This permits startup/core-0 readers and prevents a higher-priority polling reader from preempting a writer holding the same lock on core 1. Hold times cover bounded copies/processing only: no waits, I2C or logging. Base task priorities above are unchanged; cross-core copies can still return busy. S1 reporting and the Mission/network handoff retain their optional nonblocking copy policy. INT-25 checks the actual kernel ceiling/restore behavior; T15 must measure worst-case hold times and stop latency.
+All bounded polling mutexes, including S1 reporting and Mission/network handoff, use priority ceiling 1. This permits startup/core-0 readers and prevents a higher-priority polling reader from preempting a writer holding the same lock on core 1. Hold times cover bounded copies/processing only: no waits, I2C or logging. Base task priorities above are unchanged; cross-core copies can still return busy. Optional reporting reads remain nonblocking; Mission state logging occurs after releasing its snapshot lock. INT-25 checks the actual kernel ceiling/restore behavior; T15 must measure worst-case hold times and stop latency.
 
 ## 6. Kernel object budget
 
@@ -132,4 +132,4 @@ S2 command/feedback, S3 IR/barcode, S4 and S5 polling mutexes use priority ceili
 | Event flags | S2 persistent stop: 1 | 16 total |
 | Queues / buffers | Static barcode ring 64 and copied encounter FIFO 8; one mapping handoff and one scan request | Fixed application capacities |
 
-No application mailbox or kernel message buffer is allocated. Required objects are created before task start; optional reporting failure is tolerated. Measure runtime memory and stack margins under concurrent load. [Testing](testing/README.md) owns evidence.
+No application mailbox or kernel message buffer is allocated. Required objects are created before task start; optional reporting failure is tolerated. Measure runtime memory and stack margins under concurrent load. [Testing](../testing/README.md) owns evidence.

@@ -161,6 +161,43 @@ static bool capture_test(void)
            service.status.encounters.events[0].value == 'A' &&
            service.status.encounters.run_epoch == 7u;
 }
+static bool ir_capture_test(void)
+{
+    IrTracker tracker;
+    ir_tracking_init(&tracker);
+    bool valid = ir_tracking_capture(&tracker, IR_CAPTURE_BLACK, 0u);
+    for (uint32_t now = 0u; now <= 500u; now += IR_SAMPLE_MS)
+    {
+        ir_tracking_sample(&tracker, (IrRaw){3000u, 500u}, true, now);
+    }
+    valid = valid && tracker.calibration.black_set &&
+            calibration_control_feedback(IR_CAPTURE_BLACK, &tracker) == 1u &&
+            ir_tracking_capture(&tracker, IR_CAPTURE_WHITE, 520u);
+    for (uint32_t now = 520u; now <= 1020u; now += IR_SAMPLE_MS)
+    {
+        ir_tracking_sample(&tracker, (IrRaw){500u, 3000u}, true, now);
+    }
+    valid = valid && tracker.calibration.white_set &&
+            calibration_control_feedback(IR_CAPTURE_WHITE, &tracker) == 2u;
+    ir_tracking_sample(&tracker, (IrRaw){3000u, 3000u}, true, 1040u);
+    IrTrackingOutput output = ir_tracking_output(&tracker, 1040u);
+    valid = valid && output.valid && output.steering < 0.0f &&
+            !ir_tracking_output(&tracker, 1101u).valid;
+    /* A later low-contrast attempt must clear both accepted references. */
+    valid = valid && ir_tracking_capture(&tracker, IR_CAPTURE_BLACK, 1120u);
+    for (uint32_t now = 1120u; now <= 1620u; now += IR_SAMPLE_MS)
+    {
+        ir_tracking_sample(&tracker, (IrRaw){2000u, 2000u}, true, now);
+    }
+    valid = valid && ir_tracking_capture(&tracker, IR_CAPTURE_WHITE, 1640u);
+    for (uint32_t now = 1640u; now <= 2140u; now += IR_SAMPLE_MS)
+    {
+        ir_tracking_sample(&tracker, (IrRaw){2100u, 2100u}, true, now);
+    }
+    return valid && tracker.capture_result == IR_CAPTURE_CONTRAST &&
+           !tracker.calibration.black_set && !tracker.calibration.white_set;
+}
+
 void subsystem3_test(void)
 {
     TEST_INIT();
@@ -231,6 +268,9 @@ void subsystem3_test(void)
         "S3-U17",
         busy && cancelled == 3 && tracker.capture_kind == IR_CAPTURE_NONE,
         "busy white press ignored, fresh later press accepted, GP21 cancels");
+    TEST_CHECK("S3-U18", ir_capture_test(),
+               "black/white capture, opposite polarities, stale guidance and "
+               "low-contrast reference reset");
     TEST_SUMMARY("subsystem3");
 }
 #endif

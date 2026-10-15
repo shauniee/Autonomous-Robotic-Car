@@ -1,6 +1,6 @@
 # Technical and hardware information
 
-Project allocations are in [TEAM](TEAM.md#2-pins); operating power/flash steps are in [GUIDE](GUIDE.md#power-and-flashing). This guide owns component facts and driver reference data. Chip absolute maxima, module ratings and measured system limits are different. Unverified installed-part/calibration values are tracked once in [PROJECT_SPECS](docs/donotsubmit/PROJECT_SPECS.md#pending-decisions).
+Project allocations are in [TEAM](../TEAM.md#2-pins); operating power/flash steps are in [GUIDE](../../GUIDE.md#power-and-flashing). This guide owns component facts and driver reference data. Chip absolute maxima, module ratings and measured system limits are different. Unverified installed-part/calibration values are tracked once in [PROJECT_SPECS](PROJECT_SPECS.md#pending-decisions).
 
 ## Raspberry Pi Pico W / WH
 
@@ -30,7 +30,7 @@ WH is the header-equipped W. The SDK board is `pico_w`.
 
 ADC_VREF is filtered from 3V3 through approximately 201 Ω / 2.2 µF; loading can produce about a 30 mV offset and supply noise. Averaging improves repeatability but does not establish absolute accuracy. No precision external reference is configured in this project.
 
-Radio/internal signals include power enable, bidirectional data/IRQ, chip-select and a shared internal clock/VSYS-divided sensing path. They are reserved in [TEAM](TEAM.md#2-pins); do not repurpose them or sample internal supply signals while disrupting the radio.
+Radio/internal signals include power enable, bidirectional data/IRQ, chip-select and a shared internal clock/VSYS-divided sensing path. They are reserved in [TEAM](../TEAM.md#2-pins); do not repurpose them or sample internal supply signals while disrupting the radio.
 
 ### Physical header map
 
@@ -81,7 +81,7 @@ See subsystem driver contracts for acquisition and control policy; hardware capa
 
 Physical forward direction depends on motor wiring and installation. Brake is an electrical request, not proof of immediate stationarity. Check wiring with power off; share grounds and avoid motor-current return paths through sensor ground wiring. Sensor/servo currents and motor stall current must fit the actual rail/driver limits.
 
-The carrier provides seven Grove ports, motor terminals, four servo signal ports, local buttons, buzzer/mute switch, RGB LEDs and a battery-measurement jumper. Signal pair assignments/sharing belong to [TEAM](TEAM.md#2-pins). The optional battery divider yields `VBAT / 2` when its solder jumper is closed; the selected VBAT follows the highest relevant supply. The carrier switch cuts power, reset restarts the Pico, and motor-test buttons drive the motors at full speed independently of the application request path. Keep wheels clear and avoid those buttons while validating unknown wiring. A Maker Pi Pico is a separate development carrier and has no equivalent Robo motor-driver assumption.
+The carrier provides seven Grove ports, motor terminals, four servo signal ports, local buttons, buzzer/mute switch, RGB LEDs and a battery-measurement jumper. Signal pair assignments/sharing belong to [TEAM](../TEAM.md#2-pins). The optional battery divider yields `VBAT / 2` when its solder jumper is closed; the selected VBAT follows the highest relevant supply. The carrier switch cuts power, reset restarts the Pico, and motor-test buttons drive the motors at full speed independently of the application request path. Keep wheels clear and avoid those buttons while validating unknown wiring. A Maker Pi Pico is a separate development carrier and has no equivalent Robo motor-driver assumption.
 
 ## Motors and encoders
 
@@ -104,7 +104,7 @@ For decoded counts per wheel revolution `N`, wheel diameter `D`, interval `dt` a
 - Wheel speed: `v = ds / dt`.
 - Differential-drive yaw change: `dtheta = (ds_right - ds_left) / b` radians; convert to degrees for the public contract.
 
-`N` includes the selected edge decoding and gearing; raw motor-shaft PPR cannot be substituted without conversion. Direction comes from quadrature phase. Account for wrap, bounce/noise, missed edges, slip and finite measurement windows. [Motion](docs/architecture/SUBSYSTEM2.md) owns PID/actions.
+`N` includes the selected edge decoding and gearing; raw motor-shaft PPR cannot be substituted without conversion. Direction comes from quadrature phase. Account for wrap, bounce/noise, missed edges, slip and finite measurement windows. [Motion](../architecture/SUBSYSTEM2.md) owns PID/actions.
 
 ## TCRT5000-based IR modules
 
@@ -136,7 +136,7 @@ If the installed board uses LM393, it is a dual comparator with **open-collector
 | Response | Approximately 1.3 µs under specified overdrive/load conditions; board filtering/hysteresis changes behavior |
 | Eight-pin order | 1 OUT A, 2 IN− A, 3 IN+ A, 4 GND, 5 IN+ B, 6 IN− B, 7 OUT B, 8 VCC |
 
-Threshold chatter may need justified hysteresis/filtering. Comparator trim is separate from analogue black/white calibration. Do not connect unused AOUT/DOUT contacts merely because they are present; follow TEAM's allocation. [Line Tracking](docs/architecture/SUBSYSTEM3.md) and [Barcode](docs/architecture/SUBSYSTEM3.md) own the processing logic.
+Threshold chatter may need justified hysteresis/filtering. Comparator trim is separate from analogue black/white calibration. Do not connect unused AOUT/DOUT contacts merely because they are present; follow TEAM's allocation. [Line Tracking](../architecture/SUBSYSTEM3.md) and [Barcode](../architecture/SUBSYSTEM3.md) own the processing logic.
 
 ## Ultrasonic sensor
 
@@ -208,8 +208,8 @@ Rates: 0.75, 1.5, 3, 7.5, 15, 30, 75 and 220 Hz. Reject the `−4096` overflow c
 | ±5.6 | 330 | 295 |
 | ±8.1 | 230 | 205 |
 
-Gravity-derived pitch/roll is useful only after mounted-axis/bias calibration and when acceleration is near gravity. Dynamic acceleration, slip and magnetic disturbances need validity guards. [Terrain](docs/architecture/SUBSYSTEM4.md) owns classification, height validation and peak retention.
+Gravity-derived pitch/roll is useful only after mounted-axis/bias calibration and when acceleration is near gravity. Dynamic acceleration, slip and magnetic disturbances need validity guards. [Terrain](../architecture/SUBSYSTEM4.md) owns classification, height validation and peak retention.
 
 ## Implementation versus calibration
 
-UAT drivers request the settings described in the owning [Motion](docs/architecture/SUBSYSTEM2.md), [Terrain](docs/architecture/SUBSYSTEM4.md) and [Obstacle](docs/architecture/SUBSYSTEM5.md) guides. Those settings and numerical software input bounds do not establish installed-module ratings or measured behavior. Actual calibration/provenance is recorded once in [PROJECT_SPECS](docs/donotsubmit/PROJECT_SPECS.md#pending-decisions); physical results belong to [testing](testing/README.md).
+UAT drivers request the settings described in the owning [Motion](../architecture/SUBSYSTEM2.md), [Terrain](../architecture/SUBSYSTEM4.md) and [Obstacle](../architecture/SUBSYSTEM5.md) guides. Those settings and numerical software input bounds do not establish installed-module ratings or measured behavior. Actual calibration/provenance is recorded once in [PROJECT_SPECS](PROJECT_SPECS.md#pending-decisions); physical results belong to [testing](../../testing/README.md).

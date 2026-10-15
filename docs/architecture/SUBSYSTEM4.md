@@ -1,6 +1,6 @@
 # Subsystem 4: Terrain
 
-Owner: Darrius. S4 owns bounded GY-511 acquisition, mounted gravity/bias calibration, movement classification and reference-calibrated hump estimates. [TECHNICAL_INFO](../../TECHNICAL_INFO.md#gy-511--lsm303dlhc-imu) owns chip facts; [TEAM](../../TEAM.md) owns I2C allocation.
+Owner: Darrius. S4 owns bounded GY-511 acquisition, mounted gravity/bias calibration, movement classification and reference-calibrated hump estimates. [TECHNICAL_INFO](../donotsubmit/TECHNICAL_INFO.md#gy-511--lsm303dlhc-imu) owns chip facts; [TEAM](../TEAM.md) owns I2C allocation.
 
 ## Acquisition and calibration
 

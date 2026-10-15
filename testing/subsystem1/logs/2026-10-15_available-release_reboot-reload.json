@@ -1,0 +1,613 @@
+{
+  "date": "2026-10-15",
+  "source_revision": "33ea475",
+  "expected_image_sha256": "f554c1f1280098cfc6c3278992c0d5877f744dab0f07a1ef84d02e6b674318b0",
+  "device_cryptographic_readback": false,
+  "method": "User normal USB reboot, actual live MQTT revision0 before reload, same operator helper table reload acknowledged revision1; no recompile/reflash",
+  "official_mission_letters": false,
+  "power": "USB only; motors inhibited",
+  "checks": {
+    "cleared_on_normal_reboot": true,
+    "helper_acknowledged": true,
+    "new_revision_one": true,
+    "fresh_telemetry": true,
+    "never_moving_in_samples": true,
+    "motor_inhibited": true,
+    "unchanged_uf2": true
+  },
+  "result": "PASS",
+  "before": [
+    {
+      "broker_connected": true,
+      "robot_status": "live",
+      "elapsed_ms": 355,
+      "telemetry": {
+        "schema": 3,
+        "sequence": 385,
+        "observed_ms": 16690,
+        "mission": {
+          "state": "CALIBRATING",
+          "reason": "configuration_pending",
+          "run": 0,
+          "action": 0,
+          "completed": 0,
+          "configured": false,
+          "moving": false,
+          "stopped": false,
+          "test_inhibited": true
+        },
+        "line": {
+          "ms": 16680,
+          "age_ms": 40,
+          "valid": false,
+          "raw": {
+            "left": 254,
+            "right": 156
+          },
+          "black": null,
+          "white": null,
+          "fraction": null,
+          "error": null,
+          "condition": "unknown",
+          "capture": "waiting"
+        },
+        "motion": {
+          "ms": 16690,
+          "age_ms": 30,
+          "valid": false,
+          "stationary": false,
+          "encoder_valid": true,
+          "count": [
+            0,
+            0
+          ],
+          "distance_mm": null,
+          "speed_mm_s": null,
+          "xy_mm": null,
+          "yaw_mdeg": null,
+          "duty": [
+            0.0,
+            0.0
+          ],
+          "status": 0,
+          "reason": 0
+        },
+        "terrain": {
+          "ms": 0,
+          "age_ms": 16720,
+          "valid": false,
+          "calibrated": false,
+          "accel_mg": null,
+          "mag_milli_gauss": null,
+          "pitch_mdeg": null,
+          "roll_mdeg": null,
+          "turn_mdeg_s": null,
+          "state": 0,
+          "movement": null,
+          "run": 0,
+          "height_mm": null,
+          "max_height_mm": null
+        },
+        "obstacle": {
+          "ms": 16670,
+          "age_ms": 50,
+          "front_mm": null,
+          "profile_ms": 0,
+          "profile_valid": false,
+          "width_mm": null,
+          "closest_mm": null,
+          "gap_mm": null,
+          "scan_id": 0,
+          "scan_status": 0
+        },
+        "barcode": {
+          "symbol": "",
+          "action": 0,
+          "orientation": 0,
+          "revision": 0,
+          "epoch": 0,
+          "faults": 0
+        },
+        "events": {
+          "humps": 0,
+          "barcodes": 0,
+          "latest_hump": null,
+          "latest_barcode": null,
+          "dropped": [
+            0,
+            0
+          ],
+          "overflow": false
+        },
+        "calibration": {
+          "status": 0,
+          "samples": 0,
+          "reason": 0
+        },
+        "mapping": {
+          "request_id": 0,
+          "result": 0
+        }
+      },
+      "mapping": {
+        "request_id": 1047978281,
+        "result": 2,
+        "revision": 2
+      }
+    },
+    {
+      "broker_connected": true,
+      "robot_status": "live",
+      "elapsed_ms": 460,
+      "telemetry": {
+        "schema": 3,
+        "sequence": 402,
+        "observed_ms": 17200,
+        "mission": {
+          "state": "CALIBRATING",
+          "reason": "configuration_pending",
+          "run": 0,
+          "action": 0,
+          "completed": 0,
+          "configured": false,
+          "moving": false,
+          "stopped": false,
+          "test_inhibited": true
+        },
+        "line": {
+          "ms": 17200,
+          "age_ms": 20,
+          "valid": false,
+          "raw": {
+            "left": 257,
+            "right": 155
+          },
+          "black": null,
+          "white": null,
+          "fraction": null,
+          "error": null,
+          "condition": "unknown",
+          "capture": "waiting"
+        },
+        "motion": {
+          "ms": 17190,
+          "age_ms": 30,
+          "valid": false,
+          "stationary": false,
+          "encoder_valid": true,
+          "count": [
+            0,
+            0
+          ],
+          "distance_mm": null,
+          "speed_mm_s": null,
+          "xy_mm": null,
+          "yaw_mdeg": null,
+          "duty": [
+            0.0,
+            0.0
+          ],
+          "status": 0,
+          "reason": 0
+        },
+        "terrain": {
+          "ms": 0,
+          "age_ms": 17220,
+          "valid": false,
+          "calibrated": false,
+          "accel_mg": null,
+          "mag_milli_gauss": null,
+          "pitch_mdeg": null,
+          "roll_mdeg": null,
+          "turn_mdeg_s": null,
+          "state": 0,
+          "movement": null,
+          "run": 0,
+          "height_mm": null,
+          "max_height_mm": null
+        },
+        "obstacle": {
+          "ms": 17150,
+          "age_ms": 70,
+          "front_mm": null,
+          "profile_ms": 0,
+          "profile_valid": false,
+          "width_mm": null,
+          "closest_mm": null,
+          "gap_mm": null,
+          "scan_id": 0,
+          "scan_status": 0
+        },
+        "barcode": {
+          "symbol": "",
+          "action": 0,
+          "orientation": 0,
+          "revision": 0,
+          "epoch": 0,
+          "faults": 0
+        },
+        "events": {
+          "humps": 0,
+          "barcodes": 0,
+          "latest_hump": null,
+          "latest_barcode": null,
+          "dropped": [
+            0,
+            0
+          ],
+          "overflow": false
+        },
+        "calibration": {
+          "status": 0,
+          "samples": 0,
+          "reason": 0
+        },
+        "mapping": {
+          "request_id": 0,
+          "result": 0
+        }
+      },
+      "mapping": {
+        "request_id": 1047978281,
+        "result": 2,
+        "revision": 2
+      }
+    },
+    {
+      "broker_connected": true,
+      "robot_status": "live",
+      "elapsed_ms": 55,
+      "telemetry": {
+        "schema": 3,
+        "sequence": 435,
+        "observed_ms": 18190,
+        "mission": {
+          "state": "CALIBRATING",
+          "reason": "configuration_pending",
+          "run": 0,
+          "action": 0,
+          "completed": 0,
+          "configured": false,
+          "moving": false,
+          "stopped": false,
+          "test_inhibited": true
+        },
+        "line": {
+          "ms": 18180,
+          "age_ms": 40,
+          "valid": false,
+          "raw": {
+            "left": 252,
+            "right": 152
+          },
+          "black": null,
+          "white": null,
+          "fraction": null,
+          "error": null,
+          "condition": "unknown",
+          "capture": "waiting"
+        },
+        "motion": {
+          "ms": 18190,
+          "age_ms": 30,
+          "valid": false,
+          "stationary": false,
+          "encoder_valid": true,
+          "count": [
+            0,
+            0
+          ],
+          "distance_mm": null,
+          "speed_mm_s": null,
+          "xy_mm": null,
+          "yaw_mdeg": null,
+          "duty": [
+            0.0,
+            0.0
+          ],
+          "status": 0,
+          "reason": 0
+        },
+        "terrain": {
+          "ms": 0,
+          "age_ms": 18220,
+          "valid": false,
+          "calibrated": false,
+          "accel_mg": null,
+          "mag_milli_gauss": null,
+          "pitch_mdeg": null,
+          "roll_mdeg": null,
+          "turn_mdeg_s": null,
+          "state": 0,
+          "movement": null,
+          "run": 0,
+          "height_mm": null,
+          "max_height_mm": null
+        },
+        "obstacle": {
+          "ms": 18170,
+          "age_ms": 50,
+          "front_mm": null,
+          "profile_ms": 0,
+          "profile_valid": false,
+          "width_mm": null,
+          "closest_mm": null,
+          "gap_mm": null,
+          "scan_id": 0,
+          "scan_status": 0
+        },
+        "barcode": {
+          "symbol": "",
+          "action": 0,
+          "orientation": 0,
+          "revision": 0,
+          "epoch": 0,
+          "faults": 0
+        },
+        "events": {
+          "humps": 0,
+          "barcodes": 0,
+          "latest_hump": null,
+          "latest_barcode": null,
+          "dropped": [
+            0,
+            0
+          ],
+          "overflow": false
+        },
+        "calibration": {
+          "status": 0,
+          "samples": 0,
+          "reason": 0
+        },
+        "mapping": {
+          "request_id": 0,
+          "result": 0
+        }
+      },
+      "mapping": {
+        "request_id": 1047978281,
+        "result": 2,
+        "revision": 2
+      }
+    },
+    {
+      "broker_connected": true,
+      "robot_status": "live",
+      "elapsed_ms": 160,
+      "telemetry": {
+        "schema": 3,
+        "sequence": 452,
+        "observed_ms": 18700,
+        "mission": {
+          "state": "CALIBRATING",
+          "reason": "configuration_pending",
+          "run": 0,
+          "action": 0,
+          "completed": 0,
+          "configured": false,
+          "moving": false,
+          "stopped": false,
+          "test_inhibited": true
+        },
+        "line": {
+          "ms": 18700,
+          "age_ms": 20,
+          "valid": false,
+          "raw": {
+            "left": 255,
+            "right": 150
+          },
+          "black": null,
+          "white": null,
+          "fraction": null,
+          "error": null,
+          "condition": "unknown",
+          "capture": "waiting"
+        },
+        "motion": {
+          "ms": 18690,
+          "age_ms": 30,
+          "valid": false,
+          "stationary": false,
+          "encoder_valid": true,
+          "count": [
+            0,
+            0
+          ],
+          "distance_mm": null,
+          "speed_mm_s": null,
+          "xy_mm": null,
+          "yaw_mdeg": null,
+          "duty": [
+            0.0,
+            0.0
+          ],
+          "status": 0,
+          "reason": 0
+        },
+        "terrain": {
+          "ms": 0,
+          "age_ms": 18720,
+          "valid": false,
+          "calibrated": false,
+          "accel_mg": null,
+          "mag_milli_gauss": null,
+          "pitch_mdeg": null,
+          "roll_mdeg": null,
+          "turn_mdeg_s": null,
+          "state": 0,
+          "movement": null,
+          "run": 0,
+          "height_mm": null,
+          "max_height_mm": null
+        },
+        "obstacle": {
+          "ms": 18650,
+          "age_ms": 70,
+          "front_mm": null,
+          "profile_ms": 0,
+          "profile_valid": false,
+          "width_mm": null,
+          "closest_mm": null,
+          "gap_mm": null,
+          "scan_id": 0,
+          "scan_status": 0
+        },
+        "barcode": {
+          "symbol": "",
+          "action": 0,
+          "orientation": 0,
+          "revision": 0,
+          "epoch": 0,
+          "faults": 0
+        },
+        "events": {
+          "humps": 0,
+          "barcodes": 0,
+          "latest_hump": null,
+          "latest_barcode": null,
+          "dropped": [
+            0,
+            0
+          ],
+          "overflow": false
+        },
+        "calibration": {
+          "status": 0,
+          "samples": 0,
+          "reason": 0
+        },
+        "mapping": {
+          "request_id": 0,
+          "result": 0
+        }
+      },
+      "mapping": {
+        "request_id": 1047978281,
+        "result": 2,
+        "revision": 2
+      }
+    }
+  ],
+  "reload_output": "{\"request_id\":1048217231,\"result\":2,\"revision\":1}\nPico acknowledgement observed; mapping is RAM-only.\n",
+  "reload_error": "",
+  "after": {
+    "broker_connected": true,
+    "robot_status": "live",
+    "elapsed_ms": 41,
+    "telemetry": {
+      "schema": 3,
+      "sequence": 1369,
+      "observed_ms": 46210,
+      "mission": {
+        "state": "CALIBRATING",
+        "reason": "configuration_pending",
+        "run": 0,
+        "action": 0,
+        "completed": 0,
+        "configured": false,
+        "moving": false,
+        "stopped": false,
+        "test_inhibited": true
+      },
+      "line": {
+        "ms": 46200,
+        "age_ms": 30,
+        "valid": false,
+        "raw": {
+          "left": 261,
+          "right": 153
+        },
+        "black": null,
+        "white": null,
+        "fraction": null,
+        "error": null,
+        "condition": "unknown",
+        "capture": "waiting"
+      },
+      "motion": {
+        "ms": 46210,
+        "age_ms": 20,
+        "valid": false,
+        "stationary": false,
+        "encoder_valid": true,
+        "count": [
+          0,
+          0
+        ],
+        "distance_mm": null,
+        "speed_mm_s": null,
+        "xy_mm": null,
+        "yaw_mdeg": null,
+        "duty": [
+          0.0,
+          0.0
+        ],
+        "status": 0,
+        "reason": 0
+      },
+      "terrain": {
+        "ms": 0,
+        "age_ms": 46230,
+        "valid": false,
+        "calibrated": false,
+        "accel_mg": null,
+        "mag_milli_gauss": null,
+        "pitch_mdeg": null,
+        "roll_mdeg": null,
+        "turn_mdeg_s": null,
+        "state": 0,
+        "movement": null,
+        "run": 0,
+        "height_mm": null,
+        "max_height_mm": null
+      },
+      "obstacle": {
+        "ms": 46190,
+        "age_ms": 40,
+        "front_mm": null,
+        "profile_ms": 0,
+        "profile_valid": false,
+        "width_mm": null,
+        "closest_mm": null,
+        "gap_mm": null,
+        "scan_id": 0,
+        "scan_status": 0
+      },
+      "barcode": {
+        "symbol": "",
+        "action": 0,
+        "orientation": 0,
+        "revision": 1,
+        "epoch": 1,
+        "faults": 0
+      },
+      "events": {
+        "humps": 0,
+        "barcodes": 0,
+        "latest_hump": null,
+        "latest_barcode": null,
+        "dropped": [
+          0,
+          0
+        ],
+        "overflow": false
+      },
+      "calibration": {
+        "status": 0,
+        "samples": 0,
+        "reason": 0
+      },
+      "mapping": {
+        "request_id": 1048217231,
+        "result": 2
+      }
+    },
+    "mapping": {
+      "request_id": 1048217231,
+      "result": 2,
+      "revision": 1
+    }
+  }
+}

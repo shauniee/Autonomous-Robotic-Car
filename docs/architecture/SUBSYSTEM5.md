@@ -1,6 +1,6 @@
 # Subsystem 5: Obstacle
 
-Owner: Jia Jing. S5 owns ultrasonic Echo capture, servo acquisition and stationary profiles. Mission owns avoidance movement through S2. [TEAM](../../TEAM.md) owns pins/PWM; [TECHNICAL_INFO](../../TECHNICAL_INFO.md#ultrasonic-sensor) owns variant/electrical facts.
+Owner: Jia Jing. S5 owns ultrasonic Echo capture, servo acquisition and stationary profiles. Mission owns avoidance movement through S2. [TEAM](../TEAM.md) owns pins/PWM; [TECHNICAL_INFO](../donotsubmit/TECHNICAL_INFO.md#ultrasonic-sensor) owns variant/electrical facts.
 
 ## Continuous acquisition and scanning
 
@@ -25,3 +25,7 @@ Even a completed valid profile does not release the brake until Mission revalida
 `ObstacleSnapshot` contains independent forward/profile times, scan state/ID, rays and profile validity. `s5_obstacle_copy`, `s5_scan_request`, `s5_scan_cancel` and reset are bounded task APIs. `s5_profile_build_config` and `s5_scan_guard` are the live configuration/phase predicates exercised by fixtures.
 
 Modules: lifecycle/task `subsystem5` and `obstacle_profile`. [S5 cases](../../testing/subsystem5/TEST_LOG.md), T08-T10 and [integration](../../testing/integration/TEST_LOG.md) own evidence. Scan publication cannot override GP21/Safety.
+
+## Shared timer regression
+
+The former core-1 `WaitUsec` trigger delay depended on a disabled local SysTick and stalled S5 plus lower-priority reporting. Trigger timing now uses the shared 1 MHz TIMER with a bounded duration/iteration guard and always restores TRIG low. INT-29 executes the timer helper; live advancing S5/reporting snapshots verify continued service with sonar absent. Neither proves Echo distance accuracy or servo motion. Those remain T08/T09.

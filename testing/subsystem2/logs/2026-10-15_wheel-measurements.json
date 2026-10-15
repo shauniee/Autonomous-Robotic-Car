@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-15",
+  "source_revision": "ffd4560",
+  "operator": "Nicholas; USB readings captured by Codex",
+  "power": "USB only; battery and power bank disconnected, user-confirmed",
+  "mode": "IR_ONLY_TEST=1 TEST=1; motor output inhibited",
+  "image_sha256": "35497460bd1598e07f6fa69853066c0de48a05ea955545bf339147135d2e4fe2",
+  "reported_geometry": {
+    "wheel_diameter_mm": 65,
+    "track_mm": 113,
+    "track_definition": "Centre-to-centre across axle; user corrected initial 1130 mm to 113 mm"
+  },
+  "trials": [
+    {
+      "trial": "Initial left turn",
+      "turns": null,
+      "result": "Not used; operator did not count exact revolutions"
+    },
+    {
+      "trial": "Left 10 turns",
+      "turns": 10,
+      "before_left_uint32": 4294964383,
+      "after_left_uint32": 4294939085,
+      "faults_after": 4,
+      "result": "REJECTED for calibration; invalid transitions detected",
+      "evidence": "../../integration/logs/2026-10-15_132025_688374_pico-console.txt"
+    },
+    {
+      "trial": "Slow left first 2 turns after GP21/reset",
+      "turns": 2,
+      "before_left_uint32": 0,
+      "after_left_uint32": 4294962209,
+      "signed_delta": -5087,
+      "faults_after": 0,
+      "result": "Recorded for provisional scaling; ground accuracy not verified"
+    },
+    {
+      "trial": "Slow left second 2 turns",
+      "turns": 2,
+      "before_left_uint32": 4294962209,
+      "after_left_uint32": 4294957174,
+      "signed_delta": -5035,
+      "endpoint_note": "One-count rest movement observed near endpoint (4294957173 to 4294957174)",
+      "faults_after": 0,
+      "result": "Recorded; variation between trials requires ground-distance verification"
+    },
+    {
+      "trial": "Slow right 2 turns",
+      "turns": 2,
+      "before_right_uint32": 0,
+      "after_right_uint32": 4294962243,
+      "signed_delta": -5053,
+      "faults_after": 0,
+      "result": "Recorded for provisional scaling; repeat/ground accuracy pending"
+    }
+  ],
+  "slow_trial_evidence": "../../integration/logs/2026-10-15_132544_709478_pico-console.txt",
+  "provisional_estimates": {
+    "left_counts_per_wheel_revolution": 2530.5,
+    "right_counts_per_wheel_revolution": 2526.5,
+    "left_m_per_count": 8.069690673121382e-05,
+    "right_m_per_count": 8.082466751764756e-05,
+    "left_encoder_sign_for_forward_positive": -1,
+    "right_encoder_sign_for_forward_positive": -1
+  },
+  "production_calibration_accepted": false,
+  "electrical_release_or_PID_tuning_claimed": false,
+  "remaining": [
+    "Repeat with a fixed wheel mark and measured ground travel; resolve count variation and invalid transitions at intended speed",
+    "Confirm motor/encoder electrical ratings and installed GP28 battery-jumper isolation",
+    "Measure motor direction, PID response, saturation, stall and physical braking under approved power policy",
+    "Keep motion/electrical confirmation flags false until required measurements and acceptance pass"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-15",
+  "source_revision": "33ea47505f2ef197cad8d9a76715b922d644d758",
+  "mission_ready": false,
+  "submission_ready_without_video": false,
+  "software_checks": {
+    "six_profiles": "PASS",
+    "strict_arm_objects": 96,
+    "fixture_exclusion": "PASS",
+    "evidence": "2026-10-15_available-release_builds.json",
+    "live_freshness": "PASS: 12 actual MQTT samples, IR20\u201340ms/Motion10\u201330ms",
+    "same_image_reboot_mapping_reload": "PASS: cleared revision0 and MQTT reload acknowledged revision1"
+  },
+  "executed_firmware": {
+    "revision": "33ea475",
+    "passed": 45,
+    "capture": "2026-10-15_152409_309541_pico-console.json",
+    "expected_image_sha256": "f554c1f1280098cfc6c3278992c0d5877f744dab0f07a1ef84d02e6b674318b0",
+    "device_cryptographic_readback": false
+  },
+  "physical_partial": [
+    "USB-only IR black/white calibration and static line observations",
+    "Slow marked encoder trials and stop/reset counts; provisional scale only",
+    "Actual Pico MQTT two-table replacement and invalid-request rejection",
+    "Normal reboot clears mapping; MQTT reload accepted on unchanged firmware"
+  ],
+  "retained_failures": [
+    "Fast manual encoder trial: four illegal edges, not accepted",
+    "Earlier serial permission/no-trigger/disconnect/interrupted observation summaries retained",
+    "Live 61bc484 telemetry exposed cache-age problem; 33ea475 20ms provider fix verified on actual MQTT samples"
+  ],
+  "operator_confirmed": {
+    "wheel_diameter_mm": 65,
+    "wheel_track_mm": 113,
+    "GP28_sensing_jumper": "Disconnected",
+    "motor_rating": "Unknown",
+    "motor_supply": "Unknown",
+    "current_power": "USB only"
+  },
+  "remaining_without_IMU_and_ultrasonic": [
+    "Verify motor/supply ratings and wiring before powered release",
+    "Repeat marked counts and ground-distance scale; verify encoder reliability at intended speed",
+    "Powered motor directions, PID, saturation/stall, distance/angle and brake latency acceptance",
+    "Physical tracking, all 104 barcode scale/orientation combinations, all four navigation actions and line recovery",
+    "Confirm issued barcode/junction/finish/bypass rules and calibrated thresholds",
+    "Full stale/encoder/deadline/network/load tests and repeated complete-course rehearsals"
+  ],
+  "deferred_missing_hardware": [
+    "Joint black/IMU calibration, motion and reference/one-wheel hump acceptance",
+    "Installed Echo/servo calibration, scan/cancel and both-side bypass/original-route acceptance"
+  ],
+  "configuration_flags": "Electrical/Motion/course confirmation remain false; commissioning disabled; diagnostic TEST excludes mission start",
+  "readiness_rule": "Connection of missing sensors alone does not establish readiness; required settings and physical acceptance must pass"
+}

@@ -1,0 +1,206 @@
+{
+  "started": "2026-10-15T15:32:41.267235+08:00",
+  "port": "/dev/cu.usbmodemMTK3PICO1",
+  "method": "Passive USB serial capture; no commands, flash or motor requests sent",
+  "expected_image_operator_supplied": {
+    "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test_ir_only.uf2",
+    "sha256": "f554c1f1280098cfc6c3278992c0d5877f744dab0f07a1ef84d02e6b674318b0"
+  },
+  "image_identity_verified_on_device": false,
+  "log": "2026-10-15_153241_267235_pico-console.txt",
+  "bytes": 26295,
+  "expected_ids": [
+    "INT-15",
+    "INT-16",
+    "INT-21",
+    "INT-22",
+    "INT-23",
+    "INT-24",
+    "INT-25",
+    "INT-28",
+    "INT-29",
+    "S1-U04",
+    "S1-U06",
+    "S1-U07",
+    "S1-U09",
+    "S1-U10",
+    "S1-U11",
+    "S1-U12",
+    "S1-U13",
+    "S2-U06",
+    "S2-U07",
+    "S2-U08",
+    "S2-U09",
+    "S2-U10",
+    "S2-U11",
+    "S2-U12",
+    "S2-U13",
+    "S2-U14",
+    "S3-U06",
+    "S3-U09",
+    "S3-U12",
+    "S3-U14",
+    "S3-U15",
+    "S3-U16",
+    "S3-U17",
+    "S3-U18",
+    "S4-U03",
+    "S4-U04",
+    "S4-U05",
+    "S4-U06",
+    "S4-U07",
+    "S4-U08",
+    "S4-U09",
+    "S4-U10",
+    "S5-U04",
+    "S5-U05",
+    "S5-U06"
+  ],
+  "complete_run_observed": false,
+  "observed_results": {
+    "S1-U04": [
+      "PASS"
+    ],
+    "S1-U06": [
+      "PASS"
+    ],
+    "S1-U07": [
+      "PASS"
+    ],
+    "S1-U09": [
+      "PASS"
+    ],
+    "S1-U10": [
+      "PASS"
+    ],
+    "S1-U11": [
+      "PASS"
+    ],
+    "S1-U12": [
+      "PASS"
+    ],
+    "S1-U13": [
+      "PASS"
+    ],
+    "S2-U06": [
+      "PASS"
+    ],
+    "S2-U07": [
+      "PASS"
+    ],
+    "S2-U08": [
+      "PASS"
+    ],
+    "S2-U09": [
+      "PASS"
+    ],
+    "S2-U10": [
+      "PASS"
+    ],
+    "S2-U11": [
+      "PASS"
+    ],
+    "S2-U12": [
+      "PASS"
+    ],
+    "S2-U13": [
+      "PASS"
+    ],
+    "S2-U14": [
+      "PASS"
+    ],
+    "S3-U06": [
+      "PASS"
+    ],
+    "S3-U12": [
+      "PASS"
+    ],
+    "S3-U09": [
+      "PASS"
+    ],
+    "S3-U14": [
+      "PASS"
+    ],
+    "S3-U15": [
+      "PASS"
+    ],
+    "S3-U16": [
+      "PASS"
+    ],
+    "S3-U17": [
+      "PASS"
+    ],
+    "S3-U18": [
+      "PASS"
+    ],
+    "S4-U03": [
+      "PASS"
+    ],
+    "S4-U04": [
+      "PASS"
+    ],
+    "S4-U05": [
+      "PASS"
+    ],
+    "S4-U06": [
+      "PASS"
+    ],
+    "S4-U07": [
+      "PASS"
+    ],
+    "S4-U08": [
+      "PASS"
+    ],
+    "S4-U09": [
+      "PASS"
+    ],
+    "S4-U10": [
+      "PASS"
+    ],
+    "S5-U04": [
+      "PASS"
+    ],
+    "S5-U05": [
+      "PASS"
+    ],
+    "S5-U06": [
+      "PASS"
+    ],
+    "INT-15": [
+      "PASS"
+    ],
+    "INT-16": [
+      "PASS"
+    ],
+    "INT-22": [
+      "PASS"
+    ],
+    "INT-23": [
+      "PASS"
+    ],
+    "INT-21": [
+      "PASS"
+    ],
+    "INT-24": [
+      "PASS"
+    ],
+    "INT-25": [
+      "PASS"
+    ],
+    "INT-28": [
+      "PASS"
+    ],
+    "INT-29": [
+      "PASS"
+    ]
+  },
+  "failed": [],
+  "missing": [],
+  "unexpected": [],
+  "duplicate": [],
+  "firmware_result": "NOT_EVALUATED",
+  "sensor_observation_only": true,
+  "capture_error": null,
+  "operator_stopped": true,
+  "physical_mission_acceptance_claimed": false
+}

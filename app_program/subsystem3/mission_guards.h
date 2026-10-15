@@ -12,6 +12,10 @@ typedef struct
 bool mission_sensors_ready(uint32_t now, const S3IrSnapshot *ir,
                            const MotionFeedback *motion,
                            const TerrainSnapshot *terrain);
+/* Mapping is configuration only. Raw encoder quietness and acknowledged
+   braking qualify stopped replacement before speed/PID calibration exists. */
+bool mission_mapping_stopped(uint32_t now, const MotionFeedback *motion,
+                             const MotionHealth *health);
 uint32_t mission_broad_observe(MissionDwell *dwell, const S3IrSnapshot *ir,
                                uint32_t now);
 bool mission_junction_check(const RobotConfig *config, float distance,

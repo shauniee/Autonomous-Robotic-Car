@@ -22,7 +22,7 @@ Apply these rules to new or changed application code. They are a concise project
 - Bound hardware polling, waits, retries, buffers and actions. Validate counts, indices and inputs. Preserve acquisition time and use wrap-safe elapsed-time calculations.
 - `volatile` is for required hardware/asynchronous access; it is not synchronization. Use documented locks/atomics and copy coherent snapshots.
 - Keep ISRs bounded: capture, signal, return. No blocking, formatting, decoding or allocation in ISR. Use `_task` / `_isr` names where applicable.
-- Respect [TEAM ownership](../../TEAM.md#3-peripherals): one motor writer, separate peripheral owners, kernel-only networking. Stop must not depend on diagnostics queues or the request mutex.
+- Respect [TEAM ownership](../TEAM.md#3-peripherals): one motor writer, separate peripheral owners, kernel-only networking. Stop must not depend on diagnostics queues or the request mutex.
 - Keep credentials out of version control. Track behavior and evidence through the owning guides and [test records](../../testing/README.md).
 
 ## Review checklist

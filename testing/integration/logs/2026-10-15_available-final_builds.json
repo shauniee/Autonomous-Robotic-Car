@@ -1,0 +1,272 @@
+[
+  {
+    "profile": "wireless-ir-test",
+    "source_revision": "aadf6bd506d3c83a88bdff4dd21923e99960f388",
+    "configuration": {
+      "path": "app_program/common/robot_config.c",
+      "sha256": "2009c57b8c04e92da666ec1ea824c529878efbce1b1211ed5981fb8548fce563",
+      "worktree_diff_whitespace_only": true
+    },
+    "command": [
+      "make",
+      "-C",
+      "build_make",
+      "-j8",
+      "SMP=1",
+      "CONSOLE=usb_cdc",
+      "WIFI=cyw43",
+      "CRASH_REPORT=0",
+      "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+      "NET=lwip",
+      "MQTT=1",
+      "TEST=1",
+      "IR_ONLY_TEST=1"
+    ],
+    "exit": 0,
+    "log": "testing/integration/logs/2026-10-15_available-final_wireless-ir-test.txt",
+    "uf2": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test_ir_only.uf2",
+      "sha256": "0bfbcfcf53847968bade88ee34826fd5880081311bc8e0d2a3db3338a72ad359",
+      "bytes": 854016
+    },
+    "elf": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test_ir_only.elf",
+      "sha256": "3e4469e15ff05e68d80f9839faa21ee7468d862b1ab12bba9cb802a4da516db1",
+      "bytes": 3701908
+    },
+    "fixture_symbols": {
+      "subsystem1_test": true,
+      "subsystem2_test": true,
+      "subsystem3_test": true,
+      "subsystem4_test": true,
+      "subsystem5_test": true,
+      "integration_test": true
+    },
+    "fixture_exclusion_ok": true
+  },
+  {
+    "profile": "offline-ir-test",
+    "source_revision": "aadf6bd506d3c83a88bdff4dd21923e99960f388",
+    "configuration": {
+      "path": "app_program/common/robot_config.c",
+      "sha256": "2009c57b8c04e92da666ec1ea824c529878efbce1b1211ed5981fb8548fce563",
+      "worktree_diff_whitespace_only": true
+    },
+    "command": [
+      "make",
+      "-C",
+      "build_make",
+      "-j8",
+      "SMP=1",
+      "CONSOLE=usb_cdc",
+      "WIFI=cyw43",
+      "CRASH_REPORT=0",
+      "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+      "NET=none",
+      "MQTT=0",
+      "TEST=1",
+      "IR_ONLY_TEST=1"
+    ],
+    "exit": 0,
+    "log": "testing/integration/logs/2026-10-15_available-final_offline-ir-test.txt",
+    "uf2": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_test_ir_only.uf2",
+      "sha256": "5bc01b19fc649b6a83c71cafcd088d3a38855fc43b979e421eef8b85c81e1721",
+      "bytes": 735232
+    },
+    "elf": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_test_ir_only.elf",
+      "sha256": "628167ce960272d24c94d1e98ac3766680711718416c47009c51f2bd604c76c2",
+      "bytes": 3094956
+    },
+    "fixture_symbols": {
+      "subsystem1_test": true,
+      "subsystem2_test": true,
+      "subsystem3_test": true,
+      "subsystem4_test": true,
+      "subsystem5_test": true,
+      "integration_test": true
+    },
+    "fixture_exclusion_ok": true
+  },
+  {
+    "profile": "offline-test",
+    "source_revision": "aadf6bd506d3c83a88bdff4dd21923e99960f388",
+    "configuration": {
+      "path": "app_program/common/robot_config.c",
+      "sha256": "2009c57b8c04e92da666ec1ea824c529878efbce1b1211ed5981fb8548fce563",
+      "worktree_diff_whitespace_only": true
+    },
+    "command": [
+      "make",
+      "-C",
+      "build_make",
+      "-j8",
+      "SMP=1",
+      "CONSOLE=usb_cdc",
+      "WIFI=cyw43",
+      "CRASH_REPORT=0",
+      "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+      "NET=none",
+      "MQTT=0",
+      "TEST=1",
+      "IR_ONLY_TEST=0"
+    ],
+    "exit": 0,
+    "log": "testing/integration/logs/2026-10-15_available-final_offline-test.txt",
+    "uf2": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_test.uf2",
+      "sha256": "f27ac3b458f7ff664fbcd6340cafc1bb6770ab2d0435784ca689a87caeb9d283",
+      "bytes": 737280
+    },
+    "elf": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_test.elf",
+      "sha256": "9ad67a0ba4028a43777b09ce137f2911f6ffc787e0aee0792538205eb72d2d75",
+      "bytes": 3098928
+    },
+    "fixture_symbols": {
+      "subsystem1_test": true,
+      "subsystem2_test": true,
+      "subsystem3_test": true,
+      "subsystem4_test": true,
+      "subsystem5_test": true,
+      "integration_test": true
+    },
+    "fixture_exclusion_ok": true
+  },
+  {
+    "profile": "offline-normal",
+    "source_revision": "aadf6bd506d3c83a88bdff4dd21923e99960f388",
+    "configuration": {
+      "path": "app_program/common/robot_config.c",
+      "sha256": "2009c57b8c04e92da666ec1ea824c529878efbce1b1211ed5981fb8548fce563",
+      "worktree_diff_whitespace_only": true
+    },
+    "command": [
+      "make",
+      "-C",
+      "build_make",
+      "-j8",
+      "SMP=1",
+      "CONSOLE=usb_cdc",
+      "WIFI=cyw43",
+      "CRASH_REPORT=0",
+      "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+      "NET=none",
+      "MQTT=0",
+      "TEST=0",
+      "IR_ONLY_TEST=0"
+    ],
+    "exit": 0,
+    "log": "testing/integration/logs/2026-10-15_available-final_offline-normal.txt",
+    "uf2": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi.uf2",
+      "sha256": "90e2db1c17bb01d5c1768db75b957afff7b89d4b057b85f48ba55b904a5abb2e",
+      "bytes": 651264
+    },
+    "elf": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi.elf",
+      "sha256": "8db4b73845863a94def3cd2c6151935515afede772f021d3c6ae97d715051dc8",
+      "bytes": 2876392
+    },
+    "fixture_symbols": {
+      "subsystem1_test": false,
+      "subsystem2_test": false,
+      "subsystem3_test": false,
+      "subsystem4_test": false,
+      "subsystem5_test": false,
+      "integration_test": false
+    },
+    "fixture_exclusion_ok": true
+  },
+  {
+    "profile": "wireless-test",
+    "source_revision": "aadf6bd506d3c83a88bdff4dd21923e99960f388",
+    "configuration": {
+      "path": "app_program/common/robot_config.c",
+      "sha256": "2009c57b8c04e92da666ec1ea824c529878efbce1b1211ed5981fb8548fce563",
+      "worktree_diff_whitespace_only": true
+    },
+    "command": [
+      "make",
+      "-C",
+      "build_make",
+      "-j8",
+      "SMP=1",
+      "CONSOLE=usb_cdc",
+      "WIFI=cyw43",
+      "CRASH_REPORT=0",
+      "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+      "NET=lwip",
+      "MQTT=1",
+      "TEST=1",
+      "IR_ONLY_TEST=0"
+    ],
+    "exit": 0,
+    "log": "testing/integration/logs/2026-10-15_available-final_wireless-test.txt",
+    "uf2": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2",
+      "sha256": "4f7a153f96a0d158264628c7a5a81fa3f21895527180642d05aa0c8f2d5403c9",
+      "bytes": 856576
+    },
+    "elf": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.elf",
+      "sha256": "35681c0b2d30deee7567f762baceb7a04b4ca8bd8e2becd99b4239ea7eae6b7e",
+      "bytes": 3705872
+    },
+    "fixture_symbols": {
+      "subsystem1_test": true,
+      "subsystem2_test": true,
+      "subsystem3_test": true,
+      "subsystem4_test": true,
+      "subsystem5_test": true,
+      "integration_test": true
+    },
+    "fixture_exclusion_ok": true
+  },
+  {
+    "profile": "wireless-normal",
+    "source_revision": "aadf6bd506d3c83a88bdff4dd21923e99960f388",
+    "configuration": {
+      "path": "app_program/common/robot_config.c",
+      "sha256": "2009c57b8c04e92da666ec1ea824c529878efbce1b1211ed5981fb8548fce563",
+      "worktree_diff_whitespace_only": true
+    },
+    "command": [
+      "make",
+      "-C",
+      "build_make",
+      "-j8",
+      "SMP=1",
+      "CONSOLE=usb_cdc",
+      "WIFI=cyw43",
+      "CRASH_REPORT=0",
+      "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk",
+      "NET=lwip",
+      "MQTT=1",
+      "TEST=0",
+      "IR_ONLY_TEST=0"
+    ],
+    "exit": 0,
+    "log": "testing/integration/logs/2026-10-15_available-final_wireless-normal.txt",
+    "uf2": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2",
+      "sha256": "97b702e770e0ceacb5d4d955a465d3c97c76ddcdbcb0d5e9cd071cc21f437f74",
+      "bytes": 814080
+    },
+    "elf": {
+      "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.elf",
+      "sha256": "aff232cede962746a11e975564900dfea9efc93c8735f077acd31a2d8484e074",
+      "bytes": 3600884
+    },
+    "fixture_symbols": {
+      "subsystem1_test": false,
+      "subsystem2_test": false,
+      "subsystem3_test": false,
+      "subsystem4_test": false,
+      "subsystem5_test": false,
+      "integration_test": false
+    },
+    "fixture_exclusion_ok": true
+  }
+]

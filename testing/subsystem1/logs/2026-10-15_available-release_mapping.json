@@ -1,0 +1,22 @@
+{
+  "source_revision": "33ea475",
+  "expected_image_sha256": "f554c1f1280098cfc6c3278992c0d5877f744dab0f07a1ef84d02e6b674318b0",
+  "power": "USB only; motors inhibited",
+  "firmware_unchanged_between_assignments": true,
+  "official_mission_letters": false,
+  "checks": [
+    {
+      "file": "four-letter-example.json",
+      "exit": 0,
+      "output": "{\"request_id\":1047977616,\"result\":2,\"revision\":1}\nPico acknowledgement observed; mapping is RAM-only.\n",
+      "error": ""
+    },
+    {
+      "file": "four-letter-alternative.json",
+      "exit": 0,
+      "output": "{\"request_id\":1047978281,\"result\":2,\"revision\":2}\nPico acknowledgement observed; mapping is RAM-only.\n",
+      "error": ""
+    }
+  ],
+  "result": "PASS"
+}

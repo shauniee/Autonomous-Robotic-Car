@@ -1,6 +1,7 @@
 #include "../../app_program/common/robot_config.h"
 #include "../../app_program/subsystem3/mission.h"
 #include "../../app_program/subsystem3/mission_guards.h"
+#include "../../app_program/common/robot_time.h"
 #include "../fixture_config.h"
 #include "../../app_program/test_report.h"
 #if APP_TEST
@@ -138,6 +139,44 @@ void integration_test(void)
                "start/scan resume requires all required producers healthy");
     TEST_CHECK("INT-25", polling_mutex_test(),
                "real kernel ceiling raises and restores polling lock priority");
+    motion = (MotionFeedback){.sampled_ms = 100u,
+                              .sequence = 1u,
+                              .run_epoch = 7u,
+                              .encoder = {.valid = true},
+                              .encoder_quiet = true};
+    MotionHealth stopped = {.serviced_ms = 100u,
+                            .sequence = 1u,
+                            .run_epoch = 7u,
+                            .stopped = true,
+                            .brake_acknowledged = true};
+    bool mapping_stop = mission_mapping_stopped(160u, &motion, &stopped) &&
+                        !mission_mapping_stopped(161u, &motion, &stopped) &&
+                        !mission_mapping_stopped(100u, NULL, &stopped);
+    motion.encoder_quiet = false;
+    mapping_stop =
+        mapping_stop && !mission_mapping_stopped(100u, &motion, &stopped);
+    motion.encoder_quiet = true;
+    stopped.brake_acknowledged = false;
+    mapping_stop =
+        mapping_stop && !mission_mapping_stopped(100u, &motion, &stopped);
+    stopped.brake_acknowledged = true;
+    stopped.run_epoch = 8u;
+    mapping_stop =
+        mapping_stop && !mission_mapping_stopped(100u, &motion, &stopped);
+    stopped.run_epoch = 7u;
+    motion.encoder.faults = 1u;
+    TEST_CHECK("INT-28",
+               mapping_stop &&
+                   !mission_mapping_stopped(100u, &motion, &stopped),
+               "mapping before PID setup needs fresh matching stopped/braked "
+               "quiet encoder feedback; stale/moving/faulted input rejects");
+    uint32_t pulse_start = in_w(TIMER_TIMERAWL);
+    bool pulse_wait = robot_pulse_wait_us(10u);
+    TEST_CHECK("INT-29",
+               pulse_wait && in_w(TIMER_TIMERAWL) - pulse_start >= 10u &&
+                   robot_pulse_wait_us(0u) && !robot_pulse_wait_us(101u),
+               "shared hardware TIMER bounds pulse waits; live core-1 "
+               "acquisition/report progress also needs observation");
     TEST_SUMMARY("integration");
 }
 #endif

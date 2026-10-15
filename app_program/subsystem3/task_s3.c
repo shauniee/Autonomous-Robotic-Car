@@ -6,6 +6,7 @@
 #include "drv_ir_tracking.h"
 #include "../common/drv_buttons.h"
 #include "../common/buzzer.h"
+#include "../common/robot_config.h"
 
 #define INPUT_PERIOD_MS 10u
 #define REPORT_PERIOD_MS 500u
@@ -74,6 +75,19 @@ void task_s_task(INT stacd, void *exinf)
     uint32_t sample_due = now;
     uint32_t sequence = 0u, joint_id = 0u, joint_deadline = 0u;
     bool black_done = false, cancel_pending = false;
+    const bool joint_required =
+        APP_IR_ONLY_TEST == 0 &&
+        robot_config.commissioning == COMMISSIONING_DISABLED;
+#if APP_IR_ONLY_TEST
+    tm_printf((UB *)"[CAL] IR-only TEST; IMU calibration skipped, "
+                    "MOTOR_INHIBITED; "
+                    "black=one beep, white=two beeps\n");
+#endif
+    if (!joint_required && !APP_IR_ONLY_TEST)
+    {
+        tm_printf((UB *)"[CAL] commissioning IR-only calibration; "
+                        "full mission disabled\n");
+    }
 #if APP_TEST
     uint32_t report_due = now;
 #endif
@@ -116,7 +130,7 @@ void task_s_task(INT stacd, void *exinf)
 #endif
         TerrainSnapshot terrain = {0};
         bool terrain_copy = s4_get_terrain(&terrain) >= E_OK;
-        if (tracker.calibration.white_set && terrain_copy &&
+        if (joint_required && tracker.calibration.white_set && terrain_copy &&
             !terrain.calibrated && !controls.joint_busy)
         {
             tracker.calibration = (IrCalibration){0};
@@ -155,7 +169,7 @@ void task_s_task(INT stacd, void *exinf)
             chirps = calibration_handle_buttons(
                 &controls, &tracker, inputs.gp20_down, inputs.gp21_down, now);
         }
-        if (before == IR_CAPTURE_NONE &&
+        if (joint_required && before == IR_CAPTURE_NONE &&
             tracker.capture_kind == IR_CAPTURE_BLACK)
         {
             if (++joint_id == 0u)

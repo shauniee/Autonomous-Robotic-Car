@@ -1,0 +1,6 @@
+{
+  "method": "Passive subscribe to real broker mapping topic before same-image reboot",
+  "retained_mapping_present": false,
+  "messages": [],
+  "broker_policy_note": "Local broker permits retained messages; operator helper publishes mapping retain=false. This observation is not an ACL guarantee."
+}

@@ -73,7 +73,7 @@ These are engineering proposals/project decisions, separate from assessment requ
 - Network loss must not stop otherwise healthy local autonomy. Status requests cannot override Safety.
 - Use calibrated proportional line guidance and separate encoder wheel PID. This later decision supersedes the older line-PID proposal; Motion's wheel PID remains.
 - Adopt [CODING_STANDARD](CODING_STANDARD.md) for application development. GNU C11 and atomic startup publication are retained. A complete Barr compliance audit is not claimed; the supplied assignment text does not establish a mandatory Barr citation.
-- Operating power policy belongs to [GUIDE](../../GUIDE.md#power-and-flashing); hardware ratings belong to [TECHNICAL_INFO](../../TECHNICAL_INFO.md).
+- Operating power policy belongs to [GUIDE](../../GUIDE.md#power-and-flashing); hardware ratings belong to [TECHNICAL_INFO](TECHNICAL_INFO.md).
 
 ## Pending decisions
 
@@ -83,7 +83,7 @@ Record answers and measured values here once, then link from other guides.
 | --- | --- | --- |
 | D01 | Issued barcode symbology/framing, quiet zones, width tolerances, direction and duplicate rearm; four announced letter identities loaded at runtime under the confirmed rule above | S3 / team |
 | D02 | Finish, junction/crossing rules, barcode-to-junction spacing, print scale and permitted bypass/reverse boundaries | Team |
-| D03 | Motor/encoder ratings and logic levels, decoded counts per wheel revolution, polarity, wheel diameter, track width and car envelope | S2 |
+| D03 | [Provisional wheel observations](../../testing/subsystem2/logs/2026-10-15_wheel-measurements.json) and [electrical status](../../testing/subsystem2/logs/2026-10-15_electrical-status.json) recorded; acceptance pending. Motor/encoder ratings and logic levels, decoded counts per wheel revolution, polarity, wheel diameter, track width and car envelope | S2 |
 | D04 | Mounted TCRT module voltage/current/output levels, polarity, height, contrast/noise and lighting range | S3 |
 | D05 | Actual sonar variant/Echo level, range, repeat interval, missing-echo behavior; servo supply/current, endpoints, center and settling | S5 |
 | D06 | IMU supply/pull-ups, axes/bias, filters, impact thresholds and valid height method against reference humps | S4 |
@@ -105,7 +105,9 @@ Project sequence and readiness gates belong to [GUIDE](../../GUIDE.md#acceptance
 | M6/M7 detection/profile | S5-U04-U06; T08/T09 |
 | M8/M9 bypass/original route | INT-23; T10/T11 and confirmed depth/boundaries |
 | M10 reporting/MQTT | S1-U04/U06-U13; INT-18; T12/T13/T15 |
-| Combined black/IMU calibration | S3-U14/U17; S4-U05/U06/U09/U10; T01/T02 |
+| Combined black/IMU calibration | S3-U14/U17/U18; S4-U05/U06/U09/U10; T01/T02 |
 | Required health and shared-lock scheduling | INT-24/25; T09/T14/T15 and measured stop latency |
 
 [Testing](../../testing/README.md) owns definitions/results. [GUIDE](../../GUIDE.md#acceptance-and-submission) owns the release checklist. No firmware fixture/build substitutes for measured mission acceptance or completed analysis reports.
+
+Available-hardware regression trace: INT-27 owns inhibited build-profile guards; INT-28 owns stopped raw-encoder mapping eligibility; INT-29 owns bounded shared-TIMER trigger timing. See [integration results](../../testing/integration/TEST_LOG.md). These do not close D01–D09 or physical M1–M10 acceptance.

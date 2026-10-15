@@ -1,8 +1,16 @@
 # Subsystem 3: Line, Barcode, Mission and Safety
 
-Owner: Nicholas. S3 senses line/barcode and coordinates Mission/Safety; S2 owns every motor output. [ARCHITECTURE](../ARCHITECTURE.md) owns system coordination and shared contracts. [TEAM](../../TEAM.md) owns wiring/resources.
+Owner: Nicholas. S3 senses line/barcode and coordinates Mission/Safety; S2 owns every motor output. [ARCHITECTURE](../ARCHITECTURE.md) owns system coordination and shared contracts. [TEAM](../TEAM.md) owns wiring/resources.
 
 ## Line acquisition and calibration
+
+`IR_ONLY_TEST=1` requires inhibited `TEST=1`, has a distinct image name and
+permits IR-only black/white inspection while the IMU is unavailable. Mission
+and powered commissioning remain disabled in that image. Explicit two-second
+commissioning modes also use IR-only calibration under electrical release;
+ordinary mission calibration remains joint. [GUIDE](../../GUIDE.md#checks-while-imu-and-ultrasonic-are-unavailable)
+owns the distinct beep meanings and operator steps. S3-U18 exercises complete
+IR capture, opposite sensor polarities, stale guidance and contrast rejection.
 
 The task reads paired ADC0/ADC1 at nominal 20 ms with one original acquisition time/sequence. Black/white capture uses at least 500 ms and 25 samples; each channel needs at least 300 ADC-count contrast. Missing/invalid acquisitions and gaps above 60 ms invalidate guidance. Completed references survive ordinary stop; reboot clears them.
 

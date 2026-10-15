@@ -1,0 +1,72 @@
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+[TEST] S3 snapshot mutex creation returned=3
+[TEST] S3 snapshot mutex published=3
+[TEST] release GP20, press and release to run inhibited fixtures
+wifi: cyw43_utk_task starting (proc 1)
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> joined AP, no IP yet (2)
+wifi: link up, ip=192.168.0.2
+mqtt: telemetry and status subscription ready
+[TEST] === test run start ===
+[TEST] S1-U04 PASS  bounded telemetry JSON and original age; no radio test
+[TEST] S1-U06 PASS  fragmented status only; malformed and movement requests rejected
+[TEST] S1-U07 PASS  bounded heartbeat/status JSON; exact capacity and max counters
+[TEST] S1-U09 PASS  26-entry fragmented mapping and bounded rejection
+[TEST] S1-U10 PASS  ack failure/reconnect retry, stale callback, bounded backpressure
+[TEST] S1-U11 PASS  every topic rejects wildcards and duplicates
+[TEST] S1-U12 PASS  robot summary and bounded history/cursor/reset/saturation
+[TEST] S1-U13 PASS  bounded read-only event retrieval request
+[TEST] subsystem1 SUMMARY 8 passed, 0 failed
+[TEST] S2-U06 PASS  quadrature direction and illegal transition
+[TEST] S2-U07 PASS  renewal preserves origin/deadline; completion requires both wheels
+[TEST] S2-U08 PASS  old run command cannot replay after reset
+[TEST] S2-U09 PASS  bounded local commissioning requires explicit electrical release
+[TEST] S2-U10 PASS  exact expiry brakes; no one-wheel premature completion
+[TEST] S2-U11 PASS  lease wrap and deadline boundary
+[TEST] S2-U12 PASS  left/right/U-turn use signed encoder travel
+[TEST] S2-U13 PASS  signed wheel PID respects independent output bounds
+[TEST] S2-U14 PASS  non-finite distance and missing configuration reject safely
+[TEST] subsystem2 SUMMARY 9 passed, 0 failed
+[TEST] S3-U06 PASS  P guidance sign, bound and stale inhibition
+[TEST] S3-U12 PASS  age across wrap never refreshes acquisition
+[TEST] S3-U09 PASS  printed A/Z forward/reverse and invalid element
+[TEST] S3-U14 PASS  one beep only for joint completion; stop/failure/deadline dominates
+[TEST] S3-U15 PASS  A-Z both scales/orientations and zero-width rejection
+[TEST] S3-U16 PASS  real capture engine, count wrap, single queue event and retained report
+[TEST] S3-U17 PASS  busy white press ignored, fresh later press accepted, GP21 cancels
+[TEST] S3-U18 PASS  black/white capture, opposite polarities, stale guidance and low-contrast reference reset
+[TEST] subsystem3 SUMMARY 8 passed, 0 failed
+[TEST] S4-U03 PASS  invalid window preserves accepted peak
+[TEST] S4-U04 PASS  new-run snapshot clears before WAIT/error poll
+[TEST] S4-U05 PASS  100 fresh samples; repeated acquisition cannot count twice
+[TEST] S4-U06 PASS  movement, stale acquisition, exact deadline and cancellation
+[TEST] S4-U07 PASS  pivot telemetry independent of straight-travel hump filter
+[TEST] S4-U08 PASS  valid climb/crest/descent/baseline then invalid-after-valid
+[TEST] S4-U09 PASS  acquisition failure requires calibration and retains results
+[TEST] S4-U10 PASS  reinitialize preserves stop results and clears a new run
+[TEST] subsystem4 SUMMARY 8 passed, 0 failed
+[TEST] S5-U04 PASS  valid profile nearest point; missing Echo cannot grant clearance
+[TEST] S5-U05 PASS  cancel dominates timeout/movement including center restore
+[TEST] S5-U06 PASS  profile geometry includes measured sensor mounting offset
+[TEST] subsystem5 SUMMARY 3 passed, 0 failed
+[TEST] INT-15 PASS  valid complete settings accepted; missing headroom/course rejected
+[TEST] INT-16 PASS  positive junction/finish and travel/action/dwell boundaries
+[TEST] INT-22 PASS  distinct consecutive acquisitions, cache and wrap
+[TEST] INT-23 PASS  braking begins outside center-based pivot envelope
+[TEST] INT-21 PASS  any four letters, one per motion; 22 remain unmapped
+[TEST] INT-24 PASS  start/scan resume requires all required producers healthy
+[TEST] INT-25 PASS  real kernel ceiling raises and restores polling lock priority
+[TEST] INT-28 PASS  mapping before PID setup needs fresh matching stopped/braked quiet encoder feedback; stale/moving/faulted input rejects
+[TEST] INT-29 PASS  shared hardware TIMER bounds pulse waits; live core-1 acquisition/report progress also needs observation
+[TEST] integration SUMMARY 9 passed, 0 failed
+[TEST] === test run end ===
+[TEST] S3 snapshot mutex id before task st

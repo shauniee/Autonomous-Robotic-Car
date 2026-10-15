@@ -5,7 +5,6 @@
 #include "../subsystem2/subsystem2.h"
 #include <stdatomic.h>
 #include <math.h>
-#include <tk/syslib.h>
 #define ECHO_PIN 2u
 #define TRIGGER_PIN 3u
 #define SERVO_PIN 12u
@@ -88,17 +87,19 @@ static bool trigger(void)
     DI(state);
     echo_state = 1u;
     EI(state);
-    if (gpio_set_val(TRIGGER_PIN, 0u) < E_OK)
+    bool pulse_ok =
+        gpio_set_val(TRIGGER_PIN, 0u) >= E_OK && robot_pulse_wait_us(2u) &&
+        gpio_set_val(TRIGGER_PIN, 1u) >= E_OK && robot_pulse_wait_us(10u);
+    /* Always restore low, including a failed timing/driver operation. */
+    bool low = gpio_set_val(TRIGGER_PIN, 0u) >= E_OK;
+    if (!pulse_ok || !low)
     {
+        DI(state);
+        echo_state = 0u;
+        EI(state);
         return false;
     }
-    WaitUsec(2u);
-    if (gpio_set_val(TRIGGER_PIN, 1u) < E_OK)
-    {
-        return false;
-    }
-    WaitUsec(10u);
-    return gpio_set_val(TRIGGER_PIN, 0u) >= E_OK;
+    return true;
 }
 ER s5_obstacle_copy(ObstacleSnapshot *out)
 {

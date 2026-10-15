@@ -7,6 +7,9 @@
 #include "../common/robot_time.h"
 #include <math.h>
 #include <string.h>
+/* Refresh faster than the 60 ms IR/Motion validity limit. Network publication
+   remains 500 ms; a 100 ms cached provider made healthy samples look stale. */
+#define REPORT_SAMPLE_PERIOD_MS 20u
 static int32_t milli(float value)
 {
     if (!isfinite(value) || fabsf(value) >= 2147483.0f)
@@ -30,11 +33,15 @@ void s1_reporting_task(INT stacd, void *exinf)
     (void)stacd;
     (void)exinf;
     static S1Telemetry previous;
+#if APP_TEST
+    uint32_t report_due = 0u;
+#endif
     for (;;)
     {
         uint32_t now;
         if (!robot_now_ms(&now))
         {
+            tm_printf((UB *)"[REPORT] clock unavailable; reporting stopped\n");
             return;
         }
         S1Telemetry s = {.observed_ms = now, .test_inhibited = APP_TEST != 0};
@@ -93,8 +100,17 @@ void s1_reporting_task(INT stacd, void *exinf)
         else
         {
             /* Missing Mission identity cannot relabel another run's metrics. */
-            if (tk_dly_tsk(100u) < E_OK)
+#if APP_TEST
+            if (robot_due(now, report_due))
             {
+                tm_printf((UB *)"[REPORT] mission snapshot busy\n");
+                report_due = now + 1000u;
+            }
+#endif
+            ER delay_result = tk_dly_tsk(REPORT_SAMPLE_PERIOD_MS);
+            if (delay_result < E_OK)
+            {
+                tm_printf((UB *)"[REPORT] delay failed=%d\n", delay_result);
                 return;
             }
             continue;
@@ -192,9 +208,23 @@ void s1_reporting_task(INT stacd, void *exinf)
             s.orientation = last->detail & 1u;
         }
         previous = s;
-        (void)s1_telemetry_update(&s);
-        if (tk_dly_tsk(100u) < E_OK)
+        bool published = s1_telemetry_update(&s);
+#if APP_TEST
+        if (robot_due(now, report_due))
         {
+            tm_printf((UB *)"[REPORT] updated=%d mission_seq=%u "
+                            "motion_seq=%u observed_ms=%u\n",
+                      published, (unsigned)mission.sequence,
+                      (unsigned)s.motion_sequence, (unsigned)now);
+            report_due = now + 1000u;
+        }
+#else
+        (void)published;
+#endif
+        ER delay_result = tk_dly_tsk(REPORT_SAMPLE_PERIOD_MS);
+        if (delay_result < E_OK)
+        {
+            tm_printf((UB *)"[REPORT] delay failed=%d\n", delay_result);
             return;
         }
     }

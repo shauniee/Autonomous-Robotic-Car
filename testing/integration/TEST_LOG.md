@@ -16,6 +16,9 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | INT-24 | start/scan resume rejects stale, missing, uncalibrated or impacted required producers | Inhibited firmware fixture |
 | INT-25 | actual kernel ceiling raises effective priority and restores it after unlock; caller priority restored | Inhibited firmware fixture, no kernel mocks |
 
+| INT-28 | Fresh matching-epoch quiet raw encoders plus stop/brake acknowledgement; reject stale, moving, faulted or unacknowledged | Inhibited firmware fixture |
+| INT-29 | Shared hardware TIMER delay completes, zero delay accepted, excessive duration rejected | Actual inhibited firmware timer fixture |
+
 ## Build and integrated cases
 
 | ID | Required behavior | Method |
@@ -24,22 +27,24 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | INT-18 | Atomic four-letter stopped replacement with live provider revision; busy/invalid/backpressure rejection and unchanged-image reboot/reload | Actual Pico and broker; PENDING |
 | INT-19 | Combined calibration, leased actions, capture rearm, scan cancellation and original-route recovery | Actual Pico/controller/feature trials; PENDING |
 | INT-20 | Known source defects corrected; regression definitions present; measured/course limitations explicitly retained | Source review and traceability; no physical proof |
+| INT-27 | Six profiles including IR-only TEST; invalid combinations rejected and normal fixture exclusion retained | Build/profile audit |
 | INT-26 | Mission/submission readiness excludes video but requires measured settings, required hardware, physical acceptance and reports | Repository/requirements audit; no physical PASS inferred |
 
 ## Results
 
 | Date | IDs | Revision / image SHA-256 | Profile/configuration | Tester | Result | Measurements / evidence |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-15 | INT-15, INT-16, INT-21, INT-22, INT-23, INT-24, INT-25, INT-28, INT-29 | `61bc484`; UF2 `22403565d19f666e49cc46fead2dd57c9fc8fb5a0f55b438497421164920f254` | USB-only, wireless IR-only TEST; missing IMU/sonar; motors inhibited | Nicholas / Codex capture | Firmware PASS | [Complete 45-check capture](logs/2026-10-15_134410_950691_pico-console.txt), [summary](logs/2026-10-15_134410_950691_pico-console.json); logic/timer/kernel checks only, no powered acceptance |
 | 2026-10-15 | INT-17 | `c5e1832`; [image identities](logs/2026-10-15_fresh-acceptance_builds.json) | SMP=1, USB CDC, offline/wireless, TEST/normal; unconfirmed mission settings | Codex / automated tools | Software PASS | Four sequential builds; normal images exclude all six fixture entry points; [54 strict object checks](logs/2026-10-15_fresh-acceptance_strict.json); [resource estimates](logs/2026-10-15_fresh-acceptance_stack.json); [repository audit](logs/2026-10-15_fresh-acceptance_repository.json) |
 | 2026-10-15 | INT-20 | `c5e1832`; no device image executed | Source review, portable encoder inspection and helper validation | Codex | Source reviewed; hardware PENDING | Corrections below; [11 portable encoding cases](logs/2026-10-15_fresh-release_codec.json) and [12 helper input cases](logs/2026-10-15_fresh-release_helper.json) PASS on laptop; source-file hashes identify these unchanged modules |
 | 2026-10-15 | INT-17/20 | `c204e39`; working configuration differs in whitespace only, exact hash recorded | Four SMP USB CDC offline/wireless TEST/normal profiles; calibration/settings still unconfirmed | Codex | Software PASS | [Four builds/images](logs/2026-10-15_mission-hardening_builds.json), [62 strict target checks](logs/2026-10-15_mission-hardening_strict.json), [five static-analysis checks](logs/2026-10-15_mission-hardening_analysis.json), [frame estimates](logs/2026-10-15_mission-hardening_stack.json); 42 compiled fixture IDs, execution PENDING |
 | 2026-10-15 | INT-26 | `c204e39`; source/settings and recorded evidence reviewed | Full mission requirements, video excluded | Codex | NOT READY | [Readiness audit](logs/2026-10-15_mission-readiness.json); hardware unavailable, measured/course settings unconfirmed, physical acceptance/report evidence pending |
 
-Firmware execution: **PENDING**. Append actual complete console evidence only after execution. Builds/compiler checks belong in the integration log and do not fill this table with fixture PASS results.
+Actual inhibited firmware execution is recorded above. Physical acceptance remains pending. Earlier compiled-only evidence retains its original status; builds never count as executed fixtures.
 
 ## Corrections and remaining gates
 
-These rows trace the approved source fixes to focused checks. Firmware check definitions compile; they have not yet executed on a Pico. Physical scenario results remain PENDING.
+These rows trace the approved source fixes to focused checks. Firmware checks have executed on the USB-only Pico as recorded below. Physical scenario acceptance remains PENDING.
 
 | Review item | Implemented behavior / verification owner |
 | --- | --- |
@@ -67,3 +72,15 @@ The strict object check at `8592a1b` found unused fixture helpers outside TEST; 
 [Final evidence index](logs/2026-10-15_fresh-acceptance_evidence.json) identifies the accepted software revision, unchanged main/video, branch inclusion, source hashes and remaining gates. Earlier build attempts are retained for history; the `f971a0d` attempt included an uncommitted MQTT transport change later committed at `a212ae8`, so those images are not the final reference.
 
 Physical coverage and procedures: [system cases](../system/TEST_LOG.md), [GUIDE](../../GUIDE.md), [testing policy](../README.md). Include source, image, power/wiring, calibration, mapping request/revision, reference/observed measurements, time and evidence for every real run.
+
+## Available-hardware regression evidence
+
+INT-17/27: `33ea475` passed [six sequential builds and normal fixture exclusion](logs/2026-10-15_available-release_builds.json) and [96 strict Arm object checks](logs/2026-10-15_available-release_strict.json). [Invalid-profile guards](logs/2026-10-15_available-hardware_guards.json) reject IR-only without TEST. Final image execution is recorded separately.
+
+The 43-check `ffd4560` run completed; the 44-check `aadf6bd` raw capture contains every PASS and the end marker but its helper summary reports a later USB disconnect. The 45-check `61bc484` capture above completed cleanly. Earlier permission-denied, no-trigger, interrupted observation and disconnect summaries remain in `logs/`; they are not silently converted to PASS.
+
+Live MQTT on `61bc484` accepted two different rehearsal mappings on unchanged firmware, rejected replay/duplicate-action/zero-ID requests, and showed advancing acquisition/reporting after the core-1 timer fix. Its 100 ms provider cache also exposed ages beyond 60 ms; `33ea475` reduces the cache period to 20 ms without relaxing freshness. See [S1 evidence](../subsystem1/TEST_LOG.md). The later unchanged-image reboot/reload subset is recorded below; full INT-18 transport stress and T13 network recovery remain pending.
+
+Latest executed image: `33ea475`, UF2 `f554c1f1280098cfc6c3278992c0d5877f744dab0f07a1ef84d02e6b674318b0`; USB-only IR-only TEST, motors inhibited, tester Nicholas/Codex. **Firmware PASS** for INT-15, INT-16, INT-21, INT-22, INT-23, INT-24, INT-25, INT-28, INT-29; [complete 45-check capture](logs/2026-10-15_152409_309541_pico-console.txt), [summary](logs/2026-10-15_152409_309541_pico-console.json). Physical acceptance remains pending.
+
+INT-18 reboot/reload subset PASS at `33ea475`: [normal reboot and reload](../subsystem1/logs/2026-10-15_available-release_reboot-reload.json) observed fresh revision 0 before reload and matching revision 1 acknowledgement afterward, with no recompile/reflash and motors inhibited. The [earlier BOOTSEL attempt](../subsystem1/logs/2026-10-15_available-release_reboot-attempt.json) is retained as incomplete. Full INT-18 busy/backpressure/moving transport checks and T12/T13 remain partial.

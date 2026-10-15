@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-15",
+  "source_revision": "33ea475",
+  "test": "Unchanged-image reboot and RAM-only mapping reload",
+  "result": "INCOMPLETE",
+  "observation": "After requested normal USB reconnect, no USB serial device was enumerated and RPI-RP2 was mounted. Pico is in BOOTSEL, so old dashboard revision2 with age17940ms is stale and rejected as reboot evidence.",
+  "action": "Asked operator to reconnect normally with all buttons released; no image reflash or mapping sent.",
+  "prior_observation_capture": "../../integration/logs/2026-10-15_152931_254801_pico-console.json",
+  "post_reboot_capture_error": "FileNotFoundError: /dev/cu.usbmodemMTK3PICO1 absent; no log created because port open failed",
+  "physical_acceptance_claimed": false
+}

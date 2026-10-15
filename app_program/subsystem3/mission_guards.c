@@ -1,5 +1,15 @@
 #include "mission_guards.h"
 #include <math.h>
+bool mission_mapping_stopped(uint32_t now, const MotionFeedback *motion,
+                             const MotionHealth *health)
+{
+    return motion != NULL && health != NULL && motion->sequence != 0u &&
+           health->sequence != 0u && motion->run_epoch == health->run_epoch &&
+           now - motion->sampled_ms <= 60u &&
+           now - health->serviced_ms <= 60u && health->stopped &&
+           health->brake_acknowledged && motion->encoder.valid &&
+           motion->encoder.faults == 0u && motion->encoder_quiet;
+}
 bool mission_sensors_ready(uint32_t now, const S3IrSnapshot *ir,
                            const MotionFeedback *motion,
                            const TerrainSnapshot *terrain)

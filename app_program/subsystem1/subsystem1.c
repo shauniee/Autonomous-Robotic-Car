@@ -10,7 +10,8 @@ ER subsystem1_init(void)
 {
 #if TM_MQTT
     T_CMTX mutex = {0};
-    mutex.mtxatr = TA_INHERIT;
+    mutex.mtxatr = TA_CEILING;
+    mutex.ceilpri = APP_SHARED_MUTEX_CEILING;
     ID id = tk_cre_mtx(&mutex);
     atomic_store_explicit(&telemetry_mutex, id, memory_order_release);
     if (id < E_OK)

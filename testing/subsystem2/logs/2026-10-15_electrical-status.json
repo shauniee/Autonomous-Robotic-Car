@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-15",
+  "source": "Operator replies in this chat",
+  "power": "USB only; battery and power bank disconnected",
+  "GP28_battery_sensing_jumper": "Disconnected, operator confirmed",
+  "motor_model": "Unknown",
+  "motor_rated_voltage": "Unknown",
+  "motor_supply_voltage": "Unknown",
+  "powered_motor_release": false,
+  "required_before_powered_trials": [
+    "Verify motor model/rated voltage and actual supply voltage",
+    "Verify installed wiring/driver/encoder voltage compatibility under GUIDE power policy",
+    "Measure powered direction, PID, speed/distance/turn accuracy and stop response"
+  ],
+  "supersedes_only": "GP28 uncertainty in earlier wheel-measurements record; no prior raw evidence overwritten"
+}

@@ -145,7 +145,7 @@ static void latch(MissionReason reason)
 }
 static bool commissioning_ready(void)
 {
-    return robot_config.electrical_confirmed &&
+    return !APP_IR_ONLY_TEST && robot_config.electrical_confirmed &&
            ((robot_config.commissioning == COMMISSIONING_DUTY &&
              isfinite(robot_config.commissioning_duty) &&
              robot_config.commissioning_duty > 0.0f &&
@@ -364,7 +364,7 @@ static void mission_task(INT stacd, void *exinf)
                       s4_get_terrain(&terrain) >= E_OK &&
                       s5_obstacle_copy(&obstacle) >= E_OK &&
                       s3_barcode_copy(&barcode) == BARCODE_API_OK;
-        s.configured = robot_config_mission_valid();
+        s.configured = !APP_IR_ONLY_TEST && robot_config_mission_valid();
         float distance = (motion.left_m + motion.right_m) * 0.5f;
         if (atomic_load_explicit(&safety_latched, memory_order_acquire))
         {
@@ -380,6 +380,7 @@ static void mission_task(INT stacd, void *exinf)
         }
         if (copies)
         {
+            bool requalify_mapping = false;
             ID id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
             if (tk_loc_mtx(id, TMO_POL) >= E_OK)
             {
@@ -388,8 +389,8 @@ static void mission_task(INT stacd, void *exinf)
                     s.mapping_request_id = pending_id;
                     s.mapping_result = MAP_BUSY;
                     if (!s.moving && s.state != MISSION_SCAN &&
-                        !buttons.gp21_down && motion.stationary &&
-                        health.stopped &&
+                        !buttons.gp21_down &&
+                        mission_mapping_stopped(now, &motion, &health) &&
                         mission_mapping_valid(pending_mapping) &&
                         s3_barcode_reset() == BARCODE_API_OK &&
                         s3_barcode_mapping_replace(pending_mapping) ==
@@ -402,15 +403,18 @@ static void mission_task(INT stacd, void *exinf)
                         await_mapping_revision = true;
                         if (s.state == MISSION_READY)
                         {
-                            change(&s, MISSION_CALIBRATING,
-                                   REASON_CONFIGURATION);
-                            button_init(&button, now);
-                            event = BUTTON_EVENT_NONE;
+                            requalify_mapping = true;
                         }
                     }
                     mapping_pending = false;
                 }
                 (void)tk_unl_mtx(id);
+            }
+            if (requalify_mapping)
+            {
+                change(&s, MISSION_CALIBRATING, REASON_CONFIGURATION);
+                button_init(&button, now);
+                event = BUTTON_EVENT_NONE;
             }
         }
         if (s.state == MISSION_INITIALIZING)
@@ -448,7 +452,7 @@ static void mission_task(INT stacd, void *exinf)
                 event = BUTTON_EVENT_NONE;
             }
         }
-        if (s.state == MISSION_CALIBRATING && copies && terrain.calibrated &&
+        if (s.state == MISSION_CALIBRATING && copies &&
             commissioning_ready() && commissioning_data(now, &ir, &motion) &&
             motion.encoder_quiet)
         {
@@ -457,7 +461,7 @@ static void mission_task(INT stacd, void *exinf)
             event = BUTTON_EVENT_NONE;
         }
         if (s.state == MISSION_READY && s.reason == REASON_COMMISSIONING &&
-            copies && terrain.calibrated && event == BUTTON_EVENT_PRESSED &&
+            copies && event == BUTTON_EVENT_PRESSED &&
             commissioning_ready() && commissioning_data(now, &ir, &motion) &&
             motion.encoder_quiet && enable_motion(&health))
         {
@@ -943,7 +947,8 @@ static void mission_task(INT stacd, void *exinf)
 ER mission_init(void)
 {
     T_CMTX mutex = {0};
-    mutex.mtxatr = TA_INHERIT;
+    mutex.mtxatr = TA_CEILING;
+    mutex.ceilpri = APP_SHARED_MUTEX_CEILING;
     ID id = tk_cre_mtx(&mutex);
     if (id <= 0)
     {

@@ -4,6 +4,11 @@ Owner: Shaun. Reporting copies actual Mission/S2/S3/S4/S5 snapshots every nomina
 
 ## MQTT contract
 
+Stopped mapping replacement is independent of PID/metric calibration. Mission
+requires fresh matching feedback/health, zero raw encoder faults, at least 60 ms
+of raw encoder quietness and an acknowledged brake. Full mission start retains
+its separate configuration/calibration/sensor gates. INT-28 covers this guard.
+
 Default root is `robot/s3`, port 1883. Topics are independently configurable, distinct, nonempty, below 96 bytes and without wildcards. All seven topics are validated.
 
 | Suffix | Payload / behavior |
@@ -43,3 +48,9 @@ Modules: `telemetry_robot`, `telemetry`, `status_protocol`, `mapping_protocol`, 
 `scripts/mqtt_dashboard.py` subscribes to the five reporting topics and serves the buildless HTML/CSS/JavaScript under `scripts/dashboard/` over loopback HTTP. The browser polls a bounded latest-snapshot API every 500 ms. It uses the existing [Paho client](https://eclipse.dev/paho/clients/python/docs/) dependency and Python's standard HTTP server; Mosquitto does not need a WebSocket listener. Broker reconnect is automatic. The bridge never publishes MQTT messages and cannot start/reset the robot or change mappings.
 
 Retained presence is context only. A new broker session requires a fresh nonretained schema-3 snapshot and heartbeat before Robot live. Malformed/non-finite/oversized messages are rejected; current values expire in the display while accepted peaks/last scan remain historical. Browser history is bounded to 60 speed updates and 16 received encounters, reset with run identity. Numeric movement/scan/action/calibration labels follow the firmware enums. [GUIDE](../../GUIDE.md#browser-dashboard) owns setup; [web checks](../../testing/subsystem1/TEST_LOG.md#dashboard-checks) use an isolated synthetic topic root and do not replace robot acceptance.
+
+## Live verification
+
+The provider refreshes snapshots every 20 ms so a 100 ms cache cannot make healthy 60 ms IR/Motion producers appear stale. Network publication remains 500 ms. [Actual stopped mapping checks](../../testing/subsystem1/logs/2026-10-15_available-timer_mapping.json) accepted two rehearsal tables on unchanged firmware; [rejection checks](../../testing/subsystem1/logs/2026-10-15_available-timer_mapping-rejection.json) preserved the accepted revision for replay, duplicate actions and zero IDs. These observations do not establish full network recovery or powered autonomy.
+
+[Unchanged-image reboot/reload](../../testing/subsystem1/logs/2026-10-15_available-release_reboot-reload.json) subsequently verified that the RAM table clears on reboot and can be reloaded through MQTT without recompiling. The active rehearsal table is not the official mission-day assignment.

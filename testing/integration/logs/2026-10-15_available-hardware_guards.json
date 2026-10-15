@@ -1,0 +1,28 @@
+{
+  "source_revision": "ffd4560f22fc66cf6a378900d2db3cd15f7aa56c",
+  "checks": [
+    {
+      "TEST": "0",
+      "IR_ONLY_TEST": "1",
+      "exit": 2,
+      "output": "pico_rp2040.mk:102: *** IR_ONLY_TEST=1 requires TEST=1; motor outputs must remain inhibited.  Stop.\n",
+      "rejected": true
+    },
+    {
+      "TEST": "1",
+      "IR_ONLY_TEST": "2",
+      "exit": 2,
+      "output": "pico_rp2040.mk:98: *** Unknown IR_ONLY_TEST '2'; use 0 or 1.  Stop.\n",
+      "rejected": true
+    },
+    {
+      "method": "direct C guard",
+      "TEST": 0,
+      "IR_ONLY_TEST": 1,
+      "exit": 1,
+      "output": "In file included from <stdin>:1:\n../app_program/app.h:24:2: error: #error \"IR-only calibration requires inhibited TEST firmware\"\n   24 | #error \"IR-only calibration requires inhibited TEST firmware\"\n      |  ^~~~~\n",
+      "rejected": true
+    }
+  ],
+  "result": "PASS"
+}

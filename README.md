@@ -2,7 +2,7 @@
 
 Pico WH / Robo Pico firmware using micro T-Kernel 3.0 for autonomous line/barcode navigation, terrain measurement, obstacle handling and MQTT reporting.
 
-Start with [GUIDE](GUIDE.md) for setup and operation. [TEAM](TEAM.md) owns wiring/resources; [TECHNICAL_INFO](TECHNICAL_INFO.md) owns hardware facts; [ARCHITECTURE](docs/ARCHITECTURE.md) owns coordination and links to the five subsystem guides.
+Start with [GUIDE](GUIDE.md) for setup and operation. [TEAM](docs/TEAM.md) owns wiring/resources; [TECHNICAL_INFO](docs/donotsubmit/TECHNICAL_INFO.md) owns hardware facts; [ARCHITECTURE](docs/ARCHITECTURE.md) owns coordination and links to the five subsystem guides.
 
 For live MQTT readings in your browser, use the [robot dashboard](GUIDE.md#browser-dashboard).
 

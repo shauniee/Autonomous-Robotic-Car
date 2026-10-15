@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-15",
+  "source_revision": "61bc484",
+  "expected_image_sha256": "22403565d19f666e49cc46fead2dd57c9fc8fb5a0f55b438497421164920f254",
+  "power": "USB only, motors inhibited",
+  "method": "Actual Pico stopped MQTT replacement using existing operator helper; rehearsal assignments only",
+  "firmware_unchanged_between_assignments": true,
+  "checks": [
+    {
+      "file": "testing/subsystem1/data/four-letter-example.json",
+      "command": [
+        "python3",
+        "scripts/mqtt_client.py",
+        "mapping",
+        "--broker",
+        "127.0.0.1",
+        "--root",
+        "robot/s3",
+        "--file",
+        "testing/subsystem1/data/four-letter-example.json"
+      ],
+      "exit": 0,
+      "output": "{\"request_id\":1047251198,\"result\":2,\"revision\":1}\nPico acknowledgement observed; mapping is RAM-only.\n"
+    },
+    {
+      "file": "testing/subsystem1/data/four-letter-alternative.json",
+      "command": [
+        "python3",
+        "scripts/mqtt_client.py",
+        "mapping",
+        "--broker",
+        "127.0.0.1",
+        "--root",
+        "robot/s3",
+        "--file",
+        "testing/subsystem1/data/four-letter-alternative.json"
+      ],
+      "exit": 0,
+      "output": "{\"request_id\":1047251997,\"result\":2,\"revision\":2}\nPico acknowledgement observed; mapping is RAM-only.\n"
+    }
+  ],
+  "result": "PASS"
+}

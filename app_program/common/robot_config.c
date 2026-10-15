@@ -6,8 +6,15 @@
    finish_black_ms selects a CONFIRMED sustained-black finish marker after
    the configured action count and distance; unsupported finish rules inhibit.
  */
-const RobotConfig robot_config = {.left_encoder_sign = 1,
-                                  .right_encoder_sign = 1,
+const RobotConfig robot_config = {
+    /* Preliminary manual-turn geometry: testing/subsystem2/logs/
+       2026-10-15_wheel-measurements.json. Ground accuracy/PID still pending;
+       confirmation flags remain false until powered acceptance. */
+    .left_m_per_count = 0.0000806969f,
+    .right_m_per_count = 0.0000808247f,
+    .track_m = 0.113f,
+    .left_encoder_sign = -1,
+                                  .right_encoder_sign = -1,
                                   .left_forward_a = true,
                                   .right_forward_a = true,
                                   .lateral_axis = 0u,

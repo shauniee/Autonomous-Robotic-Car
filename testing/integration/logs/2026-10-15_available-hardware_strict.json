@@ -1,0 +1,764 @@
+{
+  "date": "2026-10-15",
+  "source_revision": "ffd4560f22fc66cf6a378900d2db3cd15f7aa56c",
+  "working_configuration": {
+    "path": "app_program/common/robot_config.c",
+    "sha256": "da26d041c835fdd4cff7785cd6d086377d1266be893c1e31493328ff25d3be1e",
+    "preexisting_uncommitted_change": true
+  },
+  "method": "Actual Arm object generation for normal, joint TEST and IR-only TEST; no host fake kernel",
+  "strict_flags": [
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-Wformat=2",
+    "-fstack-usage"
+  ],
+  "checks": [
+    {
+      "file": "app_program/common/robot_config.c",
+      "sha256": "da26d041c835fdd4cff7785cd6d086377d1266be893c1e31493328ff25d3be1e",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/common/run_history.c",
+      "sha256": "d1fe39bfe16465b304e9727bb667b65b6adbf7318527448f894c050be9a0c3c9",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem1/mapping_ack.c",
+      "sha256": "b680015f7859f482a2b02ccff8fd789dfe04c50d277bc9cde7bb0fb1ee213e75",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem1/status_protocol.c",
+      "sha256": "3d4eab1ea3ad51d1363c0e71ba9441d0321098f7d5de2470edc9f9bfa5d98afb",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem1/telemetry.c",
+      "sha256": "74c87be3dd923c5364d9f280df3d4588632f7b792a596087b241d25007fd07ba",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem1/telemetry_robot.c",
+      "sha256": "be7a49e235236d74ac9625eafb7d639966e2b6b892de09e9687e36f8127b12d4",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem2/motion_control.c",
+      "sha256": "3cafa8e795480dbed47cabd6250e8ab7c23e8c674b61b318415bfd3288b0181c",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem2/subsystem2.c",
+      "sha256": "e2ebf732314e2e48b9668396ee4820121f485f418bb6d546881211a566d7b857",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/barcode_runtime.c",
+      "sha256": "e2504d131fe1b09ce1fd64544c4f2f99778a86417d2836685ba650ed482c1180",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/barcode_service.c",
+      "sha256": "4be84a6816f99f31bd83beb56a22b31da378f8bbc05f109048d650d45dcbe237",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/ir_tracking_calibration.c",
+      "sha256": "6ab75f44ff485d51e6bb40982b6529fc323dd96ae85f30076bc0a958eb1a3b3e",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/joint_calibration.c",
+      "sha256": "0aeef6dfa940d49fc49fcb631f8a619bafd41e7e06e7dcc9e66a036edd2d9c92",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/mission.c",
+      "sha256": "fa8bf50f3dbd96f40ae0ac2775a92f7b4543c8b61e4b412a2bc784b107acf7d6",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/mission_guards.c",
+      "sha256": "eae11f5a7bc5f1a5fa06dd4a1dca7613183d92bf15acc1fb37ee8ec328d44042",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/subsystem3.c",
+      "sha256": "1eaac23e95ddc9ec9c832dd02a875542c47e6243c66c957eaa325dd21225bfd5",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/task_s3.c",
+      "sha256": "8dd8b1f514b93330bd815632d40b75b8d1b02385bffe3245c3e3df4f427e074c",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/drv_gy511.c",
+      "sha256": "405446983c85a835f466f8deb2980b40bbb29bc38d248c4e9470cb62c88855a1",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/subsystem4.c",
+      "sha256": "994d43782082ddd66b174ff7400d467c7c2e5d52a1417f664e507a94e57e5b21",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/task_terrain.c",
+      "sha256": "93b3444faab6ae9960e2eb346b70cb41240828f90702d09248aef50bec9767f8",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/terrain_algo.c",
+      "sha256": "3be9f60d16cf46374fda7e7c306d9c5f75a0bd2355df0eda92e696bdae1cada5",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/terrain_calibration.c",
+      "sha256": "691ee09c85ef8f8d0b86119e46baef8028cbc27ba9ba9d816e9a2bd09fde5d5e",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/terrain_motion.c",
+      "sha256": "c86cb9eb06404d9700c98c9ec4d23ee708cd01f04727bd99ca4dd15d9d12b53d",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem5/obstacle_profile.c",
+      "sha256": "23ea6c28cabb56f6ad3ebbdf933b57b69e099e8bc07403adc8fd672d510b95ad",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem5/subsystem5.c",
+      "sha256": "9336b3279225cf1b2f730a27e4054dea5e89268ed8b6cb99c977ba2a04776378",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "sha256": "6b843800c4ef986b3d73bb81c1d52f1429c0aebe5a53b2b4bd9d36046c69f00e",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/integration/mission_test.c",
+      "sha256": "e758752292045d0f1a814df1bad8d3cd23689b74549a98ca8a117a4002ee8a2b",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem1/subsystem1_test.c",
+      "sha256": "875e4e7eaeb5212efd379aa9ba4c47d14eec1fba5c33d2102bea349f9aa81950",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem2/subsystem2_test.c",
+      "sha256": "23d1effb24745a6cb208dd3b0a0d38d7803d26beff958bd14eeeae50f1b16d17",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem3/subsystem3_test.c",
+      "sha256": "3a18bbcc285f710d906ce0839ad60d2a6efbd4b5f57a866c6b0598483067066e",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem4/subsystem4_test.c",
+      "sha256": "adbbee94730b36209e21043934e9a1a9039b47709be6fdf4b6fb2d5a1a556cd1",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem5/subsystem5_test.c",
+      "sha256": "c8621380327ab73ed3532b298d202f61d175aae458114f66b074c750fc30077c",
+      "TEST": 0,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/common/robot_config.c",
+      "sha256": "da26d041c835fdd4cff7785cd6d086377d1266be893c1e31493328ff25d3be1e",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/common/run_history.c",
+      "sha256": "d1fe39bfe16465b304e9727bb667b65b6adbf7318527448f894c050be9a0c3c9",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem1/mapping_ack.c",
+      "sha256": "b680015f7859f482a2b02ccff8fd789dfe04c50d277bc9cde7bb0fb1ee213e75",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem1/status_protocol.c",
+      "sha256": "3d4eab1ea3ad51d1363c0e71ba9441d0321098f7d5de2470edc9f9bfa5d98afb",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem1/telemetry.c",
+      "sha256": "74c87be3dd923c5364d9f280df3d4588632f7b792a596087b241d25007fd07ba",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem1/telemetry_robot.c",
+      "sha256": "be7a49e235236d74ac9625eafb7d639966e2b6b892de09e9687e36f8127b12d4",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem2/motion_control.c",
+      "sha256": "3cafa8e795480dbed47cabd6250e8ab7c23e8c674b61b318415bfd3288b0181c",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem2/subsystem2.c",
+      "sha256": "e2ebf732314e2e48b9668396ee4820121f485f418bb6d546881211a566d7b857",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/barcode_runtime.c",
+      "sha256": "e2504d131fe1b09ce1fd64544c4f2f99778a86417d2836685ba650ed482c1180",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/barcode_service.c",
+      "sha256": "4be84a6816f99f31bd83beb56a22b31da378f8bbc05f109048d650d45dcbe237",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/ir_tracking_calibration.c",
+      "sha256": "6ab75f44ff485d51e6bb40982b6529fc323dd96ae85f30076bc0a958eb1a3b3e",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/joint_calibration.c",
+      "sha256": "0aeef6dfa940d49fc49fcb631f8a619bafd41e7e06e7dcc9e66a036edd2d9c92",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/mission.c",
+      "sha256": "fa8bf50f3dbd96f40ae0ac2775a92f7b4543c8b61e4b412a2bc784b107acf7d6",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/mission_guards.c",
+      "sha256": "eae11f5a7bc5f1a5fa06dd4a1dca7613183d92bf15acc1fb37ee8ec328d44042",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/subsystem3.c",
+      "sha256": "1eaac23e95ddc9ec9c832dd02a875542c47e6243c66c957eaa325dd21225bfd5",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/task_s3.c",
+      "sha256": "8dd8b1f514b93330bd815632d40b75b8d1b02385bffe3245c3e3df4f427e074c",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/drv_gy511.c",
+      "sha256": "405446983c85a835f466f8deb2980b40bbb29bc38d248c4e9470cb62c88855a1",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/subsystem4.c",
+      "sha256": "994d43782082ddd66b174ff7400d467c7c2e5d52a1417f664e507a94e57e5b21",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/task_terrain.c",
+      "sha256": "93b3444faab6ae9960e2eb346b70cb41240828f90702d09248aef50bec9767f8",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/terrain_algo.c",
+      "sha256": "3be9f60d16cf46374fda7e7c306d9c5f75a0bd2355df0eda92e696bdae1cada5",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/terrain_calibration.c",
+      "sha256": "691ee09c85ef8f8d0b86119e46baef8028cbc27ba9ba9d816e9a2bd09fde5d5e",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/terrain_motion.c",
+      "sha256": "c86cb9eb06404d9700c98c9ec4d23ee708cd01f04727bd99ca4dd15d9d12b53d",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem5/obstacle_profile.c",
+      "sha256": "23ea6c28cabb56f6ad3ebbdf933b57b69e099e8bc07403adc8fd672d510b95ad",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem5/subsystem5.c",
+      "sha256": "9336b3279225cf1b2f730a27e4054dea5e89268ed8b6cb99c977ba2a04776378",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "sha256": "6b843800c4ef986b3d73bb81c1d52f1429c0aebe5a53b2b4bd9d36046c69f00e",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/integration/mission_test.c",
+      "sha256": "e758752292045d0f1a814df1bad8d3cd23689b74549a98ca8a117a4002ee8a2b",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem1/subsystem1_test.c",
+      "sha256": "875e4e7eaeb5212efd379aa9ba4c47d14eec1fba5c33d2102bea349f9aa81950",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem2/subsystem2_test.c",
+      "sha256": "23d1effb24745a6cb208dd3b0a0d38d7803d26beff958bd14eeeae50f1b16d17",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem3/subsystem3_test.c",
+      "sha256": "3a18bbcc285f710d906ce0839ad60d2a6efbd4b5f57a866c6b0598483067066e",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem4/subsystem4_test.c",
+      "sha256": "adbbee94730b36209e21043934e9a1a9039b47709be6fdf4b6fb2d5a1a556cd1",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem5/subsystem5_test.c",
+      "sha256": "c8621380327ab73ed3532b298d202f61d175aae458114f66b074c750fc30077c",
+      "TEST": 1,
+      "IR_ONLY_TEST": 0,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/common/robot_config.c",
+      "sha256": "da26d041c835fdd4cff7785cd6d086377d1266be893c1e31493328ff25d3be1e",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/common/run_history.c",
+      "sha256": "d1fe39bfe16465b304e9727bb667b65b6adbf7318527448f894c050be9a0c3c9",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem1/mapping_ack.c",
+      "sha256": "b680015f7859f482a2b02ccff8fd789dfe04c50d277bc9cde7bb0fb1ee213e75",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem1/status_protocol.c",
+      "sha256": "3d4eab1ea3ad51d1363c0e71ba9441d0321098f7d5de2470edc9f9bfa5d98afb",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem1/telemetry.c",
+      "sha256": "74c87be3dd923c5364d9f280df3d4588632f7b792a596087b241d25007fd07ba",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem1/telemetry_robot.c",
+      "sha256": "be7a49e235236d74ac9625eafb7d639966e2b6b892de09e9687e36f8127b12d4",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem2/motion_control.c",
+      "sha256": "3cafa8e795480dbed47cabd6250e8ab7c23e8c674b61b318415bfd3288b0181c",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem2/subsystem2.c",
+      "sha256": "e2ebf732314e2e48b9668396ee4820121f485f418bb6d546881211a566d7b857",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/barcode_runtime.c",
+      "sha256": "e2504d131fe1b09ce1fd64544c4f2f99778a86417d2836685ba650ed482c1180",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/barcode_service.c",
+      "sha256": "4be84a6816f99f31bd83beb56a22b31da378f8bbc05f109048d650d45dcbe237",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/ir_tracking_calibration.c",
+      "sha256": "6ab75f44ff485d51e6bb40982b6529fc323dd96ae85f30076bc0a958eb1a3b3e",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/joint_calibration.c",
+      "sha256": "0aeef6dfa940d49fc49fcb631f8a619bafd41e7e06e7dcc9e66a036edd2d9c92",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/mission.c",
+      "sha256": "fa8bf50f3dbd96f40ae0ac2775a92f7b4543c8b61e4b412a2bc784b107acf7d6",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/mission_guards.c",
+      "sha256": "eae11f5a7bc5f1a5fa06dd4a1dca7613183d92bf15acc1fb37ee8ec328d44042",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/subsystem3.c",
+      "sha256": "1eaac23e95ddc9ec9c832dd02a875542c47e6243c66c957eaa325dd21225bfd5",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem3/task_s3.c",
+      "sha256": "8dd8b1f514b93330bd815632d40b75b8d1b02385bffe3245c3e3df4f427e074c",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/drv_gy511.c",
+      "sha256": "405446983c85a835f466f8deb2980b40bbb29bc38d248c4e9470cb62c88855a1",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/subsystem4.c",
+      "sha256": "994d43782082ddd66b174ff7400d467c7c2e5d52a1417f664e507a94e57e5b21",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/task_terrain.c",
+      "sha256": "93b3444faab6ae9960e2eb346b70cb41240828f90702d09248aef50bec9767f8",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/terrain_algo.c",
+      "sha256": "3be9f60d16cf46374fda7e7c306d9c5f75a0bd2355df0eda92e696bdae1cada5",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/terrain_calibration.c",
+      "sha256": "691ee09c85ef8f8d0b86119e46baef8028cbc27ba9ba9d816e9a2bd09fde5d5e",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem4/terrain_motion.c",
+      "sha256": "c86cb9eb06404d9700c98c9ec4d23ee708cd01f04727bd99ca4dd15d9d12b53d",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem5/obstacle_profile.c",
+      "sha256": "23ea6c28cabb56f6ad3ebbdf933b57b69e099e8bc07403adc8fd672d510b95ad",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "app_program/subsystem5/subsystem5.c",
+      "sha256": "9336b3279225cf1b2f730a27e4054dea5e89268ed8b6cb99c977ba2a04776378",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c",
+      "sha256": "6b843800c4ef986b3d73bb81c1d52f1429c0aebe5a53b2b4bd9d36046c69f00e",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/integration/mission_test.c",
+      "sha256": "e758752292045d0f1a814df1bad8d3cd23689b74549a98ca8a117a4002ee8a2b",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem1/subsystem1_test.c",
+      "sha256": "875e4e7eaeb5212efd379aa9ba4c47d14eec1fba5c33d2102bea349f9aa81950",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem2/subsystem2_test.c",
+      "sha256": "23d1effb24745a6cb208dd3b0a0d38d7803d26beff958bd14eeeae50f1b16d17",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem3/subsystem3_test.c",
+      "sha256": "3a18bbcc285f710d906ce0839ad60d2a6efbd4b5f57a866c6b0598483067066e",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem4/subsystem4_test.c",
+      "sha256": "adbbee94730b36209e21043934e9a1a9039b47709be6fdf4b6fb2d5a1a556cd1",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "file": "testing/subsystem5/subsystem5_test.c",
+      "sha256": "c8621380327ab73ed3532b298d202f61d175aae458114f66b074c750fc30077c",
+      "TEST": 1,
+      "IR_ONLY_TEST": 1,
+      "exit": 0,
+      "output": ""
+    }
+  ],
+  "result": "PASS"
+}

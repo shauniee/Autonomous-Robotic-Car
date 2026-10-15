@@ -29,3 +29,11 @@ Fresh physical definitions; every result is PENDING until actually executed. [GU
 | --- | --- | --- | --- | --- | --- | --- | --- |
 
 No physical PASS is recorded. Append actual console/subscriber/video/scope/reference measurements, including failures and reruns. Three clean complete rehearsals is a useful team target, not an instructor rule. Course/depth/finish/symbology acceptance remains mandatory before declaring mission readiness.
+
+## Partial USB-only observations, 2026-10-15
+
+T01/T03 partial: `ffd4560` IR-only TEST accepted black (one beep), white (two beeps), and observed left/right contrast, broad black and white under static patches. [Raw capture](../integration/logs/2026-10-15_132025_688374_pico-console.txt). This bypasses joint IMU calibration only in diagnostic/commissioning mode; no tracking/course PASS.
+
+T02/T05 partial: local GP21/reset cleared counts/faults without starting motors. [Slow manual encoder trials](../subsystem2/logs/2026-10-15_wheel-measurements.json) recorded both signs and provisional scale; the fast trial had four illegal edges and is rejected. No powered brake timing, PID or distance/angle acceptance. [Electrical follow-up](../subsystem2/logs/2026-10-15_electrical-status.json): GP28 jumper disconnected; motor and supply ratings unknown.
+
+T12/T15 partial: actual stopped mapping and report-progress evidence is in [S1 results](../subsystem1/TEST_LOG.md). No complete T01–T16 physical scenario is accepted by these observations.
