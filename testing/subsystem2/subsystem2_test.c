@@ -171,6 +171,42 @@ void subsystem2_test(void)
     TEST_CHECK("S2-U15", freshness,
                "freshness accepts exact age bound and rejects stale/future samples");
 
+    motion_control_init(&control, 4u);
+    fresh.mode = MOTION_DISTANCE;
+    fresh.target = 0.2f;
+    fresh.speed_mps = 0.1f;
+    fresh.deadline_ms = 900u;
+    bool identity = motion_control_accept(&control, &fresh, 1.0f, 2.0f,
+                                          100u, &cfg);
+    MotionCommand renewal = fresh;
+    renewal.sampled_ms = renewal.issued_ms = 120u;
+    renewal.expires_ms = 180u;
+    identity = identity && motion_control_accept(&control, &renewal, 1.2f,
+                                                  2.2f, 120u, &cfg) &&
+               control.origin_left == 1.0f && control.origin_right == 2.0f &&
+               control.command.deadline_ms == 900u;
+    MotionCommand mutation = renewal;
+    mutation.target = 0.3f;
+    identity = identity && !motion_control_accept(&control, &mutation, 1.2f,
+                                                   2.2f, 120u, &cfg);
+    motion_control_step(&control, 1.2f, 2.2f, 0, 0, 0.02f, 120u, &cfg,
+                        &left, &right);
+    identity = identity && control.status == MOTION_DONE &&
+               motion_control_ack(&control, 1u);
+    MotionCommand next = renewal;
+    next.action_id = 2u;
+    identity = identity && motion_control_accept(&control, &next, 1.2f, 2.2f,
+                                                  120u, &cfg);
+    motion_control_step(&control, 1.4f, 2.4f, 0, 0, 0.02f, 121u, &cfg,
+                        &left, &right);
+    identity = identity && control.status == MOTION_DONE &&
+               motion_control_ack(&control, 2u);
+    mutation = renewal;
+    identity = identity && !motion_control_accept(&control, &mutation, 1.4f,
+                                                   2.4f, 121u, &cfg);
+    TEST_CHECK("S2-U16", identity,
+               "same-action lease renewal retains identity origin/deadline; mutation and replay reject");
+
     TEST_SUMMARY("subsystem2");
 }
 #endif
