@@ -63,6 +63,61 @@ static bool status_encode_test(void)
            payload[0] == '\0';
 }
 
+static bool telemetry_freshness_test(void)
+{
+    S1Telemetry status = {.sampled_ms = UINT32_MAX - 39u,
+                          .reading_valid = true,
+                          .motion_ms = UINT32_MAX - 39u,
+                          .motion_valid = true,
+                          .terrain_ms = UINT32_MAX - 229u,
+                          .terrain_valid = true,
+                          .magnetic_ms = UINT32_MAX - 229u,
+                          .magnetic_valid = true,
+                          .front_ms = UINT32_MAX - 229u,
+                          .front_valid = true,
+                          .front_mm = 234,
+                          .left_mm = 12,
+                          .right_mm = 34,
+                          .accel_mg = {0, 0, 1000},
+                          .magnetic_milli_gauss = {1, 2, 3}};
+    static char json[S1_TELEMETRY_PAYLOAD_MAX + 1u];
+    unsigned length = s1_telemetry_encode(&status, 20u, json, sizeof(json));
+    bool boundary = length > 0u && strstr(json, "\"age_ms\":60") &&
+                    strstr(json, "\"distance_mm\":[12,34]") &&
+                    strstr(json, "\"accel_mg\":[0,0,1000]") &&
+                    strstr(json, "\"mag_milli_gauss\":[1,2,3]") &&
+                    strstr(json, "\"front_mm\":234");
+    status.sampled_ms = 20u - 61u;
+    length = s1_telemetry_encode(&status, 20u, json, sizeof(json));
+    bool independent = length > 0u && strstr(json, "\"fraction\":null") &&
+                       strstr(json, "\"distance_mm\":[12,34]") &&
+                       strstr(json, "\"accel_mg\":[0,0,1000]");
+    status.sampled_ms = UINT32_MAX - 39u;
+    status.motion_ms = 20u - 61u;
+    length = s1_telemetry_encode(&status, 20u, json, sizeof(json));
+    independent = independent && length > 0u &&
+                  strstr(json, "\"fraction\":[0.000,0.000]") &&
+                  strstr(json, "\"distance_mm\":null");
+    status.motion_ms = UINT32_MAX - 39u;
+    status.terrain_ms = 20u - 251u;
+    length = s1_telemetry_encode(&status, 20u, json, sizeof(json));
+    independent = independent && length > 0u &&
+                  strstr(json, "\"accel_mg\":null") &&
+                  strstr(json, "\"mag_milli_gauss\":[1,2,3]");
+    status.terrain_ms = UINT32_MAX - 229u;
+    status.magnetic_ms = 20u - 251u;
+    length = s1_telemetry_encode(&status, 20u, json, sizeof(json));
+    independent = independent && length > 0u &&
+                  strstr(json, "\"accel_mg\":[0,0,1000]") &&
+                  strstr(json, "\"mag_milli_gauss\":null");
+    status.magnetic_ms = UINT32_MAX - 229u;
+    status.front_ms = 20u - 251u;
+    length = s1_telemetry_encode(&status, 20u, json, sizeof(json));
+    return boundary && independent && length > 0u &&
+           strstr(json, "\"front_mm\":null") &&
+           strstr(json, "\"mag_milli_gauss\":[1,2,3]");
+}
+
 static bool mapping_test(void)
 {
     static S1MappingRequest request;
@@ -147,6 +202,8 @@ void subsystem1_test(void)
     TEST_CHECK(
         "S1-U07", status_encode_test(),
         "bounded heartbeat/status JSON; exact capacity and max counters");
+    TEST_CHECK("S1-U15", telemetry_freshness_test(),
+               "independent line/motion/terrain/magnetic/sonar freshness boundaries across wrap");
     TEST_CHECK("S1-U09", mapping_test(),
                "26-entry fragmented mapping and bounded rejection");
     TEST_CHECK("S1-U14", mapping_identity_test(),
