@@ -246,6 +246,35 @@ void subsystem4_test(void)
                    c.max_hump_peak_m == roll_peak,
                "roll-only hump yields height; negative travel invalidates later window and preserves maximum");
 
+    RunHistory history;
+    run_history_reset(&history, 7u);
+    bool history_ok = true;
+    for (unsigned i = 0u; i < RUN_HISTORY_CAPACITY + 1u; ++i)
+    {
+        history_ok = run_history_append(
+                         &history, (RunEvent){.sampled_at = i, .value = i}) &&
+                     history_ok;
+    }
+    history_ok = history_ok && history.run_epoch == 7u && history.count == 9u &&
+                 history.length == RUN_HISTORY_CAPACITY && history.dropped == 1u &&
+                 history.events[0].id == 2u && history.events[7].id == 9u;
+    history.count = UINT32_MAX;
+    history_ok = !run_history_append(&history, (RunEvent){0}) &&
+                 history.overflow;
+    TerrainSnapshot history_snapshot = {.run_epoch = 7u,
+                                        .height_valid = true,
+                                        .last_hump_height_m = 0.02f,
+                                        .max_hump_peak_m = 0.04f,
+                                        .humps = history};
+    s4_snapshot_run_reset(&history_snapshot, 8u);
+    TEST_CHECK("S4-U16",
+               history_ok && history_snapshot.run_epoch == 8u &&
+                   history_snapshot.humps.run_epoch == 8u &&
+                   history_snapshot.humps.length == 0u &&
+                   !history_snapshot.height_valid &&
+                   history_snapshot.last_hump_height_m == 0.0f &&
+                   history_snapshot.max_hump_peak_m == 0.0f,
+               "hump history eviction/overflow is explicit and new-run snapshot resets epoch/history");
     TEST_SUMMARY("subsystem4");
 }
 #endif
