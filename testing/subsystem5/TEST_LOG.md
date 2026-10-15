@@ -12,6 +12,7 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | S5-U05 | cancel dominates timeout/movement including center restore | Inhibited firmware fixture |
 | S5-U06 | profile geometry includes measured sensor mounting offset | Inhibited firmware fixture |
 | S5-U07 | Profile validation rejects insufficient/oversized scans, missing/invalid Echo range and angles outside the servo envelope; boundary angle remains accepted | Inhibited firmware fixture |
+| S5-U08 | Exhaustive scan guard truth table preserves cancel priority over timeout and movement failure | Inhibited firmware fixture |
 
 ## Results
 
@@ -22,5 +23,7 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 Actual inhibited firmware execution is recorded above. Physical acceptance remains pending. Earlier compiled-only evidence retains its original status; builds never count as executed fixtures.
 
 Physical coverage and procedures: [system cases](../system/TEST_LOG.md), [GUIDE](../../GUIDE.md), [testing policy](../README.md). Include source, image, power/wiring, calibration, mapping request/revision, reference/observed measurements, time and evidence for every real run.
+
+Hardware-only coverage remains **PENDING**: with powered scan hardware and confirmed electrical limits, verify trigger-low/high/low pulse timing; missing, malformed, out-of-order, zero-width and overlong Echo edges; servo center and each scan angle within measured pulse limits; settle and trigger timing at every angle; stationary/fresh admission, invalid/duplicate/busy request IDs, cancellation, deadline, motion interruption, all-rays completion and center restoration. Record actual pulse widths, ranges, angles, request/status IDs and evidence under the applicable physical system scenario. Firmware guard/profile fixtures do not exercise GPIO IRQ timing, PWM output or the S5 task request lifecycle.
 
 Latest executed image: `33ea475`, UF2 `f554c1f1280098cfc6c3278992c0d5877f744dab0f07a1ef84d02e6b674318b0`; USB-only IR-only TEST, motors inhibited, tester Nicholas/Codex. **Firmware PASS** for S5-U04, S5-U05, S5-U06; [complete 45-check capture](../integration/logs/2026-10-15_152409_309541_pico-console.txt), [summary](../integration/logs/2026-10-15_152409_309541_pico-console.json). Physical acceptance remains pending.

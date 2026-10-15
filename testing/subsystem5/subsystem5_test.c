@@ -53,6 +53,18 @@ void subsystem5_test(void)
     malformed.rays[2].angle_deg = 60.0f;
     TEST_CHECK("S5-U07", profile_rejects && s5_profile_build_config(&malformed, &cfg),
                "profile rejects insufficient/oversized scans, invalid Echo range and out-of-envelope angle");
+    bool lifecycle = true;
+    for (unsigned cancel = 0u; cancel < 2u; ++cancel)
+        for (unsigned expired = 0u; expired < 2u; ++expired)
+            for (unsigned stationary = 0u; stationary < 2u; ++stationary)
+            {
+                ScanStatus expected = cancel ? SCAN_CANCELLED :
+                    ((expired || !stationary) ? SCAN_FAILED : SCAN_RUNNING);
+                lifecycle = lifecycle &&
+                    s5_scan_guard(cancel != 0u, expired != 0u, stationary != 0u) == expected;
+            }
+    TEST_CHECK("S5-U08", lifecycle,
+               "scan guard truth table preserves cancel priority across timeout and movement states");
     TEST_SUMMARY("subsystem5");
 }
 #endif
