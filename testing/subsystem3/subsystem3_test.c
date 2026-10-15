@@ -198,6 +198,36 @@ static bool ir_capture_test(void)
            !tracker.calibration.black_set && !tracker.calibration.white_set;
 }
 
+static bool barcode_mapping_test(void)
+{
+    RobotConfig cfg = fixture_config();
+    barcode_service_t service;
+    barcode_service_init(&service);
+    barcode_action_t actions[BARCODE_ALPHABET];
+    for (unsigned i = 0; i < BARCODE_ALPHABET; ++i)
+        actions[i] = (barcode_action_t)(i % 5u);
+    bool pass = !barcode_config_valid(NULL) && barcode_config_valid(&cfg.barcode) &&
+                barcode_service_mapping(&service, actions) &&
+                service.status.mapping_revision == 1u;
+    barcode_action_t invalid[BARCODE_ALPHABET];
+    memcpy(invalid, actions, sizeof invalid);
+    invalid[4] = (barcode_action_t)99;
+    pass = !barcode_service_mapping(&service, invalid) &&
+           service.status.mapping_revision == 1u && pass;
+    pass = barcode_service_configure(&service, &cfg.barcode) && pass;
+    pass = !barcode_service_mapping(&service, invalid) && pass;
+    barcode_service_reject(&service, BARCODE_SHORT_QUIET);
+    pass = service.status.result == BARCODE_SHORT_QUIET &&
+           service.status.rejected_reads == 1u &&
+           service.status.state == BARCODE_WAIT_QUIET && pass;
+    barcode_service_fault(&service, BARCODE_CAPTURE_OVERFLOW);
+    pass = service.status.state == BARCODE_FAULT &&
+           (service.status.fault_bits & BARCODE_FAULT_CAPTURE) != 0u && pass;
+    barcode_service_reset(&service, BARCODE_CANCELLED);
+    return pass && service.status.state == BARCODE_DISABLED &&
+           service.status.result == BARCODE_CANCELLED && service.status.fault_bits == 0u;
+}
+
 static bool calibration_fault_test(void)
 {
     IrTracker tracker;
@@ -304,6 +334,8 @@ void subsystem3_test(void)
                "low-contrast reference reset");
     TEST_CHECK("S3-U19", calibration_fault_test(),
                "IR calibration admission, wrapped timeout, duplicate/invalid samples and polarity");
+    TEST_CHECK("S3-U20", barcode_mapping_test(),
+               "barcode mapping validation, replacement admission, rejection, fault and reset lifecycle");
     TEST_SUMMARY("subsystem3");
 }
 #endif

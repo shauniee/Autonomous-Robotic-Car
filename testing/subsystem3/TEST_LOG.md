@@ -18,6 +18,7 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 
 | S3-U18 | Black/white capture, opposite polarity, stale guidance and low-contrast reset | Inhibited firmware fixture |
 | S3-U19 | IR calibration admission, wrapped capture timeout, duplicate/invalid sample handling and opposite polarity | Inhibited firmware fixture |
+| S3-U20 | Barcode mapping validation, replacement admission, reject/fault/reset lifecycle | Inhibited firmware fixture |
 
 ## Results
 
