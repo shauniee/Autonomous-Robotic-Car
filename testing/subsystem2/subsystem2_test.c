@@ -234,6 +234,37 @@ void subsystem2_test(void)
     TEST_CHECK("S2-U17", stall_terminal,
                "stalled action brakes, acknowledges once, and returns idle");
 
+    motion_control_init(&control, 4u);
+    RobotConfig bench_cfg = {.electrical_confirmed = true,
+                             .commissioning = COMMISSIONING_DUTY};
+    MotionCommand bench_cmd = {.action_id = 1u,
+                               .run_epoch = 4u,
+                               .mode = MOTION_DUTY_BENCH,
+                               .issued_ms = 100u,
+                               .sampled_ms = 100u,
+                               .expires_ms = 160u,
+                               .deadline_ms = 2100u,
+                               .left_duty = 0.1f,
+                               .right_duty = -0.1f};
+    bool bench_valid =
+        motion_command_valid(&bench_cmd, 100u, 4u, &bench_cfg) &&
+        motion_control_accept(&control, &bench_cmd, 0, 0, 100u, &bench_cfg);
+    bench_cmd.sampled_ms = bench_cmd.issued_ms = 2090u;
+    bench_cmd.expires_ms = 2150u;
+    bench_valid = bench_valid &&
+                  motion_control_accept(&control, &bench_cmd, 0, 0, 2090u,
+                                        &bench_cfg);
+    motion_control_step(&control, 0, 0, 0, 0, 0.02f, 2099u, &bench_cfg,
+                        &left, &right);
+    bench_valid = bench_valid && control.status == MOTION_ACTIVE &&
+                  left == 0.1f && right == -0.1f;
+    motion_control_step(&control, 0, 0, 0, 0, 0.02f, 2100u, &bench_cfg,
+                        &left, &right);
+    bench_valid = bench_valid && control.status == MOTION_DONE && left == 0 &&
+                  right == 0;
+    TEST_CHECK("S2-U18", bench_valid,
+               "bounded bench command runs only before its exact deadline then brakes");
+
     TEST_SUMMARY("subsystem2");
 }
 #endif
