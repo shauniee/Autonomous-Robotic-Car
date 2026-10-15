@@ -281,6 +281,32 @@ void subsystem2_test(void)
     TEST_CHECK("S2-U19", modes,
                "unknown mode and out-of-range speed/distance requests reject");
 
+    motion_control_init(&control, 4u);
+    MotionCommand invalid_feedback = {.action_id = 1u,
+                                      .run_epoch = 4u,
+                                      .mode = MOTION_SPEED,
+                                      .left_mps = 0.1f,
+                                      .right_mps = 0.1f,
+                                      .sampled_ms = 100u,
+                                      .issued_ms = 100u,
+                                      .expires_ms = 160u};
+    bool fail_safe = motion_control_accept(&control, &invalid_feedback, 0, 0,
+                                           100u, &cfg);
+    motion_control_step(&control, 0, 0, NAN, 0, 0.02f, 120u, &cfg, &left,
+                        &right);
+    fail_safe = fail_safe && control.status == MOTION_FAILED &&
+                control.reason == MOTION_ENCODER_FAULT && left == 0 &&
+                right == 0;
+    motion_control_init(&control, 4u);
+    fail_safe = fail_safe &&
+                motion_control_accept(&control, &invalid_feedback, 0, 0,
+                                      100u, &cfg);
+    motion_control_step(&control, 0, 0, 0, 0, 0.0f, 120u, &cfg, &left,
+                        &right);
+    TEST_CHECK("S2-U20", fail_safe && control.status == MOTION_FAILED &&
+                             control.reason == MOTION_ENCODER_FAULT &&
+                             left == 0 && right == 0,
+               "non-finite speed and invalid control interval fail with zero output");
     TEST_SUMMARY("subsystem2");
 }
 #endif
