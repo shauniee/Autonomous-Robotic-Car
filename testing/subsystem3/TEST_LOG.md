@@ -22,6 +22,7 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | S3-U21 | Mission sensor freshness, stopped mapping admission, broad-black dwell continuity, confirmed junction/finish thresholds and geometry guards | Inhibited firmware fixture |
 | S3-U22 | IR normalization endpoints/midpoint, line classification/hysteresis, invalid raw rejection and zero guidance | Inhibited firmware fixture |
 | S3-U23 | Code 39 valid decode, ambiguous width rejection, malformed frame rejection and invalid configuration rejection | Inhibited firmware fixture |
+| S3-U24 | Unmapped symbol remains a recorded observation and is excluded from the action event queue | Inhibited firmware fixture |
 
 ## Results
 

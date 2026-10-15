@@ -306,6 +306,39 @@ static bool barcode_rejection_test(void)
     return pass;
 }
 
+static bool unmapped_observation_test(void)
+{
+    RobotConfig cfg = fixture_config();
+    barcode_service_t service;
+    barcode_service_init(&service);
+    bool pass = barcode_service_configure(&service, &cfg.barcode);
+    barcode_action_t map[BARCODE_ALPHABET] = {BARCODE_UNMAPPED};
+    pass = barcode_service_mapping(&service, map) && pass;
+    uint32_t widths[BARCODE_ELEMENTS];
+    alphabet_frame(0u, 1u, false, widths);
+    barcode_encoder_t e = {.left_count = 0u, .right_count = 0u,
+                           .epoch = 2u, .valid = true};
+    barcode_service_observe(&service, false, &e, 0u, false);
+    e.left_count += 600u; e.right_count += 600u;
+    e.sampled_us = 1000u;
+    barcode_service_observe(&service, true, &e, e.sampled_us, true);
+    for (unsigned i = 0u; i < BARCODE_ELEMENTS; ++i)
+    {
+        e.left_count += widths[i] / 10u;
+        e.right_count += widths[i] / 10u;
+        e.sampled_us += 1000u;
+        barcode_service_observe(&service, (i & 1u) != 0u, &e, e.sampled_us, true);
+    }
+    e.left_count += 600u; e.right_count += 600u;
+    e.sampled_us += 1000u;
+    barcode_service_observe(&service, false, &e, e.sampled_us, false);
+    barcode_event_t event;
+    return pass && service.status.have_decode && service.status.latest.symbol == 'A' &&
+           service.status.latest.action == BARCODE_UNMAPPED &&
+           service.status.encounters.count == 1u &&
+           !barcode_service_pop(&service, &event);
+}
+
 static bool mission_guard_test(void)
 {
     RobotConfig cfg = fixture_config();
@@ -439,6 +472,8 @@ void subsystem3_test(void)
                "IR normalization endpoints/midpoint, hysteresis classes, invalid raw rejection and zero guidance");
     TEST_CHECK("S3-U23", barcode_rejection_test(),
                "Code39 valid decode, noisy overlapping-width rejection, malformed frame rejection and config validation");
+    TEST_CHECK("S3-U24", unmapped_observation_test(),
+               "unmapped symbol is retained as observation and never enters action queue");
     TEST_SUMMARY("subsystem3");
 }
 #endif
