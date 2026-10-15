@@ -36,3 +36,6 @@ Actual inhibited firmware execution is recorded above. Physical acceptance remai
 Physical coverage and procedures: [system cases](../system/TEST_LOG.md), [GUIDE](../../GUIDE.md), [testing policy](../README.md). Include source, image, power/wiring, calibration, mapping request/revision, reference/observed measurements, time and evidence for every real run.
 
 Latest executed image: `33ea475`, UF2 `f554c1f1280098cfc6c3278992c0d5877f744dab0f07a1ef84d02e6b674318b0`; USB-only IR-only TEST, motors inhibited, tester Nicholas/Codex. **Firmware PASS** for S3-U06, S3-U09, S3-U12, S3-U14, S3-U15, S3-U16, S3-U17, S3-U18; [complete 45-check capture](../integration/logs/2026-10-15_152409_309541_pico-console.txt), [summary](../integration/logs/2026-10-15_152409_309541_pico-console.json). Physical acceptance remains pending.
+
+
+Exact target fixture host run at `1bd0ffd`: PASS, 15 checks (S3-U06, S3-U09, S3-U12, S3-U14–S3-U25); full output in [host fixture log](../pure/logs/2026-10-15_fixture-suite.txt). The runner compiles the existing `subsystemN_test.c` unchanged and real production algorithm sources with the host compiler; only the test report output is adapted. It does not provide T-Kernel, GPIO, timer, firmware or physical-hardware evidence.
