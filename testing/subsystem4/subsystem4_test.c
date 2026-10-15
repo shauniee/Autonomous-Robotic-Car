@@ -117,6 +117,164 @@ void subsystem4_test(void)
                retained && c.max_hump_peak_m == 0.0f &&
                    c.last_hump_height_m == 0.0f && !c.is_calibrated,
                "reinitialize preserves stop results and clears a new run");
+    RobotConfig mapped_cfg = fixture_config();
+    mapped_cfg.lateral_sign = -1;
+    mapped_cfg.forward_sign = 1;
+    mapped_cfg.vertical_sign = -1;
+    terrain_algo_init(&c);
+    c.is_calibrated = true;
+    Gy511RawAxes mapped_raw = {100, 200, -975};
+    terrain_algo_process_config(&c, &mapped_raw, 0.01f, true, 20u,
+                                &mapped_cfg);
+    TEST_CHECK("S4-U11",
+               c.pitch_deg > 2.0f && c.pitch_deg < 2.6f &&
+                   c.roll_deg > 1.0f && c.roll_deg < 1.4f,
+               "axis/sign mapping converts raw milli-g into calibrated pitch and roll");
+
+    S4Calibration identity_cal;
+    terrain_calibration_begin(&identity_cal, &c, 41u, 5000u, 0u);
+    terrain_calibration_step(&identity_cal, &c, &raw, GY511_NEW, false, 20u);
+    bool calibration_lifecycle =
+        identity_cal.request_id == 41u &&
+        identity_cal.reason == S4_CAL_MOVING &&
+        identity_cal.status == S4_CAL_FAILED;
+    terrain_calibration_begin(&identity_cal, &c, 42u, 5000u, 0u);
+    Gy511RawAxes bad_gravity = {0, 0, 1200};
+    terrain_calibration_step(&identity_cal, &c, &bad_gravity, GY511_NEW, true,
+                             20u);
+    calibration_lifecycle =
+        calibration_lifecycle && identity_cal.request_id == 42u &&
+        identity_cal.reason == S4_CAL_GRAVITY && !c.is_calibrated;
+    terrain_calibration_begin(&identity_cal, &c, 43u, 5000u, 0u);
+    terrain_calibration_step(&identity_cal, &c, &raw, GY511_NEW, true, 20u);
+    terrain_calibration_cancel(&identity_cal, &c);
+    calibration_lifecycle =
+        calibration_lifecycle && identity_cal.request_id == 43u &&
+        identity_cal.status == S4_CAL_CANCELLED &&
+        identity_cal.reason == S4_CAL_STOP && !c.is_calibrated;
+    terrain_calibration_begin(&identity_cal, &c, 44u, 5000u, 0u);
+    for (unsigned i = 1u; i <= 100u; ++i)
+    {
+        terrain_calibration_step(&identity_cal, &c, &raw, GY511_NEW, true,
+                                 i * 20u);
+    }
+    TEST_CHECK("S4-U12",
+               calibration_lifecycle && identity_cal.request_id == 44u &&
+                   identity_cal.status == S4_CAL_DONE && c.is_calibrated,
+               "request identity, stationarity/gravity rejection, abort and fresh-request recovery");
+
+    MotionFeedback before = {.valid = true,
+                             .sequence = 1u,
+                             .sampled_ms = 100u,
+                             .run_epoch = 5u,
+                             .yaw_deg = 179.0f};
+    MotionFeedback after = {.valid = true,
+                            .sequence = 2u,
+                            .sampled_ms = 160u,
+                            .run_epoch = 5u,
+                            .yaw_deg = -179.0f,
+                            .left_mps = 0.2f};
+    bool timing = terrain_motion_measure(&after, &before, true, 160u, &turn,
+                                         &acceleration) &&
+                  turn > 33.0f && turn < 34.0f;
+    MotionFeedback invalid_motion = after;
+    invalid_motion.sequence = before.sequence;
+    timing = timing && !terrain_motion_measure(&invalid_motion, &before, true,
+                                               160u, &turn, &acceleration);
+    invalid_motion = after;
+    invalid_motion.sampled_ms = before.sampled_ms;
+    timing = timing && !terrain_motion_measure(&invalid_motion, &before, true,
+                                               160u, &turn, &acceleration);
+    invalid_motion = after;
+    invalid_motion.run_epoch++;
+    timing = timing && !terrain_motion_measure(&invalid_motion, &before, true,
+                                               160u, &turn, &acceleration);
+    TEST_CHECK("S4-U13", timing,
+               "motion derivation wraps yaw and rejects duplicate, zero-dt and cross-epoch samples");
+
+    RobotConfig classify_cfg = fixture_config();
+    motion = (MotionFeedback){.valid = true, .stationary = true};
+    c.state = TERRAIN_STATE_IMPACT;
+    bool priority = terrain_movement_classify(&c, &motion, true, 100, 100,
+                                              &classify_cfg) == TERRAIN_IMPACT;
+    c.state = TERRAIN_STATE_FLAT;
+    priority = priority &&
+               terrain_movement_classify(&c, &motion, true, 100, 100,
+                                         &classify_cfg) == TERRAIN_STATIONARY;
+    motion.stationary = false;
+    priority = priority &&
+               terrain_movement_classify(&c, &motion, true, 100, 100,
+                                         &classify_cfg) == TERRAIN_TURNING;
+    c.state = TERRAIN_STATE_CLIMBING;
+    priority = priority &&
+               terrain_movement_classify(&c, &motion, true, 0, 100,
+                                         &classify_cfg) == TERRAIN_CLIMB;
+    c.state = TERRAIN_STATE_DESCENDING;
+    priority = priority &&
+               terrain_movement_classify(&c, &motion, true, 0, 100,
+                                         &classify_cfg) == TERRAIN_DESCENT;
+    c.state = TERRAIN_STATE_FLAT;
+    priority = priority &&
+               terrain_movement_classify(&c, &motion, true, 0, 1,
+                                         &classify_cfg) == TERRAIN_ACCELERATING &&
+               terrain_movement_classify(&c, &motion, false, 0, 0,
+                                         &classify_cfg) == TERRAIN_MOVING;
+    TEST_CHECK("S4-U14", priority,
+               "impact, stationary, turn, terrain phase and acceleration classification priority");
+
+    terrain_algo_init(&c);
+    c.is_calibrated = true;
+    Gy511RawAxes roll = {300, 0, 954};
+    for (unsigned i = 0u; i < 50u; ++i)
+    {
+        terrain_algo_process_config(&c, &roll, 0.005f, true, i * 20u,
+                                    &classify_cfg);
+    }
+    bool roll_hump = c.state == TERRAIN_STATE_CLIMBING ||
+                     c.state == TERRAIN_STATE_CRESTING;
+    Gy511RawAxes flat = {0, 0, 1000};
+    for (unsigned i = 50u; i < 160u; ++i)
+    {
+        terrain_algo_process_config(&c, &flat, 0.005f, true, i * 20u,
+                                    &classify_cfg);
+    }
+    float roll_peak = c.max_hump_peak_m;
+    terrain_algo_process_config(&c, &flat, -0.01f, true, 3200u,
+                                &classify_cfg);
+    TEST_CHECK("S4-U15",
+               roll_hump && roll_peak > 0.005f && c.height_valid == false &&
+                   c.max_hump_peak_m == roll_peak,
+               "roll-only hump yields height; negative travel invalidates later window and preserves maximum");
+
+    RunHistory history;
+    run_history_reset(&history, 7u);
+    bool history_ok = true;
+    for (unsigned i = 0u; i < RUN_HISTORY_CAPACITY + 1u; ++i)
+    {
+        history_ok = run_history_append(
+                         &history, (RunEvent){.sampled_at = i, .value = i}) &&
+                     history_ok;
+    }
+    history_ok = history_ok && history.run_epoch == 7u && history.count == 9u &&
+                 history.length == RUN_HISTORY_CAPACITY && history.dropped == 1u &&
+                 history.events[0].id == 2u && history.events[7].id == 9u;
+    history.count = UINT32_MAX;
+    history_ok = !run_history_append(&history, (RunEvent){0}) &&
+                 history.overflow;
+    TerrainSnapshot history_snapshot = {.run_epoch = 7u,
+                                        .height_valid = true,
+                                        .last_hump_height_m = 0.02f,
+                                        .max_hump_peak_m = 0.04f,
+                                        .humps = history};
+    s4_snapshot_run_reset(&history_snapshot, 8u);
+    TEST_CHECK("S4-U16",
+               history_ok && history_snapshot.run_epoch == 8u &&
+                   history_snapshot.humps.run_epoch == 8u &&
+                   history_snapshot.humps.length == 0u &&
+                   !history_snapshot.height_valid &&
+                   history_snapshot.last_hump_height_m == 0.0f &&
+                   history_snapshot.max_hump_peak_m == 0.0f,
+               "hump history eviction/overflow is explicit and new-run snapshot resets epoch/history");
     TEST_SUMMARY("subsystem4");
 }
 #endif
