@@ -111,6 +111,8 @@ A TEST image can show `CALIBRATING` / configuration pending with blank uncalibra
 
 GP21 during combined calibration cancels both and latches stop. Reset is a separate local action. Ordinary stopping retains completed calibration; an IMU reinitialization after fault requires a new combined capture. Reboot always requires recalibration and mapping reload.
 
+Three beeps can result from the IMU half of the combined attempt failing even when the IR sensors are correctly over black. With the IMU disconnected, this build cannot complete calibration. Ultrasonic sensing is not part of that calibration step, but valid forward sensing is required before full mission start. Acquisition faults require stopped reinitialization and a fresh combined calibration; accepted run results remain available.
+
 ## Four-letter mapping without changing code
 
 The decoder supports A-Z. Exactly four distinct letters are assigned, one each for left/right/straight/U-turn. The other 22 have no navigation command.
@@ -182,3 +184,18 @@ Use the five passes in [testing](testing/README.md). Required cases include all 
 - [ ] Confirm submission artifacts, instructor access and demonstration schedule; development references under `docs/donotsubmit/` are excluded from submission packaging.
 
 On mission day change only the four assignments in the laptop data file, verify the live applied acknowledgement/revision, then start locally. Keep the frozen firmware unchanged. Save real results and video links under [testing](testing/README.md); the [video guide](videos/README.md) is preserved unchanged.
+
+### Remaining release gates, excluding video
+
+The current branch is software-integrated; it is not a certified completed mission. [The readiness audit](testing/integration/logs/2026-10-15_mission-readiness.json) records the current evidence. Complete each gate before declaring mission/submission readiness:
+
+| Gate | What to do | Expected result |
+| --- | --- | --- |
+| Measured configuration | Resolve D03-D08 in the [pending register](docs/donotsubmit/PROJECT_SPECS.md#pending-decisions); enter recorded values, not confirmation flags alone | Motion/sonar/terrain/electrical configuration validates against real installed hardware |
+| Course rules/freeze | Resolve D01/D02/D09/D10, including issued barcode format, junction/finish and supported bypass depth/boundaries | The final image supports the actual course before the four letters are announced |
+| Startup and controls | Execute the inhibited fixtures, T01/T02 and raised-wheel measurements | Recorded fixture results, successful black+IMU then white calibration, independent brake and separate reset/start |
+| Navigation and sensing | Execute T03-T11, including all alphabet/scales/orientations, four motions, reference/one-wheel humps and both bypass sides | Agreed accuracy/clearance criteria met; original route confirmed; uncertainty stops |
+| Failure handling and course | Execute T12-T16, including stale/encoder/deadline/network/load faults and repeated full-course runs | Correct fault/reset behavior, measured timing/stack margin and complete autonomous runs on the frozen image |
+| Submission evidence | Save configuration/image identities, complete Motion tuning/accuracy and Terrain analysis from measurements, and confirm instructor access/artifacts | Required reports and traceable acceptance records exist; video can be handled separately |
+
+Missing sensors or unconfirmed measurements remain unavailable/pending. Successful compiler checks and a live MQTT dashboard do not replace these gates.

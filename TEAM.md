@@ -121,6 +121,8 @@ Providers own private objects and public snapshot APIs. See [Architecture](docs/
 
 S3's Mission is the sole command producer. Core-0 configuration is a bounded copied handoff, revalidated by Mission on core 1. Shared GPIO dispatch services encoder pins before GP16 and acknowledges owned bits only; the USB SDK shim is not a general dispatcher.
 
+S2 command/feedback, S3 IR/barcode, S4 and S5 polling mutexes use priority ceiling 1. This permits startup/core-0 readers and prevents a higher-priority polling reader from preempting a writer holding the same lock on core 1. Hold times cover bounded copies/processing only: no waits, I2C or logging. Base task priorities above are unchanged; cross-core copies can still return busy. S1 reporting and the Mission/network handoff retain their optional nonblocking copy policy. INT-25 checks the actual kernel ceiling/restore behavior; T15 must measure worst-case hold times and stop latency.
+
 ## 6. Kernel object budget
 
 | Object | Application use | Configured limit |

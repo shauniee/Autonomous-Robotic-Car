@@ -143,16 +143,6 @@ static void latch(MissionReason reason)
     }
     atomic_store_explicit(&moving, false, memory_order_release);
 }
-static bool sensors_ok(uint32_t now, const S3IrSnapshot *ir,
-                       const MotionFeedback *motion,
-                       const TerrainSnapshot *terrain)
-{
-    return ir->normalized_valid && ir->capture_kind == IR_CAPTURE_NONE &&
-           now - ir->sampled_ms <= 60u && motion->valid &&
-           now - motion->sampled_ms <= 60u && terrain->terrain_valid &&
-           terrain->calibrated && now - terrain->timestamp_ms <= 250u &&
-           terrain->state != TERRAIN_STATE_IMPACT;
-}
 static bool commissioning_ready(void)
 {
     return robot_config.electrical_confirmed &&
@@ -212,8 +202,9 @@ static void safety_task(INT stacd, void *exinf)
                 atomic_load_explicit(&current_mode, memory_order_acquire) ==
                 MISSION_COMMISSIONING;
             if (!service || !copies ||
-                !(commissioning ? commissioning_data(now, &ir, &motion)
-                                : sensors_ok(now, &ir, &motion, &terrain)))
+                !(commissioning
+                      ? commissioning_data(now, &ir, &motion)
+                      : mission_sensors_ready(now, &ir, &motion, &terrain)))
             {
                 latch(REASON_SENSOR);
             }
@@ -486,8 +477,9 @@ static void mission_task(INT stacd, void *exinf)
         }
         if (s.state == MISSION_CALIBRATING && copies && s.configured &&
             mapped && !await_mapping_revision &&
-            sensors_ok(now, &ir, &motion, &terrain) && motion.stationary &&
-            obstacle.front_valid && now - obstacle.front_ms <= 250u)
+            mission_sensors_ready(now, &ir, &motion, &terrain) &&
+            motion.stationary && obstacle.front_valid &&
+            now - obstacle.front_ms <= 250u)
         {
             if (barcode.state == BARCODE_DISABLED)
             {
@@ -503,8 +495,8 @@ static void mission_task(INT stacd, void *exinf)
         }
         if (s.state == MISSION_READY && s.reason != REASON_COMMISSIONING &&
             event == BUTTON_EVENT_PRESSED && copies && ir.guidance_valid &&
-            sensors_ok(now, &ir, &motion, &terrain) && obstacle.front_valid &&
-            now - obstacle.front_ms <= 250u &&
+            mission_sensors_ready(now, &ir, &motion, &terrain) &&
+            obstacle.front_valid && now - obstacle.front_ms <= 250u &&
             s3_barcode_reset() == BARCODE_API_OK &&
             s3_barcode_configure(&robot_config.barcode,
                                  barcode_adapter_provider()) ==
@@ -528,13 +520,14 @@ static void mission_task(INT stacd, void *exinf)
                                       .action_id = ++s.action_id};
             change(&s, MISSION_FOLLOW_LINE, REASON_NONE);
         }
-        if (s.moving && (!copies ||
-                         !(s.state == MISSION_COMMISSIONING
-                               ? commissioning_data(now, &ir, &motion)
-                               : sensors_ok(now, &ir, &motion, &terrain)) ||
-                         health.stopped || barcode.fault_bits != 0u ||
-                         (s.state == MISSION_FOLLOW_LINE &&
-                          barcode.state == BARCODE_DISABLED)))
+        if (s.moving &&
+            (!copies ||
+             !(s.state == MISSION_COMMISSIONING
+                   ? commissioning_data(now, &ir, &motion)
+                   : mission_sensors_ready(now, &ir, &motion, &terrain)) ||
+             health.stopped || barcode.fault_bits != 0u ||
+             (s.state == MISSION_FOLLOW_LINE &&
+              barcode.state == BARCODE_DISABLED)))
         {
             latch(REASON_SENSOR);
         }
@@ -581,6 +574,14 @@ static void mission_task(INT stacd, void *exinf)
                     obstacle.scan_status == SCAN_CANCELLED)
                 {
                     latch(REASON_BLOCKED);
+                }
+                else if (obstacle.scan_status == SCAN_DONE &&
+                         (!mission_sensors_ready(now, &ir, &motion, &terrain) ||
+                          !motion.stationary || !health.stopped ||
+                          !health.brake_acknowledged))
+                {
+                    /* A scan can outlast the health of another producer. */
+                    latch(REASON_SENSOR);
                 }
                 else if (obstacle.scan_status == SCAN_DONE &&
                          obstacle.profile_valid && obstacle.front_valid &&

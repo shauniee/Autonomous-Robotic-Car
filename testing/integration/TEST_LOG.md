@@ -13,6 +13,8 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | INT-22 | distinct consecutive acquisitions, cache and wrap | Inhibited firmware fixture |
 | INT-23 | braking begins outside center-based pivot envelope | Inhibited firmware fixture |
 | INT-21 | any four letters, one per motion; 22 remain unmapped | Inhibited firmware fixture |
+| INT-24 | start/scan resume rejects stale, missing, uncalibrated or impacted required producers | Inhibited firmware fixture |
+| INT-25 | actual kernel ceiling raises effective priority and restores it after unlock; caller priority restored | Inhibited firmware fixture, no kernel mocks |
 
 ## Build and integrated cases
 
@@ -22,6 +24,7 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | INT-18 | Atomic four-letter stopped replacement with live provider revision; busy/invalid/backpressure rejection and unchanged-image reboot/reload | Actual Pico and broker; PENDING |
 | INT-19 | Combined calibration, leased actions, capture rearm, scan cancellation and original-route recovery | Actual Pico/controller/feature trials; PENDING |
 | INT-20 | Known source defects corrected; regression definitions present; measured/course limitations explicitly retained | Source review and traceability; no physical proof |
+| INT-26 | Mission/submission readiness excludes video but requires measured settings, required hardware, physical acceptance and reports | Repository/requirements audit; no physical PASS inferred |
 
 ## Results
 
@@ -29,6 +32,8 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-15 | INT-17 | `c5e1832`; [image identities](logs/2026-10-15_fresh-acceptance_builds.json) | SMP=1, USB CDC, offline/wireless, TEST/normal; unconfirmed mission settings | Codex / automated tools | Software PASS | Four sequential builds; normal images exclude all six fixture entry points; [54 strict object checks](logs/2026-10-15_fresh-acceptance_strict.json); [resource estimates](logs/2026-10-15_fresh-acceptance_stack.json); [repository audit](logs/2026-10-15_fresh-acceptance_repository.json) |
 | 2026-10-15 | INT-20 | `c5e1832`; no device image executed | Source review, portable encoder inspection and helper validation | Codex | Source reviewed; hardware PENDING | Corrections below; [11 portable encoding cases](logs/2026-10-15_fresh-release_codec.json) and [12 helper input cases](logs/2026-10-15_fresh-release_helper.json) PASS on laptop; source-file hashes identify these unchanged modules |
+| 2026-10-15 | INT-17/20 | `c204e39`; working configuration differs in whitespace only, exact hash recorded | Four SMP USB CDC offline/wireless TEST/normal profiles; calibration/settings still unconfirmed | Codex | Software PASS | [Four builds/images](logs/2026-10-15_mission-hardening_builds.json), [62 strict target checks](logs/2026-10-15_mission-hardening_strict.json), [five static-analysis checks](logs/2026-10-15_mission-hardening_analysis.json), [frame estimates](logs/2026-10-15_mission-hardening_stack.json); 42 compiled fixture IDs, execution PENDING |
+| 2026-10-15 | INT-26 | `c204e39`; source/settings and recorded evidence reviewed | Full mission requirements, video excluded | Codex | NOT READY | [Readiness audit](logs/2026-10-15_mission-readiness.json); hardware unavailable, measured/course settings unconfirmed, physical acceptance/report evidence pending |
 
 Firmware execution: **PENDING**. Append actual complete console evidence only after execution. Builds/compiler checks belong in the integration log and do not fill this table with fixture PASS results.
 
@@ -52,6 +57,10 @@ These rows trace the approved source fixes to focused checks. Firmware check def
 | G3: hidden obstacle depth / original route | Remains a course and physical acceptance gate. Sparse forward sonar cannot prove a passed rear edge or every possible route; T10/T11 and confirmed course bounds are required. |
 | Joint black/IMU calibration | [Coordinator](../../app_program/subsystem3/task_s3.c) waits for both producers before one beep, ignores early white presses and cancels/fails at the bounded deadline; S3-U14/U17, S4-U05/U06, T01/T02 |
 | Late GP21 / local reset | Mission preserves local-stop reason and rechecks inhibition around Motion reset and state publication; T02/T14/T15 |
+| Health lost during scan | Required-data health and stopped/stationary/brake acknowledgement are rechecked before scan-to-bypass release; INT-24, T09/T14 |
+| IMU acquisition failure/recovery | Calibration becomes invalid; stopped reinitialization preserves accepted last/max/history and requires fresh calibration; S4-U09/U10, T01/T07/T14 |
+| Polling mutex preemption | Shared bounded command/snapshot locks use priority ceiling rather than relying on inheritance with TMO_POL; actual kernel fixture INT-25, measured hold/stop latency T15 |
+| Non-finite wheel distances | Invalid origins are rejected and invalid distance feedback brakes the action; S2-U14, T05/T14 |
 
 The strict object check at `8592a1b` found unused fixture helpers outside TEST; [that failed attempt](logs/2026-10-15_fresh-release_strict.json) is retained. The correction excludes those helpers and moves the large S1 test JSON buffer to TEST-only storage. [Final estimates](logs/2026-10-15_fresh-acceptance_stack.json) reduce its individual frame; runtime stack margin still requires T15. Earlier syntax-only checks did not expose this warning.
 

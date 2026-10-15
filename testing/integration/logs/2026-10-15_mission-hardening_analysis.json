@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-15",
+  "source_revision": "c204e39758976d022b526075511a7e314a1e74d4",
+  "method": "GCC static analysis of actual live pure control/guard/estimation modules",
+  "checks": [
+    {
+      "file": "app_program/subsystem2/motion_control.c",
+      "sha256": "3cafa8e795480dbed47cabd6250e8ab7c23e8c674b61b318415bfd3288b0181c",
+      "exit": 0,
+      "diagnostic": ""
+    },
+    {
+      "file": "app_program/subsystem3/mission_guards.c",
+      "sha256": "eae11f5a7bc5f1a5fa06dd4a1dca7613183d92bf15acc1fb37ee8ec328d44042",
+      "exit": 0,
+      "diagnostic": ""
+    },
+    {
+      "file": "app_program/subsystem4/terrain_algo.c",
+      "sha256": "3be9f60d16cf46374fda7e7c306d9c5f75a0bd2355df0eda92e696bdae1cada5",
+      "exit": 0,
+      "diagnostic": ""
+    },
+    {
+      "file": "app_program/subsystem5/obstacle_profile.c",
+      "sha256": "23ea6c28cabb56f6ad3ebbdf933b57b69e099e8bc07403adc8fd672d510b95ad",
+      "exit": 0,
+      "diagnostic": ""
+    },
+    {
+      "file": "app_program/common/run_history.c",
+      "sha256": "d1fe39bfe16465b304e9727bb667b65b6adbf7318527448f894c050be9a0c3c9",
+      "exit": 0,
+      "diagnostic": ""
+    }
+  ],
+  "result": "PASS"
+}

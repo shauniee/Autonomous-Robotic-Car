@@ -18,6 +18,8 @@ Mission brakes before the pivot envelope using measured worst-case headroom for 
 
 Center-only moving sensing does not observe the adjacent/rear edge. The depth-bound design needs explicit course acceptance; do not claim passed-edge observation. Sonar/servo calibration, body envelope, braking headroom and both-side/wrong-line trials remain physical gates.
 
+Even a completed valid profile does not release the brake until Mission revalidates every required producer and measured stationarity. [Architecture](../ARCHITECTURE.md#safety-and-acceptance) owns this resume gate.
+
 ## Interfaces and verification
 
 `ObstacleSnapshot` contains independent forward/profile times, scan state/ID, rays and profile validity. `s5_obstacle_copy`, `s5_scan_request`, `s5_scan_cancel` and reset are bounded task APIs. `s5_profile_build_config` and `s5_scan_guard` are the live configuration/phase predicates exercised by fixtures.

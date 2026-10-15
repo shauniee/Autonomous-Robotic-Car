@@ -1,5 +1,16 @@
 #include "mission_guards.h"
 #include <math.h>
+bool mission_sensors_ready(uint32_t now, const S3IrSnapshot *ir,
+                           const MotionFeedback *motion,
+                           const TerrainSnapshot *terrain)
+{
+    return ir != NULL && motion != NULL && terrain != NULL &&
+           ir->normalized_valid && ir->capture_kind == IR_CAPTURE_NONE &&
+           now - ir->sampled_ms <= 60u && motion->valid &&
+           now - motion->sampled_ms <= 60u && terrain->terrain_valid &&
+           terrain->calibrated && now - terrain->timestamp_ms <= 250u &&
+           terrain->state != TERRAIN_STATE_IMPACT;
+}
 uint32_t mission_broad_observe(MissionDwell *d, const S3IrSnapshot *ir,
                                uint32_t now)
 {

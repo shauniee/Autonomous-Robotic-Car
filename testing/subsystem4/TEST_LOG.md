@@ -14,6 +14,8 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | S4-U06 | movement, stale acquisition, exact deadline and cancellation | Inhibited firmware fixture |
 | S4-U07 | pivot telemetry independent of straight-travel hump filter | Inhibited firmware fixture |
 | S4-U08 | valid climb/crest/descent/baseline then invalid-after-valid | Inhibited firmware fixture |
+| S4-U09 | acquisition failure invalidates calibration/partial window and retains accepted last/max | Inhibited firmware fixture |
+| S4-U10 | hardware-context reinitialization preserves stop-only results and clears a new run | Inhibited firmware fixture |
 
 ## Results
 

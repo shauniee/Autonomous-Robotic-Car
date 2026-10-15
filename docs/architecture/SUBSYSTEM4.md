@@ -10,6 +10,8 @@ Calibration starts only on the S3 black-press request. `s4_calibration_request(i
 
 Snapshot calibration exposes ID/status/reason/sample count. S3 defers the first success beep and white capture until black+IMU both succeed. Ordinary stopping preserves accepted bias; hardware reinitialization requires a new explicit calibration.
 
+An acceleration acquisition error or expired acquisition invalidates calibration and partial height data while retaining accepted last/max/history. It cannot silently resume with old bias. A braked reset or fresh black-capture request performs one bounded hardware reinitialization; 100 fresh stationary samples are required again. Magnetometer-only failure remains independently invalid and does not substitute for acceleration health.
+
 ## Movement and humps
 
 `terrain_motion_measure` uses fresh distinct encoder sequences, unchanged run epoch and nonzero acquisition-time delta. Turning is independent of wheel-agreement filtering used for hump travel. Classification prioritizes impact, then valid stationarity/turning, climb/descent, acceleration and moving; unavailable derived fields carry invalidity rather than fabricated rates.

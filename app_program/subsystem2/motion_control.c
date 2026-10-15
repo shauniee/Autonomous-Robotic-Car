@@ -16,7 +16,7 @@ void motion_control_init(MotionController *c, uint32_t epoch)
 bool motion_command_valid(const MotionCommand *r, uint32_t now, uint32_t epoch,
                           const RobotConfig *c)
 {
-    if (r == NULL || r->run_epoch != epoch || r->action_id == 0u ||
+    if (r == NULL || c == NULL || r->run_epoch != epoch || r->action_id == 0u ||
         (unsigned)r->mode > MOTION_DUTY_BENCH ||
         (uint32_t)(now - r->sampled_ms) > 60u ||
         (uint32_t)(now - r->issued_ms) > 60u ||
@@ -59,7 +59,8 @@ bool motion_control_accept(MotionController *c, const MotionCommand *r,
                            float left_m, float right_m, uint32_t now,
                            const RobotConfig *config)
 {
-    if (!motion_command_valid(r, now, c->epoch, config))
+    if (!isfinite(left_m) || !isfinite(right_m) ||
+        !motion_command_valid(r, now, c->epoch, config))
     {
         return false;
     }
@@ -150,7 +151,7 @@ void motion_control_step(MotionController *c, float left_m, float right_m,
         return;
     }
     if (!isfinite(dt) || dt <= 0.0f || dt > 0.060f || !isfinite(left_mps) ||
-        !isfinite(right_mps))
+        !isfinite(right_mps) || !isfinite(left_m) || !isfinite(right_m))
     {
         c->status = MOTION_FAILED;
         c->reason = MOTION_ENCODER_FAULT;

@@ -38,15 +38,10 @@ void terrain_task(INT stacd, void *exinf)
         bool new_run;
         if (s4_take_reset(&epoch, &new_run))
         {
-            float maximum = context.max_hump_peak_m;
             if (context.state == TERRAIN_STATE_IMPACT || !hardware)
             {
                 hardware = drv_gy511_init();
-                terrain_algo_init(&context);
-                if (!new_run)
-                {
-                    context.max_hump_peak_m = maximum;
-                }
+                terrain_algo_reinitialize(&context, !new_run);
                 calibration = (S4Calibration){0};
             }
             if (new_run)
@@ -79,6 +74,11 @@ void terrain_task(INT stacd, void *exinf)
             }
             else if (!cancel)
             {
+                if (!hardware)
+                {
+                    hardware = drv_gy511_init();
+                    terrain_algo_reinitialize(&context, true);
+                }
                 terrain_calibration_begin(&calibration, &context,
                                           calibration_id, deadline, now);
             }
@@ -154,8 +154,10 @@ void terrain_task(INT stacd, void *exinf)
         }
         else if (result == GY511_ERROR)
         {
+            hardware = false;
             snapshot.terrain_valid = false;
-            terrain_algo_invalidate_window(&context);
+            terrain_algo_require_calibration(&context);
+            snapshot.calibrated = false;
             snapshot.height_valid = false;
         }
 #if APP_TEST
@@ -184,7 +186,22 @@ void terrain_task(INT stacd, void *exinf)
         if (now - snapshot.timestamp_ms > 250u)
         {
             snapshot.terrain_valid = false;
+            if (context.is_calibrated)
+            {
+                hardware = false;
+                terrain_algo_require_calibration(&context);
+                snapshot.calibrated = false;
+                snapshot.height_valid = false;
+            }
         }
+        if (!context.is_calibrated && calibration.status == S4_CAL_DONE)
+        {
+            calibration.status = S4_CAL_FAILED;
+            calibration.reason = S4_CAL_SENSOR;
+            snapshot.calibration = calibration;
+        }
+        snapshot.calibrated = context.is_calibrated;
+        snapshot.calibration_samples = context.calib_count;
         if (now - snapshot.magnetic_ms > 250u)
         {
             snapshot.magnetic_valid = false;

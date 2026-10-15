@@ -1,0 +1,481 @@
+{
+  "date": "2026-10-15",
+  "timezone": "Asia/Singapore",
+  "audit_id": "INT-26",
+  "tester": "Codex repository/source/compiler audit",
+  "source_revision": "c204e39758976d022b526075511a7e314a1e74d4",
+  "readiness_scope": "Full M1-M10 mission and submission evidence, excluding video",
+  "mission_ready": false,
+  "submission_ready_excluding_video": false,
+  "software_checks_passed": true,
+  "readiness_reason": "Missing required sensors, measured configuration/course confirmation, target execution and physical/report evidence prevent a readiness claim.",
+  "branch": {
+    "current": "uat",
+    "main_revision": "c6c4ef978da606ca913a79d58bd99e3187eb108e",
+    "main_unchanged": true,
+    "development_branches_included": {
+      "feat/project-mission": true,
+      "feat/s2-mission-motion": true,
+      "feat/s4-mission-terrain": true,
+      "feat/s5-mission-obstacle": true,
+      "feat/s3-mission-navigation": true,
+      "feat/s1-mission-comms": true
+    },
+    "alternate_branch_cancelled_and_not_created": true,
+    "remote_tracking_revision_local_only": "67878c775d080f46ed575ab33cb6c430e07a77e9",
+    "remote_not_fetched_in_this_audit": true,
+    "push": "Deferred: the user conditioned publication on mission/submission readiness; that condition is not met."
+  },
+  "configuration": {
+    "path": "app_program/common/robot_config.c",
+    "sha256": "da26d041c835fdd4cff7785cd6d086377d1266be893c1e31493328ff25d3be1e",
+    "preexisting_worktree_change": "Whitespace only; preserved and excluded from agent commits.",
+    "worktree_diff_whitespace_only": true,
+    "motion_confirmed": false,
+    "terrain_confirmed": false,
+    "sonar_confirmed": false,
+    "course_confirmed": false,
+    "electrical_confirmed": false,
+    "commissioning": "disabled",
+    "calibrated_measurements": "PENDING",
+    "ir_motion_freshness_ms": 60,
+    "short_loss_recovery_ms": 500,
+    "terrain_front_freshness_ms": 250,
+    "mapping": "Exactly four distinct A-Z letters, one per left/right/straight/u_turn; other 22 unmapped; MQTT-only replacement, stopped-only, RAM-only; reboot requires reload."
+  },
+  "software_evidence": {
+    "four_sequential_builds": "PASS",
+    "fixture_exclusion_normal": "PASS",
+    "strict_target_object_checks": {
+      "count": 62,
+      "result": "PASS",
+      "source_hashes_match": true
+    },
+    "gcc_static_analysis": {
+      "modules": 5,
+      "result": "PASS",
+      "source_hashes_match": true
+    },
+    "individual_frame_estimates": "RECORDED; full call chains/interrupts/runtime margin remain T15",
+    "firmware": {
+      "compiled_ids": [
+        "INT-15",
+        "INT-16",
+        "INT-21",
+        "INT-22",
+        "INT-23",
+        "INT-24",
+        "INT-25",
+        "S1-U04",
+        "S1-U06",
+        "S1-U07",
+        "S1-U09",
+        "S1-U10",
+        "S1-U11",
+        "S1-U12",
+        "S1-U13",
+        "S2-U06",
+        "S2-U07",
+        "S2-U08",
+        "S2-U09",
+        "S2-U10",
+        "S2-U11",
+        "S2-U12",
+        "S2-U13",
+        "S2-U14",
+        "S3-U06",
+        "S3-U09",
+        "S3-U12",
+        "S3-U14",
+        "S3-U15",
+        "S3-U16",
+        "S3-U17",
+        "S4-U03",
+        "S4-U04",
+        "S4-U05",
+        "S4-U06",
+        "S4-U07",
+        "S4-U08",
+        "S4-U09",
+        "S4-U10",
+        "S5-U04",
+        "S5-U05",
+        "S5-U06"
+      ],
+      "compiled_count": 42,
+      "recorded_executions_for_revision": 0,
+      "result": "PENDING"
+    },
+    "physical_T01_T16": "PENDING; no physical PASS recorded",
+    "images": {
+      "offline-test": {
+        "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_test.uf2",
+        "sha256": "cbaebca52edd9e0028b93fe4a02d5c416898ad13a3366147585b610d0fccb167",
+        "bytes": 735232
+      },
+      "offline-normal": {
+        "path": "build_make/mtk3pico_smp1_usb_cdc_wifi.uf2",
+        "sha256": "d716829a4654d6c9d75a6d6646aec35d40b97d8010525c4f345b06d848bd5e32",
+        "bytes": 650240
+      },
+      "wireless-test": {
+        "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2",
+        "sha256": "9f172c1c88d3a045b63ff45b7623dbb5ebb94833008a3f9f85359d5753780a4a",
+        "bytes": 853504
+      },
+      "wireless-normal": {
+        "path": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2",
+        "sha256": "58939f409e6fec062f5c7344ad5fc299cf5b37d59ca8b3fe2babe546c481d8c0",
+        "bytes": 812544
+      }
+    }
+  },
+  "source_fixes_reviewed": [
+    {
+      "change": "Revalidate required producer health, measured stationarity and stopped/brake acknowledgement after scan before motion release",
+      "checks": [
+        "INT-24",
+        "T09",
+        "T14"
+      ]
+    },
+    {
+      "change": "Invalidate IMU calibration/partial window on acceleration acquisition fault; bounded stopped reinitialization requires fresh calibration and retains accepted last/max/history",
+      "checks": [
+        "S4-U09",
+        "S4-U10",
+        "T01",
+        "T07",
+        "T14"
+      ]
+    },
+    {
+      "change": "Bounded shared snapshot/command mutexes use ceiling 1 to prevent same-core writer preemption by a polling reader; independent stop is separate",
+      "checks": [
+        "INT-25",
+        "T15"
+      ]
+    },
+    {
+      "change": "Reject non-finite action origins and brake on invalid wheel distance feedback",
+      "checks": [
+        "S2-U14",
+        "T05",
+        "T14"
+      ]
+    }
+  ],
+  "changed_source_sha256": {
+    "app_program/app.h": "b317966436a949c537f725da6df311c4b053a994c1d97df3c593404c86f98483",
+    "app_program/subsystem2/motion_control.c": "3cafa8e795480dbed47cabd6250e8ab7c23e8c674b61b318415bfd3288b0181c",
+    "app_program/subsystem2/subsystem2.c": "e2ebf732314e2e48b9668396ee4820121f485f418bb6d546881211a566d7b857",
+    "app_program/subsystem3/barcode_runtime.c": "e2504d131fe1b09ce1fd64544c4f2f99778a86417d2836685ba650ed482c1180",
+    "app_program/subsystem3/mission.c": "0d6d461c34b8b5274b0658c3d9916ffc2503be135f555718f63adeb5a533bcf4",
+    "app_program/subsystem3/mission_guards.c": "eae11f5a7bc5f1a5fa06dd4a1dca7613183d92bf15acc1fb37ee8ec328d44042",
+    "app_program/subsystem3/mission_guards.h": "29d1a1f718627e899cc0c21152ecd0b9c925e77e610c28871c00e042d576860c",
+    "app_program/subsystem3/subsystem3.c": "1eaac23e95ddc9ec9c832dd02a875542c47e6243c66c957eaa325dd21225bfd5",
+    "app_program/subsystem4/drv_gy511.c": "405446983c85a835f466f8deb2980b40bbb29bc38d248c4e9470cb62c88855a1",
+    "app_program/subsystem4/subsystem4.c": "994d43782082ddd66b174ff7400d467c7c2e5d52a1417f664e507a94e57e5b21",
+    "app_program/subsystem4/task_terrain.c": "93b3444faab6ae9960e2eb346b70cb41240828f90702d09248aef50bec9767f8",
+    "app_program/subsystem4/terrain_algo.c": "3be9f60d16cf46374fda7e7c306d9c5f75a0bd2355df0eda92e696bdae1cada5",
+    "app_program/subsystem4/terrain_algo.h": "dd506818fc32e88fdd9f6a4895c047b23fc2a61c9cc4a7ee57da63df92ddaea8",
+    "app_program/subsystem5/subsystem5.c": "9336b3279225cf1b2f730a27e4054dea5e89268ed8b6cb99c977ba2a04776378",
+    "testing/integration/mission_test.c": "e758752292045d0f1a814df1bad8d3cd23689b74549a98ca8a117a4002ee8a2b",
+    "testing/subsystem2/subsystem2_test.c": "23d1effb24745a6cb208dd3b0a0d38d7803d26beff958bd14eeeae50f1b16d17",
+    "testing/subsystem4/subsystem4_test.c": "adbbee94730b36209e21043934e9a1a9039b47709be6fdf4b6fb2d5a1a556cd1"
+  },
+  "requirements": {
+    "M1": {
+      "scope": "line following/tolerance",
+      "cases": [
+        "T03",
+        "T11",
+        "T14"
+      ],
+      "status": "Implemented paths and definitions; current-image target/physical acceptance PENDING"
+    },
+    "M2": {
+      "scope": "A-Z barcode decoding",
+      "cases": [
+        "S3-U09",
+        "S3-U15",
+        "S3-U16",
+        "T04"
+      ],
+      "status": "Implemented paths and definitions; current-image target/physical acceptance PENDING"
+    },
+    "M3": {
+      "scope": "four encoder-controlled actions",
+      "cases": [
+        "S2-U07",
+        "S2-U08",
+        "S2-U10",
+        "S2-U11",
+        "S2-U14",
+        "INT-16",
+        "INT-21",
+        "INT-22",
+        "T05"
+      ],
+      "status": "Implemented paths and definitions; current-image target/physical acceptance PENDING"
+    },
+    "M4": {
+      "scope": "IMU hump detection",
+      "hardware_unavailable": "IMU",
+      "cases": [
+        "S4-U03",
+        "S4-U09",
+        "S4-U10",
+        "T06",
+        "T07",
+        "T14"
+      ],
+      "status": "Implemented paths and definitions; current-image target/physical acceptance PENDING"
+    },
+    "M5": {
+      "scope": "reference-calibrated height and greatest valid run peak",
+      "hardware_unavailable": "IMU",
+      "cases": [
+        "S4-U03",
+        "S4-U07",
+        "S4-U08",
+        "S4-U09",
+        "S4-U10",
+        "T07"
+      ],
+      "status": "Implemented paths and definitions; current-image target/physical acceptance PENDING"
+    },
+    "M6": {
+      "scope": "obstacle detection",
+      "hardware_unavailable": "ultrasonic",
+      "cases": [
+        "T08",
+        "T09"
+      ],
+      "status": "Implemented paths and definitions; current-image target/physical acceptance PENDING"
+    },
+    "M7": {
+      "scope": "stationary coarse/fine obstacle profile",
+      "hardware_unavailable": "ultrasonic",
+      "cases": [
+        "S5-U04",
+        "S5-U05",
+        "S5-U06",
+        "T08",
+        "T09"
+      ],
+      "status": "Implemented paths and definitions; current-image target/physical acceptance PENDING"
+    },
+    "M8": {
+      "scope": "supported safe bypass",
+      "hardware_unavailable": "ultrasonic",
+      "cases": [
+        "INT-23",
+        "INT-24",
+        "T09",
+        "T10"
+      ],
+      "status": "Implemented paths and definitions; current-image target/physical acceptance PENDING"
+    },
+    "M9": {
+      "scope": "original-line reacquisition",
+      "hardware_unavailable": "ultrasonic",
+      "cases": [
+        "T10",
+        "T11"
+      ],
+      "status": "Implemented paths and definitions; current-image target/physical acceptance PENDING"
+    },
+    "M10": {
+      "scope": "WiFi/MQTT telemetry/configuration",
+      "cases": [
+        "INT-18",
+        "T12",
+        "T13",
+        "T15"
+      ],
+      "status": "Implemented paths and definitions; current-image target/physical acceptance PENDING"
+    }
+  },
+  "remaining_gates": [
+    {
+      "gate": "Required installed hardware",
+      "state": "PENDING",
+      "evidence": "User reports IMU and ultrasonic unavailable and requests software work only. No full-robot calibration/acceptance executed for this revision.",
+      "next": "Connect and electrically verify both sensors with all power off; follow GUIDE power policy.",
+      "cases": [
+        "T01",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10"
+      ]
+    },
+    {
+      "gate": "Measured configuration",
+      "state": "PENDING",
+      "evidence": "robot_config remains intentionally unconfigured: all five confirmation flags false and required measured fields absent/zero. Setting flags alone cannot supply measurements.",
+      "next": "Resolve D03-D08 with installed hardware measurements and recorded tuning, then build reviewed normal configuration.",
+      "cases": [
+        "T01",
+        "T02",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T15"
+      ]
+    },
+    {
+      "gate": "Course and acceptance decisions before program freeze",
+      "state": "PENDING",
+      "evidence": "D01-D10 remain unresolved in the single pending-decision register. Only four-letter mission-day assignment rule is confirmed.",
+      "next": "Confirm symbology/print geometry, junction spacing, finish/action convention, bypass depth/boundaries, network access and numerical pass criteria before freeze. Runtime MQTT changes assignments only.",
+      "cases": [
+        "T03",
+        "T04",
+        "T10",
+        "T11",
+        "T12",
+        "T16"
+      ]
+    },
+    {
+      "gate": "Firmware execution on Pico",
+      "state": "PENDING",
+      "evidence": "42 firmware checks compile; no complete execution output for this revision is recorded.",
+      "next": "USB-only inhibited TEST: capture every [TEST] ID PASS|FAIL, including real-kernel INT-25; retain failures and reruns.",
+      "cases": [
+        "INT-15",
+        "INT-16",
+        "INT-21",
+        "INT-22",
+        "INT-23",
+        "INT-24",
+        "INT-25",
+        "S1-U04",
+        "S1-U06",
+        "S1-U07",
+        "S1-U09",
+        "S1-U10",
+        "S1-U11",
+        "S1-U12",
+        "S1-U13",
+        "S2-U06",
+        "S2-U07",
+        "S2-U08",
+        "S2-U09",
+        "S2-U10",
+        "S2-U11",
+        "S2-U12",
+        "S2-U13",
+        "S2-U14",
+        "S3-U06",
+        "S3-U09",
+        "S3-U12",
+        "S3-U14",
+        "S3-U15",
+        "S3-U16",
+        "S3-U17",
+        "S4-U03",
+        "S4-U04",
+        "S4-U05",
+        "S4-U06",
+        "S4-U07",
+        "S4-U08",
+        "S4-U09",
+        "S4-U10",
+        "S5-U04",
+        "S5-U05",
+        "S5-U06"
+      ]
+    },
+    {
+      "gate": "Physical feature/fault/course acceptance",
+      "state": "PENDING",
+      "evidence": "System results table contains no physical PASS. Compiler and individual frame estimates are not measured behavior, timing or stack margin.",
+      "next": "Run the existing five passes with agreed thresholds; record wiring/config/calibration/image/measurements, then repeat complete courses on frozen firmware.",
+      "cases": [
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16"
+      ]
+    },
+    {
+      "gate": "Mission-day MQTT mapping on frozen image",
+      "state": "PENDING",
+      "evidence": "Software supports stopped-only RAM replacement for four distinct letters. Earlier dashboard/broker observations do not establish current-image mapping acceptance or physical navigation.",
+      "next": "On one unchanged UF2, verify matching applied ID/revision for two different four-letter sets, reboot/reload and all four navigation actions.",
+      "cases": [
+        "INT-18",
+        "INT-21",
+        "T04",
+        "T05",
+        "T12",
+        "T13",
+        "T16"
+      ]
+    },
+    {
+      "gate": "Measured reports and submission access/artifacts",
+      "state": "PENDING",
+      "evidence": "Completed measured Motion tuning/accuracy and Terrain analysis deliverables are not established by the tracked evidence reviewed. Video is excluded from this decision.",
+      "next": "Prepare reports from actual trials, complete traceability/owner review and confirm instructor access and required packaging/schedule.",
+      "cases": [
+        "T05",
+        "T06",
+        "T07",
+        "T15",
+        "T16"
+      ]
+    }
+  ],
+  "limits_of_review": [
+    "No exhaustive proof of all possible edge cases is claimed. Existing focused fixtures and T01-T16 define acceptance coverage.",
+    "Priority-ceiling hold times, I2C behavior, scheduling/stop latency and stack margin require actual target measurement.",
+    "Sparse forward sonar cannot observe hidden rear edges or prove all side clearances; supported obstacle depth/boundaries require course confirmation.",
+    "Original-route identity depends on confirmed geometry plus calibrated odometry/fresh line observations; slip/wrong-crossing trials remain physical gates.",
+    "Earlier live MQTT TEST/calibrating data establishes transport observations only; it is not execution of this new image or full calibration."
+  ],
+  "preservation": {
+    "video_sha256": "e9fcddba4622c7cf4f68edf2ad4b9dd720fa1793289377a127b24a60c5576274",
+    "video_unchanged": true,
+    "raw_transcripts_unchanged": true,
+    "no_tests_directory_introduced": true,
+    "no_hardware_flash_or_motion_by_this_audit": true
+  },
+  "evidence_files": [
+    "2026-10-15_mission-hardening_builds.json",
+    "2026-10-15_mission-hardening_offline-test.txt",
+    "2026-10-15_mission-hardening_offline-normal.txt",
+    "2026-10-15_mission-hardening_wireless-test.txt",
+    "2026-10-15_mission-hardening_wireless-normal.txt",
+    "2026-10-15_mission-hardening_strict.json",
+    "2026-10-15_mission-hardening_analysis.json",
+    "2026-10-15_mission-hardening_stack.json",
+    "2026-10-15_mission-hardening_repository.json"
+  ],
+  "historical_evidence": [
+    "2026-10-15_fresh-acceptance_evidence.json",
+    "../../subsystem1/logs/2026-10-15_dashboard_audit.json",
+    "../../subsystem1/logs/2026-10-15_dashboard_broker_final.json",
+    "../../subsystem1/logs/2026-10-15_dashboard_browser.json"
+  ],
+  "operator_guide": "../../../GUIDE.md#remaining-release-gates-excluding-video",
+  "completion_note": "Source is committed at the revision above. Documentation/evidence commit follows. Preexisting whitespace-only robot_config change is intentionally retained."
+}

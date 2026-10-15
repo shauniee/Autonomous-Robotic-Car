@@ -16,7 +16,8 @@ ER subsystem3_init(void)
         return E_SYS;
     }
     T_CMTX mutex = {0};
-    mutex.mtxatr = TA_INHERIT;  // set scheduling to priority inheritance
+    mutex.mtxatr = TA_CEILING;
+    mutex.ceilpri = APP_SHARED_MUTEX_CEILING;
     ID id = tk_cre_mtx(&mutex); // create mutex
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 snapshot mutex creation returned=%d\n", id);

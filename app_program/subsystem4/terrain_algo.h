@@ -35,6 +35,8 @@ typedef struct
     bool height_valid, is_calibrated, window_valid;
 } TerrainContext;
 void terrain_algo_init(TerrainContext *ctx);
+void terrain_algo_reinitialize(TerrainContext *ctx, bool preserve_run);
+void terrain_algo_require_calibration(TerrainContext *ctx);
 bool terrain_algo_calibrate_sample(TerrainContext *ctx,
                                    const Gy511RawAxes *raw);
 void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw,

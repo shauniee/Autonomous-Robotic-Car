@@ -171,7 +171,7 @@ bool drv_gy511_init(void)
 
     out_w(I2C0_BASE + I2Cx_ENABLE, 1);
 
-    /* 4. Configure Accelerometer: 100 Hz, all axes enabled, +/- 2g High Res */
+    /* 4. Configure accelerometer: 50 Hz, all axes, +/- 2g high resolution. */
     if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG1_A, 0x47u))
         return false;
     if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG4_A, 0x88u))

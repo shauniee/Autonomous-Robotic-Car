@@ -19,6 +19,24 @@ void terrain_algo_init(TerrainContext *c)
     memset(c, 0, sizeof(*c));
     c->filtered_accel.z = 1.0f;
 }
+void terrain_algo_reinitialize(TerrainContext *c, bool preserve_run)
+{
+    float maximum = c->max_hump_peak_m;
+    float last = c->last_hump_height_m;
+    terrain_algo_init(c);
+    if (preserve_run)
+    {
+        c->max_hump_peak_m = maximum;
+        c->last_hump_height_m = last;
+    }
+}
+void terrain_algo_require_calibration(TerrainContext *c)
+{
+    c->is_calibrated = false;
+    c->calib_count = 0u;
+    c->calib_sum = (Vec3f){0};
+    terrain_algo_invalidate_window(c);
+}
 bool terrain_algo_calibrate_sample(TerrainContext *c, const Gy511RawAxes *raw)
 {
     Vec3f v = mapped(raw, &robot_config);

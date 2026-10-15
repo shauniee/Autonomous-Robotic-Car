@@ -10,6 +10,8 @@ Quadrature ISR capture validates transitions, records signed wrapping counts/epo
 
 Wheel PID uses signed feedback and bounded output with conditional integral anti-windup. Invalid timing, stale input, illegal encoder capture, stall, expired action or invalid command brakes/faults. Freshness uses wrap-safe time; old actions cannot replay across reset epochs.
 
+Non-finite wheel distances cannot establish an action origin or produce distance/turn output. Polling command/feedback copies follow the [shared lock policy](../../TEAM.md#5-interfaces-between-subsystems); independent stop does not acquire that mutex.
+
 | API | Purpose |
 | --- | --- |
 | `s2_command` | Submit validated leased movement |

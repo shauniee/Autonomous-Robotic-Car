@@ -2,11 +2,16 @@
 #define MISSION_GUARDS_H
 #include "ir_snapshot.h"
 #include "../common/robot_config.h"
+#include "../subsystem2/subsystem2.h"
+#include "../subsystem4/subsystem4.h"
 typedef struct
 {
     uint32_t first_ms, last_ms, sequence;
     unsigned count;
 } MissionDwell;
+bool mission_sensors_ready(uint32_t now, const S3IrSnapshot *ir,
+                           const MotionFeedback *motion,
+                           const TerrainSnapshot *terrain);
 uint32_t mission_broad_observe(MissionDwell *dwell, const S3IrSnapshot *ir,
                                uint32_t now);
 bool mission_junction_check(const RobotConfig *config, float distance,

@@ -31,6 +31,11 @@
  * --------------------------------------------------------------------- */
 #define TASK_STACK_SIZE 4096 /* bytes; tm_printf needs ~1 KB */
 
+/* Polling snapshot/command locks must not leave a writer preempted by its
+   reader on the same core. Ceiling 1 also permits startup/core-0 readers.
+   Hold only for bounded copies/processing: no waits, logging or I2C. */
+#define APP_SHARED_MUTEX_CEILING 1
+
 /* Create and start a task.  prc = TP_PRC1 (core 0), TP_PRC2 (core 1), or
    0 for "any core".  Defined in app_main.c. */
 IMPORT ID app_start_task(FP entry, PRI pri, UW prc, const char *name);

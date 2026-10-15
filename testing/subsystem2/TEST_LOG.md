@@ -16,6 +16,7 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | S2-U11 | lease wrap and deadline boundary | Inhibited firmware fixture |
 | S2-U12 | left/right/U-turn use signed encoder travel | Inhibited firmware fixture |
 | S2-U13 | signed wheel PID respects independent output bounds | Inhibited firmware fixture |
+| S2-U14 | non-finite action origin/feedback and missing command configuration reject safely | Inhibited firmware fixture |
 
 ## Results
 

@@ -4,6 +4,34 @@
 #include "../fixture_config.h"
 #include "../../app_program/test_report.h"
 #if APP_TEST
+static bool polling_mutex_test(void)
+{
+    T_RTSK before = {0}, held = {0}, released = {0};
+    if (tk_ref_tsk(TSK_SELF, &before) < E_OK)
+    {
+        return false;
+    }
+    T_CMTX definition = {.mtxatr = TA_CEILING,
+                         .ceilpri = APP_SHARED_MUTEX_CEILING};
+    ID id = tk_cre_mtx(&definition);
+    if (id <= 0)
+    {
+        return false;
+    }
+    bool changed = tk_chg_pri(TSK_SELF, 20) >= E_OK;
+    bool locked = changed && tk_loc_mtx(id, TMO_POL) >= E_OK;
+    bool protected = locked && tk_ref_tsk(TSK_SELF, &held) >= E_OK &&
+                     held.tskpri == APP_SHARED_MUTEX_CEILING &&
+                     held.tskbpri == 20;
+    ER unlocked = locked ? tk_unl_mtx(id) : E_OBJ;
+    bool lowered = unlocked >= E_OK &&
+                   tk_ref_tsk(TSK_SELF, &released) >= E_OK &&
+                   released.tskpri == 20 && released.tskbpri == 20;
+    ER restored = tk_chg_pri(TSK_SELF, before.tskbpri);
+    ER deleted = tk_del_mtx(id);
+    return protected && lowered && restored >= E_OK && deleted >= E_OK;
+}
+
 static bool four_letter_mapping_test(void)
 {
     barcode_action_t mapping[BARCODE_ALPHABET] = {BARCODE_UNMAPPED};
@@ -89,6 +117,27 @@ void integration_test(void)
                "braking begins outside center-based pivot envelope");
     TEST_CHECK("INT-21", four_letter_mapping_test(),
                "any four letters, one per motion; 22 remain unmapped");
+    ir = (S3IrSnapshot){.normalized_valid = true,
+                        .capture_kind = IR_CAPTURE_NONE,
+                        .sampled_ms = 100u};
+    MotionFeedback motion = {.valid = true, .sampled_ms = 100u};
+    TerrainSnapshot terrain = {
+        .terrain_valid = true, .calibrated = true, .timestamp_ms = 100u};
+    bool health = mission_sensors_ready(120u, &ir, &motion, &terrain) &&
+                  !mission_sensors_ready(161u, &ir, &motion, &terrain) &&
+                  !mission_sensors_ready(120u, NULL, &motion, &terrain);
+    terrain.calibrated = false;
+    health = health && !mission_sensors_ready(120u, &ir, &motion, &terrain);
+    terrain.calibrated = true;
+    terrain.state = TERRAIN_STATE_IMPACT;
+    health = health && !mission_sensors_ready(120u, &ir, &motion, &terrain);
+    terrain.state = TERRAIN_STATE_FLAT;
+    motion.valid = false;
+    health = health && !mission_sensors_ready(120u, &ir, &motion, &terrain);
+    TEST_CHECK("INT-24", health,
+               "start/scan resume requires all required producers healthy");
+    TEST_CHECK("INT-25", polling_mutex_test(),
+               "real kernel ceiling raises and restores polling lock priority");
     TEST_SUMMARY("integration");
 }
 #endif

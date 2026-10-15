@@ -12,7 +12,8 @@ static uint32_t calibration_id, calibration_deadline;
 ER subsystem4_init(void)
 {
     T_CMTX mutex = {0};
-    mutex.mtxatr = TA_INHERIT;
+    mutex.mtxatr = TA_CEILING;
+    mutex.ceilpri = APP_SHARED_MUTEX_CEILING;
     terrain_mutex = tk_cre_mtx(&mutex);
     return terrain_mutex < E_OK ? terrain_mutex : E_OK;
 }

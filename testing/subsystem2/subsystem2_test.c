@@ -1,5 +1,6 @@
 #include "../../app_program/subsystem2/subsystem2.h"
 #include "../../app_program/test_report.h"
+#include <math.h>
 #if APP_TEST
 void subsystem2_test(void)
 {
@@ -132,6 +133,19 @@ void subsystem2_test(void)
                pid && left < 0 && right > 0 && left >= -MOTION_MAX_DUTY &&
                    right <= MOTION_MAX_DUTY,
                "signed wheel PID respects independent output bounds");
+    motion_control_init(&control, 7u);
+    cmd.mode = MOTION_DISTANCE;
+    cmd.target = 0.1f;
+    cmd.speed_mps = 0.1f;
+    bool accepted = !motion_control_accept(&control, &cmd, NAN, 0, 100, &cfg) &&
+                    motion_control_accept(&control, &cmd, 0, 0, 100, &cfg);
+    motion_control_step(&control, NAN, 0, 0, 0, 0.02f, 120, &cfg, &left,
+                        &right);
+    TEST_CHECK("S2-U14",
+               accepted && control.status == MOTION_FAILED &&
+                   control.reason == MOTION_ENCODER_FAULT && left == 0 &&
+                   right == 0 && !motion_command_valid(&cmd, 120, 7, NULL),
+               "non-finite distance and missing configuration reject safely");
     TEST_SUMMARY("subsystem2");
 }
 #endif

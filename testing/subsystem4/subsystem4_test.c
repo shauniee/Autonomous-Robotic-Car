@@ -99,6 +99,24 @@ void subsystem4_test(void)
     TEST_CHECK("S4-U08",
                peak > 0 && !c.height_valid && c.max_hump_peak_m == peak,
                "valid climb/crest/descent/baseline then invalid-after-valid");
+    c.is_calibrated = true;
+    c.height_valid = true;
+    c.last_hump_height_m = 0.03f;
+    c.max_hump_peak_m = 0.04f;
+    terrain_algo_require_calibration(&c);
+    TEST_CHECK("S4-U09",
+               !c.is_calibrated && !c.height_valid && !c.window_valid &&
+                   c.calib_count == 0u && c.max_hump_peak_m == 0.04f &&
+                   c.last_hump_height_m == 0.03f,
+               "acquisition failure requires calibration and retains results");
+    terrain_algo_reinitialize(&c, true);
+    bool retained = !c.is_calibrated && c.state == TERRAIN_STATE_FLAT &&
+                    c.max_hump_peak_m == 0.04f && c.last_hump_height_m == 0.03f;
+    terrain_algo_reinitialize(&c, false);
+    TEST_CHECK("S4-U10",
+               retained && c.max_hump_peak_m == 0.0f &&
+                   c.last_hump_height_m == 0.0f && !c.is_calibrated,
+               "reinitialize preserves stop results and clears a new run");
     TEST_SUMMARY("subsystem4");
 }
 #endif

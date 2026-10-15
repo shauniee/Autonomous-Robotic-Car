@@ -360,7 +360,8 @@ ER subsystem2_init(void)
         return er;
     }
     T_CMTX mutex = {0};
-    mutex.mtxatr = TA_INHERIT;
+    mutex.mtxatr = TA_CEILING;
+    mutex.ceilpri = APP_SHARED_MUTEX_CEILING;
     request_mutex = tk_cre_mtx(&mutex);
     if (request_mutex <= 0)
     {

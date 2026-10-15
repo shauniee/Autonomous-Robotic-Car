@@ -380,7 +380,8 @@ static void obstacle_task(INT stacd, void *exinf)
 ER subsystem5_init(void)
 {
     T_CMTX mutex = {0};
-    mutex.mtxatr = TA_INHERIT;
+    mutex.mtxatr = TA_CEILING;
+    mutex.ceilpri = APP_SHARED_MUTEX_CEILING;
     snapshot_mutex = tk_cre_mtx(&mutex);
     if (snapshot_mutex <= 0)
     {

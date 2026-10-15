@@ -101,10 +101,11 @@ Project sequence and readiness gates belong to [GUIDE](../../GUIDE.md#acceptance
 | M1 line tolerance | T03/T11/T14; S3 and integration |
 | M2 A-Z decoding | S3-U09/U15/U16; T04 both scales/orientations |
 | M3 four encoder actions | S2-U07/U08/U10/U11; INT-16/21/22; T05 |
-| M4/M5 humps and greatest valid height | S4-U03-U08; T06/T07 and reference measurements |
+| M4/M5 humps and greatest valid height | S4-U03-U10; T06/T07/T14 and reference measurements |
 | M6/M7 detection/profile | S5-U04-U06; T08/T09 |
 | M8/M9 bypass/original route | INT-23; T10/T11 and confirmed depth/boundaries |
 | M10 reporting/MQTT | S1-U04/U06-U13; INT-18; T12/T13/T15 |
-| Combined black/IMU calibration | S3-U14/U17; S4-U05/U06; T01/T02 |
+| Combined black/IMU calibration | S3-U14/U17; S4-U05/U06/U09/U10; T01/T02 |
+| Required health and shared-lock scheduling | INT-24/25; T09/T14/T15 and measured stop latency |
 
 [Testing](../../testing/README.md) owns definitions/results. [GUIDE](../../GUIDE.md#acceptance-and-submission) owns the release checklist. No firmware fixture/build substitutes for measured mission acceptance or completed analysis reports.

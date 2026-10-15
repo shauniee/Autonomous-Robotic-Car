@@ -64,7 +64,8 @@ static bool disable_capture(void)
 int barcode_runtime_init(void)
 {
     T_CMTX definition = {0};
-    definition.mtxatr = TA_INHERIT;
+    definition.mtxatr = TA_CEILING;
+    definition.ceilpri = APP_SHARED_MUTEX_CEILING;
     ID id = tk_cre_mtx(&definition);
     if (id <= 0)
     {
