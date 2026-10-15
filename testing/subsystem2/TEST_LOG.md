@@ -42,3 +42,6 @@ S2-U15–S2-U20 are new definitions and have not run on the Pico. USB-only firmw
 
 
 
+
+
+Exact target fixture host run at `1bd0ffd`: PASS, 15 checks (S2-U06–S2-U20); full output in [host fixture log](../pure/logs/2026-10-15_fixture-suite.txt). The runner compiles the existing `subsystemN_test.c` unchanged and real production algorithm sources with the host compiler; only the test report output is adapted. It does not provide T-Kernel, GPIO, timer, firmware or physical-hardware evidence.
