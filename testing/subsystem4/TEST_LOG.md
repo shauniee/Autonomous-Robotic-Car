@@ -17,6 +17,7 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | S4-U09 | acquisition failure invalidates calibration/partial window and retains accepted last/max | Inhibited firmware fixture |
 | S4-U10 | hardware-context reinitialization preserves stop-only results and clears a new run | Inhibited firmware fixture |
 
+| S4-U11 | signed axis conversion produces pitch and roll from raw milli-g | Inhibited firmware fixture |
 ## Results
 
 | Date | IDs | Revision / image SHA-256 | Profile/configuration | Tester | Result | Measurements / evidence |
@@ -28,3 +29,5 @@ Actual inhibited firmware execution is recorded above. Physical acceptance remai
 Physical coverage and procedures: [system cases](../system/TEST_LOG.md), [GUIDE](../../GUIDE.md), [testing policy](../README.md). Include source, image, power/wiring, calibration, mapping request/revision, reference/observed measurements, time and evidence for every real run.
 
 Latest executed image: `33ea475`, UF2 `f554c1f1280098cfc6c3278992c0d5877f744dab0f07a1ef84d02e6b674318b0`; USB-only IR-only TEST, motors inhibited, tester Nicholas/Codex. **Firmware PASS** for S4-U03, S4-U04, S4-U05, S4-U06, S4-U07, S4-U08, S4-U09, S4-U10; [complete 45-check capture](../integration/logs/2026-10-15_152409_309541_pico-console.txt), [summary](../integration/logs/2026-10-15_152409_309541_pico-console.json). Physical acceptance remains pending.
+
+S4-U11–S4-U11 are new definitions and have not run on the Pico. USB-only firmware execution is pending. Physical calibration reference, motion validity, pitch/roll height accuracy, and coherent live snapshot publication remain T01/T06/T07 acceptance gates. No physical acceptance or fixture PASS is inferred from compilation.

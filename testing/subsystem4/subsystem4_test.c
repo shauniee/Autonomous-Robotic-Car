@@ -117,6 +117,20 @@ void subsystem4_test(void)
                retained && c.max_hump_peak_m == 0.0f &&
                    c.last_hump_height_m == 0.0f && !c.is_calibrated,
                "reinitialize preserves stop results and clears a new run");
+    RobotConfig mapped_cfg = fixture_config();
+    mapped_cfg.lateral_sign = -1;
+    mapped_cfg.forward_sign = 1;
+    mapped_cfg.vertical_sign = -1;
+    terrain_algo_init(&c);
+    c.is_calibrated = true;
+    Gy511RawAxes mapped_raw = {100, 200, -975};
+    terrain_algo_process_config(&c, &mapped_raw, 0.01f, true, 20u,
+                                &mapped_cfg);
+    TEST_CHECK("S4-U11",
+               c.pitch_deg > 2.0f && c.pitch_deg < 2.6f &&
+                   c.roll_deg > 1.0f && c.roll_deg < 1.4f,
+               "axis/sign mapping converts raw milli-g into calibrated pitch and roll");
+
     TEST_SUMMARY("subsystem4");
 }
 #endif
