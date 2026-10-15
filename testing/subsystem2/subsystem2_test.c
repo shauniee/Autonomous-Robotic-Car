@@ -5,12 +5,20 @@
 void subsystem2_test(void)
 {
     TEST_INIT();
-    bool encoder = drv_encoder_transition(0u, 1u) == 1 &&
-                   drv_encoder_transition(1u, 3u) == 1 &&
-                   drv_encoder_transition(3u, 2u) == 1 &&
-                   drv_encoder_transition(2u, 0u) == 1 &&
-                   drv_encoder_transition(0u, 2u) == -1 &&
-                   drv_encoder_transition(0u, 3u) == 2;
+    static const int8_t quadrature[16] = {
+        0, 1, -1, 2, -1, 0, 2, 1, 1, 2, 0, -1, 2, -1, 1, 0};
+    bool encoder = true;
+    for (unsigned previous = 0u; previous < 4u; ++previous)
+    {
+        for (unsigned current = 0u; current < 4u; ++current)
+        {
+            encoder = encoder &&
+                      drv_encoder_transition(previous, current) ==
+                          quadrature[previous * 4u + current];
+        }
+    }
+    encoder = encoder && drv_encoder_transition(4u, 0u) == 2 &&
+              drv_encoder_transition(0u, 4u) == 2;
     TEST_CHECK("S2-U06", encoder,
                "quadrature direction and illegal transition");
     RobotConfig cfg = {
@@ -146,6 +154,167 @@ void subsystem2_test(void)
                    control.reason == MOTION_ENCODER_FAULT && left == 0 &&
                    right == 0 && !motion_command_valid(&cmd, 120, 7, NULL),
                "non-finite distance and missing configuration reject safely");
+    MotionCommand fresh = {.action_id = 1u,
+                           .run_epoch = 4u,
+                           .mode = MOTION_SPEED,
+                           .sampled_ms = 100u,
+                           .issued_ms = 160u,
+                           .expires_ms = 220u};
+    bool freshness = motion_command_valid(&fresh, 160u, 4u, &cfg);
+    MotionCommand stale = fresh;
+    stale.sampled_ms = 99u;
+    freshness = freshness && !motion_command_valid(&stale, 160u, 4u, &cfg);
+    MotionCommand future = fresh;
+    future.sampled_ms = 161u;
+    freshness = freshness && !motion_command_valid(&future, 160u, 4u, &cfg);
+    TEST_CHECK("S2-U15", freshness,
+               "sample age 60 ms is accepted while stale and future samples reject");
+
+    motion_control_init(&control, 4u);
+    fresh.sampled_ms = fresh.issued_ms = 100u;
+    fresh.expires_ms = 160u;
+    fresh.mode = MOTION_DISTANCE;
+    fresh.target = 0.2f;
+    fresh.speed_mps = 0.1f;
+    fresh.deadline_ms = 900u;
+    bool identity = motion_control_accept(&control, &fresh, 1.0f, 2.0f,
+                                          100u, &cfg);
+    MotionCommand renewal = fresh;
+    renewal.sampled_ms = renewal.issued_ms = 120u;
+    renewal.expires_ms = 180u;
+    identity = identity && motion_control_accept(&control, &renewal, 1.2f,
+                                                  2.2f, 120u, &cfg) &&
+               control.origin_left == 1.0f && control.origin_right == 2.0f &&
+               control.command.deadline_ms == 900u;
+    MotionCommand mutation = renewal;
+    mutation.target = 0.3f;
+    identity = identity && !motion_control_accept(&control, &mutation, 1.2f,
+                                                   2.2f, 120u, &cfg);
+    motion_control_step(&control, 1.2f, 2.2f, 0, 0, 0.02f, 120u, &cfg,
+                        &left, &right);
+    identity = identity && control.status == MOTION_DONE &&
+               motion_control_ack(&control, 1u);
+    MotionCommand next = renewal;
+    next.action_id = 2u;
+    identity = identity && motion_control_accept(&control, &next, 1.2f, 2.2f,
+                                                  120u, &cfg);
+    motion_control_step(&control, 1.4f, 2.4f, 0, 0, 0.02f, 121u, &cfg,
+                        &left, &right);
+    identity = identity && control.status == MOTION_DONE &&
+               motion_control_ack(&control, 2u);
+    mutation = renewal;
+    identity = identity && !motion_control_accept(&control, &mutation, 1.4f,
+                                                   2.4f, 121u, &cfg);
+    TEST_CHECK("S2-U16", identity,
+               "same-action lease renewal retains identity origin/deadline; mutation and replay reject");
+
+    motion_control_init(&control, 4u);
+    MotionCommand stalled = {.action_id = 1u,
+                             .run_epoch = 4u,
+                             .mode = MOTION_DISTANCE,
+                             .target = 0.2f,
+                             .speed_mps = 0.1f,
+                             .sampled_ms = 600u,
+                             .issued_ms = 600u,
+                             .expires_ms = 660u,
+                             .deadline_ms = 2100u};
+    bool stalled_accept = motion_control_accept(&control, &stalled, 0, 0,
+                                                600u, &cfg);
+    stalled.sampled_ms = stalled.issued_ms = 1100u;
+    stalled.expires_ms = 1160u;
+    stalled_accept = stalled_accept &&
+                     motion_control_accept(&control, &stalled, 0, 0, 1100u,
+                                           &cfg);
+    motion_control_step(&control, 0, 0, 0, 0, 0.02f, 1100u, &cfg, &left,
+                        &right);
+    bool stall_terminal = stalled_accept && control.status == MOTION_FAILED &&
+                          control.reason == MOTION_STALLED && left == 0 &&
+                          right == 0 && motion_control_ack(&control, 1u) &&
+                          control.status == MOTION_IDLE &&
+                          !motion_control_ack(&control, 1u);
+    TEST_CHECK("S2-U17", stall_terminal,
+               "stalled action brakes, acknowledges once, and returns idle");
+
+    motion_control_init(&control, 4u);
+    RobotConfig bench_cfg = {.electrical_confirmed = true,
+                             .commissioning = COMMISSIONING_DUTY};
+    MotionCommand bench_cmd = {.action_id = 1u,
+                               .run_epoch = 4u,
+                               .mode = MOTION_DUTY_BENCH,
+                               .issued_ms = 100u,
+                               .sampled_ms = 100u,
+                               .expires_ms = 160u,
+                               .deadline_ms = 2100u,
+                               .left_duty = 0.1f,
+                               .right_duty = -0.1f};
+    bool bench_valid =
+        motion_command_valid(&bench_cmd, 100u, 4u, &bench_cfg) &&
+        motion_control_accept(&control, &bench_cmd, 0, 0, 100u, &bench_cfg);
+    bench_cmd.sampled_ms = bench_cmd.issued_ms = 2090u;
+    bench_cmd.expires_ms = 2150u;
+    bench_valid = bench_valid &&
+                  motion_control_accept(&control, &bench_cmd, 0, 0, 2090u,
+                                        &bench_cfg);
+    motion_control_step(&control, 0, 0, 0, 0, 0.02f, 2099u, &bench_cfg,
+                        &left, &right);
+    bench_valid = bench_valid && control.status == MOTION_ACTIVE &&
+                  left == 0.1f && right == -0.1f;
+    motion_control_step(&control, 0, 0, 0, 0, 0.02f, 2100u, &bench_cfg,
+                        &left, &right);
+    bench_valid = bench_valid && control.status == MOTION_DONE && left == 0 &&
+                  right == 0;
+    TEST_CHECK("S2-U18", bench_valid,
+               "bounded bench command runs only before its exact deadline then brakes");
+
+    MotionCommand mode_base = {.action_id = 1u,
+                               .run_epoch = 4u,
+                               .mode = MOTION_SPEED,
+                               .sampled_ms = 100u,
+                               .issued_ms = 100u,
+                               .expires_ms = 160u};
+    bool modes = motion_command_valid(&mode_base, 100u, 4u, &cfg);
+    MotionCommand invalid_mode = mode_base;
+    invalid_mode.mode = (MotionMode)99;
+    modes = modes && !motion_command_valid(&invalid_mode, 100u, 4u, &cfg);
+    invalid_mode = mode_base;
+    invalid_mode.mode = MOTION_SPEED;
+    invalid_mode.left_mps = cfg.speed_max_mps + 0.01f;
+    modes = modes && !motion_command_valid(&invalid_mode, 100u, 4u, &cfg);
+    invalid_mode = mode_base;
+    invalid_mode.mode = MOTION_DISTANCE;
+    invalid_mode.target = 5.01f;
+    invalid_mode.speed_mps = 0.1f;
+    invalid_mode.deadline_ms = 1100u;
+    modes = modes && !motion_command_valid(&invalid_mode, 100u, 4u, &cfg);
+    TEST_CHECK("S2-U19", modes,
+               "unknown mode and out-of-range speed/distance requests reject");
+
+    motion_control_init(&control, 4u);
+    MotionCommand invalid_feedback = {.action_id = 1u,
+                                      .run_epoch = 4u,
+                                      .mode = MOTION_SPEED,
+                                      .left_mps = 0.1f,
+                                      .right_mps = 0.1f,
+                                      .sampled_ms = 100u,
+                                      .issued_ms = 100u,
+                                      .expires_ms = 160u};
+    bool fail_safe = motion_control_accept(&control, &invalid_feedback, 0, 0,
+                                           100u, &cfg);
+    motion_control_step(&control, 0, 0, NAN, 0, 0.02f, 120u, &cfg, &left,
+                        &right);
+    fail_safe = fail_safe && control.status == MOTION_FAILED &&
+                control.reason == MOTION_ENCODER_FAULT && left == 0 &&
+                right == 0;
+    motion_control_init(&control, 4u);
+    fail_safe = fail_safe &&
+                motion_control_accept(&control, &invalid_feedback, 0, 0,
+                                      100u, &cfg);
+    motion_control_step(&control, 0, 0, 0, 0, 0.0f, 120u, &cfg, &left,
+                        &right);
+    TEST_CHECK("S2-U20", fail_safe && control.status == MOTION_FAILED &&
+                             control.reason == MOTION_ENCODER_FAULT &&
+                             left == 0 && right == 0,
+               "non-finite speed and invalid control interval fail with zero output");
     TEST_SUMMARY("subsystem2");
 }
 #endif
