@@ -1,0 +1,81 @@
+{
+  "date": "2026-10-14",
+  "method": "actual helper local input validation; no broker/Pico connection",
+  "python_syntax": "PASS",
+  "events_help": 0,
+  "cases": [
+    {
+      "case": "four letters",
+      "exit": 0,
+      "passed": true,
+      "output": "{\"request\":\"barcode_mapping\",\"request_id\":991637455,\"mapping\":[\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"left\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"straight\",\"unmapped\",\"unmapped\",\"unmapped\",\"right\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"u_turn\"]}\nMapping validated locally: four assigned letters, 22 unmapped.\n"
+    },
+    {
+      "case": "26 slots",
+      "exit": 0,
+      "passed": true,
+      "output": "{\"request\":\"barcode_mapping\",\"request_id\":991637482,\"mapping\":[\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"left\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"straight\",\"unmapped\",\"unmapped\",\"unmapped\",\"right\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"unmapped\",\"u_turn\"]}\nMapping validated locally: four assigned letters, 22 unmapped.\n"
+    },
+    {
+      "case": "duplicate action",
+      "exit": 2,
+      "passed": true,
+      "output": "usage: mqtt_client.py [-h] [--broker BROKER] [--port PORT] [--root ROOT]\n                      [--file FILE] [--validate-only] [--kind {hump,barcode}]\n                      [--after-id AFTER_ID]\n                      {monitor,status,mapping,events}\nmqtt_client.py: error: Assign exactly one distinct letter to each of the four motions\n"
+    },
+    {
+      "case": "missing action",
+      "exit": 2,
+      "passed": true,
+      "output": "usage: mqtt_client.py [-h] [--broker BROKER] [--port PORT] [--root ROOT]\n                      [--file FILE] [--validate-only] [--kind {hump,barcode}]\n                      [--after-id AFTER_ID]\n                      {monitor,status,mapping,events}\nmqtt_client.py: error: Assign exactly one distinct letter to each of the four motions\n"
+    },
+    {
+      "case": "duplicate key",
+      "exit": 2,
+      "passed": true,
+      "output": "usage: mqtt_client.py [-h] [--broker BROKER] [--port PORT] [--root ROOT]\n                      [--file FILE] [--validate-only] [--kind {hump,barcode}]\n                      [--after-id AFTER_ID]\n                      {monitor,status,mapping,events}\nmqtt_client.py: error: Duplicate letter: A\n"
+    },
+    {
+      "case": "lowercase",
+      "exit": 2,
+      "passed": true,
+      "output": "usage: mqtt_client.py [-h] [--broker BROKER] [--port PORT] [--root ROOT]\n                      [--file FILE] [--validate-only] [--kind {hump,barcode}]\n                      [--after-id AFTER_ID]\n                      {monitor,status,mapping,events}\nmqtt_client.py: error: Use four distinct A-Z letters, or a complete A-Z table\n"
+    },
+    {
+      "case": "nonletter",
+      "exit": 2,
+      "passed": true,
+      "output": "usage: mqtt_client.py [-h] [--broker BROKER] [--port PORT] [--root ROOT]\n                      [--file FILE] [--validate-only] [--kind {hump,barcode}]\n                      [--after-id AFTER_ID]\n                      {monitor,status,mapping,events}\nmqtt_client.py: error: Use four distinct A-Z letters, or a complete A-Z table\n"
+    },
+    {
+      "case": "wrong action",
+      "exit": 2,
+      "passed": true,
+      "output": "usage: mqtt_client.py [-h] [--broker BROKER] [--port PORT] [--root ROOT]\n                      [--file FILE] [--validate-only] [--kind {hump,barcode}]\n                      [--after-id AFTER_ID]\n                      {monitor,status,mapping,events}\nmqtt_client.py: error: Actions must be left, right, straight, u_turn or unmapped\n"
+    },
+    {
+      "case": "wrong type",
+      "exit": 2,
+      "passed": true,
+      "output": "usage: mqtt_client.py [-h] [--broker BROKER] [--port PORT] [--root ROOT]\n                      [--file FILE] [--validate-only] [--kind {hump,barcode}]\n                      [--after-id AFTER_ID]\n                      {monitor,status,mapping,events}\nmqtt_client.py: error: Actions must be left, right, straight, u_turn or unmapped\n"
+    },
+    {
+      "case": "malformed",
+      "exit": 2,
+      "passed": true,
+      "output": "usage: mqtt_client.py [-h] [--broker BROKER] [--port PORT] [--root ROOT]\n                      [--file FILE] [--validate-only] [--kind {hump,barcode}]\n                      [--after-id AFTER_ID]\n                      {monitor,status,mapping,events}\nmqtt_client.py: error: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\n"
+    },
+    {
+      "case": "all 26 assigned",
+      "exit": 2,
+      "passed": true,
+      "output": "usage: mqtt_client.py [-h] [--broker BROKER] [--port PORT] [--root ROOT]\n                      [--file FILE] [--validate-only] [--kind {hump,barcode}]\n                      [--after-id AFTER_ID]\n                      {monitor,status,mapping,events}\nmqtt_client.py: error: Assign exactly one distinct letter to each of the four motions\n"
+    },
+    {
+      "case": "wrong shape",
+      "exit": 2,
+      "passed": true,
+      "output": "usage: mqtt_client.py [-h] [--broker BROKER] [--port PORT] [--root ROOT]\n                      [--file FILE] [--validate-only] [--kind {hump,barcode}]\n                      [--after-id AFTER_ID]\n                      {monitor,status,mapping,events}\nmqtt_client.py: error: Use four distinct A-Z letters, or a complete A-Z table\n"
+    }
+  ],
+  "result": "PASS"
+}

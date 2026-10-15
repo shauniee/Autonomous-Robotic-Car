@@ -1,120 +1,133 @@
-# CSC01 team, ownership and interfaces
+# Team and subsystems
 
-Migration requested by Nicholas on 8 October 2026. Shared configuration and priority allocation are a **revised proposal for team review**, not recorded teammate/instructor approval. The proportional-only S3 change is a later Nicholas-requested bench override; the Word report is preserved. Original template guidance, including owner-edit and shared-file agreement rules, is preserved in [UPSTREAM_TEAM.md](docs/UPSTREAM_TEAM.md).
+This guide records who owns each subsystem, pin, peripheral, task and kernel object. A subsystem is one student's part of the robot, with its own folder; it may contain several tasks and peripherals.
+
+Nicholas explicitly authorized the current all-subsystem completion. Request each owner's review of their changes before team acceptance; that review is not recorded by implementation alone. All members participate in integration, debugging, system testing and demonstration.
 
 ## 1. Members and subsystems
 
-| # | Owner / student ID | Responsibility | Active status |
-|---|---|---|---|
-| S1 | Shaun / 2500629 | Communications | Inactive placeholder; MQTT deferred |
-| S2 | Mahesha / 2503973 | Motion / motors / encoders | Motor PWM and local expiry implemented; encoders pending |
-| S3 | Nicholas / 2501552 | Line/barcode; integration | Proportional IR, button calibration, explicit bounded recovery and watchdog; barcode pending |
-| S4 | Darrius / 2500360 | Terrain | Inactive placeholder |
-| S5 | Jia Jing / 2502825 | Obstacle | Inactive placeholder |
+| # | Subsystem (what it does) | Student ID | GitHub username | Code | Tests |
+| --- | --- | --- | --- | --- | --- |
+| 1 | **Shaun — Communications:** WiFi/MQTT integration, telemetry and reporting | 2500629 | Not recorded | [app_program/subsystem1/](app_program/subsystem1) | [testing/subsystem1/](testing/subsystem1) |
+| 2 | **Mahesha — Motion:** motors, encoders, wheel PID and motion APIs | 2503973 | Not recorded | [app_program/subsystem2/](app_program/subsystem2) | [testing/subsystem2/](testing/subsystem2) |
+| 3 | **Nicholas — Line and Barcode:** IR, barcode, Mission/Safety coordination and integration | 2501552 | Not recorded | [app_program/subsystem3/](app_program/subsystem3) | [testing/subsystem3/](testing/subsystem3) |
+| 4 | **Darrius — Terrain:** IMU processing, motion classification and hump measurement | 2500360 | Not recorded | [app_program/subsystem4/](app_program/subsystem4) | [testing/subsystem4/](testing/subsystem4) |
+| 5 | **Jia Jing — Obstacle:** sonar, servo scanning and obstacle profiling | 2502825 | Not recorded | [app_program/subsystem5/](app_program/subsystem5) | [testing/subsystem5/](testing/subsystem5) |
 
-Folders are `app_program/subsystemN/`, with corresponding `testing/subsystemN/`. Unknown GitHub usernames are left unspecified.
+Use development branches and commit prefixes `feat:`, `chore:` or `fix:`. Follow [CODING_STANDARD](docs/donotsubmit/CODING_STANDARD.md), record stable test IDs and measurements in [testing](testing/README.md), and demonstrations in [videos](videos/README.md). Record course/calibration decisions once in [PROJECT_SPECS](docs/donotsubmit/PROJECT_SPECS.md#pending-decisions), then update the owning guide.
 
 ## 2. Pins
+ [TECHNICAL_INFO](TECHNICAL_INFO.md) owns electrical limits and connector definitions; [GETTING_STARTED](GUIDE.md#one-time-preparation) identifies active hardware.
 
-| Pins | Owner | Current / proposed use |
-|---|---|---|
-| GP23/24/25/29 | Kernel | Pico W radio; never reassign |
-| GP0/1, GP7/28 | S2 | Future encoders; CRASH_REPORT=0; GP28 battery jumper open |
-| GP8/9, GP10/11 | S2 | M1 left, M2 right; LOW/LOW brake; physical polarity pending |
-| GP26/27 | S3 | Left ADC0 / right ADC1; Grove 6 shared GP26 contact disconnected |
-| GP20/21 | S3 | Active-low calibrate/start/reset and stop buttons |
-| GP22 | S3 | Buzzer feedback; onboard mute switch must allow sound |
-| GP16 | S3 | Future barcode capture; inactive |
-| GP4/5 | S4 | Future GY-511 I2C0; inactive |
-| GP2/3, GP12 | S5 | Future sonar and servo; inactive |
-| GP6/13/14/15/17/18/19 | Unclaimed | No demonstration LED or other example output |
+| Pin | Owner | Used for |
+| --- | --- | --- |
+| GP23, GP24, GP25, GP29 | Reserved: kernel | Pico W radio/internal signals; never allocate externally |
+| GP0 |Mahesha | Right encoder B, Grove 1, green wire; UART0 console/crash conflict below |
+| GP1 |Mahesha | Right encoder A, Grove 1, red wire; UART0 console/crash conflict below |
+| GP2 |Jia Jing | Reported HC-SR04P Echo, Grove 2; shares Maker port |
+| GP3 |Jia Jing | Reported HC-SR04P Trig, Grove 2; shares Maker port |
+| GP4 |Darrius | GY-511 SDA, Grove 3 / I2C0 |
+| GP5 |Darrius | GY-511 SCL, Grove 3 / I2C0 |
+| GP6 | Unclaimed | Check carrier sharing before allocation |
+| GP7 |Mahesha | Left encoder B, Grove 7, green wire |
+| GP8 |Mahesha | Left motor M1A, black wire; exclusive motor writer |
+| GP9 |Mahesha | Left motor M1B, yellow wire; exclusive motor writer |
+| GP10 |Mahesha | Right motor M2A, black wire; exclusive motor writer |
+| GP11 |Mahesha | Right motor M2B, yellow wire; exclusive motor writer |
+| GP12 |Jia Jing | SG90 Servo 1 signal S, orange wire; held low until configured |
+| GP13 | Unclaimed | Check carrier sharing before allocation |
+| GP14 | Unclaimed | Check carrier sharing before allocation |
+| GP15 | Unclaimed | Check carrier sharing before allocation |
+| GP16 |Nicholas | Barcode IR DOUT, Grove 4; AOUT disconnected |
+| GP17 | Unclaimed | Grove 4 second signal unused |
+| GP18 | Unclaimed | Onboard RGB LEDs; no project firmware owner |
+| GP19 | Unclaimed | Check carrier sharing before allocation |
+| GP20 |Nicholas | Onboard active-low capture/start/reset; Safety input |
+| GP21 |Nicholas | Onboard active-low stop/cancel; independent stop path |
+| GP22 |Nicholas | Onboard PWM buzzer; mute switch controls audibility |
+| GP26 |Nicholas | Left line IR AOUT, Grove 5 / ADC0; disconnect Grove 6 shared GP26 contact |
+| GP27 |Nicholas | Right line IR AOUT, Grove 6 / ADC1 |
+| GP28 |Mahesha | Left encoder A, Grove 7, red wire; ADC2-capable but used digitally; open battery jumper |
+
+### Supply and disconnected wires
+
+- Power bank: red → green terminal VIN+, black → VIN−. Verify polarity and follow [power and flashing](GUIDE.md#power-and-flashing).
+- Encoders: white → 3V3, blue → GND. Line/barcode IR: VCC → 3V3, GND → GND; both line DOUT wires stay disconnected.
+- GY-511: Vin → 3V3, GND → GND; separate `3.3`, INT1, INT2 and DRDY stay disconnected. Reported HC-SR04P: VCC → 3V3, GND → GND; verify the installed variant and Echo HIGH before connection.
+- SG90: red → +, brown → −; verify carrier silkscreen and supply rail.
+
+### Wiring conflicts
+
+- Grove 5 and Grove 6 share GP26. Joining their analogue outputs is unsafe; keep the Grove 6 GP26 contact disconnected.
+- GP28 battery sensing must remain disconnected through its jumper while used by the left encoder.
+- UART0 console and crash reporting claim GP0/GP1. Use `CONSOLE=usb_cdc CRASH_REPORT=0` with encoders attached.
+- Grove 2 and the Maker port share GP2/GP3. Do not attach independent devices to both.
+- Disconnect GY-511 wires reused elsewhere before restoring I2C. Its separate `3.3` pin is not established as an additional supply input.
+- Line sensing and digital encoder GP28 consume the external ADC-capable pins. Barcode AOUT requires a reviewed allocation change or additional hardware.
 
 ## 3. Peripherals
 
-| Peripheral | Owning task | Configuration |
-|---|---|---|
-| ADC | S3 IR bench | Native device ADC disabled (`DEVCNF_USE_ADC=0`); bounded `drv_ir.c` |
-| PWM4/5 | S2 Motion | GP8-11, 20 kHz at template 125 MHz clock |
-| PWM3 | S3 IR bench | GP22, asynchronous 2 kHz chirps |
-| PWM block reset release | S2 init | Release once without resetting; individual slices have separate owners; USE_PTMR=0 |
-| Watchdog tick / hardware TIMER | S3 init | Enable 1 us tick from 12 MHz reference; release TIMER without resetting existing time. Kernel schedule remains SysTick; WiFi reads TIMER |
-| Watchdog | S3 IR bench | 250 ms; feed only on fresh, advancing IR AND Motion progress |
-| USB / CYW43439 | Kernel | Service tasks priorities 3/4, core 0 |
-| I2C0 / sonar / encoders | Future subsystem owners | No active drivers in this bench |
+A **subsystem** is a student's folder; a **task** is a thread of execution; a **peripheral** is a hardware block. Keep application drivers (`drv_<name>.c/.h`) inside the owning subsystem, outside `device/`. Enabling a kernel driver in `config/config_device.h` changes shared configuration and needs coordination.
+
+Each driven peripheral has one owning task; other tasks use its interface. PWM slices have separate owners. Coordinate shared block/timebase initialization: never reset PWM or TIMER underneath another owner.
+
+| Peripheral | Owner subsystem | Owning task | Pins |
+| --- | --- | --- | --- |
+| UART0 | Kernel, optional | Console/crash service; disabled in encoder profile | GP0/GP1 conflict withMahesha |
+| UART1 | Unclaimed | — | Unallocated |
+| I2C0 |Darrius | Terrain, bounded direct driver | GP4/GP5 |
+| I2C1 | Unclaimed | — | Unallocated |
+| SPI0 | Unclaimed | — | Unallocated |
+| SPI1 | Unclaimed | — | Unallocated |
+| ADC |Nicholas | `task_s_task`; bounded paired `drv_ir_tracking.c`; native driver disabled (`DEVCNF_USE_ADC=0`) | GP26/GP27; GP28 allocated to encoder |
+| PWM slices 4 and 5 |Mahesha | `motion_task`; 20 kHz at the template's 125 MHz clock | GP8–GP11 |
+| PWM slice 3 |Nicholas | `task_s_task`; asynchronous 2 kHz buzzer chirps | GP22 |
+| PWM slice 6 |Jia Jing | Obstacle; disabled until calibrated | GP12 |
+| Encoder GPIO IRQs |Mahesha | Motion; bounded ISR capture | GP0/GP1/GP7/GP28 |
+| Barcode GPIO IRQ |Nicholas | S3 bounded capture entry; shared dispatcher and direct encoder adapter | GP16 |
+| Echo GPIO IRQ |Jia Jing | Obstacle; bounded ISR capture | GP2 |
+| Hardware TIMER / watchdog tick |Nicholas initialization; shared timebase | Enable 1 µs tick from 12 MHz reference without resetting TIMER; kernel WiFi also reads TIMER | Internal |
+| Watchdog |Nicholas | Safety; 250 ms normal-image supervision of local service progress; TEST disabled | Internal |
+| USB console | Kernel | USB service on core 0 | USB connector |
+| WiFi radio, TCP/IP, MQTT | Kernel | `cyw43_utk_task` on core 0 | GP23–GP25, GP29 |
+
+S2 releases PWM reset without resetting the block; each slice owner configures independently. `USE_PTMR=0`; kernel scheduling uses SysTick. IRQ buffers remain separate between owners.
 
 ### WiFi and MQTT are special
 
-The radio and the network stack belong to the kernel's built-in WiFi service
-task, `cyw43_utk_task` (`lib/libwifi/sysdepend/pico_rp2040/`). **No student
-task may call `cyw43_...`, lwIP or MQTT functions, not even from a
-"WiFi subsystem".** The calls are not safe from any other task, on either core.
-
-What students *can* do:
-
-- **Read the connection state** from any task, which is always safe:
-  ```c
-  #include "cyw43_utk.h"
-  T_CYW43_UTK_STATUS st;
-  cyw43_utk_get_status(&st);   /* st.ready, st.link_status, st.ip_addr, ... */
-  ```
-- **Send or receive data over the network** by adding code that *runs
-  inside the service task*. The MQTT client is in
-  `lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c`. It publishes a heartbeat
-  today. A "cloud / reporting" subsystem would add a kernel object
-  (e.g. a message buffer) that application tasks fill. The MQTT code then
-  reads it with `TMO_POL` (never blocking) and publishes it.
-  Because this changes shared library code, **agree it with the team and
-  the instructor first**, and record it as an interface in section 5.
-  It needs the `NET=lwip MQTT=1` build (README section 3).
+All CYW43, lwIP and MQTT operations run inside the kernel's `cyw43_utk_task`. Other tasks may read connection state through `cyw43_utk_get_status()`. The current S1 reporting task supplies read-only subsystem/Mission snapshots under its optional mutex. Kernel subscription supports bounded status and stopped-only mapping configuration, with no actuation commands. Snapshot access is nonblocking. See [Communications](docs/architecture/SUBSYSTEM1.md) for configuration, schema, publication and failure behavior.
 
 ## 4. Task priorities
 
-1 is highest; kernel priorities 1-4 remain reserved. This bench deliberately departs from the template example bands. Acceptance by the team remains pending.
+Smaller numbers mean higher priority. Priorities 1–4 are reserved for the kernel: initial task 1, USB 3 and WiFi 4 run on core 0. `TP_PRC1` means core 0; `TP_PRC2` means core 1; zero means any core. Application tasks use core 1 in SMP builds.
 
-| Task | Priority | Core | Period / event |
-|---|---:|---:|---|
-| S3 ir_task (buttons, ADC, calibration, P steering, recovery, feedback, health) | 12 | 1 (TP_PRC2) | 10 ms buttons, 20 ms paired ADC |
-| S2 Motion | 13 | 1 (TP_PRC2) | 20 ms or immediate stop wake-up |
+### UAT tasks
 
-No application networking task exists. Future full mission split: Safety 12, Motion 13, Mission 14, Line/Barcode 15, Terrain 16, Obstacle 17, S1 bridge 20; all application core 1, kernel services core 0. This split is proposed, not implemented.
+| Owner | Task / priority / core | Release |
+| --- | --- | --- |
+| Nicholas | Safety / 12 / core 1 | 10 ms |
+| Mahesha | Motion / 13 / core 1 | 20 ms or stop wake-up |
+| Nicholas | Mission / 14 / core 1 | 20 ms |
+| Nicholas | Line/Barcode / 15 / core 1 | Inputs 10 ms, ADC 20 ms, bounded edge budget |
+| Darrius | Terrain / 16 / core 1 | 20 ms, fresh-data gated |
+| Jia Jing | Obstacle / 17 / core 1 | Bounded acquisition states, 2 ms service |
+| Shaun | Reporting / 20 / core 1 | Nominal 100 ms, optional with MQTT |
 
-## 5. Interfaces and kernel objects
+Application stacks are 4096 bytes. TEST startup retains its separate 4096-byte stack; normal startup is 1024 bytes. Scheduling, stack margin and stop latency require physical measurement; configured periods are not recorded WCET.
 
-| ID | Producer -> consumer | Owner / object | Contract |
-|---|---|---|---|
-| IF-01 | S3 -> S2 | S2 priority-inheritance mutex + latest MotionRequest | Bounded duties 0..0.35, acquisition ms, enabled. Expired >60 ms or invalid active request brakes and latches stop |
-| IF-02 | S3 -> S2 | S2 persistent event flag + tk_wup_tsk | Runtime stop callers must share Motion core 1; final stop check/output serialized with IRQ masking. Stop independent of request mutex. Separate local reset clears flag and invalidates old request; reset alone cannot move |
-| IF-03 | S2 -> S3 | S2 mutex-protected MotionHealth | Successful software output-service sequence and completion timestamp; stopped is the latch, not brake acknowledgement or measured stationarity |
-| IF-04 | IR calculations -> S3 coordinator | In-task IrTrackingOutput | Fresh visible-steering validity, condition, signed error, memoryless P steering [-1,1], original acquisition time |
+## 5. Interfaces between subsystems
 
-Use mutex copies for latest snapshots; micro T-Kernel mailboxes pass pointers and require lifetime management, not FreeRTOS length-one overwrite semantics. Future navigation FIFO should use a bounded message buffer or explicit pooled mailbox messages; no navigation FIFO is implemented here.
+Providers own private objects and public snapshot APIs. See [Architecture](docs/ARCHITECTURE.md#shared-contracts) for current data flow and [Motion](docs/architecture/SUBSYSTEM2.md#control-and-contracts) for command/feedback semantics. Legacy IF-01 duty publication is retired; IF-02 stop/reset, IF-03 health, IF-04 IR guidance and IF-05 reporting remain recognizable boundaries. Encoder actions and measured feedback extend them; no direct foreign PWM access is allowed.
 
-## 6. Kernel object budget for the active S3 bench
+S3's Mission is the sole command producer. Core-0 configuration is a bounded copied handoff, revalidated by Mission on core 1. Shared GPIO dispatch services encoder pins before GP16 and acknowledges owned bits only; the USB SDK shim is not a general dispatcher.
 
-| Object | Configured application limit | S3 allocated | S3 use |
-|---|---:|---:|---|
-| Task | 32 | 1 | ir_task, priority12/core1, existing 2048-byte stack |
-| Semaphore | 16 | 0 | none |
-| Event flag | 16 | 0 | S3 uses S2's persistent stop flag via IF-02 |
-| Mailbox | 12 | 0 | none |
-| Mutex | 12 | 0 | S3 uses S2's request/health mutex via IF-01/03 |
-| Message buffer | 12 | 0 | future barcode FIFO is not allocated |
-| Fixed memory pool | 12 | 0 | none |
+## 6. Kernel object budget
 
-This is S3 usage, not the total including S2 and kernel services. Existing configuration limits are unchanged; stack margin/capacity under future load require measurement. S3 private raw samples/capture sums/control state are task-local and use no additional kernel object. The one IrCaptureKind and typed IrCaptureResult replace legacy command IDs/string-based branching.
+| Object | Application use | Configured limit |
+| --- | --- | --- |
+| Tasks | 6 required + 1 optional reporting | 32 total, including kernel services |
+| Mutexes | S1 0/1, S2 1, S3 3, S4 1, S5 1: total 6/7 | 12 total |
+| Event flags | S2 persistent stop: 1 | 16 total |
+| Queues / buffers | Static barcode ring 64 and copied encounter FIFO 8; one mapping handoff and one scan request | Fixed application capacities |
 
-## 7. Startup and power
-
-Create all subsystem objects before starting any task. Initialization failure prevents startup; a task-start failure returns its error. Motors are inhibited at boot. TEST=1 also inhibits all motor outputs in the service task.
-
-**One power source at a time.** USB alone for flashing and inhibited desktop checks. Disconnect USB before power-bank operation; never connect it to collect logs during a powered trial. References live in RAM: calibrate again after the power change.
-
-## Phase 1 IR development handoff
-
-The [IR-to-Motion handoff](docs/architecture/IR_MOTION_HANDOFF.md) freezes the existing IF-01/02/03 bench interface, shows the S3 publication template and lists inhibited Maker/Pico and radio build profiles. Motor operation is unverified and currently reported not working. Stop serialization and acknowledged reset remain future phases; no new shared runtime/interface or teammate approval is asserted.
-
-Phase 2 makes driver init/apply/brake return available BSP errors. S2 rejects failed initialization and latches stop on output errors; failed cycles do not advance IF-03 health. Driver input remains forward-only 0..0.35. This is software error handling, not electrical fault sensing or a stop/reset race fix.
-
-Phase 3 protects the final stop-flag reference, acquisition-age validation and motor output with saved/restored local PRIMASK and compiler barriers. Only nonwaiting kernel flag/time reads and bounded driver/BSP operations execute inside it; mutex acquisition, stop latching, wake-ups and sleep are outside. The kernel reads still use the port's SMP lock, so core-0 contention and mask duration need physical measurement. This is a core-1 runtime contract, not cross-core stop synchronization. The existing startup-error stop occurs while the boot latch inhibits output.
-
-At Phase 3 review (12 October 2026), S3 publishes IR snapshots and no longer calls S2 to publish motor duties. Restoring that producer/consumer integration requires a separately approved scope before physical motor trials. S3 code is unchanged here.
+No application mailbox or kernel message buffer is allocated. Required objects are created before task start; optional reporting failure is tolerated. Measure runtime memory and stack margins under concurrent load. [Testing](testing/README.md) owns evidence.

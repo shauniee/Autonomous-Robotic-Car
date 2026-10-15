@@ -25,7 +25,7 @@ typedef enum
 typedef struct
 {
     bool (*read_task)(void *user, bool *level, barcode_encoder_t *encoder,
-        uint32_t *sampled_us);
+                      uint32_t *sampled_us);
     bool (*set_enabled_task)(void *user, bool enabled);
     void *user;
 } barcode_provider_t;
@@ -35,12 +35,13 @@ typedef struct
    Default is disabled. Reset clears all queued/partial events and faults.
    It does NOT authorize motion or automatically re-enable on GP21 release. */
 barcode_api_result_t s3_barcode_configure(const barcode_config_t *config,
-    const barcode_provider_t *provider);
+                                          const barcode_provider_t *provider);
 barcode_api_result_t s3_barcode_reset(void);
+barcode_api_result_t s3_barcode_begin_run(uint32_t epoch);
 /* Any task, nonblocking. Mapping update accepted only while disabled/idle.
    False/busy copies must be ignored. Exactly one consumer removes events. */
-barcode_api_result_t s3_barcode_mapping_replace(
-    const barcode_action_t actions[BARCODE_ALPHABET]);
+barcode_api_result_t
+s3_barcode_mapping_replace(const barcode_action_t actions[BARCODE_ALPHABET]);
 barcode_api_result_t s3_barcode_copy(barcode_status_t *status);
 barcode_api_result_t s3_barcode_pop(barcode_event_t *event);
 /* Independent aligned atomic fault read: does not need the status mutex. */

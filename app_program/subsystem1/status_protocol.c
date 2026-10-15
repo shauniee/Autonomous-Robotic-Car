@@ -27,8 +27,8 @@ bool s1_status_request_begin(S1StatusRequest *request, uint32_t length)
 
 static void skip_space(const char **cursor)
 {
-    while ((**cursor == ' ') || (**cursor == '\t') ||
-           (**cursor == '\r') || (**cursor == '\n'))
+    while ((**cursor == ' ') || (**cursor == '\t') || (**cursor == '\r') ||
+           (**cursor == '\n'))
     {
         ++(*cursor);
     }
@@ -66,7 +66,8 @@ bool s1_status_request_data(S1StatusRequest *request, const void *data,
     request->received += length;
     if (!last)
     {
-        return true; /* Accepted fragment; completion is checked only on LAST. */
+        return true; /* Accepted fragment; completion is checked only on LAST.
+                      */
     }
     request->receiving = false;
     if ((request->received != request->expected) ||
@@ -77,8 +78,58 @@ bool s1_status_request_data(S1StatusRequest *request, const void *data,
     request->payload[request->received] = '\0';
     const char *cursor = request->payload;
     if (!token(&cursor, "{") || !token(&cursor, "\"request\"") ||
-        !token(&cursor, ":") || !token(&cursor, "\"status\"") ||
-        !token(&cursor, "}"))
+        !token(&cursor, ":"))
+    {
+        return false;
+    }
+    if (token(&cursor, "\"status\""))
+    {
+        if (!token(&cursor, "}"))
+        {
+            return false;
+        }
+    }
+    else if (token(&cursor, "\"events\""))
+    {
+        request->events = true;
+        if (!token(&cursor, ",") || !token(&cursor, "\"kind\"") ||
+            !token(&cursor, ":"))
+        {
+            return false;
+        }
+        if (token(&cursor, "\"barcode\""))
+        {
+            request->barcode = true;
+        }
+        else if (!token(&cursor, "\"hump\""))
+        {
+            return false;
+        }
+        if (!token(&cursor, ",") || !token(&cursor, "\"after_id\"") ||
+            !token(&cursor, ":"))
+        {
+            return false;
+        }
+        skip_space(&cursor);
+        const char *first = cursor;
+        uint32_t n = 0u;
+        while (*cursor >= '0' && *cursor <= '9')
+        {
+            unsigned digit = (unsigned)(*cursor++ - '0');
+            if (n > (UINT32_MAX - digit) / 10u)
+            {
+                return false;
+            }
+            n = n * 10u + digit;
+        }
+        if (cursor == first || (*first == '0' && cursor - first > 1) ||
+            !token(&cursor, "}"))
+        {
+            return false;
+        }
+        request->after_id = n;
+    }
+    else
     {
         return false;
     }
@@ -147,6 +198,31 @@ unsigned s1_status_encode(const S1NetworkStatus *status, char *out,
     append_text(&writer, status->have_snapshot ? "true" : "false");
     append_text(&writer, ",\"telemetry_sequence\":");
     append_number(&writer, status->telemetry_sequence);
+    append_text(&writer, "}");
+    if (!writer.valid)
+    {
+        out[0] = '\0';
+        return 0u;
+    }
+    out[writer.used] = '\0';
+    return writer.used;
+}
+
+unsigned s1_mapping_ack_encode(uint32_t id, unsigned result, uint32_t revision,
+                               char *out, unsigned capacity)
+{
+    if (out == NULL || capacity == 0u)
+    {
+        return 0u;
+    }
+    out[0] = '\0';
+    StatusWriter writer = {out, 0u, capacity, true};
+    append_text(&writer, "{\"request_id\":");
+    append_number(&writer, id);
+    append_text(&writer, ",\"result\":");
+    append_number(&writer, result);
+    append_text(&writer, ",\"revision\":");
+    append_number(&writer, revision);
     append_text(&writer, "}");
     if (!writer.valid)
     {

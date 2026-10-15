@@ -16,7 +16,7 @@ ER subsystem3_init(void)
         return E_SYS;
     }
     T_CMTX mutex = {0};
-    mutex.mtxatr = TA_INHERIT; // set scheduling to priority inheritance
+    mutex.mtxatr = TA_INHERIT;  // set scheduling to priority inheritance
     ID id = tk_cre_mtx(&mutex); // create mutex
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 snapshot mutex creation returned=%d\n", id);
@@ -26,9 +26,12 @@ ER subsystem3_init(void)
         return id < E_OK ? id : E_SYS;
     }
     latest = (S3IrSnapshot){.capture_result = IR_CAPTURE_WAITING};
-    atomic_store_explicit(&snapshot_mutex, id, memory_order_release); // ensure setup first before informing mutex is ready
+    atomic_store_explicit(&snapshot_mutex, id,
+                          memory_order_release); // ensure setup first before
+                                                 // informing mutex is ready
 #if APP_TEST
-    tm_printf((UB *)"[TEST] S3 snapshot mutex published=%d\n", atomic_load_explicit(&snapshot_mutex, memory_order_acquire));
+    tm_printf((UB *)"[TEST] S3 snapshot mutex published=%d\n",
+              atomic_load_explicit(&snapshot_mutex, memory_order_acquire));
 #endif
     return barcode_runtime_init();
 }
@@ -37,20 +40,23 @@ ER subsystem3_start(void)
 {
     ID mutex_id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
 #if APP_TEST
-    tm_printf((UB *)"[TEST] S3 snapshot mutex id before task start=%d\n", mutex_id);
+    tm_printf((UB *)"[TEST] S3 snapshot mutex id before task start=%d\n",
+              mutex_id);
 #endif
     if (mutex_id <= 0)
     {
         return E_OBJ;
     }
-    ID task_id = app_start_task((FP)task_s_task, S3_PRI_LINE, TP_PRC2, "IR line");
+    ID task_id =
+        app_start_task((FP)task_s_task, S3_PRI_LINE, TP_PRC2, "IR line");
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 task start result=%d\n", task_id);
 #endif
     return task_id < E_OK ? task_id : E_OK;
 }
 
-bool subsystem3_publish(const IrTracker *tracker, uint32_t sequence, uint32_t now)
+bool subsystem3_publish(const IrTracker *tracker, uint32_t sequence,
+                        uint32_t now)
 {
     if (tracker == NULL)
     {

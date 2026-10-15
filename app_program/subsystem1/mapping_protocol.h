@@ -13,5 +13,5 @@ typedef struct
 void s1_mapping_reset(S1MappingRequest *request);
 bool s1_mapping_begin(S1MappingRequest *request, unsigned length);
 bool s1_mapping_data(S1MappingRequest *request, const void *data,
-    unsigned length, bool last);
+                     unsigned length, bool last);
 #endif

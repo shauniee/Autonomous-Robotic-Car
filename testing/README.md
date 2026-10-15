@@ -1,60 +1,35 @@
-# Testing and evidence
+# Testing
 
-Keep subsystem cases/results in `subsystemN/TEST_LOG.md`, cross-subsystem cases in `integration/TEST_LOG.md`, and physical/full-product cases in `system/TEST_LOG.md`. Saved evidence goes in the corresponding `logs/` directory.
+This folder owns all active test code, definitions and evidence. The authorized reset removed old working-tree fixtures/logs, retired host sources and the legacy CSV outside this folder. Earlier history remains in Git; no previous PASS is inherited.
 
-| Level | Stable IDs | Ownership / contract |
-| --- | --- | --- |
-| Subsystem | `S1-U01`, `S2-U01`, … | Subsystem owner |
-| Integration | `INT-01`, … | Both interface owners; [system contracts](../docs/ARCHITECTURE.md#shared-contracts) and [IR handoff](../docs/architecture/IR_MOTION_HANDOFF.md) |
-| System | `SYS-01`, …; planned `T01`–`T16` | Team; [requirements](../docs/PROJECT_SPECS.md) |
+## Definitions and IDs
 
-IDs never change or get reused, including retired template cases. Retired definitions remain in the relevant log; placeholder template rows are not observations.
+Five subsystem folders own their firmware fixtures and TEST_LOG; integration owns shared predicates/transport cases; system owns physical T01-T16. Headers/data may supply independent synthetic vectors. IDs keep their meaning and are never reused. New cases use the next unused ID.
+
+Retired/reserved historical IDs: INT-01, INT-03, INT-04, INT-05, INT-06, INT-07, INT-08, INT-09, INT-10, INT-11, INT-14, S1-U01, S1-U02, S1-U03, S1-U05, S1-U08, S2-U01, S2-U02, S2-U03, S2-U04, S2-U05, S3-U01, S3-U02, S3-U03, S3-U04, S3-U05, S3-U07, S3-U08, S3-U10, S3-U11, S3-U13, S4-U01, S4-U02, S5-U01, S5-U02, S5-U03, SYS-01, SYS-02, SYS-03, SYS-04, SYS-05, SYS-06, SYS-07, SYS-08, SYS-09, SYS-10. These are not current run instructions. T01-T16 remain the physical scenario IDs; SYS-01-SYS-10 are reserved historical references.
 
 ## Run and record
 
-1. Define the case, steps, expected result and acceptance measurements before the run. Record wiring, power, calibration and build profile.
-2. For an appropriate firmware self-test, use `TEST_CHECK` with the case ID in the owning `subsystemN_test.c`; see `app_program/test_report.h`. Manual cases need hardware/operator steps and measurement evidence.
-3. Use [GETTING_STARTED build/flash profiles](../docs/GETTING_STARTED.md#build-profiles). TEST firmware prints `[TEST] <ID> PASS|FAIL` at startup and always inhibits motor outputs. A compiled image is not an executed pass.
-4. Save actual console output/photos/scope records as `YYYY-MM-DD_<case>.txt` or appropriate image format. Start console capture before resetting the USB-only TEST board. Example from repository root, using the actual device name:
+Define steps, expected result and agreed numerical thresholds before execution. Use [GUIDE](../GUIDE.md) for setup, power, calibration and operating steps. USB alone for inhibited firmware; battery alone for normal movement. Start one console/subscriber capture before the run.
 
-   ```sh
-   cat /dev/cu.usbmodem<device> | tee testing/subsystem3/logs/YYYY-MM-DD_self-tests.txt
-   # Linux: cat /dev/ttyACM0 | tee testing/subsystem3/logs/YYYY-MM-DD_self-tests.txt
-   ```
+Firmware checks print `[TEST] ID PASS|FAIL`. Save complete output under the owning `logs/` directory. A build is compilation evidence; an executed firmware fixture is logic evidence; a powered hardware/mission run is physical evidence. Keep these result categories separate.
 
-   Windows PuTTY supports Session → Logging → All session output. Observe the [power policy](../docs/GETTING_STARTED.md#power-and-flashing) during physical trials.
-5. Append a result row: date, ID, exact committed revision, tester, PASS/FAIL, measurements and evidence. Record the flashed-image checksum. Commit records and evidence together. Existing precommit checks instead identify the tested working tree through their source manifests plus base HEAD; base HEAD alone is insufficient.
-6. Record a failure and its reason; after a fix, append a new result. Never edit/delete a historical result or overwrite its evidence filename. Rerun affected subsystem/integration cases before merging, and the applicable full set before a demonstration.
+Each new result records date/IDs, committed revision, profile/UF2 SHA-256, tester, wiring/power, configuration/calibration, mapping request/revision, reference and observed measurements/errors, elapsed time and console/MQTT/video paths. Append failures and reruns; do not overwrite new evidence. No Pico run is claimed without real device output.
 
-## Preserved software evidence
+## Five practical passes
 
-Host tests and runners have been removed. The saved 2026-10-08 fake-kernel/hardware/network and laptop-loopback results remain historical software evidence; their recorded methods are not current run instructions. They do not establish GPIO performance, physical motion or an actual Pico connection.
-
-Firmware self-tests remain: S1-U04 (bounded encoding), S1-U06/U07 (status-only requests/network status), S2-U03 (Motion policy), S3-U02 (normalization/progress) and S3-U06 (P guidance). S3-U03 remains the retired line-PID case; later P/capture/recovery cases retain their IDs. Network snapshots never count as sensor/watchdog progress.
-
-Actual wireless checks are SYS-09/10 through [wireless setup](../docs/GETTING_STARTED.md#wireless-telemetry). Save Pico-originated subscriber output separately from synthetic/laptop transport evidence. A slow telemetry stream cannot prove short stop/recovery deadlines; use camera/scope measurements.
-
-## Planned integrated trials
-
-All remain pending until actual measurements/results are recorded. This retains the integrated design's IDs without treating proposed checks as passes.
-
-| ID | Scenario / evidence |
+| Pass | Actions / expected outcome |
 | --- | --- |
-| T01 | Electrical release: markings, continuity, loaded rails/current, signal highs, shared contacts and jumper |
-| T02 | Boot/stop/reset in every motion mode; output-brake timing and physical stopping separately |
-| T03 | Straight/curve/junction tracking under lighting, surface and speed variation |
-| T04 | Known barcode scales/speeds, partial/unknown/reverse/duplicate frames and capture/event overflow |
-| T05 | Four encoder actions: repeated distance/angle accuracy, completion, timeout and obstacle cancellation |
-| T06 | Labelled stationary/acceleration/turn/climb/descent/impact traces; no raw gyro claim |
-| T07 | Measured reference humps, slip/dynamic/incomplete rejection and invalid estimate after valid maximum |
-| T08 | Known forward ranges/materials/angles; no/late/out-of-range echo and repeat timing |
-| T09 | Moving scan rejection, coarse/fine profile, separate front age and restored-center acquisition |
-| T10 | Vehicle envelope/course boundary, both bypass sides, blocked paths and original-line versus wrong-crossing recovery |
-| T11 | Controlled line loss, interrupted search, obstacle during search and bounded timeout |
-| T12 | Actual mission telemetry/status subscription, units/validity and rejection of prohibited/malformed commands |
-| T13 | WiFi/broker loss/reconnect under sensor/scan load; healthy local control and no stale replay |
-| T14 | Stale/frozen producers, encoder/stall faults, expired command and full diagnostic/navigation/capture buffers |
-| T15 | Concurrent load: releases/WCET, missed deadlines, stop latency, queue occupancy and stack/memory usage |
-| T16 | Repeated complete-course rehearsal with navigation, humps, obstacles, telemetry and recovery |
+| 1 Software | Four sequential offline/wireless TEST/normal builds; changed-code strict checks, normal fixture exclusion, source/image identity, payload/resource bounds, links/capitalization and unchanged main/video |
+| 2 USB inhibited | Execute all fixtures and capture actual PASS/FAIL; motors remain braked; inspect raw sensor changes |
+| 3 Raised wheels/calibration | Electrical release, signed encoder/motor feedback, geometry/PID/accuracy/braking, combined black+IMU calibration, contrast and sonar/servo measurements |
+| 4 Feature course | T03-T11: all alphabet/scales/orientations, four actions, short loss, reference/one-wheel humps, both bypass sides and original route |
+| 5 Faults/rehearsal | T02/T12-T16: stale sensing, encoder/stall/deadline/buffer/network faults, stop/reset and repeated complete courses with different mappings on identical firmware |
 
-Acceptance targets/unknown values are owned by [PROJECT_SPECS](../docs/PROJECT_SPECS.md#pending-decisions), not inferred from a case name. Demonstration links belong in [videos](../videos/README.md) and the corresponding result row.
+Keep tests focused: existing Make profiles, firmware checks, one capture and concise measurements. Do not introduce a host fake-kernel framework. Synthetic fixture_config.h is never mission configuration. Numerical pass marks and unconfirmed course rules remain in [PROJECT_SPECS](../docs/donotsubmit/PROJECT_SPECS.md#pending-decisions).
+
+A-Z vectors are independent standard-pattern positions checked against [ZXing's primary Code39Reader](https://github.com/zxing/zxing/blob/master/core/src/main/java/com/google/zxing/oned/Code39Reader.java). The 104 width-vector combinations are not physical print/GPIO acceptance or confirmation of the issued symbology.
+
+## Current evidence
+
+[Integration results](integration/TEST_LOG.md) record current compiler/build/helper evidence. Firmware execution and physical passes remain PENDING until the board/operator supplies observations. [System definitions](system/TEST_LOG.md) own the actual scenarios; [videos](../videos/README.md) owns demonstration links.

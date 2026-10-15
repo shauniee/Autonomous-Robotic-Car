@@ -1,4 +1,4 @@
-# All active fixture sources belong to testing/, linked in TEST only.
+# Active firmware fixtures live here and are linked only in TEST builds.
 ifeq ($(TEST),1)
 TEST_SRCS := $(wildcard ../testing/*/*.c)
 TEST_OBJS := $(patsubst ../testing/%.c,mtkernel_3/testing/%.o,$(TEST_SRCS))

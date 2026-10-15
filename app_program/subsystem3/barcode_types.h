@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "../common/run_history.h"
 
 #define BARCODE_ELEMENTS 29u
 #define BARCODE_ALPHABET 26u
@@ -95,6 +96,8 @@ typedef struct
     uint32_t sampled_us; /* Last black-to-white edge, not publication time. */
     uint32_t mapping_revision;
     uint32_t scanner_epoch;
+    uint32_t left_count, right_count,
+        encoder_epoch; /* Last-bar exit context. */
     char symbol;
     barcode_action_t action;
     barcode_orientation_t orientation;
@@ -111,6 +114,7 @@ typedef struct
     uint32_t fault_bits;
     uint8_t queued_events;
     bool have_decode;
+    RunHistory encounters;
 } barcode_status_t;
 
 #define BARCODE_FAULT_CAPTURE 1u

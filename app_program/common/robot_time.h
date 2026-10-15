@@ -6,7 +6,10 @@
 static inline bool robot_now_ms(uint32_t *now)
 {
     SYSTIM time;
-    if (tk_get_otm(&time) < E_OK) { return false; }
+    if (tk_get_otm(&time) < E_OK)
+    {
+        return false;
+    }
     *now = time.lo;
     return true;
 }

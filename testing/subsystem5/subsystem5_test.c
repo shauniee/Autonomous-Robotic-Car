@@ -1,0 +1,36 @@
+#include "../../app_program/subsystem5/subsystem5.h"
+#include "../../app_program/test_report.h"
+#include "../fixture_config.h"
+#if APP_TEST
+void subsystem5_test(void)
+{
+    TEST_INIT();
+    ObstacleSnapshot s = {.ray_count = 5u};
+    for (unsigned i = 0u; i < 5u; ++i)
+    {
+        s.rays[i] = (ObstacleRay){(float)((int)i - 2) * 30.0f,
+                                  i == 2u ? 0.2f : 1.0f, 100u, true};
+    }
+    RobotConfig cfg = fixture_config();
+    cfg.sonar_forward_m = 0;
+    bool valid = s5_profile_build_config(&s, &cfg) && s.closest_m == 0.2f;
+    s.rays[0].valid = false;
+    TEST_CHECK(
+        "S5-U04", valid && !s5_profile_build_config(&s, &cfg),
+        "valid profile nearest point; missing Echo cannot grant clearance");
+    TEST_CHECK("S5-U05",
+               s5_scan_guard(true, false, true) == SCAN_CANCELLED &&
+                   s5_scan_guard(true, true, false) == SCAN_CANCELLED &&
+                   s5_scan_guard(false, true, true) == SCAN_FAILED &&
+                   s5_scan_guard(false, false, false) == SCAN_FAILED &&
+                   s5_scan_guard(false, false, true) == SCAN_RUNNING,
+               "cancel dominates timeout/movement including center restore");
+    s.rays[0].valid = true;
+    cfg.sonar_forward_m = 0.02f;
+    TEST_CHECK("S5-U06",
+               s5_profile_build_config(&s, &cfg) && s.closest_m > 0.21f &&
+                   s.obstacle_forward_m > 0.21f,
+               "profile geometry includes measured sensor mounting offset");
+    TEST_SUMMARY("subsystem5");
+}
+#endif

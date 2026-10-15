@@ -1,110 +1,61 @@
 # System architecture
 
-The intended robot separates sensing, Mission decisions, Motion actuation, Safety and reporting. [PROJECT_SPECS](PROJECT_SPECS.md) owns required outcomes; [TEAM](TEAM.md) owns pins, priorities and resources. The full design below is proposed. [GETTING_STARTED](GETTING_STARTED.md#current-capabilities) identifies the implemented bench and remaining work.
+The robot uses micro T-Kernel 3.0. One Mission controller coordinates the five subsystem services; independent Safety and GP21 can stop Motion. [TEAM](../TEAM.md) owns pins/resources and priorities. [GUIDE](../GUIDE.md) owns operation; [PROJECT_SPECS](donotsubmit/PROJECT_SPECS.md) owns requirements and pending course/measurement decisions.
 
-## Data flow
+## Subsystems
+
+| Guide | Responsibilities |
+| --- | --- |
+| [Subsystem 1](architecture/SUBSYSTEM1.md) | Actual snapshots, bounded MQTT reporting, read-only requests and stopped mapping transport |
+| [Subsystem 2](architecture/SUBSYSTEM2.md) | Sole motor writer, encoders, wheel PID, leased actions and stop/reset acknowledgement |
+| [Subsystem 3](architecture/SUBSYSTEM3.md) | IR/barcode sensing, combined calibration coordination, Mission and Safety |
+| [Subsystem 4](architecture/SUBSYSTEM4.md) | Task-owned IMU calibration, movement observations, reference-calibrated humps and history |
+| [Subsystem 5](architecture/SUBSYSTEM5.md) | Bounded Echo acquisition, stationary coarse/fine scanning and profiles |
 
 ```mermaid
 flowchart TD
-    Line[Line and Barcode] -->|M_line and Q_nav| Mission[Mission]
-    Terrain[Terrain] -->|M_terrain| Mission
-    Obstacle[Obstacle] -->|M_obstacle| Mission
-    Mission -->|Q_scan_request| Obstacle
-    Mission -->|M_motion_cmd| Motion[Motion]
-    Motion -->|M_motion_feedback| Mission
-    Mission -->|M_telemetry| Comms[Communications]
-    Comms -->|Q_status| Mission
-    Comms <-->|MQTT| Broker[Broker and observer]
-    Safety[Safety and local controls] -->|Q_local and EG_system| Mission
-    Safety -->|Independent stop and wake-up| Motion
-    Motion --> Motors[Motor driver]
-    Line & Terrain & Obstacle & Motion -->|Critical fault notification| Safety
+    S3[IR and Barcode] --> Mission
+    S4[Terrain] --> Mission
+    S5[Obstacle] --> Mission
+    Mission --> S2[Motion]
+    S2 --> S3
+    S2 --> S4
+    S2 --> S5
+    Safety -->|Independent stop| S2
+    S3 -->|Black press calibration request| S4
+    S2 & S3 & S4 & S5 & Mission --> S1[Reporting]
+    S1 --> Kernel[Kernel network owner]
+    Kernel -->|Stopped mapping handoff| Mission
 ```
 
-Drivers acquire bounded samples. Processing modules publish coherent observations; Mission selects behavior and issues leased Motion actions. Motion alone writes motor PWM and uses encoder feedback. Safety stops Motion independently of Mission queues. Reporting cannot authorize movement.
+## States and arbitration
 
-## Subsystem boundaries
+Boot is braked. First black press starts black+IMU calibration, then white capture and stopped mapping/configuration/health qualification permit READY. A separate fresh GP20 press begins FollowLine. Mission transitions through Navigation, Scan, Bypass and Reacquire; confirmed finish enters Complete. GP21/fault latches stop; reset and restart are separate.
 
-| Guide | Responsibility |
-| --- | --- |
-| [Line Tracking](architecture/LINE_TRACKING.md) | Calibrated P guidance, visibility classification and bounded short line-loss recovery |
-| [Barcode](architecture/BARCODE.md) | Ordered bar/space capture, frame validation and one-shot navigation events |
-| [Motion](architecture/MOTION.md) | Motor ownership, planned wheel PID, encoder actions, leases and completion |
-| [Obstacle](architecture/OBSTACLE.md) | Fresh forward clearance, stationary coarse/fine scanning and profiles |
-| [Terrain](architecture/TERRAIN.md) | Motion classification, impact reporting and validated maximum hump height |
-| [Communications](architecture/COMMUNICATIONS.md) | Kernel-owned networking, telemetry and proposed status requests |
-
-## Implemented line-following bench
-
-`app_main` starts S3 sensing and S2 Motion, then the application line-following task. `line_control` owns bench start/reset, duty mixing and bounded recovery; `task_line_follow` reads local buttons and `s3_ir_copy()`, checks S2 health and calls the existing S2 request/stop/reset APIs. S3 remains a sensor service and S2 remains the only motor writer. This narrow controller does not implement full Mission/Safety, navigation or obstacle handling.
-
-Runtime stop/reset calls execute on core 1, matching S2's serialization contract. GP21 is delivered before snapshot/health reads. Requests retain original acquisition time; stale/invalid observations or failed interfaces while operating latch stop. Details and the local state transitions belong to the [IR-to-Motion handoff](architecture/IR_MOTION_HANDOFF.md).
+Arbitration is stop/fault, required-data health, obstacles, navigation, then line guidance. Obstacles cancel pending navigation; nested obstacles during bypass/recovery stop after inspection rather than inventing another original route. Short last-direction recovery is bounded to 500 ms and needs current-run direction evidence. Junction/finish confirmation requires distinct consecutive acquisitions and travel context.
 
 ## Shared contracts
 
-These are logical full-robot contracts, not already allocated RTOS objects. Micro T-Kernel mailboxes pass linked pointers; they do not provide copied length-one overwrite semantics. Use mutex copies for snapshots and bounded message buffers or explicitly pooled messages for FIFO events.
-
-| Object | Contract |
+| Interface | Contract |
 | --- | --- |
-| `M_line`, `M_terrain`, `M_obstacle`, `M_motion_feedback`, `M_telemetry` | Latest coherent mutex-protected value: validity, acquisition timestamp, sequence, units and status. Separate validity/age for optional height/profile values. |
-| `M_motion_cmd` | Action ID, mode/target, issue/expiry time and context. Renew the same action's lease without restarting its absolute deadline. Expiry brakes locally; reset invalidates earlier commands. |
-| `Q_nav` | Bounded FIFO of copied event ID, symbol, mapped action and acquisition time. Consume once in permitted context; never overwrite events. Overflow/capture loss faults explicitly; purge obsolete events on reset/action completion. |
-| `Q_scan_request` | Scan ID, region/mode and absolute deadline. Require fresh measured stationarity; ignore duplicates, cancel on stop and report queue-full failure. |
-| `S_echo` | Wake-up from bounded echo-edge ISR; processing occurs outside ISR. |
-| `EG_system`, independent stop path | Persistent stop/fault state plus direct Motion notification/wake-up; independent of diagnostic queue capacity. |
-| `Q_fault_safety`, `Q_fault_mission` | Separate fault diagnostics; inability to enqueue does not suppress the safety action. |
-| `Q_local`, `Q_status` | Fresh local controls and bounded/rate-limited validated reporting requests. Status requests cannot drive, start, stop or clear a latch. |
-| Health snapshots / heartbeats | Advance only after meaningful bounded work; frozen/expired required progress faults while moving. Expected stationary-scan gaps use the scan deadline. |
+| `s3_ir_copy` | Coherent fresh/valid calibrated observation; original acquisition time and sequence |
+| Barcode APIs | Bounded edge ring and command FIFO; copied events with mapping/scanner/encoder identity; report history survives capture reset |
+| `s2_command` / feedback / ack | Signed speed/distance/turn, action/run identity, 60 ms lease and immutable absolute deadline; retained completion |
+| S2 stop/reset/health | Independent persistent stop; brake acknowledgement; reset invalidates old actions |
+| S4 calibration request/cancel | Core-1 bounded handoff; stopped raw-count stationarity; explicit request ID/status/sample count |
+| S4 reset/snapshot | Task-owned state; new-run epoch/height/history reset is coherent, stop retains accepted results |
+| S5 snapshot/scan/cancel | Separate forward/profile timestamps; stationary scan with absolute deadline; cancel retained through center restoration |
+| Mission snapshot/mapping | One bounded cross-core configuration handoff, revalidated while braked/stationary |
+| S1 snapshots/history | Nonblocking optional copies; reporting never authorizes movement or supplies watchdog progress |
 
-Use monotonic acquisition time and unsigned wrap-safe age calculations. Copying or publishing cached data never refreshes its time. Distances/heights are metres, speeds metres/second, angles degrees; line error/steering is negative left and positive right. Use deadline-based periodic releases, skipping missed releases rather than replaying a backlog. Bound storage, waits, retries and event processing; sonar settling and network reconnection must not block control.
+Core-1 priorities are Safety 12, Motion 13, Mission 14, Line/Barcode 15, Terrain 16, Obstacle 17 and Reporting 20. Kernel WiFi/MQTT stays on core 0. One bounded micro T-Kernel GPIO dispatcher services encoder edges before barcode/Echo. Only claimed edges are acknowledged.
 
-The implemented bench uses a narrower `MotionRequest`/`MotionHealth` contract. Its IF-01/02/03 behavior remains in the [IR handoff](architecture/IR_MOTION_HANDOFF.md#current-interface-contract); IF-04 is typed `IrTrackingOutput` in [Line Tracking](architecture/LINE_TRACKING.md#modules-and-drivers), and IF-05 is the [S1 snapshot](architecture/COMMUNICATIONS.md#modules-and-drivers). Requested duty and a stop latch are not measured speed/stationarity.
+Use kernel millisecond time for freshness/control and hardware TIMER microseconds for barcode/Echo. Keep clock domains explicit; unsigned elapsed arithmetic handles wrap. Storage, acquisitions, actions, scans and retries are bounded. No floating-point formatting/allocation/blocking in interrupts.
 
-## System state diagram
+## Safety and acceptance
 
-```mermaid
-stateDiagram-v2
-    [*] --> Initializing
-    Initializing --> Ready: Setup valid
-    Initializing --> Fault: Setup failed
-    Ready --> ActiveMission: Fresh valid start
-    state "Active mission" as ActiveMission {
-        [*] --> FollowLine
-        FollowLine --> Navigation: Mapped event
-        FollowLine --> Scan: Obstacle
-        FollowLine --> Reacquire: Recoverable loss
-        Navigation --> Reacquire: Action done and acknowledged
-        Navigation --> Scan: Obstacle cancels action
-        Scan --> Bypass: Supported path and fresh front
-        Bypass --> Reacquire: Action done
-        Bypass --> Scan: New obstacle
-        Reacquire --> FollowLine: Original line confirmed
-        Reacquire --> Scan: Obstacle
-    }
-    ActiveMission --> Stopped: Stop blocked path or exhausted recovery
-    ActiveMission --> Fault: Fault stale data or action deadline
-    FollowLine --> Complete: Confirmed finish
-    Ready --> Fault: Critical fault
-    Ready --> Stopped: Local stop
-    Stopped --> Ready: Cause clear and fresh reset
-    Fault --> Ready: Cause clear and fresh reset
-    Complete --> Ready: Fresh reset
-```
+Required IR/Motion freshness is 60 ms; Terrain/forward sonar freshness is 250 ms. Normal firmware supervises local progress with a 250 ms watchdog after services qualify. TEST always inhibits motors and does not enable that watchdog. Networking is excluded from local health.
 
-Active mission is a visual grouping of the existing operating states, not an additional firmware state. This is the integrated proposal. Complete has no usable entry guard until the finish decision in [PROJECT_SPECS](PROJECT_SPECS.md#pending-decisions) is resolved. Critical faults and local stop inhibit movement in every state, including initialization and Ready.
+The dogleg uses measured sonar offsets, pivot envelope and braking headroom, supported side clearance (left on a tie), confirmed depth/departure bounds and encoder actions. Reacquisition needs expected pose/heading/corridor and two fresh visible observations. Sensor geometry, slip and between-ray clearance require physical/course acceptance.
 
-## Mission and Safety responses
-
-| State / event | Response |
-| --- | --- |
-| Initializing / Ready | Brake, create objects, validate required sensing; reset alone never moves |
-| FollowLine | Use calibrated P guidance through Motion; monitor obstacles, barcodes and terrain concurrently |
-| Navigation | Execute one encoder action ID; preserve absolute timeout on lease renewal; retain completion until acknowledged |
-| Scan | Request stop, wait for fresh measured stationarity, request bounded profile; restore center and fresh forward range before bypass |
-| Bypass | Bounded permitted route inside course envelope; maintain forward clearance; new obstacle returns to Scan |
-| Reacquire | Bounded low-speed search with valid IR and forward range; require the original line, not an unrelated crossing |
-| Stopped / Fault / Complete | Brake and retain run maximum; reset requires cleared cause and fresh local input; a later fresh start begins the next run |
-
-Arbitration: local stop/critical fault → required-data validity → obstacle handling → barcode/navigation → normal line guidance. Obstacle preemption cancels earlier navigation. Barcode reads during bypass/recovery may be logged but cannot redirect movement. Hump monitoring and telemetry run alongside control. Clear the retained hump maximum only on a fresh run, not on a stop.
-
-Design targets and unresolved limits are centralized in [PROJECT_SPECS](PROJECT_SPECS.md#design-targets-and-team-constraints). Record physical acceptance in [testing](../testing/README.md); proposed states, builds and software self-checks do not establish an operational mission.
+Optional raised-wheel commissioning is locally selected, limited to two seconds and excludes mission readiness. Power policy and release steps are in GUIDE. [Fresh test records](../testing/README.md) distinguish source/build checks, executed fixtures and physical results.

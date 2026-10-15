@@ -1,4 +1,5 @@
-/* Shaun: bounded diagnostic snapshot; kernel service owns every network call. */
+/* Shaun: bounded diagnostic snapshot; kernel service owns every network call.
+ */
 #ifndef SUBSYSTEM1_H
 #define SUBSYSTEM1_H
 #ifdef BENCH_KERNEL_HOST_TEST

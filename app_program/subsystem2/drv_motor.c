@@ -61,8 +61,7 @@ static ER motor_setup_slice(unsigned pin)
     ER er = pwm_set_enabled(pin, FALSE);
     if (er >= E_OK)
     {
-        out_w(PWM_BASE + (pin / 2u) * 0x14u + PWM_CHx_DIV,
-              MOTOR_DIV_8_4);
+        out_w(PWM_BASE + (pin / 2u) * 0x14u + PWM_CHx_DIV, MOTOR_DIV_8_4);
         out_w(PWM_BASE + (pin / 2u) * 0x14u + PWM_CHx_CTR, 0u);
         er = pwm_set_wrap(pin, MOTOR_WRAP);
     }
@@ -113,10 +112,19 @@ static ER motor_wheel(unsigned pin, float duty, int forward_a)
 {
     /* Validated duty 0..0.35 gives compare 0..350, within MOTOR_WRAP. */
     UW compare = (UW)(fabsf(duty) * (MOTOR_WRAP + 1u));
-    if (duty < 0.0f) { forward_a = !forward_a; }
+    if (duty < 0.0f)
+    {
+        forward_a = !forward_a;
+    }
     ER brake = pwm_set_cc(pin, 0u);
-    if (brake >= E_OK) { brake = pwm_set_cc(pin + 1u, 0u); }
-    if (brake < E_OK) { return brake; }
+    if (brake >= E_OK)
+    {
+        brake = pwm_set_cc(pin + 1u, 0u);
+    }
+    if (brake < E_OK)
+    {
+        return brake;
+    }
     ER er = pwm_set_cc(pin, forward_a ? compare : 0u);
     if (er >= E_OK)
     {
@@ -129,8 +137,7 @@ ER drv_motor_apply(float left, float right)
 {
     ER er = E_PAR;
     /* Validate both wheels before converting or writing either duty. */
-    if (isfinite(left) && isfinite(right) &&
-        (fabsf(left) <= MOTION_MAX_DUTY) &&
+    if (isfinite(left) && isfinite(right) && (fabsf(left) <= MOTION_MAX_DUTY) &&
         (fabsf(right) <= MOTION_MAX_DUTY))
     {
         er = motor_wheel(8u, left, robot_config.left_forward_a);

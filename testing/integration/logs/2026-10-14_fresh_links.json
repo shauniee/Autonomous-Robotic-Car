@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-14",
+  "markdown_files": 24,
+  "local_links": 160,
+  "findings": [
+    {
+      "file": "TEAM.md",
+      "link": "docs/architecture/SUBSYSTEM2.md#public-interface",
+      "reason": "missing heading"
+    },
+    {
+      "file": "docs/donotsubmit/PROJECT_SPECS.md",
+      "link": "../../GUIDE.md#project-tasks",
+      "reason": "missing heading"
+    },
+    {
+      "file": "docs/donotsubmit/ZOOM-TRANSCRIPT.md",
+      "link": "../architecture/SUBSYSTEM1.md#mapping-configuration",
+      "reason": "missing heading"
+    },
+    {
+      "file": "docs/donotsubmit/ZOOM-TRANSCRIPT.md",
+      "link": "../../GUIDE.md#current-capabilities",
+      "reason": "missing heading"
+    }
+  ],
+  "video_byte_unchanged": true,
+  "spoken_transcript_unchanged": true
+}

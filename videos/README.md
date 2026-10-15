@@ -39,3 +39,7 @@ Newest at the bottom. Never delete a recorded row. The example row below is a te
 | Date | Subsystem | Test ID / demo | Commit | Student ID | Link | Notes |
 |---|---|---|---|---|---|---|
 | YYYY-MM-DD | S1 | S1-U03 | `abc1234` | | <https://youtu.be/...> | LED blinks at 2 Hz |
+
+## UAT evidence
+
+No hardware video was recorded during the current software completion. Add real UAT feature/rehearsal links with test IDs, exact revision and image checksum after the physical passes. Preserve existing rows and never promote the placeholder row into a recorded result.

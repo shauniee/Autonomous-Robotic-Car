@@ -18,7 +18,7 @@ typedef struct
     float left_duty, right_duty;
     MotionStatus status;
     MotionReason reason;
-    bool valid, stationary;
+    bool valid, stationary, encoder_quiet;
 } MotionFeedback;
 ER subsystem2_init(void);
 ER subsystem2_start(void);
@@ -28,6 +28,7 @@ ER s2_ack(uint32_t action_id);
 /* Core-1 runtime callers only; independent persistent stop plus wake-up. */
 ER s2_stop(void);
 ER s2_reset_stop(void);
+ER s2_prepare_reset(void);
 ER s2_health(MotionHealth *health);
 /* Retired duty producer: returns E_NOSPT, never authorizes open-loop motion. */
 ER s2_publish(MotionRequest request);

@@ -32,7 +32,7 @@ void barcode_service_reset(barcode_service_t *s, barcode_result_t reason)
 }
 
 bool barcode_service_configure(barcode_service_t *s,
-    const barcode_config_t *config)
+                               const barcode_config_t *config)
 {
     if ((s == NULL) || !barcode_config_valid(config) ||
         (s->status.state != BARCODE_DISABLED))
@@ -46,7 +46,7 @@ bool barcode_service_configure(barcode_service_t *s,
 }
 
 bool barcode_service_mapping(barcode_service_t *s,
-    const barcode_action_t actions[BARCODE_ALPHABET])
+                             const barcode_action_t actions[BARCODE_ALPHABET])
 {
     if ((s == NULL) || (actions == NULL) ||
         ((s->status.state != BARCODE_DISABLED) &&
@@ -98,8 +98,9 @@ void barcode_service_fault(barcode_service_t *s, barcode_result_t reason)
     {
         s->status.state = BARCODE_FAULT;
         s->status.result = reason;
-        s->status.fault_bits |= reason == BARCODE_EVENT_OVERFLOW ?
-            BARCODE_FAULT_QUEUE : BARCODE_FAULT_CAPTURE;
+        s->status.fault_bits |= reason == BARCODE_EVENT_OVERFLOW
+                                    ? BARCODE_FAULT_QUEUE
+                                    : BARCODE_FAULT_CAPTURE;
         s->pending_frame = false;
     }
 }
@@ -107,8 +108,8 @@ void barcode_service_fault(barcode_service_t *s, barcode_result_t reason)
 static int64_t count_delta(uint32_t current, uint32_t previous)
 {
     uint32_t delta = current - previous;
-    return delta < 0x80000000u ? (int64_t)delta :
-        (int64_t)delta - INT64_C(4294967296);
+    return delta < 0x80000000u ? (int64_t)delta
+                               : (int64_t)delta - INT64_C(4294967296);
 }
 
 static uint64_t magnitude(int64_t value)
@@ -117,12 +118,12 @@ static uint64_t magnitude(int64_t value)
 }
 
 static bool travel(const barcode_service_t *s, const barcode_encoder_t *e,
-    uint32_t *distance, int *direction)
+                   uint32_t *distance, int *direction)
 {
     int64_t left = count_delta(e->left_count, s->previous.left_count) *
-        s->config.left_um_per_count;
+                   s->config.left_um_per_count;
     int64_t right = count_delta(e->right_count, s->previous.right_count) *
-        s->config.right_um_per_count;
+                    s->config.right_um_per_count;
     if ((magnitude(left) > s->config.max_step_um) ||
         (magnitude(right) > s->config.max_step_um))
     {
@@ -144,24 +145,33 @@ static void finish_frame(barcode_service_t *s)
 {
     char symbol;
     barcode_orientation_t orientation;
-    barcode_result_t result = barcode_decode(s->widths, &s->config,
-        &symbol, &orientation);
+    barcode_result_t result =
+        barcode_decode(s->widths, &s->config, &symbol, &orientation);
     s->pending_frame = false;
     if (result != BARCODE_DECODED)
     {
         reject(s, result);
         return;
     }
-    barcode_event_t event =
-    {
-        .encounter_id = ++s->encounter_id,
-        .sampled_us = s->last_edge_us,
-        .mapping_revision = s->status.mapping_revision,
-        .scanner_epoch = s->status.scanner_epoch,
-        .symbol = symbol,
-        .action = s->mapping[(unsigned)(symbol - 'A')],
-        .orientation = orientation
-    };
+    barcode_event_t event = {.encounter_id = ++s->encounter_id,
+                             .sampled_us = s->last_edge_us,
+                             .mapping_revision = s->status.mapping_revision,
+                             .scanner_epoch = s->status.scanner_epoch,
+                             .left_count = s->frame_exit.left_count,
+                             .right_count = s->frame_exit.right_count,
+                             .encoder_epoch = s->frame_exit.epoch,
+                             .symbol = symbol,
+                             .action = s->mapping[(unsigned)(symbol - 'A')],
+                             .orientation = orientation};
+    (void)run_history_append(
+        &s->status.encounters,
+        (RunEvent){.sampled_at = event.sampled_us,
+                   .a = (int32_t)event.left_count,
+                   .b = (int32_t)event.right_count,
+                   .value = event.symbol,
+                   .revision = event.mapping_revision,
+                   .detail =
+                       ((unsigned)event.action << 1u) | event.orientation});
     s->status.latest = event;
     s->status.have_decode = true;
     s->status.result = BARCODE_DECODED;
@@ -174,27 +184,26 @@ static void finish_frame(barcode_service_t *s)
         barcode_service_fault(s, BARCODE_EVENT_OVERFLOW);
         return;
     }
-    unsigned tail = (s->event_head + s->status.queued_events) %
-        BARCODE_EVENT_CAPACITY;
+    unsigned tail =
+        (s->event_head + s->status.queued_events) % BARCODE_EVENT_CAPACITY;
     s->events[tail] = event;
     ++s->status.queued_events;
 }
 
 void barcode_service_check_time(barcode_service_t *s, uint32_t now_us)
 {
-    if ((s != NULL) && ((s->status.state == BARCODE_CAPTURE) ||
-        s->pending_frame) &&
-        (((uint32_t)(now_us - s->frame_started_us) >=
-            s->config.max_frame_us) ||
-         ((uint32_t)(now_us - s->last_edge_us) >=
-            s->config.max_edge_gap_us)))
+    if ((s != NULL) &&
+        ((s->status.state == BARCODE_CAPTURE) || s->pending_frame) &&
+        (((uint32_t)(now_us - s->frame_started_us) >= s->config.max_frame_us) ||
+         ((uint32_t)(now_us - s->last_edge_us) >= s->config.max_edge_gap_us)))
     {
         reject(s, BARCODE_TIMEOUT);
     }
 }
 
 void barcode_service_observe(barcode_service_t *s, bool level,
-    const barcode_encoder_t *e, uint32_t sampled_us, bool edge)
+                             const barcode_encoder_t *e, uint32_t sampled_us,
+                             bool edge)
 {
     if ((s == NULL) || (s->status.state == BARCODE_DISABLED) ||
         (s->status.state == BARCODE_FAULT))
@@ -204,8 +213,7 @@ void barcode_service_observe(barcode_service_t *s, bool level,
     barcode_service_check_time(s, sampled_us);
     bool black = level == s->config.black_high;
     if ((e == NULL) || !e->valid ||
-        ((uint32_t)(sampled_us - e->sampled_us) >
-            s->config.max_encoder_age_us))
+        ((uint32_t)(sampled_us - e->sampled_us) > s->config.max_encoder_age_us))
     {
         reject(s, BARCODE_BAD_ENCODER);
         return;
@@ -227,8 +235,8 @@ void barcode_service_observe(barcode_service_t *s, bool level,
         ((e->sampled_us == s->previous.sampled_us) &&
          ((e->left_count != s->previous.left_count) ||
           (e->right_count != s->previous.right_count))) ||
-        ((uint32_t)(e->sampled_us - s->previous.sampled_us) >=
-            INT32_MAX) || !travel(s, e, &distance, &direction))
+        ((uint32_t)(e->sampled_us - s->previous.sampled_us) >= INT32_MAX) ||
+        !travel(s, e, &distance, &direction))
     {
         reject(s, BARCODE_BAD_ENCODER);
         return;
@@ -258,22 +266,21 @@ void barcode_service_observe(barcode_service_t *s, bool level,
     s->run_um += distance;
     if (in_frame)
     {
-        int64_t left = count_delta(e->left_count,
-            s->frame_origin.left_count) * s->config.left_um_per_count;
-        int64_t right = count_delta(e->right_count,
-            s->frame_origin.right_count) * s->config.right_um_per_count;
+        int64_t left = count_delta(e->left_count, s->frame_origin.left_count) *
+                       s->config.left_um_per_count;
+        int64_t right =
+            count_delta(e->right_count, s->frame_origin.right_count) *
+            s->config.right_um_per_count;
         /* Bound operands before subtraction, even on corrupt/reset counts. */
         if ((magnitude(left) > s->config.max_frame_travel_um) ||
             (magnitude(right) > s->config.max_frame_travel_um) ||
-            (magnitude(left - right) >
-                s->config.max_wheel_difference_um))
+            (magnitude(left - right) > s->config.max_wheel_difference_um))
         {
             reject(s, BARCODE_BAD_ENCODER);
             return;
         }
         if ((distance > s->config.max_frame_travel_um) ||
-            (s->frame_travel_um >
-                s->config.max_frame_travel_um - distance))
+            (s->frame_travel_um > s->config.max_frame_travel_um - distance))
         {
             reject(s, BARCODE_BAD_WIDTH);
             return;
@@ -338,6 +345,7 @@ void barcode_service_observe(barcode_service_t *s, bool level,
         {
             s->status.state = BARCODE_WAIT_REARM;
             s->pending_frame = true;
+            s->frame_exit = *e;
         }
     }
     s->black = black;
@@ -346,8 +354,7 @@ void barcode_service_observe(barcode_service_t *s, bool level,
 
 bool barcode_service_pop(barcode_service_t *s, barcode_event_t *event)
 {
-    if ((s == NULL) || (event == NULL) ||
-        (s->status.queued_events == 0u) ||
+    if ((s == NULL) || (event == NULL) || (s->status.queued_events == 0u) ||
         (s->status.state == BARCODE_FAULT))
     {
         return false;

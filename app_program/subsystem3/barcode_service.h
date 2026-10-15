@@ -12,6 +12,7 @@ typedef struct
     barcode_event_t events[BARCODE_EVENT_CAPACITY];
     barcode_encoder_t previous;
     barcode_encoder_t frame_origin;
+    barcode_encoder_t frame_exit;
     uint32_t widths[BARCODE_ELEMENTS];
     uint32_t run_um;
     uint32_t frame_travel_um;
@@ -29,18 +30,17 @@ typedef struct
 
 void barcode_service_init(barcode_service_t *service);
 bool barcode_service_configure(barcode_service_t *service,
-    const barcode_config_t *config);
-void barcode_service_reset(barcode_service_t *service,
-    barcode_result_t reason);
+                               const barcode_config_t *config);
+void barcode_service_reset(barcode_service_t *service, barcode_result_t reason);
 bool barcode_service_mapping(barcode_service_t *service,
-    const barcode_action_t actions[BARCODE_ALPHABET]);
+                             const barcode_action_t actions[BARCODE_ALPHABET]);
 void barcode_service_observe(barcode_service_t *service, bool level,
-    const barcode_encoder_t *encoder, uint32_t sampled_us, bool edge);
+                             const barcode_encoder_t *encoder,
+                             uint32_t sampled_us, bool edge);
 void barcode_service_check_time(barcode_service_t *service, uint32_t now_us);
-void barcode_service_fault(barcode_service_t *service,
-    barcode_result_t reason);
+void barcode_service_fault(barcode_service_t *service, barcode_result_t reason);
 void barcode_service_reject(barcode_service_t *service,
-    barcode_result_t reason);
+                            barcode_result_t reason);
 bool barcode_service_pop(barcode_service_t *service, barcode_event_t *event);
 
 #endif

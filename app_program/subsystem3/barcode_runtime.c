@@ -14,13 +14,13 @@ static bool cancel_held;
 static uint32_t irq_save(void)
 {
     uint32_t state;
-    __asm__ volatile ("mrs %0, primask\ncpsid i" : "=r" (state) :: "memory");
+    __asm__ volatile("mrs %0, primask\ncpsid i" : "=r"(state)::"memory");
     return state;
 }
 
 static void irq_restore(uint32_t state)
 {
-    __asm__ volatile ("msr primask, %0" :: "r" (state) : "memory");
+    __asm__ volatile("msr primask, %0" ::"r"(state) : "memory");
 }
 
 static bool owner_core(void)
@@ -44,8 +44,7 @@ static barcode_api_result_t lock(ID *id)
     {
         return BARCODE_API_UNAVAILABLE;
     }
-    return tk_loc_mtx(*id, TMO_POL) >= E_OK ? BARCODE_API_OK :
-        BARCODE_API_BUSY;
+    return tk_loc_mtx(*id, TMO_POL) >= E_OK ? BARCODE_API_OK : BARCODE_API_BUSY;
 }
 
 static barcode_api_result_t unlock(ID id, barcode_api_result_t result)
@@ -59,7 +58,7 @@ static bool disable_capture(void)
     drv_barcode_enable(false);
     irq_restore(mask);
     return (provider.set_enabled_task == NULL) ||
-        provider.set_enabled_task(provider.user, false);
+           provider.set_enabled_task(provider.user, false);
 }
 
 int barcode_runtime_init(void)
@@ -78,7 +77,7 @@ int barcode_runtime_init(void)
 }
 
 barcode_api_result_t s3_barcode_configure(const barcode_config_t *config,
-    const barcode_provider_t *adapter)
+                                          const barcode_provider_t *adapter)
 {
     if (!owner_core() || !barcode_config_valid(config) || (adapter == NULL) ||
         (adapter->read_task == NULL) || (adapter->set_enabled_task == NULL))
@@ -95,8 +94,8 @@ barcode_api_result_t s3_barcode_configure(const barcode_config_t *config,
     {
         return unlock(id, BARCODE_API_FAULT);
     }
-    if (cancel_held || atomic_load_explicit(&cancel_pending,
-            memory_order_acquire) ||
+    if (cancel_held ||
+        atomic_load_explicit(&cancel_pending, memory_order_acquire) ||
         (service.status.state != BARCODE_DISABLED))
     {
         return unlock(id, BARCODE_API_BUSY);
@@ -112,8 +111,9 @@ barcode_api_result_t s3_barcode_configure(const barcode_config_t *config,
     if (!provider.set_enabled_task(provider.user, false) ||
         !drv_barcode_gpio_init() ||
         !provider.read_task(provider.user, &level, &encoder, &sampled_us) ||
-        !encoder.valid || ((uint32_t)(sampled_us - encoder.sampled_us) >
-            config->max_encoder_age_us) ||
+        !encoder.valid ||
+        ((uint32_t)(sampled_us - encoder.sampled_us) >
+         config->max_encoder_age_us) ||
         ((uint32_t)(timer_us() - sampled_us) > config->max_encoder_age_us))
     {
         return unlock(id, BARCODE_API_UNAVAILABLE);
@@ -157,8 +157,28 @@ barcode_api_result_t s3_barcode_reset(void)
     return unlock(id, disabled ? BARCODE_API_OK : BARCODE_API_UNAVAILABLE);
 }
 
-barcode_api_result_t s3_barcode_mapping_replace(
-    const barcode_action_t actions[BARCODE_ALPHABET])
+barcode_api_result_t s3_barcode_begin_run(uint32_t epoch)
+{
+    if (!owner_core())
+    {
+        return BARCODE_API_INVALID;
+    }
+    ID id;
+    barcode_api_result_t result = lock(&id);
+    if (result != BARCODE_API_OK)
+    {
+        return result;
+    }
+    if (service.status.queued_events != 0u)
+    {
+        return unlock(id, BARCODE_API_BUSY);
+    }
+    run_history_reset(&service.status.encounters, epoch);
+    return unlock(id, BARCODE_API_OK);
+}
+
+barcode_api_result_t
+s3_barcode_mapping_replace(const barcode_action_t actions[BARCODE_ALPHABET])
 {
     if (actions == NULL)
     {
@@ -194,7 +214,7 @@ barcode_api_result_t s3_barcode_mapping_replace(
 uint32_t s3_barcode_faults(void)
 {
     return drv_barcode_faults() |
-        atomic_load_explicit(&service_faults, memory_order_acquire);
+           atomic_load_explicit(&service_faults, memory_order_acquire);
 }
 
 barcode_api_result_t s3_barcode_copy(barcode_status_t *status)
@@ -287,8 +307,7 @@ void barcode_runtime_service(bool cancel_down)
         cancel_held = cancel_down;
         if (!cancel_down)
         {
-            atomic_store_explicit(&cancel_pending, false,
-                memory_order_release);
+            atomic_store_explicit(&cancel_pending, false, memory_order_release);
         }
     }
     else
@@ -315,7 +334,7 @@ void barcode_runtime_service(bool cancel_down)
                 continue;
             }
             barcode_service_observe(&service, edge.level, &edge.encoder,
-                edge.sampled_us, true);
+                                    edge.sampled_us, true);
             if (service.status.state == BARCODE_FAULT)
             {
                 break;
@@ -330,25 +349,25 @@ void barcode_runtime_service(bool cancel_down)
         bool level = false;
         barcode_encoder_t encoder = {0};
         uint32_t sampled_us = 0u;
-        bool read = empty && provider.read_task(provider.user, &level,
-            &encoder, &sampled_us);
+        bool read = empty && provider.read_task(provider.user, &level, &encoder,
+                                                &sampled_us);
         irq_restore(mask);
         if (empty)
         {
             uint32_t now = timer_us();
             if (!read || ((uint32_t)(now - sampled_us) >
-                service.config.max_encoder_age_us))
+                          service.config.max_encoder_age_us))
             {
                 encoder.valid = false;
                 sampled_us = now;
             }
-            barcode_service_observe(&service, level, &encoder,
-                sampled_us, false);
+            barcode_service_observe(&service, level, &encoder, sampled_us,
+                                    false);
         }
         barcode_service_check_time(&service, timer_us());
     }
     atomic_store_explicit(&service_faults, service.status.fault_bits,
-        memory_order_release);
+                          memory_order_release);
     if (service.status.state == BARCODE_FAULT)
     {
         (void)disable_capture();
@@ -364,6 +383,6 @@ void barcode_runtime_shutdown(void)
     if (s3_barcode_reset() != BARCODE_API_OK)
     {
         atomic_store_explicit(&service_faults, BARCODE_FAULT_CAPTURE,
-            memory_order_release);
+                              memory_order_release);
     }
 }

@@ -9,18 +9,24 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define GY511_I2C_ADDR_ACCEL    0x19u   /* 7-bit accelerometer address */
-#define GY511_I2C_ADDR_MAG      0x1Eu   /* 7-bit magnetometer address */
+#define GY511_I2C_ADDR_ACCEL 0x19u /* 7-bit accelerometer address */
+#define GY511_I2C_ADDR_MAG 0x1Eu   /* 7-bit magnetometer address */
 
-#define GY511_TIMEOUT_US        5000u   /* Whole-transaction polling bound */
+#define GY511_TIMEOUT_US 5000u /* Whole-transaction polling bound */
 
-typedef struct {
+typedef struct
+{
     int16_t x;
     int16_t y;
     int16_t z;
 } Gy511RawAxes;
 
-typedef enum { GY511_ERROR, GY511_WAIT, GY511_NEW } Gy511Result;
+typedef enum
+{
+    GY511_ERROR,
+    GY511_WAIT,
+    GY511_NEW
+} Gy511Result;
 Gy511Result drv_gy511_poll_accel(Gy511RawAxes *out);
 Gy511Result drv_gy511_poll_mag(Gy511RawAxes *out);
 

@@ -4,7 +4,7 @@
   "sha256_archive": "8bcd0324cc8cafbbbd4cd6fc88f3000a038009b37a02a5dd60bcf4e9e120da19",
   "local_changes": [
     "app_program project replacement",
-    "docs/TEAM.md project ownership and proposed priorities",
+    "TEAM.md project ownership and proposed priorities",
     "config/config_device.h disable native ADC",
     "consolidated project documentation; host tests/runners retired; firmware self-tests and evidence retained",
     "kernel service read-only S3 MQTT adapter and output ring"

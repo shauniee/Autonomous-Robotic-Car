@@ -11,9 +11,8 @@
 #include "../../../../app_program/subsystem1/status_protocol.h"
 #include <tm/tmonitor.h>
 #include <string.h>
-#include <stdio.h>
 #include "../../../../app_program/subsystem1/mapping_protocol.h"
-#include "../../../../app_program/subsystem3/mission.h"
+#include "../../../../app_program/subsystem3/mission_status.h"
 #ifndef MQTT_MAPPING_TOPIC
 #define MQTT_MAPPING_TOPIC "robot/s3/mapping"
 #endif
@@ -162,10 +161,8 @@ static void publish_timeout(void *arg)
         mission.mapping_result != MAP_PENDING)
     {
         char payload[160];
-        int n = snprintf(payload, sizeof(payload),
-            "{\"request_id\":%lu,\"result\":%u,\"revision\":%lu}",
-            (unsigned long)mission.mapping_request_id,
-            (unsigned)mission.mapping_result, (unsigned long)mission.mapping_revision);
+        unsigned n = s1_mapping_ack_encode(mission.mapping_request_id,
+            mission.mapping_result, mission.mapping_revision, payload, sizeof(payload));
         if (n > 0 && (unsigned)n < sizeof(payload))
         {
             publish(MQTT_MAPPING_STATUS_TOPIC, payload, (unsigned)n, false);
@@ -243,9 +240,8 @@ static void incoming_data(void *arg, const u8_t *data, u16_t length, u8_t flags)
             if (result != MAP_PENDING)
             {
                 char payload[128];
-                int n = snprintf(payload, sizeof(payload),
-                    "{\"request_id\":%lu,\"result\":%u,\"revision\":0}",
-                    (unsigned long)mapping_request.request_id, (unsigned)result);
+                unsigned n = s1_mapping_ack_encode(mapping_request.request_id,
+                    result, 0u, payload, sizeof(payload));
                 if (n > 0 && (unsigned)n < sizeof(payload))
                 {
                     publish(MQTT_MAPPING_STATUS_TOPIC, payload, (unsigned)n, false);

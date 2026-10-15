@@ -45,3 +45,6 @@ __pycache__/
 .env
 secrets.h
 .vscode/
+
+# Generated compiler stack-usage artifacts
+*.su

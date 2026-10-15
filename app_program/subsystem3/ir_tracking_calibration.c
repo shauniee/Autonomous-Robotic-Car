@@ -1,7 +1,8 @@
 #include "ir_tracking_calibration.h"
 #include <stddef.h>
 
-static unsigned cancel_capture_if_requested(IrTracker *tracker, bool cancel_down)
+static unsigned cancel_capture_if_requested(IrTracker *tracker,
+                                            bool cancel_down)
 {
     if (!cancel_down || tracker->capture_kind == IR_CAPTURE_NONE)
     {
@@ -12,19 +13,16 @@ static unsigned cancel_capture_if_requested(IrTracker *tracker, bool cancel_down
     return 3u;
 }
 
-static ButtonEvent capture_press_received(
-    calibration_control_t *control, 
-    bool capture_down, 
-    bool cancel_down, 
-    uint32_t now)
+static ButtonEvent capture_press_received(calibration_control_t *control,
+                                          bool capture_down, bool cancel_down,
+                                          uint32_t now)
 {
     if (cancel_down && capture_down)
     {
         button_disarm(&control->capture_button);
     }
 
-    return button_update(
-        &control->capture_button, capture_down, now);
+    return button_update(&control->capture_button, capture_down, now);
 }
 
 static IrCaptureKind next_capture_kind(const IrTracker *tracker)
@@ -37,19 +35,20 @@ static IrCaptureKind next_capture_kind(const IrTracker *tracker)
     return IR_CAPTURE_BLACK;
 }
 
-void calibration_control_init(
-    calibration_control_t *control,
-    uint32_t now)
+void calibration_control_init(calibration_control_t *control, uint32_t now)
 {
     if (control != NULL)
     {
+        control->joint_busy = false;
         button_init(&control->capture_button, now);
     }
 }
 
-unsigned calibration_control_feedback(IrCaptureKind before, const IrTracker *tracker)
+unsigned calibration_control_feedback(IrCaptureKind before,
+                                      const IrTracker *tracker)
 {
-    if ((tracker == NULL) || (before == IR_CAPTURE_NONE) || (tracker->capture_kind != IR_CAPTURE_NONE))
+    if ((tracker == NULL) || (before == IR_CAPTURE_NONE) ||
+        (tracker->capture_kind != IR_CAPTURE_NONE))
     {
         return 0u;
     }
@@ -65,12 +64,9 @@ unsigned calibration_control_feedback(IrCaptureKind before, const IrTracker *tra
     }
 }
 
-unsigned calibration_handle_buttons(
-    calibration_control_t *control,
-    IrTracker *tracker,
-    bool capture_down,
-    bool cancel_down,
-    uint32_t now)
+unsigned calibration_handle_buttons(calibration_control_t *control,
+                                    IrTracker *tracker, bool capture_down,
+                                    bool cancel_down, uint32_t now)
 {
     if (control == NULL || tracker == NULL)
     {
@@ -79,9 +75,11 @@ unsigned calibration_handle_buttons(
 
     unsigned chirps = cancel_capture_if_requested(tracker, cancel_down);
 
-    ButtonEvent event = capture_press_received(control, capture_down, cancel_down, now);
+    ButtonEvent event =
+        capture_press_received(control, capture_down, cancel_down, now);
 
-    bool press_transition = (event == BUTTON_EVENT_PRESSED) || (event == BUTTON_EVENT_IGNORED_PRESS);
+    bool press_transition = (event == BUTTON_EVENT_PRESSED) ||
+                            (event == BUTTON_EVENT_IGNORED_PRESS);
 
     if (cancel_down && press_transition)
     {
@@ -90,6 +88,10 @@ unsigned calibration_handle_buttons(
     }
 
     if (event != BUTTON_EVENT_PRESSED)
+    {
+        return chirps;
+    }
+    if (control->joint_busy)
     {
         return chirps;
     }

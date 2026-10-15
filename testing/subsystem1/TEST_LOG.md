@@ -1,25 +1,27 @@
-# S1 test log
+# Subsystem1 tests
 
-Owner: Shaun / communications. S1 now owns the optional latest S3 snapshot and bounded encoder, with one mutex and no task. Retired template IDs: S1-U01 cyclic handler, S1-U02 sleeping LED task, S1-U03 GP19 LED at 2 Hz. No template result was recorded. Heartbeat/status reporting and a status-only subscription are restored from the earlier S1 branch in the existing kernel service. No Pico hardware result is claimed.
+Fresh definitions/results after the authorized reset. Previous results are recoverable only in Git and are not current PASS evidence. Firmware fixtures execute only in inhibited TEST; no host fake-kernel runner is used.
 
-## 1. Test cases
+## Firmware cases
 
-| ID | Scope | Method | Expected |
-| --- | --- | --- | --- |
-| S1-U04 | Bounded JSON | Host actual encoder; TEST image contains a smaller self-check | Null unavailable values, negative/positive fixed decimals, original timestamp/age including wrap; exact capacity succeeds, undersized/oversized or unterminated input fails without overrun |
-| S1-U05 | Latest snapshot and adapter | Host actual S1 store/S3 adapter with fake kernel, plus simultaneous pthread producer/consumer using try-lock | Safe before init and on allocation/busy failure; TMO_POL only; complete paired values, sequence advances on stored update, independent producer storage; requested duties and TEST flag reported without controller changes |
+Each row below requires every grouped assertion to succeed. Expected PASS is a requirement, not an executed result. Fixture source: [subsystem1_test.c](subsystem1_test.c). Synthetic values are not hardware calibration.
 
-| S1-U06 | Status request parser | Firmware TEST self-check, pending execution | Accept exact status-only JSON with whitespace and fragments; reject malformed, duplicate/unknown fields, movement commands, overflow, short final fragment and embedded NUL; reset discards fragments |
-| S1-U07 | Network status encoder | Firmware TEST self-check, pending execution | Valid bounded JSON at max uint32 counters; exact capacity succeeds, too-small capacity clears output; no snapshot is explicit |
-| S1-U08 | Restored laptop helper | Isolated localhost Mosquitto with synthetic messages; monitor/status CLI | Subscribe before request; exact nonretained status-only request, live response, cached retained status alone times out, telemetry/heartbeat display, missing-heartbeat notice, no start/stop action |
+| ID | Required behavior | Method |
+| --- | --- | --- |
+| S1-U04 | bounded telemetry JSON and original age; no radio test | Inhibited firmware fixture |
+| S1-U06 | fragmented status only; malformed and movement requests rejected | Inhibited firmware fixture |
+| S1-U07 | bounded heartbeat/status JSON; exact capacity and max counters | Inhibited firmware fixture |
+| S1-U09 | 26-entry fragmented mapping and bounded rejection | Inhibited firmware fixture |
+| S1-U10 | ack failure/reconnect retry, stale callback, bounded backpressure | Inhibited firmware fixture |
+| S1-U11 | every topic rejects wildcards and duplicates | Inhibited firmware fixture |
+| S1-U12 | robot summary and bounded event history/cursor | Inhibited firmware fixture |
+| S1-U13 | bounded read-only event retrieval request | Inhibited firmware fixture |
 
-## 2. Results
+## Results
 
-Historical migration status: no S1 project results were recorded while this subsystem was an inactive placeholder.
-
-| Date | ID | Source | Tester | Result | Evidence | Limits |
+| Date | IDs | Revision / image SHA-256 | Profile/configuration | Tester | Result | Measurements / evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-08 | S1-U04/U05 | [source manifest](../integration/logs/2026-10-08_s3-mqtt-source-sha256.json) | Codex host run | PASS | [host log](../integration/logs/2026-10-08_s3-mqtt-host-checks.txt) | Real modules with fake mutex/clock; not Pico scheduling or WiFi |
-| 2026-10-08 | S1-U04 | Wireless TEST image | On-target run pending | PENDING | No Pico console log | Compiled self-check is not an executed on-target result |
-| 2026-10-09 | S1-U08 | [restoration manifest](../integration/logs/2026-10-09_s1-restore_evidence.json) | Codex laptop run | PASS | [laptop check](../integration/logs/2026-10-09_s1-restore_laptop-check.txt) | Actual helper/localhost broker, synthetic fixture; not Pico transport |
-| 2026-10-09 | S1-U04/U06/U07 | Same manifest, wireless TEST UF2 checksum | On-target run pending | PENDING | [TEST build](../integration/logs/2026-10-09_s1-restore_wireless-test-build.txt) | Compiled self-checks, not executed on Pico |
+
+Firmware execution: **PENDING**. Append actual complete console evidence only after execution. Builds/compiler checks belong in the integration log and do not fill this table with fixture PASS results.
+
+Physical coverage and procedures: [system cases](../system/TEST_LOG.md), [GUIDE](../../GUIDE.md), [testing policy](../README.md). Include source, image, power/wiring, calibration, mapping request/revision, reference/observed measurements, time and evidence for every real run.

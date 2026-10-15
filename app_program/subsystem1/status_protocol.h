@@ -12,7 +12,8 @@ typedef struct
 {
     char payload[S1_REQUEST_MAX + 1u];
     unsigned expected, received;
-    bool receiving;
+    bool receiving, events, barcode;
+    uint32_t after_id;
 } S1StatusRequest;
 
 typedef struct
@@ -29,4 +30,6 @@ bool s1_status_request_data(S1StatusRequest *request, const void *data,
                             unsigned length, bool last);
 unsigned s1_status_encode(const S1NetworkStatus *status, char *out,
                           unsigned capacity);
+unsigned s1_mapping_ack_encode(uint32_t id, unsigned result, uint32_t revision,
+                               char *out, unsigned capacity);
 #endif

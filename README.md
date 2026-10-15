@@ -1,29 +1,11 @@
 # CSC01 Autonomous Robotic Car
 
-An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, hump measurement, obstacle avoidance and WiFi telemetry. Firmware uses micro T-Kernel 3.0 on the RP2040. See [project specifications](docs/PROJECT_SPECS.md) for required outcomes and [getting started](docs/GETTING_STARTED.md#current-capabilities) for what runs today.
+Pico WH / Robo Pico firmware using micro T-Kernel 3.0 for autonomous line/barcode navigation, terrain measurement, obstacle handling and MQTT reporting.
 
-## Reading order
+Start with [GUIDE](GUIDE.md) for setup and operation. [TEAM](TEAM.md) owns wiring/resources; [TECHNICAL_INFO](TECHNICAL_INFO.md) owns hardware facts; [ARCHITECTURE](docs/ARCHITECTURE.md) owns coordination and links to the five subsystem guides.
 
-| Guide | Use it for |
-| --- | --- |
-| [Getting started](docs/GETTING_STARTED.md) | Install, build, flash, calibrate, operate and complete project tasks |
-| [Team](docs/TEAM.md) | Owners, wiring, peripheral allocation, priorities and workflow |
-| [Project specifications](docs/PROJECT_SPECS.md) | Requirements, deliverables, assessment, course details and pending decisions |
-| [Architecture](docs/ARCHITECTURE.md) | System coordination, data contracts and subsystem navigation |
-| [Technical information](docs/TECHNICAL_INFO.md) | Hardware limits, interfaces, registers and formulas |
-| [Coding standard](docs/CODING_STANDARD.md) | Project C rules and review checklist |
- |
+[Testing](testing/README.md) owns current cases/results. [Videos](videos/README.md) owns demonstration links. Development references are under `docs/donotsubmit/`.
 
-Each fact has one owning guide; other guides link to it. Assignment requirements, proposed design, implemented behavior and recorded results are distinct.
+Use `uat`; do not merge into `main`. Measured/course settings remain unconfirmed and physical acceptance remains pending. A successful build does not establish mission completion.
 
-## Repository structure
-
-| Path | Contents |
-| --- | --- |
-| `app_program/` | `app_main.c` startup, shared definitions and five subsystem folders; application drivers stay with their subsystem |
-| `build_make/` | Make profiles and generated firmware |
-| `config/` | Kernel/device configuration and ignored local credentials |
-| `kernel/`, `lib/`, `device/`, `include/`, `tools/` | Imported runtime, services, drivers, headers and conversion tools |
-| `docs/` | Six project guides, seven architecture guides and preserved drawings |
-| [testing/](testing/README.md) | Stable test IDs, result tables and saved evidence |
-| [videos/](videos/README.md) | Unlisted demonstration links |
+The imported micro T-Kernel runtime retains the TRON Forum/template licenses and original attribution. Application changes do not imply full Barr compliance certification.

@@ -28,3 +28,11 @@
 #define MQTT_REQUEST_TOPIC   "robot/s3/request"
 
 #endif /* WIFI_SECRETS_H */
+
+/* Configure all topics together when changing the robot/s3 root. */
+#ifndef MQTT_MAPPING_TOPIC
+#define MQTT_MAPPING_TOPIC "robot/s3/mapping"
+#endif
+#ifndef MQTT_MAPPING_STATUS_TOPIC
+#define MQTT_MAPPING_STATUS_TOPIC "robot/s3/mapping_status"
+#endif

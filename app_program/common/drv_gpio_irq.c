@@ -30,8 +30,14 @@ static void gpio_dispatch(UINT intno)
 
 ER drv_gpio_irq_init(void)
 {
-    if (tk_get_prc() != 2) { return E_CTX; }
-    if (initialized) { return E_OK; }
+    if (tk_get_prc() != 2)
+    {
+        return E_CTX;
+    }
+    if (initialized)
+    {
+        return E_OK;
+    }
     for (unsigned bank = 0u; bank < 4u; ++bank)
     {
         out_w(GPIO_ENABLE + bank * 4u, 0u);
@@ -40,7 +46,10 @@ ER drv_gpio_irq_init(void)
     definition.intatr = TA_HLNG;
     definition.inthdr = (FP)gpio_dispatch;
     ER er = tk_def_int(GPIO_IRQ, &definition);
-    if (er < E_OK) { return er; }
+    if (er < E_OK)
+    {
+        return er;
+    }
     ClearInt(GPIO_IRQ);
     EnableInt(GPIO_IRQ, 2u);
     initialized = true;
@@ -50,14 +59,20 @@ ER drv_gpio_irq_init(void)
 bool drv_gpio_irq_claim(unsigned pin, gpio_edge_handler_t handler)
 {
     if (!initialized || pin >= 30u || handler == NULL ||
-        (handlers[pin] != NULL && handlers[pin] != handler)) { return false; }
+        (handlers[pin] != NULL && handlers[pin] != handler))
+    {
+        return false;
+    }
     handlers[pin] = handler;
     return true;
 }
 
 bool drv_gpio_irq_enable(unsigned pin, bool enabled)
 {
-    if (!initialized || pin >= 30u || handlers[pin] == NULL) { return false; }
+    if (!initialized || pin >= 30u || handlers[pin] == NULL)
+    {
+        return false;
+    }
     unsigned bank = pin / 8u, shift = (pin % 8u) * 4u;
     uint32_t mask = 12u << shift;
     UW state;
@@ -67,7 +82,10 @@ bool drv_gpio_irq_enable(unsigned pin, bool enabled)
         out_w(GPIO_RAW + bank * 4u, mask);
         set_w(GPIO_ENABLE + bank * 4u, mask);
     }
-    else { clr_w(GPIO_ENABLE + bank * 4u, mask); }
+    else
+    {
+        clr_w(GPIO_ENABLE + bank * 4u, mask);
+    }
     EI(state);
     return true;
 }

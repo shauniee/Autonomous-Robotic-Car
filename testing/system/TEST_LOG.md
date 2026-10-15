@@ -1,26 +1,31 @@
-# System and physical test log
+# System and physical tests
 
-Retired template definitions: SYS-01 illustrative ten-second WiFi reading; SYS-02 unfilled manual placeholder. No template result was recorded. Full mission report trials T01-T16 remain pending. No source commit or hardware result is fabricated.
+Fresh physical definitions; every result is PENDING until actually executed. [GUIDE](../../GUIDE.md) owns operation and power; [PROJECT_SPECS](../../docs/donotsubmit/PROJECT_SPECS.md#pending-decisions) owns numerical thresholds and course decisions. Do not invent pass marks.
 
-## 1. Test cases
+## Cases
 
-| ID | Requirement | Steps | Expected / measurements |
-|---|---|---|---|
-| SYS-03 | Inhibited USB-only checks | USB sole source; flash TEST image by BOOTSEL; capture startup/self-tests/BENCH console; exercise GP20 black/white/start and GP21 | No motor movement; actual test lines, ADC readings, capture stage/cues logged |
-| SYS-04 | Battery calibration and polarity | Flash normal; unplug USB, connect power bank only; wheels raised; capture black then white; start on visible line; GP21 stop | Correct chirps, contrast, forward polarity; reset requires separate start; measured motor-output stop <=50 ms target |
-| SYS-05 | Straight/curve, loss and reboot | Normal firmware, USB disconnected; low-speed runs, controlled loss; fresh reboot | Repeated tracking; bounded <=100 ms commanded loss policy; physical stop separately measured; reboot inhibits and clears refs |
-| SYS-06 | Task-stall watchdog | Controlled bench fault injection with wheels raised, sole power source | No feed without both progressing; measure reset time and inhibited reboot; requires suitable operator instrumentation |
-| SYS-07 | Proportional baseline and recovery | Battery sole source; record geometry/calibration and flashed image; repeat straight/curves and left/right controlled loss; test unknown direction and persistent broad black | Measured P tracking; two visible acquisitions before bounded resume; requested turn <=100 ms; motor-output/physical stop measured separately; thresholds/gains not prevalidated |
-| SYS-08 | Future barcode | Planned after framing/mapping and decoder implementation; known samples, partial/reverse/speed/duplicate/overflow cases | One valid mapped event per encounter; no guessed turns; navigation completion requires encoders |
-| SYS-09 | Actual Pico wireless TEST connectivity | Mac broker/subscriber on same private 2.4 GHz network; USB alone, carrier switch on; flash wireless TEST; exercise black/white/start/stop | Approximately 500 ms JSON, current ADCs/references/age, null before calibration, correct states and test_inhibited=true; no motor output; record boot console, revision, UF2 checksum and MQTT log |
-| SYS-10 | Bank-only wireless following and network loss | Flash wireless normal; unplug USB then bank only; recalibrate; track/stop/reset; interrupt/restart broker and WiFi while observing safely | Current telemetry and latest snapshot on reconnect, no backlog; healthy local autonomy/GP21 preserved across loss; physical stop/recovery timing measured separately; no USB attached |
+| ID | Scenario / required actions | Expected accepted outcome |
+| --- | --- | --- |
+| T01 | **Electrical and calibration:** Verify markings/wiring/rails; black+IMU starts on one GP20 press; white waits for joint completion. Test early/held/repeated presses, movement, bad gravity/contrast, missing sensors, stale samples, cancellation, deadline and reboot. | Braked throughout; one/two beeps have their documented meaning; no early white/start; bad inputs reject without false calibration. |
+| T02 | **Stop/reset:** GP21 in calibration, following, navigation, scan, center restoration, bypass, recovery and finish. Release/hold/repeat inputs and reset after sensor/impact faults. | Measure brake command and physical stopping separately. Cancellation remains cancelled; reset never starts; fresh start needs qualified readiness. |
+| T03 | **Tracking/junctions:** Straight/curves, minor surface/light/speed variation; broad transients, repeated cached/invalid/skipped sequences, consecutive samples and qualified/unqualified crossings. | Follows without intervention; cached/transient data cannot turn/finish; ambiguity stops. |
+| T04 | **Barcodes:** All A-Z at small/large scales, forward/reverse (104 combinations); valid encoders; partial/unknown/malformed, quiet/rearm, reversal, stale/reset/wheel-disagreement, duplicate, capture/FIFO overflow and unassigned letters. | Correct symbols/orientation and one event per accepted passage; no guessed action; faults and reporting counts are explicit. |
+| T05 | **Encoder actions:** Left/right/straight/U-turn, positive/negative distance and repeated accuracy; one wheel incomplete; speed saturation/stall, renewed leases, immutable origin/deadline, completion ack, obsolete epochs and obstacle interruption. | Both wheels must qualify completion; measured distance/angle meets agreed limits; faults brake and old commands cannot replay. |
+| T06 | **Movement:** Labelled stationary/acceleration/braking, left/right pivots, climb/descent and impact, stale feedback and time/epoch changes. | Valid pivot rate is not suppressed by height filtering; unreliable motion fields are unavailable; impact stops. |
+| T07 | **Hump height/history:** Measured reference humps including one-wheel and equal-height repeats; invalid/incomplete/slip/dynamic windows after accepted peak; stop/reset, new-run WAIT/error, 8-record eviction and count saturation. | Reference error within agreed limits; count/last/max correct; invalid later candidate cannot replace maximum; new epoch never presents old peak; overflow is explicit. |
+| T08 | **Forward sonar:** Known ranges/materials/angles and installed voltage; pretrigger-high/no/stuck/late/out-of-range Echo; repeat rate and continuous acquisition under load. | Unknown is never clear; fresh valid ranges match references; acquisition remains bounded. |
+| T09 | **Scan/cancel:** Moving/stale stationarity, duplicate/busy requests, each coarse/fine/settling/center phase, servo error, deadline and cancellation. | Scan only when stationary; cancel dominates and remains cancelled; center restored with fresh forward reading before successful motion. |
+| T10 | **Bypass/original line:** Measured mount/headroom/envelope; greater-left/right, tie-left, blocked/unknown, course bounds/depth, wrong crossing/slip and nested obstacle. | Stop/scan outside pivot envelope; supported side correct; no collision; original route reacquired with fresh pose/heading/line context; unsupported layouts stop. |
+| T11 | **Line recovery:** Brief left/right loss and permanent loss; no current-run direction; pending qualified command versus additional queued ambiguity; obstacle during search, two fresh visible observations and exact 500 ms boundary; new-run opposite route. | Capture resets/rearms; qualified instruction retained; short valid loss resumes within policy; no stale direction or uncertain retry. |
+| T12 | **MQTT/configuration:** Actual Pico origin, seven valid/invalid/duplicate topics; status/events requests; four-letter replacement and all-letter remapping rotation; duplicate/missing/invalid keys/actions, NUL/fragment/oversize/busy/moving/stale IDs; reboot and broker retained-message policy. | Current bounded robot data and event records; matching live applied ID/revision; invalid input preserves accepted map and never starts movement; no retained configuration replay under approved broker policy. |
+| T13 | **Network recovery:** WiFi/broker disconnect, failed subscription, output saturation, QoS1 ack failure/reconnect/stale callbacks, overlapping requests/result queue full and timestamp/ID wrap. | Applied configuration is not replayed for retry; ack retained until delivery; full result queue does not apply another table; healthy local autonomy survives network loss. |
+| T14 | **Required-data failures:** Freeze/miss/fail IR, Motion, Terrain and forward sonar; encoder illegal edges/stall, expired lease/action, partial acquisition, full rings/FIFO and wrong identities. | Freshness/absolute limits hold; independent brake/fault; reset cannot replay commands. |
+| T15 | **Concurrent load:** Measure release timing, meaningful progress, stop latency, watchdog, stack/memory and queue occupancy with sensors/scan/network/console load. | No missed safety deadline, hard fault or unexplained overflow; diagnostic congestion cannot control movement; measured stack margin acceptable. |
+| T16 | **Complete course/freeze:** Fresh calibration/mapping to confirmed finish, all four actions/humps/obstacle, repeated complete runs and different four-letter assignments with identical UF2; record actual elapsed time. | M1-M10 meet agreed criteria without intervention; finish braked; highest accepted height/encounters correct; image checksum unchanged during mission-day mapping rehearsal. |
 
-## 2. Results
+## Results
 
-| Date | ID | Revision | Result | Reason |
-|---|---|---|---|---|
-| 2026-10-08 | SYS-03/04/05/06 | To record before trial | PENDING | No connected Pico; physical calibration/tracking/stop/reset cannot be performed in this session |
-| 2026-10-08 | SYS-07/08 | To record before trial | PENDING | Proportional refactor software checks only; barcode deferred, no physical trial performed |
-| 2026-10-08 | SYS-09/10 | To record before trial | PENDING | MQTT profiles built and host/local broker checks passed; no Pico flash, radio connection or physical trial performed for this addition |
+| Date | IDs | Revision / image SHA-256 | Wiring/power/config/calibration/mapping | Tester | Result | Reference/observed/error/time | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
 
-Do not connect USB while the power bank is connected. Use camera/scope/operator records during battery trials; USB logs are collected only in the separate USB-only phase. Record actual wiring, calibrated references and exact flashed firmware checksum/revision in every result.
+No physical PASS is recorded. Append actual console/subscriber/video/scope/reference measurements, including failures and reruns. Three clean complete rehearsals is a useful team target, not an instructor rule. Course/depth/finish/symbology acceptance remains mandatory before declaring mission readiness.
