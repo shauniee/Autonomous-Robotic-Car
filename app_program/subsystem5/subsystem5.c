@@ -1,4 +1,4 @@
-#include "subsystem5.h"
+#include "subsystem5_internal.h"
 #include "../common/drv_gpio_irq.h"
 #include "../common/robot_config.h"
 #include "../common/robot_time.h"

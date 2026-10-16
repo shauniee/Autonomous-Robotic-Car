@@ -108,7 +108,7 @@ Smaller numbers mean higher priority. Priorities 1–4 are reserved for the kern
 | Nicholas | Line/Barcode / 15 / core 1 | Inputs 10 ms, ADC 20 ms, bounded edge budget |
 | Darrius | Terrain / 16 / core 1 | 20 ms, fresh-data gated |
 | Jia Jing | Obstacle / 17 / core 1 | Bounded acquisition states, 2 ms service |
-| Shaun | Reporting / 20 / core 1 | Nominal 100 ms, optional with MQTT |
+| Shaun | Reporting / 20 / core 1 | Snapshot refresh 20 ms; telemetry publication 500 ms; optional with MQTT |
 
 Application stacks are 4096 bytes. TEST startup retains its separate 4096-byte stack; normal startup is 1024 bytes. Scheduling, stack margin and stop latency require physical measurement; configured periods are not recorded WCET.
 

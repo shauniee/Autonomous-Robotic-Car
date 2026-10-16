@@ -42,11 +42,15 @@ These laptop web checks are separate from inhibited firmware fixtures. Run `pyth
 | S1-W05 | Missing data/heartbeat becomes stale, offline presence wins and accepted peak remains |
 | S1-W06 | Broker reconnect requires fresh telemetry and heartbeat |
 | S1-W07 | Browser renders known values/units/enums/encounters; desktop/mobile layout works; no script errors |
+| S1-W08 | UI clears live readings on stale data or HTTP loss, labels retained snapshots, and restores live labels on recovery |
+
+Run the UI transition regression with `node testing/subsystem1/dashboard_ui_test.mjs`. It uses Node's built-in VM with a minimal DOM surface, the shared synthetic dashboard sample and deterministic API responses; it needs no broker or browser. This checks app state transitions, not browser layout or MQTT delivery.
 
 | Date | IDs | Source / method | Tester | Result | Evidence |
 | --- | --- | --- | --- | --- | --- |
 | 2026-10-15 | S1-W01-W06 | Source hashes in log; actual local broker + HTTP, synthetic isolated messages | Codex | PASS | [Initial run](logs/2026-10-15_dashboard_broker.json); [preview run](logs/2026-10-15_dashboard_broker_final.json); [committed-source verification](logs/2026-10-15_dashboard_broker_verified.json) |
 | 2026-10-15 | S1-W07 | Source hashes / observed browser behavior; synthetic feed separated from configured robot topic | Codex | PASS | [Browser inspection](logs/2026-10-15_dashboard_browser.json) |
+| 2026-10-15 | S1-W08 | Node VM/DOM; fresh, stale, HTTP disconnect and recovery transitions using synthetic data | Codex | PASS | [UI regression output](logs/2026-10-15_dashboard_ui_disconnect.txt); source hashes recorded there |
 
 Live configured-topic observations belong in the browser record, with the actual state/validity and no invented calibration results. Synthetic sample values are not measured robot outcomes. T12/T13/T15 and complete mission acceptance remain separate physical/integrated gates.
 

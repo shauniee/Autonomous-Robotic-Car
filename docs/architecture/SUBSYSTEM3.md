@@ -12,7 +12,7 @@ ordinary mission calibration remains joint. [GUIDE](../../GUIDE.md#checks-while-
 owns the distinct beep meanings and operator steps. S3-U18 exercises complete
 IR capture, opposite sensor polarities, stale guidance and contrast rejection.
 
-The task reads paired ADC0/ADC1 at nominal 20 ms with one original acquisition time/sequence. Black/white capture uses at least 500 ms and 25 samples; each channel needs at least 300 ADC-count contrast. Missing/invalid acquisitions and gaps above 60 ms invalidate guidance. Completed references survive ordinary stop; reboot clears them.
+The task reads paired ADC0/ADC1 at nominal 20 ms with one original acquisition time/sequence. Each channel discards one settling conversion, then averages exactly eight checked conversions. Black/white capture uses at least 500 ms and 25 samples; each channel needs at least 300 ADC-count contrast. Missing/invalid acquisitions and gaps above 60 ms invalidate guidance. Completed references survive ordinary stop; reboot clears them. The target ADC response and calibration still require hardware measurement.
 
 The first accepted black press also posts a task-owned S4 calibration request. Keep braked/still while black and 100 fresh IMU samples complete. Black completion alone does not beep or permit white capture. Extra presses are ignored. One beep confirms both; three indicates cancellation/failure/deadline. A separate white press produces two beeps on accepted contrast. [GUIDE](../../GUIDE.md#every-power-on-calibrate-map-start) owns operator steps.
 

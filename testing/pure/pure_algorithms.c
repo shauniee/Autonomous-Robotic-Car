@@ -10,7 +10,7 @@
 #include "../../app_program/subsystem3/barcode_decode.h"
 #include "../../app_program/subsystem3/ir_tracking.h"
 #include "../../app_program/subsystem4/terrain_algo.h"
-#include "../../app_program/subsystem5/subsystem5.h"
+#include "../../app_program/subsystem5/subsystem5_internal.h"
 #include "../../app_program/subsystem3/mission_guards.h"
 
 static unsigned failures;

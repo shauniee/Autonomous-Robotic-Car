@@ -1,4 +1,5 @@
 #include "../../app_program/subsystem4/terrain_motion.h"
+#include "../../app_program/subsystem4/subsystem4_internal.h"
 #include "../../app_program/test_report.h"
 #include "../fixture_config.h"
 #include <math.h>

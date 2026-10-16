@@ -1,6 +1,6 @@
 # Subsystem 1: Communications
 
-Owner: Shaun. Reporting copies actual Mission/S2/S3/S4/S5 snapshots every nominal 100 ms. The existing core-0 kernel service exclusively owns WiFi/lwIP/MQTT; student tasks do not call network APIs. Busy/unavailable reporting never authorizes movement or participates in watchdog health.
+Owner: Shaun. The reporting provider refreshes actual Mission/S2/S3/S4/S5 snapshots every nominal 20 ms; telemetry publication remains nominal 500 ms. The existing core-0 kernel service exclusively owns WiFi/lwIP/MQTT; student tasks do not call network APIs. Busy/unavailable reporting never authorizes movement or participates in watchdog health.
 
 ## MQTT contract
 

@@ -24,12 +24,14 @@ Each row below requires every grouped assertion to succeed. Expected PASS is a r
 | S3-U23 | Code 39 valid decode, ambiguous width rejection, malformed frame rejection and invalid configuration rejection | Inhibited firmware fixture |
 | S3-U24 | Unmapped symbol remains a recorded observation and is excluded from the action event queue | Inhibited firmware fixture |
 | S3-U25 | Encoder epoch change rejects capture input; bounded frame deadline returns service to quiet admission | Inhibited firmware fixture |
+| S3-U26 | Driver averaging helper returns the exact fixed eight-sample mean for varied, full-scale and zero ADC samples | Inhibited firmware fixture; pure host fixture |
 
 ## Results
 
 | Date | IDs | Revision / image SHA-256 | Profile/configuration | Tester | Result | Measurements / evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-15 | S3-U06, S3-U09, S3-U12, S3-U14, S3-U15, S3-U16, S3-U17, S3-U18 | `61bc484`; UF2 `22403565d19f666e49cc46fead2dd57c9fc8fb5a0f55b438497421164920f254` | USB-only, wireless IR-only TEST; missing IMU/sonar; motors inhibited | Nicholas / Codex capture | Firmware PASS | [Complete 45-check capture](../integration/logs/2026-10-15_134410_950691_pico-console.txt), [summary](../integration/logs/2026-10-15_134410_950691_pico-console.json); logic/timer/kernel checks only, no powered acceptance |
+| 2026-10-15 | S3-U26 | Working tree based on `d64322d` with uncommitted ADC helper/test changes | Pure host fixture; no target ADC access | Codex | Host fixture PASS | Varied inputs average to 450; full-scale and zero inputs remain 4095 and 0. [Complete fixture output](../pure/logs/2026-10-15_adc-average-fixture.txt); no firmware or physical ADC evidence |
 
 Actual inhibited firmware execution is recorded above. Physical acceptance remains pending. Earlier compiled-only evidence retains its original status; builds never count as executed fixtures.
 

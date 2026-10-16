@@ -1,4 +1,4 @@
-#include "subsystem5.h"
+#include "subsystem5_internal.h"
 #include "../common/robot_config.h"
 #include <math.h>
 bool s5_profile_build_config(ObstacleSnapshot *s, const RobotConfig *c)

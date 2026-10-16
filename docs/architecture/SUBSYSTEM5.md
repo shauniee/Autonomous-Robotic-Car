@@ -22,7 +22,7 @@ Even a completed valid profile does not release the brake until Mission revalida
 
 ## Interfaces and verification
 
-`ObstacleSnapshot` contains independent forward/profile times, scan state/ID, rays and profile validity. `s5_obstacle_copy`, `s5_scan_request`, `s5_scan_cancel` and reset are bounded task APIs. `s5_profile_build_config` and `s5_scan_guard` are the live configuration/phase predicates exercised by fixtures.
+`ObstacleSnapshot` contains independent forward/profile times, scan state/ID, rays and profile validity. `s5_obstacle_copy`, `s5_scan_request`, `s5_scan_cancel` and reset are bounded task APIs. `s5_profile_build_config` and `s5_scan_guard` are internal, fixture-tested configuration/phase predicates rather than cross-subsystem APIs.
 
 Modules: lifecycle/task `subsystem5` and `obstacle_profile`. [S5 cases](../../testing/subsystem5/TEST_LOG.md), T08-T10 and [integration](../../testing/integration/TEST_LOG.md) own evidence. Scan publication cannot override GP21/Safety.
 

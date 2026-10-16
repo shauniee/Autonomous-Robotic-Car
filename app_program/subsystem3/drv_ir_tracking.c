@@ -1,4 +1,5 @@
 #include "drv_ir_tracking.h"
+#include "drv_ir_tracking_average.h"
 #include "../app.h"
 
 #define ADC_REG_BASE 0x4004c000u
@@ -11,7 +12,6 @@
 #define ADC_CHANNEL_SHIFT 12u
 #define ADC_BUDGET_US 2000u
 #define ADC_POLL_LIMIT 4096u
-#define ADC_AVERAGE_COUNT 8u
 #define IR_LEFT_PIN 26u
 #define IR_RIGHT_PIN 27u
 #define IR_LEFT_ADC_CHANNEL 0u
@@ -106,18 +106,18 @@ static bool channel(unsigned mux, uint16_t *value, uint32_t started)
     {
         return false;
     }
-    uint32_t sum = 0u;
+    uint16_t samples[DRV_IR_TRACKING_AVERAGE_COUNT];
 
-    for (unsigned i = 0u; i <= ADC_AVERAGE_COUNT; ++i)
+    for (unsigned i = 0u; i < DRV_IR_TRACKING_AVERAGE_COUNT; ++i)
     {
         if (!adc_read_once(control, &sample, started))
         {
             return false;
         }
-        sum += sample;
+        samples[i] = (uint16_t)sample;
     }
 
-    *value = (uint16_t)(sum / ADC_AVERAGE_COUNT);
+    *value = drv_ir_tracking_average(samples);
     return true;
 }
 

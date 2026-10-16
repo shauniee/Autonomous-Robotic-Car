@@ -6,6 +6,7 @@
 #include "../../app_program/subsystem3/barcode_service.h"
 #include "../../app_program/subsystem3/mission_guards.h"
 #include "../../app_program/subsystem3/mission_status.h"
+#include "../../app_program/subsystem3/drv_ir_tracking_average.h"
 #include "../fixture_config.h"
 #include "code39_vectors.h"
 #include <math.h>
@@ -393,6 +394,19 @@ static bool barcode_encoder_deadline_test(void)
            service.status.rejected_reads == rejected_before_deadline + 1u;
 }
 
+static bool ir_adc_average_test(void)
+{
+    const uint16_t varied[DRV_IR_TRACKING_AVERAGE_COUNT] = {
+        100u, 200u, 300u, 400u, 500u, 600u, 700u, 800u};
+    const uint16_t full_scale[DRV_IR_TRACKING_AVERAGE_COUNT] = {
+        4095u, 4095u, 4095u, 4095u, 4095u, 4095u, 4095u, 4095u};
+    const uint16_t zero[DRV_IR_TRACKING_AVERAGE_COUNT] = {0u};
+
+    return drv_ir_tracking_average(varied) == 450u &&
+           drv_ir_tracking_average(full_scale) == 4095u &&
+           drv_ir_tracking_average(zero) == 0u;
+}
+
 static bool mission_guard_test(void)
 {
     RobotConfig cfg = fixture_config();
@@ -530,6 +544,8 @@ void subsystem3_test(void)
                "unmapped symbol is retained as observation and never enters action queue");
     TEST_CHECK("S3-U25", barcode_encoder_deadline_test(),
                "encoder epoch change rejects a read and frame deadline returns scanner to quiet admission");
+    TEST_CHECK("S3-U26", ir_adc_average_test(),
+               "driver's fixed eight-sample mean handles varied, full-scale and zero ADC inputs");
     TEST_SUMMARY("subsystem3");
 }
 #endif

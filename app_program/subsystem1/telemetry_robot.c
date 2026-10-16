@@ -187,14 +187,6 @@ void s1_reporting_task(INT stacd, void *exinf)
             if (barcode.encounters.run_epoch == s.run_epoch)
             {
                 s.barcodes = barcode.encounters;
-                if (s.barcodes.length > 0u)
-                {
-                    const RunEvent *last =
-                        &s.barcodes.events[s.barcodes.length - 1u];
-                    s.symbol[0] = (char)last->value;
-                    s.navigation = last->detail >> 1u;
-                    s.orientation = last->detail & 1u;
-                }
             }
             s.mapping_revision = barcode.mapping_revision;
             s.scanner_epoch = barcode.scanner_epoch;

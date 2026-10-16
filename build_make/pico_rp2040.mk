@@ -168,6 +168,7 @@ $(EXE_FILE).elf: | $(E2U)
 CFLAGS := -mcpu=cortex-m0plus -mthumb -ffreestanding\
     -std=gnu11 \
     -O2 -g3 \
+    -ffunction-sections -fdata-sections \
     -MMD -MP \
     -mfloat-abi=soft \
 
@@ -179,6 +180,7 @@ ASFLAGS := -mcpu=cortex-m0plus -mthumb -ffreestanding\
 LFLAGS := -mcpu=cortex-m0plus -mthumb -ffreestanding \
     -nostartfiles \
     -O2 -g3 \
+    -Wl,--gc-sections \
     -mfloat-abi=soft \
 
 LNKFILE := "../etc/linker/pico_rp2040/tkernel_map.ld"
@@ -367,8 +369,7 @@ CFLAGS += -DTM_WIFI_CYW43=1 -DCYW43_LWIP=$(if $(filter lwip,$(NET)),1,0) -DCYW43
           -DCYW43_DEFAULT_PIN_WL_HOST_WAKE=24u \
           -DCYW43_DEFAULT_PIN_WL_CLOCK=29u \
           -DCYW43_DEFAULT_PIN_WL_CS=25u \
-          -DNDEBUG -ffunction-sections -fdata-sections $(WIFI_INCLUDES)
-LFLAGS += -Wl,--gc-sections
+          -DNDEBUG $(WIFI_INCLUDES)
 
 OBJS += $(WIFI_LOCAL_OBJS) $(CYW43_OBJS)
 C_DEPS += $(WIFI_LOCAL_OBJS:.o=.d) $(CYW43_OBJS:.o=.d)

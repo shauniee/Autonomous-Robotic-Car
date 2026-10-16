@@ -1,6 +1,6 @@
 #include "task_terrain.h"
 #include "terrain_motion.h"
-#include "subsystem4.h"
+#include "subsystem4_internal.h"
 #include "../subsystem2/subsystem2.h"
 #include "../common/robot_time.h"
 #include <math.h>

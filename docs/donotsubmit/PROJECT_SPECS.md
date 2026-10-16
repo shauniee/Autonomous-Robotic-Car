@@ -91,6 +91,7 @@ Record answers and measured values here once, then link from other guides.
 | D08 | Stop/reset serialization, brake acknowledgement, measured stop latency and stationary feedback acceptance | S2 / Safety |
 | D09 | Final mission telemetry/status envelope, network/stack load, instructor network/broker settings available before program freeze, and shared configuration/task-priority approval | S1 / team |
 | D10 | Numerical acceptance thresholds, demonstration date, instructor repository access and evidence schedule | Team |
+| D11 | Clarify the intended meaning and required hardware/dataflow for “Three IR sensors” in the Line / Barcode deliverable; current requirement wording alone does not establish a sensor layout | S3 / team |
 
 Project sequence and readiness gates belong to [GUIDE](../../GUIDE.md#acceptance-and-submission). Existing T01–T16 IDs remain physical/integrated acceptance trials, grouped into five UAT passes; [test records](../../testing/README.md) own case definitions and results.
 

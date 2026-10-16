@@ -1,4 +1,4 @@
-#include "../../app_program/subsystem5/subsystem5.h"
+#include "../../app_program/subsystem5/subsystem5_internal.h"
 #include "../../app_program/test_report.h"
 #include "../fixture_config.h"
 #include <math.h>

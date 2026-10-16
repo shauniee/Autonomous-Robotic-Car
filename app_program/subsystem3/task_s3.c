@@ -34,6 +34,26 @@ static void request_buzzer_chirps(unsigned chirps, uint32_t now)
     }
 }
 
+static unsigned joint_calibration_feedback(unsigned feedback,
+                                           calibration_control_t *controls,
+                                           IrTracker *tracker,
+                                           bool *black_done,
+                                           bool *cancel_pending)
+{
+    if (feedback == 1u && controls->joint_busy)
+    {
+        *black_done = true;
+        feedback = 0u;
+    }
+    if (feedback == 3u && controls->joint_busy)
+    {
+        *cancel_pending = true;
+        controls->joint_busy = false;
+        tracker->calibration = (IrCalibration){0};
+    }
+    return feedback;
+}
+
 #if APP_TEST
 static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now,
                    ButtonInputs inputs)
@@ -102,17 +122,8 @@ void task_s_task(INT stacd, void *exinf)
         IrCaptureKind before = tracker.capture_kind;
         ir_tracking_check_time(&tracker, now);
         unsigned feedback = calibration_control_feedback(before, &tracker);
-        if (feedback == 1u && controls.joint_busy)
-        {
-            black_done = true;
-            feedback = 0u;
-        }
-        if (feedback == 3u && controls.joint_busy)
-        {
-            cancel_pending = true;
-            controls.joint_busy = false;
-            tracker.calibration = (IrCalibration){0};
-        }
+        feedback = joint_calibration_feedback(feedback, &controls, &tracker,
+                                              &black_done, &cancel_pending);
         request_buzzer_chirps(feedback, now);
 
         ButtonInputs inputs = drv_buttons_read();
@@ -215,17 +226,9 @@ void task_s_task(INT stacd, void *exinf)
                 ++sequence; /* Acquisition attempts, including invalid ones. */
             }
             feedback = calibration_control_feedback(before, &tracker);
-            if (feedback == 1u && controls.joint_busy)
-            {
-                black_done = true;
-                feedback = 0u;
-            }
-            if (feedback == 3u && controls.joint_busy)
-            {
-                cancel_pending = true;
-                controls.joint_busy = false;
-                tracker.calibration = (IrCalibration){0};
-            }
+            feedback = joint_calibration_feedback(feedback, &controls,
+                                                  &tracker, &black_done,
+                                                  &cancel_pending);
             request_buzzer_chirps(feedback, now);
             sample_due += IR_SAMPLE_MS;
             if ((int32_t)(now - sample_due) >= 0)

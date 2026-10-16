@@ -1,7 +1,6 @@
 #ifndef SUBSYSTEM5_H
 #define SUBSYSTEM5_H
 #include "../app.h"
-#include "../common/robot_config.h"
 #include <stdbool.h>
 #include <stdint.h>
 #define S5_PRI_OBSTACLE 17
@@ -36,8 +35,4 @@ ER s5_obstacle_copy(ObstacleSnapshot *out);
 ER s5_scan_request(uint32_t scan_id, uint32_t deadline_ms);
 void s5_scan_cancel(void);
 void s5_reset_request(void);
-bool s5_profile_build(ObstacleSnapshot *snapshot);
-bool s5_profile_build_config(ObstacleSnapshot *snapshot,
-                             const RobotConfig *config);
-ScanStatus s5_scan_guard(bool cancel, bool expired, bool stationary);
 #endif

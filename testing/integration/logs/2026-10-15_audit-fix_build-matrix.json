@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-15",
+  "branch": "codex/audit-fixes",
+  "base_revision": "d64322d",
+  "working_tree": true,
+  "toolchain": "arm-none-eabi-gcc 15.3.1 (Arm GNU Toolchain 15.3.Rel1)",
+  "common_arguments": [
+    "SMP=1",
+    "CONSOLE=usb_cdc",
+    "CRASH_REPORT=0",
+    "PICO_SDK_PATH=/Users/nicholasbay/Documents/school/INF2004/pico-sdk"
+  ],
+  "method": "Each profile was explicitly cleaned and then built serially with make -C build_make -j8.",
+  "profiles": [
+    {"id": 1, "WIFI": "none", "NET": "none", "MQTT": 0, "TEST": 0, "result": "PASS", "warnings": 0, "errors": 0, "logs": ["/tmp/sit-es-final-profile1-clean.log", "/tmp/sit-es-final-profile1-build.log"]},
+    {"id": 2, "WIFI": "none", "NET": "none", "MQTT": 0, "TEST": 1, "result": "PASS", "warnings": 0, "errors": 0, "logs": ["/tmp/sit-es-final-profile2-clean.log", "/tmp/sit-es-final-profile2-build.log"]},
+    {"id": 3, "WIFI": "cyw43", "NET": "none", "MQTT": 0, "TEST": 0, "result": "PASS", "warnings": 0, "errors": 0, "logs": ["/tmp/sit-es-final-profile3-clean.log", "/tmp/sit-es-final-profile3-build.log"]},
+    {"id": 4, "WIFI": "cyw43", "NET": "none", "MQTT": 0, "TEST": 1, "result": "PASS", "warnings": 0, "errors": 0, "logs": ["/tmp/sit-es-final-profile4-clean.log", "/tmp/sit-es-final-profile4-build.log"]},
+    {"id": 5, "WIFI": "cyw43", "NET": "lwip", "MQTT": 1, "TEST": 0, "result": "PASS", "warnings": 0, "errors": 0, "logs": ["/tmp/sit-es-final-profile5-clean.log", "/tmp/sit-es-final-profile5-build.log"]},
+    {"id": 6, "WIFI": "cyw43", "NET": "lwip", "MQTT": 1, "TEST": 1, "result": "PASS", "warnings": 0, "errors": 0, "logs": ["/tmp/sit-es-final-profile6-clean.log", "/tmp/sit-es-final-profile6-build.log"]}
+  ],
+  "host_checks": {
+    "pure_run": {"result": "PASS", "groups": 7, "log": "/tmp/sit-es-final-pure-run.log"},
+    "firmware_fixture_runner": {"result": "PASS", "assertions": 60, "log": "/tmp/sit-es-final-pure-fixtures.log"},
+    "dashboard_broker": {"result": "PASS", "checks": ["S1-W01", "S1-W02", "S1-W03", "S1-W04", "S1-W05", "S1-W06"], "method": "real local broker and loopback HTTP server; synthetic isolated topic; no robot command topics"},
+    "dashboard_ui_transitions": {"result": "PASS", "evidence": "../../subsystem1/logs/2026-10-15_dashboard_ui_disconnect.txt"}
+  },
+  "hardware_validation": "NOT RUN; host and build results do not establish Pico behavior"
+}
