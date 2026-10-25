@@ -1,12 +1,12 @@
 # Barcode
 
-Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). Capture buffering, a provisional Code 39 decoder, mapping and a copied event FIFO are implemented in software. **The scanner boots disabled:** measured configuration, S2 encoder feedback and an agreed GPIO dispatcher are not supplied. No physical barcode scan or navigation is established. Operational status belongs in [TASKS](../../TASKS.md#barcode); course geometry, A/Z patterns and pending decisions belong in [PROJECT_SPECS](../PROJECT_SPECS.md#barcode-examples).
+Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). Capture buffering, a provisional Code 39 decoder, mapping and a copied event FIFO are implemented in software. **The scanner boots disabled:** measured configuration, S2 encoder feedback and an agreed GPIO dispatcher are not supplied. No physical barcode scan or navigation is established. Operational status belongs in [TASKS](../../TASKS.md#barcode); course geometry, A/Z patterns and pending decisions belong in [PROJECT_SPECS](../TECHNICAL_INFO.md#barcode-samples).
 
 ## Functionality
 
 The third IR sensor's comparator DOUT detects black/white transitions in the adjacent barcode lane. The S3 capture entry records ordered timestamps and coherent encoder context independently of periodic line sampling. Task-level decoding measures **both black bars and white spaces**, validates a complete frame and emits one mapped navigation event. AOUT stays disconnected.
 
-The selected first version supports uppercase **A–Z** in `*X*` frames in either traversal orientation. This is a provisional project choice, not a confirmed final course symbology. The [briefing](../../zoom-transcript.md#subsystem-3-line-following-and-barcode-decoding) requires the full alphabet, commands retained until the cross junction, and Wi-Fi mapping changes without recompilation. S3 supplies a local mapping API; S1's current status-only protocol does not implement that configuration route.
+The selected first version supports uppercase **A–Z** in `*X*` frames in either traversal orientation. This is a provisional project choice, not a confirmed final course symbology. The [briefing](../donotsubmit/ZOOM-TRANSCRIPT-PROJECT.md#subsystem-3-line-following-and-barcode-decoding) requires the full alphabet, commands retained until the cross junction, and Wi-Fi mapping changes without recompilation. S3 supplies a local mapping API; S1's current status-only protocol does not implement that configuration route.
 
 Mission, rather than the decoder, requests encoder-based navigation from Motion. Line observations continue concurrently; barcode capture cannot overwrite their snapshot or erase navigation events.
 
