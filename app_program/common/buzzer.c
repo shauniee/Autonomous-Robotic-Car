@@ -1,8 +1,7 @@
 #include "buzzer.h"
 #include "drv_buzzer.h"
+#include "./robot_config.h"
 
-#define CHIRP_MS 100u
-#define MAX_CHIRPS 3u
 
 static bool initialized;
 static bool active;

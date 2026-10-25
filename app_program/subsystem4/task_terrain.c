@@ -8,8 +8,8 @@
 #include "subsystem4.h"
 #include "../subsystem2/subsystem2.h"
 #include "../common/robot_time.h"
+#include "../common/robot_config.h"
 
-#define TERRAIN_PERIOD_MS   20u
 
 static TerrainContext s_ctx;
 
