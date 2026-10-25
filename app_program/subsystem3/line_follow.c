@@ -8,8 +8,15 @@
 #define FOLLOW_PERIOD_MS 10u
 #define FOLLOW_PRIORITY 14
 #define RECOVERY_MS 500u
-#define BASE_DUTY 0.50f
+#define BASE_DUTY 0.25f
 #define BROAD_DUTY 0.20f
+/* Steering magnitude that keeps both wheels within MOTION_MAX_DUTY. */
+#define MAX_STEER 0.40f
+
+_Static_assert(BASE_DUTY * (1.0f + MAX_STEER) <= MOTION_MAX_DUTY,
+    "line-follow wheel duty must stay within MOTION_MAX_DUTY");
+_Static_assert(BROAD_DUTY <= MOTION_MAX_DUTY,
+    "broad-black duty must stay within MOTION_MAX_DUTY");
 
 typedef enum
 {
@@ -172,7 +179,16 @@ static void follow_task(INT stacd, void *exinf)
                         }
                         else if (snapshot.guidance_valid)
                         {
-                            float correction = BASE_DUTY * snapshot.steering;
+                            float steer = snapshot.steering;
+                            if (steer > MAX_STEER)
+                            {
+                                steer = MAX_STEER;
+                            }
+                            else if (steer < -MAX_STEER)
+                            {
+                                steer = -MAX_STEER;
+                            }
+                            float correction = BASE_DUTY * steer;
                             request.left = BASE_DUTY + correction;
                             request.right = BASE_DUTY - correction;
                             if (snapshot.steering != 0.0f)
