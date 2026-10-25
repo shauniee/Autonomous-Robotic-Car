@@ -19,7 +19,7 @@ This is a documentation handoff; it does not implement or approve S2 changes.
 | Safety / team | System-wide stop/fault policy and agreed physical acceptance limits |
 
 Use [Line Tracking](LINE_TRACKING.md), [Barcode](BARCODE.md),
-[Motion](MOTION.md) and the [shared contracts](../ARCHITECTURE.md#shared-contracts)
+[Motion](MOTION.md) and the [shared contracts](../ARCHITECTURE.md#shared-data-rules)
 as the owning specifications. S3 does not write motor PWM. Proportional line
 guidance and S2's planned per-wheel speed PID solve separate problems.
 

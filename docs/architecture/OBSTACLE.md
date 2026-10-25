@@ -57,7 +57,7 @@ Use [TEAM's sonar/servo allocation](../TEAM.md#2-pins) and [peripheral ownership
 | Suggested servo driver | Calibrated PWM angle mapping and nonblocking settling state |
 | Suggested scan coordinator | Scan ID/deadline, coarse/fine plan, duplicates/cancellation and center restoration |
 | Suggested profile generator | Closest point, width/location, left/right clearance with independent ages |
-| Mission / Motion | Stationary confirmation, scan request and bounded movement; [contracts](../ARCHITECTURE.md#shared-contracts) |
+| Mission / Motion | Stationary confirmation, scan request and bounded movement; [contracts](../ARCHITECTURE.md#shared-data-rules) |
 
 ## Business logic
 
