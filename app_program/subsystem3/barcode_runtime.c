@@ -2,6 +2,7 @@
 #include "barcode_service.h"
 #include "drv_barcode.h"
 #include "../app.h"
+#include "../common/robot_time.h"
 #include <stdatomic.h>
 
 static atomic_int barcode_mutex;
@@ -30,11 +31,6 @@ static bool owner_core(void)
 #else
     return true;
 #endif
-}
-
-static uint32_t timer_us(void)
-{
-    return in_w(0x40054028u); /* TIMERAWL: existing shared 1 us timebase. */
 }
 
 static barcode_api_result_t lock(ID *id)
@@ -114,7 +110,7 @@ barcode_api_result_t s3_barcode_configure(const barcode_config_t *config,
         !provider.read_task(provider.user, &level, &encoder, &sampled_us) ||
         !encoder.valid || ((uint32_t)(sampled_us - encoder.sampled_us) >
             config->max_encoder_age_us) ||
-        ((uint32_t)(timer_us() - sampled_us) > config->max_encoder_age_us))
+        ((uint32_t)(robot_time_us() - sampled_us) > config->max_encoder_age_us))
     {
         return unlock(id, BARCODE_API_UNAVAILABLE);
     }
@@ -335,7 +331,7 @@ void barcode_runtime_service(bool cancel_down)
         irq_restore(mask);
         if (empty)
         {
-            uint32_t now = timer_us();
+            uint32_t now = robot_time_us();
             if (!read || ((uint32_t)(now - sampled_us) >
                 service.config.max_encoder_age_us))
             {
@@ -345,7 +341,7 @@ void barcode_runtime_service(bool cancel_down)
             barcode_service_observe(&service, level, &encoder,
                 sampled_us, false);
         }
-        barcode_service_check_time(&service, timer_us());
+        barcode_service_check_time(&service, robot_time_us());
     }
     atomic_store_explicit(&service_faults, service.status.fault_bits,
         memory_order_release);

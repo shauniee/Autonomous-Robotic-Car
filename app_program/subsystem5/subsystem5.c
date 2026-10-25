@@ -1,5 +1,6 @@
 #include "subsystem5.h"
 #include "tk/syslib.h"
+#include "../common/robot_time.h"
 
 #define ECHO_PIN 2
 #define TRIGGER_PIN 3
@@ -92,15 +93,11 @@ static ER ultrasonic_trigger(void)
 static ER ultrasonic_wait_for_echo(void)
 {
     ER error;
-    SYSTIM start; // record the time
-    SYSTIM now;
+    uint32_t start; // record the time
+    uint32_t now;
 
     /* Record when we started waiting. */
-    error = tk_get_otm(&start);
-    if (error < E_OK)
-    {
-        return error;
-    }
+    start = robot_time_ms();
 
     error = ultrasonic_trigger();
     if (error < E_OK)
@@ -111,14 +108,10 @@ static ER ultrasonic_wait_for_echo(void)
     /* Keep checking while Echo is LOW. */
     while (gpio_get_val(ECHO_PIN) == 0)
     {
-        error = tk_get_otm(&now);
-        if (error < E_OK)
-        {
-            return error;
-        }
+        now = robot_time_ms();
 
         /* Stop waiting after 30 milliseconds. */
-        if ((UW)(now.lo - start.lo) >= 30u)
+        if (robot_time_elapsed(now, start) >= 30u)
         {
             return E_TMOUT;
         }
@@ -126,19 +119,19 @@ static ER ultrasonic_wait_for_echo(void)
 
     /* Echo has become HIGH. */
     /* Echo is HIGH: record the start time in microseconds. */
-    UW pulse_start = in_w(TIMER_TIMERAWL);
+    UW pulse_start = robot_time_us();
 
     /* Wait for Echo to become LOW. */
     while (gpio_get_val(ECHO_PIN) == 1)
     {
-        if ((UW)(in_w(TIMER_TIMERAWL) - pulse_start) >= 30000u)
+        if ((UW)(robot_time_us() - pulse_start) >= 30000u)
         {
             return E_TMOUT;
         }
     }
 
     /* Calculate how long Echo stayed HIGH. */
-    UW pulse_end = in_w(TIMER_TIMERAWL);
+    UW pulse_end = robot_time_us();
     UW duration_us = pulse_end - pulse_start;
     /* Approximate distance in whole centimetres. */
     UW distance_cm = duration_us / 58u;

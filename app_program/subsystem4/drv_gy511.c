@@ -4,6 +4,7 @@
 
 #include "drv_gy511.h"
 #include "../app.h"
+#include "../common/robot_time.h"
 #include "../../device/i2c/sysdepend/rp2040/i2c_sysdep.h"
 
 /* Registers for LSM303DLHC */
@@ -17,21 +18,16 @@
 #define REG_MR_REG_M        0x02u
 #define REG_OUT_X_H_M       0x03u
 
-/* Microsecond timer helper */
-static inline uint32_t get_time_us(void) {
-    return in_w(TIMER_TIMERAWL);
-}
-
 /* Wait with timeout for I2C status flag */
 static bool wait_i2c_status(uint32_t mask, bool match_set, uint32_t timeout_us) {
-    uint32_t start = get_time_us();
+    uint32_t start = robot_time_us();
     while (true) {
         uint32_t status = in_w(I2C0_BASE + I2Cx_STATUS);
         bool condition = (status & mask) != 0;
         if (condition == match_set) {
             return true;
         }
-        if ((uint32_t)(get_time_us() - start) >= timeout_us) {
+        if ((uint32_t)(robot_time_us() - start) >= timeout_us) {
             return false;
         }
     }
@@ -93,9 +89,9 @@ static bool i2c0_read_buffer(uint8_t slave_addr, uint8_t reg, uint8_t *buf, uint
 bool drv_gy511_init(void) {
     /* 1. Release I2C0 and IO_BANK0 resets */
     clr_w(RESETS_RESET, RESETS_RESET_I2C0);
-    uint32_t start = get_time_us();
+    uint32_t start = robot_time_us();
     while (!(in_w(RESETS_RESET_DONE) & RESETS_RESET_I2C0)) {
-        if ((uint32_t)(get_time_us() - start) >= GY511_TIMEOUT_US) return false;
+        if ((uint32_t)(robot_time_us() - start) >= GY511_TIMEOUT_US) return false;
     }
 
     /* 2. Configure GP4 (SDA) and GP5 (SCL) mux to I2C (func 3) with pull-ups */

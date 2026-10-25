@@ -7,6 +7,7 @@
 #include "terrain_algo.h"
 #include "subsystem4.h"
 #include "../subsystem2/subsystem2.h"
+#include "../common/robot_time.h"
 
 #define TERRAIN_PERIOD_MS   20u
 
@@ -20,13 +21,14 @@ void terrain_task(INT stacd, void *exinf) {
 
     /* Startup calibration: collect 100 samples while resting (2.0s timeout guard) */
     uint32_t calib_attempts = 0;
+    uint32_t release = robot_time_ms();
     while (!s_ctx.is_calibrated && calib_attempts < 200) {
         Gy511RawAxes raw = {0};
         if (hw_ok && drv_gy511_read_accel(&raw)) {
             terrain_algo_calibrate_sample(&s_ctx, &raw);
         }
         calib_attempts++;
-        tk_dly_tsk(10);
+        tk_dly_tsk(robot_time_next_delay(&release, 10u, robot_time_ms()));
     }
 
     for (;;) {
@@ -45,7 +47,7 @@ void terrain_task(INT stacd, void *exinf) {
 
             /* Update shared snapshot for Mission and Telemetry */
             TerrainSnapshot snap;
-            snap.timestamp_ms = (uint32_t)in_w(TIMER_TIMERAWL) / 1000u;
+            snap.timestamp_ms = robot_time_ms();
             snap.terrain_valid = true;
             snap.accel_x_g = s_ctx.filtered_accel.x;
             snap.accel_y_g = s_ctx.filtered_accel.y;
@@ -78,7 +80,7 @@ void terrain_task(INT stacd, void *exinf) {
             s4_publish_snapshot(&snap);
         }
 
-        /* Periodic sleep: block for 20 ms */
-        tk_dly_tsk(TERRAIN_PERIOD_MS);
+        /* Fixed-rate release every TERRAIN_PERIOD_MS */
+        tk_dly_tsk(robot_time_next_delay(&release, TERRAIN_PERIOD_MS, robot_time_ms()));
     }
 }

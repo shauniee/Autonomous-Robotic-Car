@@ -1,5 +1,6 @@
 #include "subsystem2.h"
 #include "drv_motor.h"
+#include "../common/robot_time.h"
 static ID request_mutex, stop_flag, motion_tid;
 static MotionRequest latest;
 static MotionHealth progress;
@@ -29,7 +30,6 @@ static ER latch_stop(void)
     brake_acknowledged = false;
     return tk_set_flg(stop_flag, 1u);
 }
-static uint32_t now_ms(void) { SYSTIM t; tk_get_otm(&t); return t.lo; }
 ER s2_stop(void) {
     if (stop_flag<=0) return E_OBJ;
     UW state = control_enter();
@@ -92,9 +92,9 @@ ER s2_health(MotionHealth *h) {
 }
 static void motion_task(INT stacd, void *exinf) {
     (void)stacd; (void)exinf;
-    uint32_t next=now_ms();
+    uint32_t next=robot_time_ms();
     for (;;) {
-        uint32_t now=now_ms();
+        uint32_t now=robot_time_ms();
         MotionRequest r={0}; T_RFLG f={0};
         ER er=tk_loc_mtx(request_mutex,2);
         uint32_t request_epoch;
@@ -120,7 +120,7 @@ static void motion_task(INT stacd, void *exinf) {
                        (f.flgptn & 1u) != 0u;
         bool same_epoch = request_epoch == control_epoch;
         bool valid = er >= E_OK && same_epoch &&
-                     motion_request_valid(r, stopped, now_ms());
+                     motion_request_valid(r, stopped, robot_time_ms());
         ER output_er;
         if (!valid)
         {
@@ -153,7 +153,7 @@ static void motion_task(INT stacd, void *exinf) {
         control_leave(interrupt_state);
         if (output_er >= E_OK)
         {
-            uint32_t serviced_ms = now_ms();
+            uint32_t serviced_ms = robot_time_ms();
             er = tk_loc_mtx(request_mutex, 2);
             if (er >= E_OK)
             {
@@ -168,7 +168,7 @@ static void motion_task(INT stacd, void *exinf) {
             }
         }
         /* Fixed deadline; stop wake-ups service immediately without shifting it. */
-        now=now_ms();
+        now=robot_time_ms();
         if ((int32_t)(now-next)>=0) {
             next+=20;
             if ((int32_t)(now-next)>=0) next=now+20;

@@ -1,5 +1,6 @@
 #include "line_follow.h"
 #include "subsystem3.h"
+#include "../common/robot_time.h"
 #include "../subsystem2/subsystem2.h"
 #include "../common/button.h"
 #include "../common/drv_buttons.h"
@@ -42,28 +43,13 @@ static void stop(FollowState *state)
     }
 }
 
-static bool time_now(uint32_t *now)
-{
-    SYSTIM time;
-    if (tk_get_otm(&time) < E_OK)
-    {
-        return false;
-    }
-    *now = time.lo;
-    return true;
-}
-
 static void follow_task(INT stacd, void *exinf)
 {
     (void)stacd;
     (void)exinf;
     FollowState state = CALIBRATING;
     uint32_t now;
-    if (!time_now(&now))
-    {
-        stop(&state);
-        return;
-    }
+    now = robot_time_ms();
     uint32_t started = now;
     uint32_t next = now;
     uint32_t recovery_started = now;
@@ -77,11 +63,7 @@ static void follow_task(INT stacd, void *exinf)
         APP_TEST ? " MOTOR_INHIBITED" : "");
     for (;;)
     {
-        if (!time_now(&now))
-        {
-            stop(&state);
-            return;
-        }
+        now = robot_time_ms();
         ButtonInputs inputs = drv_buttons_read();
         if (inputs.gp21_down)
         {
@@ -94,11 +76,7 @@ static void follow_task(INT stacd, void *exinf)
         MotionHealth health = {0};
         bool copied = s3_ir_copy(&snapshot);
         bool healthy = s2_health(&health) >= E_OK;
-        if (!time_now(&now))
-        {
-            stop(&state);
-            return;
-        }
+        now = robot_time_ms();
         ir_snapshot_refresh(&snapshot, now);
         healthy = healthy && ((health.sequence != 0u &&
             (uint32_t)(now - health.serviced_ms) <= IR_MAX_GAP_MS) ||
@@ -239,11 +217,7 @@ static void follow_task(INT stacd, void *exinf)
             }
         }
         next += FOLLOW_PERIOD_MS;
-        if (!time_now(&now))
-        {
-            stop(&state);
-            return;
-        }
+        now = robot_time_ms();
         if ((int32_t)(now - next) >= 0)
         {
             next = now + FOLLOW_PERIOD_MS;
