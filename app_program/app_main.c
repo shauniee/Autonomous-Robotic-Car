@@ -47,9 +47,11 @@ static void startup_error(void) {
 
 /* Shared 1 us hardware TIMER tick from the 12 MHz reference. Scheduling uses
    SysTick. Release TIMER without resetting a timebase also read by WiFi. */
+#define RP2040_WATCHDOG_TICK	0x4005802cu	/* WATCHDOG.TICK: 1 us reference divider */
+
 static void app_timebase_init(void)
 {
-    const UW watchdog_tick_register = 0x4005802cu;
+    const UW watchdog_tick_register = RP2040_WATCHDOG_TICK;
     const UW tick_enable = 1u << 9;
     const UW reference_cycles_per_us = 12u;
 

@@ -5,6 +5,7 @@
 #include <stdatomic.h>
 #include "../common/drv_buttons.h"
 #include "../common/buzzer.h"
+#include "../common/robot_time.h"
 
 // consumers may call before startup, including from the other core
 static atomic_int snapshot_mutex;
@@ -79,11 +80,6 @@ bool s3_ir_copy(S3IrSnapshot *snapshot)
     {
         return false;
     }
-    SYSTIM time;
-    if (tk_get_otm(&time) < E_OK)
-    {
-        return false;
-    }
-    ir_snapshot_refresh(snapshot, time.lo);
+    ir_snapshot_refresh(snapshot, robot_time_ms());
     return true;
 }

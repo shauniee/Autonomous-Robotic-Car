@@ -1,5 +1,6 @@
 #include "task_s3.h"
 #include "subsystem3_internal.h"
+#include "../common/robot_time.h"
 #include "ir_tracking_calibration.h"
 #include "drv_ir_tracking.h"
 #include "../common/drv_buttons.h"
@@ -7,17 +8,6 @@
 
 #define INPUT_PERIOD_MS 10u
 #define REPORT_PERIOD_MS 500u
-
-static bool read_time(uint32_t *now)
-{
-    SYSTIM time;
-    if (tk_get_otm(&time) < E_OK)
-    {
-        return false;
-    }
-    *now = time.lo;
-    return true;
-}
 
 static void request_buzzer_chirps(unsigned chirps, uint32_t now)
 {
@@ -61,11 +51,7 @@ void task_s_task(INT stacd, void *exinf)
     ir_tracking_init(&tracker);
     bool adc_ready = drv_ir_tracking_init();
     uint32_t now;
-    if (!read_time(&now))
-    {
-        tm_printf((UB *)"[IR] time unavailable; task stopped\n");
-        return;
-    }
+    now = robot_time_ms();
     calibration_control_t controls;
     calibration_control_init(&controls, now);
     uint32_t next = now;
@@ -76,12 +62,7 @@ void task_s_task(INT stacd, void *exinf)
 #endif
     for (;;)
     {
-        if (!read_time(&now))
-        {
-            tm_printf((UB *)"[IR] time unavailable; task stopped\n");
-            barcode_runtime_shutdown();
-            return;
-        }
+        now = robot_time_ms();
         IrCaptureKind before = tracker.capture_kind;
         ir_tracking_check_time(&tracker, now);
         request_buzzer_chirps(calibration_control_feedback(before, &tracker), now);
@@ -105,12 +86,7 @@ void task_s_task(INT stacd, void *exinf)
         {
             IrRaw raw = {0};
             bool acquired = adc_ready && drv_ir_tracking_read(&raw);
-            if (!read_time(&now))
-            {
-                tm_printf((UB *)"[IR] acquisition time unavailable\n");
-                barcode_runtime_shutdown();
-                return;
-            }
+            now = robot_time_ms();
             bool advancing = !tracker.have_sample || (now != tracker.sample_ms);
             before = tracker.capture_kind;
             ir_tracking_sample(&tracker, raw, acquired, now);
@@ -148,12 +124,7 @@ void task_s_task(INT stacd, void *exinf)
         }
 #endif
         next += INPUT_PERIOD_MS;
-        if (!read_time(&now))
-        {
-            tm_printf((UB *)"[IR] scheduling time unavailable\n");
-            barcode_runtime_shutdown();
-            return;
-        }
+        now = robot_time_ms();
         if ((int32_t)(now - next) >= 0)
         {
             next = now + INPUT_PERIOD_MS;

@@ -1,5 +1,6 @@
 #include "drv_ir_tracking.h"
 #include "../app.h"
+#include "../common/robot_time.h"
 
 #define ADC_REG_BASE 0x4004c000u
 #define ADC_CONTROL ADC_REG_BASE
@@ -21,11 +22,6 @@
 /* IR owns the ADC, no two tasks will not amend the same counter while reading the ADC */
 static unsigned polls;
 
-static uint32_t clock_us(void)
-{
-    return in_w(TIMER_TIMERAWL);
-}
-
 static bool pool_within_limit(void)
 {
     return (polls < ADC_POLL_LIMIT);
@@ -33,7 +29,7 @@ static bool pool_within_limit(void)
 
 static bool time_within_limit(uint32_t started)
 {
-    return ((uint32_t)(clock_us() - started) < ADC_BUDGET_US);
+    return ((uint32_t)(robot_time_us() - started) < ADC_BUDGET_US);
 }
 
 static bool budget_available(uint32_t started)
@@ -124,7 +120,7 @@ static bool channel(unsigned mux, uint16_t *value, uint32_t started)
 bool drv_ir_tracking_init(void)
 {
     polls = 0u;
-    uint32_t started = clock_us();
+    uint32_t started = robot_time_us();
 
     /* Bring the ADC out of reset */
     clr_w(RESETS_RESET, RESETS_RESET_ADC);
@@ -147,7 +143,7 @@ bool drv_ir_tracking_read(IrRaw *raw)
         return false;
     }
     polls = 0u;
-    uint32_t started = clock_us();
+    uint32_t started = robot_time_us();
     IrRaw pair = {0};
 
     if (!channel(IR_LEFT_ADC_CHANNEL, &pair.left, started))
