@@ -8,11 +8,11 @@ Only the owner edits a subsystem's folders. Request the owner's review for chang
 
 | # | Subsystem (what it does) | Student ID | GitHub username | Code | Tests |
 | --- | --- | --- | --- | --- | --- |
-| 1 | **Shaun — Communications:** WiFi/MQTT integration, telemetry and reporting | 2500629 | Not recorded | [app_program/subsystem1/](../app_program/subsystem1/) | [testing/subsystem1/](../testing/subsystem1/) |
-| 2 | **Mahesha — Motion:** motors, encoders, wheel PID and motion APIs | 2503973 | Not recorded | [app_program/subsystem2/](../app_program/subsystem2/) | [testing/subsystem2/](../testing/subsystem2/) |
-| 3 | **Nicholas — Line and Barcode:** IR, barcode, Mission/Safety coordination and integration | 2501552 | Not recorded | [app_program/subsystem3/](../app_program/subsystem3/) | [testing/subsystem3/](../testing/subsystem3/) |
-| 4 | **Darrius — Terrain:** IMU processing, motion classification and hump measurement | 2500360 | Not recorded | [app_program/subsystem4/](../app_program/subsystem4/) | [testing/subsystem4/](../testing/subsystem4/) |
-| 5 | **Jia Jing — Obstacle:** sonar, servo scanning and obstacle profiling | 2502825 | Not recorded | [app_program/subsystem5/](../app_program/subsystem5/) | [testing/subsystem5/](../testing/subsystem5/) |
+| 1 | **Shaun — Communications:** WiFi/MQTT integration, telemetry and reporting | 2500629 | shauniee | [app_program/subsystem1/](../app_program/subsystem1/) | [testing/subsystem1/](../testing/subsystem1/) |
+| 2 | **Mahesha — Motion:** motors, encoders, wheel PID and motion APIs | 2503973 | itsjustmdawg | [app_program/subsystem2/](../app_program/subsystem2/) | [testing/subsystem2/](../testing/subsystem2/) |
+| 3 | **Nicholas — Line and Barcode:** IR, barcode, Mission/Safety coordination and integration | 2501552 | nicholas-bay | [app_program/subsystem3/](../app_program/subsystem3/) | [testing/subsystem3/](../testing/subsystem3/) |
+| 4 | **Darrius — Terrain:** IMU processing, motion classification and hump measurement | 2500360 | Galaxius03 | [app_program/subsystem4/](../app_program/subsystem4/) | [testing/subsystem4/](../testing/subsystem4/) |
+| 5 | **Jia Jing — Obstacle:** sonar, servo scanning and obstacle profiling | 2502825 | JJLOLLOL | [app_program/subsystem5/](../app_program/subsystem5/) | [testing/subsystem5/](../testing/subsystem5/) |
 
 Use development branches and commit prefixes `feat:`, `chore:` or `fix:`. Follow [CODING_STANDARD](CODING_STANDARD.md), record stable test IDs and measurements in [testing](../testing/README.md), and demonstrations in [videos](../videos/README.md). Record course/calibration decisions once in [PROJECT_SPECS](PROJECT_SPECS.md#pending-decisions), then update the owning guide.
 
@@ -131,13 +131,13 @@ The provider creates and owns each shared object. Current objects stay private b
 | ID | From → To | Mechanism | Object ID name | Data / meaning | Agreed by |
 | --- | --- | --- | --- | --- | --- |
 | IF-01 |Nicholas → Mahesha | Latest value underMahesha priority-inheritance mutex | `request_mutex` (private); `s2_publish()` | `MotionRequest`: duties, enabled flag and original sample time; [limits and expiry](architecture/IR_MOTION_HANDOFF.md#current-interface-contract) | Team agreement not recorded |
-| IF-02 |Nicholas → Mahesha | Persistent event flag + task wake-up, independent of request mutex | `stop_flag`, `motion_tid` (private); `s2_stop()` / `s2_reset_stop()` | Stop latch; fresh local reset invalidates the old request; [ordering limitations](architecture/IR_MOTION_HANDOFF.md#verification-and-known-limits) | Team agreement not recorded |
+| IF-02 |Nicholas → Mahesha | Persistent event flag + task wake-up, independent of request mutex | `stop_flag`, `motion_tid` (private); `s2_stop()` / `s2_reset_stop()` | Stop latch; fresh local reset invalidates the old request; [ordering limitations](architecture/IR_MOTION_HANDOFF.md#build-and-acceptance) | Team agreement not recorded |
 | IF-03 |Mahesha → Nicholas | Coherent health copy underMahesha mutex; stop flag read separately | `request_mutex`, `stop_flag` (private); `s2_health()` | `MotionHealth`: software service progress and latch; no physical brake/stationarity acknowledgement; [contract](architecture/IR_MOTION_HANDOFF.md#current-interface-contract) | Team agreement not recorded |
-| IF-04 | IR tracker → Nicholas coordinator | In-task typed value | —; `ir_tracking_output()` | `IrTrackingOutput`: validity, line condition, signed error/steering and sample time; [Line Tracking](architecture/LINE_TRACKING.md#modules-and-drivers) | Team agreement not recorded |
+| IF-04 | IR tracker → Nicholas coordinator | In-task typed value | —; `ir_tracking_output()` | `IrTrackingOutput`: validity, line condition, signed error/steering and sample time; [Line Tracking](architecture/LINE_TRACKING.md#modules-and-public-interface) | Team agreement not recorded |
 | IF-05 |Nicholas → Shaun → kernel network service | Latest value under optional Shaun priority-inheritance mutex; `TMO_POL` both sides | `telemetry_mutex` (private); `s1_telemetry_update()` / `s1_telemetry_copy()` | `S1Telemetry`; busy/unavailable access skips diagnostics; [Communications contract](architecture/COMMUNICATIONS.md#modules-and-drivers) | Team agreement not recorded |
 | IF-06 | Unclaimed | — | — | — | — |
 
-Full-robot message/queue contracts remain [proposed in ARCHITECTURE](ARCHITECTURE.md#shared-contracts), without allocated object IDs. Each cross-subsystem interface requires an [integration test record](../testing/integration/TEST_LOG.md); implementation or a saved software result does not establish physical acceptance.
+Full-robot message/queue contracts remain [proposed in ARCHITECTURE](ARCHITECTURE.md#shared-data-rules), without allocated object IDs. Each cross-subsystem interface requires an [integration test record](../testing/integration/TEST_LOG.md); implementation or a saved software result does not establish physical acceptance.
 
 ## 6. Kernel object budget
 

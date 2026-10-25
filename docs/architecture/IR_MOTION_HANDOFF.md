@@ -1,6 +1,6 @@
 # IR-to-Motion bench integration
 
-Owner: Nicholas / application coordination, using Mahesha's existing S2 interface. This guide owns the implemented bench movement policy. [Line Tracking](LINE_TRACKING.md) owns sensing/calibration; [Motion](MOTION.md) owns actuation; [TASKS](../../TASKS.md) owns implementation/validation status. Full Mission/Safety remains proposed.
+Owner: Nicholas / application coordination, using Mahesha's existing S2 interface. This guide owns the implemented bench movement policy. [Line Tracking](LINE_TRACKING.md) owns sensing/calibration; [Motion](MOTION.md) owns actuation; the realignment tracking issue (#62) owns implementation/validation status. Full Mission/Safety remains proposed.
 
 ## Running path
 

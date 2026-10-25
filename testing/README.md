@@ -5,7 +5,7 @@ Keep subsystem cases/results in `subsystemN/TEST_LOG.md`, cross-subsystem cases 
 | Level | Stable IDs | Ownership / contract |
 | --- | --- | --- |
 | Subsystem | `S1-U01`, `S2-U01`, … | Subsystem owner |
-| Integration | `INT-01`, … | Both interface owners; [system contracts](../docs/ARCHITECTURE.md#shared-contracts) and [IR handoff](../docs/architecture/IR_MOTION_HANDOFF.md) |
+| Integration | `INT-01`, … | Both interface owners; [system contracts](../docs/ARCHITECTURE.md#shared-data-rules) and [IR handoff](../docs/architecture/IR_MOTION_HANDOFF.md) |
 | System | `SYS-01`, …; planned `T01`–`T16` | Team; [requirements](../docs/PROJECT_SPECS.md) |
 
 IDs never change or get reused, including retired template cases. Retired definitions remain in the relevant log; placeholder template rows are not observations.
