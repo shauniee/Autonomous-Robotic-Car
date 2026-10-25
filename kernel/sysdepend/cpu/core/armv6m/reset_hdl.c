@@ -38,7 +38,7 @@ IMPORT	const void *__bss_end;
 IMPORT	const void *__noinit_end;
 #endif
 
-IMPORT const void (*vector_tbl[])();
+IMPORT void (*vector_tbl[])();
 
 #if BOARD_DIAG_GPIO_SCAN
 /* Bring-up diagnostic (hw_setting.c).  Declared locally so the temporary

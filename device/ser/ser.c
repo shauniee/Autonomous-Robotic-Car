@@ -73,7 +73,7 @@ EXPORT void dev_ser_notify_rcv(UW unit, UW data)
 	p_buff = &get_dcb_mem( unit, rcv_buff);
 	next = p_buff->top + 1;
 	if(next >= DEVCONF_SER_BUFFSIZE) next = 0;
-	if(next != p_buff->tail) {
+	if((UW)next != p_buff->tail) {
 		p_buff->data[p_buff->top] = data;
 		p_buff->top = next;
 	} else {	

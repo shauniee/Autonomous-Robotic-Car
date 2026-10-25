@@ -30,7 +30,7 @@
 /*----------------------------------------------------------------------
  * Device register base address
  */
-const LOCAL UW ba[DEV_SER_UNITNM] = { UART0_BASE, UART1_BASE };
+LOCAL const UW ba[DEV_SER_UNITNM] = { UART0_BASE, UART1_BASE };
 
 #define	UART_DR(x)	(ba[x] + UARTx_DR)	// Data Register
 #define	UART_RSR(x)	(ba[x] + UARTx_RSR)	// Receive Status Register/Error Clear Register
@@ -50,7 +50,7 @@ const LOCAL UW ba[DEV_SER_UNITNM] = { UART0_BASE, UART1_BASE };
 /*----------------------------------------------------------------------
  * Device data
 */
-const LOCAL struct {
+LOCAL const struct {
 	UINT	intno;		// Interrupt number
 	PRI	intpri;		// Interrupt priority
 } ll_devdat[DEV_SER_UNITNM] = {

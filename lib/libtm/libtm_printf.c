@@ -83,7 +83,7 @@ typedef	void	(*OutFn)( UB *str, INT len, OutPar *par );
  */
 LOCAL	UB	*outint( UB *ep, UW val, UB base )
 {
-LOCAL const UB  digits[32] = "0123456789abcdef0123456789ABCDEF";
+LOCAL const UB  digits[] = "0123456789abcdef0123456789ABCDEF";
 	UB	caps;
 
 	caps = (base & 0x40) >> 2;		/* 'a' or 'A' */
