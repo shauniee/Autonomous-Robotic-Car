@@ -1,125 +1,138 @@
-"""Monitor S1 telemetry/heartbeats or request read-only status. Python 3.10+."""
+"""Monitor binary S1 telemetry, request a snapshot or send the barcode mapping. Python 3.10+.
+
+  python scripts/mqtt_client.py selftest
+  python scripts/mqtt_client.py monitor  --broker 192.168.1.10
+  python scripts/mqtt_client.py snapshot --broker 192.168.1.10
+  python scripts/mqtt_client.py mapping  --broker 192.168.1.10 --letters AZWF   # left right straight u-turn
+"""
 import argparse
 import json
 import os
+import sys
 import threading
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mqtt_frames as frames  # noqa: E402
+
+GOLDEN = {
+    "telemetry": "112A320501020408033412785603F8D03061",
+    "event": "120119E803100011000200",
+    "ack": "150700",
+}
+
+
+def selftest():
+    """Decode the golden vectors of docs/MQTT_PROTOCOL.md and reject malformed frames."""
+    tel = frames.decode(bytes.fromhex(GOLDEN["telemetry"]))
+    assert tel["sequence"] == 42 and tel["motion_status"] == "FAILED" and tel["left_count"] == 0x1234
+    assert tel["front_mm"] == 0x10D0 and tel["front_valid"] and tel["barcode_letter"] == "B"
+    assert frames.decode(bytes.fromhex(GOLDEN["event"]))["kind"] == "barcode"
+    assert frames.decode(bytes.fromhex(GOLDEN["ack"]))["result"] == "installed"
+    assert frames.encode_mapping(7, "ABCD").hex() == "1407208801"
+    assert frames.encode_snapshot_request(9).hex() == "1609"
+    bad = [b"", bytes.fromhex(GOLDEN["telemetry"])[:-1], b"\x21" + bytes(17), b"\x1f" + bytes(17),
+           bytes.fromhex(GOLDEN["telemetry"][:4] + "72" + GOLDEN["telemetry"][6:]), bytes.fromhex("150709")]
+    for frame in bad:
+        try:
+            frames.decode(frame)
+        except frames.FrameError:
+            continue
+        raise AssertionError(f"accepted malformed frame {frame.hex()}")
+    for letters in ("ABC", "AABC", "ABC1", "abcd"):
+        try:
+            frames.encode_mapping(1, letters)
+        except frames.FrameError:
+            continue
+        raise AssertionError(f"accepted letters {letters}")
+    print("selftest: PASS")
+
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("monitor", "status"))
-    parser.add_argument("--broker", required=True, help="Broker LAN IPv4 address")
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("action", choices=("monitor", "snapshot", "mapping", "selftest"))
+    parser.add_argument("--broker", help="Broker LAN IPv4 address")
     parser.add_argument("--port", type=int, default=1883)
     parser.add_argument("--root", default="robot/s3")
+    parser.add_argument("--letters", help="Four distinct letters A-Z: left right straight u-turn")
+    parser.add_argument("--timeout", type=float, default=10.0, help="Seconds to wait for a reply")
     args = parser.parse_args()
+    if args.action == "selftest":
+        selftest()
+        return
+    if not args.broker:
+        parser.error("--broker is required")
     if not 1 <= args.port <= 65535:
         parser.error("Port must be 1..65535")
     if not args.root or any(c in args.root for c in "+#\0") or len(args.root.encode()) > 80:
         parser.error("Root must be 1..80 bytes without MQTT wildcards or NUL")
+    request = None
+    if args.action == "snapshot":
+        request = frames.encode_snapshot_request(1)
+    elif args.action == "mapping":
+        if not args.letters:
+            parser.error("--letters is required for mapping")
+        try:
+            request = frames.encode_mapping(1, args.letters.upper())
+        except frames.FrameError as error:
+            parser.error(str(error))
     try:
         import paho.mqtt.client as mqtt
     except ImportError:
         parser.exit(1, "Install: python -m pip install -r scripts/requirements-mqtt.txt\n")
 
-    subscribed = threading.Event()
-    received = threading.Event()
-    state = {"error": None, "heartbeat_at": time.monotonic(), "status": None}
+    done = threading.Event()
+    state = {"error": None}
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     client.connect_timeout = 5.0
     username = os.getenv("ROBOT_MQTT_USERNAME")
     if username:
         client.username_pw_set(username, os.getenv("ROBOT_MQTT_PASSWORD", ""))
 
-    def fail(message):
-        state["error"] = message
-        subscribed.set()
-        received.set()
-
     def on_connect(client, userdata, flags, reason_code, properties):
         if reason_code.is_failure:
-            fail(f"Broker refused connection: {reason_code}")
+            state["error"] = f"Broker refused the connection: {reason_code}"
+            done.set()
             return
-        topic = args.root + ("/#" if args.action == "monitor" else "/status")
-        result, _ = client.subscribe(topic, qos=1)
-        if result != mqtt.MQTT_ERR_SUCCESS:
-            fail("Could not subscribe")
-
-    def on_subscribe(client, userdata, mid, reason_codes, properties):
-        if any(code.is_failure for code in reason_codes):
-            fail("Broker refused subscription")
-        else:
-            subscribed.set()
-
-    def on_disconnect(client, userdata, flags, reason_code, properties):
-        if reason_code.is_failure:
-            fail(f"Broker connection lost: {reason_code}")
+        client.subscribe([(f"{args.root}/telemetry", 0), (f"{args.root}/status", 1)])
+        if request is not None:
+            client.publish(f"{args.root}/request", request, qos=0)
 
     def on_message(client, userdata, message):
-        text = message.payload.decode("utf-8", errors="replace")
-        if args.action == "monitor":
-            retained = " [retained]" if message.retain else ""
-            print(f"{message.topic}{retained} {text}", flush=True)
+        if message.topic.endswith("/status"):
+            print("robot", "online" if message.payload == b"1" else "offline")
+            return
         try:
-            payload = json.loads(message.payload)
-        except (ValueError, UnicodeDecodeError):
+            decoded = frames.decode(bytes(message.payload))
+        except frames.FrameError as error:
+            print(f"rejected frame ({error}): {bytes(message.payload).hex()}", file=sys.stderr)
             return
-        if not isinstance(payload, dict) or payload.get("online") is not True:
-            return
-        if not message.retain and message.topic == args.root + "/heartbeat":
-            state["heartbeat_at"] = time.monotonic()
-        if not message.retain and message.topic == args.root + "/status":
-            state["status"] = text
-            received.set()
+        print(json.dumps(decoded, sort_keys=True))
+        wanted = {"snapshot": "snapshot", "mapping": "ack"}.get(args.action)
+        if wanted and decoded["type"] == wanted:
+            done.set()
 
     client.on_connect = on_connect
-    client.on_subscribe = on_subscribe
-    client.on_disconnect = on_disconnect
     client.on_message = on_message
-    running = False
     try:
-        client.connect(args.broker, args.port, keepalive=15)
-        client.loop_start()
-        running = True
-        if not subscribed.wait(8):
-            raise RuntimeError("Timed out connecting/subscribing to broker")
-        if state["error"]:
-            raise RuntimeError(state["error"])
+        client.connect(args.broker, args.port)
+    except OSError as error:
+        parser.exit(1, f"Cannot reach the broker: {error}\n")
+    client.loop_start()
+    try:
         if args.action == "monitor":
-            print("Monitoring; Ctrl+C to exit. Expect a live heartbeat every second.", flush=True)
-            stale_reported = False
-            while True:
-                if state["error"]:
-                    raise RuntimeError(state["error"])
-                stale = time.monotonic() - state["heartbeat_at"] > 3
-                if stale and not stale_reported:
-                    print("Heartbeat unavailable for >3 s; retained status may be stale.", flush=True)
-                stale_reported = stale
-                time.sleep(0.25)
-        result = client.publish(args.root + "/request", '{"request":"status"}',
-                                qos=1, retain=False)
-        if result.rc != mqtt.MQTT_ERR_SUCCESS:
-            raise RuntimeError("Could not publish status request")
-        result.wait_for_publish(timeout=5)
-        if not result.is_published():
-            raise RuntimeError("Broker did not acknowledge request")
-        if not received.wait(8):
-            raise RuntimeError("No live status observed; check Pico connection/subscription")
-        if state["error"]:
-            raise RuntimeError(state["error"])
-        print(state["status"])
-        print("Live status observed; broker acknowledgement alone is not a Pico response.")
+            while not state["error"]:
+                time.sleep(0.5)
+        elif not done.wait(args.timeout):
+            state["error"] = "No reply from the robot before the timeout"
     except KeyboardInterrupt:
-        return 0
-    except (OSError, RuntimeError, ValueError) as error:
-        print(f"Error: {error}")
-        return 1
+        pass
     finally:
+        client.loop_stop()
         client.disconnect()
-        if running:
-            client.loop_stop()
-    return 0
+    if state["error"]:
+        parser.exit(1, state["error"] + "\n")
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
