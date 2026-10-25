@@ -31,6 +31,8 @@ void terrain_task(INT stacd, void *exinf) {
         tk_dly_tsk(robot_time_next_delay(&release, 10u, robot_time_ms()));
     }
 
+    TerrainState prev_state = s_ctx.state;
+
     for (;;) {
         Gy511RawAxes raw_accel = {0};
         bool read_ok = hw_ok && drv_gy511_read_accel(&raw_accel);
@@ -40,15 +42,17 @@ void terrain_task(INT stacd, void *exinf) {
             float delta_d = 0.004f; 
             terrain_algo_process(&s_ctx, &raw_accel, delta_d);
 
-            /* If collision detected, directly invoke Safety Stop on Buddy 2 */
-            if (s_ctx.state == TERRAIN_STATE_IMPACT) {
+            /* Impact latches IMPACT; request one Safety Stop on the transition only */
+            if (s_ctx.state == TERRAIN_STATE_IMPACT && prev_state != TERRAIN_STATE_IMPACT) {
                 s2_stop();
             }
+            prev_state = s_ctx.state;
 
             /* Update shared snapshot for Mission and Telemetry */
             TerrainSnapshot snap;
             snap.timestamp_ms = robot_time_ms();
-            snap.terrain_valid = true;
+            /* Data is valid only once calibration has produced an offset */
+            snap.terrain_valid = s_ctx.is_calibrated;
             snap.accel_x_g = s_ctx.filtered_accel.x;
             snap.accel_y_g = s_ctx.filtered_accel.y;
             snap.accel_z_g = s_ctx.filtered_accel.z;
