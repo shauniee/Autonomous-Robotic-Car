@@ -80,7 +80,7 @@ Topic `robot/s3/telemetry`, client-ID prefix `csc01-s3-pico` plus the radio MAC,
 | calibration.black / white | Paired ADC reference object, or null if its flag is false |
 | fractions | Calibrated left/right black fractions 0..1, or null without a valid calibrated reading |
 | error | Right fraction minus left fraction, or null without calibrated reading |
-| line | unknown, visible, lost or broad_black; see the complete [IR classification](LINE_TRACKING.md#states-and-responses) |
+| line | unknown, visible, lost or broad_black; see the complete [IR classification](LINE_TRACKING.md#normalization-classification-and-proportional-guidance) |
 | state | READY, FOLLOW_LINE, RECOVER_LINE or STOPPED |
 | reason | Current controller reason, including capture/start/stop/failure policy |
 | capture | Typed capture outcome's display name; not a remote acknowledgement or request ID |

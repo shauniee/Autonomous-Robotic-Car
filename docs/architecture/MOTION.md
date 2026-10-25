@@ -58,7 +58,7 @@ Use [TEAM's motor/encoder allocations](../TEAM.md#2-pins) and [PWM ownership](..
 | Suggested speed estimator / wheel controller | Count-window speed/distance conversion and separate per-wheel PID |
 | Suggested action controller | Unique action IDs, lease/deadline validation, completion retention, acknowledgement and stall detection |
 
-Use [shared `M_motion_cmd` / feedback contracts](../ARCHITECTURE.md#shared-contracts) for full integration. Feedback must expose measured counts/speeds/distance, validity/time, readiness/stationarity and active/done/failed action ID/reason. The existing bench's software health sequence is insufficient for scan stationarity.
+Use [shared `M_motion_cmd` / feedback contracts](../ARCHITECTURE.md#shared-data-rules) for full integration. Feedback must expose measured counts/speeds/distance, validity/time, readiness/stationarity and active/done/failed action ID/reason. The existing bench's software health sequence is insufficient for scan stationarity.
 
 ## Business logic
 
