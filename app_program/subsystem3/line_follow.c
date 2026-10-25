@@ -241,7 +241,7 @@ static void follow_task(INT stacd, void *exinf)
         if (tk_dly_tsk((RELTIM)(next - now)) < E_OK)
         {
             stop(&state);
-            return;
+            for (;;) tk_slp_tsk(TMO_FEVR); /* Halt: never return from a task */
         }
     }
 }

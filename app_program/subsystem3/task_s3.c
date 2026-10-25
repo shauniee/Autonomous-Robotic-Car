@@ -5,6 +5,7 @@
 #include "drv_ir_tracking.h"
 #include "../common/drv_buttons.h"
 #include "../common/buzzer.h"
+#include "../subsystem2/subsystem2.h"
 
 #define INPUT_PERIOD_MS 10u
 #define REPORT_PERIOD_MS 500u
@@ -108,7 +109,8 @@ void task_s_task(INT stacd, void *exinf)
         {
             tm_printf((UB *)"[IR] buzzer service failed; task stopped\n");
             barcode_runtime_shutdown();
-            return;
+            s2_stop();
+            for (;;) tk_slp_tsk(TMO_FEVR); /* Halt: never return from a task */
         }
         /* Cache failure skips publication; local work still advances.
            Readers invalidate the cached acquisition after 60 ms. */
@@ -133,7 +135,8 @@ void task_s_task(INT stacd, void *exinf)
         {
             tm_printf((UB *)"[IR] task delay failed\n");
             barcode_runtime_shutdown();
-            return;
+            s2_stop();
+            for (;;) tk_slp_tsk(TMO_FEVR); /* Halt: never return from a task */
         }
     }
 }

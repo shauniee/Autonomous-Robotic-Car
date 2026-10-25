@@ -69,7 +69,7 @@ ER subsystem5_init(void)
     return E_OK;
 }
 /*ULTRASONIC FUNCTIONS!!!!! :)*/
-static ER ultrasonic_trigger(void)
+ER ultrasonic_trigger(void)
 {
     ER error;
 
@@ -90,7 +90,7 @@ static ER ultrasonic_trigger(void)
     return gpio_set_val(TRIGGER_PIN, 0);
 }
 
-static ER ultrasonic_wait_for_echo(void)
+ER ultrasonic_wait_for_echo(void)
 {
     ER error;
     uint32_t start; // record the time
@@ -174,5 +174,7 @@ ER subsystem5_start(void)
     // return error;
     // }
 
-    return ultrasonic_wait_for_echo();
+    /* Non-blocking: boot never waits for an echo. Ranging is a later
+       periodic job; absence of echo must not stop startup. */
+    return E_OK;
 }
