@@ -4,6 +4,8 @@
 
 #include <math.h>
 #include "terrain_algo.h"
+#include "../common/robot_data.h"
+#include "../subsystem2/encoder_math.h"
 #include "../common/robot_config.h"
 
 #define RAD_TO_DEG              57.2957795f
@@ -17,9 +19,13 @@ void terrain_algo_init(TerrainContext *ctx) {
     ctx->roll_deg = 0.0f;
     ctx->state = TERRAIN_STATE_FLAT;
     ctx->height_valid = false;
-    ctx->current_hump_rise_m = 0.0f;
-    ctx->last_hump_height_m = 0.0f;
-    ctx->max_hump_peak_m = 0.0f;
+    ctx->rise_q = 0u;
+    ctx->last_hump_code = 0u;
+    ctx->max_hump_code = 0u;
+    ctx->hump_count = 0u;
+    for (unsigned i = 0u; i < HUMP_EVENT_CAPACITY; ++i) ctx->hump_events[i] = 0u;
+    ctx->hump_event_head = 0u;
+    ctx->flat_run = 0u;
     ctx->is_calibrated = false;
     ctx->calib_count = 0;
     ctx->calib_sum = (Vec3f){0.0f, 0.0f, 0.0f};
@@ -43,7 +49,19 @@ bool terrain_algo_calibrate_sample(TerrainContext *ctx, const Gy511RawAxes *raw)
     return false;
 }
 
-void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float delta_dist_m) {
+void terrain_algo_calibration_restart(TerrainContext *ctx) {
+    ctx->calib_count = 0;
+    ctx->calib_sum = (Vec3f){0.0f, 0.0f, 0.0f};
+}
+
+/* Working height in 0.1 mm units, saturating at the 16-bit limit. */
+static void rise_add(TerrainContext *ctx, float tenths_mm) {
+    float next = (float)ctx->rise_q + tenths_mm;
+    ctx->rise_q = next <= 0.0f ? 0u : (next >= 65535.0f ? 65535u : (uint16_t)(next + 0.5f));
+}
+
+void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t delta_counts) {
+    float delta_dist_mm = (float)delta_counts / ENC_COUNTS_PER_MM;
     if (!ctx->is_calibrated) return;
 
     /* 1. Convert to physical g with bias removal */
@@ -75,14 +93,14 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
         case TERRAIN_STATE_FLAT:
             if (ctx->pitch_deg > PITCH_CLIMB_THRESH_DEG) {
                 ctx->state = TERRAIN_STATE_CLIMBING;
-                ctx->current_hump_rise_m = 0.0f;
+                ctx->rise_q = 0u;
                 ctx->height_valid = false;
             }
             break;
 
         case TERRAIN_STATE_CLIMBING:
-            if (delta_dist_m > 0.0f) {
-                ctx->current_hump_rise_m += sinf(ctx->pitch_deg * DEG_TO_RAD) * delta_dist_m;
+            if (delta_dist_mm > 0.0f) {
+                rise_add(ctx, sinf(ctx->pitch_deg * DEG_TO_RAD) * delta_dist_mm * 10.0f);
             }
             if (ctx->pitch_deg < PITCH_CLIMB_THRESH_DEG && ctx->pitch_deg > PITCH_DESC_THRESH_DEG) {
                 ctx->state = TERRAIN_STATE_CRESTING;
@@ -92,20 +110,32 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
         case TERRAIN_STATE_CRESTING:
             if (ctx->pitch_deg < PITCH_DESC_THRESH_DEG) {
                 ctx->state = TERRAIN_STATE_DESCENDING;
+                ctx->flat_run = 0u;
             } else if (fabsf(ctx->pitch_deg) < 2.0f) {
-                /* Premature flatten without descent */
-                ctx->state = TERRAIN_STATE_FLAT;
+                /* The filtered pitch passes through zero between climb and descent;
+                   only a sustained flat reading is a premature flatten. */
+                if (++ctx->flat_run >= HUMP_FLAT_SAMPLES) {
+                    ctx->state = TERRAIN_STATE_FLAT;
+                    ctx->flat_run = 0u;
+                }
+            } else {
+                ctx->flat_run = 0u;
             }
             break;
 
         case TERRAIN_STATE_DESCENDING:
             if (fabsf(ctx->pitch_deg) < 2.0f) {
-                /* Complete climb-crest-descent window finished! */
-                ctx->last_hump_height_m = ctx->current_hump_rise_m * HUMP_CALIB_FACTOR;
-                ctx->height_valid = (ctx->last_hump_height_m > 0.005f); /* >5mm minimum threshold */
-                
-                if (ctx->height_valid && (ctx->last_hump_height_m > ctx->max_hump_peak_m)) {
-                    ctx->max_hump_peak_m = ctx->last_hump_height_m;
+                /* Complete climb-crest-descent window finished: only a valid, complete
+                   encounter adds an event. */
+                float mm = ((float)ctx->rise_q / 10.0f) * HUMP_CALIB_FACTOR;
+                ctx->height_valid = mm >= (float)HUMP_MIN_HEIGHT_MM;
+                if (ctx->height_valid) {
+                    uint8_t code = (uint8_t)rd_sat_valid((uint32_t)(mm / (float)HUMP_MM_PER_COUNT + 0.5f), HUMP_RESULT_BITS);
+                    ctx->last_hump_code = code;
+                    if (code > ctx->max_hump_code) ctx->max_hump_code = code;
+                    if (ctx->hump_count < 255u) ctx->hump_count++;
+                    ctx->hump_events[ctx->hump_event_head] = code;
+                    ctx->hump_event_head = (uint8_t)((ctx->hump_event_head + 1u) % HUMP_EVENT_CAPACITY);
                 }
                 ctx->state = TERRAIN_STATE_FLAT;
             }
@@ -118,5 +148,5 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
 }
 
 void terrain_algo_reset_run_peak(TerrainContext *ctx) {
-    ctx->max_hump_peak_m = 0.0f;
+    ctx->max_hump_code = 0u;
 }

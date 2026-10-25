@@ -13,6 +13,8 @@
 #include "../common/robot_config.h"
 
 #define ENC_COUNT_MASK (ENC_COUNT_BITS >= 32u ? 0xFFFFFFFFu : ((1u << (ENC_COUNT_BITS % 32u)) - 1u))
+/* Counts per millimetre of wheel travel (geometry is PROVISIONAL, D03). */
+#define ENC_COUNTS_PER_MM (ENC_COUNTS_PER_REV / (3.14159265f * WHEEL_DIAMETER_MM))
 #define ENC_QUAD_INVALID 2	/* skipped state or both channels changed */
 
 /* Quadrature step between two 2-bit levels (A*2+B): +1, -1, 0 (no change),
@@ -41,6 +43,12 @@ static inline int32_t enc_travel_signed(uint32_t now, uint32_t origin)
 {
     unsigned shift = 32u - ENC_COUNT_BITS;
     return (int32_t)(enc_travel(now, origin) << shift) >> shift;
+}
+
+/* Wrap-safe mean of the two wheel counts (a plain average breaks at the wrap). */
+static inline uint32_t enc_mean(uint32_t left, uint32_t right)
+{
+    return enc_advance(left, enc_travel_signed(right, left) / 2);
 }
 
 #endif /* ENCODER_MATH_H */

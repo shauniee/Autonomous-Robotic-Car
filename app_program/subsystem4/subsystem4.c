@@ -8,6 +8,10 @@
 
 static ID s_terrain_mtx = -1;
 static TerrainSnapshot s_latest_snapshot;
+static rd_word_t s_terrain_word;	/* writer: the terrain task; layout in terrain_pack.h */
+
+uint32_t s4_terrain_word(void) { return rd_word_read(&s_terrain_word); }
+void s4_publish_word(uint32_t word) { rd_word_publish(&s_terrain_word, word); }
 
 ER subsystem4_init(void) {
     /* Create priority-inheritance mutex for thread-safe snapshot reads */
