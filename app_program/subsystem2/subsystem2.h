@@ -20,5 +20,9 @@ ER s2_stop(void);
 /* Fresh core-1 local action only. E_OBJ until latest stop is serviced.
    Success clears cached work; it does not command movement. */
 ER s2_reset_stop(void);
+
+/* Any core, startup only: latches stop and a permanent inhibit that
+   s2_reset_stop() refuses. Does not call s2_stop(). */
+ER s2_inhibit_startup(void);
 ER s2_health(MotionHealth *health);
 #endif

@@ -46,6 +46,15 @@ ER s2_publish(MotionRequest request) {
     latest=request;
     return tk_unl_mtx(request_mutex);
 }
+/* Bit 0 = stop latched; bit 1 = startup inhibit (never cleared at runtime).
+   Nonwaiting kernel flag operation: sets the bits and touches no motor
+   output, so it is safe from any core, including startup on core 0. */
+ER s2_inhibit_startup(void)
+{
+    if (stop_flag <= 0) return E_OBJ;
+    return tk_set_flg(stop_flag, 3u);
+}
+
 ER s2_reset_stop(void)
 {
     ER er = tk_loc_mtx(request_mutex, 2);
@@ -58,7 +67,11 @@ ER s2_reset_stop(void)
     er = tk_ref_flg(stop_flag, &flag);
     if (er >= E_OK)
     {
-        if (((flag.flgptn & 1u) == 0u) || !brake_acknowledged ||
+        if ((flag.flgptn & 2u) != 0u)
+        {
+            er = E_OBJ; /* Startup inhibit: GP20 cannot clear it. */
+        }
+        else if (((flag.flgptn & 1u) == 0u) || !brake_acknowledged ||
             (brake_epoch != control_epoch))
         {
             er = E_OBJ;
