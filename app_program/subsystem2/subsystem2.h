@@ -3,7 +3,7 @@
 #define SUBSYSTEM2_H
 #include "../app.h"
 #include "motion_policy.h"
-#define S2_PRI_MOTION 13
+#include "../common/robot_config.h"
 ER subsystem2_init(void);
 ER subsystem2_start(void);
 /* Progress records successful output processing, not measured motion. */

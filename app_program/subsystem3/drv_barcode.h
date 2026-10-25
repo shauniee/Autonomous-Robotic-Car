@@ -2,10 +2,10 @@
 #define DRV_BARCODE_H
 
 #include "barcode_types.h"
+#include "../common/robot_config.h"
 
 #define BARCODE_EDGE_FALL 4u
 #define BARCODE_EDGE_RISE 8u
-#define BARCODE_GPIO 16u
 
 typedef struct
 {

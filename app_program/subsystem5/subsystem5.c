@@ -1,9 +1,8 @@
 #include "subsystem5.h"
 #include "tk/syslib.h"
 #include "../common/robot_time.h"
+#include "../common/robot_config.h"
 
-#define ECHO_PIN 2
-#define TRIGGER_PIN 3
 /* Servo setup paused while learning ultrasonic sensing. */
 // #define SERVO_PIN 12
 // #define SERVO_CENTRE_US 1500u

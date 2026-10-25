@@ -2,13 +2,10 @@
 #define PROHIBIT_DEF_SIZE_T
 #include <math.h>
 #include "drv_motor.h"
+#include "../common/robot_config.h"
 /* Template clk_sys is 125 MHz. PWM DIV is 8.4 fixed point:
    125 MHz / 6.25 / 1000 = 20 kHz, carrier maximum. */
-#define MOTOR_WRAP 999u
-#define MOTOR_DIV_8_4 100u
 /* Verify motor lead polarity on the actual robot, wheels raised. */
-#define LEFT_FORWARD_A 1
-#define RIGHT_FORWARD_A 1
 
 static ER motor_gpio_low(void)
 {

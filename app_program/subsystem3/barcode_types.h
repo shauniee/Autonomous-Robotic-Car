@@ -3,12 +3,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "../common/robot_config.h"
 
 #define BARCODE_ELEMENTS 29u
 #define BARCODE_ALPHABET 26u
-#define BARCODE_EVENT_CAPACITY 8u
-#define BARCODE_EDGE_CAPACITY 64u
-#define BARCODE_SERVICE_BUDGET 16u
 
 typedef enum
 {

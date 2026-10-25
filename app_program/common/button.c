@@ -1,7 +1,7 @@
 #include "button.h"
 #include <stddef.h>
+#include "./robot_config.h"
 
-#define BUTTON_DEBOUNCE_MS 30u
 
 void button_init(Button *button, uint32_t now)
 {

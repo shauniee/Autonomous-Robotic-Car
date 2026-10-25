@@ -4,19 +4,7 @@
 #include "../subsystem2/subsystem2.h"
 #include "../common/button.h"
 #include "../common/drv_buttons.h"
-
-#define FOLLOW_PERIOD_MS 10u
-#define FOLLOW_PRIORITY 14
-#define RECOVERY_MS 500u
-#define BASE_DUTY 0.25f
-#define BROAD_DUTY 0.20f
-/* Steering magnitude that keeps both wheels within MOTION_MAX_DUTY. */
-#define MAX_STEER 0.40f
-
-_Static_assert(BASE_DUTY * (1.0f + MAX_STEER) <= MOTION_MAX_DUTY,
-    "line-follow wheel duty must stay within MOTION_MAX_DUTY");
-_Static_assert(BROAD_DUTY <= MOTION_MAX_DUTY,
-    "broad-black duty must stay within MOTION_MAX_DUTY");
+#include "../common/robot_config.h"
 
 typedef enum
 {

@@ -8,11 +8,11 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "../common/robot_config.h"
 
 #define GY511_I2C_ADDR_ACCEL    0x19u   /* 7-bit accelerometer address */
 #define GY511_I2C_ADDR_MAG      0x1Eu   /* 7-bit magnetometer address */
 
-#define GY511_TIMEOUT_US        5000u   /* 5 ms non-blocking timeout (NFR12) */
 
 typedef struct {
     int16_t x;

@@ -7,8 +7,8 @@
 
 #include "../app.h"
 #include "terrain_algo.h"
+#include "../common/robot_config.h"
 
-#define S4_PRI_TERRAIN  16      /* Priority 16, Core 1 (TEAM.md section 4) */
 
 typedef struct {
     uint32_t     timestamp_ms;
