@@ -4,6 +4,7 @@
 #include "safety.h"
 #include "../subsystem2/subsystem2.h"
 #include "../subsystem5/subsystem5.h"
+#include "../subsystem1/subsystem1.h"
 #include "../subsystem2/drv_encoder.h"
 #include "../common/button.h"
 #include "../common/drv_buttons.h"
@@ -19,7 +20,7 @@ MissionState mission_state(void)
 ER mission_set_mapping(const uint8_t letters[4])
 {
     MissionState state = mission_state();
-    if (state == MISSION_FOLLOW || state == MISSION_JUNCTION_TURN)
+    if (state == MISSION_FOLLOW || state == MISSION_JUNCTION_TURN || state == MISSION_BYPASS)
     {
         return E_OBJ;
     }
@@ -107,7 +108,8 @@ static void mission_task(INT stacd, void *exinf)
             .left_clearance_mm = profile.left_clearance_mm,
             .right_clearance_mm = profile.right_clearance_mm,
             .have_barcode = barcode_pop(&barcode),
-            .barcode_action = barcode.action};
+            .barcode_action = barcode.action,
+            .barcode_letter = (uint8_t)(barcode.symbol >= 'A' && barcode.symbol <= 'Z' ? barcode.symbol - 'A' : 31)};
 
         MissionOutputs out;
         mission_step(&mission, &in, &out);
@@ -115,6 +117,10 @@ static void mission_task(INT stacd, void *exinf)
         if (out.stop_now && s2_stop() < E_OK)
         {
             tm_printf((UB *)"[MISSION] stop request failed\n");
+        }
+        if (out.event_kind != 0u)
+        {
+            s1_event((mqtt_event_kind_t)out.event_kind, out.event_arg, out.event_arg2);
         }
         if (out.request_reset)
         {

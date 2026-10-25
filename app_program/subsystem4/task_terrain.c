@@ -5,6 +5,7 @@
 #include "task_terrain.h"
 #include "../subsystem2/drv_encoder.h"
 #include "../common/robot_data.h"
+#include "../subsystem1/subsystem1.h"
 #include "drv_gy511.h"
 #include "terrain_algo.h"
 #include "subsystem4.h"
@@ -46,6 +47,7 @@ void terrain_task(INT stacd, void *exinf) {
         rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_CALIBRATION_FAILED);
     }
     TerrainState prev_state = s_ctx.state;
+    uint8_t prev_hump_count = s_ctx.hump_count;
 
     for (;;) {
         Gy511RawAxes raw_accel = {0};
@@ -68,6 +70,10 @@ void terrain_task(INT stacd, void *exinf) {
             /* Impact latches IMPACT; request one Safety Stop on the transition only */
             if (s_ctx.state == TERRAIN_STATE_IMPACT && prev_state != TERRAIN_STATE_IMPACT) {
                 s2_stop();
+            }
+            if (s_ctx.hump_count != prev_hump_count) {
+                prev_hump_count = s_ctx.hump_count;
+                s1_event(MQTT_EVENT_HUMP, s_ctx.last_hump_code, 0u);
             }
             prev_state = s_ctx.state;
 

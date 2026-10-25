@@ -109,6 +109,9 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
     if (in->have_barcode && in->barcode_action != BARCODE_UNMAPPED)
     {
         m->held = in->barcode_action; /* the newest read replaces an unused one */
+        out->event_kind = 1u;	/* MQTT_EVENT_BARCODE */
+        out->event_arg = in->barcode_letter;
+        out->event_arg2 = (uint16_t)in->barcode_action;
     }
 
     if (!m->recovering && obstacle_ahead(in))
@@ -145,6 +148,8 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
                 m->current_action = next_action_id(m);
                 m->turn_target = action == BARCODE_LEFT ? 90.0f : (action == BARCODE_RIGHT ? -90.0f : 180.0f);
                 enter(m, MISSION_JUNCTION_TURN, in->now_ms);
+                out->event_kind = 4u;	/* MQTT_EVENT_TURN */
+                out->event_arg = (uint8_t)action;
                 out->command = action_command(MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS, m->turn_target,
                                               m->current_action, in->now_ms);
                 return;
@@ -319,6 +324,8 @@ static void handle_bypass(Mission *m, const MissionInputs *in, MissionOutputs *o
         else if (!in->side_valid || in->side_mm > m->pass_baseline_mm + MISSION_PASS_JUMP_MM)
         {
             m->obstacle_depth_counts = enc_travel(in->travel_counts, m->bypass_origin);
+            out->event_kind = 3u;	/* MQTT_EVENT_OBSTACLE: depth in encoder counts */
+            out->event_arg2 = (uint16_t)(m->obstacle_depth_counts > 65535u ? 65535u : m->obstacle_depth_counts);
             begin_action(m, BYPASS_PASS_MARGIN, MOTION_MODE_DISTANCE, MISSION_CLEAR_SPEED_MMPS,
                          S5_BODY_LENGTH_MM + S5_CLEARANCE_MM);
         }

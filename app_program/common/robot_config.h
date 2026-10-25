@@ -22,11 +22,11 @@
 #define S4_PRI_TERRAIN		16
 
 /* --- S1 communications --------------------------------------------- */
-#define S1_REQUEST_MAX			64u
-#define S1_STATUS_MAX			256u
-#define S1_HEARTBEAT_PERIOD_MS		1000u
-#define S1_TELEMETRY_PERIOD_MS		500u
-#define S1_TELEMETRY_PAYLOAD_MAX	768u	/* JSON; replaced by #39 */
+#define S1_PRI_REPORTING	20
+#define S1_TELEMETRY_PERIOD_MS	500u
+#define S1_REPORT_PERIOD_MS	50u	/* Reporting release: requests and events are served at this rate */
+#define S1_EVENT_CAPACITY	16u	/* event-log ring; oldest overwritten, drops counted */
+#define S1_EVENTS_PER_RELEASE	2u
 
 /* --- S2 motion ------------------------------------------------------ */
 #define MOTION_MAX_DUTY		.35f	/* PROVISIONAL (D07) */
@@ -231,7 +231,7 @@ _Static_assert(S3_PRI_LINE != S2_PRI_MOTION && S2_PRI_MOTION != FOLLOW_PRIORITY 
 	S3_PRI_LINE != FOLLOW_PRIORITY, "task priorities must be distinct");
 _Static_assert(PITCH_DESC_THRESH_DEG < 0.0f && PITCH_CLIMB_THRESH_DEG > 0.0f,
 	"pitch thresholds must straddle zero");
-_Static_assert(S1_TELEMETRY_PAYLOAD_MAX <= S1_STATUS_MAX * 4u,
-	"telemetry payload bound out of proportion to status buffer");
+_Static_assert(S1_TELEMETRY_PERIOD_MS % S1_REPORT_PERIOD_MS == 0u && S1_EVENT_CAPACITY >= 4u,
+	"telemetry period must be a whole number of Reporting releases");
 
 #endif /* ROBOT_CONFIG_H */

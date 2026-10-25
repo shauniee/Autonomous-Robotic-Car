@@ -70,6 +70,7 @@ typedef struct
     s5_scan_state_t scan_state;
     bool profile_valid;
     uint32_t left_clearance_mm, right_clearance_mm;
+    uint8_t barcode_letter;	/* 0..25, 31 none */
     bool have_barcode;		/* a decoded barcode this release */
     barcode_action_t barcode_action;
 } MissionInputs;
@@ -81,6 +82,9 @@ typedef struct
     bool request_reset;		/* ask Safety to release the latch (never moves) */
     bool start_scanner;
     bool stop_scanner;
+    uint8_t event_kind;		/* mqtt_event_kind_t, 0 none: one event per release */
+    uint8_t event_arg;
+    uint16_t event_arg2;
     bool scan_request;		/* ask Obstacle for a scan */
     bool scan_cancel;
     bool side_watch_on;		/* hold the servo toward the obstacle */
