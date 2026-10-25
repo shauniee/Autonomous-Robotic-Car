@@ -104,7 +104,7 @@ static bool channel(unsigned mux, uint16_t *value, uint32_t started)
     }
     uint32_t sum = 0u;
 
-    for (unsigned i = 0u; i <= ADC_AVERAGE_COUNT; ++i)
+    for (unsigned i = 0u; i < ADC_AVERAGE_COUNT; ++i)
     {
         if (!adc_read_once(control, &sample, started))
         {
