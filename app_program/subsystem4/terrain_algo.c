@@ -4,16 +4,11 @@
 
 #include <math.h>
 #include "terrain_algo.h"
+#include "../common/robot_config.h"
 
-#define ACCEL_MG_PER_LSB        0.001f          /* 1 mg/digit at +/- 2g */
-#define LPF_ALPHA               0.20f           /* IIR filter weight */
 #define RAD_TO_DEG              57.2957795f
 #define DEG_TO_RAD              0.0174532925f
 
-#define PITCH_CLIMB_THRESH_DEG   3.5f           /* Pitch elevation indicating climb */
-#define PITCH_DESC_THRESH_DEG   -3.5f           /* Negative pitch indicating descent */
-#define IMPACT_THRESHOLD_G       2.5f           /* Collision acceleration limit (FR11) */
-#define HUMP_CALIB_FACTOR        1.15f          /* Wheelbase geometric scale factor */
 
 void terrain_algo_init(TerrainContext *ctx) {
     ctx->accel_offset = (Vec3f){0.0f, 0.0f, 0.0f};

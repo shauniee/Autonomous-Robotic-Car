@@ -1,8 +1,7 @@
 #include "drv_buttons.h"
 #include "../app.h"
+#include "./robot_config.h"
 
-#define BUTTON_GP20 20u
-#define BUTTON_GP21 21u
 
 static bool configure_button_pin(unsigned pin)
 {

@@ -2,9 +2,8 @@
 #define S1_TELEMETRY_H
 #include <stdbool.h>
 #include <stdint.h>
+#include "../common/robot_config.h"
 
-#define S1_TELEMETRY_PERIOD_MS 500u
-#define S1_TELEMETRY_PAYLOAD_MAX 768u
 
 /* Portable across kernel/network headers. Decimal values use thousandths;
    duties are requests, not measured speed or proof that motors are moving. */

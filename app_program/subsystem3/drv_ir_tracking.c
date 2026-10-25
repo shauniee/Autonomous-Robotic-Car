@@ -1,6 +1,7 @@
 #include "drv_ir_tracking.h"
 #include "../app.h"
 #include "../common/robot_time.h"
+#include "../common/robot_config.h"
 
 #define ADC_REG_BASE 0x4004c000u
 #define ADC_CONTROL ADC_REG_BASE
@@ -10,11 +11,6 @@
 #define ADC_READY (1u << 8)
 #define ADC_ERROR (1u << 9)
 #define ADC_CHANNEL_SHIFT 12u
-#define ADC_BUDGET_US 2000u
-#define ADC_POLL_LIMIT 4096u
-#define ADC_AVERAGE_COUNT 8u
-#define IR_LEFT_PIN 26u
-#define IR_RIGHT_PIN 27u
 #define IR_LEFT_ADC_CHANNEL 0u
 #define IR_RIGHT_ADC_CHANNEL 1u
 #define GPIO_NULL_FUNCTION 31u

@@ -3,10 +3,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "../common/robot_config.h"
 
-#define S1_REQUEST_MAX 64u
-#define S1_STATUS_MAX 256u
-#define S1_HEARTBEAT_PERIOD_MS 1000u
 
 typedef struct
 {

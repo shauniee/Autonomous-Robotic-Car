@@ -5,9 +5,8 @@
 #include "drv_ir_tracking.h"
 #include "../common/drv_buttons.h"
 #include "../common/buzzer.h"
+#include "../common/robot_config.h"
 
-#define INPUT_PERIOD_MS 10u
-#define REPORT_PERIOD_MS 500u
 
 static void request_buzzer_chirps(unsigned chirps, uint32_t now)
 {

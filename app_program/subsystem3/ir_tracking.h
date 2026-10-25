@@ -3,19 +3,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "../common/robot_config.h"
 
 /* RP2040 ADC RESULT is 12 bits: 0 through (2^12 - 1). */
-#define IR_ADC_MAX 4095u
-#define IR_SAMPLE_MS 20u
-#define IR_MAX_GAP_MS 60u
-#define IR_CAPTURE_MS 500u
-#define IR_CAPTURE_MIN_SAMPLES 25u
-#define IR_MIN_CONTRAST 300u
-#define IR_MAX_CORRECTION 0.10f
-#define IR_KP 0.05f
-#define IR_WHITE_ENTER 0.15f
-#define IR_WHITE_EXIT 0.25f
-#define IR_BROAD_BLACK 0.85f
 
 typedef struct
 {
