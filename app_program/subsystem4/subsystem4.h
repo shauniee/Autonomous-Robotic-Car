@@ -7,6 +7,7 @@
 
 #include "../app.h"
 #include "terrain_algo.h"
+#include "terrain_pack.h"
 #include "../common/robot_config.h"
 
 
@@ -22,6 +23,7 @@ typedef struct {
     bool         height_valid;
     float        last_hump_height_m;
     float        max_hump_peak_m;
+    uint8_t      hump_count;
 } TerrainSnapshot;
 
 /* Subsystem lifecycle called by app_main.c */
@@ -30,6 +32,9 @@ ER subsystem4_start(void);
 
 /* Public thread-safe data access */
 ER s4_get_terrain(TerrainSnapshot *out);
+/* Terrain word (see terrain_pack.h): hump count and heights in one load. */
+uint32_t s4_terrain_word(void);
+void s4_publish_word(uint32_t word);
 void s4_publish_snapshot(const TerrainSnapshot *in);
 
 #endif /* SUBSYSTEM4_H */

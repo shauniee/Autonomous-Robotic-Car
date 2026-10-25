@@ -39,7 +39,7 @@ EXPORT ID app_start_task(FP entry, PRI pri, UW prc, const char *name)
 }
 
 static void startup_error(void) {
-    s2_stop();
+    s2_inhibit_startup();
     tm_printf((UB*)"Startup failed: motor outputs remain inhibited.\n");
     for (;;) tk_slp_tsk(TMO_FEVR);
 }

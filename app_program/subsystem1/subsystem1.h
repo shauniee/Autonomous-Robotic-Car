@@ -1,12 +1,13 @@
-/* Shaun: bounded diagnostic snapshot; kernel service owns every network call. */
+/* Shaun: communications. Reporting task: binary telemetry, event log, mapping command. */
 #ifndef SUBSYSTEM1_H
 #define SUBSYSTEM1_H
-#ifdef BENCH_KERNEL_HOST_TEST
-#include "kernel_io.h"
-#else
 #include "../app.h"
-#endif
-#include "telemetry.h"
+#include "mqtt_frame.h"
 ER subsystem1_init(void);
 ER subsystem1_start(void);
+
+/* Log one event with the current time and encoder position. Any core-1 task;
+   a full ring overwrites the oldest event (counted, see s1_report.h).
+   kind: mqtt_event_kind_t; arg and arg2 as documented in MQTT_PROTOCOL.md. */
+void s1_event(mqtt_event_kind_t kind, uint8_t arg, uint16_t arg2);
 #endif

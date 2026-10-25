@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "drv_gy511.h"
+#include "../common/robot_config.h"
 
 typedef enum {
     TERRAIN_STATE_FLAT = 0,
@@ -32,9 +33,13 @@ typedef struct {
     
     /* Hump estimator state */
     bool         height_valid;          /* Separate validity flag */
-    float        current_hump_rise_m;   /* Accumulated climb height */
-    float        last_hump_height_m;    /* Height of most recent valid hump */
-    float        max_hump_peak_m;       /* Greatest valid peak in current run (FR5) */
+    uint16_t     rise_q;                /* Working climb height, 0.1 mm units, saturating (16-bit fixed point) */
+    uint8_t      last_hump_code;        /* 7-bit result of the most recent valid hump */
+    uint8_t      max_hump_code;         /* Greatest valid result this run (FR5); 0 until a hump */
+    uint8_t      hump_count;            /* Valid complete encounters, saturating at 255 */
+    uint8_t      hump_events[HUMP_EVENT_CAPACITY]; /* Ring of 7-bit results, oldest overwritten */
+    uint8_t      hump_event_head;
+    uint8_t      flat_run;              /* consecutive near-zero pitch samples while cresting */
     
     /* Calibration helper */
     bool         is_calibrated;
@@ -44,7 +49,11 @@ typedef struct {
 
 void terrain_algo_init(TerrainContext *ctx);
 bool terrain_algo_calibrate_sample(TerrainContext *ctx, const Gy511RawAxes *raw);
-void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float delta_dist_m);
+/* delta_counts: forward encoder travel since the previous call, taken by the
+   caller from a private origin (modular subtraction); converted to mm here. */
+void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t delta_counts);
+/* Restart the stationary start calibration (the robot moved while sampling). */
+void terrain_algo_calibration_restart(TerrainContext *ctx);
 void terrain_algo_reset_run_peak(TerrainContext *ctx);
 
 #endif /* TERRAIN_ALGO_H */

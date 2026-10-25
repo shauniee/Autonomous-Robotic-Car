@@ -6,6 +6,7 @@
 #include "../common/drv_buttons.h"
 #include "../common/buzzer.h"
 #include "../common/robot_config.h"
+#include "../subsystem2/subsystem2.h"
 
 
 static void request_buzzer_chirps(unsigned chirps, uint32_t now)
@@ -49,6 +50,8 @@ void task_s_task(INT stacd, void *exinf)
     IrTracker tracker;
     ir_tracking_init(&tracker);
     bool adc_ready = drv_ir_tracking_init();
+    /* The GPIO dispatcher is core-1 only, so the scanner starts here, disabled. */
+    if (!barcode_init()) tm_printf((UB *)"[BARCODE] init failed; scanner unavailable\n");
     uint32_t now;
     now = robot_time_ms();
     calibration_control_t controls;
@@ -102,12 +105,13 @@ void task_s_task(INT stacd, void *exinf)
         }
         /* Service after due ADC work, with a fixed edge budget. GP21 is
            delivered each release; barcode never owns motor/line policy. */
-        barcode_runtime_service(inputs.gp21_down);
+        barcode_service(inputs.gp21_down);
         if (!buzzer_service(now))
         {
             tm_printf((UB *)"[IR] buzzer service failed; task stopped\n");
-            barcode_runtime_shutdown();
-            return;
+            barcode_stop();
+            s2_stop();
+            for (;;) tk_slp_tsk(TMO_FEVR); /* Halt: never return from a task */
         }
         /* Cache failure skips publication; local work still advances.
            Readers invalidate the cached acquisition after 60 ms. */
@@ -131,8 +135,9 @@ void task_s_task(INT stacd, void *exinf)
         if (tk_dly_tsk((RELTIM)(next - now)) < E_OK)
         {
             tm_printf((UB *)"[IR] task delay failed\n");
-            barcode_runtime_shutdown();
-            return;
+            barcode_stop();
+            s2_stop();
+            for (;;) tk_slp_tsk(TMO_FEVR); /* Halt: never return from a task */
         }
     }
 }
