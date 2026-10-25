@@ -14,26 +14,13 @@ static const uint16_t alphabet[BARCODE_ALPHABET] =
 
 bool barcode_config_valid(const barcode_config_t *c)
 {
-    if ((c == NULL) || (c->left_um_per_count == 0u) ||
-        (c->right_um_per_count == 0u) || (c->narrow_min_um == 0u) ||
-        (c->narrow_min_um > c->narrow_max_um) ||
+    if ((c == NULL) || (c->narrow_min == 0u) ||
+        (c->narrow_min > c->narrow_max) ||
         (c->wide_ratio_min_milli <= 1000u) ||
         (c->wide_ratio_min_milli > c->wide_ratio_max_milli) ||
         (c->wide_ratio_max_milli > 10000u) ||
         (c->width_tolerance_milli == 0u) ||
-        (c->width_tolerance_milli >= 500u) ||
-        (c->quiet_zone_um < c->narrow_max_um) ||
-        (c->rearm_um < c->quiet_zone_um) ||
-        (c->max_step_um < c->narrow_max_um) ||
-        (c->max_wheel_difference_um == 0u) ||
-        (c->max_frame_travel_um < c->narrow_max_um) ||
-        ((c->max_frame_travel_um / c->left_um_per_count) >= INT32_MAX) ||
-        ((c->max_frame_travel_um / c->right_um_per_count) >= INT32_MAX) ||
-        (c->max_encoder_age_us == 0u) ||
-        (c->max_encoder_age_us >= INT32_MAX) ||
-        (c->max_edge_gap_us <= c->max_encoder_age_us) ||
-        (c->max_frame_us < c->max_edge_gap_us) ||
-        (c->max_frame_us >= INT32_MAX))
+        (c->width_tolerance_milli >= 500u))
     {
         return false;
     }
@@ -84,8 +71,8 @@ barcode_result_t barcode_decode(const uint32_t widths[BARCODE_ELEMENTS],
     /* *X*: twenty narrow elements including gaps, nine wide elements. */
     uint32_t narrow = (uint32_t)(((uint64_t)sorted[9] + sorted[10]) / 2u);
     uint32_t wide = sorted[24];
-    if ((narrow < config->narrow_min_um) ||
-        (narrow > config->narrow_max_um) || (sorted[19] >= sorted[20]) ||
+    if ((narrow < config->narrow_min) ||
+        (narrow > config->narrow_max) || (sorted[19] >= sorted[20]) ||
         ((uint64_t)wide * 1000u <
             (uint64_t)narrow * config->wide_ratio_min_milli) ||
         ((uint64_t)wide * 1000u >

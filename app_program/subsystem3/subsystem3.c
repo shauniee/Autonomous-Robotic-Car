@@ -32,7 +32,7 @@ ER subsystem3_init(void)
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 snapshot mutex published=%d\n", atomic_load_explicit(&snapshot_mutex, memory_order_acquire));
 #endif
-    return barcode_runtime_init();
+    return E_OK;
 }
 
 ER subsystem3_start(void)

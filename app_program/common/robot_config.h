@@ -36,7 +36,8 @@
 #define RIGHT_FORWARD_A		1	/* PROVISIONAL (D03): polarity */
 
 /* Encoder: one wrapping count per wheel (ARCHITECTURE, Encoder contract). */
-#define ENC_COUNT_BITS		16u	/* PROVISIONAL (D03): width from counts/rev and longest segment */
+#define ENC_COUNT_BITS		16u
+#define ENC_COUNT_MASK_VALUE	((1ul << ENC_COUNT_BITS) - 1ul)	/* PROVISIONAL (D03): width from counts/rev and longest segment */
 #define LEFT_ENCODER_SIGN	1	/* PROVISIONAL (D03): polarity */
 #define RIGHT_ENCODER_SIGN	1	/* PROVISIONAL (D03): polarity */
 #define ENC_LEFT_A_PIN		28u
@@ -89,6 +90,17 @@
 
 /* --- S3 barcode ---------------------------------------------------- */
 #define BARCODE_GPIO		16u
+/* Widths are encoder counts (mean of both wheels). UNMEASURED PLACEHOLDERS
+   until #59 measures print scale, polarity and quiet zones (D01, D04). */
+#define BARCODE_BLACK_HIGH	0	/* PROVISIONAL (D04): 1 if the module outputs high on black */
+#define BARCODE_NARROW_MIN	4u	/* PROVISIONAL (D01) */
+#define BARCODE_NARROW_MAX	40u	/* PROVISIONAL (D01) */
+#define BARCODE_WIDE_RATIO_MIN_MILLI 2500u	/* PROVISIONAL (D01): observed about 3:1 */
+#define BARCODE_WIDE_RATIO_MAX_MILLI 3500u	/* PROVISIONAL (D01) */
+#define BARCODE_TOLERANCE_MILLI	300u	/* PROVISIONAL (D01) */
+#define BARCODE_QUIET_COUNTS	80u	/* PROVISIONAL (D01): minimum white before a frame */
+#define BARCODE_REARM_COUNTS	160u	/* PROVISIONAL (D01): white before the next frame */
+#define BARCODE_MAX_ELEMENT_COUNTS 140u	/* PROVISIONAL (D01): longest bar or space */
 #define BARCODE_EVENT_CAPACITY	8u
 #define BARCODE_EDGE_CAPACITY	64u	/* power of two: indices wrap unsigned */
 #define BARCODE_SERVICE_BUDGET	16u
@@ -138,6 +150,15 @@ _Static_assert(ADC_AVERAGE_COUNT >= 1u && ADC_AVERAGE_COUNT <= 16u,
 _Static_assert(IR_SAMPLE_MS >= INPUT_PERIOD_MS, "IR sampled faster than the input task runs");
 _Static_assert((BARCODE_EDGE_CAPACITY & (BARCODE_EDGE_CAPACITY - 1u)) == 0u,
 	"barcode edge ring capacity must be a power of two");
+_Static_assert(BARCODE_NARROW_MIN <= BARCODE_NARROW_MAX && BARCODE_NARROW_MAX < BARCODE_QUIET_COUNTS &&
+	BARCODE_QUIET_COUNTS <= BARCODE_REARM_COUNTS &&
+	BARCODE_MAX_ELEMENT_COUNTS > BARCODE_NARROW_MAX * 3u && BARCODE_REARM_COUNTS < ENC_COUNT_MASK_VALUE / 2u,
+	"barcode width limits out of order or beyond the encoder wrap");
+_Static_assert(BARCODE_WIDE_RATIO_MIN_MILLI > 1000u && BARCODE_WIDE_RATIO_MIN_MILLI <= BARCODE_WIDE_RATIO_MAX_MILLI &&
+	BARCODE_TOLERANCE_MILLI > 0u && BARCODE_TOLERANCE_MILLI < 500u &&
+	(unsigned long long)BARCODE_WIDE_RATIO_MIN_MILLI * (1000u - BARCODE_TOLERANCE_MILLI) >
+	1000ull * (1000u + BARCODE_TOLERANCE_MILLI),
+	"narrow and wide classes overlap at the configured tolerance");
 _Static_assert(BARCODE_EVENT_CAPACITY >= 1u, "barcode event queue empty");
 _Static_assert(MOTOR_WRAP == 999u && MOTOR_DIV_8_4 == 100u,
 	"PWM wrap and divider define the 20 kHz motor frequency");
