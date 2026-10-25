@@ -20,6 +20,7 @@ $CC $CFLAGS testing/pure/test_barcode.c app_program/subsystem3/barcode_frame.c \
 $CC $CFLAGS testing/pure/test_safety.c app_program/common/robot_data.c -o "$build_dir/test_safety"
 $CC $CFLAGS testing/pure/test_mission.c app_program/subsystem3/mission_logic.c \
     app_program/common/robot_data.c -lm -o "$build_dir/test_mission"
+$CC $CFLAGS testing/pure/test_echo_range.c -o "$build_dir/test_echo_range"
 $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
     -o "$build_dir/test_robot_data"
 
@@ -30,3 +31,4 @@ $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
 "$build_dir/test_barcode"
 "$build_dir/test_safety"
 "$build_dir/test_mission"
+"$build_dir/test_echo_range"

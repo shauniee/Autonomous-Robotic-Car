@@ -1,179 +1,116 @@
 #include "subsystem5.h"
-#include "tk/syslib.h"
+#include <stdatomic.h>
+#include "../common/drv_gpio_irq.h"
 #include "../common/robot_time.h"
 #include "../common/robot_config.h"
 
-/* Servo setup paused while learning ultrasonic sensing. */
-// #define SERVO_PIN 12
-// #define SERVO_CENTRE_US 1500u
-// #define SERVO_SETTLE_MS 300u
-//
-// /* Prepare GP12 (PWM slice 6, channel A), but do not move the servo yet. */
-// static ER servo_init(void)
-// {
-//     ER error;
-//
-//     /* Release PWM without resetting slices used by motors or the buzzer. */
-//     clr_w(RESETS_RESET, RESETS_RESET_PWM);
-//     if ((in_w(RESETS_RESET_DONE) & RESETS_RESET_PWM) == 0) {
-//         return E_IO;
-//     }
-//
-//     /* Configure only slice 6. GP13 shares this slice's frequency. */
-//     out_w(PWM_CH6_BASE + PWM_CHx_CSR, 0u);
-//     out_w(PWM_CH6_BASE + PWM_CHx_CTR, 0u);
-//
-//     /* Template clock: 125 MHz. Divide by 125 for one tick per microsecond.
-//        The divider register stores the divider multiplied by 16. */
-//     out_w(PWM_CH6_BASE + PWM_CHx_DIV, 125u * 16u);
-//
-//     /* 0..19999 gives a 20 ms frame (50 Hz). */
-//     error = pwm_set_wrap(SERVO_PIN, 19999u);
-//     if (error < E_OK) {
-//         return error;
-//     }
-//
-//     /* Zero duty until subsystem5_start() commands centre. */
-//     error = pwm_set_cc(SERVO_PIN, 0u);
-//     if (error < E_OK) {
-//         return error;
-//     }
-//
-//     return pwm_set_pin(SERVO_PIN);
-// }
-//
+/* Echo capture state. The handler is the only writer once the task arms the
+   measurement with the Echo IRQ disabled, so no field has two writers at once. */
+enum { ECHO_IDLE, ECHO_ARMED, ECHO_HIGH, ECHO_DONE };
+static _Atomic unsigned echo_state;
+static _Atomic uint32_t pulse_us;
+static uint32_t rise_us;			/* handler-private */
+static rd_word_t front_word;			/* writer: the obstacle task */
+
+uint32_t s5_front_word(void)
+{
+    return rd_word_read(&front_word);
+}
+
+static void echo_edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
+{
+    (void)pin;
+    unsigned state = atomic_load_explicit(&echo_state, memory_order_relaxed);
+    if (edges == GPIO_IRQ_EDGE_RISE && state == ECHO_ARMED)
+    {
+        rise_us = sampled_us;
+        atomic_store_explicit(&echo_state, ECHO_HIGH, memory_order_release);
+    }
+    else if (edges == GPIO_IRQ_EDGE_FALL && state == ECHO_HIGH)
+    {
+        atomic_store_explicit(&pulse_us, robot_time_elapsed(sampled_us, rise_us), memory_order_relaxed);
+        atomic_store_explicit(&echo_state, ECHO_DONE, memory_order_release);
+    }
+    /* Any other combination (both flags, stray edge) leaves the measurement to time out. */
+}
+
 ER subsystem5_init(void)
 {
-    ER error;
-
-    error = gpio_set_val(TRIGGER_PIN, 0);
-    if (error != E_OK)
+    ER error = gpio_set_val(TRIGGER_PIN, 0);
+    if (error >= E_OK)
     {
-        return error;
+        error = gpio_set_pin(TRIGGER_PIN, GPIO_MODE_OUT);
     }
-
-    error = gpio_set_pin(TRIGGER_PIN, GPIO_MODE_OUT);
-    if (error != E_OK)
+    if (error >= E_OK)
     {
-        return error;
+        error = gpio_set_pin(ECHO_PIN, GPIO_MODE_IN);
     }
-
-    error = gpio_set_pin(ECHO_PIN, GPIO_MODE_IN);
-    if (error < E_OK)
-    {
-        return error;
-    }
-
-    // return servo_init(); /* Servo setup paused. */
-    return E_OK;
+    return error;
 }
-/*ULTRASONIC FUNCTIONS!!!!! :)*/
-ER ultrasonic_trigger(void)
+
+/* 10 us trigger pulse from the hardware TIMER; the only busy wait in S5. */
+static ER trigger(void)
 {
-    ER error;
-
-    error = gpio_set_val(TRIGGER_PIN, 0);
-    if (error < E_OK)
-    {
-        return error;
-    }
-    WaitUsec(2);
-
+    ER error = gpio_set_val(TRIGGER_PIN, 0);
+    if (error < E_OK) return error;
+    uint32_t t = robot_time_us();
+    while (robot_time_elapsed(robot_time_us(), t) < 2u) { }
     error = gpio_set_val(TRIGGER_PIN, 1);
-    if (error < E_OK)
-    {
-        return error;
-    }
-    WaitUsec(10);
-
+    if (error < E_OK) return error;
+    t = robot_time_us();
+    while (robot_time_elapsed(robot_time_us(), t) < 10u) { }
     return gpio_set_val(TRIGGER_PIN, 0);
 }
 
-ER ultrasonic_wait_for_echo(void)
+static void obstacle_task(INT stacd, void *exinf)
 {
-    ER error;
-    uint32_t start; // record the time
-    uint32_t now;
-
-    /* Record when we started waiting. */
-    start = robot_time_ms();
-
-    error = ultrasonic_trigger();
-    if (error < E_OK)
+    (void)stacd; (void)exinf;
+    bool ready = drv_gpio_irq_init() >= E_OK && drv_gpio_irq_claim(ECHO_PIN, echo_edge);
+    if (!ready)
     {
-        return error;
+        rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
+        tm_printf((UB *)"[S5] echo dispatcher unavailable; front range unknown\n");
     }
-
-    /* Keep checking while Echo is LOW. */
-    while (gpio_get_val(ECHO_PIN) == 0)
+    uint32_t release = robot_time_ms(), misses = 0u;
+    for (;;)
     {
-        now = robot_time_ms();
-
-        /* Stop waiting after 30 milliseconds. */
-        if (robot_time_elapsed(now, start) >= 30u)
+        if (ready)
         {
-            return E_TMOUT;
+            (void)drv_gpio_irq_enable(ECHO_PIN, false);
+            atomic_store_explicit(&echo_state, ECHO_ARMED, memory_order_release);
+            (void)drv_gpio_irq_enable(ECHO_PIN, true);
+            uint32_t sent_us = robot_time_us();
+            if (trigger() >= E_OK)
+            {
+                /* Wait for the echo without blocking other tasks: poll the state per tick. */
+                while (atomic_load_explicit(&echo_state, memory_order_acquire) != ECHO_DONE &&
+                       robot_time_elapsed(robot_time_us(), sent_us) < SONAR_TIMEOUT_US)
+                {
+                    tk_dly_tsk(1);
+                }
+            }
+            (void)drv_gpio_irq_enable(ECHO_PIN, false);
+            bool done = atomic_load_explicit(&echo_state, memory_order_acquire) == ECHO_DONE;
+            uint32_t range = done ? echo_range_mm(atomic_load_explicit(&pulse_us, memory_order_relaxed))
+                                  : ECHO_RANGE_INVALID;
+            atomic_store_explicit(&echo_state, ECHO_IDLE, memory_order_release);
+            rd_word_publish(&front_word, echo_pack(range, robot_time_ms()));
+            if (echo_note(&misses, range != ECHO_RANGE_INVALID))
+            {
+                rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
+            }
+            else
+            {
+                rd_fault_clear(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
+            }
         }
+        tk_dly_tsk(robot_time_next_delay(&release, SONAR_REPEAT_MS, robot_time_ms()));
     }
-
-    /* Echo has become HIGH. */
-    /* Echo is HIGH: record the start time in microseconds. */
-    UW pulse_start = robot_time_us();
-
-    /* Wait for Echo to become LOW. */
-    while (gpio_get_val(ECHO_PIN) == 1)
-    {
-        if ((UW)(robot_time_us() - pulse_start) >= 30000u)
-        {
-            return E_TMOUT;
-        }
-    }
-
-    /* Calculate how long Echo stayed HIGH. */
-    UW pulse_end = robot_time_us();
-    UW duration_us = pulse_end - pulse_start;
-    /* Approximate distance in whole centimetres. */
-    UW distance_cm = duration_us / 58u;
-
-    if (duration_us >= 30000u)
-    {
-        return E_TMOUT;
-    }
-
-    tm_printf((UB *)"Distance: %u cm\n",
-              (unsigned int)distance_cm);
-
-    tm_printf((UB *)"Echo duration: %u us\n",
-              (unsigned int)duration_us);
-
-    return E_OK;
 }
 
 ER subsystem5_start(void)
 {
-    /* Servo movement paused; keep the code for a later lesson. */
-    // ER error;
-
-    // /* A 1500 us pulse requests centre, approximately 90 degrees.
-    // Physically align the sensor so this position faces forward. */
-    // error = pwm_set_cc(SERVO_PIN, SERVO_CENTRE_US);
-    // if (error < E_OK) {
-    // return error;
-    // }
-
-    // error = pwm_set_enabled(SERVO_PIN, TRUE);
-    // if (error < E_OK) {
-    // return error;
-    // }
-
-    // /* This delay is intentionally milliseconds; let other RTOS tasks run.
-    // Initial estimate only: verify settling with the installed servo. */
-    // error = tk_dly_tsk(SERVO_SETTLE_MS);
-    // if (error < E_OK) {
-    // return error;
-    // }
-
-    /* Non-blocking: boot never waits for an echo. Ranging is a later
-       periodic job; absence of echo must not stop startup. */
-    return E_OK;
+    /* Boot never waits for an echo: ranging runs in its own periodic task. */
+    ID tid = app_start_task((FP)obstacle_task, S5_PRI_OBSTACLE, TP_PRC2, "Obstacle");
+    return tid < E_OK ? tid : E_OK;
 }

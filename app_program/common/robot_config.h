@@ -130,6 +130,12 @@
 #define HUMP_CALIB_FACTOR	1.15f	/* PROVISIONAL (D06) */
 
 /* --- S5 obstacle --------------------------------------------------- */
+#define S5_PRI_OBSTACLE		17
+#define SONAR_REPEAT_MS		60u	/* PROVISIONAL (D05): trigger-to-trigger */
+#define SONAR_TIMEOUT_US	30000u	/* no echo after this long */
+#define SONAR_MIN_PULSE_US	150u	/* shorter than this is not a real echo */
+#define SONAR_NO_ECHO_LIMIT	3u	/* consecutive misses that set the fault bit */
+#define SONAR_MM_PER_MS_X10	1715u	/* mm per ms of pulse x10: 343 m/s round trip, PROVISIONAL (D05) */
 #define ECHO_PIN		2	/* PROVISIONAL (D05): <= 3.3 V before connecting */
 #define TRIGGER_PIN		3
 
@@ -187,6 +193,8 @@ _Static_assert(MISSION_JUNCTION_MIN_COUNTS < MISSION_FINISH_COUNTS && MISSION_FI
 _Static_assert(MISSION_FOLLOW_SPEED_MMPS * (1.0f + MAX_STEER) <= MOTION_SPEED_MAX_MMPS &&
 	MISSION_TURN_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS && MISSION_CLEAR_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS,
 	"Mission speeds must stay within the Motion speed limit");
+_Static_assert(SONAR_TIMEOUT_US / 1000u < SONAR_REPEAT_MS && SONAR_MIN_PULSE_US < SONAR_TIMEOUT_US &&
+	SONAR_NO_ECHO_LIMIT >= 1u, "sonar timing: the timeout must fit inside the repeat interval");
 _Static_assert(SAFETY_PRI < S3_PRI_LINE && SAFETY_PRI < S2_PRI_MOTION && SAFETY_PRI < FOLLOW_PRIORITY,
 	"Safety must outrank every task it supervises");
 _Static_assert(SAFETY_STALE_MS >= IR_SAMPLE_MS && SAFETY_PERIOD_MS <= MOTION_PERIOD_MS,
