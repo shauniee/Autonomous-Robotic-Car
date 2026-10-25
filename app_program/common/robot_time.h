@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "../app.h"
+#include "robot_time_math.h"
 
 /* Kernel milliseconds since boot. tk_get_otm() always returns E_OK
    (kernel/tkernel/time_calls.c), so no error path is reported here. */
@@ -27,34 +28,6 @@ static inline uint32_t robot_time_ms(void)
 static inline uint32_t robot_time_us(void)
 {
     return in_w(TIMER_TIMERAWL);
-}
-
-/* Interval since `then`; valid while the interval is below 2^31 units. */
-static inline uint32_t robot_time_elapsed(uint32_t now, uint32_t then)
-{
-    return now - then;
-}
-
-/* True when `now` is at or after `deadline`, across wrap. */
-static inline bool robot_time_reached(uint32_t now, uint32_t deadline)
-{
-    return (int32_t)(now - deadline) >= 0;
-}
-
-/* Fixed-rate release.  Call once per cycle with the current kernel ms and
-   sleep for the returned delay.  *release is the grid anchor for the next
-   cycle, advanced by one period each time it is reached.  An overrun
-   re-anchors to now, so missed periods are skipped rather than run back to
-   back. */
-static inline RELTIM robot_time_next_delay(uint32_t *release, uint32_t period, uint32_t now)
-{
-    if (robot_time_reached(now, *release)) {
-        *release += period;
-        if (robot_time_reached(now, *release)) {
-            *release = now + period;
-        }
-    }
-    return (RELTIM)(*release - now);
 }
 
 #endif /* ROBOT_TIME_H */
