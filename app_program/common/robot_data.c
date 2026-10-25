@@ -17,7 +17,7 @@ bool rd_mapping_letters_valid(const uint8_t letters[RD_MAP_COUNT])
 
 bool rd_mapping_pack(const uint8_t letters[RD_MAP_COUNT], uint32_t *word)
 {
-    if (word == NULL || !rd_mapping_letters_valid(letters)) {
+    if (word == RD_NULL || !rd_mapping_letters_valid(letters)) {
         return false;
     }
     uint32_t packed = 0u;
@@ -30,7 +30,7 @@ bool rd_mapping_pack(const uint8_t letters[RD_MAP_COUNT], uint32_t *word)
 
 bool rd_mapping_lookup(uint32_t word, uint8_t letter, rd_map_action_t *action)
 {
-    if (action == NULL || !rd_mapping_is_mapped(word) || letter >= RD_MAP_LETTER_COUNT) {
+    if (action == RD_NULL || !rd_mapping_is_mapped(word) || letter >= RD_MAP_LETTER_COUNT) {
         return false;
     }
     for (unsigned i = 0u; i < RD_MAP_COUNT; ++i) {

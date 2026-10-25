@@ -3,7 +3,7 @@
 
 #include "../app.h"
 #include "ir_snapshot.h"
-#include "barcode_runtime.h"
+#include "barcode.h"
 #include "../common/robot_config.h"
 
 

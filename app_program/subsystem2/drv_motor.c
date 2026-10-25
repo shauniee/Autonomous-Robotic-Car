@@ -107,14 +107,23 @@ ER drv_motor_init(void)
     return er;
 }
 
+/* Signed duty: positive drives the wheel forward, negative backward.
+   forward_a is the per-motor polarity constant (robot_config.h): the channel
+   that moves the wheel forward. Magnitude is clamped to MOTION_MAX_DUTY. */
 static ER motor_wheel(unsigned pin, float duty, int forward_a)
 {
-    /* Validated duty 0..0.35 gives compare 0..350, within MOTOR_WRAP. */
-    UW compare = (UW)(duty * (MOTOR_WRAP + 1u));
-    ER er = pwm_set_cc(pin, forward_a ? compare : 0u);
+    float magnitude = duty < 0.0f ? -duty : duty;
+    if (magnitude > MOTION_MAX_DUTY)
+    {
+        magnitude = MOTION_MAX_DUTY;
+    }
+    /* Clamped magnitude <= MOTION_MAX_DUTY keeps compare within MOTOR_WRAP. */
+    UW compare = (UW)(magnitude * (MOTOR_WRAP + 1u));
+    int a_active = (duty >= 0.0f) ? (forward_a != 0) : (forward_a == 0);
+    ER er = pwm_set_cc(pin, a_active ? compare : 0u);
     if (er >= E_OK)
     {
-        er = pwm_set_cc(pin + 1u, forward_a ? 0u : compare);
+        er = pwm_set_cc(pin + 1u, a_active ? 0u : compare);
     }
     return er;
 }
@@ -122,10 +131,8 @@ static ER motor_wheel(unsigned pin, float duty, int forward_a)
 ER drv_motor_apply(float left, float right)
 {
     ER er = E_PAR;
-    /* Validate both wheels before converting or writing either duty. */
-    if (isfinite(left) && isfinite(right) &&
-        (left >= 0.0f) && (right >= 0.0f) &&
-        (left <= MOTION_MAX_DUTY) && (right <= MOTION_MAX_DUTY))
+    /* Reject non-finite values before writing either wheel. */
+    if (isfinite(left) && isfinite(right))
     {
         er = motor_wheel(8u, left, LEFT_FORWARD_A);
         if (er >= E_OK)

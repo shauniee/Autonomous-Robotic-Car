@@ -1,7 +1,8 @@
 #include "subsystem3.h"
+#include "safety.h"
 #include "subsystem3_internal.h"
 #include "task_s3.h"
-#include "line_follow.h"
+#include "mission.h"
 #include <stdatomic.h>
 #include "../common/drv_buttons.h"
 #include "../common/buzzer.h"
@@ -32,7 +33,7 @@ ER subsystem3_init(void)
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 snapshot mutex published=%d\n", atomic_load_explicit(&snapshot_mutex, memory_order_acquire));
 #endif
-    return barcode_runtime_init();
+    return E_OK;
 }
 
 ER subsystem3_start(void)
@@ -49,7 +50,12 @@ ER subsystem3_start(void)
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 task start result=%d\n", task_id);
 #endif
-    return task_id < E_OK ? task_id : line_follow_start();
+    if (task_id < E_OK)
+    {
+        return task_id;
+    }
+    ER er = safety_start();
+    return er < E_OK ? er : mission_start();
 }
 
 bool subsystem3_publish(const IrTracker *tracker, uint32_t sequence, uint32_t now)

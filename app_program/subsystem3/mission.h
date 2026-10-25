@@ -1,0 +1,25 @@
+/*
+ *	mission.h
+ *	Mission task (core 1): reads the line snapshot, barcode events, buttons,
+ *	Motion feedback and Safety, steps the state machine in mission_logic.c and
+ *	writes one Motion command each release. It owns the GP20/GP21 button
+ *	handling for the run; Safety separately latches stops.
+ */
+
+#ifndef MISSION_H
+#define MISSION_H
+
+#include "../app.h"
+#include "mission_logic.h"
+
+ER mission_start(void);
+
+/* Current state (single load). */
+MissionState mission_state(void);
+
+/* Install the four barcode letters (indexed by rd_map_action_t). Accepted only
+   while the robot is not running; returns E_OBJ otherwise or for invalid or
+   duplicate letters. */
+ER mission_set_mapping(const uint8_t letters[4]);
+
+#endif /* MISSION_H */
