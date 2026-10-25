@@ -21,6 +21,8 @@ $CC $CFLAGS testing/pure/test_safety.c app_program/common/robot_data.c -o "$buil
 $CC $CFLAGS testing/pure/test_mission.c app_program/subsystem3/mission_logic.c \
     app_program/common/robot_data.c -lm -o "$build_dir/test_mission"
 $CC $CFLAGS testing/pure/test_echo_range.c -o "$build_dir/test_echo_range"
+$CC $CFLAGS testing/pure/test_obstacle_profile.c app_program/subsystem5/obstacle_profile.c -lm \
+    -o "$build_dir/test_obstacle_profile"
 $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
     -o "$build_dir/test_robot_data"
 
@@ -32,3 +34,4 @@ $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
 "$build_dir/test_safety"
 "$build_dir/test_mission"
 "$build_dir/test_echo_range"
+"$build_dir/test_obstacle_profile"

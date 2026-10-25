@@ -136,6 +136,19 @@
 #define SONAR_MIN_PULSE_US	150u	/* shorter than this is not a real echo */
 #define SONAR_NO_ECHO_LIMIT	3u	/* consecutive misses that set the fault bit */
 #define SONAR_MM_PER_MS_X10	1715u	/* mm per ms of pulse x10: 343 m/s round trip, PROVISIONAL (D05) */
+/* Servo and scan. UNMEASURED PLACEHOLDERS until #60 (D05). */
+#define SERVO_PIN		12u
+#define SERVO_CENTRE_US		1500u	/* PROVISIONAL (D05): faces forward */
+#define SERVO_US_PER_DEG	10u	/* PROVISIONAL (D05): endpoints and scale */
+#define SERVO_MAX_DEG		60	/* sweep limit either side of forward */
+#define SERVO_SETTLE_MS		300u	/* PROVISIONAL (D05) */
+#define S5_COARSE_STEP_DEG	30	/* coarse rays at -60,-30,0,30,60 relative to forward */
+#define S5_FINE_STEP_DEG	10	/* fine rays around the closest coarse ray */
+#define S5_SONAR_FORWARD_MM	0.0f	/* PROVISIONAL (D05): sensor offset from the reference point */
+#define S5_SONAR_LEFT_MM	0.0f	/* PROVISIONAL (D05) */
+#define S5_BODY_LENGTH_MM	200.0f	/* PROVISIONAL (D02): car envelope */
+#define S5_CLEARANCE_MM		30.0f	/* PROVISIONAL (D02) */
+#define S5_SCAN_DEADLINE_MS	8000u	/* a scan that has not finished by then fails */
 #define ECHO_PIN		2	/* PROVISIONAL (D05): <= 3.3 V before connecting */
 #define TRIGGER_PIN		3
 
@@ -195,6 +208,8 @@ _Static_assert(MISSION_FOLLOW_SPEED_MMPS * (1.0f + MAX_STEER) <= MOTION_SPEED_MA
 	"Mission speeds must stay within the Motion speed limit");
 _Static_assert(SONAR_TIMEOUT_US / 1000u < SONAR_REPEAT_MS && SONAR_MIN_PULSE_US < SONAR_TIMEOUT_US &&
 	SONAR_NO_ECHO_LIMIT >= 1u, "sonar timing: the timeout must fit inside the repeat interval");
+_Static_assert(SERVO_MAX_DEG > 0 && SERVO_MAX_DEG * (int)SERVO_US_PER_DEG < (int)SERVO_CENTRE_US &&
+	S5_COARSE_STEP_DEG > S5_FINE_STEP_DEG && S5_FINE_STEP_DEG > 0, "servo sweep out of range");
 _Static_assert(SAFETY_PRI < S3_PRI_LINE && SAFETY_PRI < S2_PRI_MOTION && SAFETY_PRI < FOLLOW_PRIORITY,
 	"Safety must outrank every task it supervises");
 _Static_assert(SAFETY_STALE_MS >= IR_SAMPLE_MS && SAFETY_PERIOD_MS <= MOTION_PERIOD_MS,
