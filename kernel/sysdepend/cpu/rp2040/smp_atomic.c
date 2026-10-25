@@ -76,7 +76,7 @@ EXPORT void knl_arch_cpu_relax( void )
  * coarse relative to a short critical section -- adequate for spotting
  * outliers, not for costing individual acquisitions.
  */
-#define TIMER_RAWL	(*(_UW*)0x40054028)
+#define TIMER_RAWL	(*(_UW*)TIMER_TIMERAWL)
 
 EXPORT UW knl_arch_time_us( void )
 {

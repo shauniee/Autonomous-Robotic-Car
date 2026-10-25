@@ -1,11 +1,11 @@
 /* Keep Pico SDK types out of translation units that include µT-Kernel. */
 
 #include "tusb.h"
+#include "hardware/structs/timer.h"
 
 uint32_t tusb_time_millis_api(void)
 {
-    volatile uint32_t const *timer_raw_low = (volatile uint32_t const *)0x40054028u;
-    return *timer_raw_low / 1000U;
+    return timer_hw->timerawl / 1000U;
 }
 
 int tm_tusb_init(void)
