@@ -1,5 +1,7 @@
 #include "subsystem2.h"
 #include "drv_motor.h"
+#include "drv_encoder.h"
+#include "../common/robot_data.h"
 #include "../common/robot_time.h"
 static ID request_mutex, stop_flag, motion_tid;
 static MotionRequest latest;
@@ -93,8 +95,17 @@ ER s2_health(MotionHealth *h) {
 static void motion_task(INT stacd, void *exinf) {
     (void)stacd; (void)exinf;
     uint32_t next=robot_time_ms();
+    /* The GPIO dispatcher is core-1 only, so the encoder starts here. */
+    if (!drv_encoder_init()) rd_fault_set(RD_OWNER_MOTION, RD_FAULT_ENCODER);
+    uint32_t seen_invalid_edges = drv_encoder_invalid_edges();
     for (;;) {
         uint32_t now=robot_time_ms();
+        /* Motion is the sole writer of its fault byte: the ISR only counts. */
+        uint32_t invalid_edges = drv_encoder_invalid_edges();
+        if (invalid_edges != seen_invalid_edges) {
+            seen_invalid_edges = invalid_edges;
+            rd_fault_set(RD_OWNER_MOTION, RD_FAULT_ENCODER);
+        }
         MotionRequest r={0}; T_RFLG f={0};
         ER er=tk_loc_mtx(request_mutex,2);
         uint32_t request_epoch;

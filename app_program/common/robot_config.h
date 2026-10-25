@@ -35,6 +35,15 @@
 #define LEFT_FORWARD_A		1	/* PROVISIONAL (D03): polarity */
 #define RIGHT_FORWARD_A		1	/* PROVISIONAL (D03): polarity */
 
+/* Encoder: one wrapping count per wheel (ARCHITECTURE, Encoder contract). */
+#define ENC_COUNT_BITS		16u	/* PROVISIONAL (D03): width from counts/rev and longest segment */
+#define LEFT_ENCODER_SIGN	1	/* PROVISIONAL (D03): polarity */
+#define RIGHT_ENCODER_SIGN	1	/* PROVISIONAL (D03): polarity */
+#define ENC_LEFT_A_PIN		28u
+#define ENC_LEFT_B_PIN		7u
+#define ENC_RIGHT_A_PIN		1u
+#define ENC_RIGHT_B_PIN		0u
+
 /* --- S3 line ------------------------------------------------------- */
 #define IR_ADC_MAX		4095u
 #define IR_SAMPLE_MS		20u
@@ -115,6 +124,9 @@ _Static_assert((BARCODE_EDGE_CAPACITY & (BARCODE_EDGE_CAPACITY - 1u)) == 0u,
 _Static_assert(BARCODE_EVENT_CAPACITY >= 1u, "barcode event queue empty");
 _Static_assert(MOTOR_WRAP == 999u && MOTOR_DIV_8_4 == 100u,
 	"PWM wrap and divider define the 20 kHz motor frequency");
+_Static_assert(ENC_COUNT_BITS >= 8u && ENC_COUNT_BITS <= 32u, "encoder count width out of range");
+_Static_assert((LEFT_ENCODER_SIGN == 1 || LEFT_ENCODER_SIGN == -1) &&
+	(RIGHT_ENCODER_SIGN == 1 || RIGHT_ENCODER_SIGN == -1), "encoder sign must be +1 or -1");
 _Static_assert(S3_PRI_LINE != S2_PRI_MOTION && S2_PRI_MOTION != FOLLOW_PRIORITY &&
 	S3_PRI_LINE != FOLLOW_PRIORITY, "task priorities must be distinct");
 _Static_assert(PITCH_DESC_THRESH_DEG < 0.0f && PITCH_CLIMB_THRESH_DEG > 0.0f,

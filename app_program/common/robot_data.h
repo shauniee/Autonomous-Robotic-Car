@@ -19,10 +19,12 @@
 #ifndef ROBOT_DATA_H
 #define ROBOT_DATA_H
 
-#include <stddef.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
+
+/* No <stddef.h>: the kernel headers define their own size_t. */
+#define RD_NULL ((void *)0)
 
 /* --- Word snapshot ---------------------------------------------------- */
 
@@ -57,7 +59,7 @@ static inline uint32_t rd_field_set(uint32_t word, unsigned shift, unsigned widt
                                     uint32_t value, bool *ok)
 {
     bool fits = value <= rd_mask(width);
-    if (ok != NULL) {
+    if (ok != RD_NULL) {
         *ok = fits;
     }
     if (!fits) {
@@ -122,7 +124,7 @@ static inline uint32_t rd_motion_feedback_pack(rd_motion_status_t status, uint32
     bool fits_id;
     uint32_t word = rd_field_set(0u, RD_MOTION_STATUS_BITS, RD_MOTION_ACTION_BITS, action_id, &fits_id);
     bool fits_status = (unsigned)status <= rd_mask(RD_MOTION_STATUS_BITS);
-    if (ok != NULL) {
+    if (ok != RD_NULL) {
         *ok = fits_id && fits_status;
     }
     return (fits_id && fits_status) ? (word | (uint32_t)status) : 0u;

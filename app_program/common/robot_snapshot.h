@@ -9,21 +9,24 @@
 #ifndef ROBOT_SNAPSHOT_H
 #define ROBOT_SNAPSHOT_H
 
-#include <stddef.h>
-#include <string.h>
+#include <stdint.h>
 #include "../app.h"
 
 #define RD_SNAPSHOT_LOCK_MS 2u	/* bounded wait for the copy */
 
 /* Copies src to dst under mtx. Returns E_OK or the kernel error; dst is left
    untouched on failure. Writer and readers use the same call. */
-static inline ER rd_snapshot_copy(ID mtx, void *dst, const void *src, size_t size)
+static inline ER rd_snapshot_copy(ID mtx, void *dst, const void *src, uint32_t size)
 {
     ER er = tk_loc_mtx(mtx, RD_SNAPSHOT_LOCK_MS);
     if (er < E_OK) {
         return er;
     }
-    memcpy(dst, src, size);
+    uint8_t *to = dst;	/* byte loop: <string.h> would clash with the kernel's size_t */
+    const uint8_t *from = src;
+    for (uint32_t i = 0u; i < size; ++i) {
+        to[i] = from[i];
+    }
     ER unlock = tk_unl_mtx(mtx);
     return unlock;
 }
