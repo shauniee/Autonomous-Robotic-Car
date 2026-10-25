@@ -1,8 +1,7 @@
 #include "drv_buzzer.h"
 #include "../app.h"
+#include "./robot_config.h"
 
-#define BUZZER_PIN 22u
-#define BUZZER_SLICE 3u
 #define PWM_SLICE_STRIDE 0x14u
 
 /* 
@@ -10,9 +9,6 @@
  * divider = 1000 / 16 = 62.5
  * frequency = 125 MHz / 62.5 / 1000 = 2 kHz
 */
-#define BUZZER_DIVIDER 1000u
-#define BUZZER_WRAP 999u
-#define BUZZER_LEVEL 500u
 
 static bool initialized;
 

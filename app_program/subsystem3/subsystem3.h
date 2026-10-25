@@ -4,8 +4,8 @@
 #include "../app.h"
 #include "ir_snapshot.h"
 #include "barcode_runtime.h"
+#include "../common/robot_config.h"
 
-#define S3_PRI_LINE 12
 
 ER subsystem3_init(void);
 ER subsystem3_start(void);
