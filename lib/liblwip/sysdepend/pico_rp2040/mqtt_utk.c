@@ -1,4 +1,7 @@
-/* S1 reporting transport; every call runs in the existing core-0 service. */
+/* S1 transport: connect, reconnect, publish opaque byte frames and hand
+   received frames to Reporting. It knows no frame layout. Every call runs in
+   the existing core-0 radio service. Three topics: telemetry, command and
+   status (retained, with a last will). */
 #include "mqtt_utk.h"
 #include "lwip/apps/mqtt.h"
 #include "lwip/ip_addr.h"
@@ -6,26 +9,22 @@
 #include "lwip/sys.h"
 #include "cyw43.h"
 #include "wifi_secrets.h"
-#include "../../../../app_program/subsystem1/telemetry.h"
-#include "../../../../app_program/subsystem1/status_protocol.h"
+#include "../../../../app_program/subsystem1/s1_bridge.h"
 #include <tm/tmonitor.h>
 #include <string.h>
+#include <stdio.h>
 
-/* Defaults also support existing ignored wifi_secrets.h files. */
 #ifndef MQTT_USERNAME
 #define MQTT_USERNAME ""
 #endif
 #ifndef MQTT_PASSWORD
 #define MQTT_PASSWORD ""
 #endif
-#ifndef MQTT_HEARTBEAT_TOPIC
-#define MQTT_HEARTBEAT_TOPIC "robot/s3/heartbeat"
-#endif
 #ifndef MQTT_STATUS_TOPIC
 #define MQTT_STATUS_TOPIC "robot/s3/status"
 #endif
-#ifndef MQTT_REQUEST_TOPIC
-#define MQTT_REQUEST_TOPIC "robot/s3/request"
+#ifndef MQTT_COMMAND_TOPIC
+#define MQTT_COMMAND_TOPIC "robot/s3/request"
 #endif
 
 #define MQTT_KEEPALIVE_S 10u
@@ -33,324 +32,246 @@
 #define MQTT_RETRY_MIN_MS 1000u
 #define MQTT_RETRY_MAX_MS 30000u
 #define MQTT_TOPIC_MAX 96u
+#define MQTT_FRAMES_PER_POLL 2u
+#define STATUS_ONLINE "1"
+#define STATUS_OFFLINE "0"
 
 static mqtt_client_t *client;
 static ip_addr_t broker_addr;
 static char client_id[64];
-static bool link_ready, active, online, retry_pending, bad_configuration;
-static bool status_pending;
+static bool link_ready, connecting, online, retry_pending, bad_configuration, in_command_topic;
 static uint32_t retry_ms = MQTT_RETRY_MIN_MS;
-static uint32_t heartbeat_ms, request_ms;
-static bool have_request;
-static S1StatusRequest request;
-static S1NetworkStatus diagnostics;
-static void publish_timeout(void *arg);
+static uint8_t rx[S1_FRAME_MAX];
+static unsigned rx_length;
+static bool rx_overflow;
+
 static void retry_timeout(void *arg);
 static void attempt_timeout(void *arg);
 
 static void cancel_timers(void)
 {
-    sys_untimeout(publish_timeout, NULL);
     sys_untimeout(retry_timeout, NULL);
     sys_untimeout(attempt_timeout, NULL);
+    retry_pending = false;
+}
+
+static void set_online(bool value)
+{
+    online = value;
+    s1_bridge_link(link_ready, online);
 }
 
 static void schedule_retry(void)
 {
-    cancel_timers();
-    online = false;
-    active = false;
-    status_pending = false;
-    s1_status_request_reset(&request);
-    /* Close failed attempts, including TCP attempts that never completed. */
-    if (client)
+    if (retry_pending || bad_configuration)
     {
-        mqtt_disconnect(client);
+        return;
     }
     retry_pending = true;
     sys_timeout(retry_ms, retry_timeout, NULL);
-    if (retry_ms < MQTT_RETRY_MAX_MS)
+    retry_ms = retry_ms >= MQTT_RETRY_MAX_MS / 2u ? MQTT_RETRY_MAX_MS : retry_ms * 2u;	/* bounded backoff */
+}
+
+static void drop_connection(void)
+{
+    connecting = false;
+    set_online(false);
+    if (client != NULL && mqtt_client_is_connected(client))
     {
-        retry_ms *= 2u;
-        if (retry_ms > MQTT_RETRY_MAX_MS)
+        mqtt_disconnect(client);
+    }
+    sys_untimeout(attempt_timeout, NULL);
+}
+
+static void publish_status(const char *payload)
+{
+    (void)mqtt_publish(client, MQTT_STATUS_TOPIC, payload, 1u, 1u, 1u, NULL, NULL);
+}
+
+static void drain_outgoing(void)
+{
+    uint8_t frame[S1_FRAME_MAX];
+    for (unsigned i = 0u; i < MQTT_FRAMES_PER_POLL && online; ++i)
+    {
+        unsigned n = s1_bridge_take(frame, sizeof frame);
+        if (n == 0u)
         {
-            retry_ms = MQTT_RETRY_MAX_MS;
+            return;
+        }
+        /* QoS 0, not retained: telemetry is replaced by the next one, never replayed. */
+        if (mqtt_publish(client, MQTT_TOPIC, frame, (u16_t)n, 0u, 0u, NULL, NULL) != ERR_OK)
+        {
+            return;	/* send buffer full: the frame is dropped, the next one follows */
         }
     }
-}
-
-static void publish_done(void *arg, err_t result)
-{
-    (void)arg;
-    if (result != ERR_OK)
-    {
-        ++diagnostics.dropped_publish;
-    }
-}
-
-static void publish(const char *topic, const char *payload, unsigned length,
-                    bool retained)
-{
-    if (length == 0u)
-    {
-        return;
-    }
-    err_t result = mqtt_publish(client, topic, payload, (u16_t)length,
-                               retained ? 1u : 0u, retained ? 1u : 0u,
-                               publish_done, NULL);
-    if (result != ERR_OK)
-    {
-        ++diagnostics.dropped_publish;
-    }
-}
-
-static void publish_latest(void)
-{
-    S1Telemetry snapshot;
-    char payload[S1_TELEMETRY_PAYLOAD_MAX + 1u];
-    diagnostics.have_snapshot = s1_telemetry_copy(&snapshot);
-    if (!diagnostics.have_snapshot)
-    {
-        return;
-    }
-    diagnostics.telemetry_sequence = snapshot.sequence;
-    unsigned length = s1_telemetry_encode(&snapshot, sys_now(), payload,
-                                         sizeof(payload));
-    if (length == 0u)
-    {
-        ++diagnostics.dropped_publish;
-        return;
-    }
-    publish(MQTT_TOPIC, payload, length, false);
-}
-
-static void publish_status(bool retained)
-{
-    char payload[S1_STATUS_MAX + 1u];
-    diagnostics.uptime_ms = sys_now();
-    unsigned length = s1_status_encode(&diagnostics, payload, sizeof(payload));
-    publish(retained ? MQTT_STATUS_TOPIC : MQTT_HEARTBEAT_TOPIC,
-            payload, length, retained);
-}
-
-static void publish_timeout(void *arg)
-{
-    (void)arg;
-    if (!online || !link_ready || !mqtt_client_is_connected(client))
-    {
-        return;
-    }
-    publish_latest();
-    uint32_t now = sys_now();
-    if ((uint32_t)(now - heartbeat_ms) >= S1_HEARTBEAT_PERIOD_MS)
-    {
-        heartbeat_ms = now;
-        publish_status(false);
-    }
-    if (status_pending)
-    {
-        status_pending = false;
-        publish_status(true);
-    }
-    sys_timeout(S1_TELEMETRY_PERIOD_MS, publish_timeout, NULL);
 }
 
 static void retry_timeout(void *arg)
 {
     (void)arg;
     retry_pending = false;
-    mqtt_utk_start(); /* The link guard prevents broker attempts while offline. */
 }
 
 static void attempt_timeout(void *arg)
 {
     (void)arg;
     tm_printf((UB*)"mqtt: connection/subscription deadline; retry scheduled\n");
+    drop_connection();
     schedule_retry();
 }
 
 static void incoming_publish(void *arg, const char *topic, u32_t length)
 {
     (void)arg;
-    s1_status_request_reset(&request);
-    if (!online || (strcmp(topic, MQTT_REQUEST_TOPIC) != 0))
-    {
-        ++diagnostics.rejected_requests;
-        return;
-    }
-    if (!s1_status_request_begin(&request, length))
-    {
-        ++diagnostics.rejected_requests;
-    }
+    (void)length;
+    in_command_topic = strcmp(topic, MQTT_COMMAND_TOPIC) == 0;
+    rx_length = 0u;
+    rx_overflow = false;
 }
 
 static void incoming_data(void *arg, const u8_t *data, u16_t length, u8_t flags)
 {
     (void)arg;
-    if (!request.receiving)
+    if (!in_command_topic)
     {
         return;
     }
-    bool last = (flags & MQTT_DATA_FLAG_LAST) != 0u;
-    if (!s1_status_request_data(&request, data, length, last))
+    if (rx_length + length > sizeof rx)
     {
-        ++diagnostics.rejected_requests;
-        return;
+        rx_overflow = true;	/* longer than any frame: refuse the whole message */
     }
-    if (last)
+    else
     {
-        uint32_t now = sys_now();
-        if (have_request &&
-            ((uint32_t)(now - request_ms) < S1_HEARTBEAT_PERIOD_MS))
-        {
-            ++diagnostics.rejected_requests;
-            return;
-        }
-        request_ms = now;
-        have_request = true;
-        status_pending = true; /* Coalesce; the periodic service publishes it. */
+        memcpy(&rx[rx_length], data, length);
+        rx_length += length;
+    }
+    if ((flags & MQTT_DATA_FLAG_LAST) != 0u && !rx_overflow && rx_length > 0u)
+    {
+        s1_bridge_put(rx, rx_length);	/* the bridge consumer validates the content */
     }
 }
 
 static void subscribed(void *arg, err_t result)
 {
     (void)arg;
-    if (!active || !link_ready)
-    {
-        return;
-    }
     if (result != ERR_OK)
     {
-        schedule_retry();
+        attempt_timeout(NULL);
         return;
     }
     sys_untimeout(attempt_timeout, NULL);
-    online = true;
+    connecting = false;
     retry_ms = MQTT_RETRY_MIN_MS;
-    have_request = false;
-    ++diagnostics.connection_sequence;
-    publish_latest();
-    publish_status(true);
-    publish_status(false);
-    heartbeat_ms = sys_now();
-    sys_timeout(S1_TELEMETRY_PERIOD_MS, publish_timeout, NULL);
-    tm_printf((UB*)"mqtt: telemetry and status subscription ready\n");
+    set_online(true);
+    publish_status(STATUS_ONLINE);
+    tm_printf((UB*)"mqtt: ready\n");
 }
 
-static void connection_cb(mqtt_client_t *c, void *arg,
-                          mqtt_connection_status_t status)
+static void connection_cb(mqtt_client_t *c, void *arg, mqtt_connection_status_t status)
 {
-    (void)c;
     (void)arg;
-    if ((status != MQTT_CONNECT_ACCEPTED) || !link_ready)
+    if (status == MQTT_CONNECT_ACCEPTED)
     {
-        schedule_retry();
+        mqtt_set_inpub_callback(c, incoming_publish, incoming_data, NULL);
+        if (mqtt_subscribe(c, MQTT_COMMAND_TOPIC, 0u, subscribed, NULL) != ERR_OK)
+        {
+            attempt_timeout(NULL);
+        }
         return;
     }
-    mqtt_set_inpub_callback(client, incoming_publish, incoming_data, NULL);
-    if (mqtt_subscribe(client, MQTT_REQUEST_TOPIC, 1u, subscribed, NULL) != ERR_OK)
-    {
-        schedule_retry();
-    }
+    drop_connection();	/* refused or disconnected */
+    schedule_retry();
 }
 
 static bool valid_topic(const char *topic)
 {
-    unsigned length = (unsigned)strlen(topic);
-    return (length > 0u) && (length < MQTT_TOPIC_MAX) &&
-           !strchr(topic, '+') && !strchr(topic, '#');
+    return topic != NULL && topic[0] != '\0' && strlen(topic) < MQTT_TOPIC_MAX;
 }
 
 static bool configure(void)
 {
-    const char *topics[] = {MQTT_TOPIC, MQTT_HEARTBEAT_TOPIC,
-                            MQTT_STATUS_TOPIC, MQTT_REQUEST_TOPIC};
-    if (!ip4addr_aton(MQTT_BROKER_IP, ip_2_ip4(&broker_addr)) ||
-        ip4_addr_isany(ip_2_ip4(&broker_addr)) ||
-        (MQTT_BROKER_PORT < 1) || (MQTT_BROKER_PORT > 65535) ||
-        (MQTT_CLIENT_ID[0] == '\0') || (strlen(MQTT_CLIENT_ID) > 40u))
+    uint8_t mac[6] = {0};
+    if (!valid_topic(MQTT_TOPIC) || !valid_topic(MQTT_STATUS_TOPIC) || !valid_topic(MQTT_COMMAND_TOPIC) ||
+        !ipaddr_aton(MQTT_BROKER_IP, &broker_addr))
     {
         return false;
     }
-    for (unsigned i = 0u; i < 4u; ++i)
+    cyw43_hal_get_mac(CYW43_HAL_MAC_WLAN0, mac);
+    int n = snprintf(client_id, sizeof client_id, "%s-%02x%02x%02x%02x%02x%02x", MQTT_CLIENT_ID,
+                     mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    return n > 0 && (unsigned)n < sizeof client_id;
+}
+
+static void connect_now(void)
+{
+    struct mqtt_connect_client_info_t info = {0};
+    info.client_id = client_id;
+    info.client_user = MQTT_USERNAME[0] != '\0' ? MQTT_USERNAME : NULL;
+    info.client_pass = MQTT_PASSWORD[0] != '\0' ? MQTT_PASSWORD : NULL;
+    info.keep_alive = MQTT_KEEPALIVE_S;
+    info.will_topic = MQTT_STATUS_TOPIC;
+    info.will_msg = STATUS_OFFLINE;
+    info.will_qos = 1u;
+    info.will_retain = 1u;
+    connecting = true;
+    sys_timeout(MQTT_ATTEMPT_MS, attempt_timeout, NULL);
+    if (mqtt_client_connect(client, &broker_addr, MQTT_BROKER_PORT, connection_cb, NULL, &info) != ERR_OK)
     {
-        if (!valid_topic(topics[i]))
-        {
-            return false;
-        }
-        for (unsigned j = 0u; j < i; ++j)
-        {
-            if (strcmp(topics[i], topics[j]) == 0)
-            {
-                return false; /* A retained response must never become a request. */
-            }
-        }
+        attempt_timeout(NULL);
     }
-    uint8_t mac[6];
-    if (cyw43_wifi_get_mac(&cyw43_state, CYW43_ITF_STA, mac) != 0)
-    {
-        return false;
-    }
-    static const char hex[] = "0123456789abcdef";
-    unsigned length = (unsigned)strlen(MQTT_CLIENT_ID);
-    memcpy(client_id, MQTT_CLIENT_ID, length);
-    client_id[length++] = '-';
-    for (unsigned i = 0u; i < sizeof(mac); ++i)
-    {
-        client_id[length++] = hex[mac[i] >> 4u];
-        client_id[length++] = hex[mac[i] & 0x0fu];
-    }
-    client_id[length] = '\0';
-    IP_SET_TYPE(&broker_addr, IPADDR_TYPE_V4);
-    return true;
 }
 
 void mqtt_utk_start(void)
 {
-    if (!link_ready || bad_configuration || active || retry_pending)
-    {
-        return;
-    }
     if (!configure())
     {
         bad_configuration = true;
         tm_printf((UB*)"mqtt: invalid broker/client/topic configuration\n");
         return;
     }
-    if (!client)
+    client = mqtt_client_new();
+    if (client == NULL)
     {
-        client = mqtt_client_new();
-        if (!client)
-        {
-            schedule_retry();
-            return;
-        }
-    }
-    struct mqtt_connect_client_info_t info = {0};
-    info.client_id = client_id;
-    info.client_user = MQTT_USERNAME[0] ? MQTT_USERNAME : NULL;
-    info.client_pass = (MQTT_USERNAME[0] && MQTT_PASSWORD[0]) ? MQTT_PASSWORD : NULL;
-    info.keep_alive = MQTT_KEEPALIVE_S;
-    info.will_topic = MQTT_STATUS_TOPIC;
-    info.will_msg = "{\"schema\":1,\"online\":false}";
-    info.will_qos = 1u;
-    info.will_retain = 1u;
-    active = true;
-    sys_timeout(MQTT_ATTEMPT_MS, attempt_timeout, NULL);
-    if (mqtt_client_connect(client, &broker_addr, MQTT_BROKER_PORT,
-                            connection_cb, NULL, &info) != ERR_OK)
-    {
-        schedule_retry();
+        bad_configuration = true;
+        tm_printf((UB*)"mqtt: client allocation failed\n");
     }
 }
 
 void mqtt_utk_poll(bool link_up)
 {
-    bool lost = link_ready && !link_up;
-    link_ready = link_up;
-    if (lost && active)
+    if (bad_configuration || client == NULL)
     {
-        schedule_retry(); /* Discard fragments; never call a motion interface. */
+        return;
     }
-    mqtt_utk_start();
+    if (link_up != link_ready)
+    {
+        link_ready = link_up;
+        if (!link_up)
+        {
+            cancel_timers();
+            drop_connection();
+            retry_ms = MQTT_RETRY_MIN_MS;
+        }
+        s1_bridge_link(link_ready, online);
+    }
+    if (!link_ready)
+    {
+        return;
+    }
+    if (!online && !connecting && !retry_pending)
+    {
+        connect_now();
+    }
+    else if (online)
+    {
+        if (!mqtt_client_is_connected(client))
+        {
+            drop_connection();
+            schedule_retry();
+        }
+        else
+        {
+            drain_outgoing();
+        }
+    }
 }
