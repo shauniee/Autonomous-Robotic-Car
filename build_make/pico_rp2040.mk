@@ -152,11 +152,19 @@ $(E2U): ../tools/elf2uf2/main.cpp
 
 $(EXE_FILE).elf: | $(E2U)
 
+# -Wunused-parameter and -Wcast-function-type are disabled deliberately:
+#   - T-Kernel, device-driver and SMP callbacks have fixed prototypes; many
+#     implementations ignore arguments the ABI requires.
+#   - Device and handler tables store typed function pointers as FP (void (*)())
+#     by design, so those casts are the intended ABI conversion.
+# Every other -Wall -Wextra warning is fixed in source.
 CFLAGS := -mcpu=cortex-m0plus -mthumb -ffreestanding\
     -std=gnu11 \
     -O2 -g3 \
     -MMD -MP \
     -mfloat-abi=soft \
+    -Wall -Wextra -Wno-unused-parameter -Wno-cast-function-type \
+    -ffunction-sections -fdata-sections \
 
 ASFLAGS := -mcpu=cortex-m0plus -mthumb -ffreestanding\
     -x assembler-with-cpp \
@@ -167,6 +175,7 @@ LFLAGS := -mcpu=cortex-m0plus -mthumb -ffreestanding \
     -nostartfiles \
     -O2 -g3 \
     -mfloat-abi=soft \
+    -Wl,--gc-sections \
 
 LNKFILE := "../etc/linker/pico_rp2040/tkernel_map.ld"
 
@@ -214,7 +223,7 @@ PROFILE_FILE := .build_profile
 
 ifneq ($(strip $(shell cat $(PROFILE_FILE) 2>/dev/null)),$(PROFILE_ID))
 $(info Build profile is now $(PROFILE_ID); discarding objects built for another profile.)
-$(shell find mtkernel_3 -name '*.o' -o -name '*.d' | xargs -r rm -f; \
+$(shell find mtkernel_3 \( -name '*.o' -o -name '*.d' \) -print0 | xargs -0 -r rm -f; \
 	  rm -f $(EXE_FILE).elf $(EXE_FILE).map $(EXE_FILE).uf2; \
 	  echo $(PROFILE_ID) > $(PROFILE_FILE))
 endif
@@ -353,8 +362,7 @@ CFLAGS += -DTM_WIFI_CYW43=1 -DCYW43_LWIP=$(if $(filter lwip,$(NET)),1,0) -DCYW43
           -DCYW43_DEFAULT_PIN_WL_HOST_WAKE=24u \
           -DCYW43_DEFAULT_PIN_WL_CLOCK=29u \
           -DCYW43_DEFAULT_PIN_WL_CS=25u \
-          -DNDEBUG -ffunction-sections -fdata-sections $(WIFI_INCLUDES)
-LFLAGS += -Wl,--gc-sections
+          -DNDEBUG $(WIFI_INCLUDES)
 
 OBJS += $(WIFI_LOCAL_OBJS) $(CYW43_OBJS)
 C_DEPS += $(WIFI_LOCAL_OBJS:.o=.d) $(CYW43_OBJS:.o=.d)
