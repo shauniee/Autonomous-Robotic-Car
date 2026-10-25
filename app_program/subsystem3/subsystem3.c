@@ -1,4 +1,5 @@
 #include "subsystem3.h"
+#include "safety.h"
 #include "subsystem3_internal.h"
 #include "task_s3.h"
 #include "line_follow.h"
@@ -49,7 +50,12 @@ ER subsystem3_start(void)
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 task start result=%d\n", task_id);
 #endif
-    return task_id < E_OK ? task_id : line_follow_start();
+    if (task_id < E_OK)
+    {
+        return task_id;
+    }
+    ER er = safety_start();
+    return er < E_OK ? er : line_follow_start();
 }
 
 bool subsystem3_publish(const IrTracker *tracker, uint32_t sequence, uint32_t now)

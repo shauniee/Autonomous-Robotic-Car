@@ -15,6 +15,7 @@
 
 /* --- Tasks ---------------------------------------------------------- */
 #define TASK_STACK_SIZE		2048	/* bytes; tm_printf needs ~1 KB */
+#define SAFETY_PRI		11
 #define S3_PRI_LINE		12
 #define S2_PRI_MOTION		13
 #define FOLLOW_PRIORITY		14
@@ -80,6 +81,9 @@
 #define ADC_POLL_LIMIT		4096u
 #define ADC_AVERAGE_COUNT	8u
 
+#define SAFETY_PERIOD_MS	10u
+#define SAFETY_STALE_MS		60u	/* PROVISIONAL (D07): required-producer age limit */
+#define SAFETY_BOOT_GRACE_MS	1500u	/* producers may be silent this long after boot */
 #define INPUT_PERIOD_MS		10u
 #define REPORT_PERIOD_MS	500u
 #define FOLLOW_PERIOD_MS	10u
@@ -168,6 +172,10 @@ _Static_assert((LEFT_ENCODER_SIGN == 1 || LEFT_ENCODER_SIGN == -1) &&
 _Static_assert(MOTION_SPEED_MAX_MMPS > 0.0f && WHEEL_DIAMETER_MM > 0.0f &&
 	TRACK_WIDTH_MM > 0.0f && ENC_COUNTS_PER_REV > 0.0f, "motion geometry must be positive");
 _Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS, "stall limit must precede the action timeout");
+_Static_assert(SAFETY_PRI < S3_PRI_LINE && SAFETY_PRI < S2_PRI_MOTION && SAFETY_PRI < FOLLOW_PRIORITY,
+	"Safety must outrank every task it supervises");
+_Static_assert(SAFETY_STALE_MS >= IR_SAMPLE_MS && SAFETY_PERIOD_MS <= MOTION_PERIOD_MS,
+	"Safety must release at least as often as Motion");
 _Static_assert(S3_PRI_LINE != S2_PRI_MOTION && S2_PRI_MOTION != FOLLOW_PRIORITY &&
 	S3_PRI_LINE != FOLLOW_PRIORITY, "task priorities must be distinct");
 _Static_assert(PITCH_DESC_THRESH_DEG < 0.0f && PITCH_CLIMB_THRESH_DEG > 0.0f,
