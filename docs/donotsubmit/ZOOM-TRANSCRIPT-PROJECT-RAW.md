@@ -9,7 +9,7 @@ topic: Project briefing transcript
 - **Speaker:** Muhamed Fauzi Bin Abbas
 - **Recording date shown in export:** 31 August 2026, 2:48 PM
 - **Recording duration shown in export:** 35 minutes
-- **Original:** [Zoom transcript](../sources/project-briefing-zoom-transcript.txt)
+- **Original:** Zoom transcript (`sources/project-briefing-zoom-transcript.txt`, not in this repository)
 
 > Formatting edition: Zoom interface text and the duplicate speaker label are omitted. Spoken text is retained in order, including repetitions, recognition errors and corrections. Section headings and paragraph breaks are editorial. Only one speech timestamp (00:05) was supplied; no later timestamps have been invented. This edition was checked against the supplied text, not against the recording.
 
