@@ -13,7 +13,7 @@ IDs never change or get reused, including retired template cases. Retired defini
 ## Run and record
 
 1. Define the case, steps, expected result and acceptance measurements before the run. Record wiring, power, calibration and build profile.
-2. For an appropriate firmware self-test, use `TEST_CHECK` with the case ID in the owning `subsystemN_test.c`; see `app_program/test_report.h`. Manual cases need hardware/operator steps and measurement evidence.
+2. For an appropriate firmware self-test, use `TEST_CHECK` with the case ID in `testing/firmware/` (`subsystemN_test.c`, `data_layer_test.c`); see `testing/firmware/test_report.h`. These files are linked only with `TEST=1`. Manual cases need hardware/operator steps and measurement evidence.
 3. Use [GETTING_STARTED build/flash profiles](../docs/GETTING_STARTED.md#build-profiles). TEST firmware prints `[TEST] <ID> PASS|FAIL` at startup and always inhibits motor outputs. A compiled image is not an executed pass.
 4. Save actual console output/photos/scope records as `YYYY-MM-DD_<case>.txt` or appropriate image format. Start console capture before resetting the USB-only TEST board. Example from repository root, using the actual device name:
 

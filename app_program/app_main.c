@@ -95,6 +95,7 @@ EXPORT INT usermain(void)
 	subsystem2_test();
 	subsystem4_test();
 	subsystem5_test();
+	data_layer_test();
 	tm_printf((UB*)"[TEST] === test run end ===\n");
 	REQUIRE(subsystem3_start());
 #endif

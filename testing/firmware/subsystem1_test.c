@@ -1,8 +1,8 @@
 #define PROHIBIT_DEF_SIZE_T
 #include <stddef.h>
-#include "subsystem1.h"
-#include "status_protocol.h"
-#include "../test_report.h"
+#include "../../app_program/subsystem1/subsystem1.h"
+#include "../../app_program/subsystem1/status_protocol.h"
+#include "test_report.h"
 #include <string.h>
 #if APP_TEST
 static bool status_request_test(void)

@@ -2,7 +2,7 @@
  * subsystem4_test.c - Automated target test runner for Buddy 4.
  */
 
-#include "subsystem4.h"
+#include "../../app_program/subsystem4/subsystem4.h"
 
 #if APP_TEST
 void subsystem4_test(void) {

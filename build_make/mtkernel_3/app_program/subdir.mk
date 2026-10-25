@@ -16,3 +16,18 @@ mtkernel_3/app_program/%.o: ../app_program/%.c
 	$(GCC) $(CFLAGS) -D$(TARGET) $(INCPATH) -MF"$(@:%.o=%.d)" -MT"$(@)" -c -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
+
+# On-target tests live under testing/firmware and are linked only with TEST=1,
+# so a normal image contains no test code.
+ifeq ($(TEST),1)
+TEST_SRCS = $(wildcard ../testing/firmware/*.c)
+OBJS += $(subst ../, ./mtkernel_3/, $(TEST_SRCS:.c=.o))
+C_DEPS += $(subst ../, ./mtkernel_3/, $(TEST_SRCS:.c=.d))
+
+mtkernel_3/testing/%.o: ../testing/%.c
+	@echo 'Building file: $<'
+	@mkdir -p $(dir $@)
+	$(GCC) $(CFLAGS) -D$(TARGET) $(INCPATH) -MF"$(@:%.o=%.d)" -MT"$(@)" -c -o "$@" "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+endif

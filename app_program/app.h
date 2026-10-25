@@ -57,6 +57,7 @@ IMPORT void subsystem2_test(void);
 IMPORT void subsystem3_test(void);
 IMPORT void subsystem4_test(void);
 IMPORT void subsystem5_test(void);
+IMPORT void data_layer_test(void);	/* testing/firmware: shared-data layer */
 #endif
 
 /* Print a readable message if a kernel call failed (negative error code) */

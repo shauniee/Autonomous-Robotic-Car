@@ -1,5 +1,5 @@
-#include "subsystem2.h"
-#include "../test_report.h"
+#include "../../app_program/subsystem2/subsystem2.h"
+#include "test_report.h"
 #if APP_TEST
 void subsystem2_test(void) {
     MotionRequest r={.1f,.1f,100,true};
