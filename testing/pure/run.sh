@@ -13,9 +13,11 @@ CFLAGS="-std=c11 -O2 -Wall -Wextra -Werror -pthread"
 
 $CC $CFLAGS testing/pure/test_robot_time.c -o "$build_dir/test_robot_time"
 $CC $CFLAGS testing/pure/test_encoder_math.c -o "$build_dir/test_encoder_math"
+$CC $CFLAGS testing/pure/test_mqtt_frame.c app_program/subsystem1/mqtt_frame.c -o "$build_dir/test_mqtt_frame"
 $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
     -o "$build_dir/test_robot_data"
 
 "$build_dir/test_robot_time"
 "$build_dir/test_encoder_math"
 "$build_dir/test_robot_data"
+"$build_dir/test_mqtt_frame"
