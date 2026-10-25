@@ -206,6 +206,137 @@ static void test_line_loss_recovery_is_bounded(void)
     assert(m3.state == MISSION_STOP && out.stop_now);
 }
 
+/* ---- Bypass ------------------------------------------------------------ */
+
+static MissionOutputs bstep(Mission *m, MissionInputs *in, uint32_t *t)
+{
+    *t += 10u;
+    return step(m, in, *t);
+}
+
+/* Complete the current Motion action: report DONE for its ID, then step. */
+static MissionOutputs finish(Mission *m, MissionInputs *in, uint32_t *t, const MissionOutputs *prev)
+{
+    in->motion_action = prev->command.action_id;
+    in->motion_status = RD_MOTION_DONE;
+    MissionOutputs out = bstep(m, in, t);
+    in->motion_status = RD_MOTION_RUNNING;
+    return out;
+}
+
+static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t, uint32_t left_mm, uint32_t right_mm)
+{
+    *t = to_follow(m, in);
+    in->front_valid = true; in->front_age_ms = 0u; in->front_mm = MISSION_OBSTACLE_STOP_MM;
+    MissionOutputs out = bstep(m, in, t);
+    assert(m->state == MISSION_BYPASS && out.command.mode == MOTION_MODE_STOP);
+    out = bstep(m, in, t);
+    assert(!out.scan_request && out.command.mode == MOTION_MODE_STOP);	/* not stationary yet */
+    in->stationary = true;
+    out = bstep(m, in, t);
+    assert(out.scan_request && m->bypass_step == BYPASS_SCANNING);
+    in->scan_state = S5_SCAN_DONE; in->profile_valid = true;
+    in->left_clearance_mm = left_mm; in->right_clearance_mm = right_mm;
+}
+
+static void test_bypass_full_sequence(void)
+{
+    Mission m; MissionInputs in = base(100u); uint32_t t;
+    into_scanning(&m, &in, &t, 800u, 400u);			/* left side has more room */
+    MissionOutputs out = bstep(&m, &in, &t);
+    assert(m.bypass_side == 1 && out.command.mode == MOTION_MODE_TURN && out.command.target == 90.0f);
+    in.front_valid = false;
+    out = finish(&m, &in, &t, &out);				/* turn out done -> offset leg */
+    assert(out.command.mode == MOTION_MODE_DISTANCE && out.command.target == MISSION_BYPASS_OFFSET_MM);
+    out = finish(&m, &in, &t, &out);				/* offset done -> turn parallel */
+    assert(out.command.mode == MOTION_MODE_TURN && out.command.target == -90.0f);
+    in.travel_counts = 5000u;
+    out = finish(&m, &in, &t, &out);				/* parallel leg, side-watch toward the obstacle */
+    assert(m.bypass_step == BYPASS_PASS && out.command.mode == MOTION_MODE_DISTANCE);
+    out = bstep(&m, &in, &t);
+    assert(out.side_watch_on && out.side_watch_deg == -SERVO_MAX_DEG);	/* obstacle is on the right */
+    in.side_valid = true; in.side_mm = 300u;
+    out = bstep(&m, &in, &t);					/* baseline captured */
+    assert(m.bypass_step == BYPASS_PASS);
+    in.travel_counts += 150u; in.side_mm = 300u + MISSION_PASS_JUMP_MM;	/* at the threshold: not yet */
+    out = bstep(&m, &in, &t);
+    assert(m.bypass_step == BYPASS_PASS);
+    in.travel_counts += 20u; in.side_mm = 300u + MISSION_PASS_JUMP_MM + 1u;	/* jump: far end passed */
+    out = bstep(&m, &in, &t);
+    assert(m.bypass_step == BYPASS_PASS_MARGIN && m.obstacle_depth_counts == 170u);	/* depth from encoder travel */
+    out = bstep(&m, &in, &t);
+    assert(!out.side_watch_on);
+    out = finish(&m, &in, &t, &out);				/* margin done -> turn in */
+    assert(out.command.mode == MOTION_MODE_TURN && out.command.target == -90.0f);
+    out = finish(&m, &in, &t, &out);				/* turn in done -> offset back */
+    assert(out.command.mode == MOTION_MODE_DISTANCE);
+    out = finish(&m, &in, &t, &out);				/* offset done -> face forward */
+    assert(out.command.mode == MOTION_MODE_TURN && out.command.target == 90.0f);
+    out = finish(&m, &in, &t, &out);
+    assert(m.bypass_step == BYPASS_REACQUIRE);
+    in.line = IR_LINE_LOST;					/* creeping forward, no line yet */
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_BYPASS && out.command.mode == MOTION_MODE_FOLLOW);
+    in.line = IR_LINE_VISIBLE;
+    bstep(&m, &in, &t);
+    assert(m.state == MISSION_BYPASS);				/* one read is not enough */
+    bstep(&m, &in, &t);
+    assert(m.state == MISSION_FOLLOW);				/* two fresh reads reacquire the original line */
+}
+
+static void test_bypass_failures(void)
+{
+    Mission m; MissionInputs in = base(100u); uint32_t t;
+    /* Neither side wide enough. */
+    into_scanning(&m, &in, &t, MISSION_BYPASS_MIN_CLEAR_MM - 1u, MISSION_BYPASS_MIN_CLEAR_MM - 1u);
+    MissionOutputs out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_STOP && out.stop_now);
+
+    /* Right side chosen when it has more room; scan failure stops. */
+    Mission r; MissionInputs ir = base(100u);
+    into_scanning(&r, &ir, &t, 400u, 900u);
+    out = bstep(&r, &ir, &t);
+    assert(r.bypass_side == -1 && out.command.target == -90.0f);
+    Mission f; MissionInputs iff = base(100u);
+    into_scanning(&f, &iff, &t, 800u, 800u);
+    iff.scan_state = S5_SCAN_FAILED;
+    bstep(&f, &iff, &t);
+    assert(f.state == MISSION_STOP);
+
+    /* A second obstacle while driving the offset leg stops the robot. */
+    Mission s; MissionInputs is = base(100u);
+    into_scanning(&s, &is, &t, 800u, 400u);
+    out = bstep(&s, &is, &t); is.front_valid = false;
+    out = finish(&s, &is, &t, &out);				/* offset leg running */
+    assert(s.bypass_step == BYPASS_OFFSET_OUT);
+    is.front_valid = true; is.front_age_ms = 0u; is.front_mm = MISSION_OBSTACLE_STOP_MM;
+    out = bstep(&s, &is, &t);
+    assert(s.state == MISSION_STOP && out.stop_now);
+    /* Stale front reading is not trusted either way: no stop on old data. */
+    Mission g; MissionInputs ig = base(100u);
+    into_scanning(&g, &ig, &t, 800u, 400u);
+    out = bstep(&g, &ig, &t); ig.front_valid = false;
+    out = finish(&g, &ig, &t, &out);
+    ig.front_valid = true; ig.front_age_ms = 10u * SONAR_REPEAT_MS; ig.front_mm = 10u;
+    bstep(&g, &ig, &t);
+    assert(g.state == MISSION_BYPASS);
+
+    /* A failed leg or a pass leg that never passes the obstacle stops. */
+    Mission h; MissionInputs ih = base(100u);
+    into_scanning(&h, &ih, &t, 800u, 400u);
+    out = bstep(&h, &ih, &t); ih.front_valid = false;
+    ih.motion_action = out.command.action_id; ih.motion_status = RD_MOTION_FAILED;
+    out = bstep(&h, &ih, &t);
+    assert(h.state == MISSION_STOP && out.stop_now);
+
+    /* The whole bypass is bounded in time. */
+    Mission k; MissionInputs ik = base(100u);
+    into_scanning(&k, &ik, &t, 800u, 400u);
+    t += MISSION_BYPASS_TIMEOUT_MS;
+    out = step(&k, &ik, t);
+    assert(k.state == MISSION_STOP && out.stop_now);
+}
+
 int main(void)
 {
     test_start_and_reset_never_move();
@@ -213,6 +344,8 @@ int main(void)
     test_barcode_hold_and_junction();
     test_finish();
     test_line_loss_recovery_is_bounded();
+    test_bypass_full_sequence();
+    test_bypass_failures();
     puts("mission: PASS");
     return 0;
 }

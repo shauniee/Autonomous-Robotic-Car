@@ -4,6 +4,9 @@
 
 #define LAST_ACTION_ID rd_mask(RD_MOTION_ACTION_BITS)
 
+static bool obstacle_ahead(const MissionInputs *in);
+static void enter_bypass(Mission *m, const MissionInputs *in, MissionOutputs *out);
+
 void mission_init(Mission *m, uint32_t now_ms)
 {
     *m = (Mission){.state = MISSION_CALIBRATE, .state_since_ms = now_ms};
@@ -108,6 +111,11 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         m->held = in->barcode_action; /* the newest read replaces an unused one */
     }
 
+    if (!m->recovering && obstacle_ahead(in))
+    {
+        enter_bypass(m, in, out);
+        return;
+    }
     bool broad = in->line == IR_LINE_BROAD_BLACK && in->usable_line;
     if (broad && !m->in_broad)
     {
@@ -199,6 +207,175 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
                                   is_broad ? 0.0f : steer, 1u);
 }
 
+
+/* ---- Bypass ------------------------------------------------------------ */
+
+static void begin_action(Mission *m, MissionBypassStep step, motion_mode_t mode, float speed, float target)
+{
+    m->bypass_step = step;
+    m->current_action = next_action_id(m);
+    m->action_mode = mode;
+    m->action_speed = speed;
+    m->action_target = target;
+}
+
+static bool action_done(const Mission *m, const MissionInputs *in)
+{
+    return in->motion_action == m->current_action && in->motion_status == RD_MOTION_DONE;
+}
+
+static bool obstacle_ahead(const MissionInputs *in)
+{
+    return in->front_valid && in->front_age_ms <= 3u * SONAR_REPEAT_MS && in->front_mm <= MISSION_OBSTACLE_STOP_MM;
+}
+
+static void enter_bypass(Mission *m, const MissionInputs *in, MissionOutputs *out)
+{
+    enter(m, MISSION_BYPASS, in->now_ms);
+    m->bypass_step = BYPASS_STOPPING;
+    m->bypass_started_ms = in->now_ms;
+    m->bypass_scan_requested = false;
+    m->in_broad = false;
+    out->command = stop_command(in->now_ms);
+}
+
+static void handle_bypass(Mission *m, const MissionInputs *in, MissionOutputs *out)
+{
+    if (robot_time_elapsed(in->now_ms, m->bypass_started_ms) >= MISSION_BYPASS_TIMEOUT_MS)
+    {
+        out->scan_cancel = true;
+        out->side_watch_on = false;
+        to_stop(m, in, out, true);
+        return;
+    }
+    bool moving_forward = m->bypass_step == BYPASS_OFFSET_OUT || m->bypass_step == BYPASS_OFFSET_IN;
+    bool failed = m->current_action == in->motion_action && in->motion_status == RD_MOTION_FAILED &&
+                  m->bypass_step > BYPASS_SCANNING && m->bypass_step != BYPASS_REACQUIRE;
+    if (failed || (moving_forward && obstacle_ahead(in)))
+    {
+        /* A second obstacle (or any failed leg) stops the robot. */
+        out->side_watch_on = false;
+        to_stop(m, in, out, true);
+        return;
+    }
+
+    switch (m->bypass_step)
+    {
+    case BYPASS_STOPPING:
+        if (in->stationary)
+        {
+            out->scan_request = true;
+            m->bypass_step = BYPASS_SCANNING;
+        }
+        break;
+    case BYPASS_SCANNING:
+        if (in->scan_state == S5_SCAN_FAILED || in->scan_state == S5_SCAN_CANCELLED)
+        {
+            to_stop(m, in, out, true);
+        }
+        else if (in->scan_state == S5_SCAN_DONE && in->profile_valid)
+        {
+            m->bypass_side = in->left_clearance_mm >= in->right_clearance_mm ? 1 : -1;
+            uint32_t clearance = m->bypass_side > 0 ? in->left_clearance_mm : in->right_clearance_mm;
+            if (clearance < MISSION_BYPASS_MIN_CLEAR_MM)
+            {
+                to_stop(m, in, out, true); /* neither side is wide enough */
+            }
+            else
+            {
+                begin_action(m, BYPASS_TURN_OUT, MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS, (float)m->bypass_side * 90.0f);
+            }
+        }
+        break;
+    case BYPASS_TURN_OUT:
+        if (action_done(m, in))
+            begin_action(m, BYPASS_OFFSET_OUT, MOTION_MODE_DISTANCE, MISSION_CLEAR_SPEED_MMPS, MISSION_BYPASS_OFFSET_MM);
+        break;
+    case BYPASS_OFFSET_OUT:
+        if (action_done(m, in))
+            begin_action(m, BYPASS_TURN_PARALLEL, MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS, (float)-m->bypass_side * 90.0f);
+        break;
+    case BYPASS_TURN_PARALLEL:
+        if (action_done(m, in))
+        {
+            m->pass_baseline_set = false;
+            m->bypass_origin = in->travel_counts;
+            begin_action(m, BYPASS_PASS, MOTION_MODE_DISTANCE, MISSION_CLEAR_SPEED_MMPS, MISSION_PASS_LEG_MM);
+        }
+        break;
+    case BYPASS_PASS:
+        /* Servo held toward the obstacle; the first valid range is the baseline,
+           a jump (or loss of echo) afterwards is the far end of the obstacle. */
+        out->side_watch_on = true;
+        out->side_watch_deg = (int16_t)(-m->bypass_side * SERVO_MAX_DEG);
+        if (!m->pass_baseline_set)
+        {
+            if (in->side_valid)
+            {
+                m->pass_baseline_set = true;
+                m->pass_baseline_mm = in->side_mm;
+            }
+        }
+        else if (!in->side_valid || in->side_mm > m->pass_baseline_mm + MISSION_PASS_JUMP_MM)
+        {
+            m->obstacle_depth_counts = enc_travel(in->travel_counts, m->bypass_origin);
+            begin_action(m, BYPASS_PASS_MARGIN, MOTION_MODE_DISTANCE, MISSION_CLEAR_SPEED_MMPS,
+                         S5_BODY_LENGTH_MM + S5_CLEARANCE_MM);
+        }
+        else if (action_done(m, in))
+        {
+            to_stop(m, in, out, true); /* leg ended without ever passing the obstacle */
+            out->side_watch_on = false;
+        }
+        break;
+    case BYPASS_PASS_MARGIN:
+        if (action_done(m, in))
+            begin_action(m, BYPASS_TURN_IN, MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS, (float)-m->bypass_side * 90.0f);
+        break;
+    case BYPASS_TURN_IN:
+        if (action_done(m, in))
+            begin_action(m, BYPASS_OFFSET_IN, MOTION_MODE_DISTANCE, MISSION_CLEAR_SPEED_MMPS, MISSION_BYPASS_OFFSET_MM);
+        break;
+    case BYPASS_OFFSET_IN:
+        if (action_done(m, in))
+            begin_action(m, BYPASS_TURN_FORWARD, MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS, (float)m->bypass_side * 90.0f);
+        break;
+    case BYPASS_TURN_FORWARD:
+        if (action_done(m, in))
+        {
+            m->bypass_step = BYPASS_REACQUIRE;
+            m->visible_streak = 0u;
+        }
+        break;
+    case BYPASS_REACQUIRE:
+        /* Creep straight on until two fresh visible reads rejoin the original line. */
+        if (in->line == IR_LINE_VISIBLE && in->guidance_valid && in->usable_line)
+        {
+            if (++m->visible_streak >= 2u)
+            {
+                m->direction = 0;
+                m->recovering = false;
+                enter(m, MISSION_FOLLOW, in->now_ms);
+                out->command = stop_command(in->now_ms);
+                return;
+            }
+        }
+        else
+        {
+            m->visible_streak = 0u;
+        }
+        out->command = follow_command(in, MISSION_BROAD_SPEED_MMPS * 0.5f, 0.0f, 1u);
+        return;
+    default:
+        to_stop(m, in, out, true);
+        return;
+    }
+    if (m->state == MISSION_BYPASS && m->bypass_step >= BYPASS_TURN_OUT && m->bypass_step != BYPASS_REACQUIRE)
+    {
+        out->command = action_command(m->action_mode, m->action_speed, m->action_target, m->current_action, in->now_ms);
+    }
+}
+
 static void handle_junction_turn(Mission *m, const MissionInputs *in, MissionOutputs *out)
 {
     bool mine = in->motion_action == m->current_action;
@@ -247,6 +424,7 @@ void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out)
     case MISSION_READY: handle_ready(m, in, out); break;
     case MISSION_FOLLOW: handle_follow(m, in, out); break;
     case MISSION_JUNCTION_TURN: handle_junction_turn(m, in, out); break;
+    case MISSION_BYPASS: handle_bypass(m, in, out); break;
     case MISSION_COMPLETE:
         if (in->start_pressed)
         {

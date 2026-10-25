@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "ir_tracking.h"
+#include "../subsystem5/obstacle_profile.h"
 #include "barcode_types.h"
 #include "../subsystem2/motion_control.h"
 #include "../common/robot_config.h"
@@ -22,12 +23,28 @@ typedef enum
     MISSION_READY,
     MISSION_FOLLOW,
     MISSION_JUNCTION_TURN,
+    MISSION_BYPASS,
     MISSION_COMPLETE,
     MISSION_STOP,
     MISSION_STATE_COUNT
 } MissionState;
 
 typedef enum { JUNCTION_PHASE_TURN, JUNCTION_PHASE_CLEAR } MissionJunctionPhase;
+
+typedef enum
+{
+    BYPASS_STOPPING,	/* braked, waiting to be stationary */
+    BYPASS_SCANNING,	/* waiting for the profile */
+    BYPASS_TURN_OUT,
+    BYPASS_OFFSET_OUT,
+    BYPASS_TURN_PARALLEL,
+    BYPASS_PASS,		/* side-watch until the range jumps */
+    BYPASS_PASS_MARGIN,	/* clear the obstacle's far end */
+    BYPASS_TURN_IN,
+    BYPASS_OFFSET_IN,
+    BYPASS_TURN_FORWARD,
+    BYPASS_REACQUIRE	/* creep forward until two fresh line reads */
+} MissionBypassStep;
 
 typedef struct
 {
@@ -44,6 +61,15 @@ typedef struct
     uint32_t travel_counts;	/* mean of both wheel counts, wrapped */
     rd_motion_status_t motion_status;
     uint8_t motion_action;
+    bool stationary;		/* encoders unchanged for MISSION_STATIONARY_MS */
+    bool front_valid;
+    uint32_t front_age_ms;
+    uint32_t front_mm;		/* front range; meaningful only if front_valid */
+    bool side_valid;
+    uint32_t side_mm;
+    s5_scan_state_t scan_state;
+    bool profile_valid;
+    uint32_t left_clearance_mm, right_clearance_mm;
     bool have_barcode;		/* a decoded barcode this release */
     barcode_action_t barcode_action;
 } MissionInputs;
@@ -55,6 +81,10 @@ typedef struct
     bool request_reset;		/* ask Safety to release the latch (never moves) */
     bool start_scanner;
     bool stop_scanner;
+    bool scan_request;		/* ask Obstacle for a scan */
+    bool scan_cancel;
+    bool side_watch_on;		/* hold the servo toward the obstacle */
+    int16_t side_watch_deg;
 } MissionOutputs;
 
 typedef struct
@@ -72,6 +102,16 @@ typedef struct
     unsigned visible_streak;
     uint8_t action_id;
     uint8_t current_action;	/* ID of the Motion action in progress */
+    MissionBypassStep bypass_step;
+    int bypass_side;		/* +1 bypass to the left, -1 to the right */
+    uint32_t bypass_origin;	/* travel count at the start of the current leg */
+    uint32_t bypass_started_ms;
+    uint32_t pass_baseline_mm;
+    bool pass_baseline_set;
+    uint32_t obstacle_depth_counts;	/* encoder travel along the obstacle (the measured depth) */
+    bool bypass_scan_requested;
+    motion_mode_t action_mode;	/* the Motion action being rewritten each release */
+    float action_speed, action_target;
 } Mission;
 
 void mission_init(Mission *m, uint32_t now_ms);

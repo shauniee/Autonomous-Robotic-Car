@@ -3,6 +3,7 @@
 #include "subsystem3.h"
 #include "safety.h"
 #include "../subsystem2/subsystem2.h"
+#include "../subsystem5/subsystem5.h"
 #include "../subsystem2/drv_encoder.h"
 #include "../common/button.h"
 #include "../common/drv_buttons.h"
@@ -34,7 +35,7 @@ static uint32_t mean_travel_count(void)
 }
 
 static const char *const state_names[MISSION_STATE_COUNT] = {
-    "CALIBRATE", "READY", "FOLLOW", "JUNCTION_TURN", "COMPLETE", "STOP"};
+    "CALIBRATE", "READY", "FOLLOW", "JUNCTION_TURN", "BYPASS", "COMPLETE", "STOP"};
 
 static void mission_task(INT stacd, void *exinf)
 {
@@ -46,6 +47,9 @@ static void mission_task(INT stacd, void *exinf)
     Button start_button;
     button_init(&start_button, now);
     MissionState reported = MISSION_STATE_COUNT;
+    uint32_t last_left = drv_encoder_count(ENCODER_LEFT), last_right = drv_encoder_count(ENCODER_RIGHT);
+    uint32_t still_since = now;
+    bool side_watching = false;
 
     for (;;)
     {
@@ -65,6 +69,16 @@ static void mission_task(INT stacd, void *exinf)
         ir_snapshot_refresh(&snapshot, now);
 
         uint32_t feedback = s2_feedback();
+        uint32_t left_now = drv_encoder_count(ENCODER_LEFT), right_now = drv_encoder_count(ENCODER_RIGHT);
+        if (left_now != last_left || right_now != last_right)
+        {
+            last_left = left_now;
+            last_right = right_now;
+            still_since = now;
+        }
+        uint32_t front = s5_front_word(), side = s5_side_word();
+        ObstacleProfile profile = {0};
+        bool have_profile = s5_profile_copy(&profile) >= E_OK;
         barcode_event_t barcode = {0};
         MissionInputs in = {
             .now_ms = now,
@@ -82,6 +96,16 @@ static void mission_task(INT stacd, void *exinf)
             .travel_counts = mean_travel_count(),
             .motion_status = rd_motion_feedback_status(feedback),
             .motion_action = (uint8_t)rd_motion_feedback_action(feedback),
+            .stationary = robot_time_elapsed(now, still_since) >= MISSION_STATIONARY_MS,
+            .front_valid = echo_valid(front),
+            .front_age_ms = (now - echo_time16(front)) & 0xFFFFu,
+            .front_mm = echo_range(front),
+            .side_valid = echo_valid(side) && ((now - echo_time16(side)) & 0xFFFFu) <= 3u * SONAR_REPEAT_MS,
+            .side_mm = echo_range(side),
+            .scan_state = s5_scan_state_unpack(s5_scan_word() & rd_mask(S5_SCAN_STATE_BITS)),
+            .profile_valid = have_profile && profile.valid,
+            .left_clearance_mm = profile.left_clearance_mm,
+            .right_clearance_mm = profile.right_clearance_mm,
             .have_barcode = barcode_pop(&barcode),
             .barcode_action = barcode.action};
 
@@ -103,6 +127,19 @@ static void mission_task(INT stacd, void *exinf)
         if (out.stop_scanner)
         {
             barcode_stop();
+        }
+        if (out.scan_request)
+        {
+            s5_scan_request(0u);
+        }
+        if (out.scan_cancel)
+        {
+            s5_scan_cancel();
+        }
+        if (out.side_watch_on != side_watching || out.side_watch_on)
+        {
+            side_watching = out.side_watch_on;
+            s5_side_watch(out.side_watch_on, out.side_watch_deg);
         }
         if (s2_command(&out.command) < E_OK)
         {

@@ -100,6 +100,14 @@
 #define MISSION_CLEAR_MM		60.0f	/* PROVISIONAL (D02): drive clear of a junction after a turn */
 #define MISSION_JUNCTION_MIN_COUNTS	6u	/* PROVISIONAL (D02): broad black this long is a junction */
 #define MISSION_FINISH_COUNTS		120u	/* PROVISIONAL (D02): broad black this long is the finish */
+/* Bypass (D02, D12; curved sections out of scope until D12 is answered). */
+#define MISSION_OBSTACLE_STOP_MM	250u	/* PROVISIONAL (D02): front range that triggers a bypass */
+#define MISSION_STATIONARY_MS		150u	/* encoders unchanged this long before a scan */
+#define MISSION_BYPASS_OFFSET_MM	250.0f	/* PROVISIONAL (D02): sideways offset to the parallel leg */
+#define MISSION_BYPASS_MIN_CLEAR_MM	300u	/* PROVISIONAL (D02): side clearance needed to try */
+#define MISSION_PASS_JUMP_MM		150u	/* PROVISIONAL (D05): side range jump marking pass-by */
+#define MISSION_PASS_LEG_MM		2000.0f	/* longest parallel leg before the bypass fails */
+#define MISSION_BYPASS_TIMEOUT_MS	45000u	/* whole bypass must finish by then */
 #define MISSION_START_WAIT_MS		200u	/* wait for Motion to leave its stop latch */
 
 /* --- S3 barcode ---------------------------------------------------- */
