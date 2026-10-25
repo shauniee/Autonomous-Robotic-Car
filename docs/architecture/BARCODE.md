@@ -1,6 +1,6 @@
 # Barcode
 
-Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). Capture buffering, a provisional Code 39 decoder, mapping and a copied event FIFO are implemented in software. **The scanner boots disabled:** measured configuration, S2 encoder feedback and an agreed GPIO dispatcher are not supplied. No physical barcode scan or navigation is established. Operational status belongs in [TASKS](../../TASKS.md#barcode); course geometry, A/Z patterns and pending decisions belong in [PROJECT_SPECS](../TECHNICAL_INFO.md#barcode-samples).
+Owner: Nicholas / S3. Parent: [system architecture](../ARCHITECTURE.md). Capture buffering, a provisional Code 39 decoder, mapping and a copied event FIFO are implemented in software. **The scanner boots disabled:** measured configuration, S2 encoder feedback and an agreed GPIO dispatcher are not supplied. No physical barcode scan or navigation is established. Operational status belongs in the realignment tracking issue (#62); course geometry, A/Z patterns and pending decisions belong in [PROJECT_SPECS](../TECHNICAL_INFO.md#barcode-samples).
 
 ## Functionality
 
@@ -54,7 +54,7 @@ Follow [TEAM's barcode and line wiring](../TEAM.md#2-pins), including disconnect
 | `barcode_service.c/.h` | Task-owned frame/rearm state, encoder validation, mapping and eight copied events |
 | `barcode_runtime.c/.h` | Public nonblocking API, provider connection and private priority-inheritance mutex |
 | `barcode_types.h` | Portable configuration, encoder context, result/status and event types |
-| Mission / Motion | Consume permitted events and perform unique encoder actions; [shared contract](../ARCHITECTURE.md#shared-contracts) |
+| Mission / Motion | Consume permitted events and perform unique encoder actions; [shared contract](../ARCHITECTURE.md#shared-data-rules) |
 
 The existing S3 task services at most 16 captured records per nominal 10 ms input release, after due line ADC work. It adds no task, changes no priority and writes no motors or network data. Capture remains disabled without an explicit successful configuration. Source selection uses the existing application wildcard, with no shared build/configuration change. Kernel object accounting belongs in [TEAM](../TEAM.md#6-kernel-object-budget).
 

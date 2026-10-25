@@ -37,7 +37,7 @@ The current S3 service does not drive motors, feed a whole-system watchdog or pu
 
 ## 3. Current firmware run instructions
 
-S3 fixtures and assertions live here in `ir_self_test.c/.h` and `subsystem3_test.c/.h`. `firmware.mk` adds them only with TEST=1 through the shared Make include. Use the `subsystem3_test()` hook already called by `app_main.c`; the private production mutex retains only a TEST bridge, with its assertions defined here. Build profiles and pending integration are recorded in [TASKS](../../TASKS.md#s3-line-service); the intended calibration/data API is in [Line Tracking](../../docs/architecture/LINE_TRACKING.md).
+S3 fixtures and assertions live here in `ir_self_test.c/.h` and `subsystem3_test.c/.h`. `firmware.mk` adds them only with TEST=1 through the shared Make include. Use the `subsystem3_test()` hook already called by `app_main.c`; the private production mutex retains only a TEST bridge, with its assertions defined here. Build profiles and pending integration are recorded in the realignment tracking issue (#62); the intended calibration/data API is in [Line Tracking](../../docs/architecture/LINE_TRACKING.md).
 
 In TEST builds, S1/S2/S4/S5 tasks start first while the S3 acquisition task remains stopped. Open the serial monitor, release GP20, then press and release GP20 to start the complete firmware self-test suite. The button gate requires about 30 ms stable release/press/release and prints a waiting message every second. S3 acquisition begins only after the suite finishes, so the start press is not treated as a calibration press and its periodic diagnostics are easy to capture. A build is not an executed self-test pass. The millivalues divide by 1000 to obtain the public −1…+1 sensor values; use the printed validity flags.
 

@@ -45,7 +45,7 @@ Terrain processing groups the existing monitoring/hump phases; it is not a new c
 | Impact | Report event promptly; a collision/critical condition invokes Safety inhibition |
 | Fault | Required acquisition unavailable/invalid/stale: independent critical notification; height-only invalidity does not itself fabricate an acquisition fault |
 
-No Terrain state writes motor outputs. Stopping retains the run maximum; a new run clears it through [Mission](../ARCHITECTURE.md#mission-and-safety-responses).
+No Terrain state writes motor outputs. Stopping retains the run maximum; a new run clears it through [Mission](../ARCHITECTURE.md#mission-s3).
 
 ## GPIO and peripherals
 

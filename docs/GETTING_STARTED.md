@@ -91,7 +91,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `TEST=1` | Includes firmware self-tests and forces S2 braking even when the controller enables motion |
 | `CRASH_REPORT=1` | Immediate crash/console copy on UART0; project uses `0` because of the [pin conflict](TEAM.md#wiring-conflicts) |
 
-`arm-none-eabi-gcc not found` means PATH is wrong. An unset SDK path or missing USB/radio/network headers means the SDK path/submodules need fixing. There is no active CMake target or dashboard build. For ordinary-Pico/Maker development, use the preserved [handoff profile](architecture/IR_MOTION_HANDOFF.md#reproducible-software-builds).
+`arm-none-eabi-gcc not found` means PATH is wrong. An unset SDK path or missing USB/radio/network headers means the SDK path/submodules need fixing. There is no active CMake target or dashboard build. For ordinary-Pico/Maker development, use the preserved [handoff profile](architecture/IR_MOTION_HANDOFF.md#build-and-acceptance).
 
 ## Power and flashing
 
