@@ -43,6 +43,7 @@ EXPORT const T_CTSK knl_init_ctsk = {
 	INITTASK_DSNAME,		/* dsname */
 #endif
 	INITTASK_STACK,			/* bufptr */
+	0,				/* assprc: no affinity (TA_ASSPRC unset) */
 };
 
 /* --------------------------------------------------------------- */
