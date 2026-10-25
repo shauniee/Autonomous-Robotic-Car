@@ -4,9 +4,14 @@
 
 #include "subsystem4.h"
 #include "task_terrain.h"
+#include "../common/robot_data.h"
 
 static ID s_terrain_mtx = -1;
 static TerrainSnapshot s_latest_snapshot;
+static rd_word_t s_terrain_word;	/* writer: the terrain task; layout in terrain_pack.h */
+
+uint32_t s4_terrain_word(void) { return rd_word_read(&s_terrain_word); }
+void s4_publish_word(uint32_t word) { rd_word_publish(&s_terrain_word, word); }
 
 ER subsystem4_init(void) {
     /* Create priority-inheritance mutex for thread-safe snapshot reads */
@@ -26,11 +31,16 @@ ER subsystem4_start(void) {
 }
 
 void s4_publish_snapshot(const TerrainSnapshot *in) {
-    if (s_terrain_mtx >= E_OK) {
-        tk_loc_mtx(s_terrain_mtx, TMO_FEVR);
-        s_latest_snapshot = *in;
-        tk_unl_mtx(s_terrain_mtx);
+    if (s_terrain_mtx < E_OK) {
+        return;
     }
+    /* Bounded wait: a stuck reader must not stall the 50 Hz terrain loop. */
+    if (tk_loc_mtx(s_terrain_mtx, 2) < E_OK) {
+        rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU);	/* cannot publish: consumers see stale data */
+        return;
+    }
+    s_latest_snapshot = *in;
+    (void)tk_unl_mtx(s_terrain_mtx);
 }
 
 ER s4_get_terrain(TerrainSnapshot *out) {
@@ -38,6 +48,5 @@ ER s4_get_terrain(TerrainSnapshot *out) {
     ER er = tk_loc_mtx(s_terrain_mtx, 5);
     if (er < E_OK) return er;
     *out = s_latest_snapshot;
-    tk_unl_mtx(s_terrain_mtx);
-    return E_OK;
+    return tk_unl_mtx(s_terrain_mtx);
 }

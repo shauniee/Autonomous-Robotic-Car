@@ -24,6 +24,8 @@ $CC $CFLAGS testing/pure/test_echo_range.c -o "$build_dir/test_echo_range"
 $CC $CFLAGS testing/pure/test_obstacle_profile.c app_program/subsystem5/obstacle_profile.c -lm \
     -o "$build_dir/test_obstacle_profile"
 $CC $CFLAGS testing/pure/test_mqtt_frame.c app_program/subsystem1/mqtt_frame.c -o "$build_dir/test_mqtt_frame"
+$CC $CFLAGS testing/pure/test_terrain.c app_program/subsystem4/terrain_algo.c app_program/common/robot_data.c -lm \
+    -o "$build_dir/test_terrain"
 $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
     -o "$build_dir/test_robot_data"
 
@@ -37,3 +39,4 @@ $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
 "$build_dir/test_echo_range"
 "$build_dir/test_obstacle_profile"
 "$build_dir/test_mqtt_frame"
+"$build_dir/test_terrain"

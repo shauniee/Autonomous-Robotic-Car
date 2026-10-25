@@ -135,6 +135,11 @@
 #define PITCH_CLIMB_THRESH_DEG	3.5f	/* PROVISIONAL (D06) */
 #define PITCH_DESC_THRESH_DEG	-3.5f	/* PROVISIONAL (D06) */
 #define IMPACT_THRESHOLD_G	2.5f	/* PROVISIONAL (D06) */
+#define HUMP_RESULT_BITS	7u	/* reported height: 7 bits, all-ones is the invalid code */
+#define HUMP_MM_PER_COUNT	1u	/* PROVISIONAL (D06): scale of the reported 7-bit result */
+#define HUMP_MIN_HEIGHT_MM	5u	/* PROVISIONAL (D06): smaller rises are not humps */
+#define HUMP_FLAT_SAMPLES	10u	/* PROVISIONAL (D06): releases at crest before it counts as flat ground */
+#define HUMP_EVENT_CAPACITY	8u	/* per-hump events kept; the count keeps running */
 #define HUMP_CALIB_FACTOR	1.15f	/* PROVISIONAL (D06) */
 
 /* --- S5 obstacle --------------------------------------------------- */
