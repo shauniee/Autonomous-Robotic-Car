@@ -3,6 +3,7 @@
  */
 
 #include "task_terrain.h"
+#include "../common/robot_data.h"
 #include "drv_gy511.h"
 #include "terrain_algo.h"
 #include "subsystem4.h"
@@ -18,6 +19,9 @@ void terrain_task(INT stacd, void *exinf) {
 
     terrain_algo_init(&s_ctx);
     bool hw_ok = drv_gy511_init();
+    if (!hw_ok) {
+        rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU);
+    }
 
     /* Startup calibration: collect 100 samples while resting (2.0s timeout guard) */
     uint32_t calib_attempts = 0;
@@ -31,11 +35,21 @@ void terrain_task(INT stacd, void *exinf) {
         tk_dly_tsk(robot_time_next_delay(&release, 10u, robot_time_ms()));
     }
 
+    if (!s_ctx.is_calibrated) {
+        rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_CALIBRATION_FAILED);
+    }
     TerrainState prev_state = s_ctx.state;
 
     for (;;) {
         Gy511RawAxes raw_accel = {0};
         bool read_ok = hw_ok && drv_gy511_read_accel(&raw_accel);
+
+        /* Sensor failure sets the IMU fault bit; a good read clears it. */
+        if (read_ok) {
+            rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMU);
+        } else {
+            rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU);
+        }
 
         if (read_ok) {
             /* Estimate incremental forward travel (at 0.20 m/s cruise, 20ms = 0.004 m) */
@@ -64,19 +78,6 @@ void terrain_task(INT stacd, void *exinf) {
             snap.max_hump_peak_m = s_ctx.max_hump_peak_m;
 
             s4_publish_snapshot(&snap);
-
-            /* Telemetry stream (every 200 ms / 10 cycles) for serial monitor & MQTT */
-            static uint32_t s_telemetry_counter = 0;
-            if ((++s_telemetry_counter % 10u) == 0u) {
-                int x_mg = (int)(s_ctx.filtered_accel.x * 1000.0f);
-                int y_mg = (int)(s_ctx.filtered_accel.y * 1000.0f);
-                int z_mg = (int)(s_ctx.filtered_accel.z * 1000.0f);
-                int pitch_x10 = (int)(s_ctx.pitch_deg * 10.0f);
-                int roll_x10 = (int)(s_ctx.roll_deg * 10.0f);
-                int hump_mm = (int)(s_ctx.max_hump_peak_m * 1000.0f);
-                tm_printf((UB*)"[MQTT_XYZ] X=%d Y=%d Z=%d PITCH=%d ROLL=%d STATE=%d HUMP=%d\n",
-                          x_mg, y_mg, z_mg, pitch_x10, roll_x10, (int)s_ctx.state, hump_mm);
-            }
         } else {
             /* Mark sensor invalid if I2C timed out */
             TerrainSnapshot snap = {0};
