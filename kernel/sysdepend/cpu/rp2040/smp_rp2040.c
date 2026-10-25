@@ -361,7 +361,7 @@ EXPORT void knl_smp_core0_init( void )
  * taking the SIO interrupt, so that in this phase core 1 never enters a
  * handler and never reaches any kernel code path.
  */
-IMPORT const void (*vector_tbl[])();
+IMPORT void (*vector_tbl[])();
 
 LOCAL void knl_smp_core1_entry( void )
 {
