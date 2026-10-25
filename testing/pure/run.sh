@@ -28,6 +28,8 @@ $CC $CFLAGS testing/pure/test_terrain.c app_program/subsystem4/terrain_algo.c ap
     -o "$build_dir/test_terrain"
 $CC $CFLAGS testing/pure/test_s1_report.c app_program/subsystem1/s1_report.c app_program/subsystem1/mqtt_frame.c \
     -o "$build_dir/test_s1_report"
+$CC $CFLAGS testing/pure/test_s1_stress.c app_program/subsystem1/s1_bridge.c app_program/common/robot_data.c \
+    -o "$build_dir/test_s1_stress"
 $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
     -o "$build_dir/test_robot_data"
 
@@ -43,3 +45,4 @@ $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
 "$build_dir/test_mqtt_frame"
 "$build_dir/test_terrain"
 "$build_dir/test_s1_report"
+"$build_dir/test_s1_stress"
