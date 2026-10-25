@@ -11,7 +11,6 @@ static rd_word_t feedback;		/* single writer: Motion */
 static MotionHealth progress;		/* guarded by command_mutex */
 static uint32_t stop_requests;		/* incremented by core-1 stop callers inside DI */
 static uint32_t serviced_stops;		/* written by Motion after braking */
-static uint8_t next_follow_id;
 
 #define STOP_BIT 1u
 #define INHIBIT_BIT 2u
@@ -107,22 +106,6 @@ ER s2_health(MotionHealth *h)
     h->brake_acknowledged = er >= E_OK && h->stopped && serviced_stops == stop_requests;
     control_leave(state);
     return er;
-}
-
-ER s2_publish(MotionRequest request)
-{
-    /* Duty pair -> speed fraction and steering; sample time is kept. */
-    float sum = request.left + request.right;
-    MotionCommand command = {.mode = MOTION_MODE_STOP, .sampled_ms = request.sampled_ms};
-    if (request.enabled && sum > 0.0f)
-    {
-        command.mode = MOTION_MODE_FOLLOW;
-        command.speed_mmps = MOTION_SPEED_MAX_MMPS * (sum * 0.5f / MOTION_MAX_DUTY);
-        command.steering = (request.left - request.right) / sum;
-        command.action_id = ++next_follow_id & rd_mask(RD_MOTION_ACTION_BITS);
-        if (command.action_id == 0u) command.action_id = 1u;
-    }
-    return s2_command(&command);
 }
 
 static void motion_task(INT stacd, void *exinf)

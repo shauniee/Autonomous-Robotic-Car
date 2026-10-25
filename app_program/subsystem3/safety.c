@@ -56,7 +56,7 @@ static void safety_task(INT stacd, void *exinf)
             }
             rd_word_publish(&latched, held | causes);
         }
-        else if (reset_pending && held != 0u &&
+        else if (reset_pending && (held != 0u || (health_read && health.stopped)) &&
                  safety_reset_allowed(causes, health_read && health.brake_acknowledged, true))
         {
             if (s2_reset_stop() >= E_OK)

@@ -32,13 +32,4 @@ ER s2_reset_stop(void);
 ER s2_inhibit_startup(void);
 ER s2_health(MotionHealth *health);
 
-/* Transitional duty-level request used by line_follow.c until the Mission
-   state machine (#36) replaces it. Converted to a FOLLOW command. */
-typedef struct
-{
-    float left, right;
-    uint32_t sampled_ms;
-    bool enabled;
-} MotionRequest;
-ER s2_publish(MotionRequest request);
 #endif

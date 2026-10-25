@@ -92,6 +92,16 @@
 #define BROAD_DUTY		0.20f	/* PROVISIONAL (D07) */
 #define MAX_STEER		0.40f	/* keeps both wheels within MOTION_MAX_DUTY */
 
+/* --- Mission (S3). UNMEASURED PLACEHOLDERS until #59/#61 (D01, D02, D07) ----- */
+#define MISSION_FOLLOW_SPEED_MMPS	120.0f	/* PROVISIONAL (D07) */
+#define MISSION_BROAD_SPEED_MMPS	90.0f	/* PROVISIONAL (D07): crossing broad black */
+#define MISSION_TURN_SPEED_MMPS		100.0f	/* PROVISIONAL (D07) */
+#define MISSION_CLEAR_SPEED_MMPS	100.0f	/* PROVISIONAL (D07) */
+#define MISSION_CLEAR_MM		60.0f	/* PROVISIONAL (D02): drive clear of a junction after a turn */
+#define MISSION_JUNCTION_MIN_COUNTS	6u	/* PROVISIONAL (D02): broad black this long is a junction */
+#define MISSION_FINISH_COUNTS		120u	/* PROVISIONAL (D02): broad black this long is the finish */
+#define MISSION_START_WAIT_MS		200u	/* wait for Motion to leave its stop latch */
+
 /* --- S3 barcode ---------------------------------------------------- */
 #define BARCODE_GPIO		16u
 /* Widths are encoder counts (mean of both wheels). UNMEASURED PLACEHOLDERS
@@ -172,6 +182,11 @@ _Static_assert((LEFT_ENCODER_SIGN == 1 || LEFT_ENCODER_SIGN == -1) &&
 _Static_assert(MOTION_SPEED_MAX_MMPS > 0.0f && WHEEL_DIAMETER_MM > 0.0f &&
 	TRACK_WIDTH_MM > 0.0f && ENC_COUNTS_PER_REV > 0.0f, "motion geometry must be positive");
 _Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS, "stall limit must precede the action timeout");
+_Static_assert(MISSION_JUNCTION_MIN_COUNTS < MISSION_FINISH_COUNTS && MISSION_FINISH_COUNTS < ENC_COUNT_MASK_VALUE / 2u,
+	"junction and finish lengths must be ordered within the encoder wrap");
+_Static_assert(MISSION_FOLLOW_SPEED_MMPS * (1.0f + MAX_STEER) <= MOTION_SPEED_MAX_MMPS &&
+	MISSION_TURN_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS && MISSION_CLEAR_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS,
+	"Mission speeds must stay within the Motion speed limit");
 _Static_assert(SAFETY_PRI < S3_PRI_LINE && SAFETY_PRI < S2_PRI_MOTION && SAFETY_PRI < FOLLOW_PRIORITY,
 	"Safety must outrank every task it supervises");
 _Static_assert(SAFETY_STALE_MS >= IR_SAMPLE_MS && SAFETY_PERIOD_MS <= MOTION_PERIOD_MS,
