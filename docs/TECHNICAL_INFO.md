@@ -209,3 +209,16 @@ Rates: 0.75, 1.5, 3, 7.5, 15, 30, 75 and 220 Hz. Reject the `−4096` overflow c
 | ±8.1 | 230 | 205 |
 
 Gravity-derived pitch/roll is useful only after mounted-axis/bias calibration and when acceleration is near gravity. Dynamic acceleration, slip and magnetic disturbances need validity guards. [Terrain](architecture/TERRAIN.md) owns classification, height validation and peak retention.
+
+## Barcode samples
+
+Supplied printed samples are **A and Z**, each at two scales; the larger is about twice the smaller. Both contain 15 black bars in three groups of five, so counting bars cannot distinguish them.
+
+Each sequence alternates black bar / white space, starting and ending with a black bar. `n` = narrow, `w` = wide; inter-character gaps are narrow. The observed wide:narrow ratio is approximately 3:1, not a calibrated tolerance.
+
+| Sample | First group | Middle group | Last group |
+| --- | --- | --- | --- |
+| A | `nwnnwnwnn` | `wnnnnwnnw` | `nwnnwnwnn` |
+| Z | `nwnnwnwnn` | `nwwnwnnnn` | `nwnnwnwnn` |
+
+The patterns are consistent with Code 39 `*A*` and `*Z*`; this is an inference, not a confirmed symbology specification. Width tolerances, quiet-zone minimum, mounting coordinate and junction offset remain pending ([PROJECT_SPECS](PROJECT_SPECS.md#pending-decisions) D01/D02).
