@@ -5,8 +5,8 @@ Keep subsystem cases/results in `subsystemN/TEST_LOG.md`, cross-subsystem cases 
 | Level | Stable IDs | Ownership / contract |
 | --- | --- | --- |
 | Subsystem | `S1-U01`, `S2-U01`, … | Subsystem owner |
-| Integration | `INT-01`, … | Both interface owners; [system contracts](../docs/ARCHITECTURE.md#shared-data-rules) and [IR handoff](../docs/architecture/IR_MOTION_HANDOFF.md) |
-| System | `SYS-01`, …; planned `T01`–`T16` | Team; [requirements](../docs/PROJECT_SPECS.md) |
+| Integration | `INT-01`, … | Both interface owners; [system contracts](../docs/architecture.md#shared-data-rules) and [IR handoff](../docs/architecture/subsystem3.md) |
+| System | `SYS-01`, …; planned `T01`–`T16` | Team; [requirements](../docs/project-specs.md) |
 
 IDs never change or get reused, including retired template cases. Retired definitions remain in the relevant log; placeholder template rows are not observations.
 
@@ -14,7 +14,7 @@ IDs never change or get reused, including retired template cases. Retired defini
 
 1. Define the case, steps, expected result and acceptance measurements before the run. Record wiring, power, calibration and build profile.
 2. For an appropriate firmware self-test, use `TEST_CHECK` with the case ID in the owning `subsystemN_test.c`; see `app_program/test_report.h`. Manual cases need hardware/operator steps and measurement evidence.
-3. Use [GETTING_STARTED build/flash profiles](../docs/GETTING_STARTED.md#build-profiles). TEST firmware prints `[TEST] <ID> PASS|FAIL` at startup and always inhibits motor outputs. A compiled image is not an executed pass.
+3. Use [build/flash profiles](../docs/team.md#6-getting-started). TEST firmware prints `[TEST] <ID> PASS|FAIL` at startup and always inhibits motor outputs. A compiled image is not an executed pass.
 4. Save actual console output/photos/scope records as `YYYY-MM-DD_<case>.txt` or appropriate image format. Start console capture before resetting the USB-only TEST board. Example from repository root, using the actual device name:
 
    ```sh
@@ -22,7 +22,7 @@ IDs never change or get reused, including retired template cases. Retired defini
    # Linux: cat /dev/ttyACM0 | tee testing/subsystem3/logs/YYYY-MM-DD_self-tests.txt
    ```
 
-   Windows PuTTY supports Session → Logging → All session output. Observe the [power policy](../docs/GETTING_STARTED.md#power-and-flashing) during physical trials.
+   Windows PuTTY supports Session → Logging → All session output. Observe the [power policy](../docs/team.md#6-getting-started) during physical trials.
 5. Append a result row: date, ID, exact committed revision, tester, PASS/FAIL, measurements and evidence. Record the flashed-image checksum. Commit records and evidence together. Existing precommit checks instead identify the tested working tree through their source manifests plus base HEAD; base HEAD alone is insufficient.
 6. Record a failure and its reason; after a fix, append a new result. Never edit/delete a historical result or overwrite its evidence filename. Rerun affected subsystem/integration cases before merging, and the applicable full set before a demonstration.
 
@@ -32,7 +32,7 @@ Host-only tests for kernel-free modules run with `testing/pure/run.sh` (no fake 
 
 Firmware self-tests remain: S1-U04 (bounded encoding), S1-U06/U07 (status-only requests/network status), S2-U03 (Motion policy), S3-U02 (normalization/progress) and S3-U06 (P guidance). S3-U03 remains the retired line-PID case; later P/capture/recovery cases retain their IDs. Network snapshots never count as sensor/watchdog progress.
 
-Actual wireless checks are SYS-09/10 through [wireless setup](../docs/GETTING_STARTED.md#wireless-telemetry). Save Pico-originated subscriber output separately from synthetic/laptop transport evidence. A slow telemetry stream cannot prove short stop/recovery deadlines; use camera/scope measurements.
+Actual wireless checks are SYS-09/10 through [wireless setup](../docs/team.md#6-getting-started). Save Pico-originated subscriber output separately from synthetic/laptop transport evidence. A slow telemetry stream cannot prove short stop/recovery deadlines; use camera/scope measurements.
 
 ## Planned integrated trials
 
@@ -57,4 +57,4 @@ All remain pending until actual measurements/results are recorded. This retains 
 | T15 | Concurrent load: releases/WCET, missed deadlines, stop latency, queue occupancy and stack/memory usage |
 | T16 | Repeated complete-course rehearsal with navigation, humps, obstacles, telemetry and recovery |
 
-Acceptance targets/unknown values are owned by [PROJECT_SPECS](../docs/PROJECT_SPECS.md#pending-decisions), not inferred from a case name. Demonstration links belong in [videos](../videos/README.md) and the corresponding result row.
+Acceptance targets/unknown values are owned by [project-specs](../docs/project-specs.md#pending-decisions), not inferred from a case name. Demonstration links belong in [videos](../videos/README.md) and the corresponding result row.

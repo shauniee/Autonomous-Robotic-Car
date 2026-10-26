@@ -28,7 +28,6 @@ typedef struct {
     Vec3f        accel_offset;          /* Calibrated zero bias */
     Vec3f        filtered_accel;        /* Low-pass filtered acceleration */
     float        pitch_deg;             /* Calibrated body pitch angle */
-    float        roll_deg;              /* Calibrated body roll angle */
     TerrainState state;                 /* Current terrain state */
     
     /* Hump estimator state */
@@ -37,8 +36,6 @@ typedef struct {
     uint8_t      last_hump_code;        /* 7-bit result of the most recent valid hump */
     uint8_t      max_hump_code;         /* Greatest valid result this run (FR5); 0 until a hump */
     uint8_t      hump_count;            /* Valid complete encounters, saturating at 255 */
-    uint8_t      hump_events[HUMP_EVENT_CAPACITY]; /* Ring of 7-bit results, oldest overwritten */
-    uint8_t      hump_event_head;
     uint8_t      flat_run;              /* consecutive near-zero pitch samples while cresting */
     
     /* Calibration helper */
@@ -54,6 +51,5 @@ bool terrain_algo_calibrate_sample(TerrainContext *ctx, const Gy511RawAxes *raw)
 void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t delta_counts);
 /* Restart the stationary start calibration (the robot moved while sampling). */
 void terrain_algo_calibration_restart(TerrainContext *ctx);
-void terrain_algo_reset_run_peak(TerrainContext *ctx);
 
 #endif /* TERRAIN_ALGO_H */

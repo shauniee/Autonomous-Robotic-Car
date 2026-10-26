@@ -38,7 +38,7 @@ bool barcode_set_mapping(const uint8_t letters[4])
     return true;
 }
 
-bool barcode_mapped(void)
+static bool barcode_mapped(void)
 {
     return rd_mapping_is_mapped(rd_word_read(&mapping_word));
 }
@@ -65,11 +65,6 @@ void barcode_stop(void)
 {
     drv_barcode_enable(false);
     running = false;
-}
-
-bool barcode_running(void)
-{
-    return running;
 }
 
 static void push_event(const barcode_event_t *event)

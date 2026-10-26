@@ -1,5 +1,4 @@
 #include "task_s3.h"
-#include "subsystem3_internal.h"
 #include "../common/robot_time.h"
 #include "ir_tracking_calibration.h"
 #include "drv_ir_tracking.h"

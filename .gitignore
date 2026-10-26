@@ -31,12 +31,6 @@ build*/**/*.d
 build-host/
 build-ir-tracking/
 build-sensor-bench/
-*.uf2
-*.elf
-*.map
-.DS_Store
-config/network_config.h
-config/network_config.example.h
 
 build/
 build-*/

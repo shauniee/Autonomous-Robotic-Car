@@ -16,15 +16,12 @@ void terrain_algo_init(TerrainContext *ctx) {
     ctx->accel_offset = (Vec3f){0.0f, 0.0f, 0.0f};
     ctx->filtered_accel = (Vec3f){0.0f, 0.0f, 1.0f};
     ctx->pitch_deg = 0.0f;
-    ctx->roll_deg = 0.0f;
     ctx->state = TERRAIN_STATE_FLAT;
     ctx->height_valid = false;
     ctx->rise_q = 0u;
     ctx->last_hump_code = 0u;
     ctx->max_hump_code = 0u;
     ctx->hump_count = 0u;
-    for (unsigned i = 0u; i < HUMP_EVENT_CAPACITY; ++i) ctx->hump_events[i] = 0u;
-    ctx->hump_event_head = 0u;
     ctx->flat_run = 0u;
     ctx->is_calibrated = false;
     ctx->calib_count = 0;
@@ -75,11 +72,10 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t
     ctx->filtered_accel.y = (ctx->filtered_accel.y * (1.0f - LPF_ALPHA)) + (cur.y * LPF_ALPHA);
     ctx->filtered_accel.z = (ctx->filtered_accel.z * (1.0f - LPF_ALPHA)) + (cur.z * LPF_ALPHA);
 
-    /* 3. Compute pitch and roll angles */
+    /* 3. Compute pitch angle */
     ctx->pitch_deg = atan2f(ctx->filtered_accel.y,
                             sqrtf((ctx->filtered_accel.x * ctx->filtered_accel.x) + 
                                   (ctx->filtered_accel.z * ctx->filtered_accel.z))) * RAD_TO_DEG;
-    ctx->roll_deg  = atan2f(-ctx->filtered_accel.x, ctx->filtered_accel.z) * RAD_TO_DEG;
 
     /* 4. Impact detection (FR11): check horizontal deceleration */
     float shock_horiz = sqrtf((cur.x * cur.x) + (cur.y * cur.y));
@@ -134,8 +130,6 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t
                     ctx->last_hump_code = code;
                     if (code > ctx->max_hump_code) ctx->max_hump_code = code;
                     if (ctx->hump_count < 255u) ctx->hump_count++;
-                    ctx->hump_events[ctx->hump_event_head] = code;
-                    ctx->hump_event_head = (uint8_t)((ctx->hump_event_head + 1u) % HUMP_EVENT_CAPACITY);
                 }
                 ctx->state = TERRAIN_STATE_FLAT;
             }
@@ -145,8 +139,4 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t
             /* Latch state until system reset */
             break;
     }
-}
-
-void terrain_algo_reset_run_peak(TerrainContext *ctx) {
-    ctx->max_hump_code = 0u;
 }

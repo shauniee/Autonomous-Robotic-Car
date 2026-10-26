@@ -27,14 +27,6 @@ ER mission_set_mapping(const uint8_t letters[4])
     return barcode_set_mapping(letters) ? E_OK : E_OBJ;
 }
 
-/* Wrap-safe mean of the two wheel counts (a plain average breaks at the wrap). */
-static uint32_t mean_travel_count(void)
-{
-    uint32_t left = drv_encoder_count(ENCODER_LEFT);
-    uint32_t right = drv_encoder_count(ENCODER_RIGHT);
-    return enc_advance(left, enc_travel_signed(right, left) / 2);
-}
-
 static const char *const state_names[MISSION_STATE_COUNT] = {
     "CALIBRATE", "READY", "FOLLOW", "JUNCTION_TURN", "BYPASS", "COMPLETE", "STOP"};
 
@@ -94,7 +86,7 @@ static void mission_task(INT stacd, void *exinf)
             .line = snapshot.line,
             .steering = snapshot.steering,
             .line_sampled_ms = snapshot.sampled_ms,
-            .travel_counts = mean_travel_count(),
+            .travel_counts = enc_mean(drv_encoder_count(ENCODER_LEFT), drv_encoder_count(ENCODER_RIGHT)),
             .motion_status = rd_motion_feedback_status(feedback),
             .motion_action = (uint8_t)rd_motion_feedback_action(feedback),
             .stationary = robot_time_elapsed(now, still_since) >= MISSION_STATIONARY_MS,
