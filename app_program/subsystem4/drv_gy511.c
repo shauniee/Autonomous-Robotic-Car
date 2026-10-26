@@ -13,11 +13,6 @@
 #define REG_OUT_X_L_A 0x28u
 #define REG_AUTO_INC_A 0x80u
 
-#define REG_CRA_REG_M 0x00u
-#define REG_CRB_REG_M 0x01u
-#define REG_MR_REG_M 0x02u
-#define REG_OUT_X_H_M 0x03u
-
 static uint32_t transaction_started;
 
 
@@ -167,10 +162,11 @@ bool drv_gy511_init(void)
 
     out_w(I2C0_BASE + I2Cx_ENABLE, 1);
 
-    /* 4. Configure accelerometer: 50 Hz, all axes, +/- 2g high resolution. */
+    /* 4. Configure accelerometer: 50 Hz, all axes, +/- 4 g high resolution
+       (CTRL_REG4_A: BDU, FS = 01, HR), so a 2.5 g impact is measurable. */
     if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG1_A, 0x47u))
         return false;
-    if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG4_A, 0x88u))
+    if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG4_A, 0x98u))
         return false;
 
     return true;

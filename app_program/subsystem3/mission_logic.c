@@ -1,6 +1,7 @@
 #include "mission_logic.h"
 #include <math.h>
 #include "../common/robot_time_math.h"
+#include "../subsystem2/encoder_math.h"
 
 #define LAST_ACTION_ID rd_mask(RD_MOTION_ACTION_BITS)
 
@@ -42,6 +43,17 @@ static MotionCommand follow_command(const MissionInputs *in, float speed, float 
                            .action_id = id, .sampled_ms = in->line_sampled_ms};
 }
 
+/* Counts fresh visible line reads; true on the second in a row. */
+static bool line_reacquired(Mission *m, const MissionInputs *in)
+{
+    if (in->line == IR_LINE_VISIBLE && in->guidance_valid && in->usable_line)
+    {
+        return ++m->visible_streak >= 2u;
+    }
+    m->visible_streak = 0u;
+    return false;
+}
+
 static void to_stop(Mission *m, const MissionInputs *in, MissionOutputs *out, bool call_stop)
 {
     enter(m, MISSION_STOP, in->now_ms);
@@ -64,9 +76,15 @@ static void handle_calibrate(Mission *m, const MissionInputs *in, MissionOutputs
 
 static void handle_ready(Mission *m, const MissionInputs *in, MissionOutputs *out)
 {
+    bool may_start = in->mapped && !in->start_blocked;
     if (m->start_pending)
     {
-        if (!in->motion_stopped && !in->safety_latched && in->guidance_valid)
+        if (!may_start)
+        {
+            m->start_pending = false; /* a fault appeared while waiting: a new press is needed */
+            out->start_refused = true;
+        }
+        else if (!in->motion_stopped && !in->safety_latched && in->guidance_valid)
         {
             m->start_pending = false;
             m->direction = 0;
@@ -80,6 +98,11 @@ static void handle_ready(Mission *m, const MissionInputs *in, MissionOutputs *ou
         {
             m->start_pending = false; /* Motion did not release: a new press is needed. */
         }
+        return;
+    }
+    if (in->start_pressed && !may_start)
+    {
+        out->start_refused = true; /* never run without the mission-day letters or with a fault */
         return;
     }
     if (in->start_pressed && in->guidance_valid)
@@ -109,7 +132,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
     if (in->have_barcode && in->barcode_action != BARCODE_UNMAPPED)
     {
         m->held = in->barcode_action; /* the newest read replaces an unused one */
-        out->event_kind = 1u;	/* MQTT_EVENT_BARCODE */
+        out->event_kind = MQTT_EVENT_BARCODE;
         out->event_arg = in->barcode_letter;
         out->event_arg2 = (uint16_t)in->barcode_action;
     }
@@ -148,7 +171,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
                 m->current_action = next_action_id(m);
                 m->turn_target = action == BARCODE_LEFT ? 90.0f : (action == BARCODE_RIGHT ? -90.0f : 180.0f);
                 enter(m, MISSION_JUNCTION_TURN, in->now_ms);
-                out->event_kind = 4u;	/* MQTT_EVENT_TURN */
+                out->event_kind = MQTT_EVENT_TURN;
                 out->event_arg = (uint8_t)action;
                 out->command = action_command(MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS, m->turn_target,
                                               m->current_action, in->now_ms);
@@ -160,16 +183,9 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
     if (m->recovering)
     {
         /* Bounded recovery: two fresh visible reads rejoin the line. */
-        if (in->line == IR_LINE_VISIBLE && in->guidance_valid && in->usable_line)
+        if (line_reacquired(m, in))
         {
-            if (++m->visible_streak >= 2u)
-            {
-                m->recovering = false;
-            }
-        }
-        else
-        {
-            m->visible_streak = 0u;
+            m->recovering = false;
         }
     }
     else if (in->line == IR_LINE_LOST)
@@ -177,6 +193,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         if (m->direction == 0)
         {
             to_stop(m, in, out, true); /* never saw the line move: no side to search */
+            out->line_lost = true;
             return;
         }
         m->recovering = true;
@@ -189,6 +206,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         if (robot_time_elapsed(in->now_ms, m->recovery_since_ms) >= RECOVERY_MS)
         {
             to_stop(m, in, out, true);
+            out->line_lost = true;
             return;
         }
         out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS * 0.5f, m->direction > 0 ? 1.0f : -1.0f, 1u);
@@ -239,7 +257,6 @@ static void enter_bypass(Mission *m, const MissionInputs *in, MissionOutputs *ou
     enter(m, MISSION_BYPASS, in->now_ms);
     m->bypass_step = BYPASS_STOPPING;
     m->bypass_started_ms = in->now_ms;
-    m->bypass_scan_requested = false;
     m->in_broad = false;
     out->command = stop_command(in->now_ms);
 }
@@ -323,9 +340,9 @@ static void handle_bypass(Mission *m, const MissionInputs *in, MissionOutputs *o
         }
         else if (!in->side_valid || in->side_mm > m->pass_baseline_mm + MISSION_PASS_JUMP_MM)
         {
-            m->obstacle_depth_counts = enc_travel(in->travel_counts, m->bypass_origin);
-            out->event_kind = 3u;	/* MQTT_EVENT_OBSTACLE: depth in encoder counts */
-            out->event_arg2 = (uint16_t)(m->obstacle_depth_counts > 65535u ? 65535u : m->obstacle_depth_counts);
+            float depth_mm = (float)enc_travel(in->travel_counts, m->bypass_origin) / ENC_COUNTS_PER_MM;
+            out->event_kind = MQTT_EVENT_OBSTACLE;
+            out->event_arg2 = (uint16_t)(depth_mm >= 65535.0f ? 65535u : depth_mm + 0.5f);
             begin_action(m, BYPASS_PASS_MARGIN, MOTION_MODE_DISTANCE, MISSION_CLEAR_SPEED_MMPS,
                          S5_BODY_LENGTH_MM + S5_CLEARANCE_MM);
         }
@@ -356,20 +373,13 @@ static void handle_bypass(Mission *m, const MissionInputs *in, MissionOutputs *o
         break;
     case BYPASS_REACQUIRE:
         /* Creep straight on until two fresh visible reads rejoin the original line. */
-        if (in->line == IR_LINE_VISIBLE && in->guidance_valid && in->usable_line)
+        if (line_reacquired(m, in))
         {
-            if (++m->visible_streak >= 2u)
-            {
-                m->direction = 0;
-                m->recovering = false;
-                enter(m, MISSION_FOLLOW, in->now_ms);
-                out->command = stop_command(in->now_ms);
-                return;
-            }
-        }
-        else
-        {
-            m->visible_streak = 0u;
+            m->direction = 0;
+            m->recovering = false;
+            enter(m, MISSION_FOLLOW, in->now_ms);
+            out->command = stop_command(in->now_ms);
+            return;
         }
         out->command = follow_command(in, MISSION_BROAD_SPEED_MMPS * 0.5f, 0.0f, 1u);
         return;

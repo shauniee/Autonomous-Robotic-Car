@@ -9,7 +9,7 @@
  *	     stores are single-copy atomic on RP2040 across both cores.
  *	  2. Mutex copy: snapshots above 32 bits, see robot_snapshot.h.
  *	  3. Fault bytes: one byte per owner; an owner sets and clears only the
- *	     bits of its own byte; Safety reads every byte.
+ *	     bits of its own byte; Mission and Safety read them through masks.
  *	Never publish a reference into another subsystem's storage, and never
  *	read-modify-write a shared word: build the new word, then publish it.
  *
@@ -140,36 +140,43 @@ static inline uint32_t rd_motion_feedback_action(uint32_t word)
     return rd_field_get(word, RD_MOTION_STATUS_BITS, RD_MOTION_ACTION_BITS);
 }
 
-/* --- Fault bytes -------------------------------------------------------- */
+/* --- Fault bytes --------------------------------------------------------
+   Every bit is reported over MQTT. Two masks decide what a bit does:
+   start-blocking bits keep Mission in READY; run-stopping bits make Safety
+   latch a stop. A bit in neither is report-only (missing or unreliable data
+   degrades a measurement but is not a hazard). */
 
 typedef enum {
-    RD_OWNER_MOTION,	/* S2 */
-    RD_OWNER_LINE,	/* S3 line, barcode and Mission */
+    RD_OWNER_MOTION,	/* S2 Motion task */
+    RD_OWNER_LINE,	/* S3 task: IR and barcode capture */
     RD_OWNER_TERRAIN,	/* S4 */
     RD_OWNER_OBSTACLE,	/* S5 */
-    RD_OWNER_NETWORK,	/* kernel task, core 0: report only, never stops motion */
+    RD_OWNER_MISSION,	/* Mission task */
+    RD_OWNER_NETWORK,	/* kernel task, core 0 */
     RD_OWNER_COUNT
 } rd_owner_t;
 
 /* Bit positions are PROVISIONAL until owners confirm them (#28). */
 enum {
-    RD_FAULT_MOTOR_STALL = 1u << 0,
-    RD_FAULT_ENCODER = 1u << 1,
+    RD_FAULT_MOTOR_STALL = 1u << 0,	/* start-blocking, run-stopping */
+    RD_FAULT_ENCODER = 1u << 1,		/* start-blocking, run-stopping */
 
-    RD_FAULT_IR_INVALID = 1u << 0,
-    RD_FAULT_LINE_LOST = 1u << 1,
-    RD_FAULT_BARCODE_CAPTURE_OVERFLOW = 1u << 2,
-    RD_FAULT_BARCODE_EVENT_OVERFLOW = 1u << 3,
+    RD_FAULT_IR_INVALID = 1u << 0,	/* start-blocking */
+    /* Overflow is a per-run condition, cleared when the scanner stops, so it
+       is reported during the run and never blocks the next start. */
+    RD_FAULT_BARCODE_CAPTURE_OVERFLOW = 1u << 1,	/* report only */
+    RD_FAULT_BARCODE_EVENT_OVERFLOW = 1u << 2,	/* report only */
 
-    RD_FAULT_IMU = 1u << 0,
-    RD_FAULT_CALIBRATION_FAILED = 1u << 1,
-    RD_FAULT_IMPACT = 1u << 2,
+    RD_FAULT_IMU = 1u << 0,		/* start-blocking */
+    RD_FAULT_CALIBRATION_FAILED = 1u << 1,	/* start-blocking */
+    RD_FAULT_IMPACT = 1u << 2,		/* start-blocking, run-stopping */
 
-    RD_FAULT_NO_ECHO = 1u << 0,
-    RD_FAULT_SERVO = 1u << 1,
+    RD_FAULT_NO_ECHO = 1u << 0,		/* report only: open space gives no echo */
 
-    RD_FAULT_WIFI_LOST = 1u << 0,
-    RD_FAULT_BROKER_LOST = 1u << 1
+    RD_FAULT_LINE_LOST = 1u << 0,	/* report only: Mission stops itself */
+
+    RD_FAULT_WIFI_LOST = 1u << 0,	/* report only: networking never starts or stops */
+    RD_FAULT_BROKER_LOST = 1u << 1	/* report only */
 };
 
 /* Only the owner calls set/clear for its own byte (single writer, so the
@@ -178,13 +185,10 @@ void rd_fault_set(rd_owner_t owner, uint8_t bits);
 void rd_fault_clear(rd_owner_t owner, uint8_t bits);
 uint8_t rd_fault_get(rd_owner_t owner);
 
-/* The four stop-capable owner bytes packed one per 8 bits in owner order
-   (Motion in bits 0-7 ... Obstacle in bits 24-31). Read Network separately
-   with rd_fault_get(). */
-uint32_t rd_fault_aggregate(void);
+/* True when a start-blocking bit is set: Mission refuses a start. */
+bool rd_fault_start_blocked(void);
 
-/* True when any owner other than Network has a fault bit set. Safety stops
-   on this; Network bits never stop motion. */
+/* True when a run-stopping bit is set: Safety latches a stop. */
 bool rd_fault_stop_pending(void);
 
 #endif /* ROBOT_DATA_H */

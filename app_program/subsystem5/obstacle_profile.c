@@ -35,12 +35,14 @@ bool s5_profile_build(const ObstacleRay *rays, unsigned count, ObstacleProfile *
         return false;
     }
     float closest = INFINITY;
-    unsigned nearest = 0u;
+    unsigned nearest = 0u, outer_left = 0u, outer_right = 0u;
     for (unsigned i = 0u; i < count; ++i)
     {
+        if (rays[i].angle_deg > rays[outer_left].angle_deg) outer_left = i;
+        if (rays[i].angle_deg < rays[outer_right].angle_deg) outer_right = i;
         if (!ray_ok(&rays[i]))
         {
-            return false;
+            continue; /* no echo: unknown, never clear space */
         }
         float radius = hypotf(forward_of(&rays[i]), left_of(&rays[i]));
         if (radius < closest)
@@ -49,10 +51,18 @@ bool s5_profile_build(const ObstacleRay *rays, unsigned count, ObstacleProfile *
             nearest = i;
         }
     }
+    if (isinf(closest))
+    {
+        return false; /* no echo at all: nothing was profiled */
+    }
     float front = forward_of(&rays[nearest]), left = left_of(&rays[nearest]);
     float xmin = left, xmax = left, free_left = left, free_right = left;
     for (unsigned i = 0u; i < count; ++i)
     {
+        if (!ray_ok(&rays[i]))
+        {
+            continue;
+        }
         float x = left_of(&rays[i]), y = forward_of(&rays[i]);
         if (y <= front + S5_BODY_LENGTH_MM + S5_CLEARANCE_MM)
         {
@@ -62,12 +72,14 @@ bool s5_profile_build(const ObstacleRay *rays, unsigned count, ObstacleProfile *
         free_left = fmaxf(free_left, x);
         free_right = fminf(free_right, x);
     }
+    /* A side is measured only if its outermost ray echoed; an unknown side
+       reports zero clearance so Mission never bypasses into it. */
     *out = (ObstacleProfile){
         .closest_angle_deg = rays[nearest].angle_deg,
         .closest_mm = clamp_u16(closest),
         .width_mm = clamp_u16(xmax - xmin),
-        .left_clearance_mm = clamp_u16(free_left - xmax),
-        .right_clearance_mm = clamp_u16(xmin - free_right),
+        .left_clearance_mm = ray_ok(&rays[outer_left]) ? clamp_u16(free_left - xmax) : 0u,
+        .right_clearance_mm = ray_ok(&rays[outer_right]) ? clamp_u16(xmin - free_right) : 0u,
         .obstacle_forward_mm = clamp_i16(front),
         .obstacle_left_mm = clamp_i16(left),
         .valid = true};

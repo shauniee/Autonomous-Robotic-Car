@@ -140,9 +140,6 @@ barcode_result_t barcode_decode(const uint32_t widths[BARCODE_ELEMENTS],
     return BARCODE_BAD_SYMBOL;
 }
 
-#include "../subsystem2/encoder_math.h"
-#include "../common/robot_data.h"
-
 barcode_action_t barcode_action_for(uint32_t word, char symbol)
 {
     rd_map_action_t action;

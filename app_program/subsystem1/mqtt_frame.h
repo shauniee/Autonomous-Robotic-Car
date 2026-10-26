@@ -1,6 +1,7 @@
 /*
  *	mqtt_frame.h
- *	Binary MQTT frames, schema version 1 (docs/MQTT_PROTOCOL.md). Little-endian,
+ *	Binary MQTT frames, schema version 2 (docs/architecture.md, MQTT binary
+ *	protocol). Little-endian,
  *	explicit masks and shifts, never a struct copy. Kernel-free: encode and
  *	decode are pure functions over byte buffers.
  *
@@ -13,7 +14,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MQTT_FRAME_VERSION 1u
+#define MQTT_FRAME_VERSION 2u
 
 typedef enum
 {
@@ -26,12 +27,12 @@ typedef enum
 } mqtt_type_t;
 
 /* Frame lengths in bytes (exact). */
-#define MQTT_LEN_TELEMETRY 18u
+#define MQTT_LEN_TELEMETRY 23u
 #define MQTT_LEN_EVENT 11u
 #define MQTT_LEN_MAPPING 5u
 #define MQTT_LEN_ACK 3u
 #define MQTT_LEN_SNAPSHOT_REQUEST 2u
-#define MQTT_FRAME_MAX 18u
+#define MQTT_FRAME_MAX 23u
 
 typedef enum
 {
@@ -44,7 +45,7 @@ typedef enum
     MQTT_DECODE_RANGE	/* a field is outside its range (letter, state, code) */
 } mqtt_decode_t;
 
-#define MQTT_FAULT_BYTES 5u	/* Motion, Line/Barcode, Terrain, Obstacle, Network */
+#define MQTT_FAULT_BYTES 6u	/* rd_owner_t order: Motion, Line, Terrain, Obstacle, Mission, Network */
 #define MQTT_NO_LETTER 31u	/* barcode letter field when nothing decoded yet */
 
 typedef struct
@@ -53,6 +54,8 @@ typedef struct
     uint8_t mission_state;	/* 0..15 */
     uint8_t motion_status;	/* 0..3: IDLE, RUNNING, DONE, FAILED */
     uint8_t motion_action;	/* 0..63 */
+    uint8_t line_status;	/* 0..3: IrLine (UNKNOWN, VISIBLE, LOST, BROAD_BLACK) */
+    bool mapped;		/* four barcode letters installed */
     uint8_t faults[MQTT_FAULT_BYTES];
     uint16_t left_count, right_count;	/* wrapped encoder counts */
     uint8_t hump_count;
@@ -62,13 +65,15 @@ typedef struct
     bool front_valid;
     uint8_t barcode_letter;	/* 0..25 or MQTT_NO_LETTER */
     uint8_t barcode_action;	/* 0..7 (barcode_action_t) */
+    uint16_t obstacle_width_mm;	/* latest profile; 0 none */
+    uint16_t obstacle_depth_mm;	/* latest bypass; 0 none */
 } mqtt_telemetry_t;
 
 typedef enum
 {
     MQTT_EVENT_BARCODE = 1,	/* arg: letter (0..25), arg2: action */
     MQTT_EVENT_HUMP,		/* arg: 7-bit height code */
-    MQTT_EVENT_OBSTACLE,	/* arg2: width mm, arg: depth in encoder counts / 8 clamp */
+    MQTT_EVENT_OBSTACLE,	/* arg2: depth mm along the obstacle */
     MQTT_EVENT_TURN,		/* arg: action */
     MQTT_EVENT_COUNT
 } mqtt_event_kind_t;

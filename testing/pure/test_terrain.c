@@ -10,7 +10,7 @@ static TerrainContext ctx;
 static void calibrate(void)
 {
     terrain_algo_init(&ctx);
-    Gy511RawAxes flat = {0, 0, 1000};
+    Gy511RawAxes flat = {0, 0, (int16_t)lroundf(1.0f / ACCEL_MG_PER_LSB)};
     for (int i = 0; i < 100; ++i) terrain_algo_calibrate_sample(&ctx, &flat);
     assert(ctx.is_calibrated);
 }
@@ -19,7 +19,7 @@ static void calibrate(void)
 static void feed(float pitch_deg, int n, uint32_t counts)
 {
     float r = pitch_deg * 0.0174532925f;
-    Gy511RawAxes a = {0, (int16_t)lroundf(sinf(r) * 1000.0f), (int16_t)lroundf(cosf(r) * 1000.0f)};
+    Gy511RawAxes a = {0, (int16_t)lroundf(sinf(r) / ACCEL_MG_PER_LSB), (int16_t)lroundf(cosf(r) / ACCEL_MG_PER_LSB)};
     for (int i = 0; i < n; ++i) terrain_algo_process(&ctx, &a, counts);
 }
 

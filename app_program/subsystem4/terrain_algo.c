@@ -77,11 +77,16 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t
                             sqrtf((ctx->filtered_accel.x * ctx->filtered_accel.x) + 
                                   (ctx->filtered_accel.z * ctx->filtered_accel.z))) * RAD_TO_DEG;
 
-    /* 4. Impact detection (FR11): check horizontal deceleration */
+    /* 4. Impact detection (FR11): horizontal shock on level ground. IMPACT
+       lasts while the shock does; Safety latches the stop it causes, and a
+       hump in progress is abandoned. */
     float shock_horiz = sqrtf((cur.x * cur.x) + (cur.y * cur.y));
     if (shock_horiz > IMPACT_THRESHOLD_G && fabsf(ctx->pitch_deg) < 3.0f) {
         ctx->state = TERRAIN_STATE_IMPACT;
         return;
+    }
+    if (ctx->state == TERRAIN_STATE_IMPACT) {
+        ctx->state = TERRAIN_STATE_FLAT;
     }
 
     /* 5. Hump progression state machine (Figure 7) */
@@ -136,7 +141,6 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t
             break;
 
         case TERRAIN_STATE_IMPACT:
-            /* Latch state until system reset */
             break;
     }
 }
