@@ -9,7 +9,7 @@
 #ifndef BARCODE_H
 #define BARCODE_H
 
-#include "barcode_frame.h"
+#include "barcode_decode.h"
 
 /* Core-1 task only: claim GP16 on the dispatcher. False on failure. */
 bool barcode_init(void);

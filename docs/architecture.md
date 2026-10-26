@@ -2,7 +2,7 @@
 
 Target design for `main`. It implements the requirements and change requirement in [project-specs](project-specs.md) with the fewest mechanisms that meet them. [Tribunal 1](additional-docs/tribunal1.md) records the Week 8 plan: task ownership, priorities, RTOS interfaces and authority boundaries are unchanged from it, except for the four [post-Tribunal decisions](#post-tribunal-decisions). Pre-realignment code is on branch `legacy-main`; the fuller integration is on branch `uat` as a port source.
 
-Related: pins, hardware and workflow in [team](team.md); data widths and scales in [project-specs](project-specs.md); subsystem detail in [S1](architecture/subsystem1.md), [S2](architecture/subsystem2.md), [S3](architecture/subsystem3.md), [S4](architecture/subsystem4.md), [S5](architecture/subsystem5.md).
+Related: pins, wiring and task budget in [team](team.md); data widths and scales in [project-specs](project-specs.md); subsystem detail in [S1](architecture/subsystem1.md), [S2](architecture/subsystem2.md), [S3](architecture/subsystem3.md), [S4](architecture/subsystem4.md), [S5](architecture/subsystem5.md).
 
 ## Tasks
 

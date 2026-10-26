@@ -1,6 +1,6 @@
 # Tribunal 1 summary (INF2004 Week 8, group CSC01)
 
-Condensed record of the Week 8 Tribunal 1 submission. Current requirements and open decisions live in [project-specs](../project-specs.md); owners and workflow in [team](../team.md); coordination rules in [architecture](../architecture.md).
+Condensed record of the Week 8 Tribunal 1 submission. Current requirements and open decisions live in [project-specs](../project-specs.md); owners and pins in [team](../team.md); coordination rules in [architecture](../architecture.md).
 
 ## Purpose
 

@@ -112,7 +112,6 @@ void barcode_service(bool cancel)
         if (result == BARCODE_DECODED)
         {
             barcode_event_t event = {
-                .sampled_us = edge.sampled_us,
                 .left_count = edge.left_count,
                 .right_count = edge.right_count,
                 .symbol = symbol,

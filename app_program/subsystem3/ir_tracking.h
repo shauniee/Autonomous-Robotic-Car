@@ -98,9 +98,39 @@ void ir_tracking_check_time(IrTracker *tracker, uint32_t now);
 void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
                         uint32_t now);
 IrReading ir_tracking_reading(IrRaw raw, const IrCalibration *calibration);
-IrLine ir_tracking_classify(IrReading reading, IrLine previous);
 IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now);
+/* Portable data for S1 and future Mission consumers; no wire format implied.
+   Invalid normalized/error/steering fields are zero; use validity flags. */
+typedef struct
+{
+    uint32_t sequence;
+    uint32_t sampled_ms;
+    uint32_t sample_age_ms;
+    IrRaw raw;
+    IrCalibration calibration;
+    float normalized_left;
+    float normalized_right;
+    float error;
+    float steering;
+    IrLine line;
+    IrCaptureKind capture_kind;
+    IrCaptureResult capture_result;
+    bool have_sample;
+    bool acquisition_valid;
+    bool calibration_valid;
+    bool sample_fresh;
+    bool normalized_valid;
+    bool guidance_valid;
+} S3IrSnapshot;
+
+S3IrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t sequence,
+    uint32_t now);
+/* Recompute age at read time without changing sequence or acquisition time. */
+void ir_snapshot_refresh(S3IrSnapshot *snapshot, uint32_t now);
+
+#if APP_TEST
 const char *ir_tracking_line_name(IrLine line);
 const char *ir_tracking_capture_name(IrCaptureResult result);
+#endif
 
 #endif

@@ -215,7 +215,16 @@ One byte per owner; each owner sets and clears only its own bits; Safety reads e
 | Adjacent barcode lane | 20 mm white gap from nearest line edge |
 | Illustrated barcode | about 141 mm long in the photographed travel direction |
 
-Barcode samples and bar patterns: [team](team.md#39-barcode-samples). Verify print scale and mounting before using any length as a motion distance.
+**Barcode samples.** Printed samples **A and Z**, each at two scales (larger ~2x). Both have 15 black bars in three groups of five, so bar counts cannot distinguish them. Sequences alternate black/white, starting and ending black; `n` narrow, `w` wide; inter-character gaps narrow. Observed wide:narrow ~3:1 (not a calibrated tolerance).
+
+| Sample | First group | Middle group | Last group |
+| --- | --- | --- | --- |
+| A | `nwnnwnwnn` | `wnnnnwnnw` | `nwnnwnwnn` |
+| Z | `nwnnwnwnn` | `nwwnwnnnn` | `nwnnwnwnn` |
+
+Consistent with Code 39 `*A*` / `*Z*` (inference, not a confirmed spec). Width tolerances, quiet zone, mounting coordinate and junction offset remain pending (D01/D02 in [pending decisions](#pending-decisions)).
+
+Verify print scale and mounting before using any length as a motion distance.
 
 ## 8. Not specified by any source
 

@@ -6,8 +6,7 @@
 #include "../subsystem5/subsystem5.h"
 #include "../subsystem1/subsystem1.h"
 #include "../subsystem2/drv_encoder.h"
-#include "../common/button.h"
-#include "../common/drv_buttons.h"
+#include "../common/buttons.h"
 #include "../common/robot_time.h"
 
 static _Atomic uint32_t published_state;	/* writer: Mission task */

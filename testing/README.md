@@ -14,7 +14,7 @@ IDs never change or get reused, including retired template cases. Retired defini
 
 1. Define the case, steps, expected result and acceptance measurements before the run. Record wiring, power, calibration and build profile.
 2. For an appropriate firmware self-test, use `TEST_CHECK` with the case ID in the owning `subsystemN_test.c`; see `app_program/test_report.h`. Manual cases need hardware/operator steps and measurement evidence.
-3. Use [build/flash profiles](../docs/team.md#6-getting-started). TEST firmware prints `[TEST] <ID> PASS|FAIL` at startup and always inhibits motor outputs. A compiled image is not an executed pass.
+3. Use [build/flash profiles](../README.md#getting-started). TEST firmware prints `[TEST] <ID> PASS|FAIL` at startup and always inhibits motor outputs. A compiled image is not an executed pass.
 4. Save actual console output/photos/scope records as `YYYY-MM-DD_<case>.txt` or appropriate image format. Start console capture before resetting the USB-only TEST board. Example from repository root, using the actual device name:
 
    ```sh
@@ -22,7 +22,7 @@ IDs never change or get reused, including retired template cases. Retired defini
    # Linux: cat /dev/ttyACM0 | tee testing/subsystem3/logs/YYYY-MM-DD_self-tests.txt
    ```
 
-   Windows PuTTY supports Session → Logging → All session output. Observe the [power policy](../docs/team.md#6-getting-started) during physical trials.
+   Windows PuTTY supports Session → Logging → All session output. Observe the [power policy](../README.md#getting-started) during physical trials.
 5. Append a result row: date, ID, exact committed revision, tester, PASS/FAIL, measurements and evidence. Record the flashed-image checksum. Commit records and evidence together. Existing precommit checks instead identify the tested working tree through their source manifests plus base HEAD; base HEAD alone is insufficient.
 6. Record a failure and its reason; after a fix, append a new result. Never edit/delete a historical result or overwrite its evidence filename. Rerun affected subsystem/integration cases before merging, and the applicable full set before a demonstration.
 
@@ -32,7 +32,7 @@ Host-only tests for kernel-free modules run with `testing/pure/run.sh` (no fake 
 
 Firmware self-tests remain: S1-U04 (bounded encoding), S1-U06/U07 (status-only requests/network status), S2-U03 (Motion policy), S3-U02 (normalization/progress) and S3-U06 (P guidance). S3-U03 remains the retired line-PID case; later P/capture/recovery cases retain their IDs. Network snapshots never count as sensor/watchdog progress.
 
-Actual wireless checks are SYS-09/10 through [wireless setup](../docs/team.md#6-getting-started). Save Pico-originated subscriber output separately from synthetic/laptop transport evidence. A slow telemetry stream cannot prove short stop/recovery deadlines; use camera/scope measurements.
+Actual wireless checks are SYS-09/10 through [wireless setup](../README.md#getting-started). Save Pico-originated subscriber output separately from synthetic/laptop transport evidence. A slow telemetry stream cannot prove short stop/recovery deadlines; use camera/scope measurements.
 
 ## Planned integrated trials
 
