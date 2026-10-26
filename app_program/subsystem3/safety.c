@@ -2,7 +2,7 @@
 #include <stdatomic.h>
 #include "subsystem3.h"
 #include "../subsystem2/subsystem2.h"
-#include "../common/drv_buttons.h"
+#include "../common/buttons.h"
 #include "../common/robot_time.h"
 
 static rd_word_t latched;		/* writer: Safety task */

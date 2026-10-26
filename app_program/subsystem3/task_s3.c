@@ -2,7 +2,7 @@
 #include "../common/robot_time.h"
 #include "ir_tracking_calibration.h"
 #include "drv_ir_tracking.h"
-#include "../common/drv_buttons.h"
+#include "../common/buttons.h"
 #include "../common/buzzer.h"
 #include "../common/robot_config.h"
 #include "../subsystem2/subsystem2.h"

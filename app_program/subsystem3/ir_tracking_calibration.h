@@ -1,7 +1,7 @@
 #ifndef IR_TRACKING_CALIBRATION_H
 #define IR_TRACKING_CALIBRATION_H
 
-#include "../common/button.h"
+#include "../common/buttons.h"
 #include "ir_tracking.h"
 
 typedef struct

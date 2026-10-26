@@ -1,5 +1,5 @@
-#ifndef BUTTON_H
-#define BUTTON_H
+#ifndef BUTTONS_H
+#define BUTTONS_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -19,6 +19,15 @@ typedef struct
     bool press_allowed;
     uint32_t raw_changed_ms;
 } Button;
+
+typedef struct
+{
+    bool gp20_down;
+    bool gp21_down;
+} ButtonInputs;
+
+bool drv_buttons_init(void);
+ButtonInputs drv_buttons_read(void);
 
 void button_init(Button *button, uint32_t now);
 void button_disarm(Button *button);

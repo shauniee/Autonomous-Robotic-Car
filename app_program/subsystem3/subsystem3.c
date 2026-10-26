@@ -3,7 +3,7 @@
 #include "task_s3.h"
 #include "mission.h"
 #include <stdatomic.h>
-#include "../common/drv_buttons.h"
+#include "../common/buttons.h"
 #include "../common/buzzer.h"
 #include "../common/robot_time.h"
 
