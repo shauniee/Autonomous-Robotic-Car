@@ -1,25 +1,27 @@
 /* Host test for app_program/subsystem1/mqtt_frame.[ch] (issue #39). The byte
-   vectors below are the golden vectors in docs/MQTT_PROTOCOL.md; the PC client
-   (#42) decodes the same bytes. */
+   vectors below are the schema v2 golden vectors in docs/architecture.md;
+   scripts/mqtt_client.py --self-test decodes the same bytes. */
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include "../../app_program/subsystem1/mqtt_frame.h"
 
 static const uint8_t golden_telemetry[MQTT_LEN_TELEMETRY] = {
-    0x11, 0x2A, 0x32, 0x05, 0x01, 0x02, 0x04, 0x08, 0x03, 0x34, 0x12, 0x78, 0x56,
-    0x03, 0xF8, 0xD0, 0x30, 0x61};
-static const uint8_t golden_event[MQTT_LEN_EVENT] = {0x12, 0x01, 0x19, 0xE8, 0x03, 0x10, 0x00, 0x11, 0x00, 0x02, 0x00};
-static const uint8_t golden_mapping[MQTT_LEN_MAPPING] = {0x14, 0x07, 0x20, 0x88, 0x01};
-static const uint8_t golden_ack[MQTT_LEN_ACK] = {0x15, 0x07, 0x00};
-static const uint8_t golden_request[MQTT_LEN_SNAPSHOT_REQUEST] = {0x16, 0x09};
+    0x21, 0x2A, 0x72, 0x45, 0x01, 0x02, 0x04, 0x08, 0x01, 0x03, 0x34, 0x12, 0x78, 0x56,
+    0x03, 0xF8, 0xD0, 0x30, 0x61, 0xA4, 0x01, 0xAA, 0x00};
+static const uint8_t golden_event[MQTT_LEN_EVENT] = {0x22, 0x01, 0x19, 0xE8, 0x03, 0x10, 0x00, 0x11, 0x00, 0x02, 0x00};
+static const uint8_t golden_mapping[MQTT_LEN_MAPPING] = {0x24, 0x07, 0x20, 0x88, 0x01};
+static const uint8_t golden_ack[MQTT_LEN_ACK] = {0x25, 0x07, 0x00};
+static const uint8_t golden_request[MQTT_LEN_SNAPSHOT_REQUEST] = {0x26, 0x09};
 
 static mqtt_telemetry_t sample(void)
 {
     mqtt_telemetry_t t = {.sequence = 0x2A, .mission_state = 2, .motion_status = 3, .motion_action = 5,
-                          .faults = {1, 2, 4, 8, 3}, .left_count = 0x1234, .right_count = 0x5678,
+                          .line_status = 1, .mapped = true,
+                          .faults = {1, 2, 4, 8, 1, 3}, .left_count = 0x1234, .right_count = 0x5678,
                           .hump_count = 3, .hump_max = 0x78, .hump_valid = true,
-                          .front_mm = 0x10D0, .front_valid = true, .barcode_letter = 1, .barcode_action = 3};
+                          .front_mm = 0x10D0, .front_valid = true, .barcode_letter = 1, .barcode_action = 3,
+                          .obstacle_width_mm = 420, .obstacle_depth_mm = 170};
     return t;
 }
 
@@ -36,6 +38,7 @@ static void test_golden(void)
     assert(d.sequence == 0x2A && d.mission_state == 2 && d.motion_status == 3 && d.motion_action == 5);
     assert(d.left_count == 0x1234 && d.right_count == 0x5678 && d.hump_count == 3 && d.hump_max == 0x78);
     assert(d.hump_valid && d.front_mm == 0x10D0 && d.front_valid && d.barcode_letter == 1 && d.barcode_action == 3);
+    assert(d.line_status == 1 && d.mapped && d.obstacle_width_mm == 420 && d.obstacle_depth_mm == 170);
 
     mqtt_event_t e = {.kind = MQTT_EVENT_BARCODE, .arg = 25, .time_ms = 1000, .left_count = 16, .right_count = 17, .arg2 = 2};
     assert(mqtt_encode_event(buf, sizeof buf, &e) == MQTT_LEN_EVENT && memcmp(buf, golden_event, MQTT_LEN_EVENT) == 0);
@@ -75,6 +78,7 @@ static void test_boundaries_and_rejections(void)
     assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_OK && d.front_mm == 8191u);
     mqtt_telemetry_t over;
     over = t; over.mission_state = 16; assert(mqtt_encode_telemetry(buf, sizeof buf, MQTT_TYPE_TELEMETRY, &over) == 0);
+    over = t; over.line_status = 4; assert(mqtt_encode_telemetry(buf, sizeof buf, MQTT_TYPE_TELEMETRY, &over) == 0);
     over = t; over.motion_action = 64; assert(mqtt_encode_telemetry(buf, sizeof buf, MQTT_TYPE_TELEMETRY, &over) == 0);
     over = t; over.hump_max = 128; assert(mqtt_encode_telemetry(buf, sizeof buf, MQTT_TYPE_TELEMETRY, &over) == 0);
     over = t; over.front_mm = 8192; assert(mqtt_encode_telemetry(buf, sizeof buf, MQTT_TYPE_TELEMETRY, &over) == 0);
@@ -88,17 +92,15 @@ static void test_boundaries_and_rejections(void)
     assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY + 1u, &ty, &d) == MQTT_DECODE_LENGTH);
     assert(mqtt_decode_telemetry(buf, 0u, &ty, &d) == MQTT_DECODE_NULL);
     assert(mqtt_decode_telemetry(0, 5u, &ty, &d) == MQTT_DECODE_NULL);
-    buf[0] = 0x21; assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_VERSION);
-    buf[0] = 0x1F; assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_TYPE);
-    buf[0] = 0x10; assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_TYPE);
-    buf[0] = 0x15; assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_LENGTH);	/* ack type, telemetry length */
-    memcpy(buf, golden_telemetry, MQTT_LEN_TELEMETRY); buf[2] |= 0x40;
-    assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_RESERVED);
+    buf[0] = 0x11; assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_VERSION);	/* schema v1 */
+    buf[0] = 0x2F; assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_TYPE);
+    buf[0] = 0x20; assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_TYPE);
+    buf[0] = 0x25; assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_LENGTH);	/* ack type, telemetry length */
     memcpy(buf, golden_telemetry, MQTT_LEN_TELEMETRY); buf[3] |= 0x80;
     assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_RESERVED);
-    memcpy(buf, golden_telemetry, MQTT_LEN_TELEMETRY); buf[16] |= 0x40;
+    memcpy(buf, golden_telemetry, MQTT_LEN_TELEMETRY); buf[17] |= 0x40;
     assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_RESERVED);
-    memcpy(buf, golden_telemetry, MQTT_LEN_TELEMETRY); buf[17] = 0x1A;		/* letter 26 */
+    memcpy(buf, golden_telemetry, MQTT_LEN_TELEMETRY); buf[18] = 0x1A;		/* letter 26 */
     assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_RANGE);
 
     /* Mapping: duplicates, out-of-range letters and reserved bits are rejected both ways. */
@@ -109,7 +111,7 @@ static void test_boundaries_and_rejections(void)
     assert(mqtt_encode_mapping(buf, sizeof buf, &m) == MQTT_LEN_MAPPING);
     mqtt_mapping_t dm; assert(mqtt_decode_mapping(buf, MQTT_LEN_MAPPING, &dm) == MQTT_DECODE_OK && dm.letters[0] == 25);
     buf[4] |= 0x10; assert(mqtt_decode_mapping(buf, MQTT_LEN_MAPPING, &dm) == MQTT_DECODE_RESERVED);
-    memcpy(buf, (uint8_t[]){0x14, 0, 0x20, 0x00, 0x00}, MQTT_LEN_MAPPING);	/* letters 0,1,0,0: duplicates */
+    memcpy(buf, (uint8_t[]){0x24, 0, 0x20, 0x00, 0x00}, MQTT_LEN_MAPPING);	/* letters 0,1,0,0: duplicates */
     assert(mqtt_decode_mapping(buf, MQTT_LEN_MAPPING, &dm) == MQTT_DECODE_RANGE);
     assert(mqtt_decode_mapping(buf, MQTT_LEN_MAPPING - 1u, &dm) == MQTT_DECODE_LENGTH);
 

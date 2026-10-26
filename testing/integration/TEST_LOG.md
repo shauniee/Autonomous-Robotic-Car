@@ -4,6 +4,11 @@ Template example INT-01/02 retired: S2-to-S3 sample flow (at least five in two s
 
 Host methods below describe retained historical checks; their runners are retired. Firmware/build/manual methods remain applicable. See [testing procedure](../README.md).
 
+## Contents
+
+- [1. Test cases](#1-test-cases)
+- [2. Results](#2-results)
+
 ## 1. Test cases
 
 | ID | Scope | Method | Expected |

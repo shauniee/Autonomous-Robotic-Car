@@ -7,7 +7,7 @@ static MissionInputs base(uint32_t now)
 {
     return (MissionInputs){.now_ms = now, .inputs_ok = true, .calibration_valid = true, .guidance_valid = true,
                            .usable_line = true, .line = IR_LINE_VISIBLE, .line_sampled_ms = now,
-                           .motion_stopped = true, .motion_status = RD_MOTION_IDLE};
+                           .motion_stopped = true, .motion_status = RD_MOTION_IDLE, .mapped = true};
 }
 
 static MissionOutputs step(Mission *m, MissionInputs *in, uint32_t now)
@@ -61,6 +61,33 @@ static void test_start_and_reset_never_move(void)
     in.start_pressed = false; t += MISSION_START_WAIT_MS;
     out = step(&m, &in, t);
     assert(m.state == MISSION_READY && out.command.mode == MOTION_MODE_STOP);
+}
+
+static void test_start_gate(void)
+{
+    Mission m; MissionInputs in = base(100u);
+    uint32_t t = 100u;
+    mission_init(&m, t);
+    step(&m, &in, t);
+    assert(m.state == MISSION_READY);
+
+    /* No mission-day letters: the press is refused and nothing is requested. */
+    in.mapped = false; in.start_pressed = true; t += 10u;
+    MissionOutputs out = step(&m, &in, t);
+    assert(out.start_refused && !out.request_reset && !m.start_pending && out.command.mode == MOTION_MODE_STOP);
+
+    /* A start-blocking fault refuses the press the same way. */
+    in.mapped = true; in.start_blocked = true; t += 10u;
+    out = step(&m, &in, t);
+    assert(out.start_refused && !m.start_pending);
+
+    /* A fault that appears while waiting for Motion cancels the pending start. */
+    in.start_blocked = false; t += 10u;
+    out = step(&m, &in, t);
+    assert(!out.start_refused && m.start_pending);
+    in.start_pressed = false; in.start_blocked = true; t += 10u;
+    out = step(&m, &in, t);
+    assert(out.start_refused && !m.start_pending && m.state == MISSION_READY);
 }
 
 static void test_follow_and_stops(void)
@@ -181,7 +208,7 @@ static void test_line_loss_recovery_is_bounded(void)
     /* No known side: stop immediately. */
     in.line = IR_LINE_LOST; t += 10u;
     MissionOutputs out = step(&m, &in, t);
-    assert(m.state == MISSION_STOP && out.stop_now);
+    assert(m.state == MISSION_STOP && out.stop_now && out.line_lost);
 
     /* Known side: pivot toward it, then rejoin after two fresh visible reads. */
     Mission m2; MissionInputs in2 = base(100u);
@@ -203,7 +230,7 @@ static void test_line_loss_recovery_is_bounded(void)
     for (uint32_t waited = 0u; waited < RECOVERY_MS + 20u && m3.state == MISSION_FOLLOW; waited += 10u) {
         t += 10u; out = step(&m3, &in3, t);
     }
-    assert(m3.state == MISSION_STOP && out.stop_now);
+    assert(m3.state == MISSION_STOP && out.stop_now && out.line_lost);
 }
 
 /* ---- Bypass ------------------------------------------------------------ */
@@ -263,7 +290,8 @@ static void test_bypass_full_sequence(void)
     assert(m.bypass_step == BYPASS_PASS);
     in.travel_counts += 20u; in.side_mm = 300u + MISSION_PASS_JUMP_MM + 1u;	/* jump: far end passed */
     out = bstep(&m, &in, &t);
-    assert(m.bypass_step == BYPASS_PASS_MARGIN && m.obstacle_depth_counts == 170u);	/* depth from encoder travel */
+    assert(m.bypass_step == BYPASS_PASS_MARGIN && out.event_kind == MQTT_EVENT_OBSTACLE &&
+           out.event_arg2 == (uint16_t)(170.0f / ENC_COUNTS_PER_MM + 0.5f));	/* depth in mm from encoder travel */
     out = bstep(&m, &in, &t);
     assert(!out.side_watch_on);
     out = finish(&m, &in, &t, &out);				/* margin done -> turn in */
@@ -340,6 +368,7 @@ static void test_bypass_failures(void)
 int main(void)
 {
     test_start_and_reset_never_move();
+    test_start_gate();
     test_follow_and_stops();
     test_barcode_hold_and_junction();
     test_finish();

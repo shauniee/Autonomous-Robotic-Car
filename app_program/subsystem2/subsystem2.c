@@ -115,17 +115,30 @@ static void motion_task(INT stacd, void *exinf)
     motion_control_reset(&controller);
     uint32_t release = robot_time_ms();
     /* The GPIO dispatcher is core-1 only, so the encoder starts here. */
-    if (!drv_encoder_init()) rd_fault_set(RD_OWNER_MOTION, RD_FAULT_ENCODER);
+    bool encoder_ready = drv_encoder_init();
+    if (!encoder_ready) rd_fault_set(RD_OWNER_MOTION, RD_FAULT_ENCODER); /* permanent: no ISR */
     uint32_t seen_invalid_edges = drv_encoder_invalid_edges();
+    uint32_t good_counts = 0u;
+    uint32_t last_left = drv_encoder_count(ENCODER_LEFT), last_right = drv_encoder_count(ENCODER_RIGHT);
     for (;;)
     {
         /* Motion is the sole writer of its fault byte: the ISR only counts. */
         uint32_t invalid_edges = drv_encoder_invalid_edges();
+        uint32_t left = drv_encoder_count(ENCODER_LEFT), right = drv_encoder_count(ENCODER_RIGHT);
         if (invalid_edges != seen_invalid_edges)
         {
             seen_invalid_edges = invalid_edges;
+            good_counts = 0u;
             rd_fault_set(RD_OWNER_MOTION, RD_FAULT_ENCODER);
         }
+        else if (encoder_ready && (rd_fault_get(RD_OWNER_MOTION) & RD_FAULT_ENCODER) != 0u)
+        {
+            int32_t dl = enc_travel_signed(left, last_left), dr = enc_travel_signed(right, last_right);
+            good_counts += (uint32_t)(dl < 0 ? -dl : dl) + (uint32_t)(dr < 0 ? -dr : dr);
+            if (good_counts >= ENC_FAULT_CLEAR_COUNTS) rd_fault_clear(RD_OWNER_MOTION, RD_FAULT_ENCODER);
+        }
+        last_left = left;
+        last_right = right;
 
         MotionCommand command = {0};
         ER er = rd_snapshot_copy(command_mutex, &command, &latest, sizeof command);
@@ -156,7 +169,9 @@ static void motion_task(INT stacd, void *exinf)
             (void)latch_stop(); /* Lost the command path: stop. */
             stopped = true;
         }
+        /* Stall lasts while driving into it; Safety latches the stop it causes. */
         if (out.stall) rd_fault_set(RD_OWNER_MOTION, RD_FAULT_MOTOR_STALL);
+        else if (stopped) rd_fault_clear(RD_OWNER_MOTION, RD_FAULT_MOTOR_STALL);
 
         ER output_er;
 #if APP_TEST

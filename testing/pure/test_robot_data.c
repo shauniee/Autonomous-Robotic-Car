@@ -80,23 +80,35 @@ static void test_feedback(void)
 
 static void test_faults(void)
 {
-    assert(rd_fault_aggregate() == 0u && !rd_fault_stop_pending());
-    rd_fault_set(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST | RD_FAULT_BROKER_LOST);
-    assert(!rd_fault_stop_pending());                               /* network never stops motion */
-    assert(rd_fault_aggregate() == 0u);
-    for (unsigned o = 0u; o < RD_OWNER_NETWORK; ++o) {
-        rd_fault_set((rd_owner_t)o, 0x81u);
-        assert(rd_fault_stop_pending());
-        assert(rd_fault_get((rd_owner_t)o) == 0x81u);
-        assert(((rd_fault_aggregate() >> (8u * o)) & 0xFFu) == 0x81u);
-        rd_fault_clear((rd_owner_t)o, 0x01u);                       /* clear only own listed bit */
-        assert(rd_fault_get((rd_owner_t)o) == 0x80u);
-        rd_fault_clear((rd_owner_t)o, 0x80u);
-        assert(!rd_fault_stop_pending());
+    /* The agreed policy: every bit is reported; these columns decide the rest. */
+    static const struct { rd_owner_t owner; uint8_t bit; bool blocks_start, stops_run; } policy[] = {
+        {RD_OWNER_MOTION, RD_FAULT_MOTOR_STALL, true, true},
+        {RD_OWNER_MOTION, RD_FAULT_ENCODER, true, true},
+        {RD_OWNER_LINE, RD_FAULT_IR_INVALID, true, false},
+        {RD_OWNER_LINE, RD_FAULT_BARCODE_CAPTURE_OVERFLOW, false, false},
+        {RD_OWNER_LINE, RD_FAULT_BARCODE_EVENT_OVERFLOW, false, false},
+        {RD_OWNER_TERRAIN, RD_FAULT_IMU, true, false},
+        {RD_OWNER_TERRAIN, RD_FAULT_CALIBRATION_FAILED, true, false},
+        {RD_OWNER_TERRAIN, RD_FAULT_IMPACT, true, true},
+        {RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO, false, false},
+        {RD_OWNER_MISSION, RD_FAULT_LINE_LOST, false, false},
+        {RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST, false, false},
+        {RD_OWNER_NETWORK, RD_FAULT_BROKER_LOST, false, false}};
+    assert(!rd_fault_start_blocked() && !rd_fault_stop_pending());
+    for (unsigned i = 0u; i < sizeof policy / sizeof policy[0]; ++i) {
+        rd_fault_set(policy[i].owner, policy[i].bit);
+        assert(rd_fault_get(policy[i].owner) == policy[i].bit);
+        assert(rd_fault_start_blocked() == policy[i].blocks_start);
+        assert(rd_fault_stop_pending() == policy[i].stops_run);
+        rd_fault_clear(policy[i].owner, policy[i].bit);
+        assert(rd_fault_get(policy[i].owner) == 0u);
     }
-    rd_fault_clear(RD_OWNER_NETWORK, 0xFFu);
+    rd_fault_set(RD_OWNER_MOTION, 0x81u);
+    rd_fault_clear(RD_OWNER_MOTION, 0x01u);                         /* clear only the listed bit */
+    assert(rd_fault_get(RD_OWNER_MOTION) == 0x80u);
+    rd_fault_clear(RD_OWNER_MOTION, 0x80u);
     rd_fault_set((rd_owner_t)RD_OWNER_COUNT, 1u);                   /* invalid owner ignored */
-    assert(rd_fault_get((rd_owner_t)RD_OWNER_COUNT) == 0u && rd_fault_aggregate() == 0u);
+    assert(rd_fault_get((rd_owner_t)RD_OWNER_COUNT) == 0u);
 }
 
 static void test_stress(void)

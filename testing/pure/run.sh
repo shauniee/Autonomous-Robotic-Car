@@ -46,3 +46,4 @@ $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
 "$build_dir/test_terrain"
 "$build_dir/test_s1_report"
 "$build_dir/test_s1_stress"
+python3 scripts/mqtt_client.py --self-test	# laptop decoder agrees with the golden vectors

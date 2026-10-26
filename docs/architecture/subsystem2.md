@@ -2,6 +2,14 @@
 
 Owner: Mahesha. Parent: [architecture](../architecture.md); pins and peripherals in [team](../team.md); pending decisions in [project-specs](../project-specs.md#pending-decisions).
 
+## Contents
+
+- [Functionality](#functionality)
+- [Interfaces and contract](#interfaces-and-contract)
+- [Data and fault bits](#data-and-fault-bits)
+- [Status](#status)
+- [Open items](#open-items)
+
 ## Functionality
 
 - Motion (core 1, priority 13, 20 ms release or woken by stop) is the sole motor-output writer. Two H-bridges drive the motors; quadrature encoders provide counts and direction.
@@ -54,7 +62,7 @@ Boot, local stop, collision, stall, critical fault and deadline failure inhibit 
 
 - Command and feedback are packed words per [architecture](../architecture.md#motion-command-contract); encoder counts are fixed-width wrapping per wheel (`ENC_COUNT_BITS` = 16, provisional until counts per revolution and longest segment are measured). Consumers store their own origin and subtract modularly; nobody resets the shared count.
 - Motion duty limit `MOTION_MAX_DUTY` 0.35 and `ENC_COUNTS_PER_REV` 360 are marked PROVISIONAL in `robot_config.h`.
-- Fault byte (Motion): bit 0 motor stall, bit 1 encoder fault (proposed positions, awaiting owner confirmation). Encoder fault is mapped from a change in the invalid-quadrature-transition counter (`drv_encoder_invalid_edges`).
+- Fault byte (Motion): bit 0 motor stall, bit 1 encoder fault (proposed positions, awaiting owner confirmation). Both block a start and stop a run ([fault bitmask](../architecture.md#fault-bitmask)). Encoder fault is set by a change in the invalid-quadrature-transition counter (`drv_encoder_invalid_edges`) and clears after `ENC_FAULT_CLEAR_COUNTS` (64) valid counts with no new invalid transition, so a hand-spun wheel proves the encoder again; it stays set if the encoder ISR never started. Stall lasts while driving into it and clears once stopped; the Safety latch holds the stop.
 
 ## Status
 

@@ -66,21 +66,31 @@ uint8_t rd_fault_get(rd_owner_t owner)
     return atomic_load_explicit(&fault_byte[owner], memory_order_acquire);
 }
 
-uint32_t rd_fault_aggregate(void)
-{
-    uint32_t all = 0u;
-    for (unsigned i = 0u; i < RD_OWNER_NETWORK; ++i) {
-        all |= (uint32_t)rd_fault_get((rd_owner_t)i) << (8u * i);
-    }
-    return all;
-}
+static const uint8_t start_blocking[RD_OWNER_COUNT] = {
+    [RD_OWNER_MOTION] = RD_FAULT_MOTOR_STALL | RD_FAULT_ENCODER,
+    [RD_OWNER_LINE] = RD_FAULT_IR_INVALID,
+    [RD_OWNER_TERRAIN] = RD_FAULT_IMU | RD_FAULT_CALIBRATION_FAILED | RD_FAULT_IMPACT};
 
-bool rd_fault_stop_pending(void)
+static const uint8_t run_stopping[RD_OWNER_COUNT] = {
+    [RD_OWNER_MOTION] = RD_FAULT_MOTOR_STALL | RD_FAULT_ENCODER,
+    [RD_OWNER_TERRAIN] = RD_FAULT_IMPACT};
+
+static bool any_fault(const uint8_t mask[RD_OWNER_COUNT])
 {
     for (unsigned i = 0u; i < RD_OWNER_COUNT; ++i) {
-        if (i != RD_OWNER_NETWORK && rd_fault_get((rd_owner_t)i) != 0u) {
+        if ((rd_fault_get((rd_owner_t)i) & mask[i]) != 0u) {
             return true;
         }
     }
     return false;
+}
+
+bool rd_fault_start_blocked(void)
+{
+    return any_fault(start_blocking);
+}
+
+bool rd_fault_stop_pending(void)
+{
+    return any_fault(run_stopping);
 }

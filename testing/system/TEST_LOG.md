@@ -2,6 +2,11 @@
 
 Retired template definitions: SYS-01 illustrative ten-second WiFi reading; SYS-02 unfilled manual placeholder. No template result was recorded. Full mission report trials T01-T16 remain pending. No source commit or hardware result is fabricated.
 
+## Contents
+
+- [1. Test cases](#1-test-cases)
+- [2. Results](#2-results)
+
 ## 1. Test cases
 
 | ID | Requirement | Steps | Expected / measurements |

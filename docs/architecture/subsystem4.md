@@ -2,6 +2,19 @@
 
 **Owner:** Darrius. Parent: [architecture](../architecture.md) (Terrain task: core 1, priority 16, 20 ms; sensor evidence only, never writes motors). Requirements and pending decisions: [project specs](../project-specs.md#pending-decisions) (D06 covers IMU supply, axes/bias, filters, impact thresholds and the height method). Wiring and I2C ownership: [team](../team.md#2-pins). Motion partner: [subsystem 2](subsystem2.md). Telemetry: [subsystem 1](subsystem1.md).
 
+## Contents
+
+- [1. Functionality](#1-functionality)
+- [2. States and responses](#2-states-and-responses)
+- [3. Interfaces and contract](#3-interfaces-and-contract)
+  - [3.1 Provided (implemented per owner status; see section 5)](#31-provided-implemented-per-owner-status-see-section-5)
+  - [3.2 Consumed from S2 (proposed, not agreed)](#32-consumed-from-s2-proposed-not-agreed)
+  - [3.3 Safety path](#33-safety-path)
+- [4. Data and fault bits](#4-data-and-fault-bits)
+- [5. Status](#5-status)
+- [6. Design rules](#6-design-rules)
+- [7. Open items](#7-open-items)
+
 ## 1. Functionality
 
 Read GY-511 (LSM303DLHC; I2C0, GP4 SDA / GP5 SCL) acceleration and magnetic data and combine them with coherent measured Motion feedback. Calibrate mounted axes and offsets, filter acceleration, then classify stationary, accelerating, turning, climbing, descending and impact. Publish timestamped terrain data; collision or critical acquisition faults notify Safety independently of diagnostic queues.
@@ -64,7 +77,7 @@ On collision or critical acquisition failure S4 must reach Safety and S2 stop in
 ## 4. Data and fault bits
 
 - Reported data: pitch, roll, calibrated acceleration, terrain/motion state, hump events, last and maximum valid height, validity flags. Packed telemetry form (heights packed to 7 bits with a defined scale and invalid code; working values 16-bit fixed point) is the target in [architecture](../architecture.md#subsystem-summaries). Only a valid completed encounter adds a hump event and may update the maximum.
-- Fault byte (S4 owner): IMU fault, calibration failed, impact ([architecture](../architecture.md#fault-bitmask)). Bit positions are not specified in the sources merged here; Insufficient data to verify.
+- Fault byte (S4 owner): bit 0 IMU fault, bit 1 calibration failed, bit 2 impact. All three block a start; only impact stops a run ([fault bitmask](../architecture.md#fault-bitmask)). Impact is set while the shock lasts, then the state returns to FLAT; the Safety latch holds the stop and a hump in progress is abandoned.
 - Proposed snapshot additions: `turn_rate_dps` and `turn_rate_is_estimate`, to keep the encoder-derived label explicit.
 
 ## 5. Status
@@ -74,7 +87,7 @@ On collision or critical acquisition failure S4 must reach Safety and S2 stop in
 - Register-level I2C0 driver at 400 kHz; accelerometer 0x19, magnetometer 0x1E; auto-increment multi-byte reads; 5 ms bus timeout returning false; accelerometer 100 Hz, +/-2 g high resolution; magnetometer 30 Hz.
 - Startup calibration: 100 samples over 2.0 s for zero-bias; first-order IIR low-pass (alpha 0.20); pitch and roll from the gravity vector.
 - Hump state machine FLAT, CLIMBING, CRESTING, DESCENDING (+/-3.5 degree entry, +/-2.0 degree return); height from the sum of sin(pitch) times travel times a geometric factor of 1.15; only a completed climb-crest-descent above 5 mm validates; greatest valid peak retained.
-- Impact when horizontal deceleration exceeds 2.5 g while flat.
+- Impact when horizontal deceleration exceeds 2.5 g while flat. The accelerometer runs at +/- 4 g (2 mg/digit) so the threshold is measurable.
 - A 5 Hz `[MQTT_XYZ]` bench telemetry string and `tools/simple_mqtt_server.py` dashboard.
 
 The earlier architecture guide instead described the S4 lifecycle as an inactive placeholder, with the classifier and reference-validated height method proposed. The two accounts conflict; the thresholds above (3.5, 2.0, 5 mm, 1.15, 2.5 g) and the nominal 0.004 m per tick (0.20 m/s assumed cruise) are owner-reported, uncalibrated working values, not accepted limits. The historical stationary bench used acceleration 50 Hz, +/-2 g, high-resolution/BDU and magnetic 30 Hz, +/-1.3 gauss; neither configuration is accepted full-robot calibration.

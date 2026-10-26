@@ -37,72 +37,15 @@ ER subsystem3_init(void)
     return E_OK;
 }
 
-/* Task-to-publication boundary. Failure skips only the cached copy. */
-static bool subsystem3_publish(const IrTracker *tracker, uint32_t sequence, uint32_t now)
+/* Task-to-publication boundary. A busy mutex skips only this cached copy;
+   readers invalidate a stale acquisition by its age. */
+static void subsystem3_publish(const S3IrSnapshot *snapshot)
 {
-    if (tracker == NULL)
-    {
-        return false;
-    }
-    S3IrSnapshot snapshot = ir_snapshot_build(tracker, sequence, now);
     ID id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
-    if ((id <= 0) || (tk_loc_mtx(id, TMO_POL) < E_OK))
+    if ((id > 0) && (tk_loc_mtx(id, TMO_POL) >= E_OK))
     {
-        return false;
-    }
-    latest = snapshot;
-    return tk_unl_mtx(id) >= E_OK;
-}
-
-
-typedef struct
-{
-    Button capture_button;
-} calibration_control_t;
-
-static unsigned cancel_capture_if_requested(IrTracker *tracker, bool cancel_down)
-{
-    if (!cancel_down || tracker->capture_kind == IR_CAPTURE_NONE)
-    {
-        return 0u;
-    }
-
-    ir_tracking_cancel_capture(tracker, IR_CAPTURE_CANCELLED);
-    return 3u;
-}
-
-static ButtonEvent capture_press_received(
-    calibration_control_t *control, 
-    bool capture_down, 
-    bool cancel_down, 
-    uint32_t now)
-{
-    if (cancel_down && capture_down)
-    {
-        button_disarm(&control->capture_button);
-    }
-
-    return button_update(
-        &control->capture_button, capture_down, now);
-}
-
-static IrCaptureKind next_capture_kind(const IrTracker *tracker)
-{
-    if (tracker->calibration.black_set && !tracker->calibration.white_set)
-    {
-        return IR_CAPTURE_WHITE;
-    }
-
-    return IR_CAPTURE_BLACK;
-}
-
-static void calibration_control_init(
-    calibration_control_t *control,
-    uint32_t now)
-{
-    if (control != NULL)
-    {
-        button_init(&control->capture_button, now);
+        latest = *snapshot;
+        (void)tk_unl_mtx(id);
     }
 }
 
@@ -124,49 +67,33 @@ static unsigned calibration_control_feedback(IrCaptureKind before, const IrTrack
     }
 }
 
-static unsigned calibration_handle_buttons(
-    calibration_control_t *control,
-    IrTracker *tracker,
-    bool capture_down,
-    bool cancel_down,
-    uint32_t now)
+/* GP20 captures black, then white; GP21 cancels a capture in progress. */
+static unsigned calibration_handle_buttons(Button *capture_button, IrTracker *tracker,
+    bool capture_down, bool cancel_down, uint32_t now)
 {
-    if (control == NULL || tracker == NULL)
+    unsigned chirps = 0u;
+    if (cancel_down && tracker->capture_kind != IR_CAPTURE_NONE)
     {
-        return 0u;
+        ir_tracking_cancel_capture(tracker, IR_CAPTURE_CANCELLED);
+        chirps = 3u;
     }
-
-    unsigned chirps = cancel_capture_if_requested(tracker, cancel_down);
-
-    ButtonEvent event = capture_press_received(control, capture_down, cancel_down, now);
-
-    bool press_transition = (event == BUTTON_EVENT_PRESSED) || (event == BUTTON_EVENT_IGNORED_PRESS);
-
-    if (cancel_down && press_transition)
+    if (cancel_down && capture_down)
+    {
+        button_disarm(capture_button);
+    }
+    ButtonEvent event = button_update(capture_button, capture_down, now);
+    if (cancel_down && (event == BUTTON_EVENT_PRESSED || event == BUTTON_EVENT_IGNORED_PRESS))
     {
         tracker->capture_result = IR_CAPTURE_CANCEL_HELD;
         return 3u;
     }
-
-    if (event != BUTTON_EVENT_PRESSED)
-    {
-        return chirps;
-    }
-
     /* Once calibrated, GP20 belongs to the bench start/reset controller. */
-    if (tracker->calibration.black_set && tracker->calibration.white_set)
+    if (event != BUTTON_EVENT_PRESSED || (tracker->calibration.black_set && tracker->calibration.white_set))
     {
         return chirps;
     }
-
-    IrCaptureKind kind = next_capture_kind(tracker);
-
-    if (!ir_tracking_capture(tracker, kind, now))
-    {
-        return 3u;
-    }
-
-    return chirps;
+    IrCaptureKind kind = tracker->calibration.black_set ? IR_CAPTURE_WHITE : IR_CAPTURE_BLACK;
+    return ir_tracking_capture(tracker, kind, now) ? chirps : 3u;
 }
 
 static void request_buzzer_chirps(unsigned chirps, uint32_t now)
@@ -214,8 +141,8 @@ static void task_s_task(INT stacd, void *exinf)
     if (!barcode_init()) tm_printf((UB *)"[BARCODE] init failed; scanner unavailable\n");
     uint32_t now;
     now = robot_time_ms();
-    calibration_control_t controls;
-    calibration_control_init(&controls, now);
+    Button capture_button;
+    button_init(&capture_button, now);
     uint32_t next = now;
     uint32_t sample_due = now;
     uint32_t sequence = 0u;
@@ -242,7 +169,7 @@ static void task_s_task(INT stacd, void *exinf)
             have_inputs = true;
         }
 #endif
-        unsigned chirps = calibration_handle_buttons(&controls, &tracker, inputs.gp20_down, inputs.gp21_down, now);
+        unsigned chirps = calibration_handle_buttons(&capture_button, &tracker, inputs.gp20_down, inputs.gp21_down, now);
         request_buzzer_chirps(chirps, now);
         if ((int32_t)(now - sample_due) >= 0)
         {
@@ -269,16 +196,22 @@ static void task_s_task(INT stacd, void *exinf)
         if (!buzzer_service(now))
         {
             tm_printf((UB *)"[IR] buzzer service failed; task stopped\n");
-            barcode_stop();
-            s2_stop();
+            barcode_service(true);
+            (void)s2_stop();
             for (;;) tk_slp_tsk(TMO_FEVR); /* Halt: never return from a task */
         }
-        /* Cache failure skips publication; local work still advances.
-           Readers invalidate the cached acquisition after 60 ms. */
-        if (!subsystem3_publish(&tracker, sequence, now))
+        S3IrSnapshot snapshot = ir_snapshot_build(&tracker, sequence, now);
+        /* Report-only fault (it blocks a start): no reading, or a calibrated
+           reading outside the calibrated range. */
+        if (!snapshot.acquisition_valid || (snapshot.calibration_valid && !snapshot.normalized_valid))
         {
-            /* Retry at the next input release, without a busy loop. */
+            rd_fault_set(RD_OWNER_LINE, RD_FAULT_IR_INVALID);
         }
+        else
+        {
+            rd_fault_clear(RD_OWNER_LINE, RD_FAULT_IR_INVALID);
+        }
+        subsystem3_publish(&snapshot);
 #if APP_TEST
         if ((int32_t)(now - report_due) >= 0)
         {
@@ -295,8 +228,8 @@ static void task_s_task(INT stacd, void *exinf)
         if (tk_dly_tsk((RELTIM)(next - now)) < E_OK)
         {
             tm_printf((UB *)"[IR] task delay failed\n");
-            barcode_stop();
-            s2_stop();
+            barcode_service(true);
+            (void)s2_stop();
             for (;;) tk_slp_tsk(TMO_FEVR); /* Halt: never return from a task */
         }
     }

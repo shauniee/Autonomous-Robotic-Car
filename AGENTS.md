@@ -1,34 +1,31 @@
 # Project guidance
 
-Follow [coding rules](docs/team.md#5-coding-rules). Record course/calibration decisions once in [project-specs](docs/project-specs.md#pending-decisions), then update the owning guide.
+Guardrails below always apply. Everything else lives in the guide listed under [Where to look](#where-to-look); read only the guide the task needs.
 
-## Owning guides
+## Contents
 
-Each fact has one owner; other guides link to it.
+- [Guardrails](#guardrails)
+- [Where to look](#where-to-look)
 
-| Topic | Owner |
+## Guardrails
+
+- **Facts:** each fact has one owning guide; other files link to it. Keep requirements, proposed design, implemented code and observed results distinct. Never invent course rules, calibrated limits, measurements or module ratings; unknown values go to the [pending decisions](docs/project-specs.md#pending-decisions).
+- **Code:** follow the [coding rules](docs/team.md#5-coding-rules). Only Motion writes the motors; networking never starts, stops or drives the robot ([authority](docs/architecture.md#authority)).
+- **Git:** one issue = one branch (`<type>/<slug>`: `feat`, `fix`, `chore`, `docs`, `test`) = one squash-merged PR into `main`. Never commit to `main`, `uat` or `legacy-main`; never force-push `main` or delete someone's branch. Push, open a PR or merge only when asked.
+- **Never commit** `config/wifi_secrets.h`, credentials, `*.elf`, `*.uf2`, `*.map` or video files.
+- **Testing:** keep fixtures and evidence in `testing/`. Append results; never overwrite evidence or reuse a test ID. A build or host test is not a firmware or physical pass; record the exact commit with each result ([testing](testing/README.md#run-and-record)).
+- **Markdown:** lowercase file stems under `docs/`. Every Markdown file starts with a contents list of its sections.
+
+## Where to look
+
+| Need | Guide |
 | --- | --- |
-| Navigation, getting started (build, flash, bring-up), attribution | [README](README.md) |
-| Members, pins and wiring, task budget, interfaces, coding rules | [team](docs/team.md) |
-| Requirements, deliverables, pending decisions (single register) | [project-specs](docs/project-specs.md) |
-| System coordination, shared-data rules | [architecture](docs/architecture.md) |
-| Data widths and scales (data table) | [project-specs](docs/project-specs.md) |
-| Test IDs, results, evidence | [testing](testing/README.md) |
-
-Subsystem guides are `docs/architecture/subsystem1.md`..`subsystem5.md` (S1 comms, S2 motion, S3 line/barcode/mission, S4 terrain, S5 obstacle); tribunal summary in `docs/additional-docs/tribunal1.md`. Code is in `app_program/subsystemN/`.
-
-## Content rules
-
-- Keep requirements, proposed behavior, implemented software and observations distinct. Do not invent course rules, calibrated limits or module ratings.
-- Leave `videos/README.md` byte-for-byte unchanged (its `docs/GETTING_STARTED.md` link is known-dangling after the docs housekeeping).
-- Lowercase Markdown filename stems under `docs/`.
-
-## Workflow
-
-One GitHub issue = one branch = one PR = one squash merge into `main`. Branch from current `main` as `<type>/<slug>` (`feat`, `fix`, `chore`, `docs`, `test`); commit with the same prefixes; stay in the issue's scope. Never commit to `main`, `uat` or `legacy-main`. Push, open a PR and merge only when the user asks; never force-push `main` or delete the user's branches. Never commit `config/wifi_secrets.h`, credentials, `*.elf`/`*.uf2`/`*.map` or videos.
-
-## Testing
-
-- Use `testing/` exclusively for active fixtures, definitions and evidence; no host fake-kernel runners.
-- Append real results and failures; never overwrite evidence. Preserve stable IDs and meanings; reserve retired IDs.
-- A build is not an executed firmware or physical pass. Record the exact committed revision with each result, as [testing](testing/README.md) specifies.
+| Build, flash, calibrate, MQTT laptop tool, bring-up order | [README](README.md) |
+| Requirements, minimum-bit change requirement, data table, pending decisions | [project-specs](docs/project-specs.md) |
+| Tasks, authority, shared data, fault policy, MQTT frame layouts | [architecture](docs/architecture.md) |
+| Members, pins, wiring, task budget, interfaces, coding rules | [team](docs/team.md) |
+| One subsystem in depth: S1 comms, S2 motion, S3 line/barcode/Mission, S4 terrain, S5 obstacle | `docs/architecture/subsystem1.md` .. `subsystem5.md`; code in `app_program/subsystemN/` |
+| Test IDs, how to record results, host tests | [testing](testing/README.md) |
+| Is the robot ready for a full run? | [mission-readiness checklist](testing/mission-readiness.md) |
+| Deferred Week 13 work and video recording | [week13-plan](docs/week13-plan.md) |
+| Week 8 Tribunal decisions | [tribunal1](docs/additional-docs/tribunal1.md) |

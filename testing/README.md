@@ -10,6 +10,12 @@ Keep subsystem cases/results in `subsystemN/TEST_LOG.md`, cross-subsystem cases 
 
 IDs never change or get reused, including retired template cases. Retired definitions remain in the relevant log; placeholder template rows are not observations.
 
+## Contents
+
+- [Run and record](#run-and-record)
+- [Preserved software evidence](#preserved-software-evidence)
+- [Planned integrated trials](#planned-integrated-trials)
+
 ## Run and record
 
 1. Define the case, steps, expected result and acceptance measurements before the run. Record wiring, power, calibration and build profile.
@@ -57,4 +63,4 @@ All remain pending until actual measurements/results are recorded. This retains 
 | T15 | Concurrent load: releases/WCET, missed deadlines, stop latency, queue occupancy and stack/memory usage |
 | T16 | Repeated complete-course rehearsal with navigation, humps, obstacles, telemetry and recovery |
 
-Acceptance targets/unknown values are owned by [project-specs](../docs/project-specs.md#pending-decisions), not inferred from a case name. Demonstration links belong in [videos](../videos/README.md) and the corresponding result row.
+Acceptance targets/unknown values are owned by [project-specs](../docs/project-specs.md#pending-decisions), not inferred from a case name. Demonstration links belong in the [video index](../docs/week13-plan.md#video-index) and the corresponding result row.

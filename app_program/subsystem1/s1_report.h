@@ -28,23 +28,9 @@ void s1_log_init(s1_event_log_t *log);
 void s1_log_push(s1_event_log_t *log, const mqtt_event_t *event);
 bool s1_log_pop(s1_event_log_t *log, mqtt_event_t *event);	/* oldest first */
 
-/* ---- Telemetry sources: plain values read by subsystem1.c ----------------- */
-typedef struct
-{
-    uint8_t mission_state;
-    uint8_t motion_status, motion_action;
-    uint8_t faults[MQTT_FAULT_BYTES];
-    uint16_t left_count, right_count;
-    uint8_t hump_count, hump_max_code;
-    bool hump_valid;
-    uint16_t front_mm;
-    bool front_valid;
-    uint8_t barcode_letter;	/* 0..25 or MQTT_NO_LETTER */
-    uint8_t barcode_action;
-} s1_sources_t;
-
-/* Copies the sources into a telemetry record, clamping to the field widths. */
-void s1_assemble(const s1_sources_t *sources, uint8_t sequence, mqtt_telemetry_t *out);
+/* Clamps a gathered telemetry record to its field widths in place, so the
+   encoder never rejects it. */
+void s1_clamp(mqtt_telemetry_t *t);
 
 /* ---- Mapping command -------------------------------------------------------
    install: called only when the robot is stopped; returns true when Mission

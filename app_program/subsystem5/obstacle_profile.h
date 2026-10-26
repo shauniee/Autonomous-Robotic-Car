@@ -52,8 +52,9 @@ typedef struct
 
 _Static_assert(S5_SCAN_STATE_COUNT == (1 << S5_SCAN_STATE_BITS), "scan state must fill 3 bits");
 
-/* Builds the profile; false (out unchanged) unless there are 5..S5_SCAN_CAPACITY
-   rays, all valid, finite and within the sweep limit. */
+/* Builds the profile from 5..S5_SCAN_CAPACITY rays; false (out unchanged)
+   when no ray echoed. Rays without an echo are skipped; a side whose
+   outermost ray has no echo is unknown and reports zero clearance. */
 bool s5_profile_build(const ObstacleRay *rays, unsigned count, ObstacleProfile *out);
 
 /* Fine angles around the nearest valid coarse ray (at most `max`, within the

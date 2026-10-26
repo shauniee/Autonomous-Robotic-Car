@@ -4,6 +4,17 @@ Single owner of: members, subsystem ownership, pins and wiring, task/kernel-obje
 
 A **subsystem** is one student's folder (may hold several tasks and peripherals); a **task** is a thread of execution; a **peripheral** is a hardware block. Only the owner edits a subsystem's folders; request the owner's review for other changes. All members join integration, debugging, system testing and demonstration.
 
+## Contents
+
+- [1. Members and subsystems](#1-members-and-subsystems)
+- [2. Pins](#2-pins)
+  - [Supply and wires](#supply-and-wires)
+  - [Wiring conflicts](#wiring-conflicts)
+  - [Physical header map (W/WH; header numbers differ from GPIO numbers)](#physical-header-map-wwh-header-numbers-differ-from-gpio-numbers)
+- [3. Task priorities and kernel object budget](#3-task-priorities-and-kernel-object-budget)
+- [4. Interfaces between subsystems](#4-interfaces-between-subsystems)
+- [5. Coding rules](#5-coding-rules)
+
 ## 1. Members and subsystems
 
 | # | Subsystem | Student ID | GitHub | Code | Tests | Guide |
@@ -14,7 +25,7 @@ A **subsystem** is one student's folder (may hold several tasks and peripherals)
 | 4 | **Darrius, Terrain:** IMU processing, motion classification, hump measurement | 2500360 | Galaxius03 | [app_program/subsystem4/](../app_program/subsystem4/) | [testing/subsystem4/](../testing/subsystem4/) | [subsystem4](architecture/subsystem4.md) |
 | 5 | **Jia Jing, Obstacle:** sonar, servo scanning, obstacle profiling | 2502825 | JJLOLLOL | [app_program/subsystem5/](../app_program/subsystem5/) | [testing/subsystem5/](../testing/subsystem5/) | [subsystem5](architecture/subsystem5.md) |
 
-Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [videos](../videos/README.md). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
+Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [week13-plan](week13-plan.md#4-video-recording). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
 
 **Current capabilities (software state, not physical proof).** S3 reads/calibrates two IR sensors and produces P steering; a separate line-following task uses the S2 request/stop/health interface (physical baseline pending). Optional S1 reporting gives telemetry, heartbeat and status-only subscription via the kernel service (S3 adapter pending). Barcode buffering, provisional A-Z decoding and mapping/event APIs are implemented but **boot disabled** without measured configuration and an encoder/GPIO provider. Pending: encoder feedback, physical barcode capture, IMU/sonar acquisition, full Mission/Safety. Compilation or retained software evidence does not establish a physical tracking run, barcode scan or verified motor operation.
 

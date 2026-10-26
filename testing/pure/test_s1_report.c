@@ -34,14 +34,15 @@ static void test_event_log(void)
 
 static void test_assemble(void)
 {
-    s1_sources_t s = {.mission_state = 40, .motion_status = 9, .motion_action = 200, .hump_max_code = 255,
-                      .front_mm = 60000, .front_valid = true, .barcode_letter = 26, .barcode_action = 12,
-                      .faults = {1, 2, 3, 4, 5}, .left_count = 0xABCD, .hump_count = 7, .hump_valid = true};
-    mqtt_telemetry_t t; uint8_t frame[MQTT_FRAME_MAX];
-    s1_assemble(&s, 9u, &t);
-    assert(t.sequence == 9 && t.mission_state == 15 && t.motion_status == 3 && t.motion_action == 63);
+    mqtt_telemetry_t t = {.sequence = 9, .mission_state = 40, .motion_status = 9, .motion_action = 200,
+                          .line_status = 9, .hump_max = 255, .front_mm = 60000, .front_valid = true,
+                          .barcode_letter = 26, .barcode_action = 12, .faults = {1, 2, 3, 4, 5, 6},
+                          .left_count = 0xABCD, .hump_count = 7, .hump_valid = true, .obstacle_width_mm = 65535};
+    uint8_t frame[MQTT_FRAME_MAX];
+    s1_clamp(&t);
+    assert(t.sequence == 9 && t.mission_state == 15 && t.motion_status == 3 && t.motion_action == 63 && t.line_status == 3);
     assert(t.hump_max == 127 && t.front_mm == 8191 && t.barcode_letter == MQTT_NO_LETTER && t.barcode_action == 7);
-    assert(t.faults[4] == 5 && t.left_count == 0xABCD && t.hump_count == 7 && t.hump_valid);	/* hump count and max carried */
+    assert(t.faults[5] == 6 && t.left_count == 0xABCD && t.hump_count == 7 && t.hump_valid && t.obstacle_width_mm == 65535);
     assert(mqtt_encode_telemetry(frame, sizeof frame, MQTT_TYPE_TELEMETRY, &t) == MQTT_LEN_TELEMETRY);	/* always encodable */
 }
 
@@ -67,18 +68,18 @@ static void test_mapping_flow(void)
     install_ok = true;
 
     /* Duplicate letters (valid header, bad content) never reach Mission. */
-    uint8_t dup[MQTT_LEN_MAPPING] = {0x14, 3, 0x20, 0x00, 0x00}; installs = 0;
+    uint8_t dup[MQTT_LEN_MAPPING] = {0x24, 3, 0x20, 0x00, 0x00}; installs = 0;
     assert(s1_handle_command(dup, sizeof dup, true, install, &ack, &send) == S1_COMMAND_MAPPING);
     assert(send && ack.sequence == 3 && ack.result == MQTT_ACK_INVALID && installs == 0u);
-    uint8_t reserved[MQTT_LEN_MAPPING] = {0x14, 4, 0x20, 0x88, 0x11};
+    uint8_t reserved[MQTT_LEN_MAPPING] = {0x24, 4, 0x20, 0x88, 0x11};
     assert(s1_handle_command(reserved, sizeof reserved, true, install, &ack, &send) == S1_COMMAND_MAPPING);
     assert(ack.result == MQTT_ACK_MALFORMED && installs == 0u);
 
     /* Not a command: no reply to guess at, nothing installed. */
-    uint8_t bad_version[MQTT_LEN_MAPPING] = {0x24, 1, 0x20, 0x88, 0x01};
+    uint8_t bad_version[MQTT_LEN_MAPPING] = {0x14, 1, 0x20, 0x88, 0x01};	/* schema v1 */
     assert(s1_handle_command(bad_version, sizeof bad_version, true, install, &ack, &send) == S1_COMMAND_IGNORED && !send);
     assert(s1_handle_command(f, len - 1u, true, install, &ack, &send) == S1_COMMAND_IGNORED && !send);
-    uint8_t ack_frame[MQTT_LEN_ACK] = {0x15, 1, 0};
+    uint8_t ack_frame[MQTT_LEN_ACK] = {0x25, 1, 0};
     assert(s1_handle_command(ack_frame, sizeof ack_frame, true, install, &ack, &send) == S1_COMMAND_IGNORED && !send);
     assert(s1_handle_command(f, 0u, true, install, &ack, &send) == S1_COMMAND_IGNORED && installs == 0u);
 

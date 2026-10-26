@@ -38,9 +38,15 @@
 
 /* Encoder: one wrapping count per wheel (ARCHITECTURE, Encoder contract). */
 #define ENC_COUNT_BITS		16u
-#define ENC_COUNT_MASK_VALUE	((1ul << ENC_COUNT_BITS) - 1ul)	/* PROVISIONAL (D03): width from counts/rev and longest segment */
+#define ENC_COUNT_MASK		(ENC_COUNT_BITS >= 32u ? 0xFFFFFFFFu : ((1u << (ENC_COUNT_BITS % 32u)) - 1u))	/* PROVISIONAL (D03): width from counts/rev and longest segment */
 #define LEFT_ENCODER_SIGN	1	/* PROVISIONAL (D03): polarity */
 #define RIGHT_ENCODER_SIGN	1	/* PROVISIONAL (D03): polarity */
+/* An encoder fault clears after this many valid counts (both wheels) with
+   no new invalid transition: 64 counts are 16 complete quadrature cycles,
+   enough to show both channels switching cleanly, and a short hand spin of
+   a wheel (about 1/6 revolution at the provisional ENC_COUNTS_PER_REV)
+   proves the encoder again. PROVISIONAL (D03): revisit with measured counts/rev. */
+#define ENC_FAULT_CLEAR_COUNTS	64u
 #define ENC_LEFT_A_PIN		28u
 #define ENC_LEFT_B_PIN		7u
 #define ENC_RIGHT_A_PIN		1u
@@ -130,11 +136,11 @@
 /* --- S4 terrain ---------------------------------------------------- */
 #define TERRAIN_PERIOD_MS	20u
 #define GY511_TIMEOUT_US	5000u
-#define ACCEL_MG_PER_LSB	0.001f	/* 1 mg/digit at +/- 2 g */
+#define ACCEL_MG_PER_LSB	0.002f	/* g per digit: 2 mg/digit at +/- 4 g, high resolution (LSM303DLHC) */
 #define LPF_ALPHA		0.20f	/* IIR filter weight; PROVISIONAL (D06) */
 #define PITCH_CLIMB_THRESH_DEG	3.5f	/* PROVISIONAL (D06) */
 #define PITCH_DESC_THRESH_DEG	-3.5f	/* PROVISIONAL (D06) */
-#define IMPACT_THRESHOLD_G	2.5f	/* PROVISIONAL (D06) */
+#define IMPACT_THRESHOLD_G	2.5f	/* PROVISIONAL (D06); must stay below the +/- 4 g range */
 #define HUMP_RESULT_BITS	7u	/* reported height: 7 bits, all-ones is the invalid code */
 #define HUMP_MM_PER_COUNT	1u	/* PROVISIONAL (D06): scale of the reported 7-bit result */
 #define HUMP_MIN_HEIGHT_MM	5u	/* PROVISIONAL (D06): smaller rises are not humps */
@@ -197,7 +203,7 @@ _Static_assert((BARCODE_EDGE_CAPACITY & (BARCODE_EDGE_CAPACITY - 1u)) == 0u,
 	"barcode edge ring capacity must be a power of two");
 _Static_assert(BARCODE_NARROW_MIN <= BARCODE_NARROW_MAX && BARCODE_NARROW_MAX < BARCODE_QUIET_COUNTS &&
 	BARCODE_QUIET_COUNTS <= BARCODE_REARM_COUNTS &&
-	BARCODE_MAX_ELEMENT_COUNTS > BARCODE_NARROW_MAX * 3u && BARCODE_REARM_COUNTS < ENC_COUNT_MASK_VALUE / 2u,
+	BARCODE_MAX_ELEMENT_COUNTS > BARCODE_NARROW_MAX * 3u && BARCODE_REARM_COUNTS < ENC_COUNT_MASK / 2u,
 	"barcode width limits out of order or beyond the encoder wrap");
 _Static_assert(BARCODE_WIDE_RATIO_MIN_MILLI > 1000u && BARCODE_WIDE_RATIO_MIN_MILLI <= BARCODE_WIDE_RATIO_MAX_MILLI &&
 	BARCODE_TOLERANCE_MILLI > 0u && BARCODE_TOLERANCE_MILLI < 500u &&
@@ -205,15 +211,13 @@ _Static_assert(BARCODE_WIDE_RATIO_MIN_MILLI > 1000u && BARCODE_WIDE_RATIO_MIN_MI
 	1000ull * (1000u + BARCODE_TOLERANCE_MILLI),
 	"narrow and wide classes overlap at the configured tolerance");
 _Static_assert(BARCODE_EVENT_CAPACITY >= 1u, "barcode event queue empty");
-_Static_assert(MOTOR_WRAP == 999u && MOTOR_DIV_8_4 == 100u,
-	"PWM wrap and divider define the 20 kHz motor frequency");
 _Static_assert(ENC_COUNT_BITS >= 8u && ENC_COUNT_BITS <= 32u, "encoder count width out of range");
 _Static_assert((LEFT_ENCODER_SIGN == 1 || LEFT_ENCODER_SIGN == -1) &&
 	(RIGHT_ENCODER_SIGN == 1 || RIGHT_ENCODER_SIGN == -1), "encoder sign must be +1 or -1");
 _Static_assert(MOTION_SPEED_MAX_MMPS > 0.0f && WHEEL_DIAMETER_MM > 0.0f &&
 	TRACK_WIDTH_MM > 0.0f && ENC_COUNTS_PER_REV > 0.0f, "motion geometry must be positive");
 _Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS, "stall limit must precede the action timeout");
-_Static_assert(MISSION_JUNCTION_MIN_COUNTS < MISSION_FINISH_COUNTS && MISSION_FINISH_COUNTS < ENC_COUNT_MASK_VALUE / 2u,
+_Static_assert(MISSION_JUNCTION_MIN_COUNTS < MISSION_FINISH_COUNTS && MISSION_FINISH_COUNTS < ENC_COUNT_MASK / 2u,
 	"junction and finish lengths must be ordered within the encoder wrap");
 _Static_assert(MISSION_FOLLOW_SPEED_MMPS * (1.0f + MAX_STEER) <= MOTION_SPEED_MAX_MMPS &&
 	MISSION_TURN_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS && MISSION_CLEAR_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS,

@@ -208,7 +208,7 @@ static void run_scan(uint8_t id)
     if (state != S5_SCAN_FAILED && state != S5_SCAN_CANCELLED)
     {
         ObstacleProfile built;
-        /* Missing rays (no echo) make the profile unknown: never assume clear space. */
+        /* No echo is unknown, never clear space: see s5_profile_build. */
         bool ok = s5_profile_build(rays, count, &built);
         if (ok && tk_loc_mtx(profile_mutex, RD_SNAPSHOT_LOCK_MS) >= E_OK)
         {

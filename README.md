@@ -2,6 +2,18 @@
 
 An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, hump measurement, obstacle avoidance and WiFi telemetry. Firmware uses micro T-Kernel 3.0 on the RP2040. See [project specifications](docs/project-specs.md) for required outcomes and [Getting started](#getting-started) for what runs today.
 
+## Contents
+
+- [Reading order](#reading-order)
+- [Repository structure](#repository-structure)
+- [Getting started](#getting-started)
+  - [Install tools](#install-tools)
+  - [Build profiles](#build-profiles)
+  - [Power and flashing](#power-and-flashing)
+  - [Calibration and local controls](#calibration-and-local-controls)
+  - [Wireless telemetry](#wireless-telemetry)
+  - [Bring-up order and project tasks](#bring-up-order-and-project-tasks)
+
 ## Reading order
 
 | Guide | Use it for |
@@ -11,6 +23,8 @@ An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, h
 | [Architecture](docs/architecture.md) | Tasks, authority, shared-data rules, MQTT protocol, subsystem navigation |
 | [Subsystem guides](docs/architecture/) | `subsystem1.md` comms, `subsystem2.md` motion, `subsystem3.md` line/barcode/mission, `subsystem4.md` terrain, `subsystem5.md` obstacle |
 | [Tribunal 1 summary](docs/additional-docs/tribunal1.md) | Week 8 defence, decisions and gaps |
+| [Mission readiness checklist](testing/mission-readiness.md) | Ordered physical checks before a full run |
+| [Week 13 plan](docs/week13-plan.md) | Deferred minimum-bit evidence and video recording |
 
 Each fact has one owning guide; other guides link to it. Assignment requirements, proposed design, implemented behavior and recorded results are distinct.
 
@@ -22,9 +36,9 @@ Each fact has one owning guide; other guides link to it. Assignment requirements
 | `build_make/` | Make profiles and generated firmware |
 | `config/` | Kernel/device configuration and ignored local credentials |
 | `kernel/`, `lib/`, `device/`, `include/`, `tools/` | Imported runtime, services, drivers, headers and conversion tools |
-| `docs/` | Three project guides, five subsystem guides and one additional document |
+| `docs/` | Project guides, five subsystem guides, the Week 13 plan and one additional document |
 | [testing/](testing/README.md) | Stable test IDs, result tables and saved evidence |
-| [videos/](videos/README.md) | Unlisted demonstration links |
+| `videos/` | Demonstration recordings (not committed); recording instructions in [week13-plan](docs/week13-plan.md#4-video-recording) |
 
 ## Getting started
 
@@ -105,7 +119,8 @@ Calibration is RAM-only; use the real mounting and surface. Enable the buzzer mu
 | --- | --- | --- |
 | Black | Stopped/Ready, release then press GP20 with both sensors over black; hold through capture | One chirp on completed capture |
 | White | Release then press GP20 over white; hold through capture | Two chirps valid pair; three rejection |
-| Start | Sensors on visible line, release then press GP20 | FOLLOW_LINE if calibration/data qualify; TEST still inhibits motors |
+| Map | `python3 scripts/mqtt_client.py map <L> <R> <S> <U> --broker <ip>` while stopped | `MAPPING ACK ... OK`; telemetry shows `mapped=yes` |
+| Start | Sensors on visible line, release then press GP20 | FOLLOW_LINE if mapped, calibration/data qualify and no start-blocking fault; otherwise refused and reported in telemetry. TEST still inhibits motors |
 | Stop | Press GP21 | Persistent stop; capture cancelled |
 | Reset | Clear cause, release GP21, freshly press GP20 | STOPPED to READY; valid calibration kept |
 | Restart | Release GP20, press again on a visible line | Fresh start; held buttons never restart |
@@ -121,15 +136,21 @@ Use a reachable private 2.4 GHz LAN; the lab broker allows anonymous access with
 3. Second terminal: `mosquitto_sub -h 127.0.0.1 -p 1883 -t 'robot/s3/#' -v`
 4. Flash wireless TEST on USB alone and confirm messages originate from the Pico. After physical readiness, use normal firmware on battery alone and recalibrate.
 
-Laptop helper (heartbeat freshness, read-only status):
+Laptop tool (binary protocol, schema v2):
 
 ```sh
 python3 -m pip install -r scripts/requirements-mqtt.txt
 python3 scripts/mqtt_client.py monitor --broker <broker-lan-ip>
-python3 scripts/mqtt_client.py status --broker <broker-lan-ip>
+python3 scripts/mqtt_client.py map A B C D --broker <broker-lan-ip>
+python3 scripts/mqtt_client.py snapshot --broker <broker-lan-ip>
 ```
 
-Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--port` for other configs. The helper subscribes before requesting status, ignores cached retained status as live, and times out without a live response. Firmware accepts only `{"request":"status"}` on `robot/s3/request`; start/stop/drive/calibration messages are rejected; status requests never change local control. Topic, schema, fields, limits and reconnect: [subsystem1](docs/architecture/subsystem1.md). Use validity/age flags; requested duty is not measured output; `motion_enabled` never overrides TEST inhibition; slow telemetry cannot prove brief recovery or stop timing; broker loss does not change healthy local control.
+- `monitor` prints every telemetry frame, event and acknowledgement as text, including active fault names and the speed/direction derived from encoder counts.
+- `map` sends the four mission-day letters in the order left, right, straight, U-turn and waits for the acknowledgement. The robot accepts it only while stopped, and a reboot clears it.
+- `snapshot` requests one telemetry frame.
+- `python3 scripts/mqtt_client.py --self-test` checks the decoder against the firmware golden vectors without a broker.
+
+Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--port` for other configs. Networking never starts, stops or drives the robot. Frame layouts: [architecture](docs/architecture.md#mqtt-binary-protocol-schema-version-2). The 500 ms stream cannot prove brief stop or recovery timing; broker loss does not change healthy local control.
 
 ### Bring-up order and project tasks
 
