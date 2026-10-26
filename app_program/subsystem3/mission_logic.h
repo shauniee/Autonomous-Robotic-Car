@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include "ir_tracking.h"
 #include "../subsystem5/obstacle_profile.h"
-#include "barcode_types.h"
+#include "barcode_decode.h"
 #include "../subsystem2/motion_control.h"
 #include "../common/robot_config.h"
 

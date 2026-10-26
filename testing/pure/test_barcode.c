@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../app_program/subsystem3/barcode_frame.h"
+#include "../../app_program/subsystem3/barcode_decode.h"
 #include "../../app_program/subsystem2/encoder_math.h"
 #include "../../app_program/common/robot_data.h"
 
