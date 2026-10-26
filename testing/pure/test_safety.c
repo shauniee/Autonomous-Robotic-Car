@@ -44,11 +44,10 @@ int main(void)
     assert(safety_causes(&in) == (SAFETY_CAUSE_STALE_LINE | SAFETY_CAUSE_STALE_MOTION));
 
     /* Reset needs a fresh press, no current cause and a serviced brake. */
-    assert(safety_reset_allowed(0u, true, true));
-    assert(!safety_reset_allowed(0u, true, false));
-    assert(!safety_reset_allowed(0u, false, true));
-    assert(!safety_reset_allowed(SAFETY_CAUSE_FAULT, true, true));
-    assert(!safety_reset_allowed(SAFETY_CAUSE_STOP_BUTTON, true, true));
+    assert(safety_reset_allowed(0u, true));
+    assert(!safety_reset_allowed(0u, false));
+    assert(!safety_reset_allowed(SAFETY_CAUSE_FAULT, true));
+    assert(!safety_reset_allowed(SAFETY_CAUSE_STOP_BUTTON, true));
 
     puts("safety: PASS");
     return 0;

@@ -25,8 +25,7 @@ typedef enum
     BARCODE_BAD_WIDTH,
     BARCODE_BAD_FRAME,
     BARCODE_BAD_SYMBOL,
-    BARCODE_REVERSED_TRAVEL,
-    BARCODE_CAPTURE_OVERFLOW
+    BARCODE_REVERSED_TRAVEL
 } barcode_result_t;
 
 typedef enum
@@ -49,7 +48,6 @@ typedef struct
 /* A decoded barcode with the encoder position where it ended. */
 typedef struct
 {
-    uint32_t sampled_us;	/* last black-to-white edge */
     uint32_t left_count, right_count;
     char symbol;
     barcode_action_t action;

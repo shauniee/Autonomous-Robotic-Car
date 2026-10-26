@@ -98,9 +98,10 @@ void ir_tracking_check_time(IrTracker *tracker, uint32_t now);
 void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
                         uint32_t now);
 IrReading ir_tracking_reading(IrRaw raw, const IrCalibration *calibration);
-IrLine ir_tracking_classify(IrReading reading, IrLine previous);
 IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now);
+#if APP_TEST
 const char *ir_tracking_line_name(IrLine line);
 const char *ir_tracking_capture_name(IrCaptureResult result);
+#endif
 
 #endif

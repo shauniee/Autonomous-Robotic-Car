@@ -4,8 +4,7 @@
 #include "ir_tracking.h"
 
 /* Portable data for S1 and future Mission consumers; no wire format implied.
-   Invalid normalized/error/steering fields are zero; use validity flags.
-   contrast is absolute ADC span, meaningful only with calibration_valid. */
+   Invalid normalized/error/steering fields are zero; use validity flags. */
 typedef struct
 {
     uint32_t sequence;
@@ -13,7 +12,6 @@ typedef struct
     uint32_t sample_age_ms;
     IrRaw raw;
     IrCalibration calibration;
-    IrRaw contrast;
     float normalized_left;
     float normalized_right;
     float error;

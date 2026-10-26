@@ -1,6 +1,5 @@
 #include "ir_snapshot.h"
 #include <stddef.h>
-#include <stdlib.h>
 
 void ir_snapshot_refresh(S3IrSnapshot *snapshot, uint32_t now)
 {
@@ -44,16 +43,6 @@ S3IrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t sequence,
     snapshot.calibration_valid =
         ir_tracking_reading(tracker->calibration.black,
                             &tracker->calibration).valid;
-    if (snapshot.calibration_valid)
-    {
-        /* Validated 12-bit references give absolute spans <= IR_ADC_MAX. */
-        snapshot.contrast.left = (uint16_t)abs(
-            (int)tracker->calibration.black.left -
-            tracker->calibration.white.left);
-        snapshot.contrast.right = (uint16_t)abs(
-            (int)tracker->calibration.black.right -
-            tracker->calibration.white.right);
-    }
     IrReading reading = ir_tracking_reading(tracker->raw,
         &tracker->calibration);
     snapshot.normalized_valid = snapshot.acquisition_valid && reading.valid &&

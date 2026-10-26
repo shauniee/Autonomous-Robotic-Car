@@ -174,7 +174,7 @@ static void capture_sample(IrTracker *tracker, IrRaw raw, uint32_t now)
     tracker->capture_kind = IR_CAPTURE_NONE;
 }
 
-IrLine ir_tracking_classify(IrReading reading, IrLine previous)
+static IrLine ir_tracking_classify(IrReading reading, IrLine previous)
 {
     if (!reading_valid(reading))
     {
@@ -251,6 +251,7 @@ IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
     return output;
 }
 
+#if APP_TEST
 const char *ir_tracking_line_name(IrLine line)
 {
     switch (line)
@@ -280,3 +281,4 @@ const char *ir_tracking_capture_name(IrCaptureResult result)
         default: return "waiting";
     }
 }
+#endif

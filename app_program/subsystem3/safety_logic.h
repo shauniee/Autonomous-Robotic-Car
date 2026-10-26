@@ -43,11 +43,11 @@ static inline uint32_t safety_causes(const SafetyInputs *in)
     return causes;
 }
 
-/* A reset needs a fresh local GP20 press, every cause cleared and the brake
-   serviced. It only releases the latch; it never starts motion. */
-static inline bool safety_reset_allowed(uint32_t current_causes, bool brake_acknowledged, bool fresh_press)
+/* A reset (requested by a fresh local GP20 press) needs every cause cleared
+   and the brake serviced. It only releases the latch; it never starts motion. */
+static inline bool safety_reset_allowed(uint32_t current_causes, bool brake_acknowledged)
 {
-    return fresh_press && current_causes == 0u && brake_acknowledged;
+    return current_causes == 0u && brake_acknowledged;
 }
 
 #endif /* SAFETY_LOGIC_H */
