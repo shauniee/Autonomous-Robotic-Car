@@ -2,6 +2,18 @@
 
 Condensed record of the Week 8 Tribunal 1 submission. Current requirements and open decisions live in [project-specs](../project-specs.md); owners and pins in [team](../team.md); coordination rules in [architecture](../architecture.md).
 
+## Contents
+
+- [Purpose](#purpose)
+- [Ownership](#ownership)
+- [What the team defended (Week 6 design, unchanged)](#what-the-team-defended-week-6-design-unchanged)
+- [What changed: minimum-bit requirement](#what-changed-minimum-bit-requirement)
+- [Issues and decisions](#issues-and-decisions)
+- [Risk register (Version B)](#risk-register-version-b)
+- [Assumption closure](#assumption-closure)
+- [Test plan (Version B, all Open)](#test-plan-version-b-all-open)
+- [Remaining gaps](#remaining-gaps)
+
 ## Purpose
 
 Defend the Week 6 architecture, justify changes, and show readiness for partial integration (Week 10 demo). The submission had three stages: pre-session AI ideation per buddy (Version A), a live Zoom-updated version (Version B), and a post-session AI gap check of A and B (Version C).

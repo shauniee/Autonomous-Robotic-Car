@@ -31,23 +31,16 @@ bool s1_log_pop(s1_event_log_t *log, mqtt_event_t *event)
 
 static uint8_t clamp8(unsigned v, unsigned max) { return (uint8_t)(v > max ? max : v); }
 
-void s1_assemble(const s1_sources_t *s, uint8_t sequence, mqtt_telemetry_t *out)
+void s1_clamp(mqtt_telemetry_t *t)
 {
-    *out = (mqtt_telemetry_t){0};
-    out->sequence = sequence;
-    out->mission_state = clamp8(s->mission_state, 15u);
-    out->motion_status = clamp8(s->motion_status, 3u);
-    out->motion_action = clamp8(s->motion_action, 63u);
-    for (unsigned i = 0u; i < MQTT_FAULT_BYTES; ++i) out->faults[i] = s->faults[i];
-    out->left_count = s->left_count;
-    out->right_count = s->right_count;
-    out->hump_count = s->hump_count;
-    out->hump_max = clamp8(s->hump_max_code, 127u);
-    out->hump_valid = s->hump_valid;
-    out->front_mm = (uint16_t)(s->front_mm > 8191u ? 8191u : s->front_mm);
-    out->front_valid = s->front_valid;
-    out->barcode_letter = (s->barcode_letter > 25u) ? MQTT_NO_LETTER : s->barcode_letter;
-    out->barcode_action = clamp8(s->barcode_action, 7u);
+    t->mission_state = clamp8(t->mission_state, 15u);
+    t->motion_status = clamp8(t->motion_status, 3u);
+    t->motion_action = clamp8(t->motion_action, 63u);
+    t->line_status = clamp8(t->line_status, 3u);
+    t->hump_max = clamp8(t->hump_max, 127u);
+    t->front_mm = (uint16_t)(t->front_mm > 8191u ? 8191u : t->front_mm);
+    t->barcode_letter = t->barcode_letter > 25u ? MQTT_NO_LETTER : t->barcode_letter;
+    t->barcode_action = clamp8(t->barcode_action, 7u);
 }
 
 s1_command_t s1_handle_command(const uint8_t *frame, unsigned length, bool robot_stopped,

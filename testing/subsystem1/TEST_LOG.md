@@ -2,6 +2,11 @@
 
 Owner: Shaun / communications. S1 now owns the optional latest S3 snapshot and bounded encoder, with one mutex and no task. Retired template IDs: S1-U01 cyclic handler, S1-U02 sleeping LED task, S1-U03 GP19 LED at 2 Hz. No template result was recorded. Heartbeat/status reporting and a status-only subscription are restored from the earlier S1 branch in the existing kernel service. No Pico hardware result is claimed.
 
+## Contents
+
+- [1. Test cases](#1-test-cases)
+- [2. Results](#2-results)
+
 ## 1. Test cases
 
 | ID | Scope | Method | Expected |

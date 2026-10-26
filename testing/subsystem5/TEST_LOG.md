@@ -2,6 +2,11 @@
 
 Owner: Jia Jing / obstacle. Inactive placeholder. Retired template definitions: S5-U01 task-context example; S5-U02 unfilled manual placeholder. No template result was recorded. No subsystem hardware test is claimed.
 
+## Contents
+
+- [Test cases](#test-cases)
+- [Results](#results)
+
 ## Test cases
 
 Project feature tests: PENDING until the subsystem is implemented.

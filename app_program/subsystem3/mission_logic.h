@@ -15,6 +15,7 @@
 #include "../subsystem5/obstacle_profile.h"
 #include "barcode_decode.h"
 #include "../subsystem2/motion_control.h"
+#include "../subsystem1/mqtt_frame.h"
 #include "../common/robot_config.h"
 
 typedef enum
@@ -50,6 +51,8 @@ typedef struct
 {
     uint32_t now_ms;
     bool start_pressed;		/* one debounced GP20 press this release */
+    bool mapped;		/* four barcode letters installed */
+    bool start_blocked;		/* a start-blocking fault bit is set */
     bool stop_down;		/* GP21 held */
     bool safety_latched;	/* Safety has latched a stop */
     bool motion_stopped;	/* Motion is in its stop latch */
@@ -80,6 +83,8 @@ typedef struct
     MotionCommand command;	/* written every release; STOP unless following or acting */
     bool stop_now;		/* call s2_stop() (once, on entry to STOP) */
     bool request_reset;		/* ask Safety to release the latch (never moves) */
+    bool start_refused;		/* a start press was refused: unmapped or faulted */
+    bool line_lost;		/* stopped because the line could not be recovered */
     bool start_scanner;
     bool stop_scanner;
     uint8_t event_kind;		/* mqtt_event_kind_t, 0 none: one event per release */
@@ -112,8 +117,6 @@ typedef struct
     uint32_t bypass_started_ms;
     uint32_t pass_baseline_mm;
     bool pass_baseline_set;
-    uint32_t obstacle_depth_counts;	/* encoder travel along the obstacle (the measured depth) */
-    bool bypass_scan_requested;
     motion_mode_t action_mode;	/* the Motion action being rewritten each release */
     float action_speed, action_target;
 } Mission;

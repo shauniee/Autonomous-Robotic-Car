@@ -17,15 +17,18 @@ int main(void)
     in.stop_button = true;
     assert(safety_causes(&in) == SAFETY_CAUSE_STOP_BUTTON);
 
-    /* An injected fault in each owner byte latches stop; Network never does. */
-    for (unsigned owner = 0u; owner < RD_OWNER_COUNT; ++owner) {
-        rd_fault_set((rd_owner_t)owner, 0x01u);
-        in = healthy();
-        in.fault_pending = rd_fault_stop_pending();
-        assert((safety_causes(&in) == SAFETY_CAUSE_FAULT) == (owner != RD_OWNER_NETWORK));
-        assert((safety_causes(&in) == 0u) == (owner == RD_OWNER_NETWORK));
-        rd_fault_clear((rd_owner_t)owner, 0x01u);
-    }
+    /* Only run-stopping bits latch a stop; report-only bits (no echo,
+       network) never do. The full policy table is in test_robot_data.c. */
+    rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
+    in = healthy(); in.fault_pending = rd_fault_stop_pending();
+    assert(safety_causes(&in) == SAFETY_CAUSE_FAULT);
+    rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
+    rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
+    rd_fault_set(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST);
+    in = healthy(); in.fault_pending = rd_fault_stop_pending();
+    assert(safety_causes(&in) == 0u);
+    rd_fault_clear(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
+    rd_fault_clear(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST);
 
     /* Freshness: at the limit is fresh, one past is stale, per producer. */
     in = healthy(); in.line_age_ms = SAFETY_STALE_MS;

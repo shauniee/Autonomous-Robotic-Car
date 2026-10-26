@@ -4,6 +4,15 @@ Owner Nicholas / 2501552. Retired template S3-U01 covered example statistics bou
 
 Host methods below describe historical checks whose runners are retired; saved results and firmware self-tests remain.
 
+## Contents
+
+- [1. Test cases](#1-test-cases)
+- [2. Results](#2-results)
+- [3. Current firmware run instructions](#3-current-firmware-run-instructions)
+- [4. Sensor-service build verification — 2026-10-09](#4-sensor-service-build-verification--2026-10-09)
+- [5. Test-source relocation verification — 2026-10-09](#5-test-source-relocation-verification--2026-10-09)
+- [6. Startup test stack correction — 2026-10-09](#6-startup-test-stack-correction--2026-10-09)
+
 ## 1. Test cases
 
 | ID | Test / requirement | Method / steps | Expected |

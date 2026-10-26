@@ -23,11 +23,19 @@ int main(void)
     ObstacleProfile keep = p;
     assert(!s5_profile_build(rays, 4u, &p) && p.closest_mm == keep.closest_mm);		/* too few rays */
     assert(!s5_profile_build(rays, S5_SCAN_CAPACITY + 1u, &p));				/* too many */
-    ObstacleRay bad[5]; for (int i = 0; i < 5; ++i) bad[i] = rays[i];
-    bad[2].valid = false;                       assert(!s5_profile_build(bad, 5u, &p));	/* invalid ray */
-    bad[2] = rays[2]; bad[2].range_mm = 0u;     assert(!s5_profile_build(bad, 5u, &p));	/* zero range */
-    bad[2] = rays[2]; bad[2].angle_deg = SERVO_MAX_DEG + 1; assert(!s5_profile_build(bad, 5u, &p));	/* beyond sweep */
+    ObstacleRay none5[5]; for (int i = 0; i < 5; ++i) { none5[i] = rays[i]; none5[i].valid = false; }
+    assert(!s5_profile_build(none5, 5u, &p) && p.closest_mm == keep.closest_mm);	/* no echo at all */
     assert(!s5_profile_build(0, 5u, &p) && !s5_profile_build(rays, 5u, 0));
+
+    /* No echo is unknown, never clear space: a skipped inner ray still profiles;
+       a silent outermost ray makes that side's clearance zero. */
+    ObstacleRay gap[5]; for (int i = 0; i < 5; ++i) gap[i] = rays[i];
+    gap[1].valid = false;
+    assert(s5_profile_build(gap, 5u, &p) && p.right_clearance_mm > 0u && p.left_clearance_mm > 0u);
+    gap[1] = rays[1]; gap[4].valid = false;					/* +60 (left) silent */
+    assert(s5_profile_build(gap, 5u, &p) && p.left_clearance_mm == 0u && p.right_clearance_mm > 0u);
+    gap[4] = rays[4]; gap[0].range_mm = 0u;					/* -60 (right) zero range */
+    assert(s5_profile_build(gap, 5u, &p) && p.right_clearance_mm == 0u && p.left_clearance_mm > 0u);
 
     /* Fine angles surround the nearest coarse ray, skip measured and out-of-sweep angles. */
     int16_t fine[4];

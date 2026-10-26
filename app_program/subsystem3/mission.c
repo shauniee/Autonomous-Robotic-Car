@@ -75,6 +75,8 @@ static void mission_task(INT stacd, void *exinf)
         MissionInputs in = {
             .now_ms = now,
             .start_pressed = event == BUTTON_EVENT_PRESSED,
+            .mapped = barcode_mapped(),
+            .start_blocked = rd_fault_start_blocked(),
             .stop_down = buttons.gp21_down,
             .safety_latched = safety_latched_causes() != 0u,
             .motion_stopped = !healthy || health.stopped,
@@ -113,13 +115,25 @@ static void mission_task(INT stacd, void *exinf)
         {
             s1_event((mqtt_event_kind_t)out.event_kind, out.event_arg, out.event_arg2);
         }
+        if (out.start_refused)
+        {
+            tm_printf((UB *)"[MISSION] start refused: %s (reported in telemetry)\n", in.mapped ? "fault set" : "no barcode mapping");
+        }
+        if (out.line_lost)
+        {
+            rd_fault_set(RD_OWNER_MISSION, RD_FAULT_LINE_LOST);
+        }
         if (out.request_reset)
         {
             safety_request_reset();
         }
-        if (out.start_scanner && !barcode_start())
+        if (out.start_scanner)
         {
-            tm_printf((UB *)"[MISSION] barcode scanner not started (unmapped or unavailable)\n");
+            rd_fault_clear(RD_OWNER_MISSION, RD_FAULT_LINE_LOST);
+            if (!barcode_start())
+            {
+                tm_printf((UB *)"[MISSION] barcode scanner unavailable\n");
+            }
         }
         if (out.stop_scanner)
         {

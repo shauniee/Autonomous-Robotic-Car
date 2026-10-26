@@ -18,14 +18,19 @@ bool barcode_init(void);
    while scanning or if the letters are invalid; true on success. */
 bool barcode_set_mapping(const uint8_t letters[4]);
 
-/* Refused (false) until a mapping is installed. Clears the ring, any partial
-   frame, queued events and the barcode fault bits. */
+/* True once a valid four-letter mapping is installed. */
+bool barcode_mapped(void);
+
+/* Mission only. Start is refused (false) until a mapping is installed; it
+   drops stale events and asks the S3 task to rearm. The S3 task applies
+   start/stop at its next release, resetting the frame and the barcode
+   overflow bits. */
 bool barcode_start(void);
 void barcode_stop(void);
 
-/* Task, once per release: drain the ring with a fixed edge budget, assemble
-   and decode frames, queue events, map capture overflow to the fault byte.
-   cancel (GP21) stops scanning. */
+/* S3 task, once per release: apply start/stop, drain the ring with a fixed
+   edge budget, assemble and decode frames, queue events, map overflow to the
+   Line fault byte. cancel (GP21 held) disables scanning while held. */
 void barcode_service(bool cancel);
 
 /* Exactly one consumer removes events. False when empty. */

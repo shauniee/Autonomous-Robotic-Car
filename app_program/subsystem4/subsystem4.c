@@ -8,7 +8,6 @@
 #include "../common/robot_time.h"
 #include "../subsystem1/subsystem1.h"
 #include "../subsystem2/drv_encoder.h"
-#include "../subsystem2/subsystem2.h"
 
 static rd_word_t s_terrain_word;	/* writer: the terrain task; layout in terrain_pack.h */
 
@@ -47,7 +46,6 @@ static void terrain_task(INT stacd, void *exinf) {
     if (!s_ctx.is_calibrated) {
         rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_CALIBRATION_FAILED);
     }
-    TerrainState prev_state = s_ctx.state;
     uint8_t prev_hump_count = s_ctx.hump_count;
 
     for (;;) {
@@ -68,15 +66,16 @@ static void terrain_task(INT stacd, void *exinf) {
             travel_origin = mean_now;
             terrain_algo_process(&s_ctx, &raw_accel, moved > 0 ? (uint32_t)moved : 0u);
 
-            /* Impact latches IMPACT; request one Safety Stop on the transition only */
-            if (s_ctx.state == TERRAIN_STATE_IMPACT && prev_state != TERRAIN_STATE_IMPACT) {
-                s2_stop();
+            /* Run-stopping fault: Safety latches the stop. */
+            if (s_ctx.state == TERRAIN_STATE_IMPACT) {
+                rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
+            } else {
+                rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
             }
             if (s_ctx.hump_count != prev_hump_count) {
                 prev_hump_count = s_ctx.hump_count;
                 s1_event(MQTT_EVENT_HUMP, s_ctx.last_hump_code, 0u);
             }
-            prev_state = s_ctx.state;
 
             s4_publish_word(terrain_pack(s_ctx.last_hump_code, s_ctx.max_hump_code, s_ctx.hump_count,
                                          (uint32_t)s_ctx.state, s_ctx.height_valid, s_ctx.is_calibrated));

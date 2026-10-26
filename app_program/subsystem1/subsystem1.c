@@ -6,11 +6,16 @@
 #include "../subsystem2/subsystem2.h"
 #include "../subsystem2/drv_encoder.h"
 #include "../subsystem3/mission.h"
+#include "../subsystem3/barcode.h"
+#include "../subsystem3/subsystem3.h"
 #include "../subsystem4/subsystem4.h"
 #include "../subsystem5/subsystem5.h"
 
+_Static_assert(MQTT_FAULT_BYTES == RD_OWNER_COUNT, "one telemetry fault byte per owner");
+
 static s1_event_log_t event_log;	/* guarded by DI: producers and Reporting share core 1 */
 static rd_word_t last_barcode;		/* writer: s1_event callers (Mission); letter | action << 5 */
+static rd_word_t last_depth_mm;		/* writer: s1_event callers (Mission); latest obstacle depth */
 
 ER subsystem1_init(void)
 {
@@ -32,30 +37,45 @@ void s1_event(mqtt_event_kind_t kind, uint8_t arg, uint16_t arg2)
     {
         rd_word_publish(&last_barcode, (uint32_t)(arg & 0x1Fu) | ((uint32_t)(arg2 & 0x7u) << 5));
     }
+    else if (kind == MQTT_EVENT_OBSTACLE)
+    {
+        rd_word_publish(&last_depth_mm, arg2);
+    }
     UW state;
     DI(state);
     s1_log_push(&event_log, &event);
     EI(state);
 }
 
-static void gather(s1_sources_t *s)
+static void gather(mqtt_telemetry_t *t, uint8_t sequence)
 {
     uint32_t feedback = s2_feedback(), terrain = s4_terrain_word(), front = s5_front_word();
     uint32_t barcode = rd_word_read(&last_barcode);
-    *s = (s1_sources_t){
+    S3IrSnapshot line = {0};
+    ObstacleProfile profile = {0};
+    bool have_line = s3_ir_copy(&line);
+    bool have_profile = s5_profile_copy(&profile) >= E_OK && profile.valid;
+    *t = (mqtt_telemetry_t){
+        .sequence = sequence,
         .mission_state = (uint8_t)mission_state(),
         .motion_status = (uint8_t)rd_motion_feedback_status(feedback),
         .motion_action = (uint8_t)rd_motion_feedback_action(feedback),
+        .line_status = (uint8_t)(have_line ? line.line : IR_LINE_UNKNOWN),
+        .mapped = barcode_mapped(),
         .left_count = (uint16_t)drv_encoder_count(ENCODER_LEFT),
         .right_count = (uint16_t)drv_encoder_count(ENCODER_RIGHT),
         .hump_count = (uint8_t)terrain_hump_count(terrain),
-        .hump_max_code = (uint8_t)terrain_max_code(terrain),
-        .hump_valid = terrain_height_valid(terrain),
+        .hump_max = (uint8_t)terrain_max_code(terrain),
+        /* The maximum is valid once any hump completed, whatever the latest climb. */
+        .hump_valid = terrain_hump_count(terrain) != 0u,
         .front_mm = (uint16_t)echo_range(front),
         .front_valid = echo_valid(front),
         .barcode_letter = (uint8_t)(barcode & 0x1Fu),
-        .barcode_action = (uint8_t)((barcode >> 5) & 0x7u)};
-    for (unsigned i = 0u; i < MQTT_FAULT_BYTES; ++i) s->faults[i] = rd_fault_get((rd_owner_t)i);
+        .barcode_action = (uint8_t)((barcode >> 5) & 0x7u),
+        .obstacle_width_mm = have_profile ? profile.width_mm : 0u,
+        .obstacle_depth_mm = (uint16_t)rd_word_read(&last_depth_mm)};
+    for (unsigned i = 0u; i < MQTT_FAULT_BYTES; ++i) t->faults[i] = rd_fault_get((rd_owner_t)i);
+    s1_clamp(t);
 }
 
 static bool install_mapping(const uint8_t letters[4])
@@ -71,11 +91,9 @@ static bool robot_stopped(void)
 
 static void post_snapshot(mqtt_type_t type, uint8_t *sequence)
 {
-    s1_sources_t sources;
     mqtt_telemetry_t telemetry;
     uint8_t frame[MQTT_FRAME_MAX];
-    gather(&sources);
-    s1_assemble(&sources, (*sequence)++, &telemetry);
+    gather(&telemetry, (*sequence)++);
     unsigned n = mqtt_encode_telemetry(frame, sizeof frame, type, &telemetry);
     if (n != 0u) (void)s1_bridge_post(frame, n);
 }
