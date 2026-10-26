@@ -87,7 +87,7 @@ The earlier architecture guide instead described the S4 lifecycle as an inactive
 - Height: accumulate vertical rise from calibrated pitch and encoder travel through the climb; map chassis rise to physical hump height with measured wheelbase/contact geometry and reference humps. Raw uncorrected double integration is not an established measurement.
 - Reject slip, incomplete windows, excess dynamic acceleration and baseline drift. Keep movement classification, hump detection, valid height and acquisition health separate.
 - I2C waits and retries are finite and must not block higher-priority control. Check for advancing sensor data; do not refresh a cached timestamp.
-- Component addresses, registers, scales and electrical limits: [team](../team.md#3-peripherals-and-hardware-reference).
+- Component addresses, registers, scales and electrical limits: manufacturer datasheets (not reproduced here).
 
 ## 7. Open items
 
