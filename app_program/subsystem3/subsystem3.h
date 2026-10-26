@@ -2,7 +2,7 @@
 #define SUBSYSTEM3_H
 
 #include "../app.h"
-#include "ir_snapshot.h"
+#include "ir_tracking.h"
 #include "barcode.h"
 #include "../common/robot_config.h"
 

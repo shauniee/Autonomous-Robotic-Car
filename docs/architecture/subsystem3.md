@@ -137,13 +137,11 @@ GPIO bank interrupts are shared and the USB SDK shim is not a general dispatcher
 
 | File | Role |
 | --- | --- |
-| `subsystem3.c/.h` | Initialization, task start, protected line-snapshot copy (`s3_ir_copy`); the supported external interface |
-| `task_s3.c/.h` | The Line/Barcode task (core 1; 10 ms input/feedback, 20 ms acquisition; missed releases skipped): ADC, calibration buttons, buzzer, barcode service |
+| `subsystem3.c/.h` | Initialization, task start, protected line-snapshot copy (`s3_ir_copy`); the supported external interface. Also holds the Line/Barcode task (core 1; 10 ms input/feedback, 20 ms acquisition; missed releases skipped): ADC, calibration buttons, buzzer, barcode service |
 | `drv_ir_tracking.c/.h` | ADC register access |
-| `ir_tracking.c/.h`, `ir_tracking_calibration.c/.h` | References, normalization, visibility, P guidance; GP20/GP21 presses to capture/cancel actions |
-| `ir_snapshot.c/.h` | Packages tracker output; invalidates stale copies |
+| `ir_tracking.c/.h` | References, normalization, visibility, P guidance; snapshot packaging that invalidates stale copies |
 | `drv_barcode.c/.h` | GP16 edge ISR and the timestamp ring |
-| `barcode_frame.c/.h`, `barcode_decode.c/.h`, `barcode_types.h` | Host-tested bar-width framing and Code 39 A-Z decode; portable types |
+| `barcode_decode.c/.h` | Host-tested bar-width framing and Code 39 A-Z decode; portable types |
 | `barcode.c/.h` | Scanner state, mapping, copied event queue; public API |
 | `mission.c/.h`, `mission_logic.c/.h`, `safety.c/.h`, `safety_logic.h` | Mission and Safety tasks; `*_logic` files are kernel-free and host-tested |
 

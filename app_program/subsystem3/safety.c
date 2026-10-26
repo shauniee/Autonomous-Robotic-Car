@@ -2,7 +2,7 @@
 #include <stdatomic.h>
 #include "subsystem3.h"
 #include "../subsystem2/subsystem2.h"
-#include "../common/drv_buttons.h"
+#include "../common/buttons.h"
 #include "../common/robot_time.h"
 
 static rd_word_t latched;		/* writer: Safety task */
@@ -57,7 +57,7 @@ static void safety_task(INT stacd, void *exinf)
             rd_word_publish(&latched, held | causes);
         }
         else if (reset_pending && (held != 0u || (health_read && health.stopped)) &&
-                 safety_reset_allowed(causes, health_read && health.brake_acknowledged, true))
+                 safety_reset_allowed(causes, health_read && health.brake_acknowledged))
         {
             if (s2_reset_stop() >= E_OK)
             {
