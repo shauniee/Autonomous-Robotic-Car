@@ -173,14 +173,6 @@ bool drv_gy511_init(void)
     if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG4_A, 0x88u))
         return false;
 
-    /* 5. Configure Magnetometer: 30 Hz, continuous mode */
-    if (!i2c0_write_reg(GY511_I2C_ADDR_MAG, REG_CRA_REG_M, 0x14u))
-        return false;
-    if (!i2c0_write_reg(GY511_I2C_ADDR_MAG, REG_CRB_REG_M, 0x20u))
-        return false;
-    if (!i2c0_write_reg(GY511_I2C_ADDR_MAG, REG_MR_REG_M, 0x00u))
-        return false;
-
     return true;
 }
 
@@ -201,60 +193,4 @@ bool drv_gy511_read_accel(Gy511RawAxes *out_raw)
     out_raw->y = (int16_t)((buf[3] << 8) | buf[2]) >> 4;
     out_raw->z = (int16_t)((buf[5] << 8) | buf[4]) >> 4;
     return true;
-}
-
-bool drv_gy511_read_mag(Gy511RawAxes *out_raw)
-{
-    if (out_raw == NULL)
-    {
-        return false;
-    }
-    uint8_t buf[6] = {0};
-    if (!i2c0_read_buffer(GY511_I2C_ADDR_MAG, REG_OUT_X_H_M, buf, 6))
-    {
-        return false;
-    }
-    out_raw->x = (int16_t)((buf[0] << 8) | buf[1]);
-    out_raw->z = (int16_t)((buf[2] << 8) | buf[3]);
-    out_raw->y = (int16_t)((buf[4] << 8) | buf[5]);
-    return true;
-}
-
-Gy511Result drv_gy511_poll_accel(Gy511RawAxes *out)
-{
-    uint8_t status;
-    if (out == NULL ||
-        !i2c0_read_buffer(GY511_I2C_ADDR_ACCEL, 0x27u, &status, 1u))
-    {
-        return GY511_ERROR;
-    }
-    if ((status & 0x80u) != 0u)
-    {
-        (void)drv_gy511_read_accel(out); /* Drain overrun; do not publish it. */
-        return GY511_ERROR;
-    }
-    if ((status & 8u) == 0u)
-    {
-        return GY511_WAIT;
-    }
-    return drv_gy511_read_accel(out) ? GY511_NEW : GY511_ERROR;
-}
-Gy511Result drv_gy511_poll_mag(Gy511RawAxes *out)
-{
-    uint8_t status;
-    if (out == NULL ||
-        !i2c0_read_buffer(GY511_I2C_ADDR_MAG, 0x09u, &status, 1u))
-    {
-        return GY511_ERROR;
-    }
-    if ((status & 1u) == 0u)
-    {
-        return GY511_WAIT;
-    }
-    if (!drv_gy511_read_mag(out) || out->x == -4096 || out->y == -4096 ||
-        out->z == -4096)
-    {
-        return GY511_ERROR;
-    }
-    return GY511_NEW;
 }

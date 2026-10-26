@@ -3,7 +3,7 @@
 #include "../common/robot_time_math.h"
 
 #define PI_F 3.14159265f
-#define COUNTS_PER_MM (ENC_COUNTS_PER_REV / (PI_F * WHEEL_DIAMETER_MM))
+#define COUNTS_PER_MM ENC_COUNTS_PER_MM
 #define LEFT 0
 #define RIGHT 1
 

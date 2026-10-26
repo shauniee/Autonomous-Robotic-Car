@@ -34,7 +34,7 @@ static void test_complete_hump(void)
     assert(ctx.state == TERRAIN_STATE_FLAT && ctx.height_valid && ctx.hump_count == 1u);
     uint32_t mm;
     assert(terrain_code_to_mm(ctx.last_hump_code, &mm) && mm >= 8u && mm <= 40u);
-    assert(ctx.max_hump_code == ctx.last_hump_code && ctx.hump_events[0] == ctx.last_hump_code);
+    assert(ctx.max_hump_code == ctx.last_hump_code);
 
     /* A second, smaller hump raises the count but not the maximum. */
     uint8_t first = ctx.last_hump_code;
@@ -58,16 +58,16 @@ static void test_incomplete_and_small_encounters_add_nothing(void)
     assert(ctx.hump_count == 0u);
 }
 
-static void test_saturation_and_ring(void)
+static void test_saturation_and_count(void)
 {
     calibrate();
     feed(10.0f, 60, 400u);				/* enormous rise saturates, never reaches the invalid code */
     feed(0.0f, 4, 4u); feed(-10.0f, 60, 4u); feed(0.0f, 30, 0u);
     assert(ctx.hump_count == 1u && ctx.last_hump_code == rd_invalid_code(HUMP_RESULT_BITS) - 1u);
-    for (unsigned i = 0; i < HUMP_EVENT_CAPACITY + 3u; ++i) {		/* ring overflow is defined: oldest overwritten */
+    for (unsigned i = 0; i < 11u; ++i) {
         feed(10.0f, 40, 4u); feed(0.0f, 4, 4u); feed(-10.0f, 40, 4u); feed(0.0f, 30, 0u);
     }
-    assert(ctx.hump_count == HUMP_EVENT_CAPACITY + 4u && ctx.hump_event_head == 4u);
+    assert(ctx.hump_count == 12u);
 }
 
 static void test_word_boundaries(void)
@@ -91,7 +91,7 @@ int main(void)
 {
     test_complete_hump();
     test_incomplete_and_small_encounters_add_nothing();
-    test_saturation_and_ring();
+    test_saturation_and_count();
     test_word_boundaries();
     puts("terrain: PASS");
     return 0;

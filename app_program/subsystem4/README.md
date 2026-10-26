@@ -8,9 +8,8 @@
 
 ## File Directory
 
-* **`subsystem4.h` / `subsystem4.c`**: Subsystem lifecycle (`init`, `start`), priority-inheritance mutex, and public snapshot reader (`s4_get_terrain`).
-* **`task_terrain.h` / `task_terrain.c`**: micro T-Kernel 50 Hz periodic task, calibration settling guard, collision emergency stop trigger (`s2_stop`), and telemetry emission.
-* **`terrain_algo.h` / `terrain_algo.c`**: 1st-order IIR filter ($\alpha=0.20$), trigonometric pitch & roll math, 5-state hump machine, kinematic height integration ($\sum \sin\theta \cdot \Delta d$), and impact detection.
+* **`subsystem4.h` / `subsystem4.c`**: Subsystem lifecycle (`init`, `start`), the terrain word (`s4_terrain_word`), and the micro T-Kernel 50 Hz periodic task: calibration settling guard, collision emergency stop trigger (`s2_stop`) and hump events.
+* **`terrain_algo.h` / `terrain_algo.c`**: 1st-order IIR filter ($\alpha=0.20$), trigonometric pitch math, 5-state hump machine, kinematic height integration ($\sum \sin\theta \cdot \Delta d$), and impact detection.
 * **`drv_gy511.h` / `drv_gy511.c`**: Low-level I2C0 driver for LSM303DLHC with 5 ms non-blocking bus timeouts.
 * **`subsystem4_test.c`**: On-target automated bench self-tests (`make TEST=1`).
 
@@ -19,4 +18,4 @@
 ## Integration Guide
 
 For the full architectural specification and integration roadmap with **Buddy 2 (Motion / Encoders)**, see:
-[`../../docs/BUDDY4_INTEGRATION_GUIDE.md`](../../docs/BUDDY4_INTEGRATION_GUIDE.md).
+[`../../docs/architecture/subsystem4.md`](../../docs/architecture/subsystem4.md).

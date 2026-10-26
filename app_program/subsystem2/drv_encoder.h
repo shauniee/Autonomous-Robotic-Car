@@ -21,12 +21,6 @@ bool drv_encoder_init(void);
 /* Current wrapped count: one aligned load, callable from any task or core. */
 uint32_t drv_encoder_count(encoder_wheel_t wheel);
 
-/* Travel of one wheel since `origin` (a count the caller stored earlier). */
-static inline uint32_t drv_encoder_travel(encoder_wheel_t wheel, uint32_t origin)
-{
-    return enc_travel(drv_encoder_count(wheel), origin);
-}
-
 /* Number of invalid quadrature transitions since boot (ISR is the only
    writer). Motion maps a change in this value to its encoder fault bit. */
 uint32_t drv_encoder_invalid_edges(void);

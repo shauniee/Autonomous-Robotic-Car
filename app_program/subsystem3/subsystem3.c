@@ -1,6 +1,5 @@
 #include "subsystem3.h"
 #include "safety.h"
-#include "subsystem3_internal.h"
 #include "task_s3.h"
 #include "mission.h"
 #include <stdatomic.h>

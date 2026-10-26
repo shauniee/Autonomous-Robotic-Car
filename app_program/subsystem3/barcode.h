@@ -17,13 +17,11 @@ bool barcode_init(void);
 /* Install four distinct letters A..Z, indexed by rd_map_action_t. Refused
    while scanning or if the letters are invalid; true on success. */
 bool barcode_set_mapping(const uint8_t letters[4]);
-bool barcode_mapped(void);
 
 /* Refused (false) until a mapping is installed. Clears the ring, any partial
    frame, queued events and the barcode fault bits. */
 bool barcode_start(void);
 void barcode_stop(void);
-bool barcode_running(void);
 
 /* Task, once per release: drain the ring with a fixed edge budget, assemble
    and decode frames, queue events, map capture overflow to the fault byte.
