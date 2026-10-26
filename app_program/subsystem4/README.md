@@ -6,6 +6,11 @@
 
 ---
 
+## Contents
+
+- [File Directory](#file-directory)
+- [Integration Guide](#integration-guide)
+
 ## File Directory
 
 * **`subsystem4.h` / `subsystem4.c`**: Subsystem lifecycle (`init`, `start`), the terrain word (`s4_terrain_word`), and the micro T-Kernel 50 Hz periodic task: calibration settling guard, collision emergency stop trigger (`s2_stop`) and hump events.

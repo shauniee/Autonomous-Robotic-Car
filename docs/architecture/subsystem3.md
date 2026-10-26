@@ -2,13 +2,37 @@
 
 **Owner:** Nicholas. Parent: [architecture](../architecture.md) (task table, authority, shared-data rules). Requirements and pending decisions: [project specs](../project-specs.md#pending-decisions). Pins and kernel budget: [team](../team.md). Motion interface: [subsystem 2](subsystem2.md). Telemetry: [subsystem 1](subsystem1.md). Implementation and physical-validation status is tracked in issue #62.
 
+## Contents
+
+- [1. Functionality](#1-functionality)
+- [2. Line tracking](#2-line-tracking)
+  - [2.1 Acquisition and calibration bounds (implemented in software)](#21-acquisition-and-calibration-bounds-implemented-in-software)
+  - [2.2 Calibration workflow](#22-calibration-workflow)
+  - [2.3 Normalization, classification and guidance](#23-normalization-classification-and-guidance)
+- [3. Barcode](#3-barcode)
+  - [3.1 Scope (implemented in software; disabled at boot)](#31-scope-implemented-in-software-disabled-at-boot)
+  - [3.2 States](#32-states)
+  - [3.3 Widths and measured configuration](#33-widths-and-measured-configuration)
+  - [3.4 Encoder and interrupt adapter (proposed integration)](#34-encoder-and-interrupt-adapter-proposed-integration)
+- [4. Interfaces and contract](#4-interfaces-and-contract)
+  - [4.1 Source modules](#41-source-modules)
+  - [4.2 Line snapshot API](#42-line-snapshot-api)
+  - [4.3 Barcode API](#43-barcode-api)
+  - [4.4 Interface to S2 (Motion)](#44-interface-to-s2-motion)
+- [5. Data and fault bits](#5-data-and-fault-bits)
+- [6. Mission and Safety (summary; owned by architecture)](#6-mission-and-safety-summary-owned-by-architecture)
+- [7. Status](#7-status)
+  - [7.1 Implemented (software only; no physical evidence)](#71-implemented-software-only-no-physical-evidence)
+  - [7.2 Proposed / not established](#72-proposed--not-established)
+- [8. Open items](#8-open-items)
+
 ## 1. Functionality
 
 S3 has three parts.
 
 - **Line tracking.** Acquires a complete pair of analogue IR readings (left GP26/ADC0, right GP27/ADC1), calibrates each sensor independently, classifies line visibility and computes memoryless proportional (P) guidance. Owns the calibration buttons and buzzer feedback.
 - **Barcode.** The third IR sensor's comparator DOUT (GP16) detects transitions in the adjacent barcode lane. Capture records ordered edge timestamps and encoder context; task-level decoding measures bars and spaces, validates a frame and emits one mapped navigation event. AOUT is disconnected.
-- **Mission/Safety.** Mission (priority 14, 20 ms) owns navigation decisions and mapping acceptance. Safety (priority 12, 10 ms) owns the GP21 stop latch, fault aggregation, freshness checks and stop authority independent of Mission and Reporting. Their behaviour is defined in [architecture](../architecture.md#subsystem-summaries) and summarised in section 6.
+- **Mission/Safety.** Mission (priority 14, 20 ms) owns navigation decisions and mapping acceptance. Safety (priority 12, 10 ms) owns the GP21 stop latch, the run-stopping fault check, freshness checks and stop authority independent of Mission and Reporting. Their behaviour is defined in [architecture](../architecture.md#subsystem-summaries) and summarised in section 6.
 
 Boundaries:
 
@@ -175,7 +199,8 @@ Declared in `barcode.h`; core-1 task context only; none is ISR-safe.
 | --- | --- |
 | `barcode_init()` | Claims GP16 on the dispatcher; false on failure |
 | `barcode_set_mapping(letters)` | Four distinct letters A-Z indexed by action; refused while scanning or if invalid |
-| `barcode_start()` / `barcode_stop()` | Start is refused until a mapping is installed; start clears ring, partial frame, queued events and barcode fault bits |
+| `barcode_mapped()` | True once four letters are installed; Mission's start gate and telemetry read it |
+| `barcode_start()` / `barcode_stop()` | Mission only. Start is refused until a mapping is installed and drops stale events; the S3 task applies start/stop at its next release, resetting the frame and the barcode overflow bits |
 | `barcode_service(cancel)` | Once per release: drain ring with a fixed edge budget, assemble and decode, queue events; GP21 (`cancel`) stops scanning |
 | `barcode_pop(event)` | Exactly one consumer (Mission); false when empty |
 
@@ -194,14 +219,13 @@ Owned by [subsystem 2](subsystem2.md); the S3-side expectations are:
 ## 5. Data and fault bits
 
 - The line snapshot (section 4.2) is the S3 data product; barcode status and events come from section 4.3. S1 maps typed fields into its own telemetry format and must not serialize native layout. The shared word-snapshot, mutex-copy and ISR-ring patterns are in [architecture](../architecture.md#shared-data-rules).
-- S3 owns one fault byte; Safety reads it each release. Example bits per [architecture](../architecture.md#fault-bitmask): IR invalid, line lost, barcode capture overflow, barcode event overflow. Bit positions are not specified in the sources merged here; Insufficient data to verify.
-- Barcode capture and event-queue overflow bits are latched in the S3 fault byte until the cause clears and `barcode_start()` is called.
+- The S3 task alone writes the Line fault byte: bit 0 IR invalid (no reading, or a calibrated reading out of range; blocks a start), bit 1 barcode capture overflow, bit 2 barcode event overflow (per run, report-only, cleared when the scanner stops). The Mission task writes its own byte: bit 0 line lost (report-only). Policy: [fault bitmask](../architecture.md#fault-bitmask).
 
 ## 6. Mission and Safety (summary; owned by architecture)
 
 [architecture](../architecture.md#subsystem-summaries) is authoritative; this is a pointer, not a second definition.
 
-- Mission is a single `switch` with one handler per state. Candidate states: Calibrating, Ready, FollowLine, Navigation, Scan, Bypass, Reacquire, Stopped, Fault, Complete (final list and bit width set in the Mission issue). A decoded command is held until the next cross junction, then executed as a Motion action. Line loss allows bounded recovery before stopping. Arbitration order: stop/fault, required-data freshness, obstacle, navigation, line following.
+- Mission is a single `switch` with one handler per state. Candidate states: Calibrating, Ready, FollowLine, Navigation, Scan, Bypass, Reacquire, Stopped, Fault, Complete (final list and bit width set in the Mission issue). A decoded command is held until the next cross junction, then executed as a Motion action. A GP20 start is refused until four letters are mapped and while a start-blocking fault is set. Line loss allows bounded recovery before stopping. Arbitration order: stop/fault, required-data freshness, obstacle, navigation, line following.
 - Mission writes one packed command every 20 ms (mode, speed and steering or target, action ID, source-sample acquisition time); Motion brakes on a sample older than the age limit (D07). Safety or GP21 sets the persistent stop flag; reset needs a fresh local GP20 press with the cause cleared.
 - Mission and Safety are proposed target design, not implemented here, except the bench policy below.
 

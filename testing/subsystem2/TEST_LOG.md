@@ -2,6 +2,11 @@
 
 Owner Mahesha / 2503973. Template example S2-U01/U02 are retired, not reused. Retired definitions: S2-U01 example values in 0..100; S2-U02 pool/slot bounds. No template result was recorded.
 
+## Contents
+
+- [Test cases](#test-cases)
+- [Results](#results)
+
 ## Test cases
 
 | ID | Test / requirement | Method / steps | Expected |

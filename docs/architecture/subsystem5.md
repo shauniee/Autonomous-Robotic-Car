@@ -2,6 +2,14 @@
 
 Owner: Jia Jing. Parent: [architecture](../architecture.md#subsystem-summaries); pins and peripherals in [team](../team.md); pending decisions in [project-specs](../project-specs.md#pending-decisions). Motion partner: [subsystem2](subsystem2.md).
 
+## Contents
+
+- [Functionality](#functionality)
+- [Interfaces and contract](#interfaces-and-contract)
+- [Data and fault bits](#data-and-fault-bits)
+- [Status](#status)
+- [Open items](#open-items)
+
 ## Functionality
 
 - A servo (GP12, 50 Hz PWM) points the ultrasonic sensor; echo pulse timing gives range at a commanded angle. The echo ISR timestamps edges; the Obstacle task triggers (nominally every 60 ms) and processes results.
@@ -20,11 +28,11 @@ Owner: Jia Jing. Parent: [architecture](../architecture.md#subsystem-summaries);
 | `s5_profile_copy(&p)` | Copy under mutex; `E_OK` when the last scan completed, `E_OBJ` if none yet |
 | `s5_side_watch(on, angle_deg)` / `s5_side_word()` | Hold servo at an angle (positive left) and range every release for the bypass leg; turning off recentres. Same word layout as front |
 
-`ObstacleProfile`: closest angle and range, width, left/right clearance, nearest point forward/left of the reference point, valid flag. A profile is built only from 5..9 rays that are all valid and within the sweep limit; any missing ray (no echo) leaves the profile unknown.
+`ObstacleProfile`: closest angle and range, width, left/right clearance, nearest point forward/left of the reference point, valid flag. A profile is built from 5..9 rays; rays without an echo are skipped and at least one must echo. If a side's outermost ray has no echo, that side is unknown and reports zero clearance, so Mission bypasses on the measured side or stops.
 
 Behaviour rules:
 
-- Forward monitoring: invalid, missing or stale range inhibits movement.
+- Forward monitoring: only a fresh valid range at or below the stop distance triggers the obstacle response. Missing or stale range is reported (no-echo bit) and never treated as clear space or as an obstacle.
 - Scan: wait for fresh measured stationary feedback, set angle, settle without blocking, trigger, wait for echo or bounded timeout, process; coarse readings guide fine angles; restore centre and acquire a new valid front reading before any bypass. Cancellation, fault and deadline apply to every phase.
 - Full request or duplicate ID reports failure; retries and whole-scan duration are finite.
 - Profile is compared against measured car width, stopping distance, clearance margin and permitted course boundary; only a supported path authorizes a bounded bypass, otherwise stop.
@@ -55,7 +63,7 @@ The diagram is representative; cancel, deadline and fault guards apply in every 
 
 ## Data and fault bits
 
-- Obstacle fault byte: bit 0 no echo, bit 1 servo fault (proposed positions, awaiting owner confirmation).
+- Obstacle fault byte: bit 0 no echo (proposed position, awaiting owner confirmation). Report-only: open space gives no echo, so it neither blocks a start nor stops a run ([fault bitmask](../architecture.md#fault-bitmask)). The unused servo-fault bit was removed because nothing detected it.
 - Telemetry carries front range mm (13 bits plus valid); obstacle width is an event argument (mm) per [subsystem1](subsystem1.md).
 - Sonar conversion constants and servo limits live in `robot_config.h`; hardware limits are in the project specs and team pin tables. Calibration values are pending.
 

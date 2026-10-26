@@ -4,13 +4,36 @@ Target design for `main`. It implements the requirements and change requirement 
 
 Related: pins, wiring and task budget in [team](team.md); data widths and scales in [project-specs](project-specs.md); subsystem detail in [S1](architecture/subsystem1.md), [S2](architecture/subsystem2.md), [S3](architecture/subsystem3.md), [S4](architecture/subsystem4.md), [S5](architecture/subsystem5.md).
 
+## Contents
+
+- [Tasks](#tasks)
+- [Authority](#authority)
+- [Shared-data rules](#shared-data-rules)
+  - [Fault bitmask](#fault-bitmask)
+- [Motion command contract](#motion-command-contract)
+- [Encoder contract](#encoder-contract)
+- [Subsystem summaries](#subsystem-summaries)
+  - [S1 Communications (subsystem1)](#s1-communications-subsystem1)
+  - [S2 Motion (subsystem2)](#s2-motion-subsystem2)
+  - [S3 Line, barcode and Mission (subsystem3)](#s3-line-barcode-and-mission-subsystem3)
+  - [S4 Terrain (subsystem4)](#s4-terrain-subsystem4)
+  - [S5 Obstacle and bypass (subsystem5, with Mission)](#s5-obstacle-and-bypass-subsystem5-with-mission)
+- [Time](#time)
+- [Post-Tribunal decisions](#post-tribunal-decisions)
+- [MQTT binary protocol, schema version 2](#mqtt-binary-protocol-schema-version-2)
+  - [Telemetry and snapshot reply (23 bytes)](#telemetry-and-snapshot-reply-23-bytes)
+  - [Event (11 bytes)](#event-11-bytes)
+  - [Mapping, acknowledgement, snapshot request](#mapping-acknowledgement-snapshot-request)
+  - [Golden vectors](#golden-vectors)
+  - [Sizes against the baseline](#sizes-against-the-baseline)
+
 ## Tasks
 
 All application tasks run on core 1. The kernel WiFi/lwIP/MQTT task (`cyw43_utk_task`, priority 4) runs on core 0. Smaller number = higher priority.
 
 | Task | Owner | Priority | Release | Role |
 | --- | --- | --- | --- | --- |
-| Safety | Nicholas | 12 | 10 ms | GP21 stop latch, fault aggregation, freshness checks, stop authority |
+| Safety | Nicholas | 12 | 10 ms | GP21 stop latch, run-stopping fault check, freshness checks, stop authority |
 | Motion | Mahesha | 13 | 20 ms, or woken by stop | Sole motor writer; encoders, wheel PID, distance/turn actions |
 | Mission | Nicholas | 14 | 20 ms | Navigation decisions, state machine, mapping acceptance |
 | Line/Barcode | Nicholas | 15 | ADC 20 ms; GP16 edge IRQ | IR line snapshot, barcode capture and decode |
@@ -21,7 +44,7 @@ All application tasks run on core 1. The kernel WiFi/lwIP/MQTT task (`cyw43_utk_
 ## Authority
 
 - Motion alone writes motor PWM.
-- Mission owns navigation decisions and accepts mapping changes, only while stopped.
+- Mission owns navigation decisions and accepts mapping changes, only while stopped. It refuses a start until four letters are mapped and while a start-blocking fault is set.
 - Safety holds stop authority independent of Mission and Reporting.
 - Line/Barcode, Terrain and Obstacle provide sensor evidence and never write motors.
 - Networking has no movement authority; network loss never stops otherwise healthy local autonomy.
@@ -35,7 +58,7 @@ flowchart TD
     Mission -->|motion command| Motion
     Motion -->|feedback word, encoder counts| Mission & LB & Terrain & Obstacle
     Safety -->|stop event flag| Motion
-    LB & Terrain & Obstacle & Motion -->|own fault byte| Safety
+    LB & Terrain & Obstacle & Motion -->|own fault byte| Safety & Mission
     Mission & Motion & LB & Terrain & Obstacle -->|snapshots| Reporting
     Reporting <-->|binary frames| Kernel[Kernel MQTT adapter, core 0]
     Kernel -->|mapping command| Reporting -->|mapping| Mission
@@ -53,17 +76,26 @@ No other mechanism: no custom PRIMASK code, no `volatile` as synchronisation, no
 
 ### Fault bitmask
 
-One byte per owner; each owner sets and clears only its own bits, so no two writers share a storage unit. Bit positions are in the data table in [project-specs](project-specs.md).
+One byte per owner task; each owner sets and clears only its own bits, so no two writers share a storage unit. Every bit is reported over MQTT so the operator can correct it before the next attempt. Two masks in `robot_data.c` decide what else a bit does:
 
-| Byte owner | Example bits |
-| --- | --- |
-| Motion (S2) | motor stall, encoder fault |
-| Line/Barcode and Mission (S3) | IR invalid, line lost, barcode capture overflow, barcode event overflow |
-| Terrain (S4) | IMU fault, calibration failed, impact |
-| Obstacle (S5) | no echo, servo fault |
-| Network (kernel task, core 0) | Wi-Fi lost, broker lost (report-only; never stops motion) |
+- **Blocks start:** Mission refuses a GP20 start while the bit is set.
+- **Stops run:** Safety latches a stop when the bit is set; the latch holds until a GP20 reset with every cause cleared.
 
-Safety reads every byte each release, latches stop for motion-relevant bits and publishes the combined mask for telemetry. Simultaneous faults stay independently visible.
+| Byte (writer) | Bit | Blocks start | Stops run | Why |
+| --- | --- | --- | --- | --- |
+| Motion (S2 task) | 0 motor stall | yes | yes | Driving into a stall can damage the car |
+| | 1 encoder fault | yes | yes | Turns and distances become wrong; clears after 64 valid counts (spin a wheel by hand) |
+| Line (S3 task) | 0 IR invalid | yes | no | No usable line reading; Mission stops itself if it cannot follow |
+| | 1 barcode capture overflow | no | no | Per run; cleared when the scanner stops |
+| | 2 barcode event overflow | no | no | Per run; cleared when the scanner stops |
+| Terrain (S4 task) | 0 IMU fault | yes | no | Hump data missing mid-run is reported, not a hazard |
+| | 1 IMU calibration failed | yes | no | As above |
+| | 2 impact | yes | yes | Collision |
+| Obstacle (S5 task) | 0 no echo | no | no | Open space gives no echo; never treated as clear space |
+| Mission (Mission task) | 0 line lost | no | no | Mission has already stopped; cleared at the next start |
+| Network (kernel task, core 0) | 0 Wi-Fi lost, 1 broker lost | no | no | Networking never starts or stops the robot |
+
+Bit positions are PROVISIONAL until owners confirm them (#28).
 
 ## Motion command contract
 
@@ -83,7 +115,8 @@ Safety reads every byte each release, latches stop for motion-relevant bits and 
 
 - The kernel adapter (`lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c`) only connects, reconnects, publishes byte frames and hands received frames to Reporting. No application logic; no application headers beyond one S1 bridge header.
 - Three topics: telemetry (binary, every 500 ms and on snapshot request), command (binary snapshot request and mapping), status (retained online/offline last will and mapping acknowledgement).
-- Wire format: [MQTT binary protocol](#mqtt-binary-protocol-schema-version-1). Native structs are never sent.
+- Wire format: [MQTT binary protocol](#mqtt-binary-protocol-schema-version-2). Native structs are never sent.
+- Laptop side: `scripts/mqtt_client.py` (monitor, map, snapshot); usage in [README](../README.md#wireless-telemetry).
 - Mapping acknowledgement `{sequence, result}` means the complete mapping was validated and installed; receipt alone is not an acknowledgement.
 
 ### S2 Motion ([subsystem2](architecture/subsystem2.md))
@@ -94,19 +127,19 @@ Sole motor writer, encoder counts, wheel PID, distance/turn actions, stop handli
 
 - **Line.** Two analogue IR channels (GP26/GP27), calibrated black/white, published as one word snapshot: normalised readings, line state, validity.
 - **Barcode.** The GP16 edge ISR pushes edge time and encoder position into a ring. The task measures bar widths from encoder travel, decodes Code 39 A-Z in either direction and queues decoded events (small fixed depth; overflow sets a fault bit).
-- **Mapping.** Four 5-bit letters (left, right, straight, U-turn). Boot state is unmapped.
+- **Mapping.** All 26 Code 39 patterns are compiled in; only the four letter-to-action assignments (left, right, straight, U-turn) arrive over MQTT. Boot state is unmapped, and Mission refuses a start until a mapping is installed.
 - **Mission.** One `switch` on state with one handler per state. Candidate states: Calibrating, Ready, FollowLine, Navigation, Scan, Bypass, Reacquire, Stopped, Fault, Complete; the final list and bit width are set in the Mission issue. A decoded barcode command is held until the next cross junction, then executed as a Motion action. Line loss allows a bounded recovery before stopping. Arbitration order: stop/fault, required-data freshness, obstacle, navigation, line following.
 
 ### S4 Terrain ([subsystem4](architecture/subsystem4.md))
 
 - Calibrate accelerometer bias while stationary at start.
 - Height accumulates sin(pitch) times encoder travel through each climb, crest and descent. Working values are 16-bit fixed point; reported height is packed to 7 bits with a defined scale (D06) and an invalid code.
-- Only a valid completed encounter adds a hump event and may update the maximum. An impact sets an S4 fault bit.
+- Only a valid completed encounter adds a hump event and may update the maximum. An impact sets the run-stopping impact bit while the shock lasts; a hump in progress is abandoned.
 
 ### S5 Obstacle and bypass ([subsystem5](architecture/subsystem5.md), with Mission)
 
 - Forward range is a word snapshot; no echo means unknown, never clear space.
-- When an obstacle blocks the line, Motion stops and Obstacle performs a stationary coarse scan (five rays) and a focused fine scan, producing location, width, closest point and left/right clearance.
+- When an obstacle blocks the line, Motion stops and Obstacle performs a stationary coarse scan (five rays) and a focused fine scan, producing location, width, closest point and left/right clearance. A ray without an echo is skipped; if a side's outermost ray has no echo, that side is unknown and reports zero clearance, so the bypass takes the measured side or stops.
 - Side-watch bypass: turn toward the side with more clearance, drive an offset leg, turn parallel, then drive the parallel leg with the servo held toward the obstacle. A range jump marks pass-by; encoder travel along the leg gives obstacle depth. Turn back, return the offset and reacquire the original line using expected heading and two fresh line observations. A second obstacle during bypass stops the robot.
 
 ## Time
@@ -126,84 +159,90 @@ Agreed 2026-10-25 as change type "Simplified". Each keeps the Tribunal's intent 
 | Encoder distance reset at every barcode | Fixed-width wrapping counts with per-consumer origins | A missed barcode leaves the interval unbounded, and a shared reset breaks other consumers (Tribunal Version C gap 3). |
 | Mutex-protected copies for every snapshot | One-word snapshots by single store/load; mutex copies only above 32 bits | Atomic on RP2040 across cores, no lock time, no torn reads. Meets risks R1 and R4 with a single writer. |
 
-## MQTT binary protocol, schema version 1
+## MQTT binary protocol, schema version 2
 
-Implemented by `app_program/subsystem1/mqtt_frame.[ch]`, tested by `testing/pure/test_mqtt_frame.c`. Field widths follow the data table in [project-specs](project-specs.md); rows pending there carry provisional widths here and change only through the data-contract review (#28).
+Implemented by `app_program/subsystem1/mqtt_frame.[ch]`, tested by `testing/pure/test_mqtt_frame.c`; the laptop decoder `scripts/mqtt_client.py` checks the same golden vectors (`--self-test`). Field widths follow the data table in [project-specs](project-specs.md); rows pending there carry provisional widths here and change only through the data-contract review (#28). Version 2 added line status, the mapped flag, the Mission fault byte and obstacle width/depth; a version 1 frame is rejected.
+
+Topics (root `robot/s3`, set in `config/wifi_secrets.h`): `<root>/telemetry` carries every robot-to-PC frame, `<root>/request` carries mapping and snapshot requests, `<root>/status` is the retained online/offline text.
 
 Rules for every frame:
 
 - Little-endian multi-byte fields, written with explicit masks and shifts, never by copying a struct.
-- Byte 0: bits 7-4 version (1), bits 3-0 type.
+- Byte 0: bits 7-4 version (2), bits 3-0 type.
 - Length is exact for the type. A receiver rejects a wrong length, version or type, any set reserved bit and any out-of-range field. Nothing is partially accepted.
 - Networking never drives, starts or stops the robot. The only command that changes robot state is the mapping, and only while stopped.
+- Speed and movement direction are not sent: the laptop derives them from successive encoder counts.
 
 | Type | Value | Direction | Length (bytes) |
 | --- | --- | --- | --- |
-| Telemetry | 1 | robot to PC, every 500 ms | 18 |
+| Telemetry | 1 | robot to PC, every 500 ms | 23 |
 | Event | 2 | robot to PC | 11 |
-| Snapshot reply | 3 | robot to PC, answers a request; body as telemetry | 18 |
+| Snapshot reply | 3 | robot to PC, answers a request; body as telemetry | 23 |
 | Mapping | 4 | PC to robot | 5 |
 | Acknowledgement | 5 | robot to PC | 3 |
 | Snapshot request | 6 | PC to robot | 2 |
 
-### Telemetry and snapshot reply (18 bytes)
+### Telemetry and snapshot reply (23 bytes)
 
 | Byte | Bits | Field | Range |
 | --- | --- | --- | --- |
-| 0 | 7-0 | version and type | `0x11` telemetry, `0x13` reply |
+| 0 | 7-0 | version and type | `0x21` telemetry, `0x23` reply |
 | 1 | 7-0 | sequence | 0-255, wraps |
 | 2 | 3-0 | mission state | 0-15 |
 | 2 | 5-4 | motion status | 0 IDLE, 1 RUNNING, 2 DONE, 3 FAILED |
-| 2 | 7-6 | reserved | 0 |
+| 2 | 7-6 | line status | 0 unknown, 1 visible, 2 lost, 3 broad black |
 | 3 | 5-0 | motion action ID | 0-63 |
-| 3 | 7-6 | reserved | 0 |
-| 4-8 | 7-0 each | fault bytes: Motion, Line/Barcode, Terrain, Obstacle, Network | owner bit positions |
-| 9-10 | 15-0 | left encoder count | wrapped, `ENC_COUNT_BITS` wide |
-| 11-12 | 15-0 | right encoder count | wrapped |
-| 13 | 7-0 | hump count | 0-255 saturating |
-| 14 | 6-0 | maximum hump height code | 7-bit result, scale D06 |
-| 14 | 7 | hump height valid | |
-| 15-16 | 12-0 | front range, mm | 0-8190; 8191 invalid |
-| 15-16 | 13 | front range valid | no echo is not clear space |
-| 15-16 | 15-14 | reserved | 0 |
-| 17 | 4-0 | last decoded barcode letter | 0-25 (A-Z), 31 none |
-| 17 | 7-5 | action it maps to | 0 unmapped, 1 left, 2 right, 3 straight, 4 U-turn |
+| 3 | 6 | mapped | four letters installed |
+| 3 | 7 | reserved | 0 |
+| 4-9 | 7-0 each | fault bytes: Motion, Line, Terrain, Obstacle, Mission, Network | [fault bitmask](#fault-bitmask) |
+| 10-11 | 15-0 | left encoder count | wrapped, `ENC_COUNT_BITS` wide |
+| 12-13 | 15-0 | right encoder count | wrapped |
+| 14 | 7-0 | hump count | 0-255 saturating |
+| 15 | 6-0 | maximum hump height code | 7-bit result, scale D06 |
+| 15 | 7 | maximum valid | set once any hump completed |
+| 16-17 | 12-0 | front range, mm | 0-8190; 8191 invalid |
+| 16-17 | 13 | front range valid | no echo is not clear space |
+| 16-17 | 15-14 | reserved | 0 |
+| 18 | 4-0 | last decoded barcode letter | 0-25 (A-Z), 31 none |
+| 18 | 7-5 | action it maps to | 0 unmapped, 1 left, 2 right, 3 straight, 4 U-turn |
+| 19-20 | 15-0 | latest obstacle width, mm | 0 none |
+| 21-22 | 15-0 | latest obstacle depth, mm | 0 none |
 
 ### Event (11 bytes)
 
 | Byte | Field |
 | --- | --- |
-| 0 | version and type, `0x12` |
-| 1 | bits 3-0 kind: 1 barcode, 2 hump, 3 obstacle, 4 turn or segment; bits 7-4 reserved 0 |
+| 0 | version and type, `0x22` |
+| 1 | bits 3-0 kind: 1 barcode, 2 hump, 3 obstacle, 4 turn; bits 7-4 reserved 0 |
 | 2 | arg: letter (barcode), height code (hump), action (turn) |
 | 3-4 | time, low 16 bits of kernel milliseconds |
 | 5-6 | left encoder count at the event |
 | 7-8 | right encoder count at the event |
-| 9-10 | arg2: action (barcode), width mm (obstacle) |
+| 9-10 | arg2: action (barcode), depth mm (obstacle) |
 
 ### Mapping, acknowledgement, snapshot request
 
-- **Mapping (5 bytes):** byte 0 `0x14`, byte 1 sequence, bytes 2-4 a 24-bit little-endian value; bits 4-0, 9-5, 14-10 and 19-15 are the letters for left, right, straight and U-turn (A=0 .. Z=25); bits 23-20 reserved 0. The four letters are distinct.
-- **Acknowledgement (3 bytes):** byte 0 `0x15`, byte 1 the sequence answered, byte 2 the result: 0 installed, 1 busy (robot not stopped), 2 invalid letters, 3 malformed frame. The acknowledgement follows installation by Mission.
-- **Snapshot request (2 bytes):** byte 0 `0x16`, byte 1 sequence.
+- **Mapping (5 bytes):** byte 0 `0x24`, byte 1 sequence, bytes 2-4 a 24-bit little-endian value; bits 4-0, 9-5, 14-10 and 19-15 are the letters for left, right, straight and U-turn (A=0 .. Z=25); bits 23-20 reserved 0. The four letters are distinct.
+- **Acknowledgement (3 bytes):** byte 0 `0x25`, byte 1 the sequence answered, byte 2 the result: 0 installed, 1 busy (robot not stopped), 2 invalid letters, 3 malformed frame. The acknowledgement follows installation by Mission.
+- **Snapshot request (2 bytes):** byte 0 `0x26`, byte 1 sequence.
 
 ### Golden vectors
 
-Used by the host tests and the PC client (#42).
+Used by the host tests and `scripts/mqtt_client.py --self-test`.
 
 | Frame | Bytes |
 | --- | --- |
-| Telemetry | `11 2A 32 05 01 02 04 08 03 34 12 78 56 03 F8 D0 30 61` |
-| Event (barcode Z, action 2) | `12 01 19 E8 03 10 00 11 00 02 00` |
-| Mapping A left, B right, C straight, D U-turn, sequence 7 | `14 07 20 88 01` |
-| Acknowledgement installed, sequence 7 | `15 07 00` |
-| Snapshot request, sequence 9 | `16 09` |
+| Telemetry | `21 2A 72 45 01 02 04 08 01 03 34 12 78 56 03 F8 D0 30 61 A4 01 AA 00` |
+| Event (barcode Z, action 2) | `22 01 19 E8 03 10 00 11 00 02 00` |
+| Mapping A left, B right, C straight, D U-turn, sequence 7 | `24 07 20 88 01` |
+| Acknowledgement installed, sequence 7 | `25 07 00` |
+| Snapshot request, sequence 9 | `26 09` |
 
 ### Sizes against the baseline
 
 | Message | Baseline on `main` (JSON) | Binary |
 | --- | --- | --- |
-| Telemetry | up to 768 bytes (`S1_TELEMETRY_PAYLOAD_MAX`) | 18 bytes |
+| Telemetry | up to 768 bytes (`S1_TELEMETRY_PAYLOAD_MAX`) | 23 bytes |
 | Mapping | up to 512 bytes on `uat` | 5 bytes |
 
 Baseline figures come from the CR baseline evidence and the #22 census; binary sizes are the exact frame lengths above. Message-size comparison under identical builds is completed in #55.

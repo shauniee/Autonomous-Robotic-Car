@@ -4,6 +4,29 @@ Single owner of requirements, the change requirement (CR), the Week 13 data tabl
 
 Status labels: **requirement** (source-stated), **proposed** (drafted, not signed off), **implemented** (in code), **observed** (measured). Rows below are requirements unless marked.
 
+## Contents
+
+- [1. Mission and required outcomes](#1-mission-and-required-outcomes)
+  - [Encounter behaviour](#encounter-behaviour)
+  - [Course rules](#course-rules)
+  - [Mission-day barcode rule](#mission-day-barcode-rule)
+- [2. Subsystem deliverables](#2-subsystem-deliverables)
+- [3. Communications](#3-communications)
+- [4. Change in requirement: minimum-bit data representation](#4-change-in-requirement-minimum-bit-data-representation)
+  - [Baseline (before), issue #22](#baseline-before-issue-22)
+- [5. Data representation table (Week 13)](#5-data-representation-table-week-13)
+  - [S1 Communications (proposed; frame layouts in architecture; needs Shaun's sign-off)](#s1-communications-proposed-frame-layouts-in-architecture-needs-shauns-sign-off)
+  - [S2 Motion (encoder width provisional until D03; one constant `ENC_COUNT_BITS` in `robot_config.h`; branches #29, #31)](#s2-motion-encoder-width-provisional-until-d03-one-constant-enc_count_bits-in-robot_configh-branches-29-31)
+  - [S3 Line, barcode and Mission (branches #35, #36, #37; pending rows converted by #52 after Nicholas confirms)](#s3-line-barcode-and-mission-branches-35-36-37-pending-rows-converted-by-52-after-nicholas-confirms)
+  - [S4 Terrain (scale provisional, 1 mm per count `HUMP_MM_PER_COUNT`, until D06; branches #45, #46)](#s4-terrain-scale-provisional-1-mm-per-count-hump_mm_per_count-until-d06-branches-45-46)
+  - [S5 Obstacle (proposed; branches #48, #49)](#s5-obstacle-proposed-branches-48-49)
+  - [Mission and Safety](#mission-and-safety)
+  - [Fault bitmask (proposed by `app_program/common/robot_data.h`, issue #27; owners confirm)](#fault-bitmask-proposed-by-app_programcommonrobot_datah-issue-27-owners-confirm)
+- [6. Assessment, demonstration and process rules](#6-assessment-demonstration-and-process-rules)
+- [7. Course geometry](#7-course-geometry)
+- [8. Not specified by any source](#8-not-specified-by-any-source)
+- [Pending decisions](#pending-decisions)
+
 ## 1. Mission and required outcomes
 
 The default project is an autonomous robot car on a predefined course, using onboard sensing and embedded software on a Raspberry Pi Pico with micro T-Kernel (using FreeRTOS is penalised; no amount given). Remote driving is outside the mission. The course has a black line, navigation barcodes before cross junctions, humps and static obstacles. Features are encountered in no fixed order. The final map is undisclosed until demonstration, so no route may be hard-coded. Success is repeatable behaviour across runs, not isolated functions.
@@ -71,7 +94,7 @@ Turn rate and heading come from encoder differential motion; impact from the acc
 - Two-way MQTT: the robot publishes telemetry, returns a snapshot or summary on request and accepts the barcode mapping. Networking never drives, starts or stops the robot.
 - On demonstration day the robot connects to the instructor's broker (a laptop broker is for development). Broker address, credentials, topics and schema were not supplied (D09).
 - Telemetry: robot state, motor speed, encoder counts/distance, line sensor status, faults, barcodes with decoded command, hump count and heights with maximum, obstacle width/depth, current movement direction (straight, left, right) and decoded barcode messages. Messages must be readable and clear to a PC subscriber. An event record gives when and where (time and encoder position) barcodes, humps, obstacles and turns occurred, so the approximate route can be reconstructed. No map visualisation or localisation was prescribed.
-- Payloads are compact binary (section 4). The laptop decoder prints readable text; a fancy dashboard is not required.
+- Payloads are compact binary (section 4). The laptop decoder (`scripts/mqtt_client.py`) prints readable text and derives motor speed and movement direction from successive encoder counts; a fancy dashboard is not required.
 - Gap (requirement vs. earlier S1 scope): the briefing requires WiFi barcode-mapping configuration; an earlier S1 guide allowed status requests only.
 
 ## 4. Change in requirement: minimum-bit data representation
@@ -125,16 +148,18 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 
 | Field | Storage / writer | Range | Invalid / overflow | Bits | Repr. |
 | --- | --- | --- | --- | --- | --- |
-| Header version | byte 0 bits 7-4, S1 | 1 | other rejected | 4 | mask/shift |
+| Header version | byte 0 bits 7-4, S1 | 2 | other rejected | 4 | mask/shift |
 | Header type | byte 0 bits 3-0, S1 | 1-6 | other rejected | 4 | mask/shift |
 | Sequence | byte 1, S1 | 0-255 | wraps mod 256 | 8 | byte |
-| Mission state / motion status / action ID | bytes 2-3 | 0-15 / 0-3 / 0-63 | out of range rejected on encode and decode | 4 / 2 / 6 | mask/shift |
-| Fault bytes | bytes 4-8 | one byte per owner | - | 5 x 8 | bytes |
-| Encoder counts | bytes 9-12 | wrapped counts | wraps (modular) | 2 x 16 | little-endian |
-| Hump count / max height | bytes 13-14 | 0-255 / 0-126 (D06 scale) | 127 invalid, bit 7 valid flag; count and height saturate | 8 / 7+1 | mask/shift |
-| Front range | bytes 15-16 | 0-8190 mm, nearest mm | 8191 invalid, bit 13 valid flag; saturates to invalid | 13+1 | mask/shift |
-| Last barcode letter / action | byte 17 | 0-25 or 31 none / 0-7 | 31 = no letter | 5 / 3 | mask/shift |
-| Event record: kind / arg / time / position / arg2 | 11-byte frame | kind 1-4; time = low 16 bits of ms; counts | kind 0 and 5-15 rejected; time wraps mod 65536 | 4 / 8 / 16 / 2x16 / 16 | little-endian |
+| Mission state / motion status / line status | byte 2 | 0-15 / 0-3 / 0-3 | out of range rejected on encode and decode | 4 / 2 / 2 | mask/shift |
+| Action ID / mapped | byte 3 | 0-63 / flag | bit 7 reserved | 6 / 1 | mask/shift |
+| Fault bytes | bytes 4-9 | one byte per owner (six owners) | - | 6 x 8 | bytes |
+| Encoder counts | bytes 10-13 | wrapped counts | wraps (modular) | 2 x 16 | little-endian |
+| Hump count / max height | bytes 14-15 | 0-255 / 0-126 (D06 scale) | 127 invalid, bit 7 valid flag (any hump completed); count and height saturate | 8 / 7+1 | mask/shift |
+| Front range | bytes 16-17 | 0-8190 mm, nearest mm | 8191 invalid, bit 13 valid flag; saturates to invalid | 13+1 | mask/shift |
+| Last barcode letter / action | byte 18 | 0-25 or 31 none / 0-7 | 31 = no letter | 5 / 3 | mask/shift |
+| Obstacle width / depth | bytes 19-22 | 0-65535 mm | 0 = none yet; saturates | 2 x 16 | little-endian |
+| Event record: kind / arg / time / position / arg2 | 11-byte frame | kind 1-4; time = low 16 bits of ms; counts; obstacle depth in mm | kind 0 and 5-15 rejected; time wraps mod 65536 | 4 / 8 / 16 / 2x16 / 16 | little-endian |
 | Mapping acknowledgement {sequence, result} | 3-byte frame | sequence 0-255; result 0-3 | result above 3 rejected; sequence wraps | 8 / 8 (2 used) | bytes |
 
 ### S2 Motion (encoder width provisional until D03; one constant `ENC_COUNT_BITS` in `robot_config.h`; branches #29, #31)
@@ -182,20 +207,21 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 
 | Field | Storage / writer | Range | Bits | Repr. |
 | --- | --- | --- | --- | --- |
-| Combined fault mask | read on demand (`rd_fault_aggregate`), Safety (read only; does not write owner bytes) | union of the four stop-capable owner bytes | 32 (Network byte reported separately) | bitmask |
+| Start-blocking / run-stopping check | read on demand (`rd_fault_start_blocked`, `rd_fault_stop_pending`), Mission / Safety (read only) | owner bytes masked by the policy in [architecture](architecture.md#fault-bitmask) | 1 each (result) | bool |
 | Stop latch cause | cause word, Safety | 4 cause bits; 0 = not latched | 4 | bit mask |
 
 ### Fault bitmask (proposed by `app_program/common/robot_data.h`, issue #27; owners confirm)
 
-One byte per owner; each owner sets and clears only its own bits; Safety reads every byte each release. Network bits are report-only and never stop motion.
+One byte per owner task; each owner sets and clears only its own bits. Every bit is reported in telemetry. Which bits block a start or stop a run: [architecture](architecture.md#fault-bitmask).
 
-| Byte | Writer | Bit 0 | Bit 1 | Bit 2 | Bit 3 |
-| --- | --- | --- | --- | --- | --- |
-| Motion | S2 | motor stall | encoder fault | - | - |
-| Line/Barcode and Mission | S3 | IR invalid | line lost | barcode capture overflow | barcode event overflow |
-| Terrain | S4 | IMU fault | calibration failed | impact | - |
-| Obstacle | S5 | no echo | servo fault | - | - |
-| Network | kernel task, core 0 | Wi-Fi lost | broker lost | - | - |
+| Byte | Writer | Bit 0 | Bit 1 | Bit 2 |
+| --- | --- | --- | --- | --- |
+| Motion | S2 task | motor stall | encoder fault | - |
+| Line | S3 task | IR invalid | barcode capture overflow | barcode event overflow |
+| Terrain | S4 task | IMU fault | calibration failed | impact |
+| Obstacle | S5 task | no echo | - | - |
+| Mission | Mission task | line lost | - | - |
+| Network | kernel task, core 0 | Wi-Fi lost | broker lost | - |
 
 ## 6. Assessment, demonstration and process rules
 
