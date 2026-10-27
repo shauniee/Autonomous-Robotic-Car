@@ -12,6 +12,7 @@ Host methods below describe historical checks whose runners are retired; saved r
 - [4. Sensor-service build verification — 2026-10-09](#4-sensor-service-build-verification--2026-10-09)
 - [5. Test-source relocation verification — 2026-10-09](#5-test-source-relocation-verification--2026-10-09)
 - [6. Startup test stack correction — 2026-10-09](#6-startup-test-stack-correction--2026-10-09)
+- [7. Minimum-bit final memory (S3-M01) — 2026-10-27](#7-minimum-bit-final-memory-s3-m01--2026-10-27)
 
 ## 1. Test cases
 
@@ -45,6 +46,8 @@ The current S3 service does not drive motors, feed a whole-system watchdog or pu
 | 2026-10-08 | S3-U09 | Future implementation | Pending | PENDING | none | Barcode deferred; no decode run |
 | 2026-10-09 | S3-U02/U06/U07/U10/U11/U12/U13 | Working tree source SHA-256 manifest in evidence | Pending Pico operator | PENDING | [service build evidence](logs/2026-10-09_s3-line-service_evidence.json) | All four profiles built; firmware checks compiled only, not executed |
 | 2026-10-09 | S3-U02/U06/U07/U10/U11/U12/U13 | Relocated test source manifest in evidence | Pending Pico operator | PENDING | [test-layout evidence](logs/2026-10-09_s3-test-layout_evidence.json) | Relocated fixtures compile in all TEST profiles; no on-board execution |
+| 2026-10-27 | S3-M01 | Commit `d6ce587` (#107 branch) | Claude Code compile run | PASS | [section 7](#7-minimum-bit-final-memory-s3-m01--2026-10-27) | Compile/link and host only; nothing flashed |
+| 2026-10-27 | S3-M02 | Not yet run on Pico | Pending operator (Nicholas) | PENDING | none | On-target final loop timing; tracked in the physical-test PR |
 
 ## 3. Current firmware run instructions
 
@@ -105,3 +108,29 @@ individual build logs share its filename prefix. One interrupted overlapping
 build attempt was discarded before the sequential rebuilds recorded here.
 Post-fix S3-U12 execution and absence of a hard fault remain PENDING until
 Nicholas flashes the corrected image and records the full firmware output.
+
+## 7. Minimum-bit final memory (S3-M01) — 2026-10-27
+
+Final implementation after #102-#106 at commit `d6ce587`. Compile and link only; no firmware was executed or flashed. Toolchain arm-none-eabi-gcc 15.3.1 (Arm GNU Toolchain 15.3.Rel1), Pico SDK in `PICO_SDK_PATH`, macOS host.
+
+Section-4 command in `build_make/`: `make clean`, then `make -k -j8 SMP=1 CONSOLE=usb_cdc WIFI=none NET=none MQTT=0 CRASH_REPORT=0 TEST=0`, then `arm-none-eabi-size mtk3pico_smp1_usb_cdc.elf`. Result: 0 warnings, 0 undefined references.
+
+| Build | text | data | bss |
+| --- | ---: | ---: | ---: |
+| Final implementation (`d6ce587`) | 70464 | 552 | 23756 |
+
+Probe (`testing/subsystem3/sizeof_probe.sh`) against the linked S3 objects (`arm-none-eabi-nm -S` on the S3 object files of the same build):
+
+| Type | `sizeof` (bytes) | Linked object | Object size (bytes) | Instances | Match |
+| --- | ---: | --- | ---: | ---: | --- |
+| `barcode_edge_t` | 6 | `ring` (`drv_barcode.o`) | 384 | 64 | yes (64 x 6) |
+| `barcode_event_t` | 6 | `events` (`barcode.o`) | 48 | 8 | yes (8 x 6) |
+| `barcode_frame_t` | 156 | `frame` (`barcode.o`) | 156 | 1 | yes |
+| `S3IrSnapshot` | 40 | `latest` (`subsystem3.o`) | 40 | 1 | yes |
+| Mission state (`uint8_t`) | 1 | `published_state` (`mission.o`) | 1 | 1 | yes |
+| `IrTracker` | 60 | none: S3 task stack | - | 1 | not in `.bss` |
+
+The [bit-usage data contract](../../docs/project-specs.md#s3-bit-usage-data-contract-proposed-spec-100-final-evidence-107) final-bits column matches these sizes. All four firmware profiles also build at this commit (`testing/pure/run.sh` passes, including the new `test_ir_tracking`).
+
+Host results above are separate from firmware results. S3-M02 (on-target loop timing) and the physical line-follow run are not part of this record; they are pending on the robot.
+
