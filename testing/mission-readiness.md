@@ -83,7 +83,8 @@ Each feature is tested alone before the full course.
 | MR-31 | Boxes blocking both sides | Robot stops instead of bypassing | - |
 | MR-32 | Lift the robot off the line while following | Bounded search, then STOP with `Mission: line lost` | - |
 | MR-33 | Stop the broker during a run, then restart it | Robot keeps driving; `Network: broker lost` shows after reconnect | - |
-| MR-34 | Finish marker | Robot stops at the finish | Finish convention (D02, still undecided) |
+| MR-34 | Finish marker | Robot stops at the finish | Finish convention (D02, still undecided); `MISSION_FINISH_COUNTS` |
+| MR-39 | S3 minimum-bit evidence: S3-M02 loop timing (USB TEST image, Phase 2 setup) and S3-P01 line-follow run (with MR-26) | As defined in the [S3 test log](subsystem3/TEST_LOG.md#1-test-cases) | `[TIMING]` console lines; S3-P01 laps and video |
 
 ## Phase 5: Full mission rehearsal (T15, T16)
 

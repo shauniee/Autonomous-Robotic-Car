@@ -41,6 +41,18 @@ int main(void)
     dly = robot_time_next_delay(&release, 10u, 500u);
     assert(dly == 10u && release == 510u);
 
+    /* Loop timing keeps the worst body time and counts overruns, across the
+       microsecond wrap. */
+    LoopTiming lt = {0};
+    const uint32_t bodies[] = {300u, 9000u, 120u, 10000u, 12000u};
+    uint32_t us = 0xFFFFF000u;
+    for (unsigned i = 0; i < 5u; ++i) {
+        loop_timing_begin(&lt, us);
+        us += bodies[i];
+        loop_timing_end(&lt, us, 10000u);
+        us += 10000u;
+    }
+    assert(lt.max_us == 12000u && lt.overruns == 2u && lt.count == 5u);
     puts("robot_time: PASS");
     return 0;
 }

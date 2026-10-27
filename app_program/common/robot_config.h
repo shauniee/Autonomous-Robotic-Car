@@ -93,6 +93,7 @@
 #define SAFETY_BOOT_GRACE_MS	1500u	/* producers may be silent this long after boot */
 #define INPUT_PERIOD_MS		10u
 #define REPORT_PERIOD_MS	500u
+#define LOOP_TIMING_REPORT_MS	5000u	/* [TIMING] console window for S3-M02 */
 #define FOLLOW_PERIOD_MS	10u
 #define RECOVERY_MS		500u	/* PROVISIONAL (D07) */
 #define BASE_DUTY		0.25f	/* PROVISIONAL (D07) */

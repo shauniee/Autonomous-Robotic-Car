@@ -31,7 +31,8 @@ Host methods below describe historical checks whose runners are retired; saved r
 | S3-U12 | Portable snapshot and nonblocking copy | TEST=1 pure fixtures plus actual private mutex boundary | Raw/reference/contrast/normalized coherence; missing/invalid/uncalibrated/capturing/stale flags; unchanged sequence/time on aging; null and locked-copy rejection |
 | S3-U13 | ADC destination validation | TEST=1 `drv_ir_read(NULL)` only | Reject null before hardware access; S3-U04 hardware protocol/WCET remains separate |
 | S3-M01 | Minimum-bit final memory (spec #100) | Compile-only `testing/subsystem3/sizeof_probe.sh` plus section-4 build command and `arm-none-eabi-size` on the final implementation; S3 `.bss` objects from `nm`/map | Probe totals equal linked S3 objects; final storage bits recorded in the [bit-usage data contract](../../docs/project-specs.md#s3-bit-usage-data-contract-proposed-spec-100-final-evidence-107); no execution claim |
-| S3-M02 | Minimum-bit final S3 loop timing (spec #100) | On-target run of the final implementation; method defined before the run (#107) | Worst-case S3 loop time below its configured period, with margin per [D13](../../docs/project-specs.md#pending-decisions); recorded with exact commit; no value assumed |
+| S3-M02 | Minimum-bit final S3 loop timing (spec #100) | Flash the wireless **TEST** image on USB alone (motors inhibited, power policy); calibrate (MR-12); for at least 60 s move the robot by hand over line, white and printed barcodes while spinning the wheels; save the console. Each task prints `[TIMING] task=<s3_input|s3_mission> max_us=.. period_us=10000 overruns=.. loops=..` every 5 s (`loop_timing_*` in `robot_time*.h`) | Worst `max_us` over all windows for both tasks below `period_us`, with margin per [D13](../../docs/project-specs.md#pending-decisions); `overruns=0`; exact commit and image recorded. Motor PWM load is absent in TEST images; say so in the result |
+| S3-P01 | Physical line-follow run of the minimum-bit final implementation (spec #100) | Normal image on battery alone after MR-19..MR-22; follow the MR-26 loop for three laps at the configured speed | Stays on the line every lap; laps, speed, commit and video link recorded; same pass rule as MR-26 |
 
 The current S3 service does not drive motors, feed a whole-system watchdog or push S1 telemetry. Retired cases/results remain historical. Firmware fixtures do not alter the live tracker; the snapshot boundary check briefly locks the real cache and verifies a nonblocking recursive read is refused.
 
@@ -47,7 +48,8 @@ The current S3 service does not drive motors, feed a whole-system watchdog or pu
 | 2026-10-09 | S3-U02/U06/U07/U10/U11/U12/U13 | Working tree source SHA-256 manifest in evidence | Pending Pico operator | PENDING | [service build evidence](logs/2026-10-09_s3-line-service_evidence.json) | All four profiles built; firmware checks compiled only, not executed |
 | 2026-10-09 | S3-U02/U06/U07/U10/U11/U12/U13 | Relocated test source manifest in evidence | Pending Pico operator | PENDING | [test-layout evidence](logs/2026-10-09_s3-test-layout_evidence.json) | Relocated fixtures compile in all TEST profiles; no on-board execution |
 | 2026-10-27 | S3-M01 | Commit `d6ce587` (#107 branch) | Claude Code compile run | PASS | [section 7](#7-minimum-bit-final-memory-s3-m01--2026-10-27) | Compile/link and host only; nothing flashed |
-| 2026-10-27 | S3-M02 | Not yet run on Pico | Pending operator (Nicholas) | PENDING | none | On-target final loop timing; tracked in the physical-test PR |
+| 2026-10-27 | S3-M02 | Not yet run on Pico | Pending operator (Nicholas) | PENDING | none | Method defined above; instrumentation builds in all four profiles |
+| 2026-10-27 | S3-P01 | Not yet run on Pico | Pending operator (Nicholas) | PENDING | none | Run with MR-26 |
 
 ## 3. Current firmware run instructions
 

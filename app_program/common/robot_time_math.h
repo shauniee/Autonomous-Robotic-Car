@@ -38,4 +38,32 @@ static inline uint32_t robot_time_next_delay(uint32_t *release, uint32_t period,
     return *release - now;
 }
 
+/* Worst-case execution time of a periodic loop body (S3-M02), in TIMER
+   microseconds: begin at the release, end just before the delay. A body
+   that uses the whole period or more counts as an overrun. */
+typedef struct
+{
+    uint32_t start_us;
+    uint32_t max_us;
+    uint32_t count;
+    uint32_t overruns;
+} LoopTiming;
+
+static inline void loop_timing_begin(LoopTiming *t, uint32_t now_us)
+{
+    t->start_us = now_us;
+}
+
+static inline void loop_timing_end(LoopTiming *t, uint32_t now_us, uint32_t period_us)
+{
+    uint32_t used = robot_time_elapsed(now_us, t->start_us);
+    if (used > t->max_us) {
+        t->max_us = used;
+    }
+    if (used >= period_us) {
+        ++t->overruns;
+    }
+    ++t->count;
+}
+
 #endif /* ROBOT_TIME_MATH_H */

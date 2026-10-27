@@ -147,8 +147,11 @@ static void task_s_task(INT stacd, void *exinf)
 #if APP_TEST
     uint32_t report_due = now;
 #endif
+    LoopTiming timing = {0};
+    uint32_t timing_due = robot_time_ms() + LOOP_TIMING_REPORT_MS;
     for (;;)
     {
+        loop_timing_begin(&timing, robot_time_us());
         now = robot_time_ms();
         IrCaptureKind before = tracker.capture_kind;
         ir_tracking_check_time(&tracker, now);
@@ -217,6 +220,8 @@ static void task_s_task(INT stacd, void *exinf)
             report_due = now + REPORT_PERIOD_MS;
         }
 #endif
+        loop_timing_end(&timing, robot_time_us(), INPUT_PERIOD_MS * 1000u);
+        loop_timing_report(&timing, "s3_input", INPUT_PERIOD_MS * 1000u, &timing_due, now);
         next += INPUT_PERIOD_MS;
         now = robot_time_ms();
         if ((int32_t)(now - next) >= 0)

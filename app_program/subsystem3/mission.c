@@ -43,8 +43,11 @@ static void mission_task(INT stacd, void *exinf)
     uint32_t still_since = now;
     bool side_watching = false;
 
+    LoopTiming timing = {0};
+    uint32_t timing_due = now + LOOP_TIMING_REPORT_MS;
     for (;;)
     {
+        loop_timing_begin(&timing, robot_time_us());
         now = robot_time_ms();
         ButtonInputs buttons = drv_buttons_read();
         if (buttons.gp21_down)
@@ -163,6 +166,8 @@ static void mission_task(INT stacd, void *exinf)
             reported = mission.state;
             tm_printf((UB *)"[MISSION] state=%s%s\n", state_names[mission.state], APP_TEST ? " MOTOR_INHIBITED" : "");
         }
+        loop_timing_end(&timing, robot_time_us(), FOLLOW_PERIOD_MS * 1000u);
+        loop_timing_report(&timing, "s3_mission", FOLLOW_PERIOD_MS * 1000u, &timing_due, now);
         tk_dly_tsk(robot_time_next_delay(&release, FOLLOW_PERIOD_MS, robot_time_ms()));
     }
 }
