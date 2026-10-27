@@ -122,7 +122,9 @@ GCC := arm-none-eabi-gcc
 AS := arm-none-eabi-gcc
 LINK := arm-none-eabi-gcc
 SIZE := arm-none-eabi-size
-E2U := tools/elf2uf2
+# Named per host OS/CPU so a native build and a Docker build sharing this
+# folder never run each other's binary.
+E2U := tools/elf2uf2-$(shell uname -s)-$(shell uname -m)
 
 # Fail early, with a readable message, when the cross compiler is not on PATH.
 ifneq ($(MAKECMDGOALS),clean)
@@ -218,7 +220,9 @@ endif
 # before any recipe executes.
 ################################################################################
 
-PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)
+# The compiler version is part of the profile, so objects from a native
+# toolchain and the Docker toolchain are never linked together.
+PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
 PROFILE_FILE := .build_profile
 
 ifneq ($(strip $(shell cat $(PROFILE_FILE) 2>/dev/null)),$(PROFILE_ID))

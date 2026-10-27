@@ -1,0 +1,31 @@
+# Builds the four README profiles in the Docker build environment and uploads
+# the UF2 images. Wireless images use config/wifi_secrets.example.h, so they
+# carry placeholder credentials; build locally with your own secrets to connect.
+name: firmware
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t robot-build .
+      - name: Build profiles
+        run: |
+          cp config/wifi_secrets.example.h config/wifi_secrets.h
+          for profile in "NET=none MQTT=0 TEST=1" "NET=none MQTT=0 TEST=0" \
+                         "NET=lwip MQTT=1 TEST=1" "NET=lwip MQTT=1 TEST=0"; do
+            docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build \
+              make -C build_make -j"$(nproc)" SMP=1 CONSOLE=usb_cdc WIFI=cyw43 CRASH_REPORT=0 $profile
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ github.sha }}
+          path: build_make/*.uf2
+          if-no-files-found: error
