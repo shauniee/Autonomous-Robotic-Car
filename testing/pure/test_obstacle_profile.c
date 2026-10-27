@@ -7,14 +7,14 @@
 int main(void)
 {
     /* Obstacle ahead: nearest ray is straight ahead; clearances on both sides. */
-    ObstacleRay rays[5] = {{-60, 1500u, true}, {-30, 700u, true}, {0, 400u, true}, {30, 700u, true}, {60, 1500u, true}};
+    ObstacleRay rays[5] = {s5_ray_make(-60, 1500u, true), s5_ray_make(-30, 700u, true), s5_ray_make(0, 400u, true), s5_ray_make(30, 700u, true), s5_ray_make(60, 1500u, true)};
     ObstacleProfile p = {0};
     assert(s5_profile_build(rays, 5u, &p) && p.valid);
     assert(p.closest_angle_deg == 0 && p.closest_mm == 400u && p.obstacle_forward_mm == 400 && p.obstacle_left_mm == 0);
     assert(p.width_mm > 0u && p.left_clearance_mm > 0u && p.right_clearance_mm > 0u);
 
     /* Obstacle to the left: more clearance to the right than a centred one has. */
-    ObstacleRay left[5] = {{-60, 900u, true}, {-30, 800u, true}, {0, 600u, true}, {30, 500u, true}, {60, 450u, true}};
+    ObstacleRay left[5] = {s5_ray_make(-60, 900u, true), s5_ray_make(-30, 800u, true), s5_ray_make(0, 600u, true), s5_ray_make(30, 500u, true), s5_ray_make(60, 450u, true)};
     ObstacleProfile q = {0};
     assert(s5_profile_build(left, 5u, &q));
     assert(q.closest_angle_deg == 60 && q.obstacle_left_mm > 0);
@@ -44,7 +44,7 @@ int main(void)
     n = s5_fine_angles(left, 5u, fine, 4u);						/* nearest at +60: +70 is out of sweep */
     for (unsigned i = 0; i < n; ++i) assert(fine[i] >= -SERVO_MAX_DEG && fine[i] <= SERVO_MAX_DEG);
     assert(s5_fine_angles(rays, 5u, fine, 0u) == 0u && s5_fine_angles(0, 5u, fine, 4u) == 0u);
-    ObstacleRay none[2] = {{0, 100u, false}, {30, 100u, false}};
+    ObstacleRay none[2] = {s5_ray_make(0, 100u, false), s5_ray_make(30, 100u, false)};
     assert(s5_fine_angles(none, 2u, fine, 4u) == 0u);
 
     /* Scan state fits 3 bits; an invalid state is rejected / decoded as FAILED. */
@@ -62,6 +62,21 @@ int main(void)
     assert(s5_scan_guard(false, true, true) == S5_SCAN_FAILED);
     assert(s5_scan_guard(false, false, false) == S5_SCAN_FAILED);
     assert(s5_scan_guard(false, false, true) == S5_SCAN_COARSE);
+
+    /* Minimum-bit packing retains the complete signed angle and 16-bit
+       measurement. Both structures are checked against Cortex-M0+ layout. */
+    assert(sizeof(ObstacleRay) == 3u && sizeof(ObstacleProfile) == 14u);
+    for (int angle = -SERVO_MAX_DEG; angle <= SERVO_MAX_DEG; ++angle) {
+        ObstacleRay roundtrip = s5_ray_make((int16_t)angle, 65535u, true);
+        assert(roundtrip.valid && roundtrip.angle_deg == angle && roundtrip.range_mm == 65535u);
+        uint32_t packed = s5_side_watch_pack(true, (int16_t)angle);
+        assert((packed & 1u) != 0u && (packed & ~0xFFu) == 0u);
+        assert(s5_side_watch_angle(packed) == angle);
+    }
+    ObstacleRay invalid = s5_ray_make((int16_t)(SERVO_MAX_DEG + 1), 42u, true);
+    assert(!invalid.valid && invalid.range_mm == 0u);
+    assert(s5_side_watch_angle(s5_side_watch_pack(false, -90)) == -SERVO_MAX_DEG);
+    assert((s5_side_watch_pack(false, 0) & 1u) == 0u);
 
     puts("obstacle_profile: PASS");
     return 0;
