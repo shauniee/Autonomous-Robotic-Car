@@ -33,11 +33,42 @@ Docker supplies the Arm compiler and Pico SDK 2.2.0, so building needs nothing e
    docker build -t robot-build .
    ```
 
-4. Build the firmware. This is the offline TEST profile; for another profile replace the `make` flags with one from [Build profiles](#build-profiles). Wireless profiles first need `config/wifi_secrets.h` ([Wireless telemetry](#wireless-telemetry)).
+4. Build the firmware with one of the four profiles below. Run builds one at a time because they share `build_make/`. TEST profiles inhibit the motors; normal profiles use `TEST=0`. See [Build profiles](#build-profiles) for option details and output filenames.
+
+   **Offline TEST — motors inhibited**
 
    ```sh
    docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build \
      make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=1
+   ```
+
+   **Offline normal**
+
+   ```sh
+   docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build \
+     make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=0
+   ```
+
+   Before building a wireless profile, create the local credentials header if it does not already exist:
+
+   ```sh
+   test -e config/wifi_secrets.h || cp config/wifi_secrets.example.h config/wifi_secrets.h
+   ```
+
+   Edit `config/wifi_secrets.h` with your `WIFI_SSID`, `WIFI_PASSWORD` and `MQTT_BROKER_IP` (the broker laptop's LAN IPv4 address). See [Wireless telemetry](#wireless-telemetry) for broker setup. The header is git-ignored; do not commit it. Wireless firmware embeds these credentials.
+
+   **Wireless TEST — motors inhibited**
+
+   ```sh
+   docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build \
+     make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=1
+   ```
+
+   **Wireless normal**
+
+   ```sh
+   docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build \
+     make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0
    ```
 
 5. Flash: hold BOOTSEL while connecting USB, release when **RPI-RP2** appears and copy `build_make/mtk3pico_smp1_usb_cdc_wifi_test.uf2` to the drive. Continue with [Power and flashing](#power-and-flashing) for power rules and serial checks.
@@ -139,6 +170,7 @@ Capture duration/contrast and classification: [subsystem3](docs/architecture/sub
 Use a reachable private 2.4 GHz LAN; the lab broker allows anonymous access without TLS, so keep it on the trusted bench network.
 
 1. `test -e config/wifi_secrets.h || cp config/wifi_secrets.example.h config/wifi_secrets.h`; edit `WIFI_SSID`, `WIFI_PASSWORD`, `MQTT_BROKER_IP` (laptop LAN IPv4, not `127.0.0.1`/`0.0.0.0`); for authenticated brokers also `MQTT_USERNAME`, `MQTT_PASSWORD`. Client-ID prefix gets a radio-MAC suffix; older local headers may omit new settings. The file is git-ignored; do not commit or print it.
+
 2. macOS: `brew install mosquitto`, `ipconfig getifaddr en0` (use the WiFi interface's address if different), `mosquitto -c config/mosquitto-lab.conf`. Linux/WSL: `mosquitto` + `mosquitto-clients`; ensure Pico reachability across WSL/firewall boundaries.
 3. Second terminal: `mosquitto_sub -h 127.0.0.1 -p 1883 -t 'robot/s3/#' -v`
 4. Flash wireless TEST on USB alone and confirm messages originate from the Pico. After physical readiness, use normal firmware on battery alone and recalibrate.
