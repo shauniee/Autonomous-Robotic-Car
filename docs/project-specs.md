@@ -13,7 +13,7 @@ Status labels: **requirement** (source-stated), **proposed** (drafted, not signe
 - [2. Subsystem deliverables](#2-subsystem-deliverables)
 - [3. Communications](#3-communications)
 - [4. Change in requirement: minimum-bit data representation](#4-change-in-requirement-minimum-bit-data-representation)
-  - [Baseline (before), issue #22](#baseline-before-issue-22)
+  - [Historical baseline, issue #22 (not required)](#historical-baseline-issue-22-not-required)
 - [5. Data representation table (Week 13)](#5-data-representation-table-week-13)
   - [S1 Communications (proposed; frame layouts in architecture; needs Shaun's sign-off)](#s1-communications-proposed-frame-layouts-in-architecture-needs-shauns-sign-off)
   - [S2 Motion (encoder width provisional until D03; one constant `ENC_COUNT_BITS` in `robot_config.h`; branches #29, #31)](#s2-motion-encoder-width-provisional-until-d03-one-constant-enc_count_bits-in-robot_configh-branches-29-31)
@@ -108,11 +108,15 @@ Change requirement one, adopted at Tribunal 1 (Week 8). Implemented in firmware 
 **Week 13 evidence (in the repository):**
 
 1. Data representation table (section 5): field, valid range, bits, representation.
-2. RAM usage before and after.
-3. Message size before and after (inter-task and/or communication messages).
+2. RAM usage of the final implementation.
+3. Message size of the final implementation (inter-task and/or communication messages).
 4. Evidence of no lost functionality and no unacceptable timing or performance degradation.
 
-### Baseline (before), issue #22
+Comparison of the revised implementation with the original is not required (course update, 2026-10-27). Evidence covers the final implementation only.
+
+### Historical baseline, issue #22 (not required)
+
+Retained as a record of the pre-change build; the Week 13 evidence does not compare against it.
 
 Compile and link results only; no firmware was executed or flashed. Measured from pinned commits: `main` `97de812`, `uat` `d8220bc`, both with the same `build_make` makefiles (taken from `main` `90628ba`). Toolchain: arm-none-eabi-gcc 15.3.1, Pico SDK 2.3.1, macOS host. Command in each `build_make/`: `make clean`, then `make -k -j8 SMP=1 CONSOLE=usb_cdc WIFI=none NET=none MQTT=0 CRASH_REPORT=0 TEST=0`, then `arm-none-eabi-size mtk3pico_smp1_usb_cdc.elf`.
 
@@ -274,3 +278,4 @@ Single register. Record answers and measured values here once, then link from ot
 | D10 | Numerical acceptance thresholds, Week 10 demonstration format/date, instructor repository access and evidence schedule | Team |
 | D11 | Which side of the line holds barcodes and which holds humps | Team |
 | D12 | Whether obstacles appear only on straight sections (the briefing states both) | Team |
+| D13 | Required timing margin for each final-implementation loop below its configured period (e.g. S3 input 10 ms, IR ADC sampling 20 ms) | Each owner / team |

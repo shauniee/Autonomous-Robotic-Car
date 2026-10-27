@@ -25,7 +25,7 @@ Related: pins, wiring and task budget in [team](team.md); data widths and scales
   - [Event (11 bytes)](#event-11-bytes)
   - [Mapping, acknowledgement, snapshot request](#mapping-acknowledgement-snapshot-request)
   - [Golden vectors](#golden-vectors)
-  - [Sizes against the baseline](#sizes-against-the-baseline)
+  - [Binary frame sizes](#binary-frame-sizes)
 
 ## Tasks
 
@@ -238,11 +238,11 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 | Acknowledgement installed, sequence 7 | `25 07 00` |
 | Snapshot request, sequence 9 | `26 09` |
 
-### Sizes against the baseline
+### Binary frame sizes
 
 | Message | Baseline on `main` (JSON) | Binary |
 | --- | --- | --- |
 | Telemetry | up to 768 bytes (`S1_TELEMETRY_PAYLOAD_MAX`) | 23 bytes |
 | Mapping | up to 512 bytes on `uat` | 5 bytes |
 
-Baseline figures come from the CR baseline evidence and the #22 census; binary sizes are the exact frame lengths above. Message-size comparison under identical builds is completed in #55.
+Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Final message-size evidence is recorded in #55.
