@@ -96,11 +96,11 @@ static void test_follow_and_stops(void)
     uint32_t t = to_follow(&m, &in);
     in.steering = IR_SCALE_ONE; t += 10u;			/* full right saturates at MAX_STEER */
     MissionOutputs out = step(&m, &in, t);
-    assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW && motion_cmd_steering(&out.command) == (int)(MAX_STEER * IR_SCALE_ONE + 0.5f));
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW && motion_cmd_steering(&out.command) == (int)(MAX_STEER * IR_SCALE_ONE));
     assert(out.command.sampled_ms == t && motion_cmd_speed(&out.command) == MISSION_FOLLOW_SPEED_MMPS);
     in.steering = -13; t += 10u;
     out = step(&m, &in, t);
-    assert(motion_cmd_steering(&out.command) == -13);	/* converted once, at the S2 boundary */
+    assert(motion_cmd_steering(&out.command) == -13);	/* signed Q7 preserved at S2 boundary */
 
     /* Unusable inputs or a Safety latch stop; Safety's own stop is not repeated. */
     in.inputs_ok = false; t += 10u;
