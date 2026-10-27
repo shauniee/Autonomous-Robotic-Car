@@ -9,7 +9,7 @@
 #include "../common/buttons.h"
 #include "../common/robot_time.h"
 
-static _Atomic uint32_t published_state;	/* writer: Mission task */
+static _Atomic uint8_t published_state;	/* writer: Mission task; 7 states, 3 bits */
 
 MissionState mission_state(void)
 {
@@ -157,7 +157,7 @@ static void mission_task(INT stacd, void *exinf)
             tm_printf((UB *)"[MISSION] command write failed; stopping\n");
             (void)s2_stop();
         }
-        atomic_store_explicit(&published_state, (uint32_t)mission.state, memory_order_release);
+        atomic_store_explicit(&published_state, (uint8_t)mission.state, memory_order_release);
         if (mission.state != reported)
         {
             reported = mission.state;

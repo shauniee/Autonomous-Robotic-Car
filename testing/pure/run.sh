@@ -17,6 +17,8 @@ $CC $CFLAGS testing/pure/test_motion_control.c app_program/subsystem2/motion_con
     app_program/common/robot_data.c -lm -o "$build_dir/test_motion_control"
 $CC $CFLAGS testing/pure/test_barcode.c app_program/subsystem3/barcode_decode.c \
     app_program/common/robot_data.c -o "$build_dir/test_barcode"
+$CC $CFLAGS testing/pure/test_ir_tracking.c app_program/subsystem3/ir_tracking.c -lm \
+    -o "$build_dir/test_ir_tracking"
 $CC $CFLAGS testing/pure/test_safety.c app_program/common/robot_data.c -o "$build_dir/test_safety"
 $CC $CFLAGS testing/pure/test_mission.c app_program/subsystem3/mission_logic.c \
     app_program/common/robot_data.c -lm -o "$build_dir/test_mission"
@@ -38,6 +40,7 @@ $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
 "$build_dir/test_robot_data"
 "$build_dir/test_motion_control"
 "$build_dir/test_barcode"
+"$build_dir/test_ir_tracking"
 "$build_dir/test_safety"
 "$build_dir/test_mission"
 "$build_dir/test_echo_range"

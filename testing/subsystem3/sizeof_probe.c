@@ -40,8 +40,8 @@ FIELD(IrTracker, sample_valid);
 
 SIZE(S3IrSnapshot);
 FIELD(S3IrSnapshot, raw);
-FIELD(S3IrSnapshot, normalized_left);
-FIELD(S3IrSnapshot, normalized_right);
+FIELD(S3IrSnapshot, left_fraction);
+FIELD(S3IrSnapshot, right_fraction);
 FIELD(S3IrSnapshot, error);
 FIELD(S3IrSnapshot, steering);
 FIELD(S3IrSnapshot, acquisition_valid);
