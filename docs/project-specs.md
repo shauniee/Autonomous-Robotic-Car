@@ -209,15 +209,17 @@ Storage bits come from `testing/subsystem3/sizeof_probe.sh` (arm-none-eabi-gcc 1
 | IR reading (in tracker): left / right fraction | 2 x `uint8_t` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | 2 x 8 | 1 | #105 |
 | IR reading (in tracker): error | `int8_t` | -1..+1 as -127..+127 (ADR 0001) | 8 | 8 | 1 | #105 |
 | IR tracking output: error / steering | 2 x `int8_t` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | 2 x 8 | 0 (returned by value) | #105 |
-| IR tracker: raw left / right | `IrRaw` (2 x `uint16_t`) | 12-bit ADC, 0-4095 | 2 x 12 | pending | 1 | #106 |
-| IR tracker: sample valid (`sample_valid`) | `bool` | Boolean | 1 | pending | 1 | #106 |
-| IR tracker struct | `IrTracker` | - | - | pending | 1 (S3 task stack) | - |
+| IR tracker: raw left / right | bits 0-23 of `IrRawWord` (`uint32_t`) | 12-bit ADC, 0-4095 | 2 x 12 | 2 x 12 | 1 | #106 |
+| IR tracker: sample valid | bit 24 of `IrRawWord` (bits 25-31 spare) | Boolean | 1 | 1 (+7 spare) | 1 | #106 |
+| IR tracker struct | `IrTracker` | - | - | 480 | 1 (S3 task stack) | - |
 | IR snapshot: left / right fraction | 2 x `uint8_t` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | 2 x 8 | 1 | #105 |
 | IR snapshot: error / steering | 2 x `int8_t` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | 2 x 8 | 1 | #105 |
 | Mission state (published copy) | `_Atomic uint8_t` (was `uint32_t`) | 7 states | 3 | 8 (smallest atomic store) | 1 | #105 |
-| IR snapshot: raw left / right | `IrRaw` (2 x `uint16_t`) | 12-bit ADC, 0-4095 | 2 x 12 | pending | 1 | #106 |
-| IR snapshot: acquisition valid (`acquisition_valid`) | `bool` | Boolean | 1 | pending | 1 | #106 |
-| IR snapshot struct | `S3IrSnapshot` | - | - | pending | 1 | - |
+| IR snapshot: raw left / right | bits 0-23 of `IrRawWord` (`uint32_t`) | 12-bit ADC, 0-4095 | 2 x 12 | 2 x 12 | 1 | #106 |
+| IR snapshot: acquisition valid | bit 24 of `IrRawWord` (bits 25-31 spare) | Boolean | 1 | 1 (+7 spare) | 1 | #106 |
+| IR snapshot struct | `S3IrSnapshot` | - | - | 320 | 1 | - |
+
+Single-store check (#106, 2026-10-27): `arm-none-eabi-objdump -d` of `ir_tracking.o` (arm-none-eabi-gcc 15.3.1, offline normal profile) shows both writes of `IrTracker.raw` in `ir_tracking_sample` as one `str` to the aligned word; the snapshot copies the word whole. Removing the two `bool` flags freed bytes that alignment padding absorbs, so `IrTracker` (60 bytes) and `S3IrSnapshot` (40 bytes) keep their size.
 
 Final build (section-4 command), final on-target S3 loop timing and the physical run are recorded by #107 in the [S3 test log](../testing/subsystem3/TEST_LOG.md).
 

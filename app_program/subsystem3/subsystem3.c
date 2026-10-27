@@ -117,8 +117,8 @@ static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now,
         "fraction_of_127 L=%u R=%u valid=%d calibrated=%d "
         "line=%s capture=%s age_ms=%u GP20_down=%d GP21_down=%d "
         "SENSOR_ONLY\n",
-        (unsigned)sequence, (unsigned)snapshot.raw.left,
-        (unsigned)snapshot.raw.right, snapshot.acquisition_valid,
+        (unsigned)sequence, (unsigned)ir_raw_word_raw(snapshot.raw).left,
+        (unsigned)ir_raw_word_raw(snapshot.raw).right, ir_raw_word_valid(snapshot.raw),
         snapshot.sample_fresh, (unsigned)snapshot.left_fraction,
         (unsigned)snapshot.right_fraction, snapshot.normalized_valid,
         snapshot.calibration_valid, ir_tracking_line_name(snapshot.line),
@@ -201,7 +201,7 @@ static void task_s_task(INT stacd, void *exinf)
         S3IrSnapshot snapshot = ir_snapshot_build(&tracker, sequence, now);
         /* Report-only fault (it blocks a start): no reading, or a calibrated
            reading outside the calibrated range. */
-        if (!snapshot.acquisition_valid || (snapshot.calibration_valid && !snapshot.normalized_valid))
+        if (!ir_raw_word_valid(snapshot.raw) || (snapshot.calibration_valid && !snapshot.normalized_valid))
         {
             rd_fault_set(RD_OWNER_LINE, RD_FAULT_IR_INVALID);
         }

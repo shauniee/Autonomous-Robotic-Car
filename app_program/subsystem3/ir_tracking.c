@@ -247,10 +247,9 @@ void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
     {
         return; /* Repeated cached samples cannot progress calibration. */
     }
-    tracker->raw = raw;
+    tracker->raw = ir_raw_word(raw, valid);
     tracker->have_sample = true;
     tracker->sample_ms = now;
-    tracker->sample_valid = valid;
     if (!valid)
     {
         tracker->reading = (IrReading){0};
@@ -273,7 +272,7 @@ IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
         return output;
     }
     output.sampled_ms = tracker->sample_ms;
-    bool usable = tracker->have_sample && tracker->sample_valid &&
+    bool usable = tracker->have_sample && ir_raw_word_valid(tracker->raw) &&
         reading_valid(tracker->reading) &&
         ((uint32_t)(now - tracker->sample_ms) <= IR_MAX_GAP_MS) &&
         (tracker->capture_kind == IR_CAPTURE_NONE);
@@ -298,7 +297,7 @@ void ir_snapshot_refresh(S3IrSnapshot *snapshot, uint32_t now)
     snapshot->sample_age_ms = snapshot->have_sample ?
         (uint32_t)(now - snapshot->sampled_ms) : 0u;
     snapshot->sample_fresh = snapshot->have_sample &&
-        snapshot->acquisition_valid &&
+        ir_raw_word_valid(snapshot->raw) &&
         (snapshot->sample_age_ms <= IR_MAX_GAP_MS);
     if (!snapshot->sample_fresh)
     {
@@ -322,18 +321,18 @@ S3IrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t sequence,
     }
     snapshot.sequence = sequence;
     snapshot.sampled_ms = tracker->sample_ms;
-    snapshot.raw = tracker->raw;
+    snapshot.raw = ir_raw_word(ir_raw_word_raw(tracker->raw),
+        tracker->have_sample && ir_raw_word_valid(tracker->raw));
     snapshot.calibration = tracker->calibration;
     snapshot.capture_kind = tracker->capture_kind;
     snapshot.capture_result = tracker->capture_result;
     snapshot.have_sample = tracker->have_sample;
-    snapshot.acquisition_valid = tracker->have_sample && tracker->sample_valid;
     snapshot.calibration_valid =
         ir_tracking_reading(tracker->calibration.black,
                             &tracker->calibration).valid;
-    IrReading reading = ir_tracking_reading(tracker->raw,
+    IrReading reading = ir_tracking_reading(ir_raw_word_raw(tracker->raw),
         &tracker->calibration);
-    snapshot.normalized_valid = snapshot.acquisition_valid && reading.valid &&
+    snapshot.normalized_valid = ir_raw_word_valid(snapshot.raw) && reading.valid &&
         (tracker->capture_kind == IR_CAPTURE_NONE);
     if (snapshot.normalized_valid)
     {
