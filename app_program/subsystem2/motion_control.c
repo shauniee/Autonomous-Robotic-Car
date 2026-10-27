@@ -12,23 +12,78 @@ void motion_control_reset(MotionController *c)
     *c = (MotionController){0};
 }
 
+enum { MOTION_SPEED_MASK = 0x1FFu, MOTION_ACTION_MASK = 0x3Fu,
+       MOTION_MODE_MASK = 0x3u, MOTION_Q_MASK = 0xFFu };
+
+motion_mode_t motion_cmd_mode(const MotionCommand *c)
+{
+    return (motion_mode_t)(c->mode_steering & MOTION_MODE_MASK);
+}
+
+uint16_t motion_cmd_speed(const MotionCommand *c)
+{
+    return (uint16_t)(c->speed_action & MOTION_SPEED_MASK);
+}
+
+int16_t motion_cmd_target(const MotionCommand *c) { return c->target; }
+
+int8_t motion_cmd_steering(const MotionCommand *c)
+{
+    unsigned v = (c->mode_steering >> 2u) & MOTION_Q_MASK;
+    return (int8_t)(v < 128u ? (int)v : (int)v - 256);
+}
+
+uint8_t motion_cmd_action(const MotionCommand *c)
+{
+    return (uint8_t)((c->speed_action >> 9u) & MOTION_ACTION_MASK);
+}
+
+bool motion_command_set(MotionCommand *dst, motion_mode_t mode, float speed_mmps,
+                        float target, int steering_q, unsigned action_id, uint32_t sampled_ms)
+{
+    if (dst == 0) return false;
+    *dst = (MotionCommand){0}; /* invalid requests fail closed */
+    if ((unsigned)mode >= MOTION_MODE_COUNT || action_id > rd_mask(RD_MOTION_ACTION_BITS) ||
+        !isfinite(speed_mmps) || !isfinite(target) ||
+        speed_mmps != floorf(speed_mmps) || target != truncf(target) ||
+        speed_mmps < 0.0f || speed_mmps > MOTION_SPEED_MAX_MMPS ||
+        steering_q < -127 || steering_q > 127 ||
+        target < -MOTION_TARGET_MAX_MM || target > MOTION_TARGET_MAX_MM ||
+        (mode == MOTION_MODE_TURN && fabsf(target) > 360.0f) ||
+        (mode == MOTION_MODE_DISTANCE && speed_mmps == 0.0f) ||
+        (mode == MOTION_MODE_TURN && speed_mmps == 0.0f)) return false;
+    *dst = (MotionCommand){
+        .sampled_ms = sampled_ms,
+        .target = (int16_t)target,
+        .speed_action = (uint16_t)(((uint16_t)action_id << 9u) | (uint16_t)speed_mmps),
+        .mode_steering = (uint16_t)((((uint16_t)(uint8_t)steering_q) << 2u) | (unsigned)mode)
+    };
+    return true;
+}
+
+MotionCommand motion_command_make(motion_mode_t mode, float speed_mmps, float target,
+                                  int steering_q, unsigned action_id, uint32_t sampled_ms)
+{
+    MotionCommand out = {0};
+    (void)motion_command_set(&out, mode, speed_mmps, target, steering_q, action_id, sampled_ms);
+    return out;
+}
+
 static bool command_valid(const MotionCommand *cmd)
 {
-    if ((unsigned)cmd->mode >= MOTION_MODE_COUNT || cmd->action_id > rd_mask(RD_MOTION_ACTION_BITS) ||
-        !isfinite(cmd->speed_mmps) || !isfinite(cmd->steering) || !isfinite(cmd->target) ||
-        cmd->speed_mmps < 0.0f || cmd->speed_mmps > MOTION_SPEED_MAX_MMPS) {
+    if ((cmd->speed_action & 0x8000u) != 0u ||
+        (cmd->mode_steering & 0xFC00u) != 0u ||
+        motion_cmd_action(cmd) > rd_mask(RD_MOTION_ACTION_BITS) ||
+        motion_cmd_speed(cmd) > MOTION_SPEED_MAX_MMPS ||
+        motion_cmd_steering(cmd) < -127 ||
+        (motion_cmd_mode(cmd) == MOTION_MODE_DISTANCE || motion_cmd_mode(cmd) == MOTION_MODE_TURN) &&
+        motion_cmd_speed(cmd) == 0u)
         return false;
-    }
-    switch (cmd->mode) {
-    case MOTION_MODE_FOLLOW:
-        return cmd->steering >= -1.0f && cmd->steering <= 1.0f;
-    case MOTION_MODE_DISTANCE:
-        return cmd->speed_mmps > 0.0f;
-    case MOTION_MODE_TURN:
-        return cmd->speed_mmps > 0.0f && fabsf(cmd->target) <= 360.0f;
-    default:
-        return true;
-    }
+
+    if (motion_cmd_target(cmd) < -MOTION_TARGET_MAX_MM || motion_cmd_target(cmd) > MOTION_TARGET_MAX_MM)
+        return false;
+    return motion_cmd_mode(cmd) != MOTION_MODE_TURN ||
+           (motion_cmd_target(cmd) >= -360 && motion_cmd_target(cmd) <= 360);
 }
 
 bool motion_command_fresh(const MotionCommand *cmd, uint32_t now_ms)
@@ -70,7 +125,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
                          const MotionInput *in, MotionOutput *out)
 {
     out->stall = false;
-    if (cmd == 0 || cmd->mode == MOTION_MODE_STOP || !motion_command_fresh(cmd, in->now_ms)) {
+    if (cmd == 0 || motion_cmd_mode(cmd) == MOTION_MODE_STOP || !motion_command_fresh(cmd, in->now_ms)) {
         /* An action cut short by a stale or missing sample has failed. */
         bool was_running = c->active && c->status == RD_MOTION_RUNNING &&
                            (c->mode == MOTION_MODE_DISTANCE || c->mode == MOTION_MODE_TURN);
@@ -80,11 +135,11 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         return;
     }
 
-    if (!c->active || cmd->action_id != c->action_id) {
+    if (!c->active || motion_cmd_action(cmd) != c->action_id) {
         *c = (MotionController){0};
         c->active = true;
-        c->action_id = cmd->action_id;
-        c->mode = cmd->mode;
+        c->action_id = motion_cmd_action(cmd);
+        c->mode = motion_cmd_mode(cmd);
         c->status = RD_MOTION_RUNNING;
         c->start_ms = c->previous_ms = in->now_ms;
         for (int w = 0; w < 2; ++w) {
@@ -118,18 +173,18 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
     }
 
     float target_cps[2];
-    float vmax_cps = cmd->speed_mmps * COUNTS_PER_MM;
-    if (cmd->mode == MOTION_MODE_FOLLOW) {
-        target_cps[LEFT] = vmax_cps * (1.0f + cmd->steering);
-        target_cps[RIGHT] = vmax_cps * (1.0f - cmd->steering);
+    float vmax_cps = motion_cmd_speed(cmd) * COUNTS_PER_MM;
+    if (motion_cmd_mode(cmd) == MOTION_MODE_FOLLOW) {
+        target_cps[LEFT] = vmax_cps * (1.0f + ((float)motion_cmd_steering(cmd) / 127.0f));
+        target_cps[RIGHT] = vmax_cps * (1.0f - ((float)motion_cmd_steering(cmd) / 127.0f));
     } else {
         float goal[2], tol_counts;
-        if (cmd->mode == MOTION_MODE_DISTANCE) {
-            goal[LEFT] = goal[RIGHT] = cmd->target * COUNTS_PER_MM;
+        if (motion_cmd_mode(cmd) == MOTION_MODE_DISTANCE) {
+            goal[LEFT] = goal[RIGHT] = motion_cmd_target(cmd) * COUNTS_PER_MM;
             tol_counts = MOTION_DIST_TOL_MM * COUNTS_PER_MM;
         } else {
             /* Pivot: each wheel travels the arc of half the track; + is left. */
-            float arc = TRACK_WIDTH_MM * 0.5f * cmd->target * (PI_F / 180.0f) * COUNTS_PER_MM;
+            float arc = TRACK_WIDTH_MM * 0.5f * motion_cmd_target(cmd) * (PI_F / 180.0f) * COUNTS_PER_MM;
             goal[LEFT] = -arc;
             goal[RIGHT] = arc;
             tol_counts = TRACK_WIDTH_MM * 0.5f * MOTION_ANGLE_TOL_DEG * (PI_F / 180.0f) * COUNTS_PER_MM;
