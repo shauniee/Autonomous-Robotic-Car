@@ -1,6 +1,6 @@
 /* Cortex-M0+ compile-only layout probe for issue #109. */
 #include "../../app_program/subsystem2/motion_control.h"
-#include "../../app_program/subsystem2/subsystem2.h"
+#include "../../app_program/subsystem2/motion_health.h"
 
 #define PROBE(name, size) char probe_##name[(size)]
 #define SIZE(type) PROBE(sizeof_##type, sizeof(type))
