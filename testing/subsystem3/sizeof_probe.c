@@ -17,9 +17,7 @@ FIELD(barcode_edge_t, high);
 SIZE(barcode_event_t);
 FIELD(barcode_event_t, left_count);
 FIELD(barcode_event_t, right_count);
-FIELD(barcode_event_t, symbol);
-FIELD(barcode_event_t, action);
-FIELD(barcode_event_t, orientation);
+FIELD(barcode_event_t, packed);
 
 SIZE(barcode_frame_t);
 FIELD(barcode_frame_t, prev_left);

@@ -62,14 +62,45 @@ typedef struct
     uint32_t width_tolerance_milli;
 } barcode_config_t;
 
-/* A decoded barcode with the encoder position where it ended. */
+/* A decoded barcode with the encoder position where it ended. `packed` holds
+   letter (bits 0-4: 0-25, BARCODE_NO_LETTER), action (bits 5-7) and
+   orientation (bit 8); use the accessors below, never mask by hand. */
 typedef struct
 {
     barcode_count_t left_count, right_count;
-    char symbol;
-    barcode_action_t action;
-    barcode_orientation_t orientation;
+    uint16_t packed;
 } barcode_event_t;
+
+#define BARCODE_NO_LETTER 31u
+#define BARCODE_EVENT_ACTION_SHIFT 5u
+#define BARCODE_EVENT_ORIENTATION_SHIFT 8u
+
+/* Letter 'A'-'Z' maps to 0-25; anything else stores BARCODE_NO_LETTER. An
+   action outside barcode_action_t stores BARCODE_UNMAPPED. */
+static inline void barcode_event_set(barcode_event_t *e, char symbol,
+    barcode_action_t action, barcode_orientation_t orientation)
+{
+    unsigned letter = symbol >= 'A' && symbol <= 'Z' ? (unsigned)(symbol - 'A') : BARCODE_NO_LETTER;
+    unsigned a = (unsigned)action <= (unsigned)BARCODE_U_TURN ? (unsigned)action : (unsigned)BARCODE_UNMAPPED;
+    e->packed = (uint16_t)(letter | a << BARCODE_EVENT_ACTION_SHIFT |
+        (orientation == BARCODE_REVERSE ? 1u : 0u) << BARCODE_EVENT_ORIENTATION_SHIFT);
+}
+
+/* 0-25 for 'A'-'Z', BARCODE_NO_LETTER otherwise. */
+static inline uint8_t barcode_event_letter(const barcode_event_t *e)
+{
+    return (uint8_t)(e->packed & 0x1Fu);
+}
+
+static inline barcode_action_t barcode_event_action(const barcode_event_t *e)
+{
+    return (barcode_action_t)(e->packed >> BARCODE_EVENT_ACTION_SHIFT & 0x7u);
+}
+
+static inline barcode_orientation_t barcode_event_orientation(const barcode_event_t *e)
+{
+    return (e->packed >> BARCODE_EVENT_ORIENTATION_SHIFT & 1u) ? BARCODE_REVERSE : BARCODE_FORWARD;
+}
 
 bool barcode_config_valid(const barcode_config_t *config);
 /* Pure, bounded decoder. Failure leaves destinations unchanged. */
