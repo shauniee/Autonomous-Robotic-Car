@@ -116,7 +116,7 @@ No active CMake target or dashboard build. Ordinary-Pico/Maker development uses 
 2. Hold BOOTSEL while connecting USB; release when **RPI-RP2** appears; copy the matching **TEST** UF2 to the drive (WSL: `explorer.exe build_make`). The Pico reboots.
 3. Open USB serial at 115200: `screen /dev/tty.usbmodem<device> 115200` (Linux `/dev/ttyACM0`; Windows PuTTY/Serial Monitor on the COM port). Quit screen: Ctrl-A, K.
 4. Inspect startup, `[TEST] <ID> PASS|FAIL`, `[IR] ... SENSOR_ONLY` / `[LINE] ... MOTOR_INHIBITED`. Console output reports acquisition/calibration/state, not motor movement or measured duty. Record failures via [testing](testing/README.md).
-5. Before normal physical use: resolve the reported motor problem; record raised-wheel baseline, polarity and stop response. Flash the normal image, disconnect USB, connect the battery/power bank alone. Use camera/scope and optional wireless observations as physical evidence.
+5. Before normal physical use: record raised-wheel baseline, polarity and stop response. Flash the normal image, disconnect USB, connect the battery/power bank alone. Use camera/scope and optional wireless observations as physical evidence.
 
 ### Calibration and local controls
 
