@@ -222,7 +222,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
     /* S3 already publishes signed Q7 steering: preserve its integer form
        across the S3->S2 boundary, with the configured correction limit. */
     int steer = in->steering;
-    int max_steer_q = (int)(MAX_STEER * IR_SCALE_ONE + 0.5f);
+    int max_steer_q = (int)(MAX_STEER * IR_SCALE_ONE);
     if (steer > max_steer_q) steer = max_steer_q;
     if (steer < -max_steer_q) steer = -max_steer_q;
     if (steer != 0) m->direction = steer > 0 ? 1 : -1;
