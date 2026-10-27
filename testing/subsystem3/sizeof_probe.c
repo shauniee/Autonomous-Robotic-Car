@@ -10,7 +10,6 @@
 #define FIELD(type, field) PROBE(field_##type##__##field, sizeof(((type *)0)->field))
 
 SIZE(barcode_edge_t);
-FIELD(barcode_edge_t, sampled_us);
 FIELD(barcode_edge_t, left_count);
 FIELD(barcode_edge_t, right_count);
 FIELD(barcode_edge_t, high);
