@@ -19,4 +19,4 @@ trap 'rm -f "$obj"' EXIT HUP INT TERM
 arm-none-eabi-gcc -mcpu=cortex-m0plus -mthumb -ffreestanding -std=gnu11 -mfloat-abi=soft -fcommon \
     -c "$probe_source" -o "$obj"
 arm-none-eabi-nm -S -t d --size-sort "$obj" |
-    awk '$4 ~ /^probe_/ { sub(/^probe_/, "", $4); printf "%d %s\\n", $2, $4 }'
+    awk '$4 ~ /^probe_/ { sub(/^probe_/, "", $4); printf "%d %s\n", $2, $4 }'
