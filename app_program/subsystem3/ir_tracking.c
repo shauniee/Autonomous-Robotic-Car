@@ -1,11 +1,20 @@
 #include "ir_tracking.h"
-#include <math.h>
 #include <stdlib.h>
 #include <stddef.h>
 
-static float clamp(float value, float lower, float upper)
+/* Float tunables in thousandths, folded at compile time. */
+#define IR_MILLI(x) ((int32_t)((x) * 1000.0f + 0.5f))
+#define IR_STEER_GAIN_MILLI IR_MILLI(IR_KP / IR_MAX_CORRECTION)
+
+static int32_t clamp(int32_t value, int32_t lower, int32_t upper)
 {
     return value < lower ? lower : (value > upper ? upper : value);
+}
+
+/* Nearest integer of num / 1000, halves away from zero. */
+static int32_t round_milli(int32_t num)
+{
+    return num >= 0 ? (num + 500) / 1000 : -((-num + 500) / 1000);
 }
 
 static bool raw_valid(IrRaw raw)
@@ -15,17 +24,40 @@ static bool raw_valid(IrRaw raw)
 
 static bool reading_valid(IrReading reading)
 {
-    return reading.valid && isfinite(reading.left_fraction) &&
-        isfinite(reading.right_fraction) && isfinite(reading.error) &&
-        (reading.left_fraction >= 0.0f) && (reading.left_fraction <= 1.0f) &&
-        (reading.right_fraction >= 0.0f) && (reading.right_fraction <= 1.0f) &&
-        (reading.error >= -1.0f) && (reading.error <= 1.0f);
+    return reading.valid && (reading.left_fraction <= IR_SCALE_ONE) &&
+        (reading.right_fraction <= IR_SCALE_ONE) &&
+        (reading.error >= -IR_SCALE_ONE);	/* int8_t tops out at +IR_SCALE_ONE */
 }
 
-static float fraction(uint16_t raw, uint16_t black, uint16_t white)
+/* (raw - white) / (black - white) as 0..IR_SCALE_ONE, nearest, clamped. A
+   signed span supports modules with either electrical polarity. */
+static uint8_t fraction(uint16_t raw, uint16_t black, uint16_t white)
 {
-    /* A signed span supports modules with either electrical polarity. */
-    return ((float)raw - (float)white) / ((float)black - (float)white);
+    int32_t num = ((int32_t)raw - white) * IR_SCALE_ONE;
+    int32_t den = (int32_t)black - white;
+    if (den < 0)
+    {
+        num = -num;
+        den = -den;
+    }
+    if (num <= 0)
+    {
+        return 0u;
+    }
+    return (uint8_t)clamp((2 * num + den) / (2 * den), 0, IR_SCALE_ONE);
+}
+
+/* Exact comparison of the unrounded fraction with a threshold in thousandths,
+   so line states match the real-valued fraction, not its 7-bit rounding. */
+static int fraction_cmp(uint16_t raw, uint16_t black, uint16_t white, int32_t milli)
+{
+    int32_t span = (int32_t)black - white;
+    int32_t scaled = ((int32_t)raw - white) * 1000 - milli * span;
+    if (span < 0)
+    {
+        scaled = -scaled;
+    }
+    return (scaled > 0) - (scaled < 0);
 }
 
 IrReading ir_tracking_reading(IrRaw raw, const IrCalibration *calibration)
@@ -44,11 +76,11 @@ IrReading ir_tracking_reading(IrRaw raw, const IrCalibration *calibration)
     {
         return reading;
     }
-    reading.left_fraction = clamp(fraction(raw.left, calibration->black.left,
-        calibration->white.left), 0.0f, 1.0f);
-    reading.right_fraction = clamp(fraction(raw.right, calibration->black.right,
-        calibration->white.right), 0.0f, 1.0f);
-    reading.error = reading.right_fraction - reading.left_fraction;
+    reading.left_fraction = fraction(raw.left, calibration->black.left,
+        calibration->white.left);
+    reading.right_fraction = fraction(raw.right, calibration->black.right,
+        calibration->white.right);
+    reading.error = (int8_t)(reading.right_fraction - reading.left_fraction);
     reading.valid = true;
     return reading;
 }
@@ -175,22 +207,26 @@ static void capture_sample(IrTracker *tracker, IrRaw raw, uint32_t now)
     tracker->capture_kind = IR_CAPTURE_NONE;
 }
 
-static IrLine ir_tracking_classify(IrReading reading, IrLine previous)
+/* Both sensors against one threshold: sign of each fraction minus it. */
+static bool both(IrRaw raw, const IrCalibration *c, int32_t milli, int sign)
+{
+    return fraction_cmp(raw.left, c->black.left, c->white.left, milli) == sign &&
+        fraction_cmp(raw.right, c->black.right, c->white.right, milli) == sign;
+}
+
+static IrLine ir_tracking_classify(IrReading reading, IrRaw raw,
+    const IrCalibration *calibration, IrLine previous)
 {
     if (!reading_valid(reading))
     {
         return IR_LINE_UNKNOWN;
     }
-    if ((reading.left_fraction > IR_BROAD_BLACK) &&
-        (reading.right_fraction > IR_BROAD_BLACK))
+    if (both(raw, calibration, IR_MILLI(IR_BROAD_BLACK), 1))
     {
         return IR_LINE_BROAD_BLACK;
     }
-    if (((previous == IR_LINE_LOST) &&
-         (reading.left_fraction < IR_WHITE_EXIT) &&
-         (reading.right_fraction < IR_WHITE_EXIT)) ||
-        ((reading.left_fraction < IR_WHITE_ENTER) &&
-         (reading.right_fraction < IR_WHITE_ENTER)))
+    if (((previous == IR_LINE_LOST) && both(raw, calibration, IR_MILLI(IR_WHITE_EXIT), -1)) ||
+        both(raw, calibration, IR_MILLI(IR_WHITE_ENTER), -1))
     {
         return IR_LINE_LOST;
     }
@@ -211,10 +247,9 @@ void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
     {
         return; /* Repeated cached samples cannot progress calibration. */
     }
-    tracker->raw = raw;
+    tracker->raw = ir_raw_word(raw, valid);
     tracker->have_sample = true;
     tracker->sample_ms = now;
-    tracker->sample_valid = valid;
     if (!valid)
     {
         tracker->reading = (IrReading){0};
@@ -225,7 +260,8 @@ void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
     capture_sample(tracker, raw, now);
     tracker->reading = tracker->capture_kind == IR_CAPTURE_NONE ?
         ir_tracking_reading(raw, &tracker->calibration) : (IrReading){0};
-    tracker->line = ir_tracking_classify(tracker->reading, tracker->line);
+    tracker->line = ir_tracking_classify(tracker->reading, raw,
+        &tracker->calibration, tracker->line);
 }
 
 IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
@@ -236,7 +272,7 @@ IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
         return output;
     }
     output.sampled_ms = tracker->sample_ms;
-    bool usable = tracker->have_sample && tracker->sample_valid &&
+    bool usable = tracker->have_sample && ir_raw_word_valid(tracker->raw) &&
         reading_valid(tracker->reading) &&
         ((uint32_t)(now - tracker->sample_ms) <= IR_MAX_GAP_MS) &&
         (tracker->capture_kind == IR_CAPTURE_NONE);
@@ -244,10 +280,10 @@ IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
     output.valid = usable && (output.line == IR_LINE_VISIBLE);
     if (output.valid)
     {
+        /* steering = clamp(KP * error, +-MAX_CORRECTION) / MAX_CORRECTION */
         output.error = tracker->reading.error;
-        float correction = clamp(IR_KP * output.error,
-            -IR_MAX_CORRECTION, IR_MAX_CORRECTION);
-        output.steering = correction / IR_MAX_CORRECTION;
+        output.steering = (int8_t)clamp(round_milli(output.error * IR_STEER_GAIN_MILLI),
+            -IR_SCALE_ONE, IR_SCALE_ONE);
     }
     return output;
 }
@@ -261,16 +297,16 @@ void ir_snapshot_refresh(S3IrSnapshot *snapshot, uint32_t now)
     snapshot->sample_age_ms = snapshot->have_sample ?
         (uint32_t)(now - snapshot->sampled_ms) : 0u;
     snapshot->sample_fresh = snapshot->have_sample &&
-        snapshot->acquisition_valid &&
+        ir_raw_word_valid(snapshot->raw) &&
         (snapshot->sample_age_ms <= IR_MAX_GAP_MS);
     if (!snapshot->sample_fresh)
     {
         snapshot->normalized_valid = false;
         snapshot->guidance_valid = false;
-        snapshot->normalized_left = 0.0f;
-        snapshot->normalized_right = 0.0f;
-        snapshot->error = 0.0f;
-        snapshot->steering = 0.0f;
+        snapshot->left_fraction = 0u;
+        snapshot->right_fraction = 0u;
+        snapshot->error = 0;
+        snapshot->steering = 0;
         snapshot->line = IR_LINE_UNKNOWN;
     }
 }
@@ -285,23 +321,23 @@ S3IrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t sequence,
     }
     snapshot.sequence = sequence;
     snapshot.sampled_ms = tracker->sample_ms;
-    snapshot.raw = tracker->raw;
+    snapshot.raw = ir_raw_word(ir_raw_word_raw(tracker->raw),
+        tracker->have_sample && ir_raw_word_valid(tracker->raw));
     snapshot.calibration = tracker->calibration;
     snapshot.capture_kind = tracker->capture_kind;
     snapshot.capture_result = tracker->capture_result;
     snapshot.have_sample = tracker->have_sample;
-    snapshot.acquisition_valid = tracker->have_sample && tracker->sample_valid;
     snapshot.calibration_valid =
         ir_tracking_reading(tracker->calibration.black,
                             &tracker->calibration).valid;
-    IrReading reading = ir_tracking_reading(tracker->raw,
+    IrReading reading = ir_tracking_reading(ir_raw_word_raw(tracker->raw),
         &tracker->calibration);
-    snapshot.normalized_valid = snapshot.acquisition_valid && reading.valid &&
+    snapshot.normalized_valid = ir_raw_word_valid(snapshot.raw) && reading.valid &&
         (tracker->capture_kind == IR_CAPTURE_NONE);
     if (snapshot.normalized_valid)
     {
-        snapshot.normalized_left = (2.0f * reading.left_fraction) - 1.0f;
-        snapshot.normalized_right = (2.0f * reading.right_fraction) - 1.0f;
+        snapshot.left_fraction = reading.left_fraction;
+        snapshot.right_fraction = reading.right_fraction;
         snapshot.error = reading.error;
     }
     IrTrackingOutput output = ir_tracking_output(tracker, now);

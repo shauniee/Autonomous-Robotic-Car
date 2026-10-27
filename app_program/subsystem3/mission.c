@@ -9,7 +9,7 @@
 #include "../common/buttons.h"
 #include "../common/robot_time.h"
 
-static _Atomic uint32_t published_state;	/* writer: Mission task */
+static _Atomic uint8_t published_state;	/* writer: Mission task; 7 states, 3 bits */
 
 MissionState mission_state(void)
 {
@@ -101,8 +101,8 @@ static void mission_task(INT stacd, void *exinf)
             .left_clearance_mm = profile.left_clearance_mm,
             .right_clearance_mm = profile.right_clearance_mm,
             .have_barcode = barcode_pop(&barcode),
-            .barcode_action = barcode.action,
-            .barcode_letter = (uint8_t)(barcode.symbol >= 'A' && barcode.symbol <= 'Z' ? barcode.symbol - 'A' : 31)};
+            .barcode_action = barcode_event_action(&barcode),
+            .barcode_letter = barcode_event_letter(&barcode)};
 
         MissionOutputs out;
         mission_step(&mission, &in, &out);
@@ -157,7 +157,7 @@ static void mission_task(INT stacd, void *exinf)
             tm_printf((UB *)"[MISSION] command write failed; stopping\n");
             (void)s2_stop();
         }
-        atomic_store_explicit(&published_state, (uint32_t)mission.state, memory_order_release);
+        atomic_store_explicit(&published_state, (uint8_t)mission.state, memory_order_release);
         if (mission.state != reported)
         {
             reported = mission.state;

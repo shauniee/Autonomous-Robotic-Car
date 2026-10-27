@@ -7,11 +7,44 @@
 
 /* RP2040 ADC RESULT is 12 bits: 0 through (2^12 - 1). */
 
+/* Base-2 scaled integers (ADR 0001): a 0..1 fraction is stored as 0..127 and
+   a signed -1..+1 value as -127..+127 (int8_t). Divide by IR_SCALE_ONE only
+   at a float boundary (Mission building the S2 motion command). */
+#define IR_SCALE_ONE 127
+
 typedef struct
 {
     uint16_t left;
     uint16_t right;
 } IrRaw;
+
+/* A raw pair and its valid flag in one word: left bits 0-11, right bits
+   12-23, valid bit 24. Written with one aligned 32-bit store, so no reader
+   sees a left from one sample beside a right from another. Readings above
+   IR_ADC_MAX (only possible with valid clear) saturate to IR_ADC_MAX. */
+typedef uint32_t IrRawWord;
+
+#define IR_RAW_BITS 12u
+#define IR_RAW_MASK ((1u << IR_RAW_BITS) - 1u)
+#define IR_RAW_VALID_BIT (2u * IR_RAW_BITS)
+_Static_assert(IR_ADC_MAX == IR_RAW_MASK, "raw IR field width must match the ADC");
+
+static inline IrRawWord ir_raw_word(IrRaw raw, bool valid)
+{
+    uint32_t left = raw.left > IR_ADC_MAX ? IR_ADC_MAX : raw.left;
+    uint32_t right = raw.right > IR_ADC_MAX ? IR_ADC_MAX : raw.right;
+    return left | right << IR_RAW_BITS | (valid ? 1u : 0u) << IR_RAW_VALID_BIT;
+}
+
+static inline IrRaw ir_raw_word_raw(IrRawWord word)
+{
+    return (IrRaw){(uint16_t)(word & IR_RAW_MASK), (uint16_t)(word >> IR_RAW_BITS & IR_RAW_MASK)};
+}
+
+static inline bool ir_raw_word_valid(IrRawWord word)
+{
+    return (word >> IR_RAW_VALID_BIT & 1u) != 0u;
+}
 
 typedef struct
 {
@@ -32,9 +65,9 @@ typedef enum
 typedef struct
 {
     bool valid;
-    float left_fraction;
-    float right_fraction;
-    float error;
+    uint8_t left_fraction;	/* 0..IR_SCALE_ONE: white..black */
+    uint8_t right_fraction;
+    int8_t error;		/* right - left, -IR_SCALE_ONE..+IR_SCALE_ONE */
 } IrReading;
 
 typedef enum
@@ -65,8 +98,7 @@ typedef struct
     IrLine line;
     IrCalibration calibration;
     IrReading reading;
-    IrRaw raw;
-    bool sample_valid;
+    IrRawWord raw;		/* latest pair; valid flag = sample valid */
     bool have_sample;
     uint32_t sample_ms;
     IrCaptureKind capture_kind;
@@ -85,8 +117,8 @@ typedef struct
 {
     bool valid;
     IrLine line;
-    float error;
-    float steering;
+    int8_t error;	/* -IR_SCALE_ONE..+IR_SCALE_ONE */
+    int8_t steering;	/* -IR_SCALE_ONE..+IR_SCALE_ONE */
     uint32_t sampled_ms;
 } IrTrackingOutput;
 
@@ -100,23 +132,22 @@ void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
 IrReading ir_tracking_reading(IrRaw raw, const IrCalibration *calibration);
 IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now);
 /* Portable data for S1 and future Mission consumers; no wire format implied.
-   Invalid normalized/error/steering fields are zero; use validity flags. */
+   Invalid fraction/error/steering fields are zero; use validity flags. */
 typedef struct
 {
     uint32_t sequence;
     uint32_t sampled_ms;
     uint32_t sample_age_ms;
-    IrRaw raw;
+    IrRawWord raw;		/* valid flag = acquisition valid */
     IrCalibration calibration;
-    float normalized_left;
-    float normalized_right;
-    float error;
-    float steering;
+    uint8_t left_fraction;	/* 0..IR_SCALE_ONE */
+    uint8_t right_fraction;
+    int8_t error;		/* -IR_SCALE_ONE..+IR_SCALE_ONE */
+    int8_t steering;
     IrLine line;
     IrCaptureKind capture_kind;
     IrCaptureResult capture_result;
     bool have_sample;
-    bool acquisition_valid;
     bool calibration_valid;
     bool sample_fresh;
     bool normalized_valid;

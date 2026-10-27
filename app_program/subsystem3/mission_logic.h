@@ -59,7 +59,7 @@ typedef struct
     bool inputs_ok;		/* IR snapshot copied and Motion health read */
     bool calibration_valid, guidance_valid, usable_line;
     IrLine line;
-    float steering;
+    int8_t steering;		/* S3 scaled, -IR_SCALE_ONE..+IR_SCALE_ONE */
     uint32_t line_sampled_ms;
     uint32_t travel_counts;	/* mean of both wheel counts, wrapped */
     rd_motion_status_t motion_status;
