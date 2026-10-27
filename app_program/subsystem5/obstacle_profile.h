@@ -31,24 +31,65 @@ typedef enum
     S5_SCAN_STATE_COUNT		/* 8: exactly fills 3 bits */
 } s5_scan_state_t;
 
-typedef struct
+/* Each ray: 7-bit signed servo angle (-60..60), 1-bit validity,
+   16-bit range. Attribute packed prevents unwanted byte padding; this
+   array is task-private, and the wider profile is mutex-copied. */
+typedef struct __attribute__((packed))
 {
-    int16_t angle_deg;
+    int8_t angle_deg : 7;
+    uint8_t valid : 1;
     uint16_t range_mm;
-    bool valid;
 } ObstacleRay;
 
+/* Closest angle and validity share one byte. All six geometrical distances
+   and coordinates remain 16-bit: D05 has no validated tighter sonar bound. */
 typedef struct
 {
-    int16_t closest_angle_deg;
-    uint16_t closest_mm;		/* distance from the reference point to the nearest ray */
-    uint16_t width_mm;		/* extent across the obstacle within the car's depth */
+    int8_t closest_angle_deg : 7;
+    uint8_t valid : 1;
+    uint16_t closest_mm;
+    uint16_t width_mm;
     uint16_t left_clearance_mm;
     uint16_t right_clearance_mm;
-    int16_t obstacle_forward_mm;	/* nearest point, forward of the reference point */
-    int16_t obstacle_left_mm;	/* nearest point, left of the reference point */
-    bool valid;
+    int16_t obstacle_forward_mm;
+    int16_t obstacle_left_mm;
 } ObstacleProfile;
+
+_Static_assert(sizeof(ObstacleRay) == 3u, "packed obstacle ray must use 24 bits");
+_Static_assert(sizeof(ObstacleProfile) == 14u, "obstacle profile layout changed unexpectedly");
+
+/* Public construction/decoding helpers: callers do not mask packed fields. */
+static inline ObstacleRay s5_ray_make(int16_t angle_deg, uint16_t range_mm, bool valid)
+{
+    ObstacleRay ray = {0};
+    if (angle_deg < -SERVO_MAX_DEG || angle_deg > SERVO_MAX_DEG)
+    {
+        ray.valid = false;
+        ray.angle_deg = 0;
+        ray.range_mm = 0u;
+    }
+    else
+    {
+        ray.angle_deg = (int8_t)angle_deg;
+        ray.valid = valid;
+        ray.range_mm = range_mm;
+    }
+    return ray;
+}
+
+static inline uint32_t s5_side_watch_pack(bool on, int16_t angle_deg)
+{
+    if (angle_deg < -SERVO_MAX_DEG) angle_deg = -SERVO_MAX_DEG;
+    if (angle_deg > SERVO_MAX_DEG) angle_deg = SERVO_MAX_DEG;
+    /* Atomic word: bit 0 enabled, bits 1..7 signed 7-bit angle. */
+    return (on ? 1u : 0u) | (((uint32_t)((uint8_t)angle_deg & 0x7Fu)) << 1u);
+}
+
+static inline int16_t s5_side_watch_angle(uint32_t word)
+{
+    unsigned value = (word >> 1u) & 0x7Fu;
+    return (int16_t)(value < 64u ? (int)value : (int)value - 128);
+}
 
 _Static_assert(S5_SCAN_STATE_COUNT == (1 << S5_SCAN_STATE_BITS), "scan state must fill 3 bits");
 

@@ -252,9 +252,10 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Scan state | scan word bits 0-2, Obstacle | 8 states (IDLE, SETTLING, COARSE, FINE, DONE, FAILED, CANCELLED, SIDE_WATCH) | out-of-range decodes as FAILED | 3 | encoded value |
 | Scan ID | scan word bits 3-6, Mission request | 0-15 | wraps | 4 | mask/shift |
 | Range, front / side | echo word, Obstacle | 0-8190 mm, nearest mm | 8191 or valid flag clear = no echo, never clear space; saturates to invalid | 13+1+16 (time low 16) | mask/shift |
-| Quantized obstacle profile | mutex-copied snapshot | distances 0-65535 mm; closest angle -60..+60 (signed) | valid flag clear; saturates at 16 bits | 5 x 16 + 1 | struct; packed pending (#54) |
+| Obstacle profile (geometry) | mutex-copied `ObstacleProfile`, S5 | closest angle -60..+60, valid flag; 4 unsigned mm measurements 0-65535; 2 signed mm coordinates | clamp to 16-bit limits; invalid profile not published | angle 7 + valid 1 + 6x16 = 104 logical; 112 stored (`sizeof` 14 bytes) | bit-fields for angle/valid, other 16-bit words (#111) |
+| ObstacleRay scan entry | `ObstacleRay` array, private S5 task | angle -60..+60; valid 0/1; range mm 0-65535 | invalid angle rejected by constructor, no echo = invalid + zero range | 7 + 1 + 16 = 24 stored bits (`sizeof` 3 bytes) | GNU C packed angle/valid byte + unaligned 16-bit range (#111) |
 | Obstacle width / depth | profile width; depth from encoder travel | 0-65535 mm / counts | saturates | 16 | unsigned |
-| Servo angle | command, Obstacle | -60..+60 degrees (signed) | clamped to sweep limit | 7 | signed |
+| Side-watch servo angle / enabled | `side_command` atomic word, Mission writer | -60..+60 degrees / yes-no | clamped to sweep; value sign-extended on read | 7 + 1 logical; 32 stored (shared atomic word) | bits 1..7 signed angle, bit 0 enabled; accessors (#111) |
 
 ### Mission and Safety
 
