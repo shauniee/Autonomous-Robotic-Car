@@ -232,6 +232,13 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Maximum hump height | terrain word bits 7-13 | 0-126, same scale | 127 invalid; saturates at 126 | 7 | fixed point |
 | Hump count | terrain word bits 14-21 | 0-255 | saturates at 255 | 8 | unsigned |
 | Terrain state / height valid / calibrated | terrain word bits 22-26 | 5 states / flag / flag | - | 3 / 1 / 1 | mask/shift |
+| Persistent acceleration filter | `TerrainContext.filtered_accel_q16`, one S4 task writer | 3 signed raw-accelerometer axes with 16 fractional bits; widened bias-corrected range | saturates on int32 overflow | 3 x 32 | Q16 signed integers; local float calculations only (#110) |
+| Calibration accumulation | `TerrainContext.calib_sum`, S4 task | 100 x signed 16-bit raw samples per axis, -3276800..3276700 | cannot overflow signed 23 bits during 100 samples | 3 x 23 = 69 bits; 72-bit storage | GNU C packed 23-bit signed bit-fields (#110) |
+| Pitch estimate | `TerrainContext.pitch_cdeg`, S4 task | -9000..9000 centidegrees | rounded nearest 0.01 degree | 15 logical, 16 stored | `int16_t` (#110) |
+| Terrain counters | `calib_count` / `flat_run`, S4 task | 0-100 / 0-10 | calibrated stops count at 100; flat run resets at 10 | 7 / 4 | C bit-fields (#110) |
+| Terrain private state / validity flags | `TerrainContext.state`, `height_valid`, `is_calibrated` | 0-4 / flag / flag | state 5-7 unused | 3 / 1 / 1 | C bit-fields (#110) |
+| Terrain private hump last/max codes | `TerrainContext.last_hump_code`, `max_hump_code` | 0-126; 127 invalid | saturates and retains max | 7 / 7 | C bit-fields (#110) |
+| Complete persistent TerrainContext | `TerrainContext`, S4 task | as above; 20 ms processing | D06 physical calibration pending; replay old float path for parity | target compiler `sizeof` to be recorded | `testing/subsystem4/sizeof_probe.c` (#110) |
 
 ### S5 Obstacle (proposed; branches #48, #49)
 
