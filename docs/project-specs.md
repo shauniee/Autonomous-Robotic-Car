@@ -22,7 +22,7 @@ Status labels: **requirement** (source-stated), **proposed** (drafted, not signe
   - [S4 Terrain (scale provisional, 1 mm per count `HUMP_MM_PER_COUNT`, until D06; branches #45, #46)](#s4-terrain-scale-provisional-1-mm-per-count-hump_mm_per_count-until-d06-branches-45-46)
   - [S5 Obstacle (proposed; branches #48, #49)](#s5-obstacle-proposed-branches-48-49)
   - [Mission and Safety](#mission-and-safety)
-  - [Fault bitmask (proposed by `app_program/common/robot_data.h`, issue #27; owners confirm)](#fault-bitmask-proposed-by-app_programcommonrobot_datah-issue-27-owners-confirm)
+  - [Fault bitmask (`app_program/common/robot_data.h`; see architecture for status)](#fault-bitmask-app_programcommonrobot_datah-see-architecture-for-status)
 - [6. Assessment, demonstration and process rules](#6-assessment-demonstration-and-process-rules)
 - [7. Course geometry](#7-course-geometry)
 - [8. Not specified by any source](#8-not-specified-by-any-source)
@@ -264,7 +264,7 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Start-blocking / run-stopping check | read on demand (`rd_fault_start_blocked`, `rd_fault_stop_pending`), Mission / Safety (read only) | owner bytes masked by the policy in [architecture](architecture.md#fault-bitmask) | 1 each (result) | bool |
 | Stop latch cause | cause word, Safety | 4 cause bits; 0 = not latched | 4 | bit mask |
 
-### Fault bitmask (proposed by `app_program/common/robot_data.h`, issue #27; owners confirm)
+### Fault bitmask (`app_program/common/robot_data.h`; see architecture for status)
 
 One byte per owner task; each owner sets and clears only its own bits. Every bit is reported in telemetry. Which bits block a start or stop a run: [architecture](architecture.md#fault-bitmask).
 
