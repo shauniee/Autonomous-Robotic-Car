@@ -12,43 +12,63 @@
 #define DEG_TO_RAD              0.0174532925f
 
 
-void terrain_algo_init(TerrainContext *ctx) {
-    ctx->accel_offset = (Vec3f){0.0f, 0.0f, 0.0f};
-    ctx->filtered_accel = (Vec3f){0.0f, 0.0f, 1.0f};
-    ctx->pitch_deg = 0.0f;
-    ctx->state = TERRAIN_STATE_FLAT;
-    ctx->height_valid = false;
-    ctx->rise_q = 0u;
-    ctx->last_hump_code = 0u;
-    ctx->max_hump_code = 0u;
-    ctx->hump_count = 0u;
-    ctx->flat_run = 0u;
-    ctx->is_calibrated = false;
-    ctx->calib_count = 0;
-    ctx->calib_sum = (Vec3f){0.0f, 0.0f, 0.0f};
+/* Filter uses the existing LPF_ALPHA=0.20 as exact 1/5 in signed
+   raw-LSB Q16 units. Keep this ratio in sync with D06 calibration if tuned. */
+#define FILTER_DIV 5
+#define RAW_Q_ONE 65536ll
+
+static int64_t round_div(int64_t value, int64_t divisor)
+{
+    return value >= 0 ? (value + divisor / 2) / divisor
+                      : -((-value + divisor / 2) / divisor);
 }
 
-bool terrain_algo_calibrate_sample(TerrainContext *ctx, const Gy511RawAxes *raw) {
+static int32_t saturate_q16(int64_t value)
+{
+    if (value > INT32_MAX) return INT32_MAX;
+    if (value < INT32_MIN) return INT32_MIN;
+    return (int32_t)value;
+}
+
+static int32_t filter_axis(int32_t previous, int16_t raw, int32_t sum, bool vertical)
+{
+    /* Calibrated correction preserves fractional averages of all 100
+       samples, rather than rounding the bias to a whole sensor count. */
+    int64_t corrected = (int64_t)raw * RAW_Q_ONE -
+                        round_div((int64_t)sum * RAW_Q_ONE, 100);
+    if (vertical) corrected += (int64_t)(1.0f / ACCEL_MG_PER_LSB + 0.5f) * RAW_Q_ONE;
+    return saturate_q16(round_div((int64_t)previous * (FILTER_DIV - 1) + corrected,
+                                  FILTER_DIV));
+}
+
+void terrain_algo_init(TerrainContext *ctx)
+{
+    *ctx = (TerrainContext){0};
+    ctx->filtered_accel_q16.z =
+        (int32_t)((1.0f / ACCEL_MG_PER_LSB + 0.5f) * RAW_Q_ONE);
+    ctx->state = TERRAIN_STATE_FLAT;
+}
+
+bool terrain_algo_calibrate_sample(TerrainContext *ctx, const Gy511RawAxes *raw)
+{
     if (ctx->is_calibrated) return true;
-
-    ctx->calib_sum.x += (float)raw->x * ACCEL_MG_PER_LSB;
-    ctx->calib_sum.y += (float)raw->y * ACCEL_MG_PER_LSB;
-    ctx->calib_sum.z += (float)raw->z * ACCEL_MG_PER_LSB;
-    ctx->calib_count++;
-
-    if (ctx->calib_count >= 100) {
-        ctx->accel_offset.x = ctx->calib_sum.x / 100.0f;
-        ctx->accel_offset.y = ctx->calib_sum.y / 100.0f;
-        ctx->accel_offset.z = (ctx->calib_sum.z / 100.0f) - 1.0f; /* Normalize Z to 1g */
+    ctx->calib_sum.x += raw->x;
+    ctx->calib_sum.y += raw->y;
+    ctx->calib_sum.z += raw->z;
+    ++ctx->calib_count;
+    if (ctx->calib_count >= 100u)
+    {
         ctx->is_calibrated = true;
         return true;
     }
     return false;
 }
 
-void terrain_algo_calibration_restart(TerrainContext *ctx) {
+void terrain_algo_calibration_restart(TerrainContext *ctx)
+{
     ctx->calib_count = 0;
-    ctx->calib_sum = (Vec3f){0.0f, 0.0f, 0.0f};
+    ctx->calib_sum = (TerrainCalibSum){0};
+    ctx->is_calibrated = false;
 }
 
 /* Working height in 0.1 mm units, saturating at the 16-bit limit. */
@@ -61,27 +81,28 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t
     float delta_dist_mm = (float)delta_counts / ENC_COUNTS_PER_MM;
     if (!ctx->is_calibrated) return;
 
-    /* 1. Convert to physical g with bias removal */
-    Vec3f cur;
-    cur.x = ((float)raw->x * ACCEL_MG_PER_LSB) - ctx->accel_offset.x;
-    cur.y = ((float)raw->y * ACCEL_MG_PER_LSB) - ctx->accel_offset.y;
-    cur.z = ((float)raw->z * ACCEL_MG_PER_LSB) - ctx->accel_offset.z;
+    /* Local float values exist only inside this one processing release;
+       persistent filter state and calibration history are scaled integers. */
+    float cur_x = ((float)raw->x - (float)ctx->calib_sum.x / 100.0f) * ACCEL_MG_PER_LSB;
+    float cur_y = ((float)raw->y - (float)ctx->calib_sum.y / 100.0f) * ACCEL_MG_PER_LSB;
 
-    /* 2. Low-pass filter (IIR) to strip chassis vibration */
-    ctx->filtered_accel.x = (ctx->filtered_accel.x * (1.0f - LPF_ALPHA)) + (cur.x * LPF_ALPHA);
-    ctx->filtered_accel.y = (ctx->filtered_accel.y * (1.0f - LPF_ALPHA)) + (cur.y * LPF_ALPHA);
-    ctx->filtered_accel.z = (ctx->filtered_accel.z * (1.0f - LPF_ALPHA)) + (cur.z * LPF_ALPHA);
+    /* Filter in high-resolution signed Q16 raw-LSB units. */
+    ctx->filtered_accel_q16.x = filter_axis(ctx->filtered_accel_q16.x, raw->x, ctx->calib_sum.x, false);
+    ctx->filtered_accel_q16.y = filter_axis(ctx->filtered_accel_q16.y, raw->y, ctx->calib_sum.y, false);
+    ctx->filtered_accel_q16.z = filter_axis(ctx->filtered_accel_q16.z, raw->z, ctx->calib_sum.z, true);
 
-    /* 3. Compute pitch angle */
-    ctx->pitch_deg = atan2f(ctx->filtered_accel.y,
-                            sqrtf((ctx->filtered_accel.x * ctx->filtered_accel.x) + 
-                                  (ctx->filtered_accel.z * ctx->filtered_accel.z))) * RAD_TO_DEG;
+    float filtered_x = ((float)ctx->filtered_accel_q16.x / (float)RAW_Q_ONE) * ACCEL_MG_PER_LSB;
+    float filtered_y = ((float)ctx->filtered_accel_q16.y / (float)RAW_Q_ONE) * ACCEL_MG_PER_LSB;
+    float filtered_z = ((float)ctx->filtered_accel_q16.z / (float)RAW_Q_ONE) * ACCEL_MG_PER_LSB;
+    float pitch_deg = atan2f(filtered_y,
+                             sqrtf(filtered_x * filtered_x + filtered_z * filtered_z)) * RAD_TO_DEG;
+    ctx->pitch_cdeg = (int16_t)lroundf(pitch_deg * 100.0f);
 
     /* 4. Impact detection (FR11): horizontal shock on level ground. IMPACT
        lasts while the shock does; Safety latches the stop it causes, and a
        hump in progress is abandoned. */
-    float shock_horiz = sqrtf((cur.x * cur.x) + (cur.y * cur.y));
-    if (shock_horiz > IMPACT_THRESHOLD_G && fabsf(ctx->pitch_deg) < 3.0f) {
+    float shock_horiz = sqrtf((cur_x * cur_x) + (cur_y * cur_y));
+    if (shock_horiz > IMPACT_THRESHOLD_G && fabsf(pitch_deg) < 3.0f) {
         ctx->state = TERRAIN_STATE_IMPACT;
         return;
     }
@@ -92,7 +113,7 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t
     /* 5. Hump progression state machine (Figure 7) */
     switch (ctx->state) {
         case TERRAIN_STATE_FLAT:
-            if (ctx->pitch_deg > PITCH_CLIMB_THRESH_DEG) {
+            if (pitch_deg > PITCH_CLIMB_THRESH_DEG) {
                 ctx->state = TERRAIN_STATE_CLIMBING;
                 ctx->rise_q = 0u;
                 ctx->height_valid = false;
@@ -101,18 +122,18 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t
 
         case TERRAIN_STATE_CLIMBING:
             if (delta_dist_mm > 0.0f) {
-                rise_add(ctx, sinf(ctx->pitch_deg * DEG_TO_RAD) * delta_dist_mm * 10.0f);
+                rise_add(ctx, sinf(pitch_deg * DEG_TO_RAD) * delta_dist_mm * 10.0f);
             }
-            if (ctx->pitch_deg < PITCH_CLIMB_THRESH_DEG && ctx->pitch_deg > PITCH_DESC_THRESH_DEG) {
+            if (pitch_deg < PITCH_CLIMB_THRESH_DEG && pitch_deg > PITCH_DESC_THRESH_DEG) {
                 ctx->state = TERRAIN_STATE_CRESTING;
             }
             break;
 
         case TERRAIN_STATE_CRESTING:
-            if (ctx->pitch_deg < PITCH_DESC_THRESH_DEG) {
+            if (pitch_deg < PITCH_DESC_THRESH_DEG) {
                 ctx->state = TERRAIN_STATE_DESCENDING;
                 ctx->flat_run = 0u;
-            } else if (fabsf(ctx->pitch_deg) < 2.0f) {
+            } else if (fabsf(pitch_deg) < 2.0f) {
                 /* The filtered pitch passes through zero between climb and descent;
                    only a sustained flat reading is a premature flatten. */
                 if (++ctx->flat_run >= HUMP_FLAT_SAMPLES) {
@@ -125,7 +146,7 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t
             break;
 
         case TERRAIN_STATE_DESCENDING:
-            if (fabsf(ctx->pitch_deg) < 2.0f) {
+            if (fabsf(pitch_deg) < 2.0f) {
                 /* Complete climb-crest-descent window finished: only a valid, complete
                    encounter adds an event. */
                 float mm = ((float)ctx->rise_q / 10.0f) * HUMP_CALIB_FACTOR;

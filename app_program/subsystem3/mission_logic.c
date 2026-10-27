@@ -28,19 +28,20 @@ static uint8_t next_action_id(Mission *m)
 
 static MotionCommand stop_command(uint32_t now_ms)
 {
-    return (MotionCommand){.mode = MOTION_MODE_STOP, .sampled_ms = now_ms};
+    return motion_command_make(MOTION_MODE_STOP, 0.0f, 0.0f, 0, 0u, now_ms);
 }
 
-/* Starting an action: a fresh ID makes Motion begin it; the same ID continues it. */
+/* Action targets are integral mm or degrees; invalid/out-of-range values
+   fail closed as a STOP command rather than being truncated. */
 static MotionCommand action_command(motion_mode_t mode, float speed, float target, uint8_t id, uint32_t now_ms)
 {
-    return (MotionCommand){.mode = mode, .speed_mmps = speed, .target = target, .action_id = id, .sampled_ms = now_ms};
+    return motion_command_make(mode, speed, target, 0, id, now_ms);
 }
 
-static MotionCommand follow_command(const MissionInputs *in, float speed, float steering, uint8_t id)
+static MotionCommand follow_command(const MissionInputs *in, float speed, int steering_q, uint8_t id)
 {
-    return (MotionCommand){.mode = MOTION_MODE_FOLLOW, .speed_mmps = speed, .steering = steering,
-                           .action_id = id, .sampled_ms = in->line_sampled_ms};
+    return motion_command_make(MOTION_MODE_FOLLOW, speed, 0.0f,
+                               steering_q, id, in->line_sampled_ms);
 }
 
 /* Counts fresh visible line reads; true on the second in a row. */
@@ -209,7 +210,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
             out->line_lost = true;
             return;
         }
-        out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS * 0.5f, m->direction > 0 ? 1.0f : -1.0f, 1u);
+        out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS * 0.5f, m->direction > 0 ? IR_SCALE_ONE : -IR_SCALE_ONE, 1u);
         return;
     }
 
@@ -218,18 +219,16 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         to_stop(m, in, out, true);
         return;
     }
-    /* The one S3 -> S2 conversion: scaled steering to the float -1..+1 that
-       MotionCommand takes (S2's interface; int8_t proposed to its owner). */
-    float steer = (float)in->steering / (float)IR_SCALE_ONE;
-    if (steer > MAX_STEER) steer = MAX_STEER;
-    if (steer < -MAX_STEER) steer = -MAX_STEER;
-    if (steer != 0.0f)
-    {
-        m->direction = steer > 0.0f ? 1 : -1;
-    }
+    /* S3 already publishes signed Q7 steering: preserve its integer form
+       across the S3->S2 boundary, with the configured correction limit. */
+    int steer = in->steering;
+    int max_steer_q = (int)(MAX_STEER * IR_SCALE_ONE);
+    if (steer > max_steer_q) steer = max_steer_q;
+    if (steer < -max_steer_q) steer = -max_steer_q;
+    if (steer != 0) m->direction = steer > 0 ? 1 : -1;
     bool is_broad = in->line == IR_LINE_BROAD_BLACK;
     out->command = follow_command(in, is_broad ? MISSION_BROAD_SPEED_MMPS : MISSION_FOLLOW_SPEED_MMPS,
-                                  is_broad ? 0.0f : steer, 1u);
+                                  is_broad ? 0 : steer, 1u);
 }
 
 

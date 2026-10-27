@@ -8,12 +8,7 @@ ER subsystem2_init(void);
 ER subsystem2_start(void);
 
 /* Progress records successful output processing, not measured motion. */
-typedef struct
-{
-    uint32_t serviced_ms, sequence;
-    bool stopped;
-    bool brake_acknowledged; /* Motion has braked since the latest stop. */
-} MotionHealth;
+#include "motion_health.h"
 
 /* Mission writes the command each 20 ms. Copy under a mutex; the sample time
    inside the command is never refreshed by rewriting it. */

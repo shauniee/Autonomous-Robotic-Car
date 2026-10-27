@@ -220,6 +220,21 @@ Rules for every frame:
 | 7-8 | right encoder count at the event |
 | 9-10 | arg2: action (barcode), depth mm (obstacle) |
 
+**Event RAM packing (issue #112).** The 11-byte event wire format and MQTT schema v2
+remain unchanged. Byte 1 already reserves four bits for kind. `arg2` cannot be
+reduced to three bits: barcode actions are small, but obstacle depth needs its
+full 16-bit range (0-65535 mm). The Reporting ring uses 16 entries of
+`s1_packed_event_t` (10 bytes each): kind uses three bits and arg seven bits
+in a shared 16-bit field; time, encoder positions and arg2 stay 16-bit.
+Invalid kinds and arguments above 127 are rejected rather than truncated.
+Ring head (0-15) and count (0-16) share a 16-bit packed word, with
+32-bit saturating `dropped`. Accessors isolate the bit operations; the
+existing core-1 interrupt-masked push/pop boundaries remain in place.
+Expected target ring storage is 168 bytes, including padding; confirm with
+`testing/subsystem3/sizeof_probe.sh testing/subsystem1/sizeof_probe.c`.
+This is a RAM layout change only: `mqtt_encode_event`, the laptop decoder
+and schema-v2 golden vectors remain compatible.
+
 ### Mapping, acknowledgement, snapshot request
 
 - **Mapping (5 bytes):** byte 0 `0x24`, byte 1 sequence, bytes 2-4 a 24-bit little-endian value; bits 4-0, 9-5, 14-10 and 19-15 are the letters for left, right, straight and U-turn (A=0 .. Z=25); bits 23-20 reserved 0. The four letters are distinct.
