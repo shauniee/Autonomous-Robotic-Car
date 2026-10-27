@@ -101,8 +101,8 @@ static void mission_task(INT stacd, void *exinf)
             .left_clearance_mm = profile.left_clearance_mm,
             .right_clearance_mm = profile.right_clearance_mm,
             .have_barcode = barcode_pop(&barcode),
-            .barcode_action = barcode.action,
-            .barcode_letter = (uint8_t)(barcode.symbol >= 'A' && barcode.symbol <= 'Z' ? barcode.symbol - 'A' : 31)};
+            .barcode_action = barcode_event_action(&barcode),
+            .barcode_letter = barcode_event_letter(&barcode)};
 
         MissionOutputs out;
         mission_step(&mission, &in, &out);

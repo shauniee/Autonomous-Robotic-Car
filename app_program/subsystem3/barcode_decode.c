@@ -178,7 +178,7 @@ static void drop(barcode_frame_t *f)
 }
 
 barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
-    uint32_t left_count, uint32_t right_count, char *symbol,
+    barcode_count_t left_count, barcode_count_t right_count, char *symbol,
     barcode_orientation_t *orientation)
 {
     if (!f->have_edge)
