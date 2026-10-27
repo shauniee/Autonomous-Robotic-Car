@@ -30,14 +30,35 @@ typedef enum {
     MOTION_MODE_COUNT
 } motion_mode_t;
 
+/* Persistent command: 10 payload bytes (12 sizeof bytes with 32-bit alignment).
+   speed_action: bits 0..8 speed 0..300 mm/s, 9..14 action ID 0..63,
+   bit 15 reserved. mode_steering: bits 0..1 mode 0..3, bits 2..9
+   steering as signed Q7 (-127..127), bits 10..15 reserved. A target is a
+   signed whole millimetre or degree, bounded by MOTION_TARGET_MAX_MM and
+   +/-360 degrees respectively; sampled_ms must remain 32 bits for wrap-safe
+   age checks. The sole writer constructs a complete value through accessors.
+   Consumers copy under the existing mutex and never mask fields by hand. */
 typedef struct {
-    motion_mode_t mode;
-    float speed_mmps;	/* 0..MOTION_SPEED_MAX_MMPS */
-    float steering;	/* FOLLOW only, -1..+1: left = v(1+s), right = v(1-s) */
-    float target;
-    uint8_t action_id;	/* fits RD_MOTION_ACTION_BITS */
-    uint32_t sampled_ms;	/* acquisition time of the source sensor sample */
+    uint32_t sampled_ms;
+    int16_t target;
+    uint16_t speed_action;
+    uint16_t mode_steering;
 } MotionCommand;
+
+_Static_assert(sizeof(MotionCommand) == 12u, "unexpected MotionCommand ABI");
+
+bool motion_command_set(MotionCommand *dst, motion_mode_t mode, float speed_mmps,
+                        float target, int steering_q, unsigned action_id, uint32_t sampled_ms);
+motion_mode_t motion_cmd_mode(const MotionCommand *cmd);
+uint16_t motion_cmd_speed(const MotionCommand *cmd);
+int16_t motion_cmd_target(const MotionCommand *cmd);
+int8_t motion_cmd_steering(const MotionCommand *cmd);
+uint8_t motion_cmd_action(const MotionCommand *cmd);
+
+/* A failed construction yields an all-zero STOP command; never drive with an
+   invalid representation. */
+MotionCommand motion_command_make(motion_mode_t mode, float speed_mmps, float target,
+                                  int steering_q, unsigned action_id, uint32_t sampled_ms);
 
 typedef struct {
     float integral, previous_speed;
