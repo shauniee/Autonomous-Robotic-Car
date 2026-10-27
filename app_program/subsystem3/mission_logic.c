@@ -218,7 +218,9 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         to_stop(m, in, out, true);
         return;
     }
-    float steer = in->steering;
+    /* The one S3 -> S2 conversion: scaled steering to the float -1..+1 that
+       MotionCommand takes (S2's interface; int8_t proposed to its owner). */
+    float steer = (float)in->steering / (float)IR_SCALE_ONE;
     if (steer > MAX_STEER) steer = MAX_STEER;
     if (steer < -MAX_STEER) steer = -MAX_STEER;
     if (steer != 0.0f)

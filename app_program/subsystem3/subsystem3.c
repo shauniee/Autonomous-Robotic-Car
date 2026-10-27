@@ -113,16 +113,14 @@ static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now,
     ButtonInputs inputs)
 {
     S3IrSnapshot snapshot = ir_snapshot_build(tracker, sequence, now);
-    /* Fixed-point display avoids floating-point console formatting. */
-    int left = (int)(snapshot.normalized_left * 1000.0f);
-    int right = (int)(snapshot.normalized_right * 1000.0f);
     tm_printf((UB *)"[IR] seq=%u ADC L=%u R=%u acquired=%d fresh=%d "
-        "normalized_milli L=%d R=%d valid=%d calibrated=%d "
+        "fraction_of_127 L=%u R=%u valid=%d calibrated=%d "
         "line=%s capture=%s age_ms=%u GP20_down=%d GP21_down=%d "
         "SENSOR_ONLY\n",
         (unsigned)sequence, (unsigned)snapshot.raw.left,
         (unsigned)snapshot.raw.right, snapshot.acquisition_valid,
-        snapshot.sample_fresh, left, right, snapshot.normalized_valid,
+        snapshot.sample_fresh, (unsigned)snapshot.left_fraction,
+        (unsigned)snapshot.right_fraction, snapshot.normalized_valid,
         snapshot.calibration_valid, ir_tracking_line_name(snapshot.line),
         ir_tracking_capture_name(snapshot.capture_result),
         (unsigned)snapshot.sample_age_ms, inputs.gp20_down,

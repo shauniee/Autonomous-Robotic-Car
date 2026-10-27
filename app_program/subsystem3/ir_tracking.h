@@ -7,6 +7,11 @@
 
 /* RP2040 ADC RESULT is 12 bits: 0 through (2^12 - 1). */
 
+/* Base-2 scaled integers (ADR 0001): a 0..1 fraction is stored as 0..127 and
+   a signed -1..+1 value as -127..+127 (int8_t). Divide by IR_SCALE_ONE only
+   at a float boundary (Mission building the S2 motion command). */
+#define IR_SCALE_ONE 127
+
 typedef struct
 {
     uint16_t left;
@@ -32,9 +37,9 @@ typedef enum
 typedef struct
 {
     bool valid;
-    float left_fraction;
-    float right_fraction;
-    float error;
+    uint8_t left_fraction;	/* 0..IR_SCALE_ONE: white..black */
+    uint8_t right_fraction;
+    int8_t error;		/* right - left, -IR_SCALE_ONE..+IR_SCALE_ONE */
 } IrReading;
 
 typedef enum
@@ -85,8 +90,8 @@ typedef struct
 {
     bool valid;
     IrLine line;
-    float error;
-    float steering;
+    int8_t error;	/* -IR_SCALE_ONE..+IR_SCALE_ONE */
+    int8_t steering;	/* -IR_SCALE_ONE..+IR_SCALE_ONE */
     uint32_t sampled_ms;
 } IrTrackingOutput;
 
@@ -100,7 +105,7 @@ void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
 IrReading ir_tracking_reading(IrRaw raw, const IrCalibration *calibration);
 IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now);
 /* Portable data for S1 and future Mission consumers; no wire format implied.
-   Invalid normalized/error/steering fields are zero; use validity flags. */
+   Invalid fraction/error/steering fields are zero; use validity flags. */
 typedef struct
 {
     uint32_t sequence;
@@ -108,10 +113,10 @@ typedef struct
     uint32_t sample_age_ms;
     IrRaw raw;
     IrCalibration calibration;
-    float normalized_left;
-    float normalized_right;
-    float error;
-    float steering;
+    uint8_t left_fraction;	/* 0..IR_SCALE_ONE */
+    uint8_t right_fraction;
+    int8_t error;		/* -IR_SCALE_ONE..+IR_SCALE_ONE */
+    int8_t steering;
     IrLine line;
     IrCaptureKind capture_kind;
     IrCaptureResult capture_result;

@@ -1,7 +1,7 @@
 /*
  *	drv_barcode.h
  *	GP16 edge capture. The dispatcher (core 1) calls the edge handler, which
- *	pushes {time, both encoder counts, level} into a single-producer /
+ *	pushes {both encoder counts, level} into a single-producer /
  *	single-consumer ring and returns. The task drains the ring.
  */
 
@@ -11,11 +11,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "../common/robot_config.h"
+#include "barcode_decode.h"
 
 typedef struct
 {
-    uint32_t sampled_us;
-    uint32_t left_count, right_count;
+    barcode_count_t left_count, right_count;	/* wrapped at ENC_COUNT_BITS */
     bool high;	/* GP16 level after the edge */
 } barcode_edge_t;
 
