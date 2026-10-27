@@ -221,7 +221,7 @@ Storage bits come from `testing/subsystem3/sizeof_probe.sh` (arm-none-eabi-gcc 1
 
 Single-store check (#106, 2026-10-27): `arm-none-eabi-objdump -d` of `ir_tracking.o` (arm-none-eabi-gcc 15.3.1, offline normal profile) shows both writes of `IrTracker.raw` in `ir_tracking_sample` as one `str` to the aligned word; the snapshot copies the word whole. Removing the two `bool` flags freed bytes that alignment padding absorbs, so `IrTracker` (60 bytes) and `S3IrSnapshot` (40 bytes) keep their size.
 
-Final build (section-4 command), final on-target S3 loop timing and the physical run are recorded by #107 in the [S3 test log](../testing/subsystem3/TEST_LOG.md).
+The final build (section-4 command) and the probe-to-object cross-check are recorded by #107 as S3-M01 in the [S3 test log](../testing/subsystem3/TEST_LOG.md#7-minimum-bit-final-memory-s3-m01--2026-10-27). On-target S3 loop timing (S3-M02) and the physical line-follow run need the robot and are tracked with the [mission-readiness checklist](../testing/mission-readiness.md).
 
 ### S4 Terrain (scale provisional, 1 mm per count `HUMP_MM_PER_COUNT`, until D06; branches #45, #46)
 
