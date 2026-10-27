@@ -116,12 +116,9 @@ void barcode_service(bool cancel)
             &symbol, &orientation);
         if (result == BARCODE_DECODED)
         {
-            barcode_event_t event = {
-                .left_count = edge.left_count,
-                .right_count = edge.right_count,
-                .symbol = symbol,
-                .action = barcode_action_for(rd_word_read(&mapping_word), symbol),
-                .orientation = orientation};
+            barcode_event_t event = {.left_count = edge.left_count, .right_count = edge.right_count};
+            barcode_event_set(&event, symbol, barcode_action_for(rd_word_read(&mapping_word), symbol),
+                orientation);
             push_event(&event);
         }
     }
