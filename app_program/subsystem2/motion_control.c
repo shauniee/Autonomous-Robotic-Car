@@ -76,8 +76,8 @@ static bool command_valid(const MotionCommand *cmd)
         motion_cmd_action(cmd) > rd_mask(RD_MOTION_ACTION_BITS) ||
         motion_cmd_speed(cmd) > MOTION_SPEED_MAX_MMPS ||
         motion_cmd_steering(cmd) < -127 ||
-        (motion_cmd_mode(cmd) == MOTION_MODE_DISTANCE || motion_cmd_mode(cmd) == MOTION_MODE_TURN) &&
-        motion_cmd_speed(cmd) == 0u)
+        ((motion_cmd_mode(cmd) == MOTION_MODE_DISTANCE || motion_cmd_mode(cmd) == MOTION_MODE_TURN) &&
+         motion_cmd_speed(cmd) == 0u))
         return false;
 
     if (motion_cmd_target(cmd) < -MOTION_TARGET_MAX_MM || motion_cmd_target(cmd) > MOTION_TARGET_MAX_MM)
