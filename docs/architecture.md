@@ -95,7 +95,7 @@ One byte per owner task; each owner sets and clears only its own bits, so no two
 | Mission (Mission task) | 0 line lost | no | no | Mission has already stopped; cleared at the next start |
 | Network (kernel task, core 0) | 0 Wi-Fi lost, 1 broker lost | no | no | Networking never starts or stops the robot |
 
-Bit positions are PROVISIONAL until owners confirm them (#28).
+Bit positions agree in `robot_data.h`, this table, [project-specs](project-specs.md#fault-bitmask-app_programcommonrobot_datah-see-architecture-for-status) and `scripts/mqtt_client.py`; each owner confirms their byte in the #113 PR before it merges (no confirmation recorded yet). `scripts/mqtt_client.py --self-test` checks the decoder's bits per owner against `robot_data.h`.
 
 ## Motion command contract
 

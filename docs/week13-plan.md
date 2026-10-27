@@ -29,7 +29,7 @@ These fields still use plain types where the [data table](project-specs.md#5-dat
 | S5 Jia Jing | Side-watch command angle | 16-bit field for a 7-bit signed angle (`subsystem5.c`) | Servo angle |
 | S1 Shaun | Event log entries | unpacked `mqtt_event_t` in RAM (`s1_report.h`) | Event record |
 | S1 Shaun | Event frame | kind uses a byte (4 bits needed); arg2 is 16 bits for a 3-bit barcode action | Event record |
-| All | Fault bit positions | marked PROVISIONAL in `robot_data.h` | Fault bitmask, #28 |
+| All | Fault bit positions | agree across firmware, docs and decoder; owner confirmation pending ([status](architecture.md#fault-bitmask)) | Fault bitmask, #113 |
 
 Convert one field at a time and rerun `testing/pure/run.sh` after each, as Tribunal risk R3 recommends.
 
