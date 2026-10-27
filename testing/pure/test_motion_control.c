@@ -48,7 +48,7 @@ static MotionOutput sim_step(Sim *s, MotionCommand *cmd, bool keep_sample, float
 static void test_freshness_and_rewrite(void)
 {
     Sim s; sim_init(&s);
-    MotionCommand cmd = {.mode = MOTION_MODE_FOLLOW, .speed_mmps = 100.0f, .action_id = 1u, .sampled_ms = s.now};
+    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW, 100.0f, 0.0f, 0, 1u, s.now);
     assert(motion_command_fresh(&cmd, s.now + MOTION_EXPIRY_MS));
     assert(!motion_command_fresh(&cmd, s.now + MOTION_EXPIRY_MS + 1u));	/* one past the limit */
     MotionOutput out = sim_step(&s, &cmd, true, 0);
@@ -69,14 +69,23 @@ static void test_freshness_and_rewrite(void)
 static void test_invalid_and_stop(void)
 {
     Sim s; sim_init(&s);
+    /* Bad constructor inputs must fail closed. Invalid packed words still
+       brake when a damaged producer bypasses the accessor. */
+    MotionCommand invalid = {0};
+    assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, NAN, 0, 0, 1u, 0u));
+    assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, 301.0f, 0, 0, 1u, 0u));
+    assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, 50.0f, 0, 128, 1u, 0u));
+    assert(!motion_command_set(&invalid, MOTION_MODE_TURN, 50.0f, 720.0f, 0, 1u, 0u));
+    assert(!motion_command_set(&invalid, MOTION_MODE_DISTANCE, 50.0f, 2001.0f, 0, 1u, 0u));
+    assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, 50.0f, 0, 0, 64u, 0u));
+    assert(!motion_command_set(&invalid, MOTION_MODE_DISTANCE, 0.0f, 100.0f, 0, 1u, 0u));
     MotionCommand bad[] = {
-        {.mode = MOTION_MODE_FOLLOW, .speed_mmps = NAN, .action_id = 1u},
-        {.mode = MOTION_MODE_FOLLOW, .speed_mmps = MOTION_SPEED_MAX_MMPS + 1.0f, .action_id = 1u},
-        {.mode = MOTION_MODE_FOLLOW, .speed_mmps = 50.0f, .steering = 1.5f, .action_id = 1u},
-        {.mode = MOTION_MODE_DISTANCE, .speed_mmps = 0.0f, .target = 100.0f, .action_id = 1u},
-        {.mode = MOTION_MODE_TURN, .speed_mmps = 50.0f, .target = 720.0f, .action_id = 1u},
-        {.mode = (motion_mode_t)MOTION_MODE_COUNT, .speed_mmps = 50.0f, .action_id = 1u},
-        {.mode = MOTION_MODE_FOLLOW, .speed_mmps = 50.0f, .action_id = 64u},	/* ID needs 7 bits */
+        {.speed_action = 301u, .mode_steering = MOTION_MODE_FOLLOW},
+        {.speed_action = 50u, .mode_steering = 0xFC00u | MOTION_MODE_FOLLOW},
+        {.speed_action = 50u, .mode_steering = MOTION_MODE_FOLLOW, .target = 2001},
+        {.speed_action = 50u, .mode_steering = MOTION_MODE_TURN, .target = 720},
+        {.speed_action = 0x8000u | 50u, .mode_steering = MOTION_MODE_FOLLOW},
+        {.speed_action = 0u, .mode_steering = MOTION_MODE_DISTANCE, .target = 100},
     };
     for (unsigned i = 0; i < sizeof bad / sizeof bad[0]; ++i) {
         MotionOutput out = sim_step(&s, &bad[i], false, 0);
@@ -84,7 +93,7 @@ static void test_invalid_and_stop(void)
     }
     MotionOutput out = sim_step(&s, 0, false, 0);			/* no command */
     assert(out.duty[0] == 0.0f && out.status == RD_MOTION_IDLE);
-    MotionCommand stop = {.mode = MOTION_MODE_STOP, .speed_mmps = 200.0f, .action_id = 2u};
+    MotionCommand stop = motion_command_make(MOTION_MODE_STOP, 200.0f, 0.0f, 0, 2u, 0u);
     out = sim_step(&s, &stop, false, 0);
     assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);		/* speed field ignored */
 }
@@ -101,7 +110,7 @@ static void test_distance_turn_actions(void)
 {
     Sim s; sim_init(&s);
     uint32_t origin_l = s.count[0], origin_r = s.count[1];
-    MotionCommand cmd = {.mode = MOTION_MODE_DISTANCE, .speed_mmps = 200.0f, .target = 300.0f, .action_id = 5u};
+    MotionCommand cmd = motion_command_make(MOTION_MODE_DISTANCE, 200.0f, 300.0f, 0, 5u, 0u);
     MotionOutput out = {0};
     run_to_done(&s, &cmd, 2000, &out);
     assert(out.status == RD_MOTION_DONE && out.action_id == 5u);
@@ -114,7 +123,7 @@ static void test_distance_turn_actions(void)
         assert(out.status == RD_MOTION_DONE && out.action_id == 5u && out.duty[0] == 0.0f);
     }
     /* A new action ID starts a fresh action (origin reset): reverse 100 mm. */
-    cmd.target = -100.0f; cmd.action_id = 6u;
+    cmd = motion_command_make(MOTION_MODE_DISTANCE, 200.0f, -100.0f, 0, 6u, cmd.sampled_ms);
     uint32_t reverse_origin = s.count[0];
     out = sim_step(&s, &cmd, false, 0);
     assert(out.status == RD_MOTION_RUNNING && out.action_id == 6u && out.duty[0] < 0.0f);
@@ -125,7 +134,7 @@ static void test_distance_turn_actions(void)
 
     /* Turn +90 degrees (left): wheels move in opposite directions by the arc. */
     uint32_t tl = s.count[0], tr = s.count[1];
-    MotionCommand turn = {.mode = MOTION_MODE_TURN, .speed_mmps = 150.0f, .target = 90.0f, .action_id = 7u};
+    MotionCommand turn = motion_command_make(MOTION_MODE_TURN, 150.0f, 90.0f, 0, 7u, 0u);
     run_to_done(&s, &turn, 2000, &out);
     assert(out.status == RD_MOTION_DONE && out.action_id == 7u);
     float dl = (float)enc_travel_signed(s.count[0], tl) * MM_PER_COUNT;
@@ -139,7 +148,7 @@ static void test_stall_and_timeout(void)
 {
     Sim s; sim_init(&s);
     s.wheel_gain[1] = 0.0f;				/* right wheel raised/stuck */
-    MotionCommand cmd = {.mode = MOTION_MODE_DISTANCE, .speed_mmps = 200.0f, .target = 500.0f, .action_id = 9u};
+    MotionCommand cmd = motion_command_make(MOTION_MODE_DISTANCE, 200.0f, 500.0f, 0, 9u, 0u);
     MotionOutput out = {0};
     bool stalled = false;
     for (int i = 0; i < (int)(MOTION_STALL_MS / MOTION_PERIOD_MS) + 10 && !stalled; ++i) {
@@ -152,7 +161,7 @@ static void test_stall_and_timeout(void)
 
     /* A stale sample during a discrete action fails it and brakes. */
     Sim t; sim_init(&t);
-    MotionCommand d = {.mode = MOTION_MODE_DISTANCE, .speed_mmps = 100.0f, .target = 400.0f, .action_id = 3u};
+    MotionCommand d = motion_command_make(MOTION_MODE_DISTANCE, 100.0f, 400.0f, 0, 3u, 0u);
     out = sim_step(&t, &d, false, 0);
     assert(out.status == RD_MOTION_RUNNING);
     t.now += MOTION_EXPIRY_MS + 20u;
@@ -163,12 +172,12 @@ static void test_stall_and_timeout(void)
 static void test_follow_steering(void)
 {
     Sim s; sim_init(&s);
-    MotionCommand cmd = {.mode = MOTION_MODE_FOLLOW, .speed_mmps = 100.0f, .steering = 1.0f, .action_id = 4u};
+    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW, 100.0f, 0.0f, (int)(1.0f) * 127, 4u, 0u);
     MotionOutput out = {0};
     for (int i = 0; i < 100; ++i) out = sim_step(&s, &cmd, false, 0);
     assert(out.status == RD_MOTION_RUNNING && out.duty[0] > 0.0f && out.duty[1] <= 0.02f);
     /* Zero commanded speed brakes but the status is not a stationarity proof. */
-    cmd.speed_mmps = 0.0f; cmd.steering = 0.0f;
+    cmd = motion_command_make(MOTION_MODE_FOLLOW, 0.0f, 0.0f, 0, 4u, cmd.sampled_ms);
     out = sim_step(&s, &cmd, false, 0);
     assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f && out.status == RD_MOTION_RUNNING);
 }

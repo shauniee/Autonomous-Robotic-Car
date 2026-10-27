@@ -18,12 +18,12 @@ jobs:
         run: sh testing/pure/run.sh
       - name: Build image
         run: docker build -t robot-build .
-      - name: Terrain Cortex-M0+ sizeof probe
+      - name: Motion Cortex-M0+ sizeof probe
         run: |
           docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build sh -c '
-            arm-none-eabi-gcc -mcpu=cortex-m0plus -mthumb -ffreestanding -std=gnu11 -mfloat-abi=soft -fcommon \
-              -c testing/subsystem4/sizeof_probe.c -o /tmp/s4-probe.o &&
-            arm-none-eabi-nm -S -t d /tmp/s4-probe.o | grep probe_'
+            arm-none-eabi-gcc -mcpu=cortex-m0plus -mthumb -ffreestanding -std=gnu11 -mfloat-abi=soft -fcommon -Iinclude -Iconfig \
+              -c testing/subsystem2/sizeof_probe.c -o /tmp/s2-probe.o &&
+            arm-none-eabi-nm -S -t d /tmp/s2-probe.o | grep probe_'
       - name: Build profiles
         run: |
           cp config/wifi_secrets.example.h config/wifi_secrets.h
