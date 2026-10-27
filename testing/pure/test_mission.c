@@ -94,13 +94,13 @@ static void test_follow_and_stops(void)
 {
     Mission m; MissionInputs in = base(100u);
     uint32_t t = to_follow(&m, &in);
-    in.steering = 5.0f; t += 10u;
+    in.steering = IR_SCALE_ONE; t += 10u;			/* full right saturates at MAX_STEER */
     MissionOutputs out = step(&m, &in, t);
     assert(out.command.mode == MOTION_MODE_FOLLOW && out.command.steering == MAX_STEER);
     assert(out.command.sampled_ms == t && out.command.speed_mmps == MISSION_FOLLOW_SPEED_MMPS);
-    in.steering = -0.1f; t += 10u;
+    in.steering = -13; t += 10u;
     out = step(&m, &in, t);
-    assert(out.command.steering == -0.1f);
+    assert(out.command.steering == -13.0f / IR_SCALE_ONE);	/* converted once, at the S2 boundary */
 
     /* Unusable inputs or a Safety latch stop; Safety's own stop is not repeated. */
     in.inputs_ok = false; t += 10u;
@@ -213,19 +213,19 @@ static void test_line_loss_recovery_is_bounded(void)
     /* Known side: pivot toward it, then rejoin after two fresh visible reads. */
     Mission m2; MissionInputs in2 = base(100u);
     t = to_follow(&m2, &in2);
-    in2.steering = 0.2f; t += 10u; step(&m2, &in2, t);
+    in2.steering = 25; t += 10u; step(&m2, &in2, t);
     in2.line = IR_LINE_LOST; t += 10u;
     out = step(&m2, &in2, t);
     assert(m2.state == MISSION_FOLLOW && out.command.mode == MOTION_MODE_FOLLOW && out.command.steering == 1.0f);
     in2.line = IR_LINE_VISIBLE; t += 10u; step(&m2, &in2, t);
     assert(m2.recovering);
     t += 10u; out = step(&m2, &in2, t);
-    assert(!m2.recovering && out.command.steering == 0.2f);
+    assert(!m2.recovering && out.command.steering == 25.0f / IR_SCALE_ONE);
 
     /* Never finding it again hits the bound and stops. */
     Mission m3; MissionInputs in3 = base(100u);
     t = to_follow(&m3, &in3);
-    in3.steering = -0.2f; t += 10u; step(&m3, &in3, t);
+    in3.steering = -25; t += 10u; step(&m3, &in3, t);
     in3.line = IR_LINE_LOST;
     for (uint32_t waited = 0u; waited < RECOVERY_MS + 20u && m3.state == MISSION_FOLLOW; waited += 10u) {
         t += 10u; out = step(&m3, &in3, t);
