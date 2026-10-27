@@ -94,11 +94,14 @@ def decode_event(f):
     return f"EVENT {EVENT_KIND.get(kind, kind)}: {detail} at t={time_ms} ms, counts L={left} R={right}"
 
 
-def header_fault_widths(text=None):
-    """Bits per owner byte in robot_data.h; each owner's bits restart at 1u << 0."""
+def header_fault_widths():
+    """Bits per owner byte in robot_data.h; each owner's bits restart at 1u << 0.
+    Reads the source tree, so the self-test runs only inside the repository."""
     path = Path(__file__).resolve().parent.parent / "app_program/common/robot_data.h"
+    bits = [int(b) for b in re.findall(r"RD_FAULT_\w+\s*=\s*1u\s*<<\s*(\d+)", path.read_text())]
+    assert bits and bits[0] == 0, "robot_data.h fault enum must start each owner at bit 0"
     widths = []
-    for bit in map(int, re.findall(r"RD_FAULT_\w+\s*=\s*1u\s*<<\s*(\d+)", text or path.read_text())):
+    for bit in bits:
         if bit == 0:
             widths.append(0)
         widths[-1] = max(widths[-1], bit + 1)
