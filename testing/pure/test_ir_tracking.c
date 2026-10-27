@@ -93,7 +93,8 @@ static unsigned replay(IrRaw black, IrRaw white)
             assert(fabsf(s.left_fraction - lf * IR_SCALE_ONE) <= 0.5f);	/* nearest step */
             assert(fabsf(s.right_fraction - rf * IR_SCALE_ONE) <= 0.5f);
             assert(near(s.error, error) && s.steering == out.steering);
-            assert(s.raw.left == raw.left && s.raw.right == raw.right);
+            IrRaw back = ir_raw_word_raw(s.raw);
+            assert(back.left == raw.left && back.right == raw.right && ir_raw_word_valid(s.raw));
             ++steps;
         }
     }
@@ -116,8 +117,32 @@ static void test_bounds_and_staleness(void)
     assert(!s.normalized_valid && s.left_fraction == 0u && s.error == 0 && s.steering == 0);
 }
 
+static void test_raw_word(void)
+{
+    const uint16_t values[] = {0u, 1u, 2048u, 4094u, 4095u};
+    for (unsigned i = 0; i < 5u; ++i) {
+        for (unsigned j = 0; j < 5u; ++j) {
+            for (int v = 0; v < 2; ++v) {
+                IrRawWord w = ir_raw_word((IrRaw){values[i], values[j]}, v);
+                IrRaw back = ir_raw_word_raw(w);
+                assert(back.left == values[i] && back.right == values[j] && ir_raw_word_valid(w) == v);
+                assert(w >> (IR_RAW_VALID_BIT + 1u) == 0u);	/* bits 25-31 spare */
+            }
+        }
+    }
+    /* An out-of-range reading (flagged invalid) saturates instead of spilling. */
+    IrRawWord w = ir_raw_word((IrRaw){0xFFFFu, 5000u}, false);
+    assert(ir_raw_word_raw(w).left == IR_ADC_MAX && ir_raw_word_raw(w).right == IR_ADC_MAX && !ir_raw_word_valid(w));
+    /* The tracker keeps an invalid sample's flag in the same word. */
+    IrTracker t; ir_tracking_init(&t);
+    ir_tracking_sample(&t, (IrRaw){100u, 200u}, false, 20u);
+    S3IrSnapshot s = ir_snapshot_build(&t, 1u, 20u);
+    assert(!ir_raw_word_valid(s.raw) && !s.normalized_valid);
+}
+
 int main(void)
 {
+    test_raw_word();
     unsigned steps = 0u;
     steps += replay((IrRaw){3500u, 3400u}, (IrRaw){400u, 500u});	/* high on black */
     steps += replay((IrRaw){300u, 450u}, (IrRaw){3900u, 3700u});	/* inverted polarity */
