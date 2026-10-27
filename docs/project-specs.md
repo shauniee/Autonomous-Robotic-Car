@@ -182,7 +182,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Mapping letters (L, R, S, U) | mapping word, Mission on valid mapping | A-Z, 26 values, all four distinct | boot state UNMAPPED; rejected before install | 5 each, 20 total | 4 x 5-bit |
 | Mapping state | mapping word bit 20 | UNMAPPED / MAPPED | - | 1 | flag |
 | Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; normalised -1..+1 | validity flags; averaged ADC saturates at 4095 | 12 each; normalised pending | struct; pending (#52) |
-| Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 32 (encoder counts at the edge); level 1 | overflow sets fault bit; new edge dropped | 32+32+1 | struct |
+| Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 16 (wrapped encoder counts at the edge); level 1 | overflow sets fault bit; new edge dropped | 16+16+1 | struct |
 | Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1+32+32 | struct; packed pending (#52) |
 | Mission state | state value, Mission | 7 states (CALIBRATE, READY, FOLLOW, JUNCTION_TURN, BYPASS, COMPLETE, STOP) | - | 3 (4 on wire) | encoded value |
 | Safety latched cause | cause word, Safety | 4 cause bits (GP21, fault, stale line, stale motion) | 0 = not latched | 4 | bit mask |
@@ -194,18 +194,18 @@ Storage bits come from `testing/subsystem3/sizeof_probe.sh` (arm-none-eabi-gcc 1
 | Field | Current C type | Bounds / units | Chosen width (bits) | Final storage bits | Instances | Ticket |
 | --- | --- | --- | ---: | ---: | ---: | --- |
 | Barcode edge: sample time (`sampled_us`) | deleted (was `uint32_t`) | Never read | 0 (deleted) | 0 | 64 | #102 |
-| Barcode edge: left / right count | 2 x `uint32_t` | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | pending | 64 | #103 |
-| Barcode edge: level (`high`) | `bool` | Boolean | 1 | pending | 64 | - |
-| Barcode edge: padding | - | - | - | pending | 64 | #102, #103 |
-| Barcode edge struct | `barcode_edge_t` | - | - | pending | 64 | - |
-| Barcode event: left / right count | 2 x `uint32_t` | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | pending | 8 | #103 |
+| Barcode edge: left / right count | 2 x `barcode_count_t` (`uint16_t`) | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | 2 x 16 | 64 | #103 |
+| Barcode edge: level (`high`) | `bool` | Boolean | 1 | 8 | 64 | - |
+| Barcode edge: padding | - | - | - | 8 | 64 | #102, #103 |
+| Barcode edge struct | `barcode_edge_t` | - | - | 48 | 64 | - |
+| Barcode event: left / right count | 2 x `barcode_count_t` (`uint16_t`) | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | 2 x 16 | 8 | #103 |
 | Barcode event: letter (`symbol`) | `char` | Letter 0-25 | 5 | pending | 8 | #104 |
 | Barcode event: action | `barcode_action_t` | Action 0-4 | 3 | pending | 8 | #104 |
 | Barcode event: orientation | `barcode_orientation_t` | Orientation 0-1 | 1 | pending | 8 | #104 |
 | Barcode event: padding | - | - | - | pending | 8 | #104 |
 | Barcode event struct | `barcode_event_t` | - | - | pending | 8 | - |
-| Barcode frame: previous left / right count | 2 x `uint32_t` | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | pending | 1 | #103 |
-| Barcode frame struct | `barcode_frame_t` | - | - | pending | 1 | - |
+| Barcode frame: previous left / right count | 2 x `barcode_count_t` (`uint16_t`) | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | 2 x 16 | 1 | #103 |
+| Barcode frame struct | `barcode_frame_t` | - | - | 1248 | 1 | - |
 | IR reading (in tracker): left / right fraction | 2 x `float` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | pending | 1 | #105 |
 | IR reading (in tracker): error | `float` | -1..+1 as -127..+127 (ADR 0001) | 8 | pending | 1 | #105 |
 | IR tracking output: error / steering | 2 x `float` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | pending | 0 (returned by value) | #105 |
@@ -302,7 +302,7 @@ Single register. Record answers and measured values here once, then link from ot
 | --- | --- | --- |
 | D01 | Issued barcode symbology/framing, quiet zones, width tolerances and duplicate rearm | S3 / team |
 | D02 | Finish convention, junction/crossing rules, barcode-to-junction spacing, print scale and permitted bypass/reverse boundaries | Team |
-| D03 | Motor/encoder ratings and logic levels, decoded counts per wheel revolution, polarity, wheel diameter, track width and car envelope | S2 |
+| D03 | Motor/encoder ratings and logic levels, decoded counts per wheel revolution, polarity, wheel diameter, track width and car envelope Barcode bound: the longest barcode (29 x `BARCODE_MAX_ELEMENT_COUNTS`) must stay below half the count range; a static assertion in `barcode_decode.h` re-checks it when `ENC_COUNT_BITS` changes | S2 |
 | D04 | Mounted IR module levels, polarity, height, contrast/noise and lighting range | S3 |
 | D05 | Installed ultrasonic model and Echo level (<= 3.3 V before connecting GP2), range, repeat interval and no-echo behaviour; servo supply, endpoints, centre and settling | S5 |
 | D06 | IMU supply/pull-ups, axes/bias, filters, impact thresholds and height method against reference humps | S4 |
