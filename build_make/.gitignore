@@ -3,4 +3,4 @@
 *.map
 **/*.d
 **/*.o
-tools/elf2uf2
+tools/elf2uf2*

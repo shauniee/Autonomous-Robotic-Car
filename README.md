@@ -4,15 +4,47 @@ An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, h
 
 ## Contents
 
+- [Quick start with Docker](#quick-start-with-docker)
 - [Reading order](#reading-order)
 - [Repository structure](#repository-structure)
 - [Getting started](#getting-started)
-  - [Install tools](#install-tools)
   - [Build profiles](#build-profiles)
   - [Power and flashing](#power-and-flashing)
   - [Calibration and local controls](#calibration-and-local-controls)
   - [Wireless telemetry](#wireless-telemetry)
   - [Bring-up order and project tasks](#bring-up-order-and-project-tasks)
+- [Build and flash without Docker](#build-and-flash-without-docker)
+
+## Quick start with Docker
+
+Docker supplies the Arm compiler and Pico SDK 2.2.0, so building needs nothing else installed. Flashing is done from your computer, not the container.
+
+1. Install and start [Docker Desktop](https://docs.docker.com/get-started/get-docker/) (Linux: Docker Engine). Windows: use the WSL 2 backend and run the commands below in a WSL Ubuntu terminal.
+2. Clone (private, access required) and open the repository root. In the coursework workspace, `code/` is the root.
+
+   ```sh
+   git clone https://github.com/shauniee/Autonomous-Robotic-Car.git
+   cd Autonomous-Robotic-Car
+   ```
+
+3. Build the image once; rebuild it after `Dockerfile` changes:
+
+   ```sh
+   docker build -t robot-build .
+   ```
+
+4. Build the firmware. This is the offline TEST profile; for another profile replace the `make` flags with one from [Build profiles](#build-profiles). Wireless profiles first need `config/wifi_secrets.h` ([Wireless telemetry](#wireless-telemetry)).
+
+   ```sh
+   docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build \
+     make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=1
+   ```
+
+5. Flash: hold BOOTSEL while connecting USB, release when **RPI-RP2** appears and copy `build_make/mtk3pico_smp1_usb_cdc_wifi_test.uf2` to the drive. Continue with [Power and flashing](#power-and-flashing) for power rules and serial checks.
+
+Prebuilt images: the `firmware` GitHub Actions workflow builds all four profiles on pushes to `main` and on pull requests and uploads the UF2 files as a run artifact. Its wireless images contain the placeholders from `config/wifi_secrets.example.h` and cannot join your network; build those yourself.
+
+Docker and [native](#build-and-flash-without-docker) builds can share `build_make/`; a compiler change rebuilds the objects automatically.
 
 ## Reading order
 
@@ -34,6 +66,7 @@ Each fact has one owning guide; other guides link to it. Assignment requirements
 | --- | --- |
 | `app_program/` | `app_main.c` startup, shared definitions and five subsystem folders; application drivers stay with their subsystem |
 | `build_make/` | Make profiles and generated firmware |
+| `Dockerfile`, `.github/workflows/` | Docker build environment and the CI workflow that builds the UF2 images |
 | `config/` | Kernel/device configuration and ignored local credentials |
 | `kernel/`, `lib/`, `device/`, `include/`, `tools/` | Imported runtime, services, drivers, headers and conversion tools |
 | `docs/` | Project guides, five subsystem guides, the Week 13 plan and one additional document |
@@ -44,35 +77,9 @@ Each fact has one owning guide; other guides link to it. Assignment requirements
 
 Requirements are in [project-specs](docs/project-specs.md). Full-robot bring-up order is at the end of this section.
 
-### Install tools
-
-Needs git, make, host C++ compiler, Pico C SDK and `arm-none-eabi-gcc`. Windows: build in WSL Ubuntu.
-
-```sh
-xcode-select --install                                    # macOS
-sudo apt update && sudo apt install -y git make g++ gcc-arm-none-eabi   # Ubuntu / WSL
-```
-
-For macOS/manual compilers use the matching `arm-none-eabi` package from Arm's GNU toolchain downloads (WSL: Linux host package); extract and add `bin` to PATH. Template uses SDK 2.2.0 (2.3.0 also recorded working):
-
-```sh
-mkdir -p ~/pico && cd ~/pico
-git clone --branch 2.2.0 https://github.com/raspberrypi/pico-sdk.git
-cd pico-sdk && git submodule update --init lib/tinyusb lib/cyw43-driver lib/lwip
-```
-
-In `~/.zshrc` or `~/.bashrc` (SDK path must have **no spaces**; a symlink works):
-
-```sh
-export PATH="$HOME/tools/arm-gnu-toolchain-<version>/bin:$PATH"
-export PICO_SDK_PATH="$HOME/pico/pico-sdk"
-```
-
-Check: `arm-none-eabi-gcc --version`; `ls "$PICO_SDK_PATH/src"`. Clone (private, access required): `git clone https://github.com/shauniee/Autonomous-Robotic-Car.git`. In the coursework workspace, `code/` is the repository root; run commands there.
-
 ### Build profiles
 
-Build sequentially (shared `build_make/`). Give every flag each time; incompatible objects rebuild automatically.
+Build sequentially (shared `build_make/`). Give every flag each time; incompatible objects rebuild automatically. With Docker, run each `make` command after `docker run ... robot-build` as in [Quick start](#quick-start-with-docker) step 4.
 
 ```sh
 # USB-only dev; motors always inhibited
@@ -99,7 +106,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `TEST=1` | Firmware self-tests; forces S2 braking even if the controller enables motion |
 | `CRASH_REPORT=1` | Crash/console copy on UART0; project uses `0` (GP0/GP1 conflict, [pins](docs/team.md#2-pins)) |
 
-`arm-none-eabi-gcc not found`: PATH wrong. Unset SDK path or missing USB/radio/network headers: fix SDK path/submodules. No active CMake target or dashboard build. Ordinary-Pico/Maker development uses the preserved handoff profile in [subsystem3](docs/architecture/subsystem3.md).
+No active CMake target or dashboard build. Ordinary-Pico/Maker development uses the preserved handoff profile in [subsystem3](docs/architecture/subsystem3.md).
 
 ### Power and flashing
 
@@ -165,3 +172,33 @@ Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--p
 9. Record subsystem, integration and full mission acceptance; rehearse demo; confirm instructor access (All).
 
 Unknown values: [project-specs](docs/project-specs.md#pending-decisions).
+
+## Build and flash without Docker
+
+Needs git, make, host C++ compiler, Pico C SDK and `arm-none-eabi-gcc`. Windows: build in WSL Ubuntu.
+
+```sh
+xcode-select --install                                    # macOS
+sudo apt update && sudo apt install -y git make g++ gcc-arm-none-eabi   # Ubuntu / WSL
+```
+
+For macOS/manual compilers use the matching `arm-none-eabi` package from Arm's GNU toolchain downloads (WSL: Linux host package); extract and add `bin` to PATH. Template uses SDK 2.2.0 (2.3.0 also recorded working):
+
+```sh
+mkdir -p ~/pico && cd ~/pico
+git clone --branch 2.2.0 https://github.com/raspberrypi/pico-sdk.git
+cd pico-sdk && git submodule update --init lib/tinyusb lib/cyw43-driver lib/lwip
+```
+
+In `~/.zshrc` or `~/.bashrc` (SDK path must have **no spaces**; a symlink works):
+
+```sh
+export PATH="$HOME/tools/arm-gnu-toolchain-<version>/bin:$PATH"
+export PICO_SDK_PATH="$HOME/pico/pico-sdk"
+```
+
+Check: `arm-none-eabi-gcc --version`; `ls "$PICO_SDK_PATH/src"`. Clone (private, access required): `git clone https://github.com/shauniee/Autonomous-Robotic-Car.git`. In the coursework workspace, `code/` is the repository root; run commands there.
+
+Build with the [Build profiles](#build-profiles) commands as written, from the repository root. `arm-none-eabi-gcc not found`: PATH wrong. Unset SDK path or missing USB/radio/network headers: fix SDK path/submodules.
+
+Flash as in [Power and flashing](#power-and-flashing): hold BOOTSEL while connecting USB, release when **RPI-RP2** appears and copy the profile's UF2 from `build_make/` to the drive.
