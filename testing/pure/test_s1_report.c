@@ -17,19 +17,85 @@ static void test_event_log(void)
     s1_log_init(&log);
     assert(!s1_log_pop(&log, &e));
     for (uint8_t i = 0; i < S1_EVENT_CAPACITY; ++i) { mqtt_event_t x = ev(i); s1_log_push(&log, &x); }
-    assert(log.count == S1_EVENT_CAPACITY && log.dropped == 0u);
+    assert(s1_log_count(&log) == S1_EVENT_CAPACITY && log.dropped == 0u);
     /* Overflow: the oldest events go, the newest are kept, drops are counted. */
     for (uint8_t i = 0; i < 5u; ++i) { mqtt_event_t x = ev((uint8_t)(100u + i)); s1_log_push(&log, &x); }
-    assert(log.count == S1_EVENT_CAPACITY && log.dropped == 5u);
+    assert(s1_log_count(&log) == S1_EVENT_CAPACITY && log.dropped == 5u);
     assert(s1_log_pop(&log, &e) && e.arg == 5u);		/* events 0-4 were overwritten */
     unsigned n = 1u; uint8_t last = e.arg;
     while (s1_log_pop(&log, &e)) { ++n; last = e.arg; }
-    assert(n == S1_EVENT_CAPACITY && last == 104u && log.count == 0u);
+    assert(n == S1_EVENT_CAPACITY && last == 104u && s1_log_count(&log) == 0u);
     /* Wrap of the ring indices: push/pop beyond capacity keeps order. */
     for (uint8_t i = 0; i < 3u * S1_EVENT_CAPACITY; ++i) {
         mqtt_event_t x = ev(i); s1_log_push(&log, &x);
         assert(s1_log_pop(&log, &e) && e.arg == i);
     }
+}
+
+static void assert_event_equal(const mqtt_event_t *expected, const mqtt_event_t *actual)
+{
+    assert(actual->kind == expected->kind && actual->arg == expected->arg);
+    assert(actual->time_ms == expected->time_ms);
+    assert(actual->left_count == expected->left_count && actual->right_count == expected->right_count);
+    assert(actual->arg2 == expected->arg2);
+}
+
+static void test_event_packing(void)
+{
+    /* All event kinds retain the complete time, encoder counts and arg2.
+       The 16-bit obstacle depth must survive, even though barcode action
+       values only require three bits. */
+    const mqtt_event_t samples[] = {
+        {.kind = MQTT_EVENT_BARCODE, .arg = 25, .arg2 = 7,
+         .time_ms = 0xFFFFu, .left_count = 0xFFFFu, .right_count = 0x1234u},
+        {.kind = MQTT_EVENT_HUMP, .arg = 127, .arg2 = 0,
+         .time_ms = 0, .left_count = 0, .right_count = 0xFFFFu},
+        {.kind = MQTT_EVENT_OBSTACLE, .arg = 0, .arg2 = 0xFFFFu,
+         .time_ms = 0xABCDu, .left_count = 0x9876u, .right_count = 0xFFFFu},
+        {.kind = MQTT_EVENT_TURN, .arg = 7, .arg2 = 0,
+         .time_ms = 1234u, .left_count = 500u, .right_count = 501u}
+    };
+    s1_event_log_t log;
+    s1_log_init(&log);
+    for (unsigned i = 0; i < sizeof samples / sizeof samples[0]; ++i)
+    {
+        mqtt_event_t roundtrip;
+        uint8_t before[MQTT_LEN_EVENT], after[MQTT_LEN_EVENT];
+        assert(mqtt_encode_event(before, sizeof before, &samples[i]) == MQTT_LEN_EVENT);
+        assert(s1_log_push(&log, &samples[i]));
+        assert(s1_log_pop(&log, &roundtrip));
+        assert_event_equal(&samples[i], &roundtrip);
+        assert(mqtt_encode_event(after, sizeof after, &roundtrip) == MQTT_LEN_EVENT);
+        assert(memcmp(before, after, MQTT_LEN_EVENT) == 0); /* schema v2 unchanged */
+    }
+    assert(s1_log_count(&log) == 0u);
+
+    /* Reject out-of-range inputs rather than silently dropping the high bit.
+       A rejected event must not disturb order, count or drop statistics. */
+    mqtt_event_t bad = {.kind = MQTT_EVENT_HUMP, .arg = 128};
+    assert(!s1_log_push(&log, &bad));
+    bad.kind = 0;
+    bad.arg = 0;
+    assert(!s1_log_push(&log, &bad));
+    bad.kind = MQTT_EVENT_COUNT;
+    assert(!s1_log_push(&log, &bad));
+    assert(s1_log_count(&log) == 0u && log.dropped == 0u);
+
+    /* Full-ring overwrite and the drop counter's saturation remain intact. */
+    for (unsigned i = 0; i < S1_EVENT_CAPACITY; ++i)
+    {
+        mqtt_event_t x = ev((uint8_t)i);
+        assert(s1_log_push(&log, &x));
+    }
+    log.dropped = 0xFFFFFFFFu;
+    mqtt_event_t newest = ev(42);
+    assert(s1_log_push(&log, &newest));
+    assert(log.dropped == 0xFFFFFFFFu && s1_log_count(&log) == S1_EVENT_CAPACITY);
+    mqtt_event_t popped;
+    assert(s1_log_pop(&log, &popped) && popped.arg == 1u);
+
+    printf("s1_event storage: %zu-byte entry, %zu-byte ring (host layout)\\n",
+           sizeof(s1_packed_event_t), sizeof(s1_event_log_t));
 }
 
 static void test_assemble(void)
@@ -92,6 +158,7 @@ static void test_mapping_flow(void)
 int main(void)
 {
     test_event_log();
+    test_event_packing();
     test_assemble();
     test_mapping_flow();
     puts("s1_report: PASS");
