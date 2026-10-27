@@ -47,7 +47,9 @@ The session introduced a minimum-bit data requirement. Decisions recorded in Ver
 - Terrain compromise (Darrius): live values in 16-bit fixed point, final result packed into 7 bits.
 - Obstacle scan states as 3-bit values and quantised profiles (Jia Jing).
 - No change: Mission request priority and the subsystem priority hierarchy; subsystems still communicate through RTOS interfaces.
-- Memory and core usage: compare RAM and message sizes before and after under identical build settings; measure packing/unpacking CPU overhead.
+- Memory and core usage: report RAM, message sizes and packing/unpacking CPU overhead for the final implementation.
+
+**Requirement update (2026-10-27):** a comparison of the revised implementation with the original is no longer required. Teams implement the additional requirements and provide evidence for the resulting final implementation only.
 
 ## Issues and decisions
 
@@ -60,7 +62,7 @@ The session introduced a minimum-bit data requirement. Decisions recorded in Ver
 | 5 | JSON-to-binary needs a compatible protocol | Binary format chosen at 47:47. Define wire schema (field order, lengths, bit order, scaling, validity, version) and update firmware and laptop endpoints; test malformed/truncated input, busy/retry, reconnect and full acknowledgement slots. Keep stopped-only replacement; applied acknowledgement means the whole mapping was installed. Earlier 26-entry/four-slot MQTT observations used JSON and do not validate the binary path | Shaun, all owners |
 | 6 | Physical line/obstacle behaviour is still a gate | Compressed data does not resolve IR contrast, barcode framing, junction ambiguity, no-echo handling, servo settling or clearance. Test issued prints, directions, speeds, queue occupancy/overflow, scan cancellation and centre return; verify Echo level, pin/jumper wiring and loaded supply before powered trials (R5, Echo above 3.3 V, open). Unknown/no echo stays distinct from clear space; recovery needs agreed corridor checks, limits and a safe outcome | Nicholas, Jia Jing, Mahesha |
 | 7 | Terrain precision and height validity unproven | Update the maximum height only after a valid completed encounter. 16-bit/7-bit widths provisional: state units, range, error budget, rounding and invalid-height representation; check accumulation and overflow; calibrate the mounted sensor; compare repeated steady-speed runs against reference humps. The "few millimetres" criterion has no confirmed tolerance or measured result | Darrius |
-| 8 | Readiness and resource architecture | Conditional partial-integration position: documented controlled integration, but changed representations are unvalidated. Compare RAM/message sizes on identical builds, measure packing cost and stack use, and keep R3 (stack overflow) separate from pointer/bounds errors. Each change needs a specification, positive pass criterion and linked result; Zoom timestamps record decisions only. Updated position: partially ready and integrated, regression testing across several subsystems not done, RAM/size and correctness/performance evidence planned before the Week 13 submission | Shaun, all owners |
+| 8 | Readiness and resource architecture | Conditional partial-integration position: documented controlled integration, but changed representations are unvalidated. Record RAM/message sizes, packing cost and stack use of the final implementation, and keep R3 (stack overflow) separate from pointer/bounds errors. Each change needs a specification, positive pass criterion and linked result; Zoom timestamps record decisions only. Updated position: partially ready and integrated, regression testing across several subsystems not done, RAM/size and correctness/performance evidence planned before the Week 13 submission | Shaun, all owners |
 
 ## Risk register (Version B)
 
@@ -86,7 +88,7 @@ Binary telemetry and concurrent snapshot access (Shaun); motor movement, stoppin
 - Binary wire format and laptop compatibility undefined; powered-operation reconnect untested.
 - Barcode-triggered encoder reset not agreed; barcode spacing and course/finish rules unconfirmed.
 - No loaded timing, physical stopping, braking or end-to-end latency measurements.
-- No RAM, message-size or CPU before/after comparison; no full regression.
+- No RAM, message-size or CPU evidence for the final implementation; no full regression.
 - Mounted IMU calibration and hump accuracy; real barcode capture; sonar range and clearance geometry.
 - Electrical checks (Echo level, jumper/pin continuity, loaded rails). The Green hardware-wiring status in Version B conflicts with these pending checks.
 - Version C was a document-only review: it found these gaps but did not recheck code, recording or robot.

@@ -1,6 +1,6 @@
 # Week 13 plan
 
-Deferred work for the Week 13 submission. The requirement and baseline it closes are in [project-specs](project-specs.md#4-change-in-requirement-minimum-bit-data-representation). Nothing here is started; each item names its owner.
+Deferred work for the Week 13 submission. The requirement it closes is in [project-specs](project-specs.md#4-change-in-requirement-minimum-bit-data-representation). Nothing here is started; each item names its owner.
 
 ## Contents
 
@@ -37,8 +37,8 @@ Convert one field at a time and rerun `testing/pure/run.sh` after each, as Tribu
 
 | Evidence | How | Owner |
 | --- | --- | --- |
-| RAM after | Same command and toolchain as the [baseline](project-specs.md#baseline-before-issue-22), then `arm-none-eabi-size`; record text/data/bss and the `sizeof` probes for the same structs | Shaun |
-| Message size after | Exact frame lengths from [architecture](architecture.md#mqtt-binary-protocol-schema-version-2) (telemetry 23 bytes in schema v2, which added line status, mapped flag, Mission fault byte and obstacle width/depth to the 18-byte v1 frame) against the JSON baseline, under identical builds (#55) | Shaun |
+| Final RAM usage | Build command and toolchain recorded with the result (the [historical baseline](project-specs.md#historical-baseline-issue-22-not-required) command is a usable template), then `arm-none-eabi-size`; record text/data/bss and `sizeof` probes for the converted structs | Shaun |
+| Final message size | Exact frame lengths from [architecture](architecture.md#mqtt-binary-protocol-schema-version-2) (telemetry 23 bytes in schema v2, which added line status, mapped flag, Mission fault byte and obstacle width/depth to the 18-byte v1 frame) and inter-task message sizes, recorded with the exact commit (#55) | Shaun |
 | No lost functionality | All host tests pass, plus the [mission-readiness checklist](../testing/mission-readiness.md) on the robot | All |
 | No unacceptable timing degradation | Integrated trial T15 in [testing](../testing/README.md#planned-integrated-trials): release jitter, missed deadlines, stop latency under load | All |
 

@@ -14,6 +14,7 @@ static bool claimed;
 static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
 {
     (void)pin;
+    (void)sampled_us;	/* edge positions are encoder counts; time is not needed */
     if (edges == (GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE))
     {
         /* Both flags together: ordering was lost, never guess two edges. */
@@ -30,9 +31,8 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
         return;
     }
     ring[write % BARCODE_EDGE_CAPACITY] = (barcode_edge_t){
-        .sampled_us = sampled_us,
-        .left_count = drv_encoder_count(ENCODER_LEFT),
-        .right_count = drv_encoder_count(ENCODER_RIGHT),
+        .left_count = (barcode_count_t)drv_encoder_count(ENCODER_LEFT),
+        .right_count = (barcode_count_t)drv_encoder_count(ENCODER_RIGHT),
         .high = edges == GPIO_IRQ_EDGE_RISE};
     atomic_store_explicit(&head, write + 1u, memory_order_release);
 }

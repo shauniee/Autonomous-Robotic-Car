@@ -15,6 +15,16 @@
 #define BARCODE_ELEMENTS 29u	/* *X*: three 9-element characters and two gaps */
 #define BARCODE_ALPHABET 26u
 
+/* Encoder counts as S3 stores them: the shared ENC_COUNT_BITS width, wrapped.
+   Travel between two counts uses modular subtraction (encoder_math.h). */
+typedef uint16_t barcode_count_t;
+_Static_assert(ENC_COUNT_BITS <= 16u, "barcode_count_t narrower than ENC_COUNT_BITS");
+/* The longest barcode (29 elements at the longest width) spans less than half
+   the count range, so modular subtraction inside a frame cannot alias. A wider
+   or narrower ENC_COUNT_BITS (D03) re-checks this bound. */
+_Static_assert((uint32_t)BARCODE_ELEMENTS * BARCODE_MAX_ELEMENT_COUNTS < ENC_COUNT_MASK / 2u,
+    "longest barcode must span less than half the encoder count range");
+
 typedef enum
 {
     BARCODE_UNMAPPED,
@@ -55,7 +65,7 @@ typedef struct
 /* A decoded barcode with the encoder position where it ended. */
 typedef struct
 {
-    uint32_t left_count, right_count;
+    barcode_count_t left_count, right_count;
     char symbol;
     barcode_action_t action;
     barcode_orientation_t orientation;
@@ -76,7 +86,7 @@ typedef struct
     uint32_t widths[BARCODE_ELEMENTS];
     uint32_t count;
     uint32_t min_quiet;	/* quiet zone now required: quiet, or rearm after a decode */
-    uint32_t prev_left, prev_right;
+    barcode_count_t prev_left, prev_right;
     bool have_edge;
     bool prev_black;
 } barcode_frame_t;
@@ -88,7 +98,7 @@ void barcode_frame_reset(barcode_frame_t *f);
    (symbol/orientation set) when a frame completes, BARCODE_NO_RESULT while
    accumulating or waiting, otherwise the rejection reason (frame dropped). */
 barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
-    uint32_t left_count, uint32_t right_count, char *symbol,
+    barcode_count_t left_count, barcode_count_t right_count, char *symbol,
     barcode_orientation_t *orientation);
 
 /* Action for a decoded letter under a mapping word (BARCODE_UNMAPPED when
