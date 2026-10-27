@@ -1,0 +1,49 @@
+S3-M01 minimum-bit before baseline
+commit: 56df1bddfe649d1bcc8f93cd0548d5d068f65696 (main 56df1bd); host: Darwin arm64
+toolchain: arm-none-eabi-gcc (Arm GNU Toolchain 15.3.Rel1 (Build arm-15.149)) 15.3.1 20260627; Pico SDK 2.3.1
+
+## testing/subsystem3/sizeof_probe.sh (bytes probe)
+1 field_IrReading__valid
+1 field_IrTracker__sample_valid
+1 field_S3IrSnapshot__acquisition_valid
+1 field_barcode_edge_t__high
+1 field_barcode_event_t__action
+1 field_barcode_event_t__orientation
+1 field_barcode_event_t__symbol
+4 field_IrReading__error
+4 field_IrReading__left_fraction
+4 field_IrReading__right_fraction
+4 field_IrTracker__raw
+4 field_IrTrackingOutput__error
+4 field_IrTrackingOutput__steering
+4 field_S3IrSnapshot__error
+4 field_S3IrSnapshot__normalized_left
+4 field_S3IrSnapshot__normalized_right
+4 field_S3IrSnapshot__raw
+4 field_S3IrSnapshot__steering
+4 field_barcode_edge_t__left_count
+4 field_barcode_edge_t__right_count
+4 field_barcode_edge_t__sampled_us
+4 field_barcode_event_t__left_count
+4 field_barcode_event_t__right_count
+4 field_barcode_frame_t__prev_left
+4 field_barcode_frame_t__prev_right
+4 sizeof_IrRaw
+12 sizeof_barcode_event_t
+16 sizeof_IrReading
+16 sizeof_IrTrackingOutput
+16 sizeof_barcode_edge_t
+56 sizeof_S3IrSnapshot
+72 sizeof_IrTracker
+160 sizeof_barcode_frame_t
+
+## build_make: make clean; make -k -j8 SMP=1 CONSOLE=usb_cdc WIFI=none NET=none MQTT=0 CRASH_REPORT=0 TEST=0
+warnings: 0; undefined references: 0
+   text	   data	    bss	    dec	    hex	filename
+  70312	    552	  24464	  95328	  17460	mtk3pico_smp1_usb_cdc.elf
+
+## S3 .bss objects (nm -S -t d: address size)
+536894096 00000096 b events
+536894192 00000160 b frame
+536894380 00001024 b ring
+ .bss.latest    0x20005fc0       0x38 ./mtkernel_3/app_program/subsystem3/subsystem3.o

@@ -29,6 +29,8 @@ Host methods below describe historical checks whose runners are retired; saved r
 | S3-U11 | Calibration-only local input workflow | TEST=1 synthetic button/time fixtures; physical GP20/21 and buzzer run separately | Held-at-boot, bounce, 30 ms release/press, cancel dominance, white retry, replacement and wraparound; 1/2/3 result counts |
 | S3-U12 | Portable snapshot and nonblocking copy | TEST=1 pure fixtures plus actual private mutex boundary | Raw/reference/contrast/normalized coherence; missing/invalid/uncalibrated/capturing/stale flags; unchanged sequence/time on aging; null and locked-copy rejection |
 | S3-U13 | ADC destination validation | TEST=1 `drv_ir_read(NULL)` only | Reject null before hardware access; S3-U04 hardware protocol/WCET remains separate |
+| S3-M01 | Minimum-bit memory before/after (spec #100) | Compile-only `testing/subsystem3/sizeof_probe.sh` plus section-4 build command and `arm-none-eabi-size`; S3 `.bss` objects from `nm`/map | Probe totals equal linked S3 objects; values recorded in the [bit-usage comparison](../../docs/project-specs.md#s3-bit-usage-comparison-spec-100-before-101-after-107); no execution claim |
+| S3-M02 | Minimum-bit S3 loop timing before/after (spec #100) | On-target run; method defined before the run (#101) | Before/after S3 loop time recorded with exact commit; no value assumed |
 
 The current S3 service does not drive motors, feed a whole-system watchdog or push S1 telemetry. Retired cases/results remain historical. Firmware fixtures do not alter the live tracker; the snapshot boundary check briefly locks the real cache and verifies a nonblocking recursive read is refused.
 
@@ -43,6 +45,8 @@ The current S3 service does not drive motors, feed a whole-system watchdog or pu
 | 2026-10-08 | S3-U09 | Future implementation | Pending | PENDING | none | Barcode deferred; no decode run |
 | 2026-10-09 | S3-U02/U06/U07/U10/U11/U12/U13 | Working tree source SHA-256 manifest in evidence | Pending Pico operator | PENDING | [service build evidence](logs/2026-10-09_s3-line-service_evidence.json) | All four profiles built; firmware checks compiled only, not executed |
 | 2026-10-09 | S3-U02/U06/U07/U10/U11/U12/U13 | Relocated test source manifest in evidence | Pending Pico operator | PENDING | [test-layout evidence](logs/2026-10-09_s3-test-layout_evidence.json) | Relocated fixtures compile in all TEST profiles; no on-board execution |
+| 2026-10-27 | S3-M01 (before) | `main` 56df1bd; probe source on branch test/s3-minimum-bit-before | Claude Code compile/link | MEASURED | [before log](logs/2026-10-27_s3-minimum-bit-before.txt) | Compile and link only; text 70312, data 552, bss 24464; `ring` 1024, `events` 96, `frame` 160, `latest` 56 B match probes; nothing executed |
+| 2026-10-27 | S3-M02 (before) | - | Pending Pico operator | PENDING | none | Loop-timing method not yet defined; no measurement |
 
 ## 3. Current firmware run instructions
 

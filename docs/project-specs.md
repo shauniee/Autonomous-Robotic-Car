@@ -18,6 +18,7 @@ Status labels: **requirement** (source-stated), **proposed** (drafted, not signe
   - [S1 Communications (proposed; frame layouts in architecture; needs Shaun's sign-off)](#s1-communications-proposed-frame-layouts-in-architecture-needs-shauns-sign-off)
   - [S2 Motion (encoder width provisional until D03; one constant `ENC_COUNT_BITS` in `robot_config.h`; branches #29, #31)](#s2-motion-encoder-width-provisional-until-d03-one-constant-enc_count_bits-in-robot_configh-branches-29-31)
   - [S3 Line, barcode and Mission (branches #35, #36, #37; pending rows converted by #52 after Nicholas confirms)](#s3-line-barcode-and-mission-branches-35-36-37-pending-rows-converted-by-52-after-nicholas-confirms)
+  - [S3 bit-usage comparison (spec #100; before #101, after #107)](#s3-bit-usage-comparison-spec-100-before-101-after-107)
   - [S4 Terrain (scale provisional, 1 mm per count `HUMP_MM_PER_COUNT`, until D06; branches #45, #46)](#s4-terrain-scale-provisional-1-mm-per-count-hump_mm_per_count-until-d06-branches-45-46)
   - [S5 Obstacle (proposed; branches #48, #49)](#s5-obstacle-proposed-branches-48-49)
   - [Mission and Safety](#mission-and-safety)
@@ -181,6 +182,38 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; time; position | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1+32+32 | struct; packed pending (#52) |
 | Mission state | state value, Mission | 7 states (CALIBRATE, READY, FOLLOW, JUNCTION_TURN, BYPASS, COMPLETE, STOP) | - | 3 (4 on wire) | encoded value |
 | Safety latched cause | cause word, Safety | 4 cause bits (GP21, fault, stale line, stale motion) | 0 = not latched | 4 | bit mask |
+
+### S3 bit-usage comparison (spec #100; before #101, after #107)
+
+Before values measured 2026-10-27 at `main` `56df1bd`. Storage bits from `testing/subsystem3/sizeof_probe.sh` (arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); struct totals match the linked `.bss` objects in the `arm-none-eabi-size` build below (`ring` 1024 B, `events` 96 B, `frame` 160 B, `latest` 56 B). Instances count persistent copies only; per-iteration local copies are exempt. Bits needed for counts follow `ENC_COUNT_BITS` (16, provisional until D03). After, saving and total columns are filled by the ticket named in the last column and checked against the probes in #107.
+
+| Field | C type before | Storage bits before | Bits needed | Storage bits after | Saving | Instances | Total saved | Ticket |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Barcode edge: sample time | `uint32_t` | 32 | 0 (never read) | - | - | 64 | - | #102 |
+| Barcode edge: left / right count | 2 x `uint32_t` | 2 x 32 | 2 x 16 | - | - | 64 | - | #103 |
+| Barcode edge: level | `bool` | 8 | 1 | - | - | 64 | - | - |
+| Barcode edge: padding | - | 24 | 0 | - | - | 64 | - | #102, #103 |
+| Barcode edge struct | `barcode_edge_t` | 128 | - | - | - | 64 | - | - |
+| Barcode event: left / right count | 2 x `uint32_t` | 2 x 32 | 2 x 16 | - | - | 8 | - | #103 |
+| Barcode event: letter | `char` | 8 | 5 | - | - | 8 | - | #104 |
+| Barcode event: action | `barcode_action_t` | 8 | 3 | - | - | 8 | - | #104 |
+| Barcode event: orientation | `barcode_orientation_t` | 8 | 1 | - | - | 8 | - | #104 |
+| Barcode event: padding | - | 8 | 0 | - | - | 8 | - | #104 |
+| Barcode event struct | `barcode_event_t` | 96 | - | - | - | 8 | - | - |
+| Barcode frame: previous left / right count | 2 x `uint32_t` | 2 x 32 | 2 x 16 | - | - | 1 | - | #103 |
+| Barcode frame struct | `barcode_frame_t` | 1280 | - | - | - | 1 | - | - |
+| IR reading (in tracker): left / right fraction | 2 x `float` | 2 x 32 | 2 x 7 | - | - | 1 | - | #105 |
+| IR reading (in tracker): error | `float` | 32 | 8 | - | - | 1 | - | #105 |
+| IR tracking output: error / steering | 2 x `float` | 2 x 32 | 2 x 8 | - | - | 0 (returned by value) | - | #105 |
+| IR tracker: raw left / right | `IrRaw` (2 x `uint16_t`) | 32 | 2 x 12 | - | - | 1 | - | #106 |
+| IR tracker: sample valid | `bool` | 8 | 1 | - | - | 1 | - | #106 |
+| IR tracker struct | `IrTracker` | 576 | - | - | - | 1 (S3 task stack) | - | - |
+| IR snapshot: normalized left / right | 2 x `float` | 2 x 32 | 2 x 7 | - | - | 1 | - | #105 |
+| IR snapshot: error / steering | 2 x `float` | 2 x 32 | 2 x 8 | - | - | 1 | - | #105 |
+| IR snapshot: raw left / right | `IrRaw` (2 x `uint16_t`) | 32 | 2 x 12 | - | - | 1 | - | #106 |
+| IR snapshot struct | `S3IrSnapshot` | 448 | - | - | - | 1 | - | - |
+
+Build before (section-4 command, `main` `56df1bd`, Pico SDK 2.3.1): 0 warnings, 0 undefined references; text 70312, data 552, bss 24464. On-target S3 loop timing before: not yet measured (needs a Pico run; recorded in the [S3 test log](../testing/subsystem3/TEST_LOG.md) when done).
 
 ### S4 Terrain (scale provisional, 1 mm per count `HUMP_MM_PER_COUNT`, until D06; branches #45, #46)
 
