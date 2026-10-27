@@ -64,7 +64,7 @@ The default project is an autonomous robot car on a predefined course, using onb
 | Line sensing | Two analogue IR sensors follow the line (GP26/GP27); a third digital IR sensor reads barcodes (GP16). Three IR sensors is the maximum. Mounting is the team's choice. |
 | Barcode placement | A barcode always precedes a junction; act at the next cross junction |
 | Sides | Barcodes lie on one fixed side of the line and humps on the other (never the same side); the instructor said the sides would be confirmed when the kit is issued; which side is D11 |
-| Humps | Single-wheel humps of varying heights (no double humps). Measuring while moving scores better than stopping. Height is estimated from tilt/IMU data mapped to known heights by practical calibration, then tuned; the speed may be reduced after detection to allow measurement |
+| Humps | Single-wheel humps (no double humps). Final ramp is about the lower practice ramp's height, slightly lower or higher, and no more than 30 mm; the higher practice ramp is disregarded (course update 2026-10-27; 30 mm limit confirmed by Nicholas). The task is estimating height through IMU sensing and processing, not mechanical clearance. Measuring while moving scores better than stopping. Height is estimated from tilt/IMU data mapped to known heights by practical calibration, then tuned; the speed may be reduced after detection to allow measurement |
 | Obstacles | Static, block the line. Briefing says straight sections in earlier passages and "straight and curved" in one later sentence: D12 |
 | Map | Undisclosed until demonstration |
 
@@ -321,7 +321,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D03 | Motor/encoder ratings and logic levels, decoded counts per wheel revolution, polarity, wheel diameter, track width and car envelope Barcode bound: the longest barcode (29 x `BARCODE_MAX_ELEMENT_COUNTS`) must stay below half the count range; a static assertion in `barcode_decode.h` re-checks it when `ENC_COUNT_BITS` changes | S2 |
 | D04 | Mounted IR module levels, polarity, height, contrast/noise and lighting range | S3 |
 | D05 | Installed ultrasonic model and Echo level (<= 3.3 V before connecting GP2), range, repeat interval and no-echo behaviour; servo supply, endpoints, centre and settling | S5 |
-| D06 | IMU supply/pull-ups, axes/bias, filters, impact thresholds and height method against reference humps | S4 |
+| D06 | IMU supply/pull-ups, axes/bias, filters, impact thresholds and height method against reference humps up to 30 mm (lower practice ramp height still to be measured; [humps](#course-rules)) | S4 |
 | D07 | Wheel PID gains, speed/turn accuracy, stall/clearance/stopping thresholds, scan/reacquisition limits and retries | Owners / team |
 | D08 | Measured stop latency and stationary-detection threshold | S2 / Safety |
 | D09 | Instructor network/broker settings available before program freeze; network/stack load | S1 / team |
