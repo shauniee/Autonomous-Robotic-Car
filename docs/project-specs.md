@@ -176,7 +176,8 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Field | Storage / writer | Range | Invalid / overflow | Bits | Repr. |
 | --- | --- | --- | --- | --- | --- |
 | Encoder count per wheel | wrapping counter, encoder ISR (core 1) | wrapped counts; mm per count from D03 geometry | wraps; consumers use modular subtraction | 16 (provisional) | fixed-width |
-| Motion command: mode, speed, steering or target, action ID, sample time | mutex-copied struct (> 32 bits), Mission | mode 0-3; speed 0-300 mm/s; steering -1..+1; target mm or degrees; action ID 0-63 | invalid fields brake; stale sample brakes | pending (#51) | struct; packed form pending |
+| Motion command: mode/speed/steering/target/action/time | `MotionCommand`, Mission writer -> S2 mutex copy | mode 0-3; speed 0-300 whole mm/s; steering -127..127 Q7; target -2000..2000 whole mm (DISTANCE) or -360..360 whole degrees (TURN); ID 0-63; sampled time uint32 ms | invalid constructor returns STOP; invalid packed/reserved fields and expired sample brake; target bound **provisional D07** | 2 / 9 / 8 / 16 / 6 / 32 logical = 73 bits; 96 stored (`sizeof` 12 bytes) | 16-bit speed+ID, 16-bit mode+Q7 steering, 16-bit target, 32-bit sampled time; accessor-only; #109 |
+| Motion health: service time / sequence / stopped / brake ack | `MotionHealth`, S2 writer guarded by command mutex | times and sequence uint32; flags yes/no | sequence/time wrap; brake acknowledgement only after serviced stop | 32 / 32 / 1 / 1 logical = 66 bits; 96 stored (`sizeof` 12 bytes) | 2 flags in one uint8, 2x uint32; accessors; #109 |
 | Motion feedback: status, action ID | feedback word, Motion | status 4 values (IDLE/RUNNING/DONE/FAILED); ID 0-63 | ID wraps; ID 1 reserved for FOLLOW | 2 + 6 (ID width provisional) | one word, single store |
 
 ### S3 Line, barcode and Mission (branches #35, #36, #37; pending rows converted by #52 after Nicholas confirms)

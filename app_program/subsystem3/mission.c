@@ -79,7 +79,7 @@ static void mission_task(INT stacd, void *exinf)
             .start_blocked = rd_fault_start_blocked(),
             .stop_down = buttons.gp21_down,
             .safety_latched = safety_latched_causes() != 0u,
-            .motion_stopped = !healthy || health.stopped,
+            .motion_stopped = !healthy || motion_health_stopped(&health),
             .inputs_ok = copied && healthy,
             .calibration_valid = snapshot.calibration_valid,
             .guidance_valid = snapshot.guidance_valid,
