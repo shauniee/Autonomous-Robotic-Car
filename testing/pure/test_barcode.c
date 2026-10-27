@@ -66,8 +66,9 @@ static void sample(const char *g2, char want, bool reverse, unsigned n, unsigned
 
 static void test_samples(void)
 {
-    const uint32_t bases[] = {0u, 0xFFF0u, 0xFFE0u};	/* includes the count wrap */
-    for (unsigned b = 0; b < 3u; ++b) {
+    /* 0xFFF0/0xFFE0 wrap inside the quiet zone; 0xFF00/0xFE80 wrap mid-frame. */
+    const uint32_t bases[] = {0u, 0xFFF0u, 0xFFE0u, 0xFF00u, 0xFE80u};
+    for (unsigned b = 0; b < sizeof bases / sizeof bases[0]; ++b) {
         for (int reverse = 0; reverse < 2; ++reverse) {
             sample("wnnnnwnnw", 'A', reverse, 10u, 30u, bases[b]);	/* small scale */
             sample("nwwnwnnnn", 'Z', reverse, 10u, 30u, bases[b]);

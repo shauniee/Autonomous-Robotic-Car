@@ -11,10 +11,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "../common/robot_config.h"
+#include "barcode_decode.h"
 
 typedef struct
 {
-    uint32_t left_count, right_count;
+    barcode_count_t left_count, right_count;	/* wrapped at ENC_COUNT_BITS */
     bool high;	/* GP16 level after the edge */
 } barcode_edge_t;
 
