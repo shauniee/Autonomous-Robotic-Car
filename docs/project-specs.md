@@ -181,7 +181,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | --- | --- | --- | --- | --- | --- |
 | Mapping letters (L, R, S, U) | mapping word, Mission on valid mapping | A-Z, 26 values, all four distinct | boot state UNMAPPED; rejected before install | 5 each, 20 total | 4 x 5-bit |
 | Mapping state | mapping word bit 20 | UNMAPPED / MAPPED | - | 1 | flag |
-| Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; normalised -1..+1 | validity flags; averaged ADC saturates at 4095 | 12 each; normalised pending | struct; pending (#52) |
+| Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; fractions 0..1 as 0..127; error and steering -1..+1 as -127..+127 | validity flags; averaged ADC saturates at 4095; fractions clamp to 0..127 | 12 each; 7 each; 8 each | struct; scaled integers ([ADR 0001](adr/0001-base-2-scaled-integers.md)) |
 | Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 16 (wrapped encoder counts at the edge); level 1 | overflow sets fault bit; new edge dropped | 16+16+1 | struct |
 | Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1 (one 16-bit word) + 16+16 | packed word + 2 counts, accessors in `barcode_decode.h` |
 | Mission state | state value, Mission | 7 states (CALIBRATE, READY, FOLLOW, JUNCTION_TURN, BYPASS, COMPLETE, STOP) | - | 3 (4 on wire) | encoded value |
@@ -206,14 +206,15 @@ Storage bits come from `testing/subsystem3/sizeof_probe.sh` (arm-none-eabi-gcc 1
 | Barcode event struct | `barcode_event_t` | - | - | 48 | 8 | - |
 | Barcode frame: previous left / right count | 2 x `barcode_count_t` (`uint16_t`) | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | 2 x 16 | 1 | #103 |
 | Barcode frame struct | `barcode_frame_t` | - | - | 1248 | 1 | - |
-| IR reading (in tracker): left / right fraction | 2 x `float` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | pending | 1 | #105 |
-| IR reading (in tracker): error | `float` | -1..+1 as -127..+127 (ADR 0001) | 8 | pending | 1 | #105 |
-| IR tracking output: error / steering | 2 x `float` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | pending | 0 (returned by value) | #105 |
+| IR reading (in tracker): left / right fraction | 2 x `uint8_t` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | 2 x 8 | 1 | #105 |
+| IR reading (in tracker): error | `int8_t` | -1..+1 as -127..+127 (ADR 0001) | 8 | 8 | 1 | #105 |
+| IR tracking output: error / steering | 2 x `int8_t` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | 2 x 8 | 0 (returned by value) | #105 |
 | IR tracker: raw left / right | `IrRaw` (2 x `uint16_t`) | 12-bit ADC, 0-4095 | 2 x 12 | pending | 1 | #106 |
 | IR tracker: sample valid (`sample_valid`) | `bool` | Boolean | 1 | pending | 1 | #106 |
 | IR tracker struct | `IrTracker` | - | - | pending | 1 (S3 task stack) | - |
-| IR snapshot: normalized left / right | 2 x `float` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | pending | 1 | #105 |
-| IR snapshot: error / steering | 2 x `float` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | pending | 1 | #105 |
+| IR snapshot: left / right fraction | 2 x `uint8_t` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | 2 x 8 | 1 | #105 |
+| IR snapshot: error / steering | 2 x `int8_t` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | 2 x 8 | 1 | #105 |
+| Mission state (published copy) | `_Atomic uint8_t` (was `uint32_t`) | 7 states | 3 | 8 (smallest atomic store) | 1 | #105 |
 | IR snapshot: raw left / right | `IrRaw` (2 x `uint16_t`) | 12-bit ADC, 0-4095 | 2 x 12 | pending | 1 | #106 |
 | IR snapshot: acquisition valid (`acquisition_valid`) | `bool` | Boolean | 1 | pending | 1 | #106 |
 | IR snapshot struct | `S3IrSnapshot` | - | - | pending | 1 | - |
