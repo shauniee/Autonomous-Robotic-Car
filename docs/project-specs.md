@@ -18,7 +18,7 @@ Status labels: **requirement** (source-stated), **proposed** (drafted, not signe
   - [S1 Communications (proposed; frame layouts in architecture; needs Shaun's sign-off)](#s1-communications-proposed-frame-layouts-in-architecture-needs-shauns-sign-off)
   - [S2 Motion (encoder width provisional until D03; one constant `ENC_COUNT_BITS` in `robot_config.h`; branches #29, #31)](#s2-motion-encoder-width-provisional-until-d03-one-constant-enc_count_bits-in-robot_configh-branches-29-31)
   - [S3 Line, barcode and Mission (branches #35, #36, #37; pending rows converted by #52 after Nicholas confirms)](#s3-line-barcode-and-mission-branches-35-36-37-pending-rows-converted-by-52-after-nicholas-confirms)
-  - [S3 bit-usage data contract (spec #100; final evidence #107)](#s3-bit-usage-data-contract-spec-100-final-evidence-107)
+  - [S3 bit-usage data contract (proposed; spec #100; final evidence #107)](#s3-bit-usage-data-contract-proposed-spec-100-final-evidence-107)
   - [S4 Terrain (scale provisional, 1 mm per count `HUMP_MM_PER_COUNT`, until D06; branches #45, #46)](#s4-terrain-scale-provisional-1-mm-per-count-hump_mm_per_count-until-d06-branches-45-46)
   - [S5 Obstacle (proposed; branches #48, #49)](#s5-obstacle-proposed-branches-48-49)
   - [Mission and Safety](#mission-and-safety)
@@ -179,40 +179,40 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Mapping state | mapping word bit 20 | UNMAPPED / MAPPED | - | 1 | flag |
 | Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; normalised -1..+1 | validity flags; averaged ADC saturates at 4095 | 12 each; normalised pending | struct; pending (#52) |
 | Barcode edge ring entry | ISR ring, barcode ISR | time 32 bit (us); counts 2 x 16; level 1 | overflow sets fault bit; new edge dropped | 32+32+1 | struct |
-| Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; time; position | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1+32+32 | struct; packed pending (#52) |
+| Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1+32+32 | struct; packed pending (#52) |
 | Mission state | state value, Mission | 7 states (CALIBRATE, READY, FOLLOW, JUNCTION_TURN, BYPASS, COMPLETE, STOP) | - | 3 (4 on wire) | encoded value |
 | Safety latched cause | cause word, Safety | 4 cause bits (GP21, fault, stale line, stale motion) | 0 = not latched | 4 | bit mask |
 
-### S3 bit-usage data contract (spec #100; final evidence #107)
+### S3 bit-usage data contract (proposed; spec #100; final evidence #107)
 
-Storage bits come from `testing/subsystem3/sizeof_probe.sh` (arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); struct totals are cross-checked against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (−1..+1 as −127..+127) follow [ADR 0001](adr/0001-scaled-integers-base-2.md); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
+Storage bits come from `testing/subsystem3/sizeof_probe.sh` (arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](adr/0001-scaled-integers-base-2.md) (on branch `docs/minimum-bit-s3`, not yet merged); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
 
 | Field | Current C type | Bounds / units | Chosen width (bits) | Final storage bits | Instances | Ticket |
 | --- | --- | --- | ---: | ---: | ---: | --- |
-| Barcode edge: sample time (`sampled_us`) | `uint32_t` | Never read | 0 (deleted) | - | 64 | #102 |
-| Barcode edge: left / right count | 2 x `uint32_t` | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | - | 64 | #103 |
-| Barcode edge: level (`high`) | `bool` | Boolean | 1 | - | 64 | - |
-| Barcode edge: padding | - | - | 0 | - | 64 | #102, #103 |
-| Barcode edge struct | `barcode_edge_t` | - | - | - | 64 | - |
-| Barcode event: left / right count | 2 x `uint32_t` | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | - | 8 | #103 |
-| Barcode event: letter (`symbol`) | `char` | Letter 0-25 | 5 | - | 8 | #104 |
-| Barcode event: action | `barcode_action_t` | Action 0-4 | 3 | - | 8 | #104 |
-| Barcode event: orientation | `barcode_orientation_t` | Orientation 0-1 | 1 | - | 8 | #104 |
-| Barcode event: padding | - | - | 0 | - | 8 | #104 |
-| Barcode event struct | `barcode_event_t` | - | - | - | 8 | - |
-| Barcode frame: previous left / right count | 2 x `uint32_t` | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | - | 1 | #103 |
-| Barcode frame struct | `barcode_frame_t` | - | - | - | 1 | - |
-| IR reading (in tracker): left / right fraction | 2 x `float` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | - | 1 | #105 |
-| IR reading (in tracker): error | `float` | -1..+1 as -127..+127 (ADR 0001) | 8 | - | 1 | #105 |
-| IR tracking output: error / steering | 2 x `float` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | - | 0 (returned by value) | #105 |
-| IR tracker: raw left / right | `IrRaw` (2 x `uint16_t`) | 12-bit ADC, 0-4095 | 2 x 12 | - | 1 | #106 |
-| IR tracker: sample valid (`sample_valid`) | `bool` | Boolean | 1 | - | 1 | #106 |
-| IR tracker struct | `IrTracker` | - | - | - | 1 (S3 task stack) | - |
-| IR snapshot: normalized left / right | 2 x `float` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | - | 1 | #105 |
-| IR snapshot: error / steering | 2 x `float` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | - | 1 | #105 |
-| IR snapshot: raw left / right | `IrRaw` (2 x `uint16_t`) | 12-bit ADC, 0-4095 | 2 x 12 | - | 1 | #106 |
-| IR snapshot: acquisition valid (`acquisition_valid`) | `bool` | Boolean | 1 | - | 1 | #106 |
-| IR snapshot struct | `S3IrSnapshot` | - | - | - | 1 | - |
+| Barcode edge: sample time (`sampled_us`) | `uint32_t` | Never read | 0 (deleted) | pending | 64 | #102 |
+| Barcode edge: left / right count | 2 x `uint32_t` | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | pending | 64 | #103 |
+| Barcode edge: level (`high`) | `bool` | Boolean | 1 | pending | 64 | - |
+| Barcode edge: padding | - | - | - | pending | 64 | #102, #103 |
+| Barcode edge struct | `barcode_edge_t` | - | - | pending | 64 | - |
+| Barcode event: left / right count | 2 x `uint32_t` | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | pending | 8 | #103 |
+| Barcode event: letter (`symbol`) | `char` | Letter 0-25 | 5 | pending | 8 | #104 |
+| Barcode event: action | `barcode_action_t` | Action 0-4 | 3 | pending | 8 | #104 |
+| Barcode event: orientation | `barcode_orientation_t` | Orientation 0-1 | 1 | pending | 8 | #104 |
+| Barcode event: padding | - | - | - | pending | 8 | #104 |
+| Barcode event struct | `barcode_event_t` | - | - | pending | 8 | - |
+| Barcode frame: previous left / right count | 2 x `uint32_t` | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | pending | 1 | #103 |
+| Barcode frame struct | `barcode_frame_t` | - | - | pending | 1 | - |
+| IR reading (in tracker): left / right fraction | 2 x `float` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | pending | 1 | #105 |
+| IR reading (in tracker): error | `float` | -1..+1 as -127..+127 (ADR 0001) | 8 | pending | 1 | #105 |
+| IR tracking output: error / steering | 2 x `float` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | pending | 0 (returned by value) | #105 |
+| IR tracker: raw left / right | `IrRaw` (2 x `uint16_t`) | 12-bit ADC, 0-4095 | 2 x 12 | pending | 1 | #106 |
+| IR tracker: sample valid (`sample_valid`) | `bool` | Boolean | 1 | pending | 1 | #106 |
+| IR tracker struct | `IrTracker` | - | - | pending | 1 (S3 task stack) | - |
+| IR snapshot: normalized left / right | 2 x `float` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | pending | 1 | #105 |
+| IR snapshot: error / steering | 2 x `float` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | pending | 1 | #105 |
+| IR snapshot: raw left / right | `IrRaw` (2 x `uint16_t`) | 12-bit ADC, 0-4095 | 2 x 12 | pending | 1 | #106 |
+| IR snapshot: acquisition valid (`acquisition_valid`) | `bool` | Boolean | 1 | pending | 1 | #106 |
+| IR snapshot struct | `S3IrSnapshot` | - | - | pending | 1 | - |
 
 Final build (section-4 command), final on-target S3 loop timing and the physical run are recorded by #107 in the [S3 test log](../testing/subsystem3/TEST_LOG.md).
 
@@ -308,3 +308,4 @@ Single register. Record answers and measured values here once, then link from ot
 | D10 | Numerical acceptance thresholds, Week 10 demonstration format/date, instructor repository access and evidence schedule | Team |
 | D11 | Which side of the line holds barcodes and which holds humps | Team |
 | D12 | Whether obstacles appear only on straight sections (the briefing states both) | Team |
+| D13 | Required margin between the worst-case final S3 loop time and its configured period (S3-M02, spec #100) | S3 / team |
