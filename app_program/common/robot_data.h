@@ -156,7 +156,8 @@ typedef enum {
     RD_OWNER_COUNT
 } rd_owner_t;
 
-/* Bit positions are PROVISIONAL until owners confirm them (#28). */
+/* Bit positions confirmed by each owner (#113). scripts/mqtt_client.py
+   --self-test checks its decoder table against this enum. */
 enum {
     RD_FAULT_MOTOR_STALL = 1u << 0,	/* start-blocking, run-stopping */
     RD_FAULT_ENCODER = 1u << 1,		/* start-blocking, run-stopping */
