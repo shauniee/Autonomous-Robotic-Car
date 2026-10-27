@@ -8,18 +8,7 @@ ER subsystem2_init(void);
 ER subsystem2_start(void);
 
 /* Progress records successful output processing, not measured motion. */
-typedef struct
-{
-    uint32_t serviced_ms, sequence; /* wrap-safe 32-bit service time and progress */
-    uint8_t flags; /* bit 0 stopped, bit 1 brake acknowledged; remaining bits zero */
-} MotionHealth;
-
-enum { MOTION_HEALTH_STOPPED_BIT = 1u, MOTION_HEALTH_BRAKED_BIT = 2u };
-static inline bool motion_health_stopped(const MotionHealth *h)
-{ return (h->flags & MOTION_HEALTH_STOPPED_BIT) != 0u; }
-static inline bool motion_health_brake_acknowledged(const MotionHealth *h)
-{ return (h->flags & MOTION_HEALTH_BRAKED_BIT) != 0u; }
-_Static_assert(sizeof(MotionHealth) == 12u, "unexpected MotionHealth layout");
+#include "motion_health.h"
 
 /* Mission writes the command each 20 ms. Copy under a mutex; the sample time
    inside the command is never refreshed by rewriting it. */
