@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Host regression tests
+        run: sh testing/pure/run.sh
       - name: Build image
         run: docker build -t robot-build .
       - name: Build profiles
