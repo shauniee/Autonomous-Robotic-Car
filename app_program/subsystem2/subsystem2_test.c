@@ -2,7 +2,7 @@
 #include "../test_report.h"
 #if APP_TEST
 void subsystem2_test(void) {
-    MotionCommand c = {.mode = MOTION_MODE_FOLLOW, .speed_mmps = 100.0f, .action_id = 1u, .sampled_ms = 100u};
+    MotionCommand c = motion_command_make(MOTION_MODE_FOLLOW, 100.0f, 0.0f, 0, 1u, 100u);
     bool pass = motion_command_fresh(&c, 160u) && !motion_command_fresh(&c, 161u) &&
         !motion_command_fresh(&c, 99u + 0x80000000u);
     TEST_INIT();
