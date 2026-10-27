@@ -14,8 +14,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Host unit and concurrency regression tests
+        run: sh testing/pure/run.sh
       - name: Build image
         run: docker build -t robot-build .
+      - name: S1 Cortex-M0+ event size probe
+        run: |
+          docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build \
+            sh testing/subsystem3/sizeof_probe.sh testing/subsystem1/sizeof_probe.c
       - name: Build profiles
         run: |
           cp config/wifi_secrets.example.h config/wifi_secrets.h
