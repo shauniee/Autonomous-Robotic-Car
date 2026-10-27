@@ -183,7 +183,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Mapping state | mapping word bit 20 | UNMAPPED / MAPPED | - | 1 | flag |
 | Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; normalised -1..+1 | validity flags; averaged ADC saturates at 4095 | 12 each; normalised pending | struct; pending (#52) |
 | Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 16 (wrapped encoder counts at the edge); level 1 | overflow sets fault bit; new edge dropped | 16+16+1 | struct |
-| Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1+32+32 | struct; packed pending (#52) |
+| Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1 (one 16-bit word) + 16+16 | packed word + 2 counts, accessors in `barcode_decode.h` |
 | Mission state | state value, Mission | 7 states (CALIBRATE, READY, FOLLOW, JUNCTION_TURN, BYPASS, COMPLETE, STOP) | - | 3 (4 on wire) | encoded value |
 | Safety latched cause | cause word, Safety | 4 cause bits (GP21, fault, stale line, stale motion) | 0 = not latched | 4 | bit mask |
 
@@ -199,11 +199,11 @@ Storage bits come from `testing/subsystem3/sizeof_probe.sh` (arm-none-eabi-gcc 1
 | Barcode edge: padding | - | - | - | 8 | 64 | #102, #103 |
 | Barcode edge struct | `barcode_edge_t` | - | - | 48 | 64 | - |
 | Barcode event: left / right count | 2 x `barcode_count_t` (`uint16_t`) | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | 2 x 16 | 8 | #103 |
-| Barcode event: letter (`symbol`) | `char` | Letter 0-25 | 5 | pending | 8 | #104 |
-| Barcode event: action | `barcode_action_t` | Action 0-4 | 3 | pending | 8 | #104 |
-| Barcode event: orientation | `barcode_orientation_t` | Orientation 0-1 | 1 | pending | 8 | #104 |
-| Barcode event: padding | - | - | - | pending | 8 | #104 |
-| Barcode event struct | `barcode_event_t` | - | - | pending | 8 | - |
+| Barcode event: letter | bits 0-4 of `packed` (`uint16_t`) | Letter 0-25; 31 = no letter | 5 | 5 | 8 | #104 |
+| Barcode event: action | bits 5-7 of `packed` | Action 0-4 | 3 | 3 | 8 | #104 |
+| Barcode event: orientation | bit 8 of `packed` | Orientation 0-1 | 1 | 1 | 8 | #104 |
+| Barcode event: padding | bits 9-15 of `packed` (spare) | - | - | 7 | 8 | #104 |
+| Barcode event struct | `barcode_event_t` | - | - | 48 | 8 | - |
 | Barcode frame: previous left / right count | 2 x `barcode_count_t` (`uint16_t`) | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | 2 x 16 | 1 | #103 |
 | Barcode frame struct | `barcode_frame_t` | - | - | 1248 | 1 | - |
 | IR reading (in tracker): left / right fraction | 2 x `float` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | pending | 1 | #105 |

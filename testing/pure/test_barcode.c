@@ -152,12 +152,35 @@ static void test_mapping(void)
     assert(barcode_action_for(0u, 'A') == BARCODE_UNMAPPED);		/* boot state */
 }
 
+static void test_event_packing(void)
+{
+    const barcode_orientation_t orients[] = {BARCODE_FORWARD, BARCODE_REVERSE};
+    for (int c = 'A' - 1; c <= 'Z' + 1; ++c) {		/* '@' and '[' are "no letter" */
+        for (int a = BARCODE_UNMAPPED; a <= BARCODE_U_TURN; ++a) {
+            for (unsigned k = 0; k < 2u; ++k) {
+                barcode_event_t e = {.left_count = 0xFFFFu, .right_count = 0x0001u};
+                barcode_event_set(&e, (char)c, (barcode_action_t)a, orients[k]);
+                uint8_t want = c >= 'A' && c <= 'Z' ? (uint8_t)(c - 'A') : BARCODE_NO_LETTER;
+                assert(barcode_event_letter(&e) == want);
+                assert(barcode_event_action(&e) == (barcode_action_t)a);
+                assert(barcode_event_orientation(&e) == orients[k]);
+                assert(e.left_count == 0xFFFFu && e.right_count == 0x0001u);	/* counts untouched */
+            }
+        }
+    }
+    barcode_event_t e;
+    barcode_event_set(&e, '\0', (barcode_action_t)7, BARCODE_FORWARD);	/* out-of-range action */
+    assert(barcode_event_letter(&e) == BARCODE_NO_LETTER && barcode_event_action(&e) == BARCODE_UNMAPPED);
+    _Static_assert(sizeof(barcode_event_t) == 6u, "barcode event is two counts plus one packed word");
+}
+
 int main(void)
 {
     test_samples();
     test_rejections();
     test_rearm();
     test_mapping();
+    test_event_packing();
     puts("barcode: PASS");
     return 0;
 }
