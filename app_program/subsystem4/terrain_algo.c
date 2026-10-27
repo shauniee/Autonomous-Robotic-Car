@@ -85,7 +85,6 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t
        persistent filter state and calibration history are scaled integers. */
     float cur_x = ((float)raw->x - (float)ctx->calib_sum.x / 100.0f) * ACCEL_MG_PER_LSB;
     float cur_y = ((float)raw->y - (float)ctx->calib_sum.y / 100.0f) * ACCEL_MG_PER_LSB;
-    float cur_z = ((float)raw->z - (float)ctx->calib_sum.z / 100.0f) * ACCEL_MG_PER_LSB + 1.0f;
 
     /* Filter in high-resolution signed Q16 raw-LSB units. */
     ctx->filtered_accel_q16.x = filter_axis(ctx->filtered_accel_q16.x, raw->x, ctx->calib_sum.x, false);
