@@ -102,8 +102,10 @@ ER s2_health(MotionHealth *h)
     UW state = control_enter();
     T_RFLG f;
     er = tk_ref_flg(stop_flag, &f);
-    h->stopped = er < E_OK || (f.flgptn & STOP_BIT) != 0;
-    h->brake_acknowledged = er >= E_OK && h->stopped && serviced_stops == stop_requests;
+    bool stopped = er < E_OK || (f.flgptn & STOP_BIT) != 0;
+    bool braked = er >= E_OK && stopped && serviced_stops == stop_requests;
+    h->flags = (uint8_t)((stopped ? MOTION_HEALTH_STOPPED_BIT : 0u) |
+                         (braked ? MOTION_HEALTH_BRAKED_BIT : 0u));
     control_leave(state);
     return er;
 }

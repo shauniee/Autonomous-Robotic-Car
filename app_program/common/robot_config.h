@@ -30,6 +30,7 @@
 
 /* --- S2 motion ------------------------------------------------------ */
 #define MOTION_MAX_DUTY		.35f	/* PROVISIONAL (D07) */
+#define MOTION_TARGET_MAX_MM 2000.0f /* D07: bounded by longest Mission leg; hardware validation pending */
 #define MOTION_EXPIRY_MS	60u	/* PROVISIONAL (D07): sample age limit */
 #define MOTOR_WRAP		999u	/* 20 kHz at 125 MHz with divider below */
 #define MOTOR_DIV_8_4		100u
