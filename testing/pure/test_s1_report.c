@@ -94,7 +94,7 @@ static void test_event_packing(void)
     mqtt_event_t popped;
     assert(s1_log_pop(&log, &popped) && popped.arg == 1u);
 
-    printf("s1_event storage: %zu-byte entry, %zu-byte ring (host layout)\\n",
+    printf("s1_event storage: %zu-byte entry, %zu-byte ring (host layout)\n",
            sizeof(s1_packed_event_t), sizeof(s1_event_log_t));
 }
 
