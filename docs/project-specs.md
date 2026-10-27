@@ -185,17 +185,17 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 
 ### S3 bit-usage comparison (spec #100; before #101, after #107)
 
-Before values measured 2026-10-27 at `main` `56df1bd`. Storage bits from `testing/subsystem3/sizeof_probe.sh` (arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); struct totals match the linked `.bss` objects in the `arm-none-eabi-size` build below (`ring` 1024 B, `events` 96 B, `frame` 160 B, `latest` 56 B). Instances count persistent copies only; per-iteration local copies are exempt. Bits needed for counts follow `ENC_COUNT_BITS` (16, provisional until D03). After, saving and total columns are filled by the ticket named in the last column and checked against the probes in #107.
+Before values measured 2026-10-27 at `main` `56df1bd`. Storage bits from `testing/subsystem3/sizeof_probe.sh` (arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); struct totals match the linked `.bss` objects in the `arm-none-eabi-size` build below (`ring` 1024 B, `events` 96 B, `frame` 160 B, `latest` 56 B). Instances count persistent copies only; per-iteration local copies are exempt. Bits needed for counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (−1..+1 as −127..+127) follow [ADR 0001](adr/0001-scaled-integers-base-2.md); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. After, saving and total columns are filled by the ticket named in the last column and checked against the probes in #107.
 
 | Field | C type before | Storage bits before | Bits needed | Storage bits after | Saving | Instances | Total saved | Ticket |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Barcode edge: sample time | `uint32_t` | 32 | 0 (never read) | - | - | 64 | - | #102 |
+| Barcode edge: sample time (`sampled_us`) | `uint32_t` | 32 | 0 (never read) | - | - | 64 | - | #102 |
 | Barcode edge: left / right count | 2 x `uint32_t` | 2 x 32 | 2 x 16 | - | - | 64 | - | #103 |
-| Barcode edge: level | `bool` | 8 | 1 | - | - | 64 | - | - |
+| Barcode edge: level (`high`) | `bool` | 8 | 1 | - | - | 64 | - | - |
 | Barcode edge: padding | - | 24 | 0 | - | - | 64 | - | #102, #103 |
 | Barcode edge struct | `barcode_edge_t` | 128 | - | - | - | 64 | - | - |
 | Barcode event: left / right count | 2 x `uint32_t` | 2 x 32 | 2 x 16 | - | - | 8 | - | #103 |
-| Barcode event: letter | `char` | 8 | 5 | - | - | 8 | - | #104 |
+| Barcode event: letter (`symbol`) | `char` | 8 | 5 | - | - | 8 | - | #104 |
 | Barcode event: action | `barcode_action_t` | 8 | 3 | - | - | 8 | - | #104 |
 | Barcode event: orientation | `barcode_orientation_t` | 8 | 1 | - | - | 8 | - | #104 |
 | Barcode event: padding | - | 8 | 0 | - | - | 8 | - | #104 |
@@ -206,11 +206,12 @@ Before values measured 2026-10-27 at `main` `56df1bd`. Storage bits from `testin
 | IR reading (in tracker): error | `float` | 32 | 8 | - | - | 1 | - | #105 |
 | IR tracking output: error / steering | 2 x `float` | 2 x 32 | 2 x 8 | - | - | 0 (returned by value) | - | #105 |
 | IR tracker: raw left / right | `IrRaw` (2 x `uint16_t`) | 32 | 2 x 12 | - | - | 1 | - | #106 |
-| IR tracker: sample valid | `bool` | 8 | 1 | - | - | 1 | - | #106 |
+| IR tracker: sample valid (`sample_valid`) | `bool` | 8 | 1 | - | - | 1 | - | #106 |
 | IR tracker struct | `IrTracker` | 576 | - | - | - | 1 (S3 task stack) | - | - |
 | IR snapshot: normalized left / right | 2 x `float` | 2 x 32 | 2 x 7 | - | - | 1 | - | #105 |
 | IR snapshot: error / steering | 2 x `float` | 2 x 32 | 2 x 8 | - | - | 1 | - | #105 |
 | IR snapshot: raw left / right | `IrRaw` (2 x `uint16_t`) | 32 | 2 x 12 | - | - | 1 | - | #106 |
+| IR snapshot: acquisition valid (`acquisition_valid`) | `bool` | 8 | 1 | - | - | 1 | - | #106 |
 | IR snapshot struct | `S3IrSnapshot` | 448 | - | - | - | 1 | - | - |
 
 Build before (section-4 command, `main` `56df1bd`, Pico SDK 2.3.1): 0 warnings, 0 undefined references; text 70312, data 552, bss 24464. On-target S3 loop timing before: not yet measured (needs a Pico run; recorded in the [S3 test log](../testing/subsystem3/TEST_LOG.md) when done).

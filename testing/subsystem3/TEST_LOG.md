@@ -45,7 +45,7 @@ The current S3 service does not drive motors, feed a whole-system watchdog or pu
 | 2026-10-08 | S3-U09 | Future implementation | Pending | PENDING | none | Barcode deferred; no decode run |
 | 2026-10-09 | S3-U02/U06/U07/U10/U11/U12/U13 | Working tree source SHA-256 manifest in evidence | Pending Pico operator | PENDING | [service build evidence](logs/2026-10-09_s3-line-service_evidence.json) | All four profiles built; firmware checks compiled only, not executed |
 | 2026-10-09 | S3-U02/U06/U07/U10/U11/U12/U13 | Relocated test source manifest in evidence | Pending Pico operator | PENDING | [test-layout evidence](logs/2026-10-09_s3-test-layout_evidence.json) | Relocated fixtures compile in all TEST profiles; no on-board execution |
-| 2026-10-27 | S3-M01 (before) | `main` 56df1bd; probe source on branch test/s3-minimum-bit-before | Claude Code compile/link | MEASURED | [before log](logs/2026-10-27_s3-minimum-bit-before.txt) | Compile and link only; text 70312, data 552, bss 24464; `ring` 1024, `events` 96, `frame` 160, `latest` 56 B match probes; nothing executed |
+| 2026-10-27 | S3-M01 (before) | `main` 56df1bd; probe at `bfdf154` | Claude Code compile/link | PASS | [before log](logs/2026-10-27_s3-minimum-bit-before.txt) | Compile and link only; probe totals equal linked S3 `.bss` objects; values in the [bit-usage comparison](../../docs/project-specs.md#s3-bit-usage-comparison-spec-100-before-101-after-107); host suite `testing/pure/run.sh` PASS; nothing executed on target |
 | 2026-10-27 | S3-M02 (before) | - | Pending Pico operator | PENDING | none | Loop-timing method not yet defined; no measurement |
 
 ## 3. Current firmware run instructions

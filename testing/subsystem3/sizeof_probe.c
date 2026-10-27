@@ -1,12 +1,11 @@
 /* S3 minimum-bit sizeof probe. Compile-only: run sizeof_probe.sh, which
    builds this for Cortex-M0+ with the firmware's target flags and prints
    each probe symbol's size in bytes. Never linked into firmware. */
-#include <stddef.h>
 #include "../../app_program/subsystem3/drv_barcode.h"
 #include "../../app_program/subsystem3/barcode_decode.h"
 #include "../../app_program/subsystem3/ir_tracking.h"
 
-#define PROBE(name, n) char probe_##name[n]
+#define PROBE(name, n) char probe_##name[(n)]
 #define SIZE(type) PROBE(sizeof_##type, sizeof(type))
 #define FIELD(type, field) PROBE(field_##type##__##field, sizeof(((type *)0)->field))
 

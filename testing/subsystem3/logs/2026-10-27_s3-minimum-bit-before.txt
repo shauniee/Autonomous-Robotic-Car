@@ -1,5 +1,5 @@
 S3-M01 minimum-bit before baseline
-commit: 56df1bddfe649d1bcc8f93cd0548d5d068f65696 (main 56df1bd); host: Darwin arm64
+commit: 56df1bddfe649d1bcc8f93cd0548d5d068f65696 (main 56df1bd); host: Darwin arm64; probe source: test/s3-minimum-bit-before at bfdf154
 toolchain: arm-none-eabi-gcc (Arm GNU Toolchain 15.3.Rel1 (Build arm-15.149)) 15.3.1 20260627; Pico SDK 2.3.1
 
 ## testing/subsystem3/sizeof_probe.sh (bytes probe)
