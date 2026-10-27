@@ -21,7 +21,7 @@ static bool profile_ready;			/* guarded by profile_mutex */
 /* Mission -> Obstacle requests: one writer per counter (no atomic RMW on M0+). */
 static _Atomic uint32_t scan_requests, scan_served, cancel_requests, cancel_served;
 static _Atomic uint8_t requested_scan_id;
-static rd_word_t side_command;			/* writer: Mission; bit 0 on, bits 8-23 angle */
+static rd_word_t side_command;			/* writer: Mission; bit 0 on, bits 1-7 signed servo angle */
 
 uint32_t s5_front_word(void)
 {
@@ -46,7 +46,7 @@ void s5_scan_cancel(void)
 
 void s5_side_watch(bool on, int16_t angle_deg)
 {
-    rd_word_publish(&side_command, (on ? 1u : 0u) | ((uint32_t)(uint16_t)angle_deg << 8));
+    rd_word_publish(&side_command, s5_side_watch_pack(on, angle_deg));
 }
 
 ER s5_profile_copy(ObstacleProfile *out)
@@ -197,8 +197,8 @@ static void run_scan(uint8_t id)
         if (servo_angle(angles[i]) < E_OK) { state = S5_SCAN_FAILED; break; }
         tk_dly_tsk(SERVO_SETTLE_MS);
         uint32_t range = measure();
-        rays[count++] = (ObstacleRay){angles[i], (uint16_t)(range == ECHO_RANGE_INVALID ? 0u : range),
-                                      range != ECHO_RANGE_INVALID};
+        rays[count++] = s5_ray_make(angles[i], (uint16_t)(range == ECHO_RANGE_INVALID ? 0u : range),
+                                    range != ECHO_RANGE_INVALID);
         if (i + 1u == coarse)
         {
             planned += s5_fine_angles(rays, count, &angles[planned], S5_SCAN_CAPACITY - planned);
@@ -247,7 +247,7 @@ static void obstacle_task(INT stacd, void *exinf)
             }
             else if ((command & 1u) != 0u)
             {
-                (void)servo_angle((int16_t)(command >> 8));
+                (void)servo_angle(s5_side_watch_angle(command));
                 side_active = true;
                 uint32_t range = measure();
                 rd_word_publish(&side_word, echo_pack(range, robot_time_ms()));
