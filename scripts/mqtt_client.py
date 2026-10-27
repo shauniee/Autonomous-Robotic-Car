@@ -94,6 +94,17 @@ def decode_event(f):
     return f"EVENT {EVENT_KIND.get(kind, kind)}: {detail} at t={time_ms} ms, counts L={left} R={right}"
 
 
+def header_fault_widths(text=None):
+    """Bits per owner byte in robot_data.h; each owner's bits restart at 1u << 0."""
+    path = Path(__file__).resolve().parent.parent / "app_program/common/robot_data.h"
+    widths = []
+    for bit in map(int, re.findall(r"RD_FAULT_\w+\s*=\s*1u\s*<<\s*(\d+)", text or path.read_text())):
+        if bit == 0:
+            widths.append(0)
+        widths[-1] = max(widths[-1], bit + 1)
+    return widths
+
+
 def fault_text(fault_bytes):
     active = [f"{owner}: {bit}" for (owner, bits), byte in zip(FAULTS, fault_bytes)
               for i, bit in enumerate(bits) if byte >> i & 1]
@@ -157,6 +168,7 @@ def self_test():
     assert t["barcode_action"] == "STRAIGHT" and (t["obstacle_width_mm"], t["obstacle_depth_mm"]) == (420, 170)
     assert "BARCODE: letter Z -> RIGHT" in decode_event(GOLDEN_EVENT)
     assert mapping_frame(7, "ABCD") == GOLDEN_MAPPING
+    assert [len(bits) for _, bits in FAULTS] == header_fault_widths(), "FAULTS disagrees with robot_data.h"
     print("mqtt_client self-test: PASS")
     return 0
 
