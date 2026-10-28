@@ -14,7 +14,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define S1_FRAME_MAX 18u		/* largest frame, MQTT_FRAME_MAX */
+#define S1_FRAME_MAX 23u		/* largest frame, MQTT_FRAME_MAX (telemetry/snapshot) */
 #define S1_OUTGOING_DEPTH 4u
 #define S1_INCOMING_DEPTH 2u
 

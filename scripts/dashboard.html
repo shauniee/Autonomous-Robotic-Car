@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Robot Telemetry</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #ffffff; --text: #1c1f24; --muted: #6b7280; --line: #e3e5e8;
+    --ok: #15803d; --ok-bg: #dcfce7; --bad: #b91c1c; --bad-bg: #fee2e2; --warn: #a16207; --warn-bg: #fef9c3;
+    --accent: #2563eb; --accent2: #db2777;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111317; --card: #1a1d23; --text: #e8eaed; --muted: #9aa0a8; --line: #2a2e36;
+      --ok: #4ade80; --ok-bg: #12301d; --bad: #f87171; --bad-bg: #3a1616; --warn: #facc15; --warn-bg: #3a3112;
+      --accent: #60a5fa; --accent2: #f472b6;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, -apple-system, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px 20px; }
+  h1 { margin: 0; font-size: 20px; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--line); color: var(--muted); }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); }
+  .pill.bad { background: var(--bad-bg); color: var(--bad); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  main { display: grid; gap: 14px; padding: 0 20px 20px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .card.wide { grid-column: 1 / -1; }
+  .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  .big { font-size: 28px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .sub { color: var(--muted); font-size: 13px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .row { display: flex; justify-content: space-between; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  canvas { width: 100%; height: 140px; display: block; margin-top: 8px; }
+  .legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .legend i { display: inline-block; width: 10px; height: 3px; margin-right: 5px; vertical-align: middle; }
+  ul { list-style: none; margin: 8px 0 0; padding: 0; max-height: 220px; overflow-y: auto; font-size: 13px; }
+  li { padding: 5px 0; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  li:first-child { border-top: 0; }
+  .faults li { color: var(--bad); }
+  .none { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Robot Telemetry</h1>
+  <div class="pills">
+    <span id="link" class="pill">Dashboard offline</span>
+    <span id="robot" class="pill">Robot: unknown</span>
+    <span id="age" class="pill">No frames yet</span>
+  </div>
+</header>
+<main>
+  <section class="card"><div class="label">Mission state</div><div id="mission" class="big">-</div><div id="seq" class="sub">-</div></section>
+  <section class="card"><div class="label">Motion</div><div id="motion" class="big">-</div><div id="action" class="sub">-</div></section>
+  <section class="card"><div class="label">Line</div><div id="line" class="big">-</div><div id="mapped" class="sub">-</div></section>
+  <section class="card"><div class="label">Direction</div><div id="direction" class="big">-</div><div id="speeds" class="sub">-</div></section>
+  <section class="card"><div class="label">Front range</div><div id="front" class="big">-</div><div class="sub">Sonar, forward</div></section>
+  <section class="card"><div class="label">Humps</div><div id="humps" class="big">-</div><div id="humpmax" class="sub">-</div></section>
+  <section class="card"><div class="label">Last barcode</div><div id="barcode" class="big">-</div><div id="baction" class="sub">-</div></section>
+  <section class="card"><div class="label">Obstacle</div><div id="obstacle" class="big">-</div><div class="sub">Width × depth</div></section>
+  <section class="card"><div class="label">Encoder counts</div>
+    <div class="row"><span>Left</span><b id="encl">-</b></div>
+    <div class="row"><span>Right</span><b id="encr">-</b></div>
+  </section>
+  <section class="card"><div class="label">Active faults</div><ul id="faults" class="faults"><li class="none">-</li></ul></section>
+  <section class="card wide"><div class="label">Wheel speed (mm/s, last 60 s)</div>
+    <canvas id="chart"></canvas>
+    <div class="legend"><span><i style="background:var(--accent)"></i>Left</span><span><i style="background:var(--accent2)"></i>Right</span></div>
+  </section>
+  <section class="card wide"><div class="label">Events and acknowledgements</div><ul id="events"><li class="none">None yet</li></ul></section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const history = [];          // {t, l, r} wheel speeds for the chart
+let lastFrame = 0;
+
+function pill(id, text, kind) { $(id).textContent = text; $(id).className = "pill" + (kind ? " " + kind : ""); }
+function mm(v) { return v == null ? "no echo" : v + " mm"; }
+
+function showTelemetry(t) {
+  lastFrame = Date.now();
+  $("mission").textContent = t.mission;
+  $("seq").textContent = "Frame #" + t.sequence;
+  $("motion").textContent = t.motion;
+  $("action").textContent = "Action id " + t.action_id;
+  $("line").textContent = t.line;
+  $("mapped").textContent = t.mapped ? "Barcodes mapped" : "No barcode mapping";
+  $("direction").textContent = t.direction ?? "-";
+  $("speeds").textContent = t.speed_left == null ? "Speed n/a" : `L ${t.speed_left} · R ${t.speed_right} mm/s`;
+  $("front").textContent = mm(t.front_mm);
+  $("humps").textContent = t.hump_count;
+  $("humpmax").textContent = t.hump_max_mm == null ? "No valid maximum" : "Max " + t.hump_max_mm + " mm";
+  $("barcode").textContent = t.barcode;
+  $("baction").textContent = t.barcode_action;
+  $("obstacle").textContent = `${t.obstacle_width_mm} × ${t.obstacle_depth_mm} mm`;
+  $("encl").textContent = t.left;
+  $("encr").textContent = t.right;
+  $("faults").innerHTML = t.faults.length ? "" : '<li class="none">None</li>';
+  for (const f of t.faults) { const li = document.createElement("li"); li.textContent = f; $("faults").append(li); }
+  if (t.speed_left != null) {
+    history.push({ t: lastFrame, l: t.speed_left, r: t.speed_right });
+    while (history.length && history[0].t < lastFrame - 60000) history.shift();
+    draw();
+  }
+}
+
+function addEvent(text) {
+  const list = $("events");
+  if (list.firstElementChild && list.firstElementChild.classList.contains("none")) list.innerHTML = "";
+  const li = document.createElement("li");
+  li.textContent = new Date().toLocaleTimeString() + "  " + text;
+  list.prepend(li);
+  while (list.children.length > 200) list.lastElementChild.remove();
+}
+
+function draw() {
+  const c = $("chart"), ctx = c.getContext("2d"), dpr = devicePixelRatio || 1;
+  c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
+  ctx.scale(dpr, dpr);
+  const w = c.clientWidth, h = c.clientHeight, css = getComputedStyle(document.documentElement);
+  const max = Math.max(50, ...history.map(p => Math.max(Math.abs(p.l), Math.abs(p.r))));
+  const now = Date.now(), x = t => w - (now - t) / 60000 * w, y = v => h / 2 - v / max * (h / 2 - 6);
+  ctx.strokeStyle = css.getPropertyValue("--line"); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+  ctx.fillStyle = css.getPropertyValue("--muted"); ctx.font = "11px system-ui";
+  ctx.fillText("+" + Math.round(max), 4, 12); ctx.fillText("-" + Math.round(max), 4, h - 4);
+  for (const [key, color] of [["l", "--accent"], ["r", "--accent2"]]) {
+    ctx.strokeStyle = css.getPropertyValue(color); ctx.lineWidth = 2; ctx.beginPath();
+    history.forEach((p, i) => i ? ctx.lineTo(x(p.t), y(p[key])) : ctx.moveTo(x(p.t), y(p[key])));
+    ctx.stroke();
+  }
+}
+
+setInterval(() => {
+  if (!lastFrame) return;
+  const s = (Date.now() - lastFrame) / 1000;
+  pill("age", s < 2 ? "Live" : `Last frame ${s.toFixed(0)} s ago`, s < 2 ? "ok" : "warn");
+}, 500);
+addEventListener("resize", draw);
+
+const source = new EventSource("/events");
+source.onopen = () => pill("link", "Dashboard connected", "ok");
+source.onerror = () => pill("link", "Dashboard offline (retrying)", "bad");
+source.onmessage = e => {
+  const m = JSON.parse(e.data);
+  if (m.type === "telemetry") showTelemetry(m);
+  else if (m.type === "status") pill("robot", m.online ? "Robot online" : "Robot offline", m.online ? "ok" : "bad");
+  else addEvent(m.text);
+};
+draw();
+</script>
+</body>
+</html>

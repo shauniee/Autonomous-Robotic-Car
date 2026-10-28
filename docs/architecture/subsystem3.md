@@ -30,7 +30,7 @@
 
 S3 has three parts.
 
-- **Line tracking.** Acquires a complete pair of analogue IR readings (left GP26/ADC0, right GP27/ADC1), calibrates each sensor independently, classifies line visibility and computes memoryless proportional (P) guidance. Owns the calibration buttons and buzzer feedback.
+- **Line tracking.** Acquires a complete pair of analogue IR readings (left GP26/ADC0, right GP27/ADC1), calibrates each sensor independently, classifies line visibility and publishes the two-sensor tracking error that Mission's line PID turns into steering. Owns the calibration buttons and buzzer feedback.
 - **Barcode.** The third IR sensor's comparator DOUT (GP16) detects transitions in the adjacent barcode lane. Capture records ordered edge timestamps and encoder context; task-level decoding measures bars and spaces, validates a frame and emits one mapped navigation event. AOUT is disconnected.
 - **Mission/Safety.** Mission (priority 14, 20 ms) owns navigation decisions and mapping acceptance. Safety (priority 12, 10 ms) owns the GP21 stop latch, the run-stopping fault check, freshness checks and stop authority independent of Mission and Reporting. Their behaviour is defined in [architecture](../architecture.md#subsystem-summaries) and summarised in section 6.
 
@@ -85,12 +85,21 @@ Cancelling black leaves the pair cleared; cancelling white keeps completed black
 ```text
 black_fraction = clamp((raw - white) / (black - white), 0, 1)
 normalized     = 2 * black_fraction - 1          (-1 white, +1 black)
-error          = right_black_fraction - left_black_fraction
-correction     = clamp(0.10 * error, -0.10, +0.10)
-steering       = correction / 0.10               (-1 left ... +1 right)
+error          = right_black_fraction - left_black_fraction   (-1 ... +1)
 ```
 
-Equal sensor values do not prove centering. No integral/derivative history is stored.
+Two-sensor tracking: one sensor sits on each edge of the 18 mm line, so centred both read about half black and the error is zero. Mission's line PID turns the error into steering (`mission_logic.c`), once per new acquisition:
+
+```text
+e        = e + (error - e) * dt / (LINE_ERROR_TAU_MS + dt)      (low-pass; the IR edge is nearly binary)
+I        = clamp(I + LINE_KI * e * dt, -LINE_I_LIMIT, +LINE_I_LIMIT)
+D        = (e - previous_e) / dt
+steering = clamp(LINE_KP * e + I + LINE_KD * D, -MAX_STEER, +MAX_STEER)   (-left ... +right)
+           changing by at most LINE_STEER_RATE * dt per sample (gentle rejoin after a gap)
+speed    = MISSION_FOLLOW_SPEED_MMPS * (1 - LINE_CURVE_SLOWDOWN * |steering| / MAX_STEER)
+```
+
+The PID history resets whenever Mission changes state and around a line search, so a run segment never inherits an old integral or derivative.
 
 | Class | Meaning |
 | --- | --- |
@@ -99,17 +108,26 @@ Equal sensor values do not prove centering. No integral/derivative history is st
 | VISIBLE | Fresh calibrated observation outside LOST/BROAD_BLACK |
 | BROAD_BLACK | Both fractions > 0.85; an observation only, not a junction, barcode or finish event |
 
-White < 0.15; partial 0.15-0.85 inclusive; black > 0.85. Age 60 ms is accepted, 61 ms is stale. Only VISIBLE authorizes valid guidance; fresh LOST/BROAD_BLACK still expose normalized values and error but give invalid guidance and zero steering.
+White < 0.15; partial 0.15-0.85 inclusive; black > 0.85. Age 60 ms is accepted, 61 ms is stale. Only VISIBLE authorizes valid guidance; fresh LOST/BROAD_BLACK still expose normalized values and error but give invalid guidance.
 
-| Left / right | Guidance (usable data) |
-| --- | --- |
-| White / white | LOST; Mission decides recovery |
-| White / partial or black | Correct right |
-| Partial / white | Correct left |
-| Partial / partial | Signed difference; equal gives zero |
-| Partial / black | Correct right |
-| Black / white or partial | Correct left |
-| Black / black | BROAD_BLACK; Mission decides |
+| Left / right | Error | Mission steers |
+| --- | --- | --- |
+| Equal (both half on their edge) | about zero | straight |
+| More black on the left | negative | left, toward the line |
+| More black on the right | positive | right, toward the line |
+| White / white | LOST | Within `LINE_CENTRE_GAP_MS` of the last VISIBLE read: the line is centred between the sensors, keep following. After that: search toward the last steering side on a `MAX_STEER` arc (both wheels turning) |
+| Black / black | BROAD_BLACK | Enter CROSSING: request at least `MISSION_BROAD_FORWARD_MM` of encoder-based straight travel at `MISSION_BROAD_SPEED_MMPS`, then resume following. Continue straight if black remains, bounded by the action timeout. Broad black never declares mission completion |
+
+The crossing target includes `MOTION_DIST_TOL_MM` so Motion's completion
+threshold is at least the requested minimum under its configured encoder
+model. Early exit from black does not shorten the distance action. The same
+action ID is renewed with the IR acquisition timestamp until matching DONE;
+failed actions, unusable sensing, front obstacles, stop/Safety inputs and the
+absolute `MOTION_ACTION_TIMEOUT_MS` bound interrupt the crossing. Another
+crossing action requires leaving black first. Held barcode turns remain
+subject to the existing junction-width check after the minimum travel.
+Physical distance depends on the uncalibrated wheel/encoder geometry (D03/D07).
+Finish detection remains unresolved (D02).
 
 ## 3. Barcode
 
@@ -163,7 +181,7 @@ GPIO bank interrupts are shared and the USB SDK shim is not a general dispatcher
 | --- | --- |
 | `subsystem3.c/.h` | Initialization, task start, protected line-snapshot copy (`s3_ir_copy`); the supported external interface. Also holds the Line/Barcode task (core 1; 10 ms input/feedback, 20 ms acquisition; missed releases skipped): ADC, calibration buttons, buzzer, barcode service |
 | `drv_ir_tracking.c/.h` | ADC register access |
-| `ir_tracking.c/.h` | References, normalization, visibility, P guidance; snapshot packaging that invalidates stale copies |
+| `ir_tracking.c/.h` | References, normalization, visibility, two-sensor error; snapshot packaging that invalidates stale copies |
 | `drv_barcode.c/.h` | GP16 edge ISR and the timestamp ring |
 | `barcode_decode.c/.h` | Host-tested bar-width framing and Code 39 A-Z decode; portable types |
 | `barcode.c/.h` | Scanner state, mapping, copied event queue; public API |
@@ -184,12 +202,12 @@ Returns false immediately on null input, unavailable initialization, busy mutex 
 | `raw`, `have_sample`, `acquisition_valid` | Latest attempted pair; missing attempt vs failed/valid acquisition |
 | `calibration`, `contrast`, `calibration_valid` | References and spans |
 | `normalized_left/right`, `normalized_valid` | Values in [-1,1] |
-| `line`, `error`, `steering`, `guidance_valid` | Visibility, observational error, P steering (valid only when fresh VISIBLE) |
+| `line`, `error`, `guidance_valid` | Visibility, right - left error (valid only when fresh VISIBLE) |
 | `capture_kind`, `capture_result` | Current phase and typed outcome |
 | `sample_fresh`, `sampled_ms`, `sample_age_ms` | Valid acquisition age <= 60 ms; original attempt time; wrap-safe age at copy (zero before first sample) |
 | `sequence` | Advances per distinct acquisition attempt including failed ones; wraps as `uint32_t` |
 
-Invalid normalized/error/steering values are zero with explicit validity flags; stale reads keep raw data and acquisition time but return UNKNOWN. Read success alone does not mean valid sensing. S3 creates one priority-inheritance mutex (handle published with C11 release/acquire atomics); both writer and reader use `TMO_POL`, so contention skips a publication or read and never delays acquisition. The struct is not a wire format.
+Invalid normalized/error values are zero with explicit validity flags; stale reads keep raw data and acquisition time but return UNKNOWN. Read success alone does not mean valid sensing. S3 creates one priority-inheritance mutex (handle published with C11 release/acquire atomics); the writer uses `TMO_POL`, so contention skips a publication and never delays acquisition; readers wait up to 2 ms, because Safety latches a stop on any failed read. The struct is not a wire format.
 
 ### 4.3 Barcode API
 
@@ -233,7 +251,7 @@ Owned by [subsystem 2](subsystem2.md); the S3-side expectations are:
 
 ### 7.1 Implemented (software only; no physical evidence)
 
-- Paired acquisition, calibration, classification, P guidance, snapshot API, buzzer/button handling.
+- Paired acquisition, calibration, classification, two-sensor error, snapshot API, buzzer/button handling; line PID in Mission.
 - Barcode capture ring, decoder, mapping, event FIFO, public API; scanner disabled at boot.
 - Removal of S3 firmware fixtures, runner and startup hooks was kept at Nicholas's request; no new testing added. Historical evidence stays under `testing/subsystem3/`. TEST-only periodic console diagnostics (about every 500 ms) are observations, not assertions.
 

@@ -91,6 +91,19 @@ ifeq ($(TEST),1)
 TEST_SUFFIX := _test
 endif
 
+# NOGUARDS=1 is a bench-only image for exercising subsystems without the
+# automatic guards: Safety acts on GP21 alone, no fault blocks a start,
+# Motion never brakes on a stall and Mission searches for a lost line instead
+# of stopping. Never use it on the
+# course. The image gets a _noguards suffix.
+NOGUARDS ?= 0
+ifneq ($(filter $(NOGUARDS),0 1),$(NOGUARDS))
+$(error Unknown NOGUARDS '$(NOGUARDS)'; use 0 or 1)
+endif
+ifeq ($(NOGUARDS),1)
+NOGUARDS_SUFFIX := _noguards
+endif
+
 # CRASH_REPORT=1 also copies every console line to UART0 on GP0 (TX) /
 # GP1 (RX), 115200 8N1.  UART output is sent immediately, so it still shows
 # the last messages and the kernel's crash report after a crash, when the
@@ -116,7 +129,7 @@ endif
 # a live hazard: an SMP=1 build was once flashed in place of an SMP=0 one and
 # only the banner in the log revealed it.
 #
-EXE_FILE := mtk3pico_smp$(SMP)_$(CONSOLE)$(WIFI_SUFFIX)$(NET_SUFFIX)$(MQTT_SUFFIX)$(CRASH_SUFFIX)$(TEST_SUFFIX)
+EXE_FILE := mtk3pico_smp$(SMP)_$(CONSOLE)$(WIFI_SUFFIX)$(NET_SUFFIX)$(MQTT_SUFFIX)$(CRASH_SUFFIX)$(TEST_SUFFIX)$(NOGUARDS_SUFFIX)
 
 GCC := arm-none-eabi-gcc
 AS := arm-none-eabi-gcc
@@ -188,6 +201,7 @@ CFLAGS  += -DCNF_SMP=1
 ASFLAGS += -DCNF_SMP=1
 endif
 CFLAGS  += -DAPP_TEST=$(TEST)
+CFLAGS  += -DAPP_NO_GUARDS=$(NOGUARDS)
 CFLAGS  += -DTM_CONSOLE_UART=$(CRASH_REPORT)
 ifeq ($(CRASH_REPORT),0)
 CFLAGS  += -DBOARD_UART0_FREE=1
@@ -222,7 +236,7 @@ endif
 
 # The compiler version is part of the profile, so objects from a native
 # toolchain and the Docker toolchain are never linked together.
-PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
+PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-noguards$(NOGUARDS)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
 PROFILE_FILE := .build_profile
 
 ifneq ($(strip $(shell cat $(PROFILE_FILE) 2>/dev/null)),$(PROFILE_ID))

@@ -1,5 +1,6 @@
 #include "mission_logic.h"
 #include <math.h>
+#include <stdlib.h>
 #include "../common/robot_time_math.h"
 #include "../subsystem2/encoder_math.h"
 
@@ -13,10 +14,66 @@ void mission_init(Mission *m, uint32_t now_ms)
     *m = (Mission){.state = MISSION_CALIBRATE, .state_since_ms = now_ms};
 }
 
+static void line_pid_reset(Mission *m)
+{
+    m->line_integral = 0.0f;
+    m->line_pid_primed = false;
+    m->line_steer_q = 0;
+}
+
 static void enter(Mission *m, MissionState next, uint32_t now_ms)
 {
     m->state = next;
     m->state_since_ms = now_ms;
+    line_pid_reset(m);	/* every run segment starts without PID history */
+    if (next == MISSION_FOLLOW)
+    {
+        m->line_seen_ms = now_ms;	/* following only starts on a visible line */
+    }
+}
+
+/* Line PID on the two-sensor error (right - left). It updates once per new IR
+   acquisition (dt from acquisition times) and holds its output between
+   samples. The nearly binary IR edge makes the error step, so it is first
+   low-pass filtered (LINE_ERROR_TAU_MS); P, I and D all act on the filtered
+   error. The steering may change by at most LINE_STEER_RATE per second, so a
+   line found again after a gap is rejoined gently. The result is signed Q7
+   steering limited to MAX_STEER. */
+static int line_pid_steering(Mission *m, const MissionInputs *in)
+{
+    if (m->line_pid_primed && in->line_sampled_ms == m->line_pid_ms)
+    {
+        return m->line_steer_q;
+    }
+    float error = (float)in->line_error / (float)IR_SCALE_ONE;
+    float derivative = 0.0f;
+    float dt = (float)IR_SAMPLE_MS / 1000.0f;	/* nominal step for the first sample */
+    uint32_t dt_ms = in->line_sampled_ms - m->line_pid_ms;
+    if (m->line_pid_primed && dt_ms > 0u && dt_ms <= IR_MAX_GAP_MS)
+    {
+        dt = (float)dt_ms / 1000.0f;
+        error = m->line_prev_error + (error - m->line_prev_error) * dt / (LINE_ERROR_TAU_MS / 1000.0f + dt);
+        derivative = (error - m->line_prev_error) / dt;
+        m->line_integral = fminf(fmaxf(m->line_integral + LINE_KI * error * dt, -LINE_I_LIMIT), LINE_I_LIMIT);
+    }
+    float steer = LINE_KP * error + m->line_integral + LINE_KD * derivative;
+    float previous = (float)m->line_steer_q / (float)IR_SCALE_ONE;
+    float step = LINE_STEER_RATE * dt;
+    steer = fminf(fmaxf(steer, previous - step), previous + step);
+    steer = fminf(fmaxf(steer, -MAX_STEER), MAX_STEER);
+    m->line_prev_error = error;
+    m->line_pid_ms = in->line_sampled_ms;
+    m->line_pid_primed = true;
+    m->line_steer_q = (int)lroundf(steer * (float)IR_SCALE_ONE);
+    return m->line_steer_q;
+}
+
+/* Follow speed slows with steering so a curve gets time to be corrected:
+   full speed straight, (1 - LINE_CURVE_SLOWDOWN) of it at MAX_STEER. */
+static float line_follow_speed(int steer_q)
+{
+    float share = fminf((float)abs(steer_q) / (MAX_STEER * (float)IR_SCALE_ONE), 1.0f);
+    return floorf(MISSION_FOLLOW_SPEED_MMPS * (1.0f - LINE_CURVE_SLOWDOWN * share));
 }
 
 static uint8_t next_action_id(Mission *m)
@@ -148,16 +205,20 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
     {
         m->in_broad = true;
         m->broad_origin = in->travel_counts;
+        m->broad_since_ms = in->now_ms;
+        m->current_action = next_action_id(m);
+        m->recovering = false;
+        enter(m, MISSION_CROSSING, in->now_ms);
+        /* Include Motion's completion tolerance so DONE cannot occur before
+           the requested minimum travel under the configured encoder model. */
+        out->command = action_command(MOTION_MODE_DISTANCE,
+            MISSION_BROAD_SPEED_MMPS,
+            MISSION_BROAD_FORWARD_MM + MOTION_DIST_TOL_MM,
+            m->current_action, in->line_sampled_ms);
+        return;
     }
     uint32_t broad_travel = m->in_broad ? enc_travel(in->travel_counts, m->broad_origin) : 0u;
 
-    if (broad && broad_travel >= MISSION_FINISH_COUNTS)
-    {
-        enter(m, MISSION_COMPLETE, in->now_ms);
-        out->stop_scanner = true;
-        out->command = stop_command(in->now_ms);
-        return;
-    }
     if (m->in_broad && !broad && in->usable_line)
     {
         m->in_broad = false;
@@ -181,16 +242,52 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         }
     }
 
+    if (broad)
+    {
+        /* The minimum distance is complete, but the intersection may be
+           wider. Continue straight until black clears, with a total bound. */
+        if (robot_time_elapsed(in->now_ms, m->broad_since_ms) >=
+            MOTION_ACTION_TIMEOUT_MS)
+        {
+            to_stop(m, in, out, true);
+            return;
+        }
+        m->recovering = false;
+        m->visible_streak = 0u;
+        line_pid_reset(m);
+        out->command = follow_command(in, MISSION_BROAD_SPEED_MMPS, 0, 1u);
+        return;
+    }
+
+    if (in->line == IR_LINE_VISIBLE && in->guidance_valid)
+    {
+        m->line_seen_ms = in->now_ms;
+    }
+    if (!m->recovering && in->line == IR_LINE_LOST && in->usable_line &&
+        robot_time_elapsed(in->now_ms, m->line_seen_ms) < LINE_CENTRE_GAP_MS)
+    {
+        /* Both sensors white just after seeing the line: with the sensors on the
+           line's edges the line is between them, i.e. centred. Keep both wheels
+           driving under the PID (the error reads about zero) instead of searching. */
+        int steer = line_pid_steering(m, in);
+        out->command = follow_command(in, line_follow_speed(steer), steer, 1u);
+        return;
+    }
     if (m->recovering)
     {
         /* Bounded recovery: two fresh visible reads rejoin the line. */
         if (line_reacquired(m, in))
         {
             m->recovering = false;
+            line_pid_reset(m);	/* no derivative across the search gap */
         }
     }
     else if (in->line == IR_LINE_LOST)
     {
+        if (m->direction == 0 && APP_NO_GUARDS)
+        {
+            m->direction = 1;	/* bench build: search one side rather than stop */
+        }
         if (m->direction == 0)
         {
             to_stop(m, in, out, true); /* never saw the line move: no side to search */
@@ -198,19 +295,22 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
             return;
         }
         m->recovering = true;
+        line_pid_reset(m);
         m->recovery_since_ms = in->now_ms;
         m->visible_streak = 0u;
         m->in_broad = false;
     }
     if (m->recovering)
     {
-        if (robot_time_elapsed(in->now_ms, m->recovery_since_ms) >= RECOVERY_MS)
+        if (!APP_NO_GUARDS && robot_time_elapsed(in->now_ms, m->recovery_since_ms) >= RECOVERY_MS)
         {
             to_stop(m, in, out, true);
             out->line_lost = true;
             return;
         }
-        out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS * 0.5f, m->direction > 0 ? IR_SCALE_ONE : -IR_SCALE_ONE, 1u);
+        /* Search arc at MAX_STEER: both wheels keep turning, toward the last side. */
+        int search_q = (int)lroundf(MAX_STEER * (float)IR_SCALE_ONE);
+        out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS * 0.5f, m->direction > 0 ? search_q : -search_q, 1u);
         return;
     }
 
@@ -219,16 +319,37 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         to_stop(m, in, out, true);
         return;
     }
-    /* S3 already publishes signed Q7 steering: preserve its integer form
-       across the S3->S2 boundary, with the configured correction limit. */
-    int steer = in->steering;
-    int max_steer_q = (int)(MAX_STEER * IR_SCALE_ONE);
-    if (steer > max_steer_q) steer = max_steer_q;
-    if (steer < -max_steer_q) steer = -max_steer_q;
+    int steer = line_pid_steering(m, in);
     if (steer != 0) m->direction = steer > 0 ? 1 : -1;
-    bool is_broad = in->line == IR_LINE_BROAD_BLACK;
-    out->command = follow_command(in, is_broad ? MISSION_BROAD_SPEED_MMPS : MISSION_FOLLOW_SPEED_MMPS,
-                                  is_broad ? 0 : steer, 1u);
+    out->command = follow_command(in, line_follow_speed(steer), steer, 1u);
+}
+
+
+static void handle_crossing(Mission *m, const MissionInputs *in,
+                            MissionOutputs *out)
+{
+    if (!in->usable_line || obstacle_ahead(in) ||
+        robot_time_elapsed(in->now_ms, m->broad_since_ms) >=
+            MOTION_ACTION_TIMEOUT_MS ||
+        (in->motion_action == m->current_action &&
+         in->motion_status == RD_MOTION_FAILED))
+    {
+        to_stop(m, in, out, true);
+        return;
+    }
+    if (in->motion_action == m->current_action &&
+        in->motion_status == RD_MOTION_DONE)
+    {
+        enter(m, MISSION_FOLLOW, in->now_ms);
+        handle_follow(m, in, out);
+        return;
+    }
+    /* Retain the action ID and original acquisition time on each renewal.
+       Leaving black early must not shorten the requested minimum travel. */
+    out->command = action_command(MOTION_MODE_DISTANCE,
+        MISSION_BROAD_SPEED_MMPS,
+        MISSION_BROAD_FORWARD_MM + MOTION_DIST_TOL_MM,
+        m->current_action, in->line_sampled_ms);
 }
 
 
@@ -441,6 +562,7 @@ void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out)
     case MISSION_CALIBRATE: handle_calibrate(m, in, out); break;
     case MISSION_READY: handle_ready(m, in, out); break;
     case MISSION_FOLLOW: handle_follow(m, in, out); break;
+    case MISSION_CROSSING: handle_crossing(m, in, out); break;
     case MISSION_JUNCTION_TURN: handle_junction_turn(m, in, out); break;
     case MISSION_BYPASS: handle_bypass(m, in, out); break;
     case MISSION_COMPLETE:

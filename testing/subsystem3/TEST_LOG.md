@@ -14,6 +14,10 @@ Host methods below describe historical checks whose runners are retired; saved r
 - [6. Startup test stack correction — 2026-10-09](#6-startup-test-stack-correction--2026-10-09)
 - [7. Minimum-bit final memory (S3-M01) — 2026-10-27](#7-minimum-bit-final-memory-s3-m01--2026-10-27)
 
+- [8. Both-black forward (S3-BF01) — 2026-10-28](#8-both-black-forward-s3-bf01--2026-10-28)
+
+- [9. Minimum crossing distance (S3-BF02) — 2026-10-28](#9-minimum-crossing-distance-s3-bf02--2026-10-28)
+
 ## 1. Test cases
 
 | ID | Test / requirement | Method / steps | Expected |
@@ -134,3 +138,39 @@ The [bit-usage data contract](../../docs/project-specs.md#s3-bit-usage-data-cont
 
 Host results above are separate from firmware results. S3-M02 (on-target loop timing) and the physical line-follow run are not part of this record; they are pending on the robot.
 
+
+## 8. Both-black forward (S3-BF01) — 2026-10-28
+
+Case: use calibrated, usable BROAD_BLACK inputs with `guidance_valid=false`.
+Expect straight FOLLOW at the configured broad speed; preserve sample time;
+stop at the forward interval boundary; resume normal tracking on an early
+exit; rearm on a new encounter. GP21 and unusable snapshots must interrupt
+movement. Check elapsed time across uint32 wrap and retain junction/finish
+cases with realistic invalid broad-black guidance.
+
+Result: PASS, host only, `testing/pure/run.sh` exit 0; tester: Codex.
+Base commit: `5e6a45b768e7e2c2f8d69ba18c0360b6680d87de`, plus uncommitted
+working-tree changes identified by the [source manifest](logs/2026-10-28_S3-BF01_both-black-forward_manifest.json).
+All host tests passed; [captured output](logs/2026-10-28_S3-BF01_both-black-forward.txt).
+No hardware was used, firmware flashed, or physical movement verified.
+The provisional forward interval requires physical calibration (D02/D07).
+
+## 9. Minimum crossing distance (S3-BF02) — 2026-10-28
+
+Supersedes the timed S3-BF01 behavior. Case: usable BROAD_BLACK with invalid
+PID guidance must request DISTANCE for 25 mm plus Motion's 3 mm completion
+tolerance. Early visible sensing must not shorten the action. Preserve action
+ID and acquisition time; accept only matching DONE. Remaining black must
+continue straight without another distance action or mission completion.
+Check GP21, unusable sensing, failed action, front obstacle and absolute timeout
+across timer wrap; retain held-barcode turns after crossing.
+
+Result: PASS, host suite `testing/pure/run.sh` exit 0; tester: Codex.
+Wireless normal Docker build (`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip
+MQTT=1 CRASH_REPORT=0 TEST=0 NOGUARDS=0`) also exited 0 and produced the UF2.
+Base commit `5e6a45b768e7e2c2f8d69ba18c0360b6680d87de` plus uncommitted changes:
+[source and image manifest](logs/2026-10-28_S3-BF02_manifest.json),
+[host output](logs/2026-10-28_S3-BF02_crossing-25mm.txt),
+[Docker build output](logs/2026-10-28_S3-BF02_docker-build.txt).
+No flash or physical distance verification was performed. Geometry/calibration
+and a distinct finish criterion remain pending (D02/D03/D07).

@@ -53,6 +53,10 @@ static void safety_task(INT stacd, void *exinf)
             if (held == 0u)
             {
                 (void)s2_stop(); /* once per latch: repeats would reset the brake acknowledgement */
+                tm_printf((UB *)"[SAFETY] latched causes=0x%x (1 GP21, 2 fault, 4 stale line, 8 stale motion)"
+                          " line_seen=%d line_age=%u motion_seen=%d motion_age=%u up=%u\n",
+                          (unsigned)causes, (int)in.line_seen, (unsigned)in.line_age_ms,
+                          (int)in.motion_seen, (unsigned)in.motion_age_ms, (unsigned)now);
             }
             rd_word_publish(&latched, held | causes);
         }

@@ -176,7 +176,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Field | Storage / writer | Range | Invalid / overflow | Bits | Repr. |
 | --- | --- | --- | --- | --- | --- |
 | Encoder count per wheel | wrapping counter, encoder ISR (core 1) | wrapped counts; mm per count from D03 geometry | wraps; consumers use modular subtraction | 16 (provisional) | fixed-width |
-| Motion command: mode/speed/steering/target/action/time | `MotionCommand`, Mission writer -> S2 mutex copy | mode 0-3; speed 0-300 whole mm/s; steering -127..127 Q7; target -2000..2000 whole mm (DISTANCE) or -360..360 whole degrees (TURN); ID 0-63; sampled time uint32 ms | invalid constructor returns STOP; invalid packed/reserved fields and expired sample brake; target bound **provisional D07** | 2 / 9 / 8 / 16 / 6 / 32 logical = 73 bits; 96 stored (`sizeof` 12 bytes) | 16-bit speed+ID, 16-bit mode+Q7 steering, 16-bit target, 32-bit sampled time; accessor-only; #109 |
+| Motion command: mode/speed/steering/target/action/time | `MotionCommand`, Mission writer -> S2 mutex copy | mode 0-3; speed 0-500 whole mm/s (MOTION_SPEED_MAX_MMPS); steering -127..127 Q7; target -2000..2000 whole mm (DISTANCE) or -360..360 whole degrees (TURN); ID 0-63; sampled time uint32 ms | invalid constructor returns STOP; invalid packed/reserved fields and expired sample brake; target bound **provisional D07** | 2 / 9 / 8 / 16 / 6 / 32 logical = 73 bits; 96 stored (`sizeof` 12 bytes) | 16-bit speed+ID, 16-bit mode+Q7 steering, 16-bit target, 32-bit sampled time; accessor-only; #109 |
 | Motion health: service time / sequence / stopped / brake ack | `MotionHealth`, S2 writer guarded by command mutex | times and sequence uint32; flags yes/no | sequence/time wrap; brake acknowledgement only after serviced stop | 32 / 32 / 1 / 1 logical = 66 bits; 96 stored (`sizeof` 12 bytes) | 2 flags in one uint8, 2x uint32; accessors; #109 |
 | Motion feedback: status, action ID | feedback word, Motion | status 4 values (IDLE/RUNNING/DONE/FAILED); ID 0-63 | ID wraps; ID 1 reserved for FOLLOW | 2 + 6 (ID width provisional) | one word, single store |
 
@@ -189,7 +189,8 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; fractions 0..1 as 0..127; error and steering -1..+1 as -127..+127 | validity flags; averaged ADC saturates at 4095; fractions clamp to 0..127 | 12 each; 7 each; 8 each | struct; scaled integers ([ADR 0001](adr/0001-base-2-scaled-integers.md)) |
 | Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 16 (wrapped encoder counts at the edge); level 1 | overflow sets fault bit; new edge dropped | 16+16+1 | struct |
 | Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1 (one 16-bit word) + 16+16 | packed word + 2 counts, accessors in `barcode_decode.h` |
-| Mission state | state value, Mission | 7 states (CALIBRATE, READY, FOLLOW, JUNCTION_TURN, BYPASS, COMPLETE, STOP) | - | 3 (4 on wire) | encoded value |
+| Mission state | state value, Mission | 8 states (CALIBRATE, READY, FOLLOW, JUNCTION_TURN, BYPASS, COMPLETE, STOP, CROSSING) | - | 3 (4 on wire) | encoded value |
+| Broad-black encounter start | `Mission.broad_since_ms`, Mission writer | uint32 milliseconds, modulo 2^32 | meaningful only while `in_broad`; unsigned elapsed subtraction handles wrap | 32 | private timestamp; no wire format |
 | Safety latched cause | cause word, Safety | 4 cause bits (GP21, fault, stale line, stale motion) | 0 = not latched | 4 | bit mask |
 
 ### S3 bit-usage data contract (proposed; spec #100; final evidence #107)
@@ -219,7 +220,7 @@ Storage bits come from `testing/subsystem3/sizeof_probe.sh` (accepts an optional
 | IR tracker struct | `IrTracker` | - | - | 480 | 1 (S3 task stack) | - |
 | IR snapshot: left / right fraction | 2 x `uint8_t` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | 2 x 8 | 1 | #105 |
 | IR snapshot: error / steering | 2 x `int8_t` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | 2 x 8 | 1 | #105 |
-| Mission state (published copy) | `_Atomic uint8_t` (was `uint32_t`) | 7 states | 3 | 8 (smallest atomic store) | 1 | #105 |
+| Mission state (published copy) | `_Atomic uint8_t` (was `uint32_t`) | 8 states | 3 | 8 (smallest atomic store) | 1 | #105 |
 | IR snapshot: raw left / right | bits 0-23 of `IrRawWord` (`uint32_t`) | 12-bit ADC, 0-4095 | 2 x 12 | 2 x 12 | 1 | #106 |
 | IR snapshot: acquisition valid | bit 24 of `IrRawWord` (bits 25-31 spare) | Boolean | 1 | 1 (+7 spare) | 1 | #106 |
 | IR snapshot struct | `S3IrSnapshot` | - | - | 320 | 1 | - |
@@ -322,7 +323,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D04 | Mounted IR module levels, polarity, height, contrast/noise and lighting range | S3 |
 | D05 | Installed ultrasonic model and Echo level (<= 3.3 V before connecting GP2), range, repeat interval and no-echo behaviour; servo supply, endpoints, centre and settling | S5 |
 | D06 | IMU supply/pull-ups, axes/bias, filters, impact thresholds and height method against reference humps up to 30 mm (lower practice ramp height still to be measured; [humps](#course-rules)) | S4 |
-| D07 | Wheel PID gains, speed/turn accuracy, stall/clearance/stopping thresholds, scan/reacquisition limits and retries | Owners / team |
+| D07 | Wheel PID gains, speed/turn accuracy, stall/clearance/stopping thresholds, scan/reacquisition limits and retries; physical accuracy of the requested 25 mm minimum both-black crossing (`MISSION_BROAD_FORWARD_MM`), including Motion completion tolerance | Owners / team |
 | D08 | Measured stop latency and stationary-detection threshold | S2 / Safety |
 | D09 | Instructor network/broker settings available before program freeze; network/stack load | S1 / team |
 | D10 | Numerical acceptance thresholds, Week 10 demonstration format/date, instructor repository access and evidence schedule | Team |

@@ -10,7 +10,8 @@
 ER subsystem3_init(void);
 ER subsystem3_start(void);
 /* 
- * Nonblocking coherent copy. False means null, uninitialized, or busy/error;
+ * Coherent copy; waits at most 2 ms for the publisher. False means null,
+ * uninitialized, or lock/unlock error;
  * Ignore the destination on failure; normalized zero is not validity.
  * This API is for task context, never an ISR.
 */

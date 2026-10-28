@@ -12,6 +12,7 @@
 #include "../subsystem5/subsystem5.h"
 
 _Static_assert(MQTT_FAULT_BYTES == RD_OWNER_COUNT, "one telemetry fault byte per owner");
+_Static_assert(S1_FRAME_MAX >= MQTT_FRAME_MAX, "bridge slots must hold the largest frame");
 
 static s1_event_log_t event_log;	/* guarded by DI: producers and Reporting share core 1 */
 static rd_word_t last_barcode;		/* writer: s1_event callers (Mission); letter | action << 5 */

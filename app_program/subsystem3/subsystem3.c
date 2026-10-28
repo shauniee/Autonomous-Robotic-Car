@@ -12,6 +12,7 @@
 // consumers may call before startup, including from the other core
 static atomic_int snapshot_mutex;
 static S3IrSnapshot latest;
+#define S3_COPY_WAIT_MS 2	/* readers' lock wait; matches s2_health() */
 
 ER subsystem3_init(void)
 {
@@ -42,10 +43,17 @@ ER subsystem3_init(void)
 static void subsystem3_publish(const S3IrSnapshot *snapshot)
 {
     ID id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
+    static unsigned misses;
     if ((id > 0) && (tk_loc_mtx(id, TMO_POL) >= E_OK))
     {
         latest = *snapshot;
         (void)tk_unl_mtx(id);
+        if (misses >= 2u) tm_printf((UB *)"[IR] snapshot publish skipped %u times in a row\n", misses);
+        misses = 0u;
+    }
+    else
+    {
+        ++misses;
     }
 }
 
@@ -258,7 +266,10 @@ ER subsystem3_start(void)
 bool s3_ir_copy(S3IrSnapshot *snapshot)
 {
     ID id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
-    if ((snapshot == NULL) || (id <= 0) || (tk_loc_mtx(id, TMO_POL) < E_OK))
+    /* Wait briefly instead of polling: the holder only copies a struct and
+       inherits the reader's priority, so a polled miss would be spurious
+       and Safety latches a stop on any failed copy. */
+    if ((snapshot == NULL) || (id <= 0) || (tk_loc_mtx(id, S3_COPY_WAIT_MS) < E_OK))
     {
         return false;
     }

@@ -27,6 +27,7 @@ typedef enum
     MISSION_BYPASS,
     MISSION_COMPLETE,
     MISSION_STOP,
+    MISSION_CROSSING,
     MISSION_STATE_COUNT
 } MissionState;
 
@@ -59,7 +60,7 @@ typedef struct
     bool inputs_ok;		/* IR snapshot copied and Motion health read */
     bool calibration_valid, guidance_valid, usable_line;
     IrLine line;
-    int8_t steering;		/* S3 scaled, -IR_SCALE_ONE..+IR_SCALE_ONE */
+    int8_t line_error;		/* S3 right - left error, Q7; + means steer right */
     uint32_t line_sampled_ms;
     uint32_t travel_counts;	/* mean of both wheel counts, wrapped */
     rd_motion_status_t motion_status;
@@ -103,11 +104,18 @@ typedef struct
     barcode_action_t held;	/* barcode command held for the next cross junction */
     uint32_t state_since_ms, recovery_since_ms;
     uint32_t broad_origin;	/* travel count where the current broad-black run began */
+    uint32_t broad_since_ms; /* start of this broad-black encounter, wraps */
     bool in_broad;
     bool recovering;
     float turn_target;	/* degrees, + left */
     bool start_pending;
     int direction;		/* last steering side: -1, 0, +1 */
+    float line_integral;	/* line PID integral term, steering units */
+    float line_prev_error;	/* filtered line error at line_pid_ms, -1..+1 */
+    uint32_t line_pid_ms;	/* IR acquisition time of the last PID update */
+    bool line_pid_primed;	/* a previous sample exists for the derivative */
+    int line_steer_q;		/* PID output held until the next IR sample */
+    uint32_t line_seen_ms;	/* last fresh VISIBLE read while following */
     unsigned visible_streak;
     uint8_t action_id;
     uint8_t current_action;	/* ID of the Motion action in progress */

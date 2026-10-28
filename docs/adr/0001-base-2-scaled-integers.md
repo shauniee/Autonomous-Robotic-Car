@@ -17,5 +17,5 @@ The minimum-bit requirement ([project-specs §4](../project-specs.md#4-change-in
 
 ## Consequences
 
-- Steering resolution is 1/127 (about 0.8 percent). The host replay test `testing/pure/test_ir_tracking.c` shows identical line states and steering within one step of the float reference for the current `IR_KP` / `IR_MAX_CORRECTION`; a gain ratio above 1 widens that bound and must re-run the test.
+- Steering resolution is 1/127 (about 0.8 percent). The host replay test `testing/pure/test_ir_tracking.c` shows identical line states and two-sensor error within one step of the float reference. Line steering is now computed in float by Mission's line PID (`mission_logic.c`) and checked against a float reference in `testing/pure/test_mission.c`.
 - Readers divide by `IR_SCALE_ONE` only at a float boundary.

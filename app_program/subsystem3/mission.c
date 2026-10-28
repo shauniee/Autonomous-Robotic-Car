@@ -9,7 +9,7 @@
 #include "../common/buttons.h"
 #include "../common/robot_time.h"
 
-static _Atomic uint8_t published_state;	/* writer: Mission task; 7 states, 3 bits */
+static _Atomic uint8_t published_state;	/* writer: Mission task; 8 states, 3 bits */
 
 MissionState mission_state(void)
 {
@@ -19,7 +19,8 @@ MissionState mission_state(void)
 ER mission_set_mapping(const uint8_t letters[4])
 {
     MissionState state = mission_state();
-    if (state == MISSION_FOLLOW || state == MISSION_JUNCTION_TURN || state == MISSION_BYPASS)
+    if (state == MISSION_FOLLOW || state == MISSION_JUNCTION_TURN || state == MISSION_BYPASS ||
+        state == MISSION_CROSSING)
     {
         return E_OBJ;
     }
@@ -27,7 +28,7 @@ ER mission_set_mapping(const uint8_t letters[4])
 }
 
 static const char *const state_names[MISSION_STATE_COUNT] = {
-    "CALIBRATE", "READY", "FOLLOW", "JUNCTION_TURN", "BYPASS", "COMPLETE", "STOP"};
+    "CALIBRATE", "READY", "FOLLOW", "JUNCTION_TURN", "BYPASS", "COMPLETE", "STOP", "CROSSING"};
 
 static void mission_task(INT stacd, void *exinf)
 {
@@ -85,7 +86,7 @@ static void mission_task(INT stacd, void *exinf)
             .guidance_valid = snapshot.guidance_valid,
             .usable_line = snapshot.normalized_valid && snapshot.capture_kind == IR_CAPTURE_NONE,
             .line = snapshot.line,
-            .steering = snapshot.steering,
+            .line_error = snapshot.error,
             .line_sampled_ms = snapshot.sampled_ms,
             .travel_counts = enc_mean(drv_encoder_count(ENCODER_LEFT), drv_encoder_count(ENCODER_RIGHT)),
             .motion_status = rd_motion_feedback_status(feedback),
@@ -162,6 +163,11 @@ static void mission_task(INT stacd, void *exinf)
         {
             reported = mission.state;
             tm_printf((UB *)"[MISSION] state=%s%s\n", state_names[mission.state], APP_TEST ? " MOTOR_INHIBITED" : "");
+            if (mission.state == MISSION_STOP)
+            {
+                tm_printf((UB *)"[MISSION] stop: gp21=%d latched=%d inputs_ok=%d\n",
+                          (int)in.stop_down, (int)in.safety_latched, (int)in.inputs_ok);
+            }
         }
         tk_dly_tsk(robot_time_next_delay(&release, FOLLOW_PERIOD_MS, robot_time_ms()));
     }

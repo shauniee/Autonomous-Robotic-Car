@@ -282,6 +282,11 @@ void cyw43_utk_task(int32_t stacd, void *exinf)
     }
 
 #if TM_NET_LWIP
+#if TM_MQTT
+    /* Create the client once lwIP and the radio MAC exist; the poll below
+     * only connects it while the link is up. */
+    mqtt_utk_start();
+#endif
     int32_t  prev_link_status = radio_status.link_status;
     uint64_t rejoin_at = (result != 0) ?
                          time_us_64() + WIFI_REJOIN_DELAY_US : 0;

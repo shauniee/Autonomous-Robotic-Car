@@ -37,6 +37,7 @@ static inline uint32_t safety_causes(const SafetyInputs *in)
     uint32_t causes = 0u;
     bool grace = in->uptime_ms < SAFETY_BOOT_GRACE_MS;
     if (in->stop_button) causes |= SAFETY_CAUSE_STOP_BUTTON;
+    if (APP_NO_GUARDS) return causes;	/* bench build: GP21 is the only stop */
     if (in->fault_pending) causes |= SAFETY_CAUSE_FAULT;
     if (in->line_seen ? in->line_age_ms > SAFETY_STALE_MS : !grace) causes |= SAFETY_CAUSE_STALE_LINE;
     if (in->motion_seen ? in->motion_age_ms > SAFETY_STALE_MS : !grace) causes |= SAFETY_CAUSE_STALE_MOTION;

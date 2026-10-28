@@ -1,4 +1,5 @@
 #include "robot_data.h"
+#include "robot_config.h"
 
 /* One byte per owner; each byte has exactly one writer. */
 static _Atomic uint8_t fault_byte[RD_OWNER_COUNT];
@@ -87,6 +88,7 @@ static bool any_fault(const uint8_t mask[RD_OWNER_COUNT])
 
 bool rd_fault_start_blocked(void)
 {
+    if (APP_NO_GUARDS) return false;	/* bench build: faults are reported only */
     return any_fault(start_blocking);
 }
 
