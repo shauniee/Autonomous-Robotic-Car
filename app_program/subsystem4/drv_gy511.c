@@ -10,10 +10,14 @@
 /* Registers for LSM303DLHC */
 #define REG_CTRL_REG1_A 0x20u
 #define REG_CTRL_REG4_A 0x23u
+/* ST LSM303DLHC datasheet section 7.1.8: STATUS_REG_A, ZYXDA.
+   https://www.st.com/resource/en/datasheet/lsm303dlhc.pdf */
+#define REG_STATUS_A 0x27u
+#define STATUS_NEW_XYZ 0x08u
 #define REG_OUT_X_L_A 0x28u
 #define REG_AUTO_INC_A 0x80u
 
-static uint32_t transaction_started;
+static uint32_t operation_started;
 
 
 /* Wait with timeout for I2C status flag */
@@ -28,6 +32,11 @@ static bool wait_i2c_status(uint32_t mask, bool match_set, uint32_t timeout_us)
             out_w(I2C0_BASE + I2Cx_ENABLE, 0u);
             return false;
         }
+        if (robot_time_elapsed(robot_time_us(), operation_started) >= GY511_TIMEOUT_US)
+        {
+            out_w(I2C0_BASE + I2Cx_ENABLE, 0u);
+            return false;
+        }
         uint32_t status = in_w(I2C0_BASE + I2Cx_STATUS);
         bool condition = (status & mask) != 0;
         if (condition == match_set)
@@ -35,7 +44,7 @@ static bool wait_i2c_status(uint32_t mask, bool match_set, uint32_t timeout_us)
             return true;
         }
         if ((uint32_t)(robot_time_us() - start) >= timeout_us ||
-            robot_time_elapsed(robot_time_us(), transaction_started) >= GY511_TIMEOUT_US)
+            robot_time_elapsed(robot_time_us(), operation_started) >= GY511_TIMEOUT_US)
         {
             return false;
         }
@@ -47,7 +56,7 @@ static bool wait_stop(void)
     while ((in_w(I2C0_BASE + I2Cx_RAW_INTR_STAT) & I2C_INT_STOP_DET) == 0u)
     {
         if ((in_w(I2C0_BASE + I2Cx_RAW_INTR_STAT) & I2C_INT_TX_ABRT) != 0u ||
-            robot_time_elapsed(robot_time_us(), transaction_started) >= GY511_TIMEOUT_US)
+            robot_time_elapsed(robot_time_us(), operation_started) >= GY511_TIMEOUT_US)
         {
             (void)in_w(I2C0_BASE + I2Cx_CLR_TX_ABRT);
             out_w(I2C0_BASE + I2Cx_ENABLE, 0u);
@@ -73,7 +82,6 @@ static bool i2c0_write_byte(uint8_t byte, bool stop_bit)
 /* Write single register to slave */
 static bool i2c0_write_reg(uint8_t slave_addr, uint8_t reg, uint8_t val)
 {
-    transaction_started = robot_time_us();
     out_w(I2C0_BASE + I2Cx_ENABLE, 0); /* Disable to set target */
     out_w(I2C0_BASE + I2Cx_TAR, slave_addr);
     (void)in_w(I2C0_BASE + I2Cx_CLR_INTR);
@@ -92,7 +100,6 @@ static bool i2c0_write_reg(uint8_t slave_addr, uint8_t reg, uint8_t val)
 static bool i2c0_read_buffer(uint8_t slave_addr, uint8_t reg, uint8_t *buf,
                              uint8_t len)
 {
-    transaction_started = robot_time_us();
     out_w(I2C0_BASE + I2Cx_ENABLE, 0);
     out_w(I2C0_BASE + I2Cx_TAR, slave_addr);
     (void)in_w(I2C0_BASE + I2Cx_CLR_INTR);
@@ -130,6 +137,7 @@ static bool i2c0_read_buffer(uint8_t slave_addr, uint8_t reg, uint8_t *buf,
 
 bool drv_gy511_init(void)
 {
+    operation_started = robot_time_us();
     /* 1. Release I2C0 and IO_BANK0 resets */
     clr_w(RESETS_RESET, RESETS_RESET_I2C0);
     uint32_t start = robot_time_us();
@@ -149,7 +157,6 @@ bool drv_gy511_init(void)
 
     /* 3. Configure Synopsys I2C0 controller (400 kHz Fast Mode at 125 MHz
      * sys_clk) */
-    transaction_started = robot_time_us();
     out_w(I2C0_BASE + I2Cx_ENABLE, 0);
     out_w(I2C0_BASE + I2Cx_CON, I2C_CON_MASTER_MODE | I2C_CON_SPEED_FAST |
                                     I2C_CON_RESTART_EN | I2C_CON_SLAVE_DISABLE |
@@ -172,21 +179,31 @@ bool drv_gy511_init(void)
     return true;
 }
 
-bool drv_gy511_read_accel(Gy511RawAxes *out_raw)
+gy511_sample_result_t drv_gy511_sample(Gy511RawAxes *out_raw)
 {
+    operation_started = robot_time_us();
     if (out_raw == NULL)
     {
-        return false;
+        return GY511_SAMPLE_ERROR;
+    }
+    uint8_t status = 0u;
+    if (!i2c0_read_buffer(GY511_I2C_ADDR_ACCEL, REG_STATUS_A, &status, 1u))
+    {
+        return GY511_SAMPLE_ERROR;
+    }
+    if ((status & STATUS_NEW_XYZ) == 0u)
+    {
+        return GY511_SAMPLE_PENDING; /* unchanged registers are not a new acquisition */
     }
     uint8_t buf[6] = {0};
     /* Auto-increment bit 7 required on LSM303 */
     if (!i2c0_read_buffer(GY511_I2C_ADDR_ACCEL, REG_OUT_X_L_A | REG_AUTO_INC_A,
                           buf, 6))
     {
-        return false;
+        return GY511_SAMPLE_ERROR;
     }
     out_raw->x = (int16_t)((buf[1] << 8) | buf[0]) >> 4;
     out_raw->y = (int16_t)((buf[3] << 8) | buf[2]) >> 4;
     out_raw->z = (int16_t)((buf[5] << 8) | buf[4]) >> 4;
-    return true;
+    return GY511_SAMPLE_FRESH;
 }

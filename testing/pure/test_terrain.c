@@ -1,3 +1,4 @@
+#include "../../app_program/subsystem4/terrain_evidence.h"
 /* Host test for the hump estimator and terrain word (issue #46). */
 #include <assert.h>
 #include <math.h>
@@ -132,8 +133,35 @@ static void test_word_boundaries(void)
     assert(terrain_code_to_mm(inv - 1u, &mm) && mm == (inv - 1u) * HUMP_MM_PER_COUNT);
 }
 
+static void test_evidence_and_invalid_window(void)
+{
+    S4Snapshot sample = {.sampled_ms = 100u, .serviced_ms = 100u,
+        .sequence = 1u, .acquisition_valid = 1u};
+    assert(terrain_evidence_fresh(&sample, 160u, 60u));
+    sample.serviced_ms = 160u;
+    ++sample.sequence;
+    assert(!terrain_evidence_fresh(&sample, 161u, 60u)); /* frozen acquisition */
+    sample.sampled_ms = UINT32_MAX - 10u;
+    sample.serviced_ms = 5u;
+    assert(terrain_evidence_fresh(&sample, 5u, 60u));
+    sample.acquisition_valid = 0u;
+    assert(!terrain_evidence_fresh(&sample, 5u, 60u));
+    TerrainContext context;
+    terrain_algo_init(&context);
+    context.hump_count = 2u;
+    context.max_hump_code = 20u;
+    context.last_hump_code = 18u;
+    context.state = TERRAIN_STATE_CLIMBING;
+    context.rise_q = 150u;
+    terrain_algo_invalidate_window(&context);
+    assert(context.state == TERRAIN_STATE_FLAT && context.rise_q == 0u);
+    assert(context.hump_count == 2u && context.max_hump_code == 20u);
+    assert(context.last_hump_code == 18u && !context.height_valid);
+}
+
 int main(void)
 {
+    test_evidence_and_invalid_window();
     test_complete_hump();
     test_incomplete_and_small_encounters_add_nothing();
     test_saturation_and_count();

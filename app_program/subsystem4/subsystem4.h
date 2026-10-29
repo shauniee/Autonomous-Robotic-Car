@@ -8,6 +8,7 @@
 #include "../app.h"
 #include "terrain_algo.h"
 #include "terrain_pack.h"
+#include "terrain_evidence.h"
 #include "../common/robot_config.h"
 
 
@@ -17,6 +18,11 @@ ER subsystem4_start(void);
 
 /* Terrain word (see terrain_pack.h): hump count and heights in one load. */
 uint32_t s4_terrain_word(void);
-void s4_publish_word(uint32_t word);
+/* All fields belong to one acquisition/service publication, copied under
+   a short cross-core mutex. Repeated reads never change sampled_ms. */
+
+void s4_step(uint32_t now_ms);
+bool s4_copy(S4Snapshot *out);
+bool s4_startup_complete(void);
 
 #endif /* SUBSYSTEM4_H */

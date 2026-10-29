@@ -17,9 +17,4 @@ ER mission_start(void);
 /* Current state (single load). */
 MissionState mission_state(void);
 
-/* Install the four barcode letters (indexed by rd_map_action_t). Accepted only
-   while the robot is not running; returns E_OBJ otherwise or for invalid or
-   duplicate letters. */
-ER mission_set_mapping(const uint8_t letters[4]);
-
 #endif /* MISSION_H */

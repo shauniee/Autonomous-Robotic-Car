@@ -97,6 +97,10 @@ static MotionCommand action_command(motion_mode_t mode, float speed, float targe
 
 static MotionCommand follow_command(const MissionInputs *in, float speed, int steering_q, uint8_t id)
 {
+    if (in->hump_active)
+    {
+        speed *= 0.5f;
+    }
     return motion_command_make(MOTION_MODE_FOLLOW, speed, 0.0f,
                                steering_q, id, in->line_sampled_ms);
 }

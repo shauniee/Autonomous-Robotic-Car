@@ -70,7 +70,7 @@ uint8_t rd_fault_get(rd_owner_t owner)
 static const uint8_t start_blocking[RD_OWNER_COUNT] = {
     [RD_OWNER_MOTION] = RD_FAULT_MOTOR_STALL | RD_FAULT_ENCODER,
     [RD_OWNER_LINE] = RD_FAULT_IR_INVALID,
-    [RD_OWNER_TERRAIN] = RD_FAULT_IMU | RD_FAULT_CALIBRATION_FAILED | RD_FAULT_IMPACT};
+    [RD_OWNER_TERRAIN] = RD_FAULT_IMPACT};
 
 static const uint8_t run_stopping[RD_OWNER_COUNT] = {
     [RD_OWNER_MOTION] = RD_FAULT_MOTOR_STALL | RD_FAULT_ENCODER,

@@ -3,8 +3,8 @@
  *	The only application header the MQTT transport (lib/liblwip) includes.
  *	Frames cross as opaque bytes; the transport knows nothing of their layout
  *	(see mqtt_frame.h). Two fixed single-producer / single-consumer rings:
- *	  outgoing: Reporting (core 1) posts, transport (core 0) takes
- *	  incoming: transport (core 0) puts, Reporting (core 1) receives
+ *	  outgoing: I/O (core 0) posts, transport (core 0) takes
+ *	  incoming: transport (core 0) puts, I/O (core 0) receives
  *	Wi-Fi or broker loss sets only the Network fault byte; it never stops motion.
  */
 
@@ -18,7 +18,7 @@
 #define S1_OUTGOING_DEPTH 4u
 #define S1_INCOMING_DEPTH 2u
 
-/* Reporting side (core 1). post: false when the ring is full (frame dropped). */
+/* I/O side (core 0). post: false when the ring is full (frame dropped). */
 bool s1_bridge_post(const uint8_t *frame, unsigned length);
 /* Returns the length written to out, or 0 when nothing is waiting. */
 unsigned s1_bridge_receive(uint8_t *out, unsigned capacity);

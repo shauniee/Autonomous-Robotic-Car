@@ -1,97 +1,187 @@
-/*
- * subsystem4.c - Buddy 4 (Terrain): lifecycle, terrain word and the 20 ms terrain task.
- */
-
 #include "subsystem4.h"
 #include "drv_gy511.h"
 #include "../common/robot_data.h"
 #include "../common/robot_time.h"
+#include "../common/robot_snapshot.h"
+#include "../common/io_task.h"
 #include "../subsystem1/subsystem1.h"
 #include "../subsystem2/drv_encoder.h"
+#include "../subsystem2/subsystem2.h"
 
-static rd_word_t s_terrain_word;	/* writer: the terrain task; layout in terrain_pack.h */
+static rd_word_t terrain_word, startup_outcome; /* writer: I/O */
+static ID snapshot_mutex;
+static S4Snapshot snapshot; /* guarded by snapshot_mutex */
+static TerrainContext context;
 
-uint32_t s4_terrain_word(void) { return rd_word_read(&s_terrain_word); }
-void s4_publish_word(uint32_t word) { rd_word_publish(&s_terrain_word, word); }
+uint32_t s4_terrain_word(void)
+{
+    return rd_word_read(&terrain_word);
+}
 
-static TerrainContext s_ctx;
+bool s4_startup_complete(void)
+{
+    return rd_word_read(&startup_outcome) != 0u;
+}
 
-static void terrain_task(INT stacd, void *exinf) {
-    (void)stacd; (void)exinf;
+bool s4_copy(S4Snapshot *out)
+{
+    if (out == NULL || snapshot_mutex <= 0 ||
+        tk_loc_mtx(snapshot_mutex, RD_SNAPSHOT_LOCK_MS) < E_OK)
+    {
+        return false;
+    }
+    *out = snapshot;
+    return tk_unl_mtx(snapshot_mutex) >= E_OK;
+}
 
-    terrain_algo_init(&s_ctx);
-    bool hw_ok = drv_gy511_init();
-    if (!hw_ok) {
+static void publish(uint32_t now, gy511_sample_result_t result)
+{
+    static S4Snapshot latest; /* only I/O writes, even if a copy is skipped */
+    latest.terrain = terrain_pack(context.last_hump_code, context.max_hump_code,
+        context.hump_count, (uint32_t)context.state, context.height_valid,
+        context.is_calibrated);
+    latest.serviced_ms = now;
+    ++latest.sequence;
+    if (result == GY511_SAMPLE_ERROR)
+    {
+        latest.acquisition_valid = 0u;
+    }
+    if (result == GY511_SAMPLE_FRESH)
+    {
+        latest.sampled_ms = now;
+        latest.acquisition_valid = 1u;
+    }
+    rd_word_publish(&terrain_word, latest.terrain);
+    if (tk_loc_mtx(snapshot_mutex, TMO_POL) >= E_OK)
+    {
+        snapshot = latest;
+        (void)tk_unl_mtx(snapshot_mutex);
+    }
+}
+
+void s4_step(uint32_t now)
+{
+    static uint8_t initialized, hardware_ready;
+    static uint32_t started_ms, next_sample_ms, acquired_ms;
+    static uint8_t have_acquisition;
+    static uint32_t last_left, last_right;
+    static uint8_t previous_humps;
+    if (!initialized)
+    {
+        terrain_algo_init(&context);
+        started_ms = now;
+        next_sample_ms = now;
+        last_left = drv_encoder_count(ENCODER_LEFT);
+        last_right = drv_encoder_count(ENCODER_RIGHT);
+        hardware_ready = drv_gy511_init() ? 1u : 0u;
+        initialized = 1u;
+        if (!hardware_ready)
+        {
+            rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU | RD_FAULT_CALIBRATION_FAILED);
+            rd_word_publish(&startup_outcome, 2u);
+        }
+        publish(robot_time_ms(), GY511_SAMPLE_ERROR);
+        return;
+    }
+    if ((int32_t)(now - next_sample_ms) < 0)
+    {
+        return;
+    }
+    bool calibrating = !s4_startup_complete();
+    next_sample_ms = now + (calibrating ? TERRAIN_CALIBRATION_PERIOD_MS : TERRAIN_PERIOD_MS);
+    uint32_t left = drv_encoder_count(ENCODER_LEFT);
+    uint32_t right = drv_encoder_count(ENCODER_RIGHT);
+    bool stationary = left == last_left && right == last_right;
+    uint32_t mean = enc_mean(left, right);
+    int32_t moved = enc_travel_signed(mean, enc_mean(last_left, last_right));
+    last_left = left;
+    last_right = right;
+    Gy511RawAxes raw = {0};
+    gy511_sample_result_t result = hardware_ready ? drv_gy511_sample(&raw) : GY511_SAMPLE_ERROR;
+    now = robot_time_ms();
+    bool acquired = result == GY511_SAMPLE_FRESH;
+    if (result == GY511_SAMPLE_ERROR)
+    {
         rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU);
     }
-
-    /* Startup calibration: collect 100 samples while resting (2.0s timeout guard) */
-    uint32_t calib_attempts = 0;
-    uint32_t release = robot_time_ms();
-    uint32_t travel_origin = enc_mean(drv_encoder_count(ENCODER_LEFT), drv_encoder_count(ENCODER_RIGHT));
-    while (!s_ctx.is_calibrated && calib_attempts < 200) {
-        Gy511RawAxes raw = {0};
-        /* Calibrate only while stationary: movement restarts the sampling. */
-        uint32_t mean_now = enc_mean(drv_encoder_count(ENCODER_LEFT), drv_encoder_count(ENCODER_RIGHT));
-        if (mean_now != travel_origin) {
-            travel_origin = mean_now;
-            terrain_algo_calibration_restart(&s_ctx);
-        } else if (hw_ok && drv_gy511_read_accel(&raw)) {
-            terrain_algo_calibrate_sample(&s_ctx, &raw);
-        }
-        calib_attempts++;
-        tk_dly_tsk(robot_time_next_delay(&release, 10u, robot_time_ms()));
+    else if (acquired)
+    {
+        acquired_ms = now;
+        have_acquisition = 1u;
+        rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMU);
     }
-
-    if (!s_ctx.is_calibrated) {
-        rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_CALIBRATION_FAILED);
+    if (!acquired && (!have_acquisition ||
+        robot_time_elapsed(now, acquired_ms) > SAFETY_STALE_MS))
+    {
+        rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU);
+        terrain_algo_invalidate_window(&context);
     }
-    uint8_t prev_hump_count = s_ctx.hump_count;
-
-    for (;;) {
-        Gy511RawAxes raw_accel = {0};
-        bool read_ok = hw_ok && drv_gy511_read_accel(&raw_accel);
-
-        /* Sensor failure sets the IMU fault bit; a good read clears it. */
-        if (read_ok) {
-            rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMU);
-        } else {
-            rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU);
+    if (calibrating)
+    {
+        if (!stationary)
+        {
+            terrain_algo_calibration_restart(&context);
         }
-
-        if (read_ok) {
-            /* Forward travel since the last release, from this task's own encoder origin. */
-            uint32_t mean_now = enc_mean(drv_encoder_count(ENCODER_LEFT), drv_encoder_count(ENCODER_RIGHT));
-            int32_t moved = enc_travel_signed(mean_now, travel_origin);
-            travel_origin = mean_now;
-            terrain_algo_process(&s_ctx, &raw_accel, moved > 0 ? (uint32_t)moved : 0u);
-
-            /* Run-stopping fault: Safety latches the stop. */
-            if (s_ctx.state == TERRAIN_STATE_IMPACT) {
-                rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
-            } else {
-                rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
-            }
-            if (s_ctx.hump_count != prev_hump_count) {
-                prev_hump_count = s_ctx.hump_count;
-                s1_event(MQTT_EVENT_HUMP, s_ctx.last_hump_code, 0u);
-            }
-
-            s4_publish_word(terrain_pack(s_ctx.last_hump_code, s_ctx.max_hump_code, s_ctx.hump_count,
-                                         (uint32_t)s_ctx.state, s_ctx.height_valid, s_ctx.is_calibrated));
+        else if (acquired)
+        {
+            (void)terrain_algo_calibrate_sample(&context, &raw);
         }
-
-        /* Fixed-rate release every TERRAIN_PERIOD_MS */
-        tk_dly_tsk(robot_time_next_delay(&release, TERRAIN_PERIOD_MS, robot_time_ms()));
+        if (context.is_calibrated)
+        {
+            rd_word_publish(&startup_outcome, 1u);
+        }
+        else if (robot_time_elapsed(now, started_ms) >= TERRAIN_CALIBRATION_TIMEOUT_MS)
+        {
+            rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_CALIBRATION_FAILED);
+            rd_word_publish(&startup_outcome, 2u);
+        }
     }
+    else if (acquired && context.is_calibrated)
+    {
+        MotionHealth health = {0};
+        bool encoder_valid = s2_health(&health) >= E_OK && health.sequence != 0u &&
+            robot_time_elapsed(now, health.serviced_ms) <= SAFETY_STALE_MS &&
+            (rd_fault_get(RD_OWNER_MOTION) & RD_FAULT_ENCODER) == 0u;
+        if (!encoder_valid)
+        {
+            /* Missing travel invalidates this window; keep completed results. */
+            terrain_algo_invalidate_window(&context);
+        }
+        terrain_algo_process(&context, &raw, encoder_valid && moved > 0 ? (uint32_t)moved : 0u);
+        if (!encoder_valid)
+        {
+            terrain_algo_invalidate_window(&context);
+        }
+        if (context.state == TERRAIN_STATE_IMPACT)
+        {
+            rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
+        }
+        else
+        {
+            rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
+        }
+        if (context.hump_count != previous_humps)
+        {
+            previous_humps = context.hump_count;
+            s1_event(MQTT_EVENT_HUMP, context.last_hump_code, 0u);
+        }
+    }
+    if (result == GY511_SAMPLE_ERROR)
+    {
+        terrain_algo_invalidate_window(&context);
+    }
+    publish(now, result);
 }
 
-ER subsystem4_init(void) {
-    return E_OK;
+ER subsystem4_init(void)
+{
+    T_CMTX mutex = {0};
+    mutex.mtxatr = TA_INHERIT;
+    snapshot_mutex = tk_cre_mtx(&mutex);
+    return snapshot_mutex > 0 ? E_OK : E_SYS;
 }
 
-ER subsystem4_start(void) {
-    /* Spawn Terrain Task on Core 1 (TP_PRC2) at Priority 16 */
-    ID tid = app_start_task((FP)terrain_task, S4_PRI_TERRAIN, TP_PRC2, "terrain_task");
-    return (tid < E_OK) ? tid : E_OK;
+ER subsystem4_start(void)
+{
+    return io_start();
 }

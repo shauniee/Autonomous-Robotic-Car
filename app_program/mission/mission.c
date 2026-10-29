@@ -1,4 +1,6 @@
 #include "mission.h"
+#include "mission_mapping.h"
+#include "../subsystem4/subsystem4.h"
 #include <stdatomic.h>
 #include "../subsystem3/subsystem3.h"
 #include "safety.h"
@@ -14,16 +16,6 @@ static _Atomic uint8_t published_state;	/* writer: Mission task; 8 states, 3 bit
 MissionState mission_state(void)
 {
     return (MissionState)atomic_load_explicit(&published_state, memory_order_acquire);
-}
-
-ER mission_set_mapping(const uint8_t letters[4])
-{
-    MissionState state = mission_state();
-    if (state != MISSION_READY && state != MISSION_STOPPED)
-    {
-        return E_OBJ;
-    }
-    return barcode_set_mapping(letters) ? E_OK : E_OBJ;
 }
 
 static const char *const state_names[MISSION_STATE_COUNT] = {
@@ -46,7 +38,24 @@ static void mission_task(INT stacd, void *exinf)
     for (;;)
     {
         now = robot_time_ms();
-        s3_step(now, true);
+        s3_step(now, s4_startup_complete());
+        mqtt_mapping_t mapping;
+        if (mission_mapping_take(&mapping))
+        {
+            /* The state decision and installation have one owner. An I/O
+               observation of READY can never race a local start here. */
+            mqtt_ack_result_t result = MQTT_ACK_BUSY;
+            if (mission.state == MISSION_READY || mission.state == MISSION_STOPPED)
+            {
+                result = barcode_set_mapping(mapping.letters) ?
+                    MQTT_ACK_OK : MQTT_ACK_INVALID;
+                if (result == MQTT_ACK_OK)
+                {
+                    mission.held = BARCODE_UNMAPPED;
+                }
+            }
+            mission_mapping_reply(result);
+        }
         s5_step(now);
         bool line_required = mission.state == MISSION_FOLLOW_LINE ||
             mission.state == MISSION_REACQUIRE ||
@@ -79,6 +88,11 @@ static void mission_task(INT stacd, void *exinf)
         uint32_t front = s5_front_word(), side = s5_side_word();
         ObstacleProfile profile = {0};
         bool have_profile = s5_profile_copy(&profile) >= E_OK;
+        S4Snapshot terrain = {0};
+        bool have_terrain = s4_copy(&terrain) &&
+            terrain_evidence_fresh(&terrain, now, SAFETY_STALE_MS) &&
+            terrain_calibrated(terrain.terrain);
+        uint32_t terrain_state = terrain_state_code(terrain.terrain);
         barcode_event_t barcode = {0};
         MissionInputs in = {
             .now_ms = now,
@@ -99,6 +113,10 @@ static void mission_task(INT stacd, void *exinf)
             .travel_counts = enc_mean(drv_encoder_count(ENCODER_LEFT), drv_encoder_count(ENCODER_RIGHT)),
             .motion_status = rd_motion_feedback_status(feedback),
             .motion_action = (uint8_t)rd_motion_feedback_action(feedback),
+            .hump_active = have_terrain &&
+                (terrain_state == TERRAIN_STATE_CLIMBING ||
+                 terrain_state == TERRAIN_STATE_CRESTING ||
+                 terrain_state == TERRAIN_STATE_DESCENDING),
             .stationary = robot_time_elapsed(now, still_since) >= MISSION_STATIONARY_MS,
             .front_valid = echo_valid(front),
             .front_age_ms = (now - echo_time16(front)) & 0xFFFFu,

@@ -72,6 +72,7 @@ typedef struct
     uint32_t travel_counts;	/* mean of both wheel counts, wrapped */
     rd_motion_status_t motion_status;
     uint8_t motion_action;
+    bool hump_active; /* fresh calibrated Terrain encounter */
     bool stationary;		/* encoders unchanged for MISSION_STATIONARY_MS */
     bool front_valid;
     uint32_t front_age_ms;

@@ -155,8 +155,45 @@ static void test_mapping_flow(void)
     assert(s1_handle_command(req, sizeof req, false, install, &ack, &send) == S1_COMMAND_SNAPSHOT && !send);
 }
 
+static bool tx_blocked;
+static mqtt_event_t posted_event;
+
+static bool post_event(const uint8_t *frame, unsigned length)
+{
+    if (tx_blocked)
+    {
+        return false;
+    }
+    assert(mqtt_decode_event(frame, length, &posted_event) == MQTT_DECODE_OK);
+    return true;
+}
+
+static void test_event_backpressure(void)
+{
+    s1_event_log_t log;
+    s1_log_init(&log);
+    mqtt_event_t first = {.kind = MQTT_EVENT_HUMP, .arg = 25u,
+        .time_ms = 123u, .left_count = 456u, .right_count = 457u};
+    mqtt_event_t second = first;
+    second.time_ms = 124u;
+    assert(s1_log_push(&log, &first) && s1_log_push(&log, &second));
+    tx_blocked = true;
+    for (unsigned i = 0u; i < 20u; ++i)
+    {
+        assert(!s1_log_post_oldest(&log, post_event));
+        assert(s1_log_count(&log) == 2u && log.dropped == 0u);
+    }
+    tx_blocked = false;
+    assert(s1_log_post_oldest(&log, post_event));
+    assert_event_equal(&first, &posted_event);
+    assert(s1_log_post_oldest(&log, post_event));
+    assert_event_equal(&second, &posted_event);
+    assert(!s1_log_post_oldest(&log, post_event));
+}
+
 int main(void)
 {
+    test_event_backpressure();
     test_event_log();
     test_event_packing();
     test_assemble();

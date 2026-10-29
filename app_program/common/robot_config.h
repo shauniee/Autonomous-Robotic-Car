@@ -26,12 +26,15 @@
 #define S2_PRI_MOTION		13
 #define FOLLOW_PRIORITY		14
 #define S4_PRI_TERRAIN		16
+#define IO_PRIORITY S4_PRI_TERRAIN /* provisional existing Terrain priority */
+#define IO_PERIOD_MS 10u /* existing calibration cadence; D13 */
 
 /* --- S1 communications --------------------------------------------- */
 #define S1_PRI_REPORTING	20
 #define S1_TELEMETRY_PERIOD_MS	500u
 #define S1_REPORT_PERIOD_MS	50u	/* Reporting release: requests and events are served at this rate */
 #define S1_EVENT_CAPACITY	16u	/* event-log ring; oldest overwritten, drops counted */
+#define S1_REQUESTS_PER_RELEASE 2u /* bounded by incoming bridge depth */
 #define S1_EVENTS_PER_RELEASE	2u
 
 /* --- S2 motion ------------------------------------------------------ */
@@ -182,6 +185,8 @@
 #define BARCODE_SERVICE_BUDGET	16u
 
 /* --- S4 terrain ---------------------------------------------------- */
+#define TERRAIN_CALIBRATION_PERIOD_MS 10u
+#define TERRAIN_CALIBRATION_TIMEOUT_MS 2000u /* existing bounded startup attempt */
 #define TERRAIN_PERIOD_MS	20u
 #define GY511_TIMEOUT_US	5000u
 #define ACCEL_MG_PER_LSB	0.002f	/* g per digit: 2 mg/digit at +/- 4 g, high resolution (LSM303DLHC) */
