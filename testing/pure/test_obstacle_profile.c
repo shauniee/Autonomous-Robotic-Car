@@ -10,7 +10,11 @@ int main(void)
     ObstacleRay rays[5] = {s5_ray_make(-60, 1500u, true), s5_ray_make(-30, 700u, true), s5_ray_make(0, 400u, true), s5_ray_make(30, 700u, true), s5_ray_make(60, 1500u, true)};
     ObstacleProfile p = {0};
     assert(s5_profile_build(rays, 5u, &p) && p.valid);
-    assert(p.closest_angle_deg == 0 && p.closest_mm == 400u && p.obstacle_forward_mm == 400 && p.obstacle_left_mm == 0);
+    assert(p.closest_angle_deg == 0);
+    assert(p.obstacle_forward_mm == (int16_t)lroundf(400.0f + S5_SONAR_FORWARD_MM));
+    assert(p.obstacle_left_mm == (int16_t)lroundf(S5_SONAR_LEFT_MM));
+    assert(p.closest_mm == (uint16_t)lroundf(hypotf(
+        400.0f + S5_SONAR_FORWARD_MM, S5_SONAR_LEFT_MM)));
     assert(p.width_mm > 0u && p.left_clearance_mm > 0u && p.right_clearance_mm > 0u);
 
     /* Obstacle to the left: more clearance to the right than a centred one has. */

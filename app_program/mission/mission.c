@@ -64,7 +64,7 @@ static void mission_task(INT stacd, void *exinf)
              (mission.phase == JUNCTION_PHASE_CROSS ||
               mission.phase == JUNCTION_PHASE_CONFIRM)) ||
             (mission.state == MISSION_BYPASS &&
-             mission.bypass_step == BYPASS_REACQUIRE);
+             mission.bypass.route == BYPASS_ROUTE_LINE);
         safety_step(line_required);
         ButtonInputs buttons = drv_buttons_read();
         if (buttons.gp21_down || mission.state == MISSION_STOPPED)

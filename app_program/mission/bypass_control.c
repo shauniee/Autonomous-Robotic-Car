@@ -279,7 +279,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
         }
         else if (input->motion_action == control->action_id && input->motion_status == RD_MOTION_DONE)
         {
-            if (abs(control->heading_cdeg - expected_heading(control) * 100) >
+            if ((unsigned)abs(control->heading_cdeg - expected_heading(control) * 100) >
                 BYPASS_RETURN_HEADING_DEG * 100)
             {
                 fail(control);

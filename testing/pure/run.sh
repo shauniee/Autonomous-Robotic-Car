@@ -20,9 +20,11 @@ $CC $CFLAGS testing/pure/test_barcode.c app_program/subsystem3/barcode_decode.c 
 $CC $CFLAGS testing/pure/test_ir_tracking.c app_program/subsystem3/ir_tracking.c -lm \
     -o "$build_dir/test_ir_tracking"
 $CC $CFLAGS testing/pure/test_safety.c app_program/common/robot_data.c -o "$build_dir/test_safety"
-$CC $CFLAGS -DMISSION_BYPASS_RELEASED=1 testing/pure/test_mission.c app_program/mission/mission_logic.c \
+$CC $CFLAGS -DMISSION_BYPASS_RELEASED=1 -DMISSION_RECOVERY_RELEASED=1 testing/pure/test_mission.c app_program/mission/mission_logic.c \
+    app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
     app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_mission"
 $CC $CFLAGS testing/pure/test_mission_pending.c app_program/mission/mission_logic.c \
+    app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
     app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_mission_pending"
 $CC $CFLAGS testing/pure/test_mission_mapping.c app_program/mission/mission_mapping.c \
     app_program/common/robot_data.c -o "$build_dir/test_mission_mapping"

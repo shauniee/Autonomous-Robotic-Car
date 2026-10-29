@@ -31,6 +31,7 @@ int main(void)
     in.now_ms += 10u;
     mission_step(&mission, &in, &out);
     assert(out.scan_request);
+    in.scan_id = out.scan_id;
     in.scan_state = S5_SCAN_DONE;
     in.profile_valid = true;
     in.left_clearance_mm = 1000u;
@@ -39,6 +40,19 @@ int main(void)
     mission_step(&mission, &in, &out);
     assert(mission.state == MISSION_STOPPED && out.stop_now);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    /* Recovery also stays disabled until physically released. */
+    mission_init(&mission, in.now_ms);
+    in.front_valid = false;
+    in.start_pressed = true;
+    mission_step(&mission, &in, &out);
+    assert(mission.state == MISSION_FOLLOW_LINE);
+    in.start_pressed = false;
+    in.line = IR_LINE_LOST;
+    in.guidance_valid = false;
+    in.now_ms += 10u;
+    in.line_sampled_ms = in.now_ms;
+    mission_step(&mission, &in, &out);
+    assert(mission.state == MISSION_STOPPED && out.line_lost && out.stop_now);
     puts("mission_pending: PASS (150 mm trigger; unreleased bypass stays stopped)");
     return 0;
 }

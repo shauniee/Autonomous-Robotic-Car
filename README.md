@@ -75,6 +75,7 @@ Optional terminal monitoring, decoder self-test, logs and shutdown:
 ```sh
 docker compose exec dashboard python /app/mqtt_client.py monitor --broker mosquitto
 docker compose exec dashboard python /app/mqtt_client.py --self-test
+docker compose run --rm --build --user "$(id -u):$(id -g)" firmware sh testing/pure/run.sh
 docker compose logs -f
 docker compose down
 ```

@@ -271,7 +271,10 @@ static void test_barcode_hold_and_junction(void)
     in.now_ms = t + 10u;
     mission_step(&m, &in, &out);
     assert(m.state == MISSION_NAVIGATE); /* repeated sample cannot confirm */
-    t += 20u; step(&m, &in, t);
+    for (unsigned i = 1u; i < MISSION_CONFIRM_SAMPLES; ++i)
+    {
+        t += 20u; step(&m, &in, t);
+    }
     assert(m.state == MISSION_FOLLOW_LINE);
 
     /* Right and U-turn targets; an unused junction with nothing held carries straight on. */
@@ -302,8 +305,10 @@ static void test_barcode_hold_and_junction(void)
     cross_junction(&ms, &is, &t, MISSION_JUNCTION_MIN_COUNTS);
     t += 10u; step(&ms, &is, t);
     assert(ms.state == MISSION_NAVIGATE && ms.phase == JUNCTION_PHASE_CONFIRM);
-    step(&ms, &is, t += 20u);
-    step(&ms, &is, t += 20u);
+    for (unsigned i = 0u; i < MISSION_CONFIRM_SAMPLES; ++i)
+    {
+        step(&ms, &is, t += 20u);
+    }
     assert(ms.state == MISSION_FOLLOW_LINE);
     /* A failed turn stops. */
     Mission mf; MissionInputs iff = base(100u);
@@ -340,182 +345,235 @@ static void test_crossing_never_completes_mission(void)
     in.guidance_valid = true;
     step(&m, &in, t += 10u);
     assert(m.state == MISSION_NAVIGATE && !m.in_broad);
-    step(&m, &in, t += 20u);
-    step(&m, &in, t += 20u);
+    for (unsigned i = 0u; i < MISSION_CONFIRM_SAMPLES; ++i)
+    {
+        step(&m, &in, t += 20u);
+    }
     assert(m.state == MISSION_FOLLOW_LINE);
 }
 
 static void test_line_loss_recovery_is_bounded(void)
 {
-    const int search_q = (int)lroundf(MAX_STEER * IR_SCALE_ONE);
-    Mission m; MissionInputs in = base(100u);
+    Mission m;
+    MissionInputs in = base(100u);
     uint32_t t = to_follow(&m, &in);
-
-    /* Healthy white is line loss, never invented proof of centering. Without
-       an observed side, stop until the configured sweep policy is resolved. */
-    in.line = IR_LINE_LOST; in.guidance_valid = false; in.line_error = 0;
+    in.line = IR_LINE_LOST;
+    in.guidance_valid = false;
     MissionOutputs out = step(&m, &in, t += 10u);
+    assert(m.state == MISSION_REACQUIRE);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
+    assert(motion_cmd_steering(&out.command) == -RECOVERY_STEER_Q);
+
+    /* A repeated acquisition cannot complete alignment. */
+    in.line = IR_LINE_VISIBLE;
+    in.guidance_valid = true;
+    in.line_error = 0;
+    out = step(&m, &in, t += 10u);
+    assert(m.state == MISSION_REACQUIRE);
+    mission_step(&m, &in, &out);
+    assert(m.state == MISSION_REACQUIRE);
+    for (unsigned i = 1u; i < MISSION_CONFIRM_SAMPLES; ++i)
+    {
+        out = step(&m, &in, t += 10u);
+    }
+    assert(m.state == MISSION_FOLLOW_LINE);
+    out = step(&m, &in, t += 20u);
+    assert(motion_cmd_steering(&out.command) == ref_p(0));
+
+    in.line = IR_LINE_LOST;
+    in.guidance_valid = false;
+    step(&m, &in, t += 10u);
+    out = step(&m, &in, t += RECOVERY_MS);
     assert(m.state == MISSION_STOPPED && out.stop_now && out.line_lost);
-
-    /* Known side: after the gap, search toward it on an arc with both wheels
-       turning, then rejoin after two fresh visible reads. */
-    Mission m2; MissionInputs in2 = base(100u);
-    t = to_follow(&m2, &in2);
-    in2.line_error = 25; t += 10u; step(&m2, &in2, t);
-    in2.line = IR_LINE_LOST; in2.guidance_valid = false; in2.line_error = 0;
-    while ((m2.state != MISSION_REACQUIRE) && m2.state == MISSION_FOLLOW_LINE) {
-        t += 10u; out = step(&m2, &in2, t);
-    }
-    assert(m2.state == MISSION_REACQUIRE && motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW &&
-           motion_cmd_steering(&out.command) == search_q && search_q < IR_SCALE_ONE);	/* inner wheel still turns */
-    in2.line = IR_LINE_VISIBLE; in2.guidance_valid = true; in2.line_error = 25; t += 10u; step(&m2, &in2, t);
-    assert((m2.state == MISSION_REACQUIRE));
-    t += 10u; out = step(&m2, &in2, t);
-    assert((m2.state != MISSION_REACQUIRE) && m2.state == MISSION_FOLLOW_LINE);
-    out = step(&m2, &in2, t += 20u);
-    assert(motion_cmd_steering(&out.command) == ref_p(25));	/* PID restarts after the search */
-
-    /* Never finding it again hits the bound and stops. */
-    Mission m3; MissionInputs in3 = base(100u);
-    t = to_follow(&m3, &in3);
-    in3.line_error = -25; t += 10u; step(&m3, &in3, t);
-    in3.line = IR_LINE_LOST; in3.guidance_valid = false; in3.line_error = 0;
-    for (uint32_t waited = 0u; waited < RECOVERY_MS + 20u && m3.state != MISSION_STOPPED; waited += 10u) {
-        t += 10u; out = step(&m3, &in3, t);
-    }
-    assert(m3.state == MISSION_STOPPED && out.stop_now && out.line_lost);
 }
 
 /* ---- Bypass ------------------------------------------------------------ */
-
 static MissionOutputs bstep(Mission *m, MissionInputs *in, uint32_t *t)
 {
     *t += 10u;
     return step(m, in, *t);
 }
 
-/* Complete the current Motion action: report DONE for its ID, then step. */
-static MissionOutputs finish(Mission *m, MissionInputs *in, uint32_t *t, const MissionOutputs *prev)
-{
-    in->motion_action = motion_cmd_action(&prev->command);
-    in->motion_status = RD_MOTION_DONE;
-    MissionOutputs out = bstep(m, in, t);
-    in->motion_status = RD_MOTION_RUNNING;
-    return out;
-}
-
-static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t, uint32_t left_mm, uint32_t right_mm)
+static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t,
+    uint32_t left_mm, uint32_t right_mm)
 {
     *t = to_follow(m, in);
-    in->front_valid = true; in->front_age_ms = 0u; in->front_mm = MISSION_OBSTACLE_STOP_MM;
+    in->front_valid = true;
+    in->front_age_ms = 0u;
+    in->front_mm = MISSION_OBSTACLE_STOP_MM;
     MissionOutputs out = bstep(m, in, t);
-    assert(m->state == MISSION_SCAN && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    assert(m->state == MISSION_SCAN);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
     out = bstep(m, in, t);
-    assert(!out.scan_request && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);	/* not stationary yet */
+    assert(!out.scan_request);
     in->stationary = true;
     out = bstep(m, in, t);
-    assert(out.scan_request && m->bypass_step == BYPASS_SCANNING);
-    in->scan_state = S5_SCAN_DONE; in->profile_valid = true;
-    in->left_clearance_mm = left_mm; in->right_clearance_mm = right_mm;
+    assert(out.scan_request && m->scan_phase == 1u);
+    in->scan_id = out.scan_id;
+    in->scan_state = S5_SCAN_DONE;
+    in->profile_valid = true;
+    in->profile_closest_mm = 300u;
+    in->profile_planning_mm = S5_EXPECTED_MAX_WIDTH_MM;
+    in->profile_forward_mm = 150;
+    in->left_clearance_mm = left_mm;
+    in->right_clearance_mm = right_mm;
+    in->front_mm = 1000u;
+}
+
+/* Simulate completed wheel travel, not just an unsubstantiated DONE flag. */
+static void complete_action(MissionInputs *in, const MissionOutputs *out)
+{
+    float target = motion_cmd_target(&out->command);
+    int32_t left = 0, right = 0;
+    if (motion_cmd_mode(&out->command) == MOTION_MODE_TURN)
+    {
+        right = (int32_t)lroundf(target * 0.0174532925f *
+            TRACK_WIDTH_MM * 0.5f * ENC_COUNTS_PER_MM);
+        left = -right;
+    }
+    else if (motion_cmd_mode(&out->command) == MOTION_MODE_DISTANCE)
+    {
+        left = right = (int32_t)lroundf(target * ENC_COUNTS_PER_MM);
+    }
+    in->wheel_count[0] += (uint32_t)left;
+    in->wheel_count[1] += (uint32_t)right;
+    in->travel_counts = enc_mean(in->wheel_count[0], in->wheel_count[1]);
+    in->motion_action = motion_cmd_action(&out->command);
+    in->motion_status = RD_MOTION_DONE;
+}
+
+static void fresh_front(MissionInputs *in, uint32_t now)
+{
+    in->front_valid = true;
+    in->front_mm = 1000u;
+    in->front_sampled_ms = now;
+    in->front_sequence++;
+    in->front_travel_counts = enc_mean(in->wheel_count[0], in->wheel_count[1]);
+}
+
+static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm)
+{
+    Mission m;
+    MissionInputs in = base(100u);
+    uint32_t t;
+    into_scanning(&m, &in, &t, left_mm, right_mm);
+    MissionOutputs out = bstep(&m, &in, &t);
+    assert(m.bypass.left_side == (left_mm >= right_mm));
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_TURN);
+    bool depth_seen = false, reacquire_seen = false;
+    uint32_t routes = 0u;
+    for (unsigned i = 0u; i < 500u && m.state != MISSION_FOLLOW_LINE; ++i)
+    {
+        assert(m.state == MISSION_BYPASS || m.state == MISSION_REACQUIRE);
+        routes |= 1u << m.bypass.route;
+        reacquire_seen |= m.state == MISSION_REACQUIRE;
+        if (motion_cmd_mode(&out.command) == MOTION_MODE_TURN ||
+            motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE)
+        {
+            complete_action(&in, &out);
+        }
+        else
+        {
+            in.motion_status = RD_MOTION_IDLE;
+        }
+        fresh_front(&in, t + 10u);
+        in.side_valid = true;
+        in.side_mm = m.bypass.forward_q8 / 256 > 250 ? 600u : 300u;
+        in.side_sampled_ms = t + 10u;
+        in.side_sequence++;
+        out = bstep(&m, &in, &t);
+        if (out.event_kind == MQTT_EVENT_OBSTACLE)
+        {
+            assert(out.event_arg2 > 0u);
+            depth_seen = true;
+        }
+    }
+    assert(m.state == MISSION_FOLLOW_LINE && depth_seen && reacquire_seen);
+    assert((routes & (1u << BYPASS_ROUTE_OFFSET)) != 0u);
+    assert((routes & (1u << BYPASS_ROUTE_PASS)) != 0u);
+    assert((routes & (1u << BYPASS_ROUTE_REAR)) != 0u);
+    assert((routes & (1u << BYPASS_ROUTE_RETURN)) != 0u);
+    assert(fabsf(m.bypass.left_q8 / 256.0f) <= BYPASS_RETURN_LATERAL_MM);
 }
 
 static void test_bypass_full_sequence(void)
 {
-    Mission m; MissionInputs in = base(100u); uint32_t t;
-    into_scanning(&m, &in, &t, 800u, 400u);			/* left side has more room */
-    MissionOutputs out = bstep(&m, &in, &t);
-    assert(m.bypass_side == 1 && motion_cmd_mode(&out.command) == MOTION_MODE_TURN && motion_cmd_target(&out.command) == 90.0f);
-    in.front_valid = true; in.front_mm = 1000u;
-    out = finish(&m, &in, &t, &out);				/* turn out done -> offset leg */
-    assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE && motion_cmd_target(&out.command) == MISSION_BYPASS_OFFSET_MM);
-    out = finish(&m, &in, &t, &out);				/* offset done -> turn parallel */
-    assert(motion_cmd_mode(&out.command) == MOTION_MODE_TURN && motion_cmd_target(&out.command) == -90.0f);
-    in.travel_counts = 5000u;
-    out = finish(&m, &in, &t, &out);				/* parallel leg, side-watch toward the obstacle */
-    assert(m.bypass_step == BYPASS_PASS && motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
-    out = bstep(&m, &in, &t);
-    assert(out.side_watch_on && out.side_watch_deg == -SERVO_MAX_DEG);	/* obstacle is on the right */
-    in.side_valid = true; in.side_mm = 300u;
-    out = bstep(&m, &in, &t);					/* baseline captured */
-    assert(m.bypass_step == BYPASS_PASS);
-    in.travel_counts += 150u; in.side_mm = 300u + MISSION_PASS_JUMP_MM;	/* at the threshold: not yet */
-    out = bstep(&m, &in, &t);
-    assert(m.bypass_step == BYPASS_PASS);
-    in.travel_counts += 20u; in.side_mm = 300u + MISSION_PASS_JUMP_MM + 1u;	/* jump: far end passed */
-    out = bstep(&m, &in, &t);
-    assert(m.bypass_step == BYPASS_PASS_MARGIN && out.event_kind == MQTT_EVENT_OBSTACLE &&
-           out.event_arg2 == (uint16_t)(170.0f / ENC_COUNTS_PER_MM + 0.5f));	/* depth in mm from encoder travel */
-    out = bstep(&m, &in, &t);
-    assert(!out.side_watch_on);
-    out = finish(&m, &in, &t, &out);				/* margin done -> turn in */
-    assert(motion_cmd_mode(&out.command) == MOTION_MODE_TURN && motion_cmd_target(&out.command) == -90.0f);
-    out = finish(&m, &in, &t, &out);				/* turn in done -> offset back */
-    assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
-    out = finish(&m, &in, &t, &out);				/* offset done -> face forward */
-    assert(motion_cmd_mode(&out.command) == MOTION_MODE_TURN && motion_cmd_target(&out.command) == 90.0f);
-    out = finish(&m, &in, &t, &out);
-    assert(m.bypass_step == BYPASS_REACQUIRE);
-    in.line = IR_LINE_LOST;					/* creeping forward, no line yet */
-    out = bstep(&m, &in, &t);
-    assert(m.state == MISSION_BYPASS && motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
-    in.line = IR_LINE_VISIBLE;
-    bstep(&m, &in, &t);
-    assert(m.state == MISSION_BYPASS);				/* one read is not enough */
-    bstep(&m, &in, &t);
-    assert(m.state == MISSION_FOLLOW_LINE);				/* two fresh reads reacquire the original line */
+    run_bypass_sequence(800u, 400u);
+    run_bypass_sequence(400u, 900u);
 }
 
 static void test_bypass_failures(void)
 {
-    Mission m; MissionInputs in = base(100u); uint32_t t;
-    /* Neither side wide enough. */
-    into_scanning(&m, &in, &t, MISSION_BYPASS_MIN_CLEAR_MM - 1u, MISSION_BYPASS_MIN_CLEAR_MM - 1u);
+    Mission m;
+    MissionInputs in = base(100u);
+    uint32_t t;
+    into_scanning(&m, &in, &t, MISSION_BYPASS_MIN_CLEAR_MM - 1u,
+        MISSION_BYPASS_MIN_CLEAR_MM - 1u);
     MissionOutputs out = bstep(&m, &in, &t);
     assert(m.state == MISSION_STOPPED && out.stop_now);
 
-    /* Right side chosen when it has more room; scan failure stops. */
-    Mission r; MissionInputs ir = base(100u);
-    into_scanning(&r, &ir, &t, 400u, 900u);
-    out = bstep(&r, &ir, &t);
-    assert(r.bypass_side == -1 && motion_cmd_target(&out.command) == -90.0f);
-    Mission f; MissionInputs iff = base(100u);
-    into_scanning(&f, &iff, &t, 800u, 800u);
-    iff.scan_state = S5_SCAN_FAILED;
-    bstep(&f, &iff, &t);
-    assert(f.state == MISSION_STOPPED);
+    /* Wrong scan IDs cannot release movement; failed scans retry boundedly. */
+    in = base(100u);
+    into_scanning(&m, &in, &t, 800u, 400u);
+    in.scan_id = (uint8_t)(m.scan_id + 1u);
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_SCAN && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    in.scan_state = S5_SCAN_FAILED;
+    for (unsigned i = 0u; i <= MISSION_SCAN_RETRIES; ++i)
+    {
+        in.scan_id = m.scan_id;
+        out = bstep(&m, &in, &t);
+    }
+    assert(m.state == MISSION_STOPPED && out.stop_now);
 
-    /* A second obstacle while driving the offset leg stops the robot. */
-    Mission s; MissionInputs is = base(100u);
-    into_scanning(&s, &is, &t, 800u, 400u);
-    out = bstep(&s, &is, &t); is.front_valid = true; is.front_mm = 1000u;
-    out = finish(&s, &is, &t, &out);				/* offset leg running */
-    assert(s.bypass_step == BYPASS_OFFSET_OUT);
-    is.front_valid = true; is.front_age_ms = 0u; is.front_mm = MISSION_OBSTACLE_STOP_MM;
-    out = bstep(&s, &is, &t);
-    assert(s.state == MISSION_STOPPED && out.stop_now);
-    /* Required forward coverage cannot be renewed from a stale side observation. */
-    Mission g; MissionInputs ig = base(100u);
-    into_scanning(&g, &ig, &t, 800u, 400u);
-    out = bstep(&g, &ig, &t); ig.front_valid = true; ig.front_mm = 1000u;
-    out = finish(&g, &ig, &t, &out);
-    ig.front_valid = true; ig.front_age_ms = 10u * SONAR_REPEAT_MS; ig.front_mm = 10u;
-    bstep(&g, &ig, &t);
-    assert(g.state == MISSION_STOPPED);
+    /* DONE without encoder evidence is rejected. */
+    in = base(100u);
+    into_scanning(&m, &in, &t, 800u, 400u);
+    out = bstep(&m, &in, &t);
+    in.motion_action = motion_cmd_action(&out.command);
+    in.motion_status = RD_MOTION_DONE;
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_STOPPED && out.stop_now);
 
-    /* A failed leg or a pass leg that never passes the obstacle stops. */
-    Mission h; MissionInputs ih = base(100u);
-    into_scanning(&h, &ih, &t, 800u, 400u);
-    out = bstep(&h, &ih, &t); ih.front_valid = true; ih.front_mm = 1000u;
-    ih.motion_action = motion_cmd_action(&out.command); ih.motion_status = RD_MOTION_FAILED;
-    out = bstep(&h, &ih, &t);
-    assert(h.state == MISSION_STOPPED && out.stop_now);
+    /* A close front obstacle after the turn cannot authorize an offset. */
+    in = base(100u);
+    into_scanning(&m, &in, &t, 800u, 400u);
+    out = bstep(&m, &in, &t);
+    complete_action(&in, &out);
+    fresh_front(&in, t + 10u);
+    out = bstep(&m, &in, &t);
+    assert(m.bypass.route == BYPASS_ROUTE_OFFSET);
+    fresh_front(&in, t + 10u);
+    in.front_mm = 10u;
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_STOPPED && out.stop_now);
 
-    /* The whole bypass is bounded in time. */
-    Mission k; MissionInputs ik = base(100u);
-    into_scanning(&k, &ik, &t, 800u, 400u);
-    t += MISSION_BYPASS_TIMEOUT_MS;
-    out = step(&k, &ik, t);
-    assert(k.state == MISSION_STOPPED && out.stop_now);
+    /* Cached front samples cannot keep a drive alive. */
+    in = base(100u);
+    into_scanning(&m, &in, &t, 800u, 400u);
+    out = bstep(&m, &in, &t);
+    complete_action(&in, &out);
+    fresh_front(&in, t + 10u);
+    bstep(&m, &in, &t);
+    fresh_front(&in, t + 10u);
+    out = bstep(&m, &in, &t);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
+    in.motion_status = RD_MOTION_RUNNING;
+    out = step(&m, &in, t += BYPASS_FRONT_MAX_AGE_MS + 1u);
+    assert(m.state == MISSION_STOPPED && out.stop_now);
+
+    in = base(100u);
+    into_scanning(&m, &in, &t, 800u, 400u);
+    out = bstep(&m, &in, &t);
+    in.motion_action = motion_cmd_action(&out.command);
+    in.motion_status = RD_MOTION_FAILED;
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_STOPPED && out.stop_now);
+
+    in = base(100u);
+    into_scanning(&m, &in, &t, 800u, 400u);
+    out = step(&m, &in, t += MISSION_BYPASS_TIMEOUT_MS);
+    assert(m.state == MISSION_STOPPED && out.stop_now);
 }
 
 /* The line PID matches the reference over a varying error, updates once per
