@@ -1,6 +1,6 @@
 #include "subsystem3.h"
-#include "safety.h"
-#include "mission.h"
+#include "../mission/safety.h"
+#include "../mission/mission.h"
 #include "drv_ir_tracking.h"
 #include "../common/robot_config.h"
 #include "../subsystem2/subsystem2.h"
@@ -136,129 +136,99 @@ static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now,
 }
 #endif
 
-static void task_s_task(INT stacd, void *exinf)
+void s3_step(uint32_t now, bool calibration_enabled)
 {
-    (void)stacd; //? might not need to be used
-    (void)exinf; //? might not need to be used
-    IrTracker tracker;
-    ir_tracking_init(&tracker);
-    bool adc_ready = drv_ir_tracking_init();
-    /* The GPIO dispatcher is core-1 only, so the scanner starts here, disabled. */
-    if (!barcode_init()) tm_printf((UB *)"[BARCODE] init failed; scanner unavailable\n");
-    uint32_t now;
-    now = robot_time_ms();
-    Button capture_button;
-    button_init(&capture_button, now);
-    uint32_t next = now;
-    uint32_t sample_due = now;
-    uint32_t sequence = 0u;
+    static IrTracker tracker;
+    static Button capture_button;
+    static bool initialized;
+    static bool adc_ready;
+    static uint32_t sample_due;
+    static uint32_t sequence;
 #if APP_TEST
-    uint32_t report_due = now;
+    static uint32_t report_due;
 #endif
-    for (;;)
+    if (!initialized)
     {
-        now = robot_time_ms();
-        IrCaptureKind before = tracker.capture_kind;
-        ir_tracking_check_time(&tracker, now);
-        request_buzzer_chirps(calibration_control_feedback(before, &tracker), now);
+        ir_tracking_init(&tracker);
+        adc_ready = drv_ir_tracking_init();
+        (void)barcode_init();
+        button_init(&capture_button, now);
+        sample_due = now;
+        initialized = true;
+    }
+    IrCaptureKind before = tracker.capture_kind;
+    ir_tracking_check_time(&tracker, now);
+    request_buzzer_chirps(calibration_control_feedback(before, &tracker), now);
 
-        ButtonInputs inputs = drv_buttons_read();
+    ButtonInputs inputs = drv_buttons_read();
 #if APP_TEST
-        static bool have_inputs;
-        static ButtonInputs previous_inputs;
-        if (!have_inputs || inputs.gp20_down != previous_inputs.gp20_down ||
-            inputs.gp21_down != previous_inputs.gp21_down)
-        {
-            tm_printf((UB *)"[IR] buttons GP20_down=%d GP21_down=%d\n",
-                inputs.gp20_down, inputs.gp21_down);
-            previous_inputs = inputs;
-            have_inputs = true;
-        }
+    static bool have_inputs;
+    static ButtonInputs previous_inputs;
+    if (!have_inputs || inputs.gp20_down != previous_inputs.gp20_down ||
+        inputs.gp21_down != previous_inputs.gp21_down)
+    {
+        tm_printf((UB *)"[IR] buttons GP20_down=%d GP21_down=%d\n",
+            inputs.gp20_down, inputs.gp21_down);
+        previous_inputs = inputs;
+        have_inputs = true;
+    }
 #endif
-        unsigned chirps = calibration_handle_buttons(&capture_button, &tracker, inputs.gp20_down, inputs.gp21_down, now);
-        request_buzzer_chirps(chirps, now);
+    unsigned chirps = calibration_enabled ?
+        calibration_handle_buttons(&capture_button, &tracker,
+            inputs.gp20_down, inputs.gp21_down, now) : 0u;
+    request_buzzer_chirps(chirps, now);
+    if ((int32_t)(now - sample_due) >= 0)
+    {
+        IrRaw raw = {0};
+        bool acquired = adc_ready && drv_ir_tracking_read(&raw);
+        now = robot_time_ms();
+        bool advancing = !tracker.have_sample || (now != tracker.sample_ms);
+        before = tracker.capture_kind;
+        ir_tracking_sample(&tracker, raw, acquired, now);
+        if (advancing)
+        {
+            ++sequence; /* Acquisition attempts, including invalid ones. */
+        }
+        request_buzzer_chirps(calibration_control_feedback(before, &tracker), now);
+        sample_due += IR_SAMPLE_MS;
         if ((int32_t)(now - sample_due) >= 0)
         {
-            IrRaw raw = {0};
-            bool acquired = adc_ready && drv_ir_tracking_read(&raw);
-            now = robot_time_ms();
-            bool advancing = !tracker.have_sample || (now != tracker.sample_ms);
-            before = tracker.capture_kind;
-            ir_tracking_sample(&tracker, raw, acquired, now);
-            if (advancing)
-            {
-                ++sequence; /* Acquisition attempts, including invalid ones. */
-            }
-            request_buzzer_chirps(calibration_control_feedback(before, &tracker), now);
-            sample_due += IR_SAMPLE_MS;
-            if ((int32_t)(now - sample_due) >= 0)
-            {
-                sample_due = now + IR_SAMPLE_MS;
-            }
-        }
-        /* Service after due ADC work, with a fixed edge budget. GP21 is
-           delivered each release; barcode never owns motor/line policy. */
-        barcode_service(inputs.gp21_down);
-        if (!buzzer_service(now))
-        {
-            tm_printf((UB *)"[IR] buzzer service failed; task stopped\n");
-            barcode_service(true);
-            (void)s2_stop();
-            for (;;) tk_slp_tsk(TMO_FEVR); /* Halt: never return from a task */
-        }
-        S3IrSnapshot snapshot = ir_snapshot_build(&tracker, sequence, now);
-        /* Report-only fault (it blocks a start): no reading, or a calibrated
-           reading outside the calibrated range. */
-        if (!ir_raw_word_valid(snapshot.raw) || (snapshot.calibration_valid && !snapshot.normalized_valid))
-        {
-            rd_fault_set(RD_OWNER_LINE, RD_FAULT_IR_INVALID);
-        }
-        else
-        {
-            rd_fault_clear(RD_OWNER_LINE, RD_FAULT_IR_INVALID);
-        }
-        subsystem3_publish(&snapshot);
-#if APP_TEST
-        if ((int32_t)(now - report_due) >= 0)
-        {
-            report(&tracker, sequence, now, inputs);
-            report_due = now + REPORT_PERIOD_MS;
-        }
-#endif
-        next += INPUT_PERIOD_MS;
-        now = robot_time_ms();
-        if ((int32_t)(now - next) >= 0)
-        {
-            next = now + INPUT_PERIOD_MS;
-        }
-        if (tk_dly_tsk((RELTIM)(next - now)) < E_OK)
-        {
-            tm_printf((UB *)"[IR] task delay failed\n");
-            barcode_service(true);
-            (void)s2_stop();
-            for (;;) tk_slp_tsk(TMO_FEVR); /* Halt: never return from a task */
+            sample_due = now + IR_SAMPLE_MS;
         }
     }
+    /* Service after due ADC work, with a fixed edge budget. GP21 is
+       delivered each release; barcode never owns motor/line policy. */
+    barcode_service(inputs.gp21_down);
+    if (!buzzer_service(now))
+    {
+        tm_printf((UB *)"[IR] buzzer service failed; task stopped\n");
+        barcode_service(true);
+        (void)s2_stop();
+        return;
+    }
+    S3IrSnapshot snapshot = ir_snapshot_build(&tracker, sequence, now);
+    /* Report-only fault (it blocks a start): no reading, or a calibrated
+       reading outside the calibrated range. */
+    if (!ir_raw_word_valid(snapshot.raw) || (snapshot.calibration_valid && !snapshot.normalized_valid))
+    {
+        rd_fault_set(RD_OWNER_LINE, RD_FAULT_IR_INVALID);
+    }
+    else
+    {
+        rd_fault_clear(RD_OWNER_LINE, RD_FAULT_IR_INVALID);
+    }
+    subsystem3_publish(&snapshot);
+#if APP_TEST
+    if ((int32_t)(now - report_due) >= 0)
+    {
+        report(&tracker, sequence, now, inputs);
+        report_due = now + REPORT_PERIOD_MS;
+    }
+#endif
 }
 
 ER subsystem3_start(void)
 {
-    ID mutex_id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
-#if APP_TEST
-    tm_printf((UB *)"[TEST] S3 snapshot mutex id before task start=%d\n", mutex_id);
-#endif
-    if (mutex_id <= 0)
-    {
-        return E_OBJ;
-    }
-    ID task_id = app_start_task((FP)task_s_task, S3_PRI_LINE, TP_PRC2, "IR line");
-#if APP_TEST
-    tm_printf((UB *)"[TEST] S3 task start result=%d\n", task_id);
-#endif
-    if (task_id < E_OK)
-    {
-        return task_id;
-    }
     return mission_start();
 }
 

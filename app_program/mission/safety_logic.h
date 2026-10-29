@@ -22,6 +22,7 @@
 
 typedef struct
 {
+    bool line_required;
     bool stop_button;		/* GP21 down */
     bool fault_pending;		/* rd_fault_stop_pending() */
     bool line_seen;		/* the IR producer has published at least once */
@@ -40,7 +41,7 @@ static inline uint32_t safety_causes(const SafetyInputs *in)
     if (in->stop_button) causes |= SAFETY_CAUSE_STOP_BUTTON;
     if (APP_NO_GUARDS) return causes;	/* bench build: GP21 is the only stop */
     if (in->fault_pending) causes |= SAFETY_CAUSE_FAULT;
-    if (in->line_seen ? in->line_age_ms > SAFETY_STALE_MS : !grace) causes |= SAFETY_CAUSE_STALE_LINE;
+    if (in->line_required && (in->line_seen ? in->line_age_ms > SAFETY_STALE_MS : !grace)) causes |= SAFETY_CAUSE_STALE_LINE;
     if (in->motion_seen ? in->motion_age_ms > SAFETY_STALE_MS : !grace) causes |= SAFETY_CAUSE_STALE_MOTION;
     return causes;
 }

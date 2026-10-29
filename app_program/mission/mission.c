@@ -1,6 +1,6 @@
 #include "mission.h"
 #include <stdatomic.h>
-#include "subsystem3.h"
+#include "../subsystem3/subsystem3.h"
 #include "safety.h"
 #include "../subsystem2/subsystem2.h"
 #include "../subsystem5/subsystem5.h"
@@ -19,8 +19,7 @@ MissionState mission_state(void)
 ER mission_set_mapping(const uint8_t letters[4])
 {
     MissionState state = mission_state();
-    if (state == MISSION_FOLLOW || state == MISSION_JUNCTION_TURN || state == MISSION_BYPASS ||
-        state == MISSION_CROSSING)
+    if (state != MISSION_READY && state != MISSION_STOPPED)
     {
         return E_OBJ;
     }
@@ -28,7 +27,7 @@ ER mission_set_mapping(const uint8_t letters[4])
 }
 
 static const char *const state_names[MISSION_STATE_COUNT] = {
-    "CALIBRATE", "READY", "FOLLOW", "JUNCTION_TURN", "BYPASS", "COMPLETE", "STOP", "CROSSING"};
+    "READY", "FOLLOW_LINE", "NAVIGATE", "SCAN", "BYPASS", "REACQUIRE", "STOPPED"};
 
 static void mission_task(INT stacd, void *exinf)
 {
@@ -47,9 +46,16 @@ static void mission_task(INT stacd, void *exinf)
     for (;;)
     {
         now = robot_time_ms();
-        safety_step();
+        s3_step(now, true);
+        s5_step(now);
+        bool line_required = mission.state == MISSION_FOLLOW_LINE ||
+            mission.state == MISSION_REACQUIRE ||
+            (mission.state == MISSION_NAVIGATE &&
+             (mission.phase == JUNCTION_PHASE_CROSS ||
+              mission.phase == JUNCTION_PHASE_CONFIRM));
+        safety_step(line_required);
         ButtonInputs buttons = drv_buttons_read();
-        if (buttons.gp21_down || mission.state == MISSION_STOP)
+        if (buttons.gp21_down || mission.state == MISSION_STOPPED)
         {
             button_disarm(&start_button);
         }
@@ -82,7 +88,8 @@ static void mission_task(INT stacd, void *exinf)
             .stop_down = buttons.gp21_down,
             .safety_latched = safety_latched_causes() != 0u,
             .motion_stopped = !healthy || motion_health_stopped(&health),
-            .inputs_ok = copied && healthy,
+            .inputs_ok = healthy && (!line_required ||
+                (copied && snapshot.sample_fresh)),
             .calibration_valid = snapshot.calibration_valid,
             .guidance_valid = snapshot.guidance_valid,
             .usable_line = snapshot.normalized_valid && snapshot.capture_kind == IR_CAPTURE_NONE,
@@ -160,7 +167,7 @@ static void mission_task(INT stacd, void *exinf)
         {
             reported = mission.state;
             tm_printf((UB *)"[MISSION] state=%s%s\n", state_names[mission.state], APP_TEST ? " MOTOR_INHIBITED" : "");
-            if (mission.state == MISSION_STOP)
+            if (mission.state == MISSION_STOPPED)
             {
                 tm_printf((UB *)"[MISSION] stop: gp21=%d latched=%d inputs_ok=%d\n",
                           (int)in.stop_down, (int)in.safety_latched, (int)in.inputs_ok);

@@ -5,7 +5,7 @@
 #include "../common/robot_time.h"
 #include "../subsystem2/subsystem2.h"
 #include "../subsystem2/drv_encoder.h"
-#include "../subsystem3/mission.h"
+#include "../mission/mission.h"
 #include "../subsystem3/barcode.h"
 #include "../subsystem3/subsystem3.h"
 #include "../subsystem4/subsystem4.h"
@@ -87,7 +87,7 @@ static bool install_mapping(const uint8_t letters[4])
 static bool robot_stopped(void)
 {
     MissionState state = mission_state();
-    return state == MISSION_CALIBRATE || state == MISSION_READY || state == MISSION_COMPLETE || state == MISSION_STOP;
+    return state == MISSION_READY || state == MISSION_STOPPED;
 }
 
 static void post_snapshot(mqtt_type_t type, uint8_t *sequence)

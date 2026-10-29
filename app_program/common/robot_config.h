@@ -161,6 +161,7 @@
 #define MISSION_PASS_JUMP_MM		150u	/* PROVISIONAL (D05): side range jump marking pass-by */
 #define MISSION_PASS_LEG_MM		2000.0f	/* longest parallel leg before the bypass fails */
 #define MISSION_BYPASS_TIMEOUT_MS	45000u	/* whole bypass must finish by then */
+#define MISSION_UTURN_PAUSE_MS 200u /* requested duration; stationary reference provisional D02/D08 */
 #define MISSION_START_WAIT_MS		200u	/* wait for Motion to leave its stop latch */
 
 /* --- S3 barcode ---------------------------------------------------- */

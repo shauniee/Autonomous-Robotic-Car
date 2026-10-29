@@ -132,28 +132,26 @@ static ER trigger(void)
     return gpio_set_val(TRIGGER_PIN, 0);
 }
 
-/* One ranging attempt: arm, trigger, poll the capture state per tick until the
-   echo or the timeout. Returns the range in mm or ECHO_RANGE_INVALID. */
-static uint32_t measure(void)
+/* Acquisition phases never sleep through an Echo or servo movement. Mission
+   calls one step per release; only the 12 us trigger pulse busy-waits. */
+typedef enum { S5_ACQUIRE_IDLE, S5_ACQUIRE_SETTLE, S5_ACQUIRE_ECHO } s5_acquire_phase_t;
+
+typedef struct
 {
-    (void)drv_gpio_irq_enable(ECHO_PIN, false);
-    atomic_store_explicit(&echo_state, ECHO_ARMED, memory_order_release);
-    (void)drv_gpio_irq_enable(ECHO_PIN, true);
-    uint32_t sent_us = robot_time_us();
-    if (trigger() >= E_OK)
-    {
-        while (atomic_load_explicit(&echo_state, memory_order_acquire) != ECHO_DONE &&
-               robot_time_elapsed(robot_time_us(), sent_us) < SONAR_TIMEOUT_US)
-        {
-            tk_dly_tsk(1);
-        }
-    }
-    (void)drv_gpio_irq_enable(ECHO_PIN, false);
-    bool done = atomic_load_explicit(&echo_state, memory_order_acquire) == ECHO_DONE;
-    uint32_t range = done ? echo_range_mm(atomic_load_explicit(&pulse_us, memory_order_relaxed)) : ECHO_RANGE_INVALID;
-    atomic_store_explicit(&echo_state, ECHO_IDLE, memory_order_release);
-    return range;
-}
+    ObstacleRay rays[S5_SCAN_CAPACITY];
+    int16_t angles[S5_SCAN_CAPACITY];
+    uint32_t scan_started_ms, sent_us, settle_since_ms, next_ping_ms;
+    uint32_t left_origin, right_origin;
+    uint32_t misses;
+    uint8_t count, planned, coarse, id;
+    uint8_t phase;
+    uint8_t initialized : 1;
+    uint8_t ready : 1;
+    uint8_t scanning : 1;
+    int16_t angle;
+} s5_acquisition_t;
+
+static s5_acquisition_t acquisition;
 
 static void publish_scan(s5_scan_state_t state, uint8_t id)
 {
@@ -162,122 +160,218 @@ static void publish_scan(s5_scan_state_t state, uint8_t id)
     rd_word_publish(&scan_word, word | ((uint32_t)id << S5_SCAN_STATE_BITS));
 }
 
-static bool stationary_since(uint32_t left, uint32_t right)
+static void cancel_echo(void)
 {
-    return drv_encoder_count(ENCODER_LEFT) == left && drv_encoder_count(ENCODER_RIGHT) == right;
+    (void)drv_gpio_irq_enable(ECHO_PIN, false);
+    atomic_store_explicit(&echo_state, ECHO_IDLE, memory_order_release);
 }
 
-/* Coarse then fine scan. Aborts (FAILED / CANCELLED) when the car moves, on
-   cancel or at the deadline. Runs inside the Obstacle task. */
-static void run_scan(uint8_t id)
+static bool set_angle(int16_t angle, uint32_t now)
 {
-    ObstacleRay rays[S5_SCAN_CAPACITY];
-    unsigned count = 0u;
-    uint32_t left = drv_encoder_count(ENCODER_LEFT), right = drv_encoder_count(ENCODER_RIGHT);
-    uint32_t started = robot_time_ms();
-    s5_scan_state_t state = S5_SCAN_SETTLING;
-    publish_scan(state, id);
-    int16_t angles[S5_SCAN_CAPACITY];
-    unsigned planned = 0u;
-    for (int a = -SERVO_MAX_DEG; a <= SERVO_MAX_DEG; a += S5_COARSE_STEP_DEG) angles[planned++] = (int16_t)a;
-    unsigned coarse = planned;
-    for (unsigned i = 0u; i < planned && state != S5_SCAN_FAILED && state != S5_SCAN_CANCELLED; ++i)
-    {
-        bool cancel = atomic_load_explicit(&cancel_requests, memory_order_acquire) !=
-                      atomic_load_explicit(&cancel_served, memory_order_relaxed);
-        bool expired = robot_time_elapsed(robot_time_ms(), started) >= S5_SCAN_DEADLINE_MS;
-        s5_scan_state_t guard = s5_scan_guard(cancel, expired, stationary_since(left, right));
-        if (guard != S5_SCAN_COARSE)
-        {
-            state = guard;
-            break;
-        }
-        state = i < coarse ? S5_SCAN_COARSE : S5_SCAN_FINE;
-        publish_scan(state, id);
-        if (servo_angle(angles[i]) < E_OK) { state = S5_SCAN_FAILED; break; }
-        tk_dly_tsk(SERVO_SETTLE_MS);
-        uint32_t range = measure();
-        rays[count++] = s5_ray_make(angles[i], (uint16_t)(range == ECHO_RANGE_INVALID ? 0u : range),
-                                    range != ECHO_RANGE_INVALID);
-        if (i + 1u == coarse)
-        {
-            planned += s5_fine_angles(rays, count, &angles[planned], S5_SCAN_CAPACITY - planned);
-        }
-    }
-    (void)servo_angle(0);
-    if (state != S5_SCAN_FAILED && state != S5_SCAN_CANCELLED)
+    cancel_echo();
+    acquisition.angle = angle;
+    acquisition.settle_since_ms = now;
+    acquisition.phase = S5_ACQUIRE_SETTLE;
+    return servo_angle(angle) >= E_OK;
+}
+
+static void finish_scan(s5_scan_state_t state, uint32_t now)
+{
+    if (state == S5_SCAN_DONE)
     {
         ObstacleProfile built;
-        /* No echo is unknown, never clear space: see s5_profile_build. */
-        bool ok = s5_profile_build(rays, count, &built);
-        if (ok && tk_loc_mtx(profile_mutex, RD_SNAPSHOT_LOCK_MS) >= E_OK)
+        bool ok = s5_profile_build(acquisition.rays, acquisition.count, &built);
+        if (ok && tk_loc_mtx(profile_mutex, TMO_POL) >= E_OK)
         {
             profile = built;
             profile_ready = true;
-            tk_unl_mtx(profile_mutex);
+            if (tk_unl_mtx(profile_mutex) < E_OK)
+            {
+                ok = false;
+            }
+        }
+        else
+        {
+            ok = false;
         }
         state = ok ? S5_SCAN_DONE : S5_SCAN_FAILED;
     }
-    publish_scan(state, id);
-    atomic_store_explicit(&cancel_served, atomic_load_explicit(&cancel_requests, memory_order_acquire),
-        memory_order_release);
+    acquisition.scanning = false;
+    cancel_echo();
+    publish_scan(state, acquisition.id);
+    (void)set_angle(0, now);
 }
 
-static void obstacle_task(INT stacd, void *exinf)
+static void range_complete(uint32_t range, uint32_t now)
 {
-    (void)stacd; (void)exinf;
-    bool ready = drv_gpio_irq_init() >= E_OK && drv_gpio_irq_claim(ECHO_PIN, echo_edge);
-    if (!ready)
+    cancel_echo();
+    acquisition.phase = S5_ACQUIRE_IDLE;
+    if (acquisition.scanning)
     {
-        rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
-        tm_printf((UB *)"[S5] echo dispatcher unavailable; front range unknown\n");
-    }
-    uint32_t release = robot_time_ms(), misses = 0u;
-    bool side_active = false;
-    for (;;)
-    {
-        if (ready)
+        unsigned index = acquisition.count;
+        acquisition.rays[index] = s5_ray_make(acquisition.angles[index],
+            (uint16_t)(range == ECHO_RANGE_INVALID ? 0u : range),
+            range != ECHO_RANGE_INVALID);
+        ++acquisition.count;
+        if (acquisition.count == acquisition.coarse)
         {
-            uint32_t requested = atomic_load_explicit(&scan_requests, memory_order_acquire);
-            uint32_t command = rd_word_read(&side_command);
-            if (requested != atomic_load_explicit(&scan_served, memory_order_relaxed))
+            unsigned extra = s5_fine_angles(acquisition.rays,
+                acquisition.count, &acquisition.angles[acquisition.planned],
+                S5_SCAN_CAPACITY - acquisition.planned);
+            acquisition.planned = (uint8_t)(acquisition.planned + extra);
+        }
+        if (acquisition.count == acquisition.planned)
+        {
+            finish_scan(S5_SCAN_DONE, now);
+        }
+        else
+        {
+            publish_scan(acquisition.count < acquisition.coarse ?
+                S5_SCAN_COARSE : S5_SCAN_FINE, acquisition.id);
+            if (!set_angle(acquisition.angles[acquisition.count], now))
             {
-                atomic_store_explicit(&scan_served, requested, memory_order_release);
-                run_scan(atomic_load_explicit(&requested_scan_id, memory_order_relaxed));
-            }
-            else if ((command & 1u) != 0u)
-            {
-                (void)servo_angle(s5_side_watch_angle(command));
-                side_active = true;
-                uint32_t range = measure();
-                rd_word_publish(&side_word, echo_pack(range, robot_time_ms()));
-            }
-            else
-            {
-                if (side_active)
-                {
-                    (void)servo_angle(0);	/* recentre, then rest the servo */
-                    side_active = false;
-                }
-                uint32_t range = measure();
-                rd_word_publish(&front_word, echo_pack(range, robot_time_ms()));
-                if (echo_note(&misses, range != ECHO_RANGE_INVALID))
-                {
-                    rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
-                }
-                else
-                {
-                    rd_fault_clear(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
-                }
+                finish_scan(S5_SCAN_FAILED, now);
             }
         }
-        tk_dly_tsk(robot_time_next_delay(&release, SONAR_REPEAT_MS, robot_time_ms()));
+        return;
+    }
+    if (acquisition.angle != 0)
+    {
+        rd_word_publish(&side_word, echo_pack(range, now));
+    }
+    else
+    {
+        rd_word_publish(&front_word, echo_pack(range, now));
+        if (echo_note(&acquisition.misses, range != ECHO_RANGE_INVALID))
+        {
+            rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
+        }
+        else
+        {
+            rd_fault_clear(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
+        }
+    }
+}
+
+void s5_step(uint32_t now)
+{
+    if (!acquisition.initialized)
+    {
+        acquisition.initialized = true;
+        acquisition.ready = drv_gpio_irq_init() >= E_OK &&
+            drv_gpio_irq_claim(ECHO_PIN, echo_edge);
+        acquisition.next_ping_ms = now;
+        if (!acquisition.ready || !set_angle(0, now))
+        {
+            acquisition.ready = false;
+            rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
+        }
+    }
+    if (!acquisition.ready)
+    {
+        return;
+    }
+    uint32_t cancel = atomic_load_explicit(&cancel_requests, memory_order_acquire);
+    bool cancelled = cancel != atomic_load_explicit(&cancel_served, memory_order_relaxed);
+    atomic_store_explicit(&cancel_served, cancel, memory_order_release);
+    uint32_t requested = atomic_load_explicit(&scan_requests, memory_order_acquire);
+    if (cancelled)
+    {
+        atomic_store_explicit(&scan_served, requested, memory_order_release);
+        if (acquisition.scanning)
+        {
+            finish_scan(S5_SCAN_CANCELLED, now);
+        }
+        else
+        {
+            cancel_echo();
+            (void)set_angle(0, now);
+        }
+        return;
+    }
+    if (acquisition.scanning)
+    {
+        bool stationary = drv_encoder_count(ENCODER_LEFT) == acquisition.left_origin &&
+            drv_encoder_count(ENCODER_RIGHT) == acquisition.right_origin;
+        s5_scan_state_t guard = s5_scan_guard(false,
+            robot_time_elapsed(now, acquisition.scan_started_ms) >= S5_SCAN_DEADLINE_MS,
+            stationary);
+        if (guard != S5_SCAN_COARSE)
+        {
+            finish_scan(guard, now);
+            return;
+        }
+    }
+    else if (requested != atomic_load_explicit(&scan_served, memory_order_relaxed))
+    {
+        atomic_store_explicit(&scan_served, requested, memory_order_release);
+        acquisition.id = atomic_load_explicit(&requested_scan_id, memory_order_relaxed);
+        acquisition.left_origin = drv_encoder_count(ENCODER_LEFT);
+        acquisition.right_origin = drv_encoder_count(ENCODER_RIGHT);
+        acquisition.scan_started_ms = now;
+        acquisition.count = 0u;
+        acquisition.planned = 0u;
+        for (int a = -SERVO_MAX_DEG; a <= SERVO_MAX_DEG; a += S5_COARSE_STEP_DEG)
+        {
+            acquisition.angles[acquisition.planned++] = (int16_t)a;
+        }
+        acquisition.coarse = acquisition.planned;
+        acquisition.scanning = true;
+        publish_scan(S5_SCAN_SETTLING, acquisition.id);
+        if (!set_angle(acquisition.angles[0], now))
+        {
+            finish_scan(S5_SCAN_FAILED, now);
+        }
+        return;
+    }
+    if (!acquisition.scanning)
+    {
+        uint32_t command = rd_word_read(&side_command);
+        int16_t angle = (command & 1u) != 0u ? s5_side_watch_angle(command) : 0;
+        if (angle != acquisition.angle && !set_angle(angle, now))
+        {
+            rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
+            return;
+        }
+    }
+    if (acquisition.phase == S5_ACQUIRE_SETTLE)
+    {
+        if (robot_time_elapsed(now, acquisition.settle_since_ms) < SERVO_SETTLE_MS)
+        {
+            return;
+        }
+        acquisition.phase = S5_ACQUIRE_IDLE;
+    }
+    if (acquisition.phase == S5_ACQUIRE_ECHO)
+    {
+        if (atomic_load_explicit(&echo_state, memory_order_acquire) == ECHO_DONE)
+        {
+            range_complete(echo_range_mm(atomic_load_explicit(&pulse_us,
+                memory_order_relaxed)), now);
+        }
+        else if (robot_time_elapsed(robot_time_us(), acquisition.sent_us) >= SONAR_TIMEOUT_US)
+        {
+            range_complete(ECHO_RANGE_INVALID, now);
+        }
+        return;
+    }
+    if ((int32_t)(now - acquisition.next_ping_ms) < 0)
+    {
+        return;
+    }
+    cancel_echo();
+    atomic_store_explicit(&echo_state, ECHO_ARMED, memory_order_release);
+    (void)drv_gpio_irq_enable(ECHO_PIN, true);
+    acquisition.sent_us = robot_time_us();
+    acquisition.next_ping_ms = now + SONAR_REPEAT_MS;
+    acquisition.phase = S5_ACQUIRE_ECHO;
+    if (trigger() < E_OK)
+    {
+        range_complete(ECHO_RANGE_INVALID, now);
     }
 }
 
 ER subsystem5_start(void)
 {
-    /* Boot never waits for an echo: ranging runs in its own periodic task. */
-    ID tid = app_start_task((FP)obstacle_task, S5_PRI_OBSTACLE, TP_PRC2, "Obstacle");
-    return tid < E_OK ? tid : E_OK;
+    return E_OK; /* Mission owns acquisition; no Obstacle task. */
 }

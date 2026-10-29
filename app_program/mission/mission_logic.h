@@ -11,27 +11,34 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "ir_tracking.h"
+#include "../subsystem3/ir_tracking.h"
 #include "../subsystem5/obstacle_profile.h"
-#include "barcode_decode.h"
+#include "../subsystem3/barcode_decode.h"
 #include "../subsystem2/motion_control.h"
 #include "../subsystem1/mqtt_frame.h"
 #include "../common/robot_config.h"
 
 typedef enum
 {
-    MISSION_CALIBRATE,
     MISSION_READY,
-    MISSION_FOLLOW,
-    MISSION_JUNCTION_TURN,
+    MISSION_FOLLOW_LINE,
+    MISSION_NAVIGATE,
+    MISSION_SCAN,
     MISSION_BYPASS,
-    MISSION_COMPLETE,
-    MISSION_STOP,
-    MISSION_CROSSING,
+    MISSION_REACQUIRE,
+    MISSION_STOPPED,
     MISSION_STATE_COUNT
 } MissionState;
 
-typedef enum { JUNCTION_PHASE_TURN, JUNCTION_PHASE_CLEAR } MissionJunctionPhase;
+typedef enum
+{
+    JUNCTION_PHASE_CROSS,
+    JUNCTION_PHASE_PAUSE_WAIT,
+    JUNCTION_PHASE_PAUSE,
+    JUNCTION_PHASE_TURN,
+    JUNCTION_PHASE_CLEAR,
+    JUNCTION_PHASE_CONFIRM
+} MissionJunctionPhase;
 
 typedef enum
 {
@@ -113,6 +120,8 @@ typedef struct
     uint32_t line_pid_ms;	/* IR acquisition time of the last PID update */
     bool line_pid_primed;	/* a previous sample exists for the derivative */
     int line_steer_q;		/* PID output held until the next IR sample */
+    uint32_t confirmed_sample_ms; /* last sample counted for line confirmation */
+    uint32_t pause_since_ms;
     uint32_t line_seen_ms;	/* last fresh VISIBLE read while following */
     unsigned visible_streak;
     uint8_t action_id;

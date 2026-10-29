@@ -1,5 +1,5 @@
 #include "safety.h"
-#include "subsystem3.h"
+#include "../subsystem3/subsystem3.h"
 #include "../subsystem2/subsystem2.h"
 #include "../common/buttons.h"
 #include "../common/robot_time.h"
@@ -16,7 +16,7 @@ uint32_t safety_latched_causes(void)
 
 /* Bounded policy step on core 1. Motion independently checks GP21, faults,
    command expiry and action failure before writing the motor outputs. */
-void safety_step(void)
+void safety_step(bool line_required)
 {
     uint32_t now = robot_time_ms();
     ButtonInputs buttons = drv_buttons_read();
@@ -32,6 +32,7 @@ void safety_step(void)
     bool health_read = s2_health(&health) >= E_OK;
     SafetyInputs in = {
         .stop_button = buttons.gp21_down,
+        .line_required = line_required,
         .fault_pending = rd_fault_stop_pending(),
         .line_seen = line_copied && snapshot.sampled_ms != 0u,
         .line_age_ms = line_copied ?

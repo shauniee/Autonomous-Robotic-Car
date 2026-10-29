@@ -7,6 +7,7 @@
 
 ER subsystem5_init(void);
 ER subsystem5_start(void);
+void s5_step(uint32_t now_ms);
 
 /* Front-range word (see echo_range.h): one load, any task. 0 before the first
    reading; a word with valid = 0 means no echo, never clear space. */

@@ -26,7 +26,7 @@ VERSION = 2
 TELEMETRY, EVENT, SNAPSHOT_REPLY, MAPPING, ACK, SNAPSHOT_REQUEST = 1, 2, 3, 4, 5, 6
 LENGTHS = {TELEMETRY: 23, EVENT: 11, SNAPSHOT_REPLY: 23, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2}
 
-MISSION = ["CALIBRATE", "READY", "FOLLOW", "JUNCTION_TURN", "BYPASS", "COMPLETE", "STOP", "CROSSING"]
+MISSION = ["READY", "FOLLOW_LINE", "NAVIGATE", "SCAN", "BYPASS", "REACQUIRE", "STOPPED"]
 MOTION = ["IDLE", "RUNNING", "DONE", "FAILED"]
 LINE = ["UNKNOWN", "VISIBLE", "LOST", "BROAD_BLACK"]
 ACTION = ["UNMAPPED", "LEFT", "RIGHT", "STRAIGHT", "U_TURN"]
@@ -250,7 +250,7 @@ def mapping_frame(sequence, letters):
 
 def self_test():
     t = decode_telemetry(GOLDEN_TELEMETRY)
-    assert frame_type(GOLDEN_TELEMETRY) == TELEMETRY and t["sequence"] == 0x2A and t["mission"] == "FOLLOW"
+    assert frame_type(GOLDEN_TELEMETRY) == TELEMETRY and t["sequence"] == 0x2A and t["mission"] == "NAVIGATE"
     assert t["motion"] == "FAILED" and t["line"] == "VISIBLE" and t["action_id"] == 5 and t["mapped"]
     assert t["faults"] == [1, 2, 4, 8, 1, 3] and (t["left"], t["right"]) == (0x1234, 0x5678)
     assert t["hump_count"] == 3 and t["front_mm"] == 0x10D0 and t["barcode"] == "B"

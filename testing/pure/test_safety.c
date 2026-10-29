@@ -1,12 +1,12 @@
-/* Host test for app_program/subsystem3/safety_logic.h (issue #37). */
+/* Host test for app_program/mission/safety_logic.h (issue #37). */
 #include <assert.h>
 #include <stdio.h>
-#include "../../app_program/subsystem3/safety_logic.h"
+#include "../../app_program/mission/safety_logic.h"
 #include "../../app_program/subsystem2/motion_stop.h"
 
 static SafetyInputs healthy(void)
 {
-    return (SafetyInputs){.line_seen = true, .line_age_ms = 20u, .motion_seen = true, .motion_age_ms = 20u,
+    return (SafetyInputs){.line_required = true, .line_seen = true, .line_age_ms = 20u, .motion_seen = true, .motion_age_ms = 20u,
                           .uptime_ms = 10000u};
 }
 
@@ -40,6 +40,12 @@ int main(void)
     assert(safety_causes(&in) == SAFETY_CAUSE_STALE_MOTION);
     in = healthy(); in.line_age_ms = in.motion_age_ms = SAFETY_STALE_MS + 1u;
     assert(safety_causes(&in) == (SAFETY_CAUSE_STALE_LINE | SAFETY_CAUSE_STALE_MOTION));	/* independent */
+
+    in = healthy(); in.line_required = false;
+    in.line_age_ms = SAFETY_STALE_MS + 1u;
+    assert(safety_causes(&in) == 0u); /* encoder turns need no visible line */
+    in.motion_age_ms = SAFETY_STALE_MS + 1u;
+    assert(safety_causes(&in) == SAFETY_CAUSE_STALE_MOTION);
 
     /* A producer that never published is excused only during boot grace. */
     in = healthy(); in.line_seen = false; in.motion_seen = false; in.uptime_ms = SAFETY_BOOT_GRACE_MS - 1u;
