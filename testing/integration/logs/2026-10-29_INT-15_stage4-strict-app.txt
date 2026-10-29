@@ -1,0 +1,1 @@
+33 application translation units passed the wireless normal compiler flags with -Werror -fsyntax-only. No kernel/hardware execution.
