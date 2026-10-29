@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "../../app_program/subsystem3/safety_logic.h"
+#include "../../app_program/subsystem2/motion_stop.h"
 
 static SafetyInputs healthy(void)
 {
@@ -52,6 +53,35 @@ int main(void)
     assert(!safety_reset_allowed(SAFETY_CAUSE_FAULT, true));
     assert(!safety_reset_allowed(SAFETY_CAUSE_STOP_BUTTON, true));
 
-    puts("safety: PASS");
+    uint8_t reset = SAFETY_RESET_BOOT;
+    assert(!safety_reset_step(&reset, BUTTON_EVENT_NONE, 0u, false));
+    assert(safety_reset_step(&reset, BUTTON_EVENT_NONE, 0u, true));
+    reset = SAFETY_RESET_PRESS;
+    assert(!safety_reset_step(&reset, BUTTON_EVENT_NONE, 0u, true));
+    assert(!safety_reset_step(&reset, BUTTON_EVENT_IGNORED_PRESS,
+        SAFETY_CAUSE_STOP_BUTTON, true));
+    assert(!safety_reset_step(&reset, BUTTON_EVENT_RELEASED, 0u, true));
+    assert(!safety_reset_step(&reset, BUTTON_EVENT_PRESSED,
+        SAFETY_CAUSE_STOP_BUTTON, true));
+    assert(safety_reset_step(&reset, BUTTON_EVENT_RELEASED, 0u, true));
+    assert(!safety_reset_step(&reset, BUTTON_EVENT_RELEASED, 0u, true));
+    assert(!safety_reset_step(&reset, BUTTON_EVENT_PRESSED,
+        SAFETY_CAUSE_STOP_BUTTON | SAFETY_CAUSE_FAULT, true));
+    assert(!safety_reset_step(&reset, BUTTON_EVENT_RELEASED, 0u, true));
+    assert(!safety_reset_step(&reset, BUTTON_EVENT_PRESSED,
+        SAFETY_CAUSE_STOP_BUTTON, true));
+    assert(!safety_reset_step(&reset, BUTTON_EVENT_RELEASED, 0u, false));
+    assert(!safety_reset_step(&reset, BUTTON_EVENT_NONE, 0u, true));
+
+    /* S2-U06: the real reset service uses this predicate while interrupts
+       are masked. A stop arriving after the acknowledged brake refuses reset. */
+    assert(!motion_stop_reset_allowed(false, true, 2u, 1u, false));
+    assert(motion_stop_reset_allowed(false, true, 2u, 2u, false));
+    assert(!motion_stop_reset_allowed(true, true, 2u, 2u, false));
+    assert(!motion_stop_reset_allowed(false, false, 2u, 2u, false));
+    assert(!motion_stop_reset_allowed(false, true, 2u, 2u, true));
+    assert(!motion_stop_reset_allowed(false, true, 0u, UINT32_MAX, false));
+    assert(motion_stop_reset_allowed(false, true, 0u, 0u, false));
+    puts("safety / S2-U06 reset brake ordering: PASS");
     return 0;
 }

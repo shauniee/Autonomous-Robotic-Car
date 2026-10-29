@@ -1,6 +1,8 @@
 #include "subsystem2.h"
 #include "drv_motor.h"
 #include "drv_encoder.h"
+#include "motion_stop.h"
+#include "../common/buttons.h"
 #include "../common/robot_data.h"
 #include "../common/robot_snapshot.h"
 #include "../common/robot_time.h"
@@ -74,13 +76,14 @@ ER s2_reset_stop(void)
     er = tk_ref_flg(stop_flag, &flag);
     if (er >= E_OK)
     {
-        if ((flag.flgptn & INHIBIT_BIT) != 0u)
+        if (!motion_stop_reset_allowed(
+                (flag.flgptn & INHIBIT_BIT) != 0u,
+                (flag.flgptn & STOP_BIT) != 0u,
+                stop_requests, serviced_stops,
+                drv_buttons_read().gp21_down ||
+                (!APP_NO_GUARDS && rd_fault_stop_pending())))
         {
-            er = E_OBJ; /* Startup inhibit: GP20 cannot clear it. */
-        }
-        else if ((flag.flgptn & STOP_BIT) == 0u || serviced_stops != stop_requests)
-        {
-            er = E_OBJ; /* Not stopped, or the brake is not yet serviced. */
+            er = E_OBJ;
         }
         else
         {
@@ -142,8 +145,25 @@ static void motion_task(INT stacd, void *exinf)
         last_left = left;
         last_right = right;
 
+        /* Check the independent path before attempting a command copy.
+           A held stop never waits for the command mutex or diagnostics. */
+        T_RFLG initial = {0};
+        ER initial_er = tk_ref_flg(stop_flag, &initial);
+        bool local_stop = drv_buttons_read().gp21_down ||
+            (!APP_NO_GUARDS && rd_fault_stop_pending());
+        if (local_stop && initial_er >= E_OK &&
+            (initial.flgptn & STOP_BIT) == 0u)
+        {
+            (void)s2_stop();
+        }
         MotionCommand command = {0};
-        ER er = rd_snapshot_copy(command_mutex, &command, &latest, sizeof command);
+        ER er = E_OK;
+        if (!local_stop && initial_er >= E_OK &&
+            (initial.flgptn & STOP_BIT) == 0u)
+        {
+            er = rd_snapshot_copy(command_mutex, &command, &latest,
+                sizeof command);
+        }
 
         /* Stop callers share this core: masking IRQs excludes them from the
            final stop check through the output. Only nonwaiting flag/time reads
@@ -151,6 +171,14 @@ static void motion_task(INT stacd, void *exinf)
         UW irq = control_enter();
         T_RFLG f = {0};
         ER flag_er = tk_ref_flg(stop_flag, &f);
+        /* Recheck after the copy, immediately before any output write. */
+        if ((drv_buttons_read().gp21_down ||
+             (!APP_NO_GUARDS && rd_fault_stop_pending())) &&
+            flag_er >= E_OK && (f.flgptn & STOP_BIT) == 0u)
+        {
+            (void)latch_stop();
+            f.flgptn |= STOP_BIT;
+        }
         uint32_t observed_stops = stop_requests;
         bool stopped = flag_er < E_OK || (f.flgptn & STOP_BIT) != 0u;
         uint32_t now = robot_time_ms();
@@ -171,7 +199,18 @@ static void motion_task(INT stacd, void *exinf)
             (void)latch_stop(); /* Lost the command path: stop. */
             stopped = true;
         }
-        /* Stall lasts while driving into it; Safety latches the stop it causes. */
+        /* Expiry, failed actions and stall are persistent, even if Mission
+           stalls or is blocked. A later fresh command cannot restart them. */
+        bool expired = motion_cmd_mode(&command) != MOTION_MODE_STOP &&
+            !motion_command_fresh(&command, now);
+        if (!stopped && (expired || out.status == RD_MOTION_FAILED))
+        {
+            (void)latch_stop();
+            observed_stops = stop_requests;
+            stopped = true;
+            motion_control_reset(&controller);
+        }
+        /* The cause clears after braking; the stop remains latched. */
         if (out.stall) rd_fault_set(RD_OWNER_MOTION, RD_FAULT_MOTOR_STALL);
         else if (stopped) rd_fault_clear(RD_OWNER_MOTION, RD_FAULT_MOTOR_STALL);
 
@@ -224,7 +263,7 @@ ER subsystem2_init(void)
     command_mutex = tk_cre_mtx(&m);
     if (command_mutex < E_OK) return command_mutex;
     T_CFLG f = {0};
-    f.iflgptn = STOP_BIT; /* Boot latched: motion needs a deliberate reset. */
+    f.iflgptn = STOP_BIT | (APP_TEST ? INHIBIT_BIT : 0u);
     stop_flag = tk_cre_flg(&f);
     return stop_flag < E_OK ? stop_flag : E_OK;
 }

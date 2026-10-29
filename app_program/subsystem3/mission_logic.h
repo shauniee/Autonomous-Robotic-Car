@@ -83,7 +83,6 @@ typedef struct
 {
     MotionCommand command;	/* written every release; STOP unless following or acting */
     bool stop_now;		/* call s2_stop() (once, on entry to STOP) */
-    bool request_reset;		/* ask Safety to release the latch (never moves) */
     bool start_refused;		/* a start press was refused: unmapped or faulted */
     bool line_lost;		/* stopped because the line could not be recovered */
     bool start_scanner;
@@ -108,7 +107,6 @@ typedef struct
     bool in_broad;
     bool recovering;
     float turn_target;	/* degrees, + left */
-    bool start_pending;
     int direction;		/* last steering side: -1, 0, +1 */
     float line_integral;	/* line PID integral term, steering units */
     float line_prev_error;	/* filtered line error at line_pid_ms, -1..+1 */

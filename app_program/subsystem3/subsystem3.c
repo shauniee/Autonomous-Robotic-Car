@@ -259,8 +259,7 @@ ER subsystem3_start(void)
     {
         return task_id;
     }
-    ER er = safety_start();
-    return er < E_OK ? er : mission_start();
+    return mission_start();
 }
 
 bool s3_ir_copy(S3IrSnapshot *snapshot)

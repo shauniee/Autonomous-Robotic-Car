@@ -64,13 +64,11 @@ static uint32_t to_follow(Mission *m, MissionInputs *in)
     mission_init(m, t);
     MissionOutputs out = step(m, in, t);			/* calibrated */
     assert(m->state == MISSION_READY && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    in->motion_stopped = false; /* Boot reset already serviced. */
     t += 10u; in->start_pressed = true;
     out = step(m, in, t);					/* start press */
-    assert(out.request_reset && m->state == MISSION_READY && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
-    in->start_pressed = false;
-    t += 10u; in->motion_stopped = false;			/* Motion released the latch */
-    out = step(m, in, t);
     assert(m->state == MISSION_FOLLOW && out.start_scanner);
+    in->start_pressed = false;
     return t;
 }
 
@@ -85,7 +83,7 @@ static void test_start_and_reset_never_move(void)
     assert(m.state == MISSION_STOP && out.stop_now && out.stop_scanner && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
     in.stop_down = false; in.motion_stopped = true; in.start_pressed = true; t += 10u;
     out = step(&m, &in, t);
-    assert(m.state == MISSION_STOP && out.request_reset && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    assert(m.state == MISSION_STOP && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
     in.start_pressed = false; in.motion_stopped = false; t += 10u;
     out = step(&m, &in, t);
     assert(m.state == MISSION_READY && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
@@ -112,20 +110,20 @@ static void test_start_gate(void)
     /* No mission-day letters: the press is refused and nothing is requested. */
     in.mapped = false; in.start_pressed = true; t += 10u;
     MissionOutputs out = step(&m, &in, t);
-    assert(out.start_refused && !out.request_reset && !m.start_pending && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    assert(out.start_refused && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
 
     /* A start-blocking fault refuses the press the same way. */
     in.mapped = true; in.start_blocked = true; t += 10u;
     out = step(&m, &in, t);
-    assert(out.start_refused && !m.start_pending);
+    assert(out.start_refused);
 
     /* A fault that appears while waiting for Motion cancels the pending start. */
     in.start_blocked = false; t += 10u;
     out = step(&m, &in, t);
-    assert(!out.start_refused && m.start_pending);
+    assert(out.start_refused);
     in.start_pressed = false; in.start_blocked = true; t += 10u;
     out = step(&m, &in, t);
-    assert(out.start_refused && !m.start_pending && m.state == MISSION_READY);
+    assert(m.state == MISSION_READY);
 }
 
 static void test_follow_and_stops(void)

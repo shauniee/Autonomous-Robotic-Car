@@ -47,8 +47,9 @@ static void mission_task(INT stacd, void *exinf)
     for (;;)
     {
         now = robot_time_ms();
+        safety_step();
         ButtonInputs buttons = drv_buttons_read();
-        if (buttons.gp21_down)
+        if (buttons.gp21_down || mission.state == MISSION_STOP)
         {
             button_disarm(&start_button);
         }
@@ -123,10 +124,6 @@ static void mission_task(INT stacd, void *exinf)
         if (out.line_lost)
         {
             rd_fault_set(RD_OWNER_MISSION, RD_FAULT_LINE_LOST);
-        }
-        if (out.request_reset)
-        {
-            safety_request_reset();
         }
         if (out.start_scanner)
         {

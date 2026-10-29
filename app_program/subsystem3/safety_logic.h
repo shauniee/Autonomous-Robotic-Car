@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "../common/robot_config.h"
+#include "../common/buttons.h"
 #include "../common/robot_time_math.h"
 #include "../common/robot_data.h"
 
@@ -44,11 +45,45 @@ static inline uint32_t safety_causes(const SafetyInputs *in)
     return causes;
 }
 
-/* A reset (requested by a fresh local GP20 press) needs every cause cleared
+/* A reset on an eligible GP21 release needs every cause cleared
    and the brake serviced. It only releases the latch; it never starts motion. */
 static inline bool safety_reset_allowed(uint32_t current_causes, bool brake_acknowledged)
 {
     return current_causes == 0u && brake_acknowledged;
+}
+
+/* Three exclusive handshake states, stored in one byte by Mission.
+   Boot may release inhibition once. Every subsequent reset requires a new
+   GP21 press with causes clear, followed by release and serviced braking. */
+typedef enum
+{
+    SAFETY_RESET_BOOT,
+    SAFETY_RESET_PRESS,
+    SAFETY_RESET_RELEASE
+} safety_reset_state_t;
+
+static inline bool safety_reset_step(uint8_t *state, ButtonEvent event,
+    uint32_t causes, bool brake_acknowledged)
+{
+    if (*state == SAFETY_RESET_BOOT && causes != 0u)
+    {
+        *state = SAFETY_RESET_PRESS;
+    }
+    if ((causes & ~SAFETY_CAUSE_STOP_BUTTON) != 0u)
+    {
+        *state = SAFETY_RESET_PRESS;
+    }
+    else if (event == BUTTON_EVENT_PRESSED)
+    {
+        *state = SAFETY_RESET_RELEASE;
+    }
+    bool request = *state == SAFETY_RESET_BOOT ||
+        (*state == SAFETY_RESET_RELEASE && event == BUTTON_EVENT_RELEASED);
+    if (event == BUTTON_EVENT_RELEASED)
+    {
+        *state = SAFETY_RESET_PRESS;
+    }
+    return request && safety_reset_allowed(causes, brake_acknowledged);
 }
 
 #endif /* SAFETY_LOGIC_H */

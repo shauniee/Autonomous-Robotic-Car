@@ -117,7 +117,6 @@ static void to_stop(Mission *m, const MissionInputs *in, MissionOutputs *out, bo
     enter(m, MISSION_STOP, in->now_ms);
     m->held = BARCODE_UNMAPPED;
     m->in_broad = false;
-    m->start_pending = false;
     out->stop_now = call_stop;
     out->stop_scanner = true;
     out->command = stop_command(in->now_ms);
@@ -134,51 +133,28 @@ static void handle_calibrate(Mission *m, const MissionInputs *in, MissionOutputs
 
 static void handle_ready(Mission *m, const MissionInputs *in, MissionOutputs *out)
 {
-    bool may_start = in->mapped && !in->start_blocked;
-    if (m->start_pending)
+    if (!in->start_pressed)
     {
-        if (!may_start)
-        {
-            m->start_pending = false; /* a fault appeared while waiting: a new press is needed */
-            out->start_refused = true;
-        }
-        else if (!in->motion_stopped && !in->safety_latched && in->guidance_valid)
-        {
-            m->start_pending = false;
-            m->direction = 0;
-            m->visible_streak = 0u;
-            m->in_broad = false;
-            m->held = BARCODE_UNMAPPED;
-            enter(m, MISSION_FOLLOW, in->now_ms);
-            out->start_scanner = true;
-        }
-        else if (robot_time_elapsed(in->now_ms, m->state_since_ms) >= MISSION_START_WAIT_MS)
-        {
-            m->start_pending = false; /* Motion did not release: a new press is needed. */
-        }
         return;
     }
-    if (in->start_pressed && !may_start)
+    if (!in->mapped || in->start_blocked || in->motion_stopped ||
+        in->safety_latched || !in->guidance_valid)
     {
-        out->start_refused = true; /* never run without the mission-day letters or with a fault */
+        out->start_refused = true;
         return;
     }
-    if (in->start_pressed && in->guidance_valid)
-    {
-        /* This press is the deliberate start: release the latch, then follow. */
-        m->start_pending = true;
-        m->state_since_ms = in->now_ms;
-        out->request_reset = in->motion_stopped || in->safety_latched;
-    }
+    m->direction = 0;
+    m->visible_streak = 0u;
+    m->in_broad = false;
+    m->held = BARCODE_UNMAPPED;
+    enter(m, MISSION_FOLLOW, in->now_ms);
+    out->start_scanner = true;
 }
 
 static void handle_stop(Mission *m, const MissionInputs *in, MissionOutputs *out)
 {
-    /* A press releases the latch only; Mission stays idle in READY afterwards. */
-    if (in->start_pressed && !in->stop_down)
-    {
-        out->request_reset = true;
-    }
+    (void)out;
+    /* GP21 release is serviced by safety_step; GP20 never resets. */
     if (!in->stop_down && !in->safety_latched && !in->motion_stopped && in->inputs_ok)
     {
         enter(m, in->calibration_valid ? MISSION_READY : MISSION_CALIBRATE, in->now_ms);

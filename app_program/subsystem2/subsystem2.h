@@ -20,7 +20,8 @@ uint32_t s2_feedback(void);
 
 /* Core-1 callers only: persistent flag plus independent wake-up. */
 ER s2_stop(void);
-/* Fresh local action only; E_OBJ until the latest stop is serviced or after
+/* Mission on eligible GP21 release only; E_OBJ while GP21/fault is active,
+   until the latest stop is serviced or after
    a startup inhibit. Clears the stored command; never commands movement. */
 ER s2_reset_stop(void);
 /* Any core, startup only: latches stop and a permanent inhibit. */
