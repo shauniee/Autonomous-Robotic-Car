@@ -169,3 +169,27 @@ Result: FAIL at host compilation; tests still reference removed Mission bypass
 fields/enumerators. [Initial output](logs/2026-10-29_INT-19-host-initial.txt).
 The earlier INT-18 firmware build independently failed on a removed bypass
 field/enumerator in mission.c. No physical execution or hardware pass claimed.
+
+Follow-up results 2026-10-29, Codex, source commit
+`bedc45fc560cb24a46f0c8ad03f5d17a2d6a90d2`:
+
+- PASS: complete macOS host suite after integration fixes, including both bypass
+  routes with encoder/sensor evidence, three-sample confirmation, scan retry/ID
+  checks, stale-front and failed-action stops, and production release gates.
+  [macOS output](logs/2026-10-29_INT-19-macos-host-final.txt).
+- PASS: complete Linux GCC host suite and Python decoder self-test inside the
+  rebuilt firmware container. Python was added to that image because the first
+  Linux run passed C tests but could not launch the Python self-test.
+  [Final Linux output](logs/2026-10-29_INT-19-linux-host-final.txt),
+  [first Linux output](logs/2026-10-29_INT-19-linux-host.txt).
+- PASS: Cortex-M0+ Motion size probe and all four offline/wireless TEST/normal
+  firmware builds. [Build output and UF2 hashes](logs/2026-10-29_INT-19-all-profiles.txt).
+  The pre-existing generated Linux converter initially returned I/O error;
+  rebuilding only that ignored tool resolved it. Firmware compilation itself
+  had already passed after the Mission field correction.
+- GitHub Actions did not execute: repository account billing/spending limits
+  prevented runner startup. [Annotation](logs/2026-10-29_INT-19-ci-block.txt).
+  Local checks cover workflow commands; they are not a hosted-CI pass.
+- [Final source manifest](logs/2026-10-29_INT-19-final-manifest.json) records the
+  committed source tested. No flashed image, physical acceptance, calibrated
+  limit, or release-gate change is claimed. Earlier failure outputs remain intact.

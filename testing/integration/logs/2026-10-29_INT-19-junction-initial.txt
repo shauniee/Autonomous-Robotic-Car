@@ -1,0 +1,10 @@
+robot_time: PASS
+encoder_math: PASS
+stress: 5000000 reads checked, 0 torn
+robot_data: PASS
+motion_control: PASS
+barcode: PASS
+ir_tracking: PASS (3516 replayed samples)
+safety / S2-U06 reset brake ordering: PASS
+Assertion failed: (m.state == MISSION_FOLLOW_LINE), function test_barcode_hold_and_junction, file test_mission.c, line 275.
+testing/pure/run.sh: line 56: 96755 Abort trap: 6           "$build_dir/test_mission"
