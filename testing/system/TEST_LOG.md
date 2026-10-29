@@ -1,12 +1,13 @@
 # System and physical test log
 
-Retired template definitions: SYS-01 illustrative ten-second WiFi reading; SYS-02 unfilled manual placeholder. No template result was recorded. Full mission report trials T01-T16 remain pending. No source commit or hardware result is fabricated.
-
 ## Contents
 
 - [1. Test cases](#1-test-cases)
 - [2. Results](#2-results)
 - [3. Final memory and message size (SYS-11)](#3-final-memory-and-message-size-sys-11)
+- [Documentation alignment — 2026-10-29](#documentation-alignment--2026-10-29)
+
+Retired template definitions: SYS-01 illustrative ten-second WiFi reading; SYS-02 unfilled manual placeholder. No template result was recorded. Full mission report trials T01-T16 remain pending. No source commit or hardware result is fabricated.
 
 ## 1. Test cases
 
@@ -67,3 +68,20 @@ Message sizes: `testing/pure/test_mqtt_frame.c` encodes and decodes every golden
 | Snapshot request | 2 |
 
 No comparison with the original implementation is required (course update 2026-10-27). Timing (T15) and physical behaviour are not covered here; see #117.
+
+## Documentation alignment — 2026-10-29
+
+Planning note only; no test was executed and no historical result is changed.
+The [central plan](../../plan.md) owns future implementation sequence;
+[mission-readiness](../mission-readiness.md) owns target physical procedures.
+Earlier task splits, GP20 reset flows, JSON messages, watchdog assumptions and
+configured timing targets describe their recorded revisions. Do not interpret
+them as target passes. Use the applicable procedure revision, exact source and
+new evidence filenames for reruns; never overwrite evidence or reuse retired IDs.
+
+2026-10-29 availability note: the user confirmed that hardware trials are
+unavailable in this session. The pin allocation is user-confirmed through
+team.md, but no continuity, rail, polarity, calibration, timing, bypass or
+full-course trial was executed. All corresponding current-image physical
+acceptance remains pending; [INT-17](../integration/logs/2026-10-29_INT-17_completion.txt)
+records the full-plan BLOCKED audit. This is not a physical PASS or FAIL.

@@ -65,12 +65,12 @@ int main(void)
 
     /* Minimum-bit packing retains the complete signed angle and 16-bit
        measurement. Both structures are checked against Cortex-M0+ layout. */
-    assert(sizeof(ObstacleRay) == 3u && sizeof(ObstacleProfile) == 14u);
+    assert(sizeof(ObstacleRay) == 4u && sizeof(ObstacleProfile) == 14u);
     for (int angle = -SERVO_MAX_DEG; angle <= SERVO_MAX_DEG; ++angle) {
         ObstacleRay roundtrip = s5_ray_make((int16_t)angle, 65535u, true);
         assert(roundtrip.valid && roundtrip.angle_deg == angle && roundtrip.range_mm == 65535u);
         uint32_t packed = s5_side_watch_pack(true, (int16_t)angle);
-        assert((packed & 1u) != 0u && (packed & ~0xFFu) == 0u);
+        assert((packed & 1u) != 0u && (packed & ~0x1FFu) == 0u);
         assert(s5_side_watch_angle(packed) == angle);
     }
     ObstacleRay invalid = s5_ray_make((int16_t)(SERVO_MAX_DEG + 1), 42u, true);

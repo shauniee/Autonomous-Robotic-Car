@@ -17,6 +17,8 @@
 #include "../subsystem2/motion_control.h"
 #include "../subsystem1/mqtt_frame.h"
 #include "../common/robot_config.h"
+#include "recovery_control.h"
+#include "bypass_control.h"
 
 typedef enum
 {
@@ -40,21 +42,6 @@ typedef enum
     JUNCTION_PHASE_CONFIRM
 } MissionJunctionPhase;
 
-typedef enum
-{
-    BYPASS_STOPPING,	/* braked, waiting to be stationary */
-    BYPASS_SCANNING,	/* waiting for the profile */
-    BYPASS_TURN_OUT,
-    BYPASS_OFFSET_OUT,
-    BYPASS_TURN_PARALLEL,
-    BYPASS_PASS,		/* side-watch until the range jumps */
-    BYPASS_PASS_MARGIN,	/* clear the obstacle's far end */
-    BYPASS_TURN_IN,
-    BYPASS_OFFSET_IN,
-    BYPASS_TURN_FORWARD,
-    BYPASS_REACQUIRE	/* creep forward until two fresh line reads */
-} MissionBypassStep;
-
 typedef struct
 {
     uint32_t now_ms;
@@ -69,6 +56,7 @@ typedef struct
     IrLine line;
     int8_t line_error;		/* S3 right - left error, Q7; + means steer right */
     uint32_t line_sampled_ms;
+    uint32_t wheel_count[2];
     uint32_t travel_counts;	/* mean of both wheel counts, wrapped */
     rd_motion_status_t motion_status;
     uint8_t motion_action;
@@ -76,12 +64,16 @@ typedef struct
     bool stationary;		/* encoders unchanged for MISSION_STATIONARY_MS */
     bool front_valid;
     uint32_t front_age_ms;
+    uint32_t front_sampled_ms, front_sequence, front_travel_counts;
     uint32_t front_mm;		/* front range; meaningful only if front_valid */
     bool side_valid;
-    uint32_t side_mm;
+    uint32_t side_mm, side_sampled_ms, side_sequence;
     s5_scan_state_t scan_state;
+    uint8_t scan_id;
     bool profile_valid;
     uint32_t left_clearance_mm, right_clearance_mm;
+    uint16_t profile_closest_mm, profile_planning_mm;
+    int16_t profile_forward_mm, profile_left_mm;
     uint8_t barcode_letter;	/* 0..25, 31 none */
     bool have_barcode;		/* a decoded barcode this release */
     barcode_action_t barcode_action;
@@ -98,6 +90,7 @@ typedef struct
     uint8_t event_kind;		/* mqtt_event_kind_t, 0 none: one event per release */
     uint8_t event_arg;
     uint16_t event_arg2;
+    uint8_t scan_id;
     bool scan_request;		/* ask Obstacle for a scan */
     bool scan_cancel;
     bool side_watch_on;		/* hold the servo toward the obstacle */
@@ -109,10 +102,14 @@ typedef struct
     uint8_t state : 3;
     uint8_t phase : 3;
     barcode_action_t held;	/* barcode command held for the next cross junction */
+    recovery_control_t recovery;
     uint32_t state_since_ms, recovery_since_ms;
     uint32_t broad_origin;	/* travel count where the current broad-black run began */
     uint32_t broad_since_ms; /* start of this broad-black encounter, wraps */
-    bool in_broad;
+    uint8_t in_broad : 1;
+    uint8_t junction_open : 1;
+    uint8_t junction_qualified : 1;
+    uint32_t junction_sampled_ms;
     float turn_target;	/* degrees, + left */
     int direction;		/* last steering side: -1, 0, +1 */
     float line_integral;	/* line PID integral term, steering units */
@@ -125,14 +122,13 @@ typedef struct
     unsigned visible_streak;
     uint8_t action_id;
     uint8_t current_action;	/* ID of the Motion action in progress */
-    MissionBypassStep bypass_step;
-    int bypass_side;		/* +1 bypass to the left, -1 to the right */
-    uint32_t bypass_origin;	/* travel count at the start of the current leg */
+    bypass_control_t bypass;
     uint32_t bypass_started_ms;
-    uint32_t pass_baseline_mm;
-    bool pass_baseline_set;
-    motion_mode_t action_mode;	/* the Motion action being rewritten each release */
-    float action_speed, action_target;
+    uint8_t scan_phase : 1;
+    uint8_t scan_retries : 1;
+    uint8_t scan_id : 4;
+    uint8_t reacquire_bypass : 1;
+
 } Mission;
 
 void mission_init(Mission *m, uint32_t now_ms);

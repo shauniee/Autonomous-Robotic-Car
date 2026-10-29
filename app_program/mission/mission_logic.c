@@ -111,12 +111,12 @@ static bool line_reacquired(Mission *m, const MissionInputs *in)
         if (in->line_sampled_ms != m->confirmed_sample_ms)
         {
             m->confirmed_sample_ms = in->line_sampled_ms;
-            if (m->visible_streak < 2u)
+            if (m->visible_streak < MISSION_CONFIRM_SAMPLES)
             {
                 ++m->visible_streak;
             }
         }
-        return m->visible_streak >= 2u;
+        return m->visible_streak >= MISSION_CONFIRM_SAMPLES;
     }
     m->visible_streak = 0u;
     return false;
@@ -126,6 +126,7 @@ static void to_stop(Mission *m, const MissionInputs *in, MissionOutputs *out, bo
 {
     enter(m, MISSION_STOPPED, in->now_ms);
     m->held = BARCODE_UNMAPPED;
+    m->reacquire_bypass = 0u;
     m->in_broad = false;
     out->stop_now = call_stop;
     out->stop_scanner = true;
@@ -164,6 +165,25 @@ static void handle_stop(Mission *m, const MissionInputs *in, MissionOutputs *out
     }
 }
 
+static void observe_junction(Mission *m, const MissionInputs *in)
+{
+    if (!m->in_broad || !m->junction_open ||
+        in->line_sampled_ms == m->junction_sampled_ms)
+    {
+        return;
+    }
+    m->junction_sampled_ms = in->line_sampled_ms;
+    if (in->line != IR_LINE_BROAD_BLACK || !in->usable_line)
+    {
+        m->junction_open = 0u;
+        return;
+    }
+    if (enc_travel(in->travel_counts, m->broad_origin) >= MISSION_JUNCTION_MIN_COUNTS)
+    {
+        m->junction_qualified = 1u;
+    }
+}
+
 static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *out)
 {
     if (in->have_barcode && in->barcode_action != BARCODE_UNMAPPED)
@@ -184,6 +204,9 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
     {
         m->in_broad = true;
         m->broad_origin = in->travel_counts;
+        m->junction_open = 1u;
+        m->junction_qualified = 0u;
+        m->junction_sampled_ms = in->line_sampled_ms;
         m->broad_since_ms = in->now_ms;
         m->current_action = next_action_id(m);
         m->phase = JUNCTION_PHASE_CROSS;
@@ -196,12 +219,12 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
             m->current_action, in->line_sampled_ms);
         return;
     }
-    uint32_t broad_travel = m->in_broad ? enc_travel(in->travel_counts, m->broad_origin) : 0u;
+    observe_junction(m, in);
 
     if (m->in_broad && !broad && in->usable_line)
     {
         m->in_broad = false;
-        if (broad_travel >= MISSION_JUNCTION_MIN_COUNTS)
+        if (m->junction_qualified)
         {
             /* Cross junction: execute the held command, else carry straight on. */
             barcode_action_t action = m->held;
@@ -223,6 +246,13 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
                 }
                 return;
             }
+            /* Straight and unmapped crossings still confirm the outgoing
+               branch using distinct acquisitions before ordinary following. */
+            m->phase = JUNCTION_PHASE_CONFIRM;
+            m->visible_streak = 0u;
+            m->confirmed_sample_ms = in->line_sampled_ms;
+            enter(m, MISSION_NAVIGATE, in->now_ms);
+            return;
         }
     }
 
@@ -244,15 +274,19 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
 
     if (in->line == IR_LINE_LOST)
     {
-        if (m->direction == 0)
+        if (!MISSION_RECOVERY_RELEASED)
         {
-            /* D07 has not defined an initial sweep without a known side. */
+            /* Physical release is independent of the proposed search policy. */
             to_stop(m, in, out, true);
             out->line_lost = true;
             return;
         }
         enter(m, MISSION_REACQUIRE, in->now_ms);
         m->recovery_since_ms = in->now_ms;
+        recovery_input_t initial = {.now_ms = in->now_ms,
+            .count = {in->wheel_count[0], in->wheel_count[1]},
+            .sampled_ms = in->line_sampled_ms};
+        recovery_control_begin(&m->recovery, &initial);
         m->visible_streak = 0u;
         m->confirmed_sample_ms = in->line_sampled_ms;
         m->in_broad = false;
@@ -274,6 +308,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
 static void handle_crossing(Mission *m, const MissionInputs *in,
                             MissionOutputs *out)
 {
+    observe_junction(m, in);
     if (!in->usable_line || obstacle_ahead(in) ||
         robot_time_elapsed(in->now_ms, m->broad_since_ms) >=
             MOTION_ACTION_TIMEOUT_MS ||
@@ -299,165 +334,133 @@ static void handle_crossing(Mission *m, const MissionInputs *in,
 }
 
 
-/* ---- Bypass ------------------------------------------------------------ */
-
-static void begin_action(Mission *m, MissionBypassStep step, motion_mode_t mode, float speed, float target)
-{
-    m->bypass_step = step;
-    m->current_action = next_action_id(m);
-    m->action_mode = mode;
-    m->action_speed = speed;
-    m->action_target = target;
-}
-
-static bool action_done(const Mission *m, const MissionInputs *in)
-{
-    return in->motion_action == m->current_action && in->motion_status == RD_MOTION_DONE;
-}
-
+/* ---- Bounded profile/coverage handover ---------------------------------- */
 static bool obstacle_ahead(const MissionInputs *in)
 {
-    return in->front_valid && in->front_age_ms <= 3u * SONAR_REPEAT_MS && in->front_mm <= MISSION_OBSTACLE_STOP_MM;
+    return in->front_valid && in->front_age_ms <= BYPASS_FRONT_MAX_AGE_MS &&
+        in->front_mm <= MISSION_OBSTACLE_STOP_MM;
+}
+
+static bypass_input_t bypass_input(Mission *m, const MissionInputs *in)
+{
+    return (bypass_input_t){.now_ms = in->now_ms,
+        .count = {in->wheel_count[0], in->wheel_count[1]},
+        .stationary = in->stationary, .cancel = in->stop_down,
+        .functional = in->inputs_ok && !in->motion_stopped,
+        .front_ms = in->front_sampled_ms, .front_sequence = in->front_sequence,
+        .front_count = in->front_travel_counts, .front_mm = in->front_mm,
+        .front_valid = in->front_valid, .side_ms = in->side_sampled_ms,
+        .side_sequence = in->side_sequence, .side_mm = in->side_mm,
+        .side_valid = in->side_valid, .line_ms = in->line_sampled_ms,
+        .line_functional = in->usable_line,
+        .line_visible = in->line == IR_LINE_VISIBLE && in->guidance_valid,
+        .line_error_q = in->line_error,
+        .line_steering_q = (int8_t)line_pid_steering(m, in),
+        .motion_status = in->motion_status, .motion_action = in->motion_action};
+}
+
+static void run_bypass(Mission *m, const MissionInputs *in, MissionOutputs *out)
+{
+    if (robot_time_elapsed(in->now_ms, m->bypass_started_ms) >= MISSION_BYPASS_TIMEOUT_MS)
+    {
+        to_stop(m, in, out, true);
+        return;
+    }
+    bypass_input_t input = bypass_input(m, in);
+    bypass_output_t result;
+    bypass_control_step(&m->bypass, &input, &m->action_id, &result);
+    out->command = result.command;
+    out->side_watch_on = result.side_watch;
+    out->side_watch_deg = result.side_angle_deg;
+    if (result.depth_event)
+    {
+        out->event_kind = MQTT_EVENT_OBSTACLE;
+        out->event_arg2 = result.depth_mm;
+    }
+    if (result.route == BYPASS_ROUTE_FAILED)
+    {
+        to_stop(m, in, out, true);
+    }
+    else if (result.route == BYPASS_ROUTE_DONE)
+    {
+        m->reacquire_bypass = 0u;
+        enter(m, MISSION_FOLLOW_LINE, in->now_ms);
+    }
+    else if (result.route == BYPASS_ROUTE_LINE && m->state != MISSION_REACQUIRE)
+    {
+        m->reacquire_bypass = 1u;
+        enter(m, MISSION_REACQUIRE, in->now_ms);
+    }
+}
+
+static void request_scan(Mission *m, MissionOutputs *out)
+{
+    m->scan_id = (uint8_t)(m->scan_id >= 15u ? 0u : m->scan_id + 1u);
+    out->scan_request = true;
+    out->scan_id = m->scan_id;
+    m->scan_phase = 1u;
 }
 
 static void enter_bypass(Mission *m, const MissionInputs *in, MissionOutputs *out)
 {
     enter(m, MISSION_SCAN, in->now_ms);
-    m->bypass_step = BYPASS_STOPPING;
+    m->scan_phase = 0u;
+    m->scan_retries = 0u;
     m->bypass_started_ms = in->now_ms;
     m->in_broad = false;
     out->command = stop_command(in->now_ms);
 }
 
-static void handle_bypass(Mission *m, const MissionInputs *in, MissionOutputs *out)
+static void handle_scan(Mission *m, const MissionInputs *in, MissionOutputs *out)
 {
     if (robot_time_elapsed(in->now_ms, m->bypass_started_ms) >= MISSION_BYPASS_TIMEOUT_MS)
     {
-        out->scan_cancel = true;
-        out->side_watch_on = false;
         to_stop(m, in, out, true);
         return;
     }
-    bool moving_forward = m->bypass_step == BYPASS_OFFSET_OUT || m->bypass_step == BYPASS_OFFSET_IN;
-    bool failed = m->current_action == in->motion_action && in->motion_status == RD_MOTION_FAILED &&
-                  m->bypass_step > BYPASS_SCANNING && m->bypass_step != BYPASS_REACQUIRE;
-    if (failed || (moving_forward && obstacle_ahead(in)))
+    if (m->scan_phase == 0u)
     {
-        /* A second obstacle (or any failed leg) stops the robot. */
-        out->side_watch_on = false;
-        to_stop(m, in, out, true);
-        return;
-    }
-
-    switch (m->bypass_step)
-    {
-    case BYPASS_STOPPING:
         if (in->stationary)
         {
-            out->scan_request = true;
-            m->bypass_step = BYPASS_SCANNING;
+            request_scan(m, out);
         }
-        break;
-    case BYPASS_SCANNING:
-        if (in->scan_state == S5_SCAN_FAILED || in->scan_state == S5_SCAN_CANCELLED)
+        return;
+    }
+    if (in->scan_id != m->scan_id)
+    {
+        return; /* A previous scan result cannot satisfy a new request. */
+    }
+    if (in->scan_state == S5_SCAN_CANCELLED || in->scan_state == S5_SCAN_FAILED)
+    {
+        if (in->scan_state == S5_SCAN_FAILED && in->stationary &&
+            m->scan_retries < MISSION_SCAN_RETRIES)
+        {
+            ++m->scan_retries;
+            request_scan(m, out);
+        }
+        else
         {
             to_stop(m, in, out, true);
         }
-        else if (in->scan_state == S5_SCAN_DONE && in->profile_valid)
-        {
-            m->bypass_side = in->left_clearance_mm >= in->right_clearance_mm ? 1 : -1;
-            uint32_t clearance = m->bypass_side > 0 ? in->left_clearance_mm : in->right_clearance_mm;
-            if (clearance < MISSION_BYPASS_MIN_CLEAR_MM)
-            {
-                to_stop(m, in, out, true); /* neither side is wide enough */
-            }
-            else
-            {
-                enter(m, MISSION_BYPASS, in->now_ms);
-                begin_action(m, BYPASS_TURN_OUT, MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS, (float)m->bypass_side * 90.0f);
-            }
-        }
-        break;
-    case BYPASS_TURN_OUT:
-        if (action_done(m, in))
-            begin_action(m, BYPASS_OFFSET_OUT, MOTION_MODE_DISTANCE, MISSION_CLEAR_SPEED_MMPS, MISSION_BYPASS_OFFSET_MM);
-        break;
-    case BYPASS_OFFSET_OUT:
-        if (action_done(m, in))
-            begin_action(m, BYPASS_TURN_PARALLEL, MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS, (float)-m->bypass_side * 90.0f);
-        break;
-    case BYPASS_TURN_PARALLEL:
-        if (action_done(m, in))
-        {
-            m->pass_baseline_set = false;
-            m->bypass_origin = in->travel_counts;
-            begin_action(m, BYPASS_PASS, MOTION_MODE_DISTANCE, MISSION_CLEAR_SPEED_MMPS, MISSION_PASS_LEG_MM);
-        }
-        break;
-    case BYPASS_PASS:
-        /* Servo held toward the obstacle; the first valid range is the baseline,
-           a jump (or loss of echo) afterwards is the far end of the obstacle. */
-        out->side_watch_on = true;
-        out->side_watch_deg = (int16_t)(-m->bypass_side * SERVO_MAX_DEG);
-        if (!m->pass_baseline_set)
-        {
-            if (in->side_valid)
-            {
-                m->pass_baseline_set = true;
-                m->pass_baseline_mm = in->side_mm;
-            }
-        }
-        else if (in->side_valid && in->side_mm > m->pass_baseline_mm + MISSION_PASS_JUMP_MM)
-        {
-            float depth_mm = (float)enc_travel(in->travel_counts, m->bypass_origin) / ENC_COUNTS_PER_MM;
-            out->event_kind = MQTT_EVENT_OBSTACLE;
-            out->event_arg2 = (uint16_t)(depth_mm >= 65535.0f ? 65535u : depth_mm + 0.5f);
-            begin_action(m, BYPASS_PASS_MARGIN, MOTION_MODE_DISTANCE, MISSION_CLEAR_SPEED_MMPS,
-                         S5_BODY_LENGTH_MM + S5_CLEARANCE_MM);
-        }
-        else if (action_done(m, in))
-        {
-            to_stop(m, in, out, true); /* leg ended without ever passing the obstacle */
-            out->side_watch_on = false;
-        }
-        break;
-    case BYPASS_PASS_MARGIN:
-        if (action_done(m, in))
-            begin_action(m, BYPASS_TURN_IN, MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS, (float)-m->bypass_side * 90.0f);
-        break;
-    case BYPASS_TURN_IN:
-        if (action_done(m, in))
-            begin_action(m, BYPASS_OFFSET_IN, MOTION_MODE_DISTANCE, MISSION_CLEAR_SPEED_MMPS, MISSION_BYPASS_OFFSET_MM);
-        break;
-    case BYPASS_OFFSET_IN:
-        if (action_done(m, in))
-            begin_action(m, BYPASS_TURN_FORWARD, MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS, (float)m->bypass_side * 90.0f);
-        break;
-    case BYPASS_TURN_FORWARD:
-        if (action_done(m, in))
-        {
-            m->bypass_step = BYPASS_REACQUIRE;
-            m->visible_streak = 0u;
-        }
-        break;
-    case BYPASS_REACQUIRE:
-        /* Creep straight on until two fresh visible reads rejoin the original line. */
-        if (line_reacquired(m, in))
-        {
-            m->direction = 0;
-            enter(m, MISSION_FOLLOW_LINE, in->now_ms);
-            out->command = stop_command(in->now_ms);
-            return;
-        }
-        out->command = follow_command(in, MISSION_BROAD_SPEED_MMPS * 0.5f, 0.0f, 1u);
-        return;
-    default:
-        to_stop(m, in, out, true);
-        return;
     }
-    if (m->state == MISSION_BYPASS && m->bypass_step >= BYPASS_TURN_OUT && m->bypass_step != BYPASS_REACQUIRE)
+    else if (in->scan_state == S5_SCAN_DONE && in->profile_valid)
     {
-        out->command = action_command(m->action_mode, m->action_speed, m->action_target, m->current_action, in->now_ms);
+        ObstacleProfile profile = {.valid = true, .closest_mm = in->profile_closest_mm,
+            .left_clearance_mm = (uint16_t)in->left_clearance_mm,
+            .right_clearance_mm = (uint16_t)in->right_clearance_mm,
+            .obstacle_forward_mm = in->profile_forward_mm,
+            .obstacle_left_mm = in->profile_left_mm};
+        bypass_input_t input = bypass_input(m, in);
+        if (!MISSION_BYPASS_RELEASED || !bypass_control_begin(&m->bypass, &input,
+            &profile, in->profile_planning_mm, &m->action_id))
+        {
+            to_stop(m, in, out, true);
+        }
+        else
+        {
+            enter(m, MISSION_BYPASS, in->now_ms);
+            run_bypass(m, in, out);
+        }
     }
 }
 
@@ -544,23 +547,28 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
 static void handle_reacquire(Mission *m, const MissionInputs *in,
     MissionOutputs *out)
 {
-    if (!in->usable_line || obstacle_ahead(in) ||
-        robot_time_elapsed(in->now_ms, m->recovery_since_ms) >= RECOVERY_MS)
+    recovery_input_t input = {.now_ms = in->now_ms,
+        .count = {in->wheel_count[0], in->wheel_count[1]},
+        .sampled_ms = in->line_sampled_ms, .functional = in->usable_line,
+        .visible = in->line == IR_LINE_VISIBLE && in->guidance_valid,
+        .hazard = obstacle_ahead(in), .cancel = in->stop_down,
+        .error_q = in->line_error,
+        .steering_q = (int8_t)line_pid_steering(m, in)};
+    recovery_output_t result;
+    recovery_control_step(&m->recovery, &input, &result);
+    if (!MISSION_RECOVERY_RELEASED || result.phase == RECOVERY_FAILED)
     {
         to_stop(m, in, out, true);
         out->line_lost = true;
-        return;
     }
-    if (line_reacquired(m, in))
+    else if (result.phase == RECOVERY_DONE)
     {
         enter(m, MISSION_FOLLOW_LINE, in->now_ms);
-        return;
     }
-    /* Existing bounded arc retained provisionally. The requested moving
-       sweep's angles/travel cap remain D07; no unmeasured sweep is enabled. */
-    int search_q = (int)lroundf(MAX_STEER * (float)IR_SCALE_ONE);
-    out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS * 0.5f,
-        m->direction > 0 ? search_q : -search_q, 1u);
+    else
+    {
+        out->command = follow_command(in, RECOVERY_SPEED_MMPS, result.steering_q, 1u);
+    }
 }
 
 void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out)
@@ -589,9 +597,18 @@ void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out)
             handle_junction_turn(m, in, out);
         }
         break;
-    case MISSION_SCAN: handle_bypass(m, in, out); break;
-    case MISSION_REACQUIRE: handle_reacquire(m, in, out); break;
-    case MISSION_BYPASS: handle_bypass(m, in, out); break;
+    case MISSION_SCAN: handle_scan(m, in, out); break;
+    case MISSION_REACQUIRE:
+        if (m->reacquire_bypass)
+        {
+            run_bypass(m, in, out);
+        }
+        else
+        {
+            handle_reacquire(m, in, out);
+        }
+        break;
+    case MISSION_BYPASS: run_bypass(m, in, out); break;
     case MISSION_STOPPED: handle_stop(m, in, out); break;
     default: to_stop(m, in, out, true); break;
     }

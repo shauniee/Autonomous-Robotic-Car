@@ -1,0 +1,33 @@
+{
+  "scope": "documentation/static only",
+  "files": {
+    "AGENTS.md": "5245ef0709ce99210dac3e9be56a70e08004937b59c79d07da194c71f79a1210",
+    "GLOSSARY.md": "d89609158deaff46913bf6c991ee00d97de24c9c9033147036e1bee6041821ab",
+    "PRODUCT.md": "bdc540dc2943281e9a3389bc298068eb1679e613159185eae5eb66f810f4861c",
+    "README.md": "1563fef98976525209076315c805b66d726aef43c4c701c7b51b8a9cc4bee7ce",
+    "app_program/subsystem4/README.md": "765e6f1df4e92d527f76955e271d7a245eda52c4b4314789f3038507e0f7da6e",
+    "docs/additional-docs/tribunal1.md": "e7123ba5f636802ddd38a97c1e0cd632b62531721f342385701772015e126153",
+    "docs/adr/0001-base-2-scaled-integers.md": "0bbc375e892dee4ffa2429c0fd1553f642be74a1ab48e31ddfd01bde1866e943",
+    "docs/architecture/subsystem1.md": "3a55c4e963d29bdc9886e858b4aa4173d5260fdb7ca2447fb080c15406579afd",
+    "docs/architecture/subsystem2.md": "eb33da0299b5717024d49bee17c5bf175b4b308f6911e1afe32d61623f4695ea",
+    "docs/architecture/subsystem3.md": "0efbec99675db3fa64ea568de8828b516f09ccdfa55b07da27d2bdd82db3bbe8",
+    "docs/architecture/subsystem4.md": "9d3ccd48fd11daf0beeb8bce9d9108ac14d45ab8de9e04f63721262d6fe19ffa",
+    "docs/architecture/subsystem5.md": "9c42b0de47e435debb4a1d70dfd761bbf527ad72f3664a6e213cb19b4ada2231",
+    "docs/architecture.md": "b8b2602edd397ca9eb19e08c44fdae2260f93e1e40bb7dc14604459d7e50a055",
+    "docs/project-specs.md": "0c5af978505752a2d372be19ae35f14ec58fe6b91b0b982635e8b55cf762df4d",
+    "docs/team.md": "a5e3c023c90e990b63574eb353a48dbec0bccbf80b11cddd9c6d0d7a1bcd8377",
+    "docs/week13-plan.md": "21378bc96dcec0d24f101110ab7fb36e248106804adde4886263b589884e370e",
+    "plan.md": "d9122afdb80fc02d463efeb26f9ef8705a63a22a38884b959bac96fc31863e39",
+    "testing/README.md": "2a33f97eecfa4d151c05ac4fe5809f96747a9895d9395c596471d0f5ca927638",
+    "testing/integration/TEST_LOG.md": "12891064b498924a29b54bd5d9bef1c97f276c92414779182f9beb098658a4e6",
+    "testing/integration/implementation-2026-10-29.md": "c88c6b46e1b270212407d84aad0587f555e6c14f759e539b45f8164d3910bdbe",
+    "testing/mission-readiness.md": "1dedccc2f196d3b5e5c0844a88c6aa54b2c69aa272ea49cadc63edabd2bd5395",
+    "testing/subsystem1/TEST_LOG.md": "cded0a7ffd3bcb17d31eaec6967f1e1c2e741c054901efc62fc48636726d9985",
+    "testing/subsystem2/TEST_LOG.md": "a44a94a80fbaa311ca4c88f0833068935de79acb1c23c26bbaf4cb93fb352149",
+    "testing/subsystem3/TEST_LOG.md": "aa1bad7a467d7ce3c40d0591c5dec717f533b54fa2e25bb708415ae6d10bddfb",
+    "testing/subsystem4/TEST_LOG.md": "61131e827e2c13bce9cd355b0c0b035eed405187b2df7194a0a70db37feb0a7a",
+    "testing/subsystem5/TEST_LOG.md": "ea1f9d21f67b7c7f12422bd9c15da2b2e434f25821a6e51d20b83a0a33076ed7",
+    "testing/system/TEST_LOG.md": "1ca730b40e827e71b7b294d693cae625d6e5c7a92774151a6b7190cc6223501e",
+    "testing/integration/logs/2026-10-29_INT-16_docs-checker.py": "9c33b3367601a2b7f0c73d134e9d1ee57cb5143ddf453096037e1258546310c2"
+  }
+}

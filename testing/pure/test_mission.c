@@ -301,6 +301,9 @@ static void test_barcode_hold_and_junction(void)
     t = to_follow(&ms, &is);
     cross_junction(&ms, &is, &t, MISSION_JUNCTION_MIN_COUNTS);
     t += 10u; step(&ms, &is, t);
+    assert(ms.state == MISSION_NAVIGATE && ms.phase == JUNCTION_PHASE_CONFIRM);
+    step(&ms, &is, t += 20u);
+    step(&ms, &is, t += 20u);
     assert(ms.state == MISSION_FOLLOW_LINE);
     /* A failed turn stops. */
     Mission mf; MissionInputs iff = base(100u);
@@ -336,7 +339,10 @@ static void test_crossing_never_completes_mission(void)
     in.line = IR_LINE_VISIBLE;
     in.guidance_valid = true;
     step(&m, &in, t += 10u);
-    assert(m.state == MISSION_FOLLOW_LINE && !m.in_broad);
+    assert(m.state == MISSION_NAVIGATE && !m.in_broad);
+    step(&m, &in, t += 20u);
+    step(&m, &in, t += 20u);
+    assert(m.state == MISSION_FOLLOW_LINE);
 }
 
 static void test_line_loss_recovery_is_bounded(void)
@@ -419,7 +425,7 @@ static void test_bypass_full_sequence(void)
     into_scanning(&m, &in, &t, 800u, 400u);			/* left side has more room */
     MissionOutputs out = bstep(&m, &in, &t);
     assert(m.bypass_side == 1 && motion_cmd_mode(&out.command) == MOTION_MODE_TURN && motion_cmd_target(&out.command) == 90.0f);
-    in.front_valid = false;
+    in.front_valid = true; in.front_mm = 1000u;
     out = finish(&m, &in, &t, &out);				/* turn out done -> offset leg */
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE && motion_cmd_target(&out.command) == MISSION_BYPASS_OFFSET_MM);
     out = finish(&m, &in, &t, &out);				/* offset done -> turn parallel */
@@ -481,25 +487,25 @@ static void test_bypass_failures(void)
     /* A second obstacle while driving the offset leg stops the robot. */
     Mission s; MissionInputs is = base(100u);
     into_scanning(&s, &is, &t, 800u, 400u);
-    out = bstep(&s, &is, &t); is.front_valid = false;
+    out = bstep(&s, &is, &t); is.front_valid = true; is.front_mm = 1000u;
     out = finish(&s, &is, &t, &out);				/* offset leg running */
     assert(s.bypass_step == BYPASS_OFFSET_OUT);
     is.front_valid = true; is.front_age_ms = 0u; is.front_mm = MISSION_OBSTACLE_STOP_MM;
     out = bstep(&s, &is, &t);
     assert(s.state == MISSION_STOPPED && out.stop_now);
-    /* Stale front reading is not trusted either way: no stop on old data. */
+    /* Required forward coverage cannot be renewed from a stale side observation. */
     Mission g; MissionInputs ig = base(100u);
     into_scanning(&g, &ig, &t, 800u, 400u);
-    out = bstep(&g, &ig, &t); ig.front_valid = false;
+    out = bstep(&g, &ig, &t); ig.front_valid = true; ig.front_mm = 1000u;
     out = finish(&g, &ig, &t, &out);
     ig.front_valid = true; ig.front_age_ms = 10u * SONAR_REPEAT_MS; ig.front_mm = 10u;
     bstep(&g, &ig, &t);
-    assert(g.state == MISSION_BYPASS);
+    assert(g.state == MISSION_STOPPED);
 
     /* A failed leg or a pass leg that never passes the obstacle stops. */
     Mission h; MissionInputs ih = base(100u);
     into_scanning(&h, &ih, &t, 800u, 400u);
-    out = bstep(&h, &ih, &t); ih.front_valid = false;
+    out = bstep(&h, &ih, &t); ih.front_valid = true; ih.front_mm = 1000u;
     ih.motion_action = motion_cmd_action(&out.command); ih.motion_status = RD_MOTION_FAILED;
     out = bstep(&h, &ih, &t);
     assert(h.state == MISSION_STOPPED && out.stop_now);
@@ -595,9 +601,36 @@ static void test_run_network_loss_and_hump_speed(void)
     assert(motion_cmd_speed(&out.command) == normal);
 }
 
+static void test_thin_patch_does_not_consume_barcode(void)
+{
+    Mission m;
+    MissionInputs in = base(100u);
+    uint32_t t = to_follow(&m, &in);
+    in.have_barcode = true;
+    in.barcode_action = BARCODE_LEFT;
+    step(&m, &in, t += 10u);
+    in.have_barcode = false;
+    in.line = IR_LINE_BROAD_BLACK;
+    in.guidance_valid = false;
+    in.travel_counts = 1000u;
+    MissionOutputs out = step(&m, &in, t += 10u);
+    in.motion_action = motion_cmd_action(&out.command);
+    in.motion_status = RD_MOTION_RUNNING;
+    in.line = IR_LINE_VISIBLE;
+    in.guidance_valid = true;
+    in.travel_counts = 1001u;
+    step(&m, &in, t += 20u);
+    in.travel_counts = 1200u; /* Forced crossing travel is now on white. */
+    in.motion_status = RD_MOTION_DONE;
+    out = step(&m, &in, t += 20u);
+    assert(m.state == MISSION_FOLLOW_LINE && m.held == BARCODE_LEFT);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
+}
+
 int main(void)
 {
     test_stop_cancels_every_phase();
+    test_thin_patch_does_not_consume_barcode();
     test_run_network_loss_and_hump_speed();
     test_start_and_reset_never_move();
     test_start_gate();

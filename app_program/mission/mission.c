@@ -88,9 +88,14 @@ static void mission_task(INT stacd, void *exinf)
             last_right = right_now;
             still_since = now;
         }
-        uint32_t front = s5_front_word(), side = s5_side_word();
-        ObstacleProfile profile = {0};
-        bool have_profile = s5_profile_copy(&profile) >= E_OK;
+        s5_range_sample_t front_sample = {0}, side_sample = {0};
+        bool range_copied = s5_range_samples(&front_sample, &side_sample) >= E_OK;
+        uint32_t front = front_sample.word, side = side_sample.word;
+        s5_profile_snapshot_t scan_profile = {0};
+        bool have_profile = s5_profile_snapshot(&scan_profile) >= E_OK &&
+            robot_time_elapsed(now, scan_profile.sampled_ms) <= S5_SCAN_DEADLINE_MS &&
+            scan_profile.evidence.left_edge_valid && scan_profile.evidence.right_edge_valid;
+        ObstacleProfile profile = scan_profile.profile;
         S4Snapshot terrain = {0};
         bool have_terrain = s4_copy(&terrain) &&
             terrain_evidence_fresh(&terrain, now, SAFETY_STALE_MS) &&
@@ -117,6 +122,7 @@ static void mission_task(INT stacd, void *exinf)
             .line = snapshot.line,
             .line_error = snapshot.error,
             .line_sampled_ms = snapshot.sampled_ms,
+            .wheel_count = {left_now, right_now},
             .travel_counts = enc_mean(drv_encoder_count(ENCODER_LEFT), drv_encoder_count(ENCODER_RIGHT)),
             .motion_status = rd_motion_feedback_status(feedback),
             .motion_action = (uint8_t)rd_motion_feedback_action(feedback),
@@ -125,10 +131,11 @@ static void mission_task(INT stacd, void *exinf)
                  terrain_state == TERRAIN_STATE_CRESTING ||
                  terrain_state == TERRAIN_STATE_DESCENDING),
             .stationary = robot_time_elapsed(now, still_since) >= MISSION_STATIONARY_MS,
-            .front_valid = echo_valid(front),
-            .front_age_ms = (now - echo_time16(front)) & 0xFFFFu,
+            .front_valid = range_copied && front_sample.sequence != 0u && echo_valid(front),
+            .front_age_ms = robot_time_elapsed(now, front_sample.sampled_ms),
             .front_mm = echo_range(front),
-            .side_valid = echo_valid(side) && ((now - echo_time16(side)) & 0xFFFFu) <= 3u * SONAR_REPEAT_MS,
+            .side_valid = range_copied && side_sample.sequence != 0u && echo_valid(side) &&
+                robot_time_elapsed(now, side_sample.sampled_ms) <= 3u * SONAR_REPEAT_MS,
             .side_mm = echo_range(side),
             .scan_state = s5_scan_state_unpack(s5_scan_word() & rd_mask(S5_SCAN_STATE_BITS)),
             .profile_valid = have_profile && profile.valid,

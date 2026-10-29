@@ -1,85 +1,110 @@
 # Subsystem 5: Obstacle sensing and profiling
 
-Owner: Jia Jing. Parent: [architecture](../architecture.md#subsystem-summaries); pins and peripherals in [team](../team.md); pending decisions in [project-specs](../project-specs.md#pending-decisions). Motion partner: [subsystem2](subsystem2.md).
-
 ## Contents
 
 - [Functionality](#functionality)
 - [Interfaces and contract](#interfaces-and-contract)
+  - [Profiling method to implement and validate](#profiling-method-to-implement-and-validate)
+  - [Bypass handover and failure exits](#bypass-handover-and-failure-exits)
 - [Data and fault bits](#data-and-fault-bits)
 - [Status](#status)
 - [Open items](#open-items)
 
 ## Functionality
 
-- A servo (GP12, 50 Hz PWM) points the ultrasonic sensor; echo pulse timing gives range at a commanded angle. The echo ISR timestamps edges; the Obstacle task triggers (nominally every 60 ms) and processes results.
-- Forward clearance has its own validity and time, separate from side samples and the scan profile.
-- Mission stops the car, confirms measured stationarity and requests a scan. A coarse sweep selects regions for fine sampling. Obstacle reports closest point, width, location and left/right clearance. Mission owns bypass and original-line recovery movement.
-- No echo is unknown, never infinite clearance. A commanded servo angle is not a measured angle. Side readings never refresh forward timestamps.
+Owner Jia Jing. [Plan](../../plan.md) owns sequence;
+[architecture](../architecture.md#mission-loop) owns bypass/stop authority;
+[team](../team.md#2-pins) owns wiring. Target S5 is bounded sonar/servo acquisition
+and profiling called by Mission on core 1, not an independent task. Mission
+chooses movements; only Motion drives motors.
+
+Professor clarification: estimate and report obstacle widths 100-200 mm; accuracy
+matters but no numerical tolerance was supplied. Evaluate safe path selection,
+full-car clearance, original-line recovery and reasonable speed as well as width
+error. Straight-only obstacle placement is an operating assumption, not proof
+that the general course excludes curves. Sonar electrical behavior/wiring are
+user-confirmed; measured timing/geometry/uncertainty still need evidence.
 
 ## Interfaces and contract
 
-| Call / word | Contract (from `app_program/subsystem5/subsystem5.h`) |
-| --- | --- |
-| `s5_front_word()` | One load, any task. Bits 0-12 range mm (8191 invalid), bit 13 valid, bits 16-31 low 16 bits of sample ms. 0 before first reading. Layout provisional pending sign-off (#28, #54) |
-| `s5_scan_request(id)` | Mission only; id 0-15. Honoured only while stationary; movement, cancel or deadline fails it. Duplicate IDs ignored |
-| `s5_scan_cancel()` | Cancel wins over progress |
-| `s5_scan_word()` | Bits 0-2 scan state (IDLE, SETTLING, COARSE, FINE, DONE, FAILED, CANCELLED, SIDE_WATCH), bits 3-6 scan id |
-| `s5_profile_copy(&p)` | Copy under mutex; `E_OK` when the last scan completed, `E_OBJ` if none yet |
-| `s5_side_watch(on, angle_deg)` / `s5_side_word()` | Hold servo at an angle (positive left) and range every release for the bypass leg; turning off recentres. Same word layout as front |
+Current APIs `s5_front_word`, `s5_side_word`, `s5_scan_request`, `s5_scan_cancel`,
+`s5_scan_word`, `s5_side_watch` and `s5_profile_copy` are reusable boundaries.
+Advance trigger/Echo/servo-settle/scan phases by timestamps and short capture ISRs;
+never busy-wait through Echo or servo movement. Full/cancel/deadline outcomes are
+explicit. Commanded servo angle is not a measured angle.
 
-`ObstacleProfile`: closest angle and range, width, left/right clearance, nearest point forward/left of the reference point, valid flag. A profile is built from 5..9 rays; rays without an echo are skipped and at least one must echo. If a side's outermost ray has no echo, that side is unknown and reports zero clearance, so Mission bypasses on the measured side or stops.
+Forward and side evidence have separate validity/acquisition times. Side scans
+never refresh forward coverage. Ordinary no echo is unknown/report-only, neither
+infinite clearance nor a universal stop. A manoeuvre without its required clearance
+evidence cannot proceed merely because ordinary tracking tolerates missing range.
 
-Behaviour rules:
+### Profiling method to implement and validate
 
-- Forward monitoring: only a fresh valid range at or below the stop distance triggers the obstacle response. Missing or stale range is reported (no-echo bit) and never treated as clear space or as an obstacle.
-- Scan: wait for fresh measured stationary feedback, set angle, settle without blocking, trigger, wait for echo or bounded timeout, process; coarse readings guide fine angles; restore centre and acquire a new valid front reading before any bypass. Cancellation, fault and deadline apply to every phase.
-- Full request or duplicate ID reports failure; retries and whole-scan duration are finite.
-- Profile is compared against measured car width, stopping distance, clearance margin and permitted course boundary; only a supported path authorizes a bounded bypass, otherwise stop.
-- New obstacles preempt bypass; completed navigation leads to original-line reacquisition. Reverse or retry requires proven rear clearance; forward sonar does not supply that.
-- A five-reading scan spaced above the conservative initial interval spans more than 240 ms from first to last trigger before settling; include this in the stationary scan deadline.
+- Stop and confirm measured stationarity; settle at each calibrated angle.
+- Take a bounded group of samples, median-filter valid ranges and retain invalid
+  counts/status. Choose sample counts and intervals from physical testing.
+- Identify obstacle regions across consecutive angles, with hysteresis and
+  background-distance comparison where a usable background exists.
+- Estimate span/closest point/clearance using range, angle, mounting geometry and
+  uncertainty. Report the estimate, not the maximum expected width as a measurement.
+- Plan conservatively with the 200 mm upper bound where useful, full car envelope
+  and calibrated margins. Unknown edge/clearance is not a supported gap.
+- Use a second stationary viewpoint only when movement there is supported; it is
+  an optional refinement after a simple measured scan/bypass works.
 
-```mermaid
-stateDiagram-v2
-    [*] --> ForwardMonitor
-    ForwardMonitor --> WaitStationary: New scan ID
-    WaitStationary --> SetAngle: Fresh stationary feedback
-    SetAngle --> Settle: Command angle
-    Settle --> Trigger: Settled and interval valid
-    Trigger --> WaitEcho: Pulse complete
-    WaitEcho --> ProcessRange: Echo or bounded timeout
-    ProcessRange --> SetAngle: Next coarse or fine angle
-    ProcessRange --> RestoreCenter: Profile complete
-    RestoreCenter --> RefreshForward: Center settled
-    RefreshForward --> ForwardMonitor: Fresh valid front and profile
-    WaitStationary --> Cancelled: Cancel
-    WaitStationary --> Fault: Deadline
-    RefreshForward --> Fault: Required acquisition failed
-    Cancelled --> ForwardMonitor: Eligible restart while braked
-    Fault --> ForwardMonitor: Cause clear and local reset
-```
+### Bypass handover and failure exits
 
-The diagram is representative; cancel, deadline and fault guards apply in every phase. The published scan word uses the smaller encoded set listed above.
+Mission sequences departure, parallel side-following, rear-edge confirmation,
+rear-of-car clearance, inward approach and original-line alignment. A single
+lost echo or range jump is not enough to prove pass-by. Encoder travel and
+repeated observations support depth and clearance decisions. Schedule forward
+checks because one servo-mounted sensor cannot watch side and front simultaneously.
+
+The requested left 50-degree scan/45-degree departure are candidate geometry,
+not universal calibrated limits; scan both sides and select a supported route.
+Reversing is permitted only with a bounded supported path/clearance. Do not infer
+rear clearance from forward sonar. Both-sides-blocked, failed profile, insufficient
+coverage, new hazard and timeout brake/stop explicitly; rescan/retry policy is
+pending D02/D05/D07. No added generic recovery framework.
 
 ## Data and fault bits
 
-- Obstacle fault byte: bit 0 no echo (proposed position, awaiting owner confirmation). Report-only: open space gives no echo, so it neither blocks a start nor stops a run ([fault bitmask](../architecture.md#fault-bitmask)). The unused servo-fault bit was removed because nothing detected it.
-- Telemetry carries front range mm (13 bits plus valid); obstacle width is an event argument (mm) per [subsystem1](subsystem1.md).
-- Sonar conversion constants and servo limits live in `robot_config.h`; hardware limits are in the project specs and team pin tables. Calibration values are pending.
+[Specs](../project-specs.md#5-data-representation-table-week-13) owns scan/range/
+profile widths and invalid codes; [architecture](../architecture.md#fault-bitmask)
+owns stop/start policy. Preserve binary schema v2 width/depth fields and events.
+Estimation uncertainty may be recorded in bounded diagnostic capture/test evidence
+without changing the wire schema. Never invent a precision rating.
 
 ## Status
 
-| Item | State |
-| --- | --- |
-| Front range with echo ISR on the GPIO dispatcher, front word, `echo_range.h` | Code present |
-| Servo driver (GP12 PWM), coarse/fine scan, side-watch, `s5_profile_copy`, profile builder and scan-state packing (`obstacle_profile.c`) | Code present; the servo scan was marked as following in issue #49 in the header comment, so completeness is not verified here |
-| Calibrated servo angle mapping, settling time, trigger interval, car width and clearance margin | Not established |
-| Bypass decisions and movement | Proposed; owned by Mission, not implemented here |
-| Physical scan and bypass evidence | None claimed; see [S5 test log](../../testing/subsystem5/TEST_LOG.md) (planned T08-T10, T14, T15: no echo, scan freshness, cancellation, bypass, load) |
+Remote `5e6a45b` contains Echo capture, PWM servo, scan/profile builder, side-watch,
+packed range/scan/profile values and a separate Obstacle task. Physical quality,
+median/hysteresis improvements, supported-side selection and original-line bypass
+must be verified rather than inferred from code. [S5 results](../../testing/subsystem5/TEST_LOG.md)
+retain their exact source/results. Working `s5_step` now advances trigger, Echo, settle and coarse/fine acquisition
+on Mission releases without waiting through a scan. Motion/cancel/deadline guards
+apply each step; front/side words are separate. Median groups, adjacent-ray edge hysteresis, edge-focused fine angles and optional
+empty-scene comparison now have bounded implementations and synthetic tests.
+Model uncertainty is distinct from planning width; unknown uncertainty provides
+no supported planning gap. Operating sample/threshold settings remain unset by
+user choice. `MISSION_BYPASS_RELEASED=0` prevents an unaccepted envelope/coverage
+policy from authorizing movement. Forward-coverage scheduling and accepted
+rear-edge/original-line bypass remain future work.
+The legacy bypass no longer treats a lost Echo as proof of a rear edge, but one
+valid range jump is still provisional and must not be claimed accepted.
 
 ## Open items
 
-- Confirm the S5 data rows and word layouts (#28, #54) and fault-bit positions.
-- Calibrate servo angles, settling time, minimum trigger interval and sweep limit; measure car width and stopping distance.
-- Agree the stationary feedback source with Motion (encoder counts, not brake acknowledgement alone).
-- Agree command handover between Mission and Obstacle for bypass.
+D02/D03/D05/D07/D12/D16: servo calibration, repeat/settle times, sample/filter/edge
+parameters, car envelope, reverse/scan/travel budgets and 15 cm interpretation.
+Use MR-17/18/30/31 and T08..T10/T14/T15: reference widths across 100-200 mm,
+backgrounds/materials/angles, both sides blocked, lost Echo, moving scan rejection,
+forward refresh, uncertainty, depth, clearance and repeated line reacquisition.
+
+The confirmed trigger meaning is in D16. Mission and Reporting now age sonar
+using full 32-bit acquisition times; the 16-bit packed time is display-only.
+Mission reads its own acquisition records, while Reporting uses a nonwaiting
+coherent mirror under the existing profile mutex. Busy publication retains the
+original sample time and cannot revive a frozen sensor. The profile snapshot
+coherently includes model evidence and scan completion time; MQTT sizes stay
+unchanged. See [continuation audit](../../plan.md#full-plan-continuation-audit).

@@ -3,7 +3,8 @@
   monitor          print telemetry, events and acknowledgements as readable text
   map L R S U      send the four mission-day letters (left, right, straight, U-turn)
   snapshot         request one telemetry snapshot
-  serve            live web dashboard at http://127.0.0.1:8080 (scripts/dashboard.html)
+  serve            live web dashboard at http://127.0.0.1:8080 (scripts/dashboard.html);
+                   the dashboard can also send the mapping
   --self-test      decode the golden vectors shared with testing/pure/test_mqtt_frame.c
 
 Frame layouts: docs/architecture.md (MQTT binary protocol). Speed and
@@ -181,16 +182,21 @@ def dashboard_message(frame, motion):
                  speed_left=measured and round(measured[0]), speed_right=measured and round(measured[1]),
                  direction=measured[2] if measured else None)
         return t
-    return {"type": "event" if kind == EVENT else "ack" if kind == ACK else "other",
-            "text": describe(frame, motion)}
+    message = {"type": "event" if kind == EVENT else "ack" if kind == ACK else "other", "text": describe(frame, motion)}
+    if kind == ACK:
+        message.update(sequence=frame[1], result=name(ACK_RESULT, frame[2]), ok=frame[2] == 0)
+    return message
 
 
 class Dashboard:
     """Serves dashboard.html and pushes decoded frames to browsers as Server-Sent Events."""
 
-    def __init__(self, port):
+    def __init__(self, port, host="127.0.0.1"):
         self.clients, self.lock = [], threading.Lock()
+        self.status = None
         page = (Path(__file__).resolve().parent / "dashboard.html").read_bytes()
+        origin = f"http://127.0.0.1:{port}"
+        self.send_mapping = None	# set by main once the MQTT client exists; returns the sequence sent
         dashboard = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -209,6 +215,8 @@ class Dashboard:
                     self.send_header("Cache-Control", "no-cache")
                     self.end_headers()
                     inbox = queue.Queue(maxsize=100)
+                    if dashboard.status:
+                        inbox.put(dashboard.status)	# the retained online/offline arrives once, often before the page opens
                     with dashboard.lock:
                         dashboard.clients.append(inbox)
                     try:
@@ -227,19 +235,50 @@ class Dashboard:
                 else:
                     self.send_error(404)
 
-        # Loopback only: the dashboard has no authentication.
-        self.server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+            def do_POST(self):
+                # Another site open in the same browser could post here; only this page may map.
+                if self.path != "/map" or self.headers.get("Origin") != origin \
+                        or self.headers.get("Content-Type") != "application/json":
+                    self.send_error(403)
+                    return
+                try:
+                    body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", 0)), 256)))
+                    letters = mapping_letters(body.get("letters", ""))
+                except (ValueError, AttributeError, TypeError):
+                    letters = None
+                if not letters:
+                    self.send_error(400, "map needs four distinct letters A-Z")
+                    return
+                if not dashboard.send_mapping:
+                    self.send_error(503, "not connected to the broker")
+                    return
+                reply = json.dumps({"sequence": dashboard.send_mapping(letters), "letters": letters}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(reply)
+
+        # Docker publishes this unauthenticated server only on host loopback.
+        self.server = ThreadingHTTPServer((host, port), Handler)
         self.server.daemon_threads = True
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
 
     def push(self, message):
         data = json.dumps(message)
+        if message.get("type") == "status":
+            self.status = data
         with self.lock:
             for inbox in self.clients:
                 try:
                     inbox.put_nowait(data)
                 except queue.Full:
                     pass	# a stalled browser misses frames; the next telemetry replaces them
+
+
+def mapping_letters(letters):
+    """Four distinct letters A-Z (left, right, straight, U-turn), uppercased; None when invalid."""
+    letters = "".join(letters).upper()
+    return letters if len(letters) == 4 and len(set(letters)) == 4 and letters.isalpha() and letters.isascii() else None
 
 
 def mapping_frame(sequence, letters):
@@ -257,6 +296,10 @@ def self_test():
     assert t["barcode_action"] == "STRAIGHT" and (t["obstacle_width_mm"], t["obstacle_depth_mm"]) == (420, 170)
     assert "BARCODE: letter Z -> RIGHT" in decode_event(GOLDEN_EVENT)
     assert mapping_frame(7, "ABCD") == GOLDEN_MAPPING
+    assert mapping_letters("abcd") == "ABCD" and mapping_letters(["W", "F", "a", "Z"]) == "WFAZ"
+    assert not any(mapping_letters(bad) for bad in ("ABCA", "ABC", "ABCDE", "AB1D", "ABÇD", ""))
+    ack = dashboard_message(bytes([0x25, 0x07, 0x01]), Motion())
+    assert ack["type"] == "ack" and ack["sequence"] == 7 and not ack["ok"] and ack["result"].startswith("BUSY")
     assert [len(bits) for _, bits in FAULTS] == header_fault_widths(), "FAULTS disagrees with robot_data.h"
     print("mqtt_client self-test: PASS")
     return 0
@@ -269,15 +312,16 @@ def main():
     parser.add_argument("--broker", help="broker address")
     parser.add_argument("--port", type=int, default=1883)
     parser.add_argument("--root", default="robot/s3", help="topic root (firmware: <root>/telemetry, /request, /status)")
-    parser.add_argument("--http-port", type=int, default=8080, help="serve: dashboard port on 127.0.0.1")
+    parser.add_argument("--http-port", type=int, default=8080, help="serve: dashboard port")
+    parser.add_argument("--http-host", default="127.0.0.1", help="serve: bind address (Docker uses 0.0.0.0)")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
         return self_test()
     if not args.action or not args.broker:
         parser.error("an action and --broker are required")
-    letters = "".join(args.letters).upper()
-    if args.action == "map" and (len(letters) != 4 or len(set(letters)) != 4 or not letters.isalpha() or not letters.isascii()):
+    letters = mapping_letters(args.letters)
+    if args.action == "map" and not letters:
         parser.error("map needs four distinct letters A-Z, e.g. map A B C D")
     try:
         import paho.mqtt.client as mqtt
@@ -287,7 +331,7 @@ def main():
     ready, done = threading.Event(), threading.Event()
     sequence = int(time.time()) & 0xFF
     motion = Motion()
-    dashboard = Dashboard(args.http_port) if args.action == "serve" else None
+    dashboard = Dashboard(args.http_port, args.http_host) if args.action == "serve" else None
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     if os.getenv("ROBOT_MQTT_USERNAME"):
         client.username_pw_set(os.getenv("ROBOT_MQTT_USERNAME"), os.getenv("ROBOT_MQTT_PASSWORD", ""))
@@ -336,6 +380,12 @@ def main():
             raise RuntimeError("timed out connecting to the broker")
         if args.action in ("monitor", "serve"):
             if dashboard:
+                def send_mapping(letters):
+                    nonlocal sequence
+                    sequence = (sequence + 1) & 0xFF
+                    client.publish(args.root + "/request", mapping_frame(sequence, letters), qos=1)
+                    return sequence
+                dashboard.send_mapping = send_mapping
                 print(f"Dashboard: http://127.0.0.1:{args.http_port}/ ; Ctrl+C to exit.", flush=True)
             else:
                 print("Monitoring; Ctrl+C to exit.", flush=True)

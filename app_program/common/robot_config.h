@@ -109,7 +109,22 @@
 #define INPUT_PERIOD_MS		10u
 #define REPORT_PERIOD_MS	500u
 #define FOLLOW_PERIOD_MS	10u
-#define RECOVERY_MS		500u	/* PROVISIONAL (D07) */
+/* Software proposals, all physical releases remain off until measured. */
+#ifndef APP_PHYSICAL_RELEASE
+#define APP_PHYSICAL_RELEASE 0
+#endif
+#ifndef MISSION_RECOVERY_RELEASED
+#define MISSION_RECOVERY_RELEASED 0
+#endif
+#define RECOVERY_MS 30000u
+#define RECOVERY_TRAVEL_MM 900u
+#define RECOVERY_SPEED_MMPS 30u
+#define RECOVERY_STEER_Q 96
+#define RECOVERY_TARGET_DEG 70
+#define RECOVERY_TARGET_TOL_DEG 5
+#define RECOVERY_ALIGN_HEADING_DEG 15
+#define RECOVERY_ALIGN_ERROR_Q 25
+#define MISSION_CONFIRM_SAMPLES 3u
 #define BASE_DUTY		0.25f	/* PROVISIONAL (D07) */
 #define BROAD_DUTY		0.20f	/* PROVISIONAL (D07) */
 #define MAX_STEER		0.60f	/* steering limit; also the line-search arc. Keeps both wheels within MOTION_MAX_DUTY */
@@ -148,14 +163,19 @@
 #define MISSION_CLEAR_SPEED_MMPS	100.0f	/* PROVISIONAL (D07) */
 #define MISSION_CLEAR_MM		60.0f	/* PROVISIONAL (D02): drive clear of a junction after a turn */
 #define MISSION_JUNCTION_MIN_COUNTS	6u	/* PROVISIONAL (D02): broad black this long is a junction */
+/* Physical envelope/coverage release is pending D02/D03/D05/D07. The
+   synthetic host fixture may explicitly enable the policy to exercise it. */
+#ifndef MISSION_BYPASS_RELEASED
+#define MISSION_BYPASS_RELEASED 0
+#endif
 /* Bypass (D02, D12; curved sections out of scope until D12 is answered). */
-#define MISSION_OBSTACLE_STOP_MM	250u	/* PROVISIONAL (D02): front range that triggers a bypass */
+#define MISSION_OBSTACLE_STOP_MM	150u	/* user-confirmed trigger distance, D16 */
 #define MISSION_STATIONARY_MS		150u	/* encoders unchanged this long before a scan */
 #define MISSION_BYPASS_OFFSET_MM	250.0f	/* PROVISIONAL (D02): sideways offset to the parallel leg */
 #define MISSION_BYPASS_MIN_CLEAR_MM	300u	/* PROVISIONAL (D02): side clearance needed to try */
 #define MISSION_PASS_JUMP_MM		150u	/* PROVISIONAL (D05): side range jump marking pass-by */
 #define MISSION_PASS_LEG_MM		2000.0f	/* longest parallel leg before the bypass fails */
-#define MISSION_BYPASS_TIMEOUT_MS	45000u	/* whole bypass must finish by then */
+#define MISSION_BYPASS_TIMEOUT_MS	90000u	/* whole bypass must finish by then */
 #define MISSION_UTURN_PAUSE_MS 200u /* requested duration; stationary reference provisional D02/D08 */
 #define MISSION_START_WAIT_MS		200u	/* wait for Motion to leave its stop latch */
 
@@ -202,14 +222,61 @@
 #define SERVO_PIN		12u
 #define SERVO_CENTRE_US		1500u	/* PROVISIONAL (D05): faces forward */
 #define SERVO_US_PER_DEG	10u	/* PROVISIONAL (D05): endpoints and scale */
-#define SERVO_MAX_DEG		60	/* sweep limit either side of forward */
+#define SERVO_MAX_DEG		75	/* PROPOSAL D05: validate endpoints before physical release */
 #define SERVO_SETTLE_MS		300u	/* PROVISIONAL (D05) */
 #define S5_COARSE_STEP_DEG	30	/* coarse rays at -60,-30,0,30,60 relative to forward */
 #define S5_FINE_STEP_DEG	10	/* fine rays around the closest coarse ray */
-#define S5_SONAR_FORWARD_MM	0.0f	/* PROVISIONAL (D05): sensor offset from the reference point */
+#define S5_SONAR_FORWARD_MM	100.0f	/* PROPOSAL: front mount relative to body centre, measure D05 */
 #define S5_SONAR_LEFT_MM	0.0f	/* PROVISIONAL (D05) */
 #define S5_BODY_LENGTH_MM	200.0f	/* PROVISIONAL (D02): car envelope */
 #define S5_CLEARANCE_MM		30.0f	/* PROVISIONAL (D02) */
+/* Proposed D05 settings for software verification, not calibrated limits.
+   Physical release remains inhibited; zero/invalid overrides fail closed. */
+#ifndef S5_SCAN_GROUP_SAMPLES
+#define S5_SCAN_GROUP_SAMPLES 3u
+#endif
+#ifndef S5_SCAN_MIN_VALID
+#define S5_SCAN_MIN_VALID 2u
+#endif
+#ifndef S5_PROFILE_DEPTH_ENTER_MM
+#define S5_PROFILE_DEPTH_ENTER_MM 30u
+#endif
+#ifndef S5_PROFILE_DEPTH_EXIT_MM
+#define S5_PROFILE_DEPTH_EXIT_MM 60u
+#endif
+#ifndef S5_PROFILE_ADJACENT_RAYS
+#define S5_PROFILE_ADJACENT_RAYS 2u
+#endif
+#ifndef S5_PROFILE_RANGE_ERROR_MM
+#define S5_PROFILE_RANGE_ERROR_MM 10u /* proposed model input, not sensor accuracy */
+#endif
+#define BYPASS_SPEED_MMPS 60u
+#define BYPASS_CHUNK_MM 50u
+#define BYPASS_TRAVEL_MM 4000u
+#define BYPASS_SENSE_TIMEOUT_MS 2000u
+#define BYPASS_SENSE_ATTEMPTS 2u
+#define BYPASS_BODY_WIDTH_MM 180u
+#define BYPASS_BODY_LENGTH_MM 200u
+#define BYPASS_CLEARANCE_MM 30u
+#define BYPASS_MAX_OFFSET_MM 600u
+#define BYPASS_FRONT_RESERVE_MM 50u
+#define BYPASS_FRONT_MAX_AGE_MS 400u
+#define BYPASS_PASS_MAX_MM 1500u
+#define BYPASS_BASELINE_SEARCH_MM 250u
+#define BYPASS_SIDE_PRESENT_MM 500u
+#define BYPASS_EDGE_SAMPLES 2u
+#define BYPASS_EDGE_ENTER_MM 150u
+#define BYPASS_EDGE_EXIT_MM 100u
+#define BYPASS_RETURN_LATERAL_MM 25u
+#define BYPASS_RETURN_HEADING_DEG 5u
+#define BYPASS_REACQUIRE_MM 100u
+#define MISSION_SCAN_RETRIES 1u
+#define TERRAIN_QUALITY_MIN_MG 900u
+#define TERRAIN_QUALITY_MAX_MG 1100u
+#define TERRAIN_QUALITY_SPEED_CHANGE_MMPS 30u
+#define TERRAIN_QUALITY_WHEEL_DIFF_MMPS 30u
+#define TERRAIN_QUALITY_STEADY_MS 200u
+#define S5_EXPECTED_MAX_WIDTH_MM 200u /* supplied obstacle width upper bound */
 #define S5_SCAN_DEADLINE_MS	8000u	/* a scan that has not finished by then fails */
 #define ECHO_PIN		2	/* PROVISIONAL (D05): <= 3.3 V before connecting */
 #define TRIGGER_PIN		3
@@ -298,4 +365,17 @@ _Static_assert(PITCH_DESC_THRESH_DEG < 0.0f && PITCH_CLIMB_THRESH_DEG > 0.0f,
 _Static_assert(S1_TELEMETRY_PERIOD_MS % S1_REPORT_PERIOD_MS == 0u && S1_EVENT_CAPACITY >= 4u,
 	"telemetry period must be a whole number of Reporting releases");
 
+_Static_assert(APP_PHYSICAL_RELEASE == 0 || APP_PHYSICAL_RELEASE == 1,
+    "physical release must be explicit");
+_Static_assert(MISSION_CONFIRM_SAMPLES > 0u && MISSION_CONFIRM_SAMPLES <= 7u,
+    "confirmation counters use three bits");
+_Static_assert(BYPASS_TRAVEL_MM <= 4095u && BYPASS_SENSE_ATTEMPTS <= 3u &&
+    BYPASS_EDGE_SAMPLES > 0u && BYPASS_EDGE_SAMPLES <= 7u,
+    "bounded bypass storage must fit its fields");
+_Static_assert(RECOVERY_STEER_Q > 0 && RECOVERY_STEER_Q < 127 &&
+    RECOVERY_SPEED_MMPS > 0u && RECOVERY_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS &&
+    RECOVERY_TRAVEL_MM * ENC_COUNTS_PER_REV /
+        (3.14159265f * WHEEL_DIAMETER_MM) < ENC_COUNT_MASK / 2u,
+    "recovery must creep with both wheels inside the encoder half range");
+_Static_assert(MISSION_SCAN_RETRIES <= 1u, "one bounded stationary rescan");
 #endif /* ROBOT_CONFIG_H */

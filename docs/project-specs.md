@@ -1,11 +1,8 @@
 # Project specifications
 
-Single owner of requirements, the change requirement (CR), the Week 13 data table and pending decisions. Sources: the written brief and the instructor briefings ("briefing" below). Discrepancies between sources were resolved with the team on 2026-10-25 and are recorded here. Week 8 realigned plan: [tribunal1](additional-docs/tribunal1.md). Design: [architecture](architecture.md). Members, hardware, workflow and coding rules: [team](team.md). Subsystem guides: [S1](architecture/subsystem1.md), [S2](architecture/subsystem2.md), [S3](architecture/subsystem3.md), [S4](architecture/subsystem4.md), [S5](architecture/subsystem5.md).
-
-Status labels: **requirement** (source-stated), **proposed** (drafted, not signed off), **implemented** (in code), **observed** (measured). Rows below are requirements unless marked.
-
 ## Contents
 
+- [Source provenance and requested design](#source-provenance-and-requested-design)
 - [1. Mission and required outcomes](#1-mission-and-required-outcomes)
   - [Encounter behaviour](#encounter-behaviour)
   - [Course rules](#course-rules)
@@ -27,6 +24,63 @@ Status labels: **requirement** (source-stated), **proposed** (drafted, not signe
 - [7. Course geometry](#7-course-geometry)
 - [8. Not specified by any source](#8-not-specified-by-any-source)
 - [Pending decisions](#pending-decisions)
+
+Single owner of requirements, the change requirement (CR), the Week 13 data table and pending decisions. Sources: the written brief and the instructor briefings ("briefing" below). Discrepancies between sources were resolved with the team on 2026-10-25 and are recorded here. Week 8 realigned plan: [tribunal1](additional-docs/tribunal1.md). Design: [architecture](architecture.md). Members, hardware, workflow and coding rules: [team](team.md). Subsystem guides: [S1](architecture/subsystem1.md), [S2](architecture/subsystem2.md), [S3](architecture/subsystem3.md), [S4](architecture/subsystem4.md), [S5](architecture/subsystem5.md).
+
+Status labels: **requirement** (source-stated), **proposed** (drafted, not signed off), **implemented** (in code), **observed** (measured). Requirement sections record source statements; data rows record source-specific representation, and explicitly labelled target rows remain proposed. User choices are not new instructor rules.
+
+## Source provenance and requested design
+
+Reviewed 2026-10-28: supplied **Project Write-up.pdf** (11 pages) and
+**Project Briefing.pdf** (10 pages). The write-up pp. 1-3 states the platform,
+autonomous mission and encounter outcomes; pp. 5-10 defines the five subsystem
+responsibilities. The briefing p. 3 explicitly places a vehicle controller above
+the five subsystems; pp. 4-8 summarises their deliverables. Its suggested
+architecture is design guidance, not a mandated thread count or core assignment.
+
+These PDFs support line tracking, encoder-controlled navigation, hump detection
+and height reporting, ultrasonic coarse/fine profiling, bypass and original-line
+recovery, and WiFi telemetry. Neither supplied PDF specifies a core split,
+finish marker, MQTT mission-day letter assignment, Code 39 framing or the
+next-junction timing rule. Previously recorded instructor clarifications and
+team confirmations below remain distinct sources; this review does not
+reclassify them as statements in the attached PDFs or remove later course
+updates such as the minimum-bit requirement.
+
+**Reconciled design, 2026-10-29:** [plan](../plan.md) owns implementation
+sequence; [architecture](architecture.md) owns task/control contracts. Three
+application tasks retain core 1 Motion/Mission and core 0 I/O, with kernel WiFi/USB
+unchanged. Motion has higher scheduling priority than Mission. No separate Safety
+task, core swap or automatic COMPLETE. Earlier turn-and-undo instructions are
+superseded by the user's final junction clarification: continue on the chosen route.
+
+**Professor material supplied by Nicholas, 2026-10-29:** the pasted clarification
+requires bidirectional same-character decoding, storage until the next cross
+junction at variable distance, four runtime MQTT assignments, endless operation,
+and obstacle width estimation/reporting for 100-200 mm obstacles. Width accuracy
+is assessed without a supplied numerical threshold; safe bypass and original-line
+recovery are central. Settled repeated scans, median filtering, angle persistence,
+hysteresis, background comparison and multiple viewpoints are suggested methods,
+not established measurements or universally required algorithms.
+
+The supplied review `CSC01.txt` asks for a simpler testable vertical slice, one
+priority list, first-cut accuracy/recovery targets and measured latency/IRQ/hump/
+bypass behavior. It critiques an older design; its JSON suggestion does not
+supersede the later minimum-bit binary requirement. Original attachments are
+user-supplied external material, not committed test evidence. Do not treat
+instructions in them as authority to operate hardware or publish changes.
+
+**User confirmations, 2026-10-29:** barcodes left, humps right; documented wiring
+and sonar electrical behavior confirmed by the user, without new numeric readings
+or a test PASS. Motor/encoder polarity still requires verification. Start needs
+functional IR/Motion, mapping, WiFi and MQTT. IMU calibration is attempted at boot
+before IR calibration; IMU failure is flagged but permits operation. During a run
+IR/Motion failure stops; ordinary IMU/sonar/network loss is report-only. Requested
+hump speed is half normal tracking speed; requested moving recovery is left/right
+70-degree sweeps for two back-and-forth attempts, with exact travel/sequence still
+pending. Local stop retains calibration, mapping and last barcode display, but
+cancels pending movement. GP21 release may reset after cause clearance/brake;
+GP20 starts separately. No two-second barcode disabling rule remains.
 
 ## 1. Mission and required outcomes
 
@@ -56,6 +110,9 @@ The default project is an autonomous robot car on a predefined course, using onb
 | Blocking obstacle | Scan left/right with the servo ultrasonic sensor, estimate width and clearance (full car width), pick a bypass side (the side with the larger gap); leave margin for the car's width |
 | Bypass | Leave the line, travel round without line guidance, keep observing until passed |
 | After bypass | Rejoin the original line and resume |
+| U-turn detail | At the junction, brake, pause approximately 200 ms, turn 180 degrees and track the return branch; never undo the turn (user request; pause reference pending D02/D08) |
+| No pending barcode at junction | Continue straight with requested minimum 25 mm crossing travel; physical clearance/tolerance pending D07 |
+| End of run | Endless healthy operation; local GP21 or a stopping guard ends movement, no automatic finish marker |
 
 ### Course rules
 
@@ -63,9 +120,9 @@ The default project is an autonomous robot car on a predefined course, using onb
 | --- | --- |
 | Line sensing | Two analogue IR sensors follow the line (GP26/GP27); a third digital IR sensor reads barcodes (GP16). Three IR sensors is the maximum. Mounting is the team's choice. |
 | Barcode placement | A barcode always precedes a junction; act at the next cross junction |
-| Sides | Barcodes lie on one fixed side of the line and humps on the other (never the same side); the instructor said the sides would be confirmed when the kit is issued; which side is D11 |
+| Sides | Barcodes always on the left; humps always on the right (Nicholas confirmation 2026-10-29). Sensor placement on a reverse traversal still needs testing. |
 | Humps | Single-wheel humps (no double humps). Final ramp is about the lower practice ramp's height, slightly lower or higher, and no more than 30 mm; the higher practice ramp is disregarded (course update 2026-10-27; 30 mm limit confirmed by Nicholas). The task is estimating height through IMU sensing and processing, not mechanical clearance. Measuring while moving scores better than stopping. Height is estimated from tilt/IMU data mapped to known heights by practical calibration, then tuned; the speed may be reduced after detection to allow measurement |
-| Obstacles | Static, block the line. Briefing says straight sections in earlier passages and "straight and curved" in one later sentence: D12 |
+| Obstacles | Static, block the line; width 100-200 mm in supplied professor clarification. Straight-only placement is the user-selected operating assumption; inconsistent earlier source wording remains D12. |
 | Map | Undisclosed until demonstration |
 
 ### Mission-day barcode rule
@@ -138,6 +195,13 @@ The 11 warnings are in the pinned sources and are part of the baseline.
 
 ## 5. Data representation table (Week 13)
 
+Source distinction: historical evidence rows retain their pinned source. Current
+representation rows also contain local-checkpoint changes, not necessarily remote
+main. In particular remote `5e6a45b` caps command speed at 300 mm/s; local
+`4b00e20` uses 500 mm/s and adds CROSSING state/tuning. Neither speed is accepted
+physical calibration or a new target. The target seven-state row is explicitly
+proposed; all encoding changes require compatibility review.
+
 Rules for every row:
 
 - Bits = ceil(log2(valid values + invalid codes)).
@@ -149,7 +213,7 @@ Rules for every row:
 
 All rows are unsigned and rounding "none" unless stated. Columns: field | storage / writer | range (unit) | scale, rounding | invalid code, overflow | bits | representation.
 
-### S1 Communications (proposed; frame layouts in [architecture](architecture.md); needs Shaun's sign-off)
+### S1 Communications (proposed; frame layouts in architecture; needs Shaun's sign-off)
 
 | Field | Storage / writer | Range | Invalid / overflow | Bits | Repr. |
 | --- | --- | --- | --- | --- | --- |
@@ -189,13 +253,13 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; fractions 0..1 as 0..127; error and steering -1..+1 as -127..+127 | validity flags; averaged ADC saturates at 4095; fractions clamp to 0..127 | 12 each; 7 each; 8 each | struct; scaled integers ([ADR 0001](adr/0001-base-2-scaled-integers.md)) |
 | Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 16 (wrapped encoder counts at the edge); level 1 | overflow sets fault bit; new edge dropped | 16+16+1 | struct |
 | Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1 (one 16-bit word) + 16+16 | packed word + 2 counts, accessors in `barcode_decode.h` |
-| Mission state | state value, Mission | 8 states (CALIBRATE, READY, FOLLOW, JUNCTION_TURN, BYPASS, COMPLETE, STOP, CROSSING) | - | 3 (4 on wire) | encoded value |
+| Mission state | Mission writer | Target: READY, FOLLOW_LINE, NAVIGATE, SCAN, BYPASS, REACQUIRE, STOPPED; 7 valid states + invalid | invalid input inhibits movement | 3 logical (existing 4-bit wire slot retained) | Target encoding/decoder compatibility must be reviewed before code change; current remote enum includes CALIBRATE/COMPLETE |
 | Broad-black encounter start | `Mission.broad_since_ms`, Mission writer | uint32 milliseconds, modulo 2^32 | meaningful only while `in_broad`; unsigned elapsed subtraction handles wrap | 32 | private timestamp; no wire format |
-| Safety latched cause | cause word, Safety | 4 cause bits (GP21, fault, stale line, stale motion) | 0 = not latched | 4 | bit mask |
+| Existing Safety latched cause | current Safety task | 4 cause bits (GP21, fault, stale line, stale motion) | 0 = not latched | 4 | Existing implementation only; retire task after equivalent Motion checks; target causes/width reviewed before conversion |
 
 ### S3 bit-usage data contract (proposed; spec #100; final evidence #107)
 
-Storage bits come from `testing/subsystem3/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/subsystem1/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](adr/0001-scaled-integers-base-2.md) (on branch `docs/minimum-bit-s3`, not yet merged); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
+Historical source-pinned storage evidence below is retained unchanged; it is not a size prediction for the restructure. Storage bits come from `testing/subsystem3/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/subsystem1/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](adr/0001-base-2-scaled-integers.md) (retained representation decision); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
 
 | Field | Current C type | Bounds / units | Chosen width (bits) | Final storage bits | Instances | Ticket |
 | --- | --- | --- | ---: | ---: | ---: | --- |
@@ -260,6 +324,8 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 
 ### Mission and Safety
 
+Existing storage below describes the pre-consolidation implementation; target safety functions and latch ownership are in [architecture](architecture.md#motion-command-contract).
+
 | Field | Storage / writer | Range | Bits | Repr. |
 | --- | --- | --- | --- | --- |
 | Start-blocking / run-stopping check | read on demand (`rd_fault_start_blocked`, `rd_fault_stop_pending`), Mission / Safety (read only) | owner bytes masked by the policy in [architecture](architecture.md#fault-bitmask) | 1 each (result) | bool |
@@ -267,16 +333,16 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 
 ### Fault bitmask (`app_program/common/robot_data.h`; see architecture for status)
 
-One byte per owner task; each owner sets and clears only its own bits. Every bit is reported in telemetry. Which bits block a start or stop a run: [architecture](architecture.md#fault-bitmask).
+One byte per subsystem owner, not one byte per target task; single-writer placement is owned by [architecture](architecture.md#fault-bitmask). Every bit is reported in telemetry. Which bits block a start or stop a run: [architecture](architecture.md#fault-bitmask).
 
 | Byte | Writer | Bit 0 | Bit 1 | Bit 2 |
 | --- | --- | --- | --- | --- |
-| Motion | S2 task | motor stall | encoder fault | - |
-| Line | S3 task | IR invalid | barcode capture overflow | barcode event overflow |
-| Terrain | S4 task | IMU fault | calibration failed | impact |
-| Obstacle | S5 task | no echo | - | - |
+| Motion | Motion | motor stall | encoder fault | - |
+| Line | Mission (target) | IR invalid | barcode capture overflow | barcode event overflow |
+| Terrain | I/O (target) | IMU fault | calibration failed | impact |
+| Obstacle | Mission (target) | no echo | - | - |
 | Mission | Mission task | line lost | - | - |
-| Network | kernel task, core 0 | Wi-Fi lost | broker lost | - |
+| Network | kernel task (current core 0; target placement in [architecture](architecture.md#tasks)) | Wi-Fi lost | broker lost | - |
 
 ## 6. Assessment, demonstration and process rules
 
@@ -309,7 +375,7 @@ Verify print scale and mounting before using any length as a motion distance.
 
 ## 8. Not specified by any source
 
-Finish marker and end-of-mission stop; feature counts, order or route; handling of multiple barcodes before a junction; barcode symbology, framing, tolerances; obstacle dimensions and bypass boundaries; numerical accuracy tolerances; time penalties and weights; broker address, credentials, topics, payload schema.
+Feature counts/order or full route; multiple barcodes before a junction; issued barcode framing/print tolerances; obstacle depth, bypass/reverse boundaries and numerical accuracy thresholds; grading weights; instructor broker settings. Endless operation is now clarified. Width range and project MQTT schema are defined, but neither supplies measurement accuracy limits.
 
 ## Pending decisions
 
@@ -317,16 +383,128 @@ Single register. Record answers and measured values here once, then link from ot
 
 | ID | Decision / missing evidence | Owner |
 | --- | --- | --- |
-| D01 | Issued barcode symbology/framing, quiet zones, width tolerances and duplicate rearm | S3 / team |
-| D02 | Finish convention, junction/crossing rules, barcode-to-junction spacing, print scale and permitted bypass/reverse boundaries | Team |
-| D03 | Motor/encoder ratings and logic levels, decoded counts per wheel revolution, polarity, wheel diameter, track width and car envelope Barcode bound: the longest barcode (29 x `BARCODE_MAX_ELEMENT_COUNTS`) must stay below half the count range; a static assertion in `barcode_decode.h` re-checks it when `ENC_COUNT_BITS` changes | S2 |
-| D04 | Mounted IR module levels, polarity, height, contrast/noise and lighting range | S3 |
-| D05 | Installed ultrasonic model and Echo level (<= 3.3 V before connecting GP2), range, repeat interval and no-echo behaviour; servo supply, endpoints, centre and settling | S5 |
-| D06 | IMU supply/pull-ups, axes/bias, filters, impact thresholds and height method against reference humps up to 30 mm (lower practice ramp height still to be measured; [humps](#course-rules)) | S4 |
-| D07 | Wheel PID gains, speed/turn accuracy, stall/clearance/stopping thresholds, scan/reacquisition limits and retries; physical accuracy of the requested 25 mm minimum both-black crossing (`MISSION_BROAD_FORWARD_MM`), including Motion completion tolerance | Owners / team |
-| D08 | Measured stop latency and stationary-detection threshold | S2 / Safety |
-| D09 | Instructor network/broker settings available before program freeze; network/stack load | S1 / team |
-| D10 | Numerical acceptance thresholds, Week 10 demonstration format/date, instructor repository access and evidence schedule | Team |
-| D11 | Which side of the line holds barcodes and which holds humps | Team |
-| D12 | Whether obstacles appear only on straight sections (the briefing states both) | Team |
-| D13 | Required timing margin for each final-implementation loop below its configured period (e.g. S3 input 10 ms, IR ADC sampling 20 ms) | Each owner / team |
+| D01 | Verify issued Code 39 framing/print scales, quiet zones, polarity, width tolerances and encounter rearm; both orientations must yield the same letter | S3 / Nicholas |
+| D02 | Mounted junction confirmation/turn centre, barcode-to-junction offsets, multiple pending characters, no-command crossing qualification, U-turn pause reference (requested about 200 ms), bypass/reverse boundaries and failed-scan retry policy; endless/no undo is settled | Nicholas |
+| D03 | Verify motor and encoder polarity, counts/revolution, ratings/levels, geometry, full car/turning envelope and maximum edge rate. Remote signs +1/+1 versus local -1/+1 are not a calibration decision; preserve barcode half-range bound | S2 / Nicholas |
+| D04 | Mounted IR position/spacing/height, contrast/noise/lighting range and barcode black polarity; wiring user-confirmed, measured sensing margins still pending | S3 |
+| D05 | Sonar electrical behavior user-confirmed; retain recorded Echo-voltage evidence when available. Calibrate repeat interval/range/servo centre/endpoints/settling, sample groups/median/edge hysteresis, coverage and width-estimation uncertainty | S5 |
+| D06 | Stationary boot IMU calibration before IR: bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Confirm half-speed completion and proposed results-retained-on-stop/new-start-reset lifecycle | S4 / Nicholas |
+| D07 | Wheel/line gains, speed/duty/distance/turn/stall limits; 25 mm crossing tolerance; exact moving +/-70 degree sweep sequence for two back-and-forth attempts, creep speed, travel budget and stable intended-line confirmation; bypass/depth/clearance budgets | Owners / Nicholas |
+| D08 | Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | S2 / Nicholas |
+| D09 | Instructor WiFi/broker settings; normal mission requires both before starting, loss mid-run report-only. Decide whether professor buffer wording requires literal RTOS message buffers; existing bounded TX/RX rings retained provisionally | S1 / Nicholas |
+| D10 | Agree first-cut lateral/turn/height/width error, recovery travel and repeatability targets before corresponding physical PASS; label proposals separately from course thresholds | Nicholas |
+| D11 | Settled 2026-10-29: barcode left, hump right. Validate sensing after reverse/U-turn traversal without inventing mirrored lane placement | S3 / S4 |
+| D12 | Straight-only obstacles are the user's operating assumption; confirm course applicability despite inconsistent earlier briefing wording; do not claim curved-course bypass support | Nicholas |
+| D13 | Numeric target priorities/periods, execution budgets, timeout slack, data-age limits, worst sensor-to-PWM latency, GPIO ISR time, stack margin and load-test criteria; user authorized existing numeric settings as provisional software defaults on 2026-10-29; physical scheduling/age acceptance remains open | Owners / Nicholas |
+| D14 | Core swap superseded. Audit core-0 I/O integration, cross-core event producers/mapping hand-off, synchronization and required initialization order; kernel WiFi/USB and capture core unchanged | Owners |
+| D15 | Watchdog reset policy/scope, enabled-state audit and physical reset/output behavior; tick initialization is not proof of watchdog protection. No new framework in this restructure | Nicholas |
+| D16 | Settled 2026-10-29: configurable 15 cm is the obstacle trigger distance (150 mm). It does not authorize any travel without valid forward sonar | Nicholas |
+
+Implementation note (2026-10-29, #130): Mission's local reset handshake has
+three exclusive states (boot, await GP21 press, await GP21 release), encoded as
+0..2 in a private `uint8_t` (2 logical bits, 8 stored; no wire field). Unknown
+state cannot request reset. Stop request/service counters remain wrapping
+32-bit core-1 counters; reset requires equality inside the output exclusion
+section. The software brake acknowledgement is not physical stationarity.
+User authorized retaining existing timing/age constants as provisional defaults
+for software implementation; D13 physical measurement/acceptance remains open.
+
+Software restructure storage contract (2026-10-29, #131–#133; no new wire fields):
+
+| Field / owner | Range and representation | Validity / overflow | Logical / stored bits |
+| --- | --- | --- | --- |
+| Mission state / navigation phase, Mission | State codes 0 READY, 1 FOLLOW_LINE, 2 NAVIGATE, 3 SCAN, 4 BYPASS, 5 REACQUIRE, 6 STOPPED; phases 0..5 | State 7 invalid -> stop; phases private, produced only by coordinator | 3 + 3 in private byte; published state remains atomic byte, existing 4-bit wire slot |
+| Pending mapping, I/O | Existing four 5-bit letters + mapped bit; sequence 0..255 at bits 21..28 | Submit rejects invalid/duplicate letters and occupied hand-off | 29 / one 32-bit word |
+| Mapping reply, Mission | Sequence bits 0..7; ACK result 0..3 at bits 8..9 | Reply only after Mission's install/reject decision | 10 / one 32-bit word |
+| Mapping progress, one writer per counter | Request/reply tickets plus private submit/consume/take counters, modulo 2^32 | One outstanding request through reply consumption; no overwrite | 32 each |
+| Terrain evidence, I/O | Existing terrain word, acquisition/service ms and attempt sequence uint32; acquisition validity 1 bit | Pending data does not renew acquisition time; copy/age/validity required; timestamps wrap | 4 x 32 + 1 logical; naturally aligned 20-byte snapshot |
+| IMU startup outcome, I/O | 0 pending, 1 calibrated, 2 failed | Missing IMU publishes failed; never interpreted as calibrated | 2 / one 32-bit word |
+| S5 step phase/flags, Mission | Phase 0..2 + initialized/ready/scanning; scan counts 0..9, scan ID 0..15, angle -60..60 | Fixed nine-ray capacity; deadline/cancel/movement abort; no echo invalid | 2+3 bits; counts 4 each, ID 4, signed angle 7 |
+| Link readiness, kernel WiFi | bit 0 WiFi, bit 1 broker; boot 0 | Both required for local start; run loss report-only | 2 / one 32-bit word |
+| Event drops, I/O and Mission | Existing ring overflow plus one per-core failure counter, uint32 | Saturate at UINT32_MAX; no ACK/delivery claim | 32 each |
+
+These describe software storage, not physical calibration. Existing private
+Mission PID/action float history is retained from the checkpoint; the final
+minimum-bit/resource audit remains Stage 9 work. MQTT byte counts stay unchanged;
+the seven-state meaning replaces the old CALIBRATE/COMPLETE state labels, so
+clients must use the updated state table. Historical golden bytes remain intact.
+
+Proposed remaining-feature software storage (implementation work; no calibration
+or physical acceptance implied): bounded sonar groups store up to five unsigned
+16-bit millimetre values; four counters in 0..5 (attempts, accepted, requested,
+minimum valid) use three bits each in a private 16-bit unit. The existing Echo invalid code 8191, larger inputs and zero are rejected;
+valid values are 1..8190 (13 logical bits per 16-bit array entry).
+The valid minimum must be a strict majority. A completed group with too few
+valid samples returns unknown, never clear space.
+Sorting uses a five-element local copy; even valid counts use the rounded mean
+of the two central measurements with 32-bit addition. This defines computation,
+not an accuracy rating or an accepted production sample count.
+
+Proposed profile-edge helper contract: configuration is supplied explicitly by
+its caller, with no calibration inferred. Depth enter/exit hysteresis, optional
+empty-scene background separation, range uncertainty, expected maximum obstacle
+width, required adjacent rays and maximum angular sample gap are unsigned
+integers in millimetres/degrees as named. UINT16_MAX range uncertainty means
+unknown; in that case the width estimate remains an estimate but planning
+clearances are zero. Evidence stores unsigned 16-bit angular/range model width
+uncertainty and planning width, plus four-bit foreground/free-ray counts and
+one-bit edge-valid flags. The model bound excludes unmeasured beam, mounting and
+object-shape effects. These remain D03/D05/D10 physical measurements, not a
+module accuracy rating. No MQTT fields are added.
+
+User steering, 2026-10-29: use the pin allocation in team.md; recovery/filtering
+operating settings and the proposed Terrain new-run reset lifecycle remain
+pending. New helper configuration uses explicit caller-supplied values in host
+fixtures. Unknown production settings are encoded as zero/invalid and stop the
+corresponding manoeuvre; no provisional values are silently enabled.
+
+Junction qualifier correction: Mission records the 32-bit timestamp of the last
+qualification sample and two one-bit flags (black encounter still open, qualified)
+beside its one-bit broad-encounter flag in one private byte. Only distinct usable
+black acquisitions may qualify the existing encoder-distance threshold; forced
+25 mm crossing travel after black has ended cannot qualify an earlier thin patch.
+No mounted geometric tolerance is claimed by these software flags.
+
+Continuation storage: `s5_range_sample_t` contains the existing packed word plus
+full 32-bit acquisition time and sequence (12 bytes). Mission owns its current
+front/side pair; a separate pair is copied under the existing profile mutex for
+optional core-0 reporting, preserving original times when publication is busy.
+`s5_profile_snapshot_t` combines the 14-byte profile, six-byte edge/model evidence
+and a 32-bit scan-completion timestamp (24 bytes). No new RTOS objects or wire
+fields are introduced. The 16-bit Echo display timestamp is never a control
+freshness clock. The compile-time bypass-release flag is zero while measured
+envelope/coverage and the deferred policies are unavailable; this is an inhibit,
+not a calibrated threshold.
+
+Decisions confirmed 2026-10-29: recovery always starts left, with targets +70,
+-70, +70, -70 degrees relative to the loss heading; Terrain results persist
+across accepted starts and stops until reboot. Numerical proposals may now be
+implemented, with physical release inhibited. This supersedes the earlier
+"keep choices pending" instruction for preparing proposals, not calibration.
+
+Uncalibrated software proposals for review (not course limits/module ratings):
+
+| Setting | Proposal / purpose | Physical acceptance |
+| --- | --- | --- |
+| Recovery | 30 mm/s, steering magnitude 96/127, 30 s / 900 mm total budget, 5 degree target tolerance | D03/D07/D08/D13 pending |
+| Recovery alignment | Original heading within 15 degrees; absolute error <=25/127 for three distinct acquisitions | D04/D07/D10 pending |
+| Scan | Three samples, at least two valid; depth enter/exit bands 30/60 mm; two adjacent rays; model range uncertainty 10 mm | D05/D10 pending; uncertainty is a proposed model input, not sensor accuracy |
+| Servo sampling | Proposed +/-75 degrees to observe lateral gaps at a 150 mm trigger; existing 300 ms settle and 60 ms repeat | Verify endpoints/mounting before release, D05 |
+| Bypass | 60 mm/s, <=50 mm motion chunks, 90 s / 4000 mm whole budget; <=2 s / two completed groups per sensing phase | D02/D03/D05/D07/D08/D13 pending |
+| Bypass geometry | Body length/width 200/180 mm, 30 mm clearance; offset >=250 mm, <=600 mm; conservative obstacle width >=200 mm | Proposals only; measure full swept envelope, D03 |
+| Rear-edge / return | Two distinct qualified side groups; 150/100 mm enter/release jump; <=1500 mm pass, <=250 mm baseline search; return within 25 mm lateral / 5 degrees and three distinct tracking acquisitions | D02/D05/D07/D10 pending |
+| Height quality | Raw acceleration norm 900..1100 mg, wheel speed difference <=30 mm/s, speed change <=30 mm/s per fresh sample, 200 ms steady data before a height window | D06/D07/D10 pending; suppress unqualified height results |
+| Retry / reverse | One stationary rescan; no autonomous reverse without rear-coverage support | Retry is a proposal; reverse remains unsupported |
+
+Storage contract before implementation: recovery keeps two 32-bit encoder origins,
+32-bit start/acquisition times and one byte of phase/leg/confirmation flags.
+Bypass keeps bounded encoder odometry in signed Q8 millimetres (21 logical bits
+per axis within +/-4000 mm), signed centidegree heading, 32-bit timestamps/counts,
+16-bit bounded leg/range results and encoded phase/flags. These are private
+Mission state; no new task, route planner, event bus or network command is added.
+At proposed +/-75 degree servo angles, angle needs eight signed bits; ray validity
+needs one more bit. `ObstacleRay` becomes four packed bytes; `ObstacleProfile`
+remains 14 bytes because its previous alignment byte holds validity. Side-watch
+uses eight angle bits plus one enable bit in its existing atomic word. Terrain
+adds one window-quality bit beside its existing classification/result flags;
+completed count/maximum/last results are never reset on accepted starts.

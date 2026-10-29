@@ -1,4 +1,5 @@
 #include "subsystem5.h"
+#include "range_filter.h"
 #include <stdatomic.h>
 #include "../common/drv_gpio_irq.h"
 #include "../common/robot_time.h"
@@ -16,6 +17,18 @@ static rd_word_t front_word;			/* writer: the obstacle task */
 static rd_word_t side_word;			/* writer: the obstacle task */
 static rd_word_t scan_word;			/* writer: the obstacle task */
 static ID profile_mutex;
+static s5_profile_evidence_t profile_evidence;
+static uint32_t profile_sampled_ms;
+static s5_range_sample_t report_samples[2]; /* guarded by profile_mutex */
+static s5_range_sample_t range_samples[2]; /* Mission-only, not cross-core */
+static const s5_profile_config_t profile_config = {
+    .depth_enter_mm = S5_PROFILE_DEPTH_ENTER_MM,
+    .depth_exit_mm = S5_PROFILE_DEPTH_EXIT_MM,
+    .background_separation_mm = 0u, /* no empty-scene reference supplied */
+    .range_uncertainty_mm = S5_PROFILE_RANGE_ERROR_MM,
+    .planning_width_mm = S5_EXPECTED_MAX_WIDTH_MM,
+    .adjacent_rays = S5_PROFILE_ADJACENT_RAYS,
+    .maximum_gap_deg = SERVO_MAX_DEG - S5_COARSE_STEP_DEG};
 static ObstacleProfile profile;			/* guarded by profile_mutex */
 static bool profile_ready;			/* guarded by profile_mutex */
 /* Mission -> Obstacle requests: one writer per counter (no atomic RMW on M0+). */
@@ -33,7 +46,11 @@ uint32_t s5_scan_word(void) { return rd_word_read(&scan_word); }
 
 void s5_scan_request(uint8_t scan_id)
 {
-    atomic_store_explicit(&requested_scan_id, scan_id & 0xFu, memory_order_relaxed);
+    if (scan_id > 15u)
+    {
+        return;
+    }
+    atomic_store_explicit(&requested_scan_id, scan_id, memory_order_relaxed);
     atomic_store_explicit(&scan_requests, atomic_load_explicit(&scan_requests, memory_order_relaxed) + 1u,
         memory_order_release);
 }
@@ -138,6 +155,7 @@ typedef enum { S5_ACQUIRE_IDLE, S5_ACQUIRE_SETTLE, S5_ACQUIRE_ECHO } s5_acquire_
 
 typedef struct
 {
+    s5_range_group_t group;
     ObstacleRay rays[S5_SCAN_CAPACITY];
     int16_t angles[S5_SCAN_CAPACITY];
     uint32_t scan_started_ms, sent_us, settle_since_ms, next_ping_ms;
@@ -151,13 +169,24 @@ typedef struct
     uint8_t initialized : 1;
     uint8_t ready : 1;
     uint8_t scanning : 1;
-    int8_t angle : 7;
+    int8_t angle;
 } s5_acquisition_t;
 
 _Static_assert(S5_SCAN_CAPACITY <= 15u,
     "scan counts must fit their four-bit fields");
 _Static_assert((2 * SERVO_MAX_DEG) / S5_COARSE_STEP_DEG + 1 <= S5_SCAN_CAPACITY,
     "coarse scan must fit fixed capture storage");
+_Static_assert(S5_SCAN_GROUP_SAMPLES == 0u ||
+    (S5_SCAN_GROUP_SAMPLES >= 3u && S5_SCAN_GROUP_SAMPLES <= S5_RANGE_GROUP_CAPACITY && (S5_SCAN_GROUP_SAMPLES & 1u) != 0u),
+    "scan group is unknown or an odd bounded count");
+_Static_assert(S5_SCAN_MIN_VALID <= S5_SCAN_GROUP_SAMPLES,
+    "valid sample minimum must fit its group");
+_Static_assert(S5_PROFILE_ADJACENT_RAYS == 0u ||
+    (S5_PROFILE_ADJACENT_RAYS >= 2u && S5_PROFILE_ADJACENT_RAYS <= S5_SCAN_CAPACITY),
+    "edge qualification needs bounded adjacent rays");
+_Static_assert(S5_PROFILE_DEPTH_ENTER_MM <= 65535u &&
+    S5_PROFILE_DEPTH_EXIT_MM <= 65535u && S5_PROFILE_RANGE_ERROR_MM <= 65535u,
+    "profile settings must fit their representation");
 static s5_acquisition_t acquisition;
 
 static void publish_scan(s5_scan_state_t state, uint8_t id)
@@ -191,10 +220,14 @@ static void finish_scan(s5_scan_state_t state, uint32_t now)
     if (state == S5_SCAN_DONE)
     {
         ObstacleProfile built;
-        bool ok = s5_profile_build(acquisition.rays, acquisition.count, &built);
+        s5_profile_evidence_t evidence;
+        bool ok = s5_profile_estimate(acquisition.rays, acquisition.count, NULL,
+            &profile_config, &built, &evidence);
         if (ok && tk_loc_mtx(profile_mutex, TMO_POL) >= E_OK)
         {
             profile = built;
+            profile_evidence = evidence;
+            profile_sampled_ms = now;
             profile_ready = true;
             if (tk_unl_mtx(profile_mutex) < E_OK)
             {
@@ -219,6 +252,26 @@ static void range_complete(uint32_t range, uint32_t now)
     acquisition.phase = S5_ACQUIRE_IDLE;
     if (acquisition.scanning)
     {
+        if (acquisition.group.requested == 0u &&
+            !s5_range_group_begin(&acquisition.group, S5_SCAN_GROUP_SAMPLES,
+                S5_SCAN_MIN_VALID))
+        {
+            finish_scan(S5_SCAN_FAILED, now);
+            return;
+        }
+        if (!s5_range_group_push(&acquisition.group, range))
+        {
+            finish_scan(S5_SCAN_FAILED, now);
+            return;
+        }
+        if (!s5_range_group_complete(&acquisition.group))
+        {
+            return; /* Same settled angle, next trigger at the repeat deadline. */
+        }
+        uint16_t filtered;
+        range = s5_range_group_median(&acquisition.group, &filtered) ?
+            filtered : ECHO_RANGE_INVALID;
+        acquisition.group = (s5_range_group_t){0};
         unsigned index = acquisition.count;
         acquisition.rays[index] = s5_ray_make(acquisition.angles[index],
             (uint16_t)(range == ECHO_RANGE_INVALID ? 0u : range),
@@ -226,8 +279,8 @@ static void range_complete(uint32_t range, uint32_t now)
         ++acquisition.count;
         if (acquisition.count == acquisition.coarse)
         {
-            unsigned extra = s5_fine_angles(acquisition.rays,
-                acquisition.count, &acquisition.angles[acquisition.planned],
+            unsigned extra = s5_profile_fine_angles(acquisition.rays,
+                acquisition.count, &profile_config, &acquisition.angles[acquisition.planned],
                 S5_SCAN_CAPACITY - acquisition.planned);
             acquisition.planned = (uint8_t)(acquisition.planned + extra);
         }
@@ -248,11 +301,19 @@ static void range_complete(uint32_t range, uint32_t now)
     }
     if (acquisition.angle != 0)
     {
-        rd_word_publish(&side_word, echo_pack(range, now));
+        uint32_t word = echo_pack(range, now);
+        range_samples[1].word = word;
+        range_samples[1].sampled_ms = now;
+        ++range_samples[1].sequence;
+        rd_word_publish(&side_word, word);
     }
     else
     {
-        rd_word_publish(&front_word, echo_pack(range, now));
+        uint32_t word = echo_pack(range, now);
+        range_samples[0].word = word;
+        range_samples[0].sampled_ms = now;
+        ++range_samples[0].sequence;
+        rd_word_publish(&front_word, word);
         if (echo_note(&acquisition.misses, range != ECHO_RANGE_INVALID))
         {
             rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
@@ -261,6 +322,12 @@ static void range_complete(uint32_t range, uint32_t now)
         {
             rd_fault_clear(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
         }
+    }
+    if (tk_loc_mtx(profile_mutex, TMO_POL) >= E_OK)
+    {
+        report_samples[0] = range_samples[0];
+        report_samples[1] = range_samples[1];
+        (void)tk_unl_mtx(profile_mutex);
     }
 }
 
@@ -319,12 +386,26 @@ void s5_step(uint32_t now)
         acquisition.id = atomic_load_explicit(&requested_scan_id, memory_order_relaxed);
         acquisition.left_origin = drv_encoder_count(ENCODER_LEFT);
         acquisition.right_origin = drv_encoder_count(ENCODER_RIGHT);
+        cancel_echo();
+        acquisition.phase = S5_ACQUIRE_IDLE;
         acquisition.scan_started_ms = now;
+        acquisition.group = (s5_range_group_t){0};
+        if (S5_SCAN_GROUP_SAMPLES == 0u || S5_SCAN_MIN_VALID == 0u ||
+            S5_PROFILE_ADJACENT_RAYS < 2u || S5_PROFILE_DEPTH_ENTER_MM == 0u ||
+            S5_PROFILE_DEPTH_EXIT_MM < S5_PROFILE_DEPTH_ENTER_MM ||
+            !s5_range_group_begin(&acquisition.group, S5_SCAN_GROUP_SAMPLES,
+                S5_SCAN_MIN_VALID))
+        {
+            publish_scan(S5_SCAN_FAILED, acquisition.id);
+            return; /* Explicit pending D05, never execute an unsupported scan. */
+        }
         acquisition.count = 0u;
         acquisition.planned = 0u;
-        for (int a = -SERVO_MAX_DEG; a <= SERVO_MAX_DEG; a += S5_COARSE_STEP_DEG)
+        const int16_t coarse_angles[] = {-SERVO_MAX_DEG, -S5_COARSE_STEP_DEG,
+            0, S5_COARSE_STEP_DEG, SERVO_MAX_DEG};
+        for (unsigned i = 0u; i < 5u; ++i)
         {
-            acquisition.angles[acquisition.planned++] = (int16_t)a;
+            acquisition.angles[acquisition.planned++] = coarse_angles[i];
         }
         acquisition.coarse = acquisition.planned;
         acquisition.scanning = true;
@@ -390,4 +471,56 @@ ER s5_profile_copy(ObstacleProfile *out)
 ER s5_profile_try_copy(ObstacleProfile *out)
 {
     return profile_copy(out, TMO_POL);
+}
+
+ER s5_range_samples(s5_range_sample_t *front, s5_range_sample_t *side)
+{
+    if (front == NULL || side == NULL)
+    {
+        return E_PAR;
+    }
+    if (tk_get_prc() != 2)
+    {
+        return E_CTX;
+    }
+    *front = range_samples[0];
+    *side = range_samples[1];
+    return E_OK;
+}
+
+ER s5_profile_snapshot(s5_profile_snapshot_t *out)
+{
+    if (out == NULL || profile_mutex <= 0)
+    {
+        return E_PAR;
+    }
+    ER er = tk_loc_mtx(profile_mutex, RD_SNAPSHOT_LOCK_MS);
+    if (er < E_OK)
+    {
+        return er;
+    }
+    bool ready = profile_ready;
+    if (ready)
+    {
+        *out = (s5_profile_snapshot_t){.profile = profile,
+            .evidence = profile_evidence, .sampled_ms = profile_sampled_ms};
+    }
+    er = tk_unl_mtx(profile_mutex);
+    return er < E_OK ? er : (ready ? E_OK : E_OBJ);
+}
+
+ER s5_range_try_copy(s5_range_sample_t *front, s5_range_sample_t *side)
+{
+    if (front == NULL || side == NULL || profile_mutex <= 0)
+    {
+        return E_PAR;
+    }
+    ER er = tk_loc_mtx(profile_mutex, TMO_POL);
+    if (er < E_OK)
+    {
+        return er;
+    }
+    *front = report_samples[0];
+    *side = report_samples[1];
+    return tk_unl_mtx(profile_mutex);
 }

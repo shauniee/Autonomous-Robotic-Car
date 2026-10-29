@@ -1,0 +1,116 @@
+{
+  "title": "Choose the dashboard's visual world",
+  "question": "Robot Telemetry redesign: status at a glance, barcode mapping beside Mission state. Keep the roll, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "kind": "assigned",
+      "label": "Swiss Grid Bulletin",
+      "kicker": "THE ROLL",
+      "lineage": "International Typographic Style (Müller-Brockmann posters)",
+      "thesis": "Robot health set as a strict flush-left typographic grid where state is the headline and red means stop.",
+      "palette": ["#f3f1ec", "#111111", "#e2231a", "#1f8a4c", "#d99a00"],
+      "materials": ["12-column visible grid", "grotesk numerals", "one signal red"],
+      "viewport": "Top bar with link and frame age; a six-cell status row (Mission, Line, Obstacle, Terrain, Motion, Faults) with each state set large and flush-left; mapping panel docked right of Mission with four letter inputs and Send; speed chart and event log below on the same grid.",
+      "risk": "Can turn cold and poster-like if the grid crowds out standard controls.",
+      "raised": [
+        {"from": "challenger-crouwel", "raise": "The 12-column grid is a real layout armature, shown as hairlines, not decoration."},
+        {"from": "challenger-atlas", "raise": "Severity uses a fixed size ramp: an active fault grows its cell's rule, so it reads before any word."},
+        {"from": "challenger-wallet", "raise": "Nothing disappears: cleared faults and refused mappings stay in the log struck through."},
+        {"from": "challenger-roster", "raise": "Each subsystem has fixed slots that never move, so the eye learns where everything lives."}
+      ],
+      "html": ".impeccable/mocks/decision/assigned.html"
+    },
+    {
+      "id": "model-pick",
+      "kind": "pick",
+      "label": "MRT Line Map",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "Singapore MRT system map and station signage",
+      "thesis": "Each subsystem is a coloured line, and the run's event record is drawn as a route of stations.",
+      "palette": ["#ffffff", "#1a1a1a", "#d42e12", "#009645", "#9900aa", "#fa9e0d", "#005ec4"],
+      "materials": ["line-colour codes", "station roundels", "wayfinding signage type"],
+      "viewport": "Header with link pills; six subsystem tiles each tagged with its line colour; mapping panel beside Mission; a horizontal route strip where barcodes, humps, obstacles and turns appear as stations with time and encoder position.",
+      "risk": "Familiar local reference; the route strip is only approximate because there is no localisation.",
+      "html": ".impeccable/mocks/decision/model-pick.html"
+    },
+    {
+      "id": "challenger-splitflap",
+      "kind": "challenger",
+      "catalogId": "signals-instruments-split-flap-concourse",
+      "label": "Split-Flap Board",
+      "verdict": "competitive",
+      "lineage": "rail concourse departure boards",
+      "thesis": "Subsystems as board rows in fixed columns; mapping letters set in flap cells.",
+      "palette": ["#121212", "#1d1d1d", "#f2f2f2", "#ffb000", "#c8352b"],
+      "materials": ["matte flap cells", "condensed caps", "amber row lamps"],
+      "viewport": "Dark board: one row per subsystem with state, value and fault columns; four flap cells for L R S U with Send; events as a departures list below.",
+      "case": "Fuses well: subsystems map to rows and the four letters to flap cells; holds clarity but is less familiar to a bench team.",
+      "risk": "Flip animation can lag a 500 ms stream and read as novelty.",
+      "hero": "https://impeccable.style/worlds/cards/signals-instruments-split-flap-concourse-hero.webp",
+      "html": ".impeccable/mocks/decision/challenger-splitflap.html"
+    },
+    {
+      "id": "challenger-console",
+      "kind": "challenger",
+      "catalogId": "digital-design-canon-dark-first-developer-console",
+      "label": "Graphite Console",
+      "verdict": "competitive",
+      "lineage": "dark-first developer consoles",
+      "thesis": "Hairline-seamed graphite panels; the Send mapping action stands alone so it is never hit by accident.",
+      "palette": ["#16181d", "#1f2228", "#2c3038", "#5ccfe6", "#87d96c", "#f28779"],
+      "materials": ["hairline seams", "monospaced figures", "small-caps panel heads"],
+      "viewport": "Persistent panels: status column left, mapping panel top right with isolated Send, chart and event log filling the rest.",
+      "case": "Very clear working product; loses on identity since it looks like every dev tool.",
+      "risk": "Close to the category default and dim on a bright lab bench.",
+      "hero": "https://impeccable.style/worlds/cards/digital-design-canon-dark-first-developer-console-hero.webp",
+      "html": ".impeccable/mocks/decision/challenger-console.html"
+    },
+    {
+      "id": "challenger-crouwel", "kind": "challenger", "catalogId": "crouwel-grid-specimen",
+      "label": "Crouwel Grid Specimen", "verdict": "declined", "lineage": "Wim Crouwel grid posters",
+      "thesis": "Letterforms built on a visible construction grid.", "palette": ["#ffffff", "#1d4ed8", "#111111"],
+      "materials": ["graph-paper grid"], "viewport": "Mapping letters drawn cell by cell.",
+      "case": "Near-duplicate of the roll with weaker clarity.", "risk": "Display letterforms slow reading.",
+      "kept": "A visible grid that is the real layout armature."
+    },
+    {
+      "id": "challenger-atlas", "kind": "challenger", "catalogId": "notation-diagram-systems-star-atlas",
+      "label": "Star Atlas", "verdict": "declined", "lineage": "celestial charts",
+      "thesis": "Magnitude as dot size on a navy chart.", "palette": ["#0d1b33", "#f4f1e8", "#e0412b"],
+      "materials": ["chart plates"], "viewport": "Subsystems as stars.",
+      "case": "Team does not identify with it and states become harder to read.", "risk": "Decorative.",
+      "kept": "A fixed size ramp for severity."
+    },
+    {
+      "id": "challenger-roster", "kind": "challenger", "catalogId": "pop-culture-shelf-character-goods-catalog",
+      "label": "Character Goods Catalog", "verdict": "declined", "lineage": "mascot rosters",
+      "thesis": "A ranked roster of characters.", "palette": ["#fde2e4", "#cde7f0", "#ff6b6b"],
+      "materials": ["pastel cells"], "viewport": "Subsystems as mascots.",
+      "case": "Undercuts fault seriousness.", "risk": "Playful where faults matter.",
+      "kept": "A finite roster with fixed slots per member."
+    },
+    {
+      "id": "challenger-wallet", "kind": "challenger", "catalogId": "vernacular-ephemera-jet-age-ticket-wallet",
+      "label": "Jet-Age Ticket Wallet", "verdict": "declined", "lineage": "airline coupon books",
+      "thesis": "Mission legs as tear-off coupons.", "palette": ["#1b2a52", "#c8102e", "#f7f5ef"],
+      "materials": ["carbon coupons"], "viewport": "Mapping as a ticket.",
+      "case": "Coupon flow hides live state.", "risk": "Nostalgic costume.",
+      "kept": "Nothing disappears; it cancels."
+    }
+  ],
+  "reroll": {"registers": ["safer", "bolder"]},
+  "buildPath": {"value": "code"},
+  "canon": true,
+  "canonCard": {
+    "kind": "canon",
+    "label": "The category standard",
+    "thesis": "A clean light card-grid telemetry dashboard, executed impeccably.",
+    "palette": ["#f6f7f9", "#ffffff", "#111827", "#2563eb"],
+    "materials": ["card grid", "status pills"],
+    "viewport": "Header pills, a grid of status cards with a mapping card first, chart and log below.",
+    "risk": "Close to today's dashboard; little to tell it apart.",
+    "html": ".impeccable/mocks/decision/canon.html"
+  },
+  "steer": true
+}

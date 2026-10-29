@@ -49,4 +49,17 @@ static inline bool echo_note(uint32_t *misses, bool got_echo)
     return *misses >= SONAR_NO_ECHO_LIMIT;
 }
 
+/* Coherent acquisition evidence; packed low time bits remain display-only. */
+typedef struct
+{
+    uint32_t word, sampled_ms, sequence;
+} s5_range_sample_t;
+
+static inline bool s5_range_sample_fresh(const s5_range_sample_t *sample,
+    uint32_t now, uint32_t maximum_age_ms)
+{
+    return sample != 0 && sample->sequence != 0u && echo_valid(sample->word) &&
+        (uint32_t)(now - sample->sampled_ms) <= maximum_age_ms;
+}
+
 #endif /* ECHO_RANGE_H */

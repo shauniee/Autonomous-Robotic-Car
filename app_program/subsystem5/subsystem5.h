@@ -4,9 +4,24 @@
 #include "../app.h"
 #include "echo_range.h"
 #include "obstacle_profile.h"
+#include "profile_edges.h"
 
 ER subsystem5_init(void);
 void s5_step(uint32_t now_ms);
+/* Mission-only (same task as s5_step): full timestamps prevent the packed
+   16-bit display time from reviving a frozen reading after 65536 ms. */
+ER s5_range_samples(s5_range_sample_t *front, s5_range_sample_t *side);
+/* Optional cross-core reporting mirror; nonwaiting coherent copy. */
+ER s5_range_try_copy(s5_range_sample_t *front, s5_range_sample_t *side);
+
+typedef struct
+{
+    ObstacleProfile profile;
+    s5_profile_evidence_t evidence;
+    uint32_t sampled_ms;
+} s5_profile_snapshot_t;
+_Static_assert(sizeof(s5_profile_snapshot_t) == 24u, "profile snapshot ABI");
+ER s5_profile_snapshot(s5_profile_snapshot_t *out);
 
 /* Front-range word (see echo_range.h): one load, any task. 0 before the first
    reading; a word with valid = 0 means no echo, never clear space. */

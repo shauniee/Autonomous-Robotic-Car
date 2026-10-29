@@ -1,0 +1,4 @@
+INT-11 initial verification attempt, 2026-10-29
+Git HEAD object read failed: fatal: mmap failed: Operation timed out.
+The attempt did not complete validation and does not establish a pass.
+Retry uses full index-to-worktree diffs after confirming no staged log changes.

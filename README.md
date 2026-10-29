@@ -1,7 +1,5 @@
 # CSC01 Autonomous Robotic Car
 
-An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, hump measurement, obstacle avoidance and WiFi telemetry. Firmware uses micro T-Kernel 3.0 on the RP2040. See [project specifications](docs/project-specs.md) for required outcomes and [Getting started](#getting-started) for what runs today.
-
 ## Contents
 
 - [Quick start with Docker](#quick-start-with-docker)
@@ -15,9 +13,13 @@ An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, h
   - [Bring-up order and project tasks](#bring-up-order-and-project-tasks)
 - [Build and flash without Docker](#build-and-flash-without-docker)
 
+Start with the [central implementation plan](plan.md): verified remote baseline, agreed features, dependencies and acceptance. Target behavior is not yet implemented; unresolved settings live in [pending decisions](docs/project-specs.md#pending-decisions).
+
+An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, hump measurement, obstacle avoidance and WiFi telemetry. Firmware uses micro T-Kernel 3.0 on the RP2040. See [project specifications](docs/project-specs.md) for required outcomes and [Getting started](#getting-started) for what runs today.
+
 ## Quick start with Docker
 
-Docker supplies the Arm compiler and Pico SDK 2.2.0, so building needs nothing else installed. Flashing is done from your computer, not the container.
+Docker supplies Mosquitto, the Python dashboard, the Arm compiler and Pico SDK 2.2.0. Flashing is done from your computer, not the container.
 
 1. Install and start [Docker Desktop](https://docs.docker.com/get-started/get-docker/) (Linux: Docker Engine). Windows: use the WSL 2 backend and run the commands below in a WSL Ubuntu terminal.
 2. Clone (private, access required) and open the repository root. In the coursework workspace, `code/` is the root.
@@ -27,51 +29,66 @@ Docker supplies the Arm compiler and Pico SDK 2.2.0, so building needs nothing e
    cd Autonomous-Robotic-Car
    ```
 
-3. Build the image once; rebuild it after `Dockerfile` changes:
-
-   ```sh
-   docker build -t robot-build .
-   ```
-
-4. Build the firmware with one of the four profiles below. Run builds one at a time because they share `build_make/`. TEST profiles inhibit the motors; normal profiles use `TEST=0`. See [Build profiles](#build-profiles) for option details and output filenames.
-
-   **Offline TEST — motors inhibited**
-
-   ```sh
-   docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build \
-     make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=1
-   ```
-
-   **Offline normal**
-
-   ```sh
-   docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build \
-     make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=0
-   ```
-
-   Before building a wireless profile, create the local credentials header if it does not already exist:
+3. Create the local credentials header, then edit `WIFI_SSID`, `WIFI_PASSWORD` and
+   `MQTT_BROKER_IP` (your Mac's LAN IPv4 address, from `ipconfig getifaddr en0`
+   or Wi-Fi settings). Use a reachable private 2.4 GHz network. Keep the header
+   local; never commit it. Rebuild firmware after changing it.
 
    ```sh
    test -e config/wifi_secrets.h || cp config/wifi_secrets.example.h config/wifi_secrets.h
+   docker compose up -d --build
    ```
 
-   Edit `config/wifi_secrets.h` with your `WIFI_SSID`, `WIFI_PASSWORD` and `MQTT_BROKER_IP` (the broker laptop's LAN IPv4 address). See [Wireless telemetry](#wireless-telemetry) for broker setup. The header is git-ignored; do not commit it. Wireless firmware embeds these credentials.
+   This starts Mosquitto on port 1883 and the dashboard at
+   <http://127.0.0.1:8080>. Open that exact address for barcode mapping.
+   Containers connect to `mosquitto`; the Pico connects to your Mac's LAN IP,
+   never `127.0.0.1`, `0.0.0.0` or the Docker service name.
+   The broker allows anonymous access without TLS: trusted bench network only.
+   No local Mosquitto or Python installation is needed.
 
-   **Wireless TEST — motors inhibited**
+4. Build wireless TEST firmware (motors inhibited):
 
    ```sh
-   docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build \
-     make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=1
+   docker compose run --rm --build --user "$(id -u):$(id -g)" firmware
    ```
 
-   **Wireless normal**
+   Builds share `build_make/`; run them one at a time. Other profiles use explicit
+   overrides (all retain the existing build toolchain):
 
    ```sh
-   docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build \
-     make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0
+   # Wireless normal
+   docker compose run --rm --build --user "$(id -u):$(id -g)" firmware make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0
+   # Offline TEST
+   docker compose run --rm --build --user "$(id -u):$(id -g)" firmware make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=1
+   # Offline normal
+   docker compose run --rm --build --user "$(id -u):$(id -g)" firmware make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=0
    ```
 
-5. Flash: hold BOOTSEL while connecting USB, release when **RPI-RP2** appears and copy `build_make/mtk3pico_smp1_usb_cdc_wifi_test.uf2` to the drive. Continue with [Power and flashing](#power-and-flashing) for power rules and serial checks.
+5. For initial wireless TEST checks, use USB power alone. Hold BOOTSEL while
+   connecting USB, release when **RPI-RP2** appears and copy
+   `build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2` to the drive.
+   Flashing is a host USB file copy. See [Build profiles](#build-profiles) for
+   other filenames and [Power and flashing](#power-and-flashing) before normal runs.
+
+Optional terminal monitoring, decoder self-test, logs and shutdown:
+
+```sh
+docker compose exec dashboard python /app/mqtt_client.py monitor --broker mosquitto
+docker compose exec dashboard python /app/mqtt_client.py --self-test
+docker compose logs -f
+docker compose down
+```
+
+The monitor is another view of the same messages, not another service. Other
+client actions (`map`, `snapshot`) also run through `docker compose exec dashboard
+python /app/mqtt_client.py ... --broker mosquitto`. The dashboard mounts the common
+firmware headers read-only so decoding uses the checkout's configured scales.
+
+If port 1883 is occupied, check `lsof -nP -iTCP:1883 -sTCP:LISTEN` and stop the
+previous broker before starting Compose. For port 8080, stop the previous dashboard.
+If the Pico cannot connect, check the laptop IP, firewall TCP 1883 access, Wi-Fi
+credentials and guest-network device isolation. `docker compose logs -f mosquitto
+dashboard` shows connection problems. Docker Desktop must be running.
 
 Prebuilt images: the `firmware` GitHub Actions workflow builds all four profiles on pushes to `main` and on pull requests and uploads the UF2 files as a run artifact. Its wireless images contain the placeholders from `config/wifi_secrets.example.h` and cannot join your network; build those yourself.
 
@@ -81,9 +98,10 @@ Docker and [native](#build-and-flash-without-docker) builds can share `build_mak
 
 | Guide | Use it for |
 | --- | --- |
+| [Implementation plan](plan.md) | Central roadmap and pinned remote/local source distinction |
 | [Project specifications](docs/project-specs.md) | Requirements, change requirement (minimum-bit), data table, assessment, pending decisions |
 | [Team](docs/team.md) | Owners, pins and wiring, task and kernel-object budget, interfaces, coding rules |
-| [Architecture](docs/architecture.md) | Tasks, authority, shared-data rules, MQTT protocol, subsystem navigation |
+| [Architecture](docs/architecture.md) | Target three-task contracts, looping Mission, stop/freshness rules, shared data and MQTT protocol |
 | [Subsystem guides](docs/architecture/) | `subsystem1.md` comms, `subsystem2.md` motion, `subsystem3.md` line/barcode/mission, `subsystem4.md` terrain, `subsystem5.md` obstacle |
 | [Tribunal 1 summary](docs/additional-docs/tribunal1.md) | Week 8 defence, decisions and gaps |
 | [Mission readiness checklist](testing/mission-readiness.md) | Ordered physical checks before a full run |
@@ -137,21 +155,23 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `TEST=1` | Firmware self-tests; forces S2 braking even if the controller enables motion |
 | `CRASH_REPORT=1` | Crash/console copy on UART0; project uses `0` (GP0/GP1 conflict, [pins](docs/team.md#2-pins)) |
 
-No active CMake target or dashboard build. Ordinary-Pico/Maker development uses the preserved handoff profile in [subsystem3](docs/architecture/subsystem3.md).
+No active CMake target. The local checkpoint includes an optional dashboard; it is not the verified remote-main baseline. Offline profiles remain build/test tools; the target normal mission requires WiFi and MQTT before start.
 
 ### Power and flashing
 
 **One power source at a time.** USB alone is for flashing and inhibited desktop checks. Disconnect USB before battery/power-bank operation; never add USB for logs during a powered trial. Reboot clears calibration; recalibrate after changing power.
 
-1. Check pins and conflicts ([team](docs/team.md#2-pins)). Current bench: motors, two line sensors, buttons, buzzer; barcode/IMU/sonar not active; servo signal held low.
+1. Check pins and conflicts ([team](docs/team.md#2-pins)). The user confirms documented wiring; actual active software and physical acceptance depend on the exact flashed revision. See the [source inventory](plan.md#remote-implementation-inventory), not an older minimal-bench assumption.
 2. Hold BOOTSEL while connecting USB; release when **RPI-RP2** appears; copy the matching **TEST** UF2 to the drive (WSL: `explorer.exe build_make`). The Pico reboots.
 3. Open USB serial at 115200: `screen /dev/tty.usbmodem<device> 115200` (Linux `/dev/ttyACM0`; Windows PuTTY/Serial Monitor on the COM port). Quit screen: Ctrl-A, K.
 4. Inspect startup, `[TEST] <ID> PASS|FAIL`, `[IR] ... SENSOR_ONLY` / `[LINE] ... MOTOR_INHIBITED`. Console output reports acquisition/calibration/state, not motor movement or measured duty. Record failures via [testing](testing/README.md).
-5. Before normal physical use: resolve the reported motor problem; record raised-wheel baseline, polarity and stop response. Flash the normal image, disconnect USB, connect the battery/power bank alone. Use camera/scope and optional wireless observations as physical evidence.
+5. Before normal physical use: verify motor/encoder polarity and record raised-wheel baseline and stop response. Flash the normal image, disconnect USB, connect the battery/power bank alone. Use camera/scope and optional wireless observations as physical evidence.
 
 ### Calibration and local controls
 
-Calibration is RAM-only; use the real mounting and surface. Enable the buzzer mute switch for audible feedback.
+The table below describes the working software control flow; physical release is pending the plan's calibration gates. Calibration is RAM-only; use the real mounting and surface. Enable audible buzzer feedback using its mute switch.
+
+Target startup/control instructions are owned by [architecture](docs/architecture.md#startup-and-local-controls): bounded boot IMU calibration attempt before IR calibration; WiFi/MQTT required at start; eligible GP21 release returns READY, then fresh GP20 starts. This reset behavior is implemented in the working source.
 
 | Step | Action | Expected response |
 | --- | --- | --- |
@@ -160,7 +180,7 @@ Calibration is RAM-only; use the real mounting and surface. Enable the buzzer mu
 | Map | `python3 scripts/mqtt_client.py map <L> <R> <S> <U> --broker <ip>` while stopped | `MAPPING ACK ... OK`; telemetry shows `mapped=yes` |
 | Start | Sensors on visible line, release then press GP20 | FOLLOW_LINE if mapped, calibration/data qualify and no start-blocking fault; otherwise refused and reported in telemetry. TEST still inhibits motors |
 | Stop | Press GP21 | Persistent stop; capture cancelled |
-| Reset | Clear cause, release GP21, freshly press GP20 | STOPPED to READY; valid calibration kept |
+| Reset | Clear cause; freshly press GP21, then release after braking is serviced | STOPPED to READY; valid calibration kept; no movement. A separate fresh GP20 press starts |
 | Restart | Release GP20, press again on a visible line | Fresh start; held buttons never restart |
 
 Capture duration/contrast and classification: [subsystem3](docs/architecture/subsystem3.md). Starting on fully white or broad black is rejected. Reboot replaces a completed calibration; failed white contrast clears both references. A plausible raw ADC value does not prove correct wiring. Controls are local; USB text commands and MQTT calibration/start/stop are retired. If capture is rejected, keep stopped and check connection, height, lighting, surface, raw contrast. If the controller stops, record the reason before reset. Software state does not prove the wheels are stationary.
@@ -171,39 +191,42 @@ Use a reachable private 2.4 GHz LAN; the lab broker allows anonymous access with
 
 1. `test -e config/wifi_secrets.h || cp config/wifi_secrets.example.h config/wifi_secrets.h`; edit `WIFI_SSID`, `WIFI_PASSWORD`, `MQTT_BROKER_IP` (laptop LAN IPv4, not `127.0.0.1`/`0.0.0.0`); for authenticated brokers also `MQTT_USERNAME`, `MQTT_PASSWORD`. Client-ID prefix gets a radio-MAC suffix; older local headers may omit new settings. The file is git-ignored; do not commit or print it.
 
-2. macOS: `brew install mosquitto`, `ipconfig getifaddr en0` (use the WiFi interface's address if different), `mosquitto -c config/mosquitto-lab.conf`. Linux/WSL: `mosquitto` + `mosquitto-clients`; ensure Pico reachability across WSL/firewall boundaries.
-3. Second terminal: `mosquitto_sub -h 127.0.0.1 -p 1883 -t 'robot/s3/#' -v`
+2. Start Docker Desktop, then `docker compose up -d --build` from the repository root.
+3. Open <http://127.0.0.1:8080> or run the optional terminal monitor below.
 4. Flash wireless TEST on USB alone and confirm messages originate from the Pico. After physical readiness, use normal firmware on battery alone and recalibrate.
 
-Laptop tool (binary protocol, schema v2):
+Laptop tool in Docker (binary protocol, schema v2):
 
 ```sh
-python3 -m pip install -r scripts/requirements-mqtt.txt
-python3 scripts/mqtt_client.py monitor --broker <broker-lan-ip>
-python3 scripts/mqtt_client.py map A B C D --broker <broker-lan-ip>
-python3 scripts/mqtt_client.py snapshot --broker <broker-lan-ip>
+docker compose exec dashboard python /app/mqtt_client.py monitor --broker mosquitto
+docker compose exec dashboard python /app/mqtt_client.py map A B C D --broker mosquitto
+docker compose exec dashboard python /app/mqtt_client.py snapshot --broker mosquitto
 ```
+
+For a non-Docker setup, install Mosquitto and the Python requirements locally:
+macOS `brew install mosquitto`, then `$(brew --prefix)/sbin/mosquitto -c config/mosquitto-lab.conf`;
+Linux/WSL install `mosquitto` and `mosquitto-clients` and allow Pico access through
+firewall/WSL boundaries. Install `scripts/requirements-mqtt.txt` in a Python virtual
+environment and run `python3 scripts/mqtt_client.py monitor --broker <broker-lan-ip>`.
+Do not run a local broker alongside Compose on the same port.
 
 - `monitor` prints every telemetry frame, event and acknowledgement as text, including active fault names and the speed/direction derived from encoder counts.
 - `map` sends the four mission-day letters in the order left, right, straight, U-turn and waits for the acknowledgement. The robot accepts it only while stopped, and a reboot clears it.
 - `snapshot` requests one telemetry frame.
 - `python3 scripts/mqtt_client.py --self-test` checks the decoder against the firmware golden vectors without a broker.
+- `python3 scripts/mqtt_client.py serve --broker <broker-lan-ip>` opens the live dashboard at `http://127.0.0.1:8080`. Its barcode-mapping strip sends the same mapping frame as `map` and shows the robot's acknowledgement; Send is enabled only while live telemetry reports READY or STOPPED. Open it at `127.0.0.1`, not `localhost`: the server refuses mapping requests from any other origin.
 
 Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--port` for other configs. Networking never starts, stops or drives the robot. Frame layouts: [architecture](docs/architecture.md#mqtt-binary-protocol-schema-version-2). The 500 ms stream cannot prove brief stop or recovery timing; broker loss does not change healthy local control.
 
 ### Bring-up order and project tasks
 
-1. Verify carrier/module, wiring, power, sensor levels; inhibited startup and calibration (All / S3).
-2. Diagnose motors; raised-wheel output, polarity, stop/reset limits, encoder counts/geometry (S2 / All).
-3. Tune wheel PID; straight/distance/turn accuracy; calibrated P line guidance at mounted height (S2 / S3).
-4. Capture known barcode patterns, reject invalid reads, implement one-shot navigation events (S3).
-5. Restore IMU wiring; calibrate axes; validate hump detection/height against references (S4).
-6. Verify sonar/servo; bounded coarse/fine profiles with independent forward freshness (S5).
-7. Integrate proposed Mission/Safety contracts, action leases, scan preconditions, bypass, original-line recovery (All).
-8. Integrate final mission telemetry; validate status subscription/recovery on Pico; measure network-load isolation (S1 / All).
-9. Record subsystem, integration and full mission acceptance; rehearse demo; confirm instructor access (All).
-
-Unknown values: [project-specs](docs/project-specs.md#pending-decisions).
+Follow [plan stages](plan.md#implementation-stages) for code changes and the
+[mission-readiness checklist](testing/mission-readiness.md) for physical checks.
+The plan starts with independent Motion protection, bounded Mission and I/O
+consolidation, then integrates/calibrates line, barcode junction actions, humps,
+obstacle profiling/bypass and mixed looping missions. No core swap or separate
+Safety task in target. Pending numeric values are recorded once in
+[project-specs](docs/project-specs.md#pending-decisions).
 
 ## Build and flash without Docker
 
@@ -234,3 +257,13 @@ Check: `arm-none-eabi-gcc --version`; `ls "$PICO_SDK_PATH/src"`. Clone (private,
 Build with the [Build profiles](#build-profiles) commands as written, from the repository root. `arm-none-eabi-gcc not found`: PATH wrong. Unset SDK path or missing USB/radio/network headers: fix SDK path/submodules.
 
 Flash as in [Power and flashing](#power-and-flashing): hold BOOTSEL while connecting USB, release when **RPI-RP2** appears and copy the profile's UF2 from `build_make/` to the drive.
+
+Software verification on 2026-10-29 is recorded in the [integration log](testing/integration/TEST_LOG.md#software-restructure--2026-10-29). Existing task periods, gains and checkpoint signs remain provisional software settings, not an instruction to flash an uncalibrated normal image. Offline profiles compile but cannot satisfy the normal WiFi/MQTT start prerequisite. Exactly three application tasks are created; see [architecture](docs/architecture.md#tasks).
+
+Current continuation: obstacle triggering follows the resolved D16 decision in
+[project specs](docs/project-specs.md#pending-decisions). Scan/filter settings
+remain unset and physical bypass release is inhibited; encountering the trigger
+brakes and an unsupported scan stops. Do not interpret the passing synthetic
+profile fixtures as an enabled full bypass. The user confirmed that physical
+trials are unavailable; [full-plan completion](plan.md#full-plan-continuation-audit)
+remains BLOCKED.

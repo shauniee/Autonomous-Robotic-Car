@@ -1,0 +1,6 @@
+NAME               IMAGE                 COMMAND                  SERVICE     CREATED         STATUS                    PORTS
+code-dashboard-1   code-dashboard        "python /app/mqtt_cl…"   dashboard   3 minutes ago   Up About a minute         127.0.0.1:8080->8080/tcp
+code-mosquitto-1   eclipse-mosquitto:2   "/docker-entrypoint.…"   mosquitto   3 minutes ago   Up 53 seconds (healthy)   0.0.0.0:1883->1883/tcp, [::]:1883->1883/tcp
+[code-dashboard:latest] sha256:9062b2475c7087a604d5e12e78ef694a398752294dfefed23cfff03c77c05464
+[code-firmware:latest] sha256:e159eef43c908e406d0fe1c3195767e76787f792b563833902931ed392170063
+[eclipse-mosquitto:2] sha256:860aeb5d63ce509508f6dcfb2bc8a1c1dd2bc60555b562b45ce90e52d8dabb0f

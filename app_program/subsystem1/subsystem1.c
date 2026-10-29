@@ -64,7 +64,10 @@ void s1_event(mqtt_event_kind_t kind, uint8_t arg, uint16_t arg2)
 
 static void gather(mqtt_telemetry_t *t, uint8_t sequence)
 {
-    uint32_t feedback = s2_feedback(), terrain = s4_terrain_word(), front = s5_front_word();
+    uint32_t feedback = s2_feedback(), terrain = s4_terrain_word();
+    s5_range_sample_t front_sample = {0}, side_sample = {0};
+    bool have_range = s5_range_try_copy(&front_sample, &side_sample) >= E_OK;
+    uint32_t front = front_sample.word;
     uint32_t barcode = rd_word_read(&last_barcode);
     S3IrSnapshot line = {0};
     ObstacleProfile profile = {0};
@@ -84,7 +87,8 @@ static void gather(mqtt_telemetry_t *t, uint8_t sequence)
         /* The maximum is valid once any hump completed, whatever the latest climb. */
         .hump_valid = terrain_hump_count(terrain) != 0u,
         .front_mm = (uint16_t)echo_range(front),
-        .front_valid = echo_valid(front),
+        .front_valid = have_range && s5_range_sample_fresh(&front_sample,
+            robot_time_ms(), 3u * SONAR_REPEAT_MS),
         .barcode_letter = (uint8_t)(barcode & 0x1Fu),
         .barcode_action = (uint8_t)((barcode >> 5) & 0x7u),
         .obstacle_width_mm = have_profile ? profile.width_mm : 0u,

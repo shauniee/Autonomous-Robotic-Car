@@ -5,6 +5,15 @@
 
 int main(void)
 {
+    s5_range_sample_t sample = {.word = echo_pack(150u, 100u),
+        .sampled_ms = 100u, .sequence = 1u};
+    assert(s5_range_sample_fresh(&sample, 160u, 60u));
+    assert(!s5_range_sample_fresh(&sample, 161u, 60u));
+    assert(!s5_range_sample_fresh(&sample, 100u + 65536u, 60u));
+    sample.sampled_ms = UINT32_MAX - 10u;
+    assert(s5_range_sample_fresh(&sample, 5u, 60u));
+    sample.sequence = 0u;
+    assert(!s5_range_sample_fresh(&sample, 5u, 60u));
     assert(echo_range_mm(SONAR_MIN_PULSE_US - 1u) == ECHO_RANGE_INVALID);	/* too short */
     assert(echo_range_mm(SONAR_TIMEOUT_US) == ECHO_RANGE_INVALID);		/* at the timeout */
     assert(echo_range_mm(0u) == ECHO_RANGE_INVALID);

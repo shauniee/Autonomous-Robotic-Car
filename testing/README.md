@@ -1,5 +1,11 @@
 # Testing and evidence
 
+## Contents
+
+- [Run and record](#run-and-record)
+- [Preserved software evidence](#preserved-software-evidence)
+- [Planned integrated trials](#planned-integrated-trials)
+
 Keep subsystem cases/results in `subsystemN/TEST_LOG.md`, cross-subsystem cases in `integration/TEST_LOG.md`, and physical/full-product cases in `system/TEST_LOG.md`. Saved evidence goes in the corresponding `logs/` directory.
 
 | Level | Stable IDs | Ownership / contract |
@@ -9,12 +15,6 @@ Keep subsystem cases/results in `subsystemN/TEST_LOG.md`, cross-subsystem cases 
 | System | `SYS-01`, …; planned `T01`–`T16` | Team; [requirements](../docs/project-specs.md) |
 
 IDs never change or get reused, including retired template cases. Retired definitions remain in the relevant log; placeholder template rows are not observations.
-
-## Contents
-
-- [Run and record](#run-and-record)
-- [Preserved software evidence](#preserved-software-evidence)
-- [Planned integrated trials](#planned-integrated-trials)
 
 ## Run and record
 
@@ -42,6 +42,15 @@ Actual wireless checks are SYS-09/10 through [wireless setup](../README.md#getti
 
 ## Planned integrated trials
 
+Target procedures follow [plan](../plan.md) and [mission-readiness](mission-readiness.md).
+Historical case definitions/results in TEST_LOG files remain unchanged. Differences
+such as GP20 reset, JSON output or a dedicated Safety task describe their recorded
+source, not target acceptance. Append a new procedure revision/result, never reuse
+retired IDs. MR-34 remains retired; MR-40 covers endless operation. S3-M02 remains
+physical timing evidence, with final-loop coverage extended through MR-39 rather
+than assuming obsolete two-task timing names/limits. SYS-06 watchdog checks await
+D15; no enabled watchdog is inferred from startup tick configuration.
+
 All remain pending until actual measurements/results are recorded. This retains the integrated design's IDs without treating proposed checks as passes.
 
 | ID | Scenario / evidence |
@@ -49,18 +58,18 @@ All remain pending until actual measurements/results are recorded. This retains 
 | T01 | Electrical release: markings, continuity, loaded rails/current, signal highs, shared contacts and jumper |
 | T02 | Boot/stop/reset in every motion mode; output-brake timing and physical stopping separately |
 | T03 | Straight/curve/junction tracking under lighting, surface and speed variation |
-| T04 | Known barcode scales/speeds, partial/unknown/reverse/duplicate frames and capture/event overflow |
+| T04 | Known barcode scales/speeds in both directions, same-character decoding, pending-to-junction execution, duplicate/partial rejection and capture overflow |
 | T05 | Four encoder actions: repeated distance/angle accuracy, completion, timeout and obstacle cancellation |
 | T06 | Labelled stationary/acceleration/turn/climb/descent/impact traces; no raw gyro claim |
 | T07 | Measured reference humps, slip/dynamic/incomplete rejection and invalid estimate after valid maximum |
-| T08 | Known forward ranges/materials/angles; no/late/out-of-range echo and repeat timing |
-| T09 | Moving scan rejection, coarse/fine profile, separate front age and restored-center acquisition |
+| T08 | Known forward ranges/materials/angles; no/late/out-of-range echo, settled repeated filtering and repeat timing |
+| T09 | Moving scan rejection, coarse/fine profile for 100-200 mm widths, uncertainty, separate front age and restored-center acquisition |
 | T10 | Vehicle envelope/course boundary, both bypass sides, blocked paths and original-line versus wrong-crossing recovery |
 | T11 | Controlled line loss, interrupted search, obstacle during search and bounded timeout |
 | T12 | Actual mission telemetry/status subscription, units/validity and rejection of prohibited/malformed commands |
 | T13 | WiFi/broker loss/reconnect under sensor/scan load; healthy local control and no stale replay |
 | T14 | Stale/frozen producers, encoder/stall faults, expired command and full diagnostic/navigation/capture buffers |
 | T15 | Concurrent load: releases/WCET, missed deadlines, stop latency, queue occupancy and stack/memory usage |
-| T16 | Repeated complete-course rehearsal with navigation, humps, obstacles, telemetry and recovery |
+| T16 | Repeated looping-course rehearsal with junction actions, stationary U-turn pause, humps, bypass, telemetry and local-stop ending |
 
 Acceptance targets/unknown values are owned by [project-specs](../docs/project-specs.md#pending-decisions), not inferred from a case name. Demonstration links belong in the [video index](../docs/week13-plan.md#video-index) and the corresponding result row.
