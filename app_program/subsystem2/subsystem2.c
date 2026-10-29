@@ -48,6 +48,11 @@ ER s2_stop(void)
 
 ER s2_command(const MotionCommand *command)
 {
+    if (command == NULL)
+    {
+        (void)s2_stop();
+        return E_PAR;
+    }
     if (command_mutex <= 0) return E_OBJ;
     ER er = rd_snapshot_copy(command_mutex, &latest, command, sizeof latest);
     if (er < E_OK) s2_stop();
@@ -69,6 +74,10 @@ ER s2_inhibit_startup(void)
 
 ER s2_reset_stop(void)
 {
+    if (command_mutex <= 0 || stop_flag <= 0)
+    {
+        return E_OBJ;
+    }
     ER er = tk_loc_mtx(command_mutex, 2);
     if (er < E_OK) return er;
     UW state = control_enter();
@@ -96,12 +105,17 @@ ER s2_reset_stop(void)
     return er < E_OK ? er : unlock;
 }
 
-ER s2_health(MotionHealth *h)
+static ER health_copy(MotionHealth *h, TMO wait)
 {
-    ER er = tk_loc_mtx(command_mutex, 2);
+    if (h == NULL) return E_PAR;
+    ER er = tk_loc_mtx(command_mutex, wait);
     if (er < E_OK) return er;
     *h = progress;
-    tk_unl_mtx(command_mutex);
+    er = tk_unl_mtx(command_mutex);
+    if (er < E_OK)
+    {
+        return er;
+    }
     UW state = control_enter();
     T_RFLG f;
     er = tk_ref_flg(stop_flag, &f);
@@ -165,54 +179,58 @@ static void motion_task(INT stacd, void *exinf)
                 sizeof command);
         }
 
-        /* Stop callers share this core: masking IRQs excludes them from the
-           final stop check through the output. Only nonwaiting flag/time reads
-           and bounded BSP writes belong in this section. */
-        UW irq = control_enter();
-        T_RFLG f = {0};
-        ER flag_er = tk_ref_flg(stop_flag, &f);
-        /* Recheck after the copy, immediately before any output write. */
-        if ((drv_buttons_read().gp21_down ||
-             (!APP_NO_GUARDS && rd_fault_stop_pending())) &&
-            flag_er >= E_OK && (f.flgptn & STOP_BIT) == 0u)
-        {
-            (void)latch_stop();
-            f.flgptn |= STOP_BIT;
-        }
-        uint32_t observed_stops = stop_requests;
-        bool stopped = flag_er < E_OK || (f.flgptn & STOP_BIT) != 0u;
         uint32_t now = robot_time_ms();
         MotionInput in = {.now_ms = now,
-                          .count = {drv_encoder_count(ENCODER_LEFT), drv_encoder_count(ENCODER_RIGHT)}};
-        MotionOutput out;
-        if (stopped || er < E_OK)
+            .count = {drv_encoder_count(ENCODER_LEFT),
+                      drv_encoder_count(ENCODER_RIGHT)}};
+        MotionOutput out = {.status = RD_MOTION_IDLE};
+        bool previously_stopped = local_stop || initial_er < E_OK ||
+            (initial.flgptn & STOP_BIT) != 0u;
+        if (previously_stopped || er < E_OK)
         {
             motion_control_reset(&controller);
-            out = (MotionOutput){.status = RD_MOTION_IDLE};
         }
         else
         {
+            /* Wheel calculations leave interrupts enabled. Only the final
+               guard and bounded output writes need the exclusion section. */
             motion_control_step(&controller, &command, &in, &out);
         }
-        if (er < E_OK && !stopped)
+        if (out.stall)
         {
-            (void)latch_stop(); /* Lost the command path: stop. */
-            stopped = true;
+            rd_fault_set(RD_OWNER_MOTION, RD_FAULT_MOTOR_STALL);
         }
-        /* Expiry, failed actions and stall are persistent, even if Mission
-           stalls or is blocked. A later fresh command cannot restart them. */
+        else if (previously_stopped)
+        {
+            rd_fault_clear(RD_OWNER_MOTION, RD_FAULT_MOTOR_STALL);
+        }
+
+        UW irq = control_enter();
+        T_RFLG f = {0};
+        ER flag_er = tk_ref_flg(stop_flag, &f);
+        bool stopped = flag_er < E_OK || (f.flgptn & STOP_BIT) != 0u;
         bool expired = motion_cmd_mode(&command) != MOTION_MODE_STOP &&
-            !motion_command_fresh(&command, now);
-        if (!stopped && (expired || out.status == RD_MOTION_FAILED))
+            !motion_command_fresh(&command, robot_time_ms());
+        bool unsafe = drv_buttons_read().gp21_down ||
+            (!APP_NO_GUARDS && rd_fault_stop_pending()) ||
+            initial_er < E_OK || er < E_OK || expired ||
+            out.status == RD_MOTION_FAILED;
+        if ((unsafe && !stopped) || flag_er < E_OK)
         {
             (void)latch_stop();
-            observed_stops = stop_requests;
             stopped = true;
-            motion_control_reset(&controller);
         }
-        /* The cause clears after braking; the stop remains latched. */
-        if (out.stall) rd_fault_set(RD_OWNER_MOTION, RD_FAULT_MOTOR_STALL);
-        else if (stopped) rd_fault_clear(RD_OWNER_MOTION, RD_FAULT_MOTOR_STALL);
+        uint32_t observed_stops = stop_requests;
+        if (stopped)
+        {
+            motion_control_reset(&controller);
+            out.duty[0] = 0.0f;
+            out.duty[1] = 0.0f;
+            if (out.status == RD_MOTION_RUNNING)
+            {
+                out.status = RD_MOTION_IDLE;
+            }
+        }
 
         ER output_er;
 #if APP_TEST
@@ -262,6 +280,8 @@ ER subsystem2_init(void)
     m.mtxatr = TA_INHERIT;
     command_mutex = tk_cre_mtx(&m);
     if (command_mutex < E_OK) return command_mutex;
+    stop_requests = 1u; /* Boot STOP is not acknowledged until Motion brakes. */
+    serviced_stops = 0u;
     T_CFLG f = {0};
     f.iflgptn = STOP_BIT | (APP_TEST ? INHIBIT_BIT : 0u);
     stop_flag = tk_cre_flg(&f);
@@ -272,4 +292,14 @@ ER subsystem2_start(void)
 {
     motion_tid = app_start_task((FP)motion_task, S2_PRI_MOTION, TP_PRC2, "Motion");
     return motion_tid < E_OK ? motion_tid : E_OK;
+}
+
+ER s2_health(MotionHealth *health)
+{
+    return health_copy(health, 2);
+}
+
+ER s2_health_try(MotionHealth *health)
+{
+    return health_copy(health, TMO_POL);
 }

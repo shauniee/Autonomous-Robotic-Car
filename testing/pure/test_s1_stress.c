@@ -51,6 +51,14 @@ static void *frame_producer(void *arg)
 
 int main(void)
 {
+    assert(!s1_bridge_ready());
+    s1_bridge_link(true, false);
+    assert(!s1_bridge_ready());
+    s1_bridge_link(true, true);
+    assert(s1_bridge_ready());
+    s1_bridge_link(false, false);
+    assert(!s1_bridge_ready() && !rd_fault_stop_pending());
+    s1_bridge_link(true, true);
     pthread_t tw, tp;
     uint32_t torn = 0u, reads = 0u;
     rd_word_publish(&terrain_word, make_word(0u));

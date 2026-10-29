@@ -1,6 +1,4 @@
 #include "subsystem3.h"
-#include "../mission/safety.h"
-#include "../mission/mission.h"
 #include "drv_ir_tracking.h"
 #include "../common/robot_config.h"
 #include "../subsystem2/subsystem2.h"
@@ -227,18 +225,15 @@ void s3_step(uint32_t now, bool calibration_enabled)
 #endif
 }
 
-ER subsystem3_start(void)
-{
-    return mission_start();
-}
 
-bool s3_ir_copy(S3IrSnapshot *snapshot)
+
+static bool copy_snapshot(S3IrSnapshot *snapshot, TMO wait)
 {
     ID id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
     /* Wait briefly instead of polling: the holder only copies a struct and
        inherits the reader's priority, so a polled miss would be spurious
        and Safety latches a stop on any failed copy. */
-    if ((snapshot == NULL) || (id <= 0) || (tk_loc_mtx(id, S3_COPY_WAIT_MS) < E_OK))
+    if ((snapshot == NULL) || (id <= 0) || (tk_loc_mtx(id, wait) < E_OK))
     {
         return false;
     }
@@ -249,4 +244,14 @@ bool s3_ir_copy(S3IrSnapshot *snapshot)
     }
     ir_snapshot_refresh(snapshot, robot_time_ms());
     return true;
+}
+
+bool s3_ir_copy(S3IrSnapshot *snapshot)
+{
+    return copy_snapshot(snapshot, S3_COPY_WAIT_MS);
+}
+
+bool s3_ir_try_copy(S3IrSnapshot *snapshot)
+{
+    return copy_snapshot(snapshot, TMO_POL);
 }

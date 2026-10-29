@@ -6,7 +6,6 @@
 #include "obstacle_profile.h"
 
 ER subsystem5_init(void);
-ER subsystem5_start(void);
 void s5_step(uint32_t now_ms);
 
 /* Front-range word (see echo_range.h): one load, any task. 0 before the first
@@ -25,6 +24,7 @@ uint32_t s5_scan_word(void);
 /* Latest finished profile, copied under a mutex. E_OK when the last scan
    completed; E_OBJ if none yet. */
 ER s5_profile_copy(ObstacleProfile *out);
+ER s5_profile_try_copy(ObstacleProfile *out);
 
 /* Side-watch for the bypass leg: hold the servo at angle_deg (relative to
    forward, + left) and range it every release. Poll s5_side_word() (front

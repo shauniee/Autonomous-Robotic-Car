@@ -14,7 +14,6 @@
 
 /* Subsystem lifecycle called by app_main.c */
 ER subsystem4_init(void);
-ER subsystem4_start(void);
 
 /* Terrain word (see terrain_pack.h): hump count and heights in one load. */
 uint32_t s4_terrain_word(void);

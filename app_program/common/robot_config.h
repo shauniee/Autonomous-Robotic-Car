@@ -19,18 +19,14 @@
 #define APP_NO_GUARDS 0
 #endif
 
-/* --- Tasks ---------------------------------------------------------- */
+/* --- Tasks: provisional existing defaults, physical acceptance D13 ---- */
 #define TASK_STACK_SIZE		2048	/* bytes; tm_printf needs ~1 KB */
-#define SAFETY_PRI		11
-#define S3_PRI_LINE		12
 #define S2_PRI_MOTION		13
 #define FOLLOW_PRIORITY		14
-#define S4_PRI_TERRAIN		16
-#define IO_PRIORITY S4_PRI_TERRAIN /* provisional existing Terrain priority */
+#define IO_PRIORITY 16 /* provisional existing Terrain priority; D13 */
 #define IO_PERIOD_MS 10u /* existing calibration cadence; D13 */
 
 /* --- S1 communications --------------------------------------------- */
-#define S1_PRI_REPORTING	20
 #define S1_TELEMETRY_PERIOD_MS	500u
 #define S1_REPORT_PERIOD_MS	50u	/* Reporting release: requests and events are served at this rate */
 #define S1_EVENT_CAPACITY	16u	/* event-log ring; oldest overwritten, drops counted */
@@ -108,7 +104,6 @@
 #define ADC_POLL_LIMIT		4096u
 #define ADC_AVERAGE_COUNT	8u
 
-#define SAFETY_PERIOD_MS	10u
 #define SAFETY_STALE_MS		60u	/* PROVISIONAL (D07): required-producer age limit */
 #define SAFETY_BOOT_GRACE_MS	1500u	/* producers may be silent this long after boot */
 #define INPUT_PERIOD_MS		10u
@@ -134,8 +129,6 @@
      LINE_KI (sway) or raise it a little (steady offset).
    - Swings across the line when it finds it again (after a gap or search)
      -> lower LINE_STEER_RATE; reacts too slowly entering curves -> raise it.
-   - Searches for the line while it is actually centred -> raise
-     LINE_CENTRE_GAP_MS; searches too late after really losing it -> lower it.
    - Faster overall -> raise MISSION_FOLLOW_SPEED_MMPS. The build checks that
      the fastest wheel (follow speed x LINE_PEAK_WHEEL, about 1.04 now) stays
      within MOTION_SPEED_MAX_MMPS (at most 511, the command field). */
@@ -146,7 +139,6 @@
 #define LINE_ERROR_TAU_MS	60.0f	/* PROVISIONAL (D07): error low-pass time constant */
 #define LINE_CURVE_SLOWDOWN	0.40f	/* PROVISIONAL (D07): speed cut at MAX_STEER (0.4 = 60% speed) */
 #define LINE_STEER_RATE		3.0f	/* PROVISIONAL (D07): max steering change per second (0 to MAX_STEER in 0.2 s) */
-#define LINE_CENTRE_GAP_MS	1000u	/* PROVISIONAL (D07): both sensors white this soon after seeing the line = centred, not lost */
 
 /* --- Mission (S3). UNMEASURED PLACEHOLDERS until #59/#61 (D01, D02, D07) ----- */
 #define MISSION_FOLLOW_SPEED_MMPS	450.0f	/* PROVISIONAL (D07): straight-line follow speed, mm/s; search runs at half */
@@ -201,7 +193,6 @@
 #define HUMP_CALIB_FACTOR	1.15f	/* PROVISIONAL (D06) */
 
 /* --- S5 obstacle --------------------------------------------------- */
-#define S5_PRI_OBSTACLE		17
 #define SONAR_REPEAT_MS		60u	/* PROVISIONAL (D05): trigger-to-trigger */
 #define SONAR_TIMEOUT_US	30000u	/* no echo after this long */
 #define SONAR_MIN_PULSE_US	150u	/* shorter than this is not a real echo */
@@ -294,12 +285,14 @@ _Static_assert(SONAR_TIMEOUT_US / 1000u < SONAR_REPEAT_MS && SONAR_MIN_PULSE_US 
 	SONAR_NO_ECHO_LIMIT >= 1u, "sonar timing: the timeout must fit inside the repeat interval");
 _Static_assert(SERVO_MAX_DEG > 0 && SERVO_MAX_DEG * (int)SERVO_US_PER_DEG < (int)SERVO_CENTRE_US &&
 	S5_COARSE_STEP_DEG > S5_FINE_STEP_DEG && S5_FINE_STEP_DEG > 0, "servo sweep out of range");
-_Static_assert(SAFETY_PRI < S3_PRI_LINE && SAFETY_PRI < S2_PRI_MOTION && SAFETY_PRI < FOLLOW_PRIORITY,
-	"Safety must outrank every task it supervises");
-_Static_assert(SAFETY_STALE_MS >= IR_SAMPLE_MS && SAFETY_PERIOD_MS <= MOTION_PERIOD_MS,
-	"Safety must release at least as often as Motion");
-_Static_assert(S3_PRI_LINE != S2_PRI_MOTION && S2_PRI_MOTION != FOLLOW_PRIORITY &&
-	S3_PRI_LINE != FOLLOW_PRIORITY, "task priorities must be distinct");
+_Static_assert(S2_PRI_MOTION < FOLLOW_PRIORITY,
+    "Motion must outrank Mission");
+_Static_assert(IO_PRIORITY > 4, "I/O stays below kernel WiFi/USB services");
+_Static_assert(SAFETY_STALE_MS >= IR_SAMPLE_MS &&
+    FOLLOW_PERIOD_MS <= SAFETY_STALE_MS && MOTION_PERIOD_MS <= SAFETY_STALE_MS,
+    "provisional producer limits must cover their release intervals");
+_Static_assert(GY511_TIMEOUT_US < IO_PERIOD_MS * 1000u,
+    "one I2C operation must not consume a whole I/O release");
 _Static_assert(PITCH_DESC_THRESH_DEG < 0.0f && PITCH_CLIMB_THRESH_DEG > 0.0f,
 	"pitch thresholds must straddle zero");
 _Static_assert(S1_TELEMETRY_PERIOD_MS % S1_REPORT_PERIOD_MS == 0u && S1_EVENT_CAPACITY >= 4u,

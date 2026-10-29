@@ -345,21 +345,11 @@ static void test_line_loss_recovery_is_bounded(void)
     Mission m; MissionInputs in = base(100u);
     uint32_t t = to_follow(&m, &in);
 
-    /* Both white just after seeing the line is the line centred between the
-       edge sensors: both wheels keep driving under the PID, no search. */
+    /* Healthy white is line loss, never invented proof of centering. Without
+       an observed side, stop until the configured sweep policy is resolved. */
     in.line = IR_LINE_LOST; in.guidance_valid = false; in.line_error = 0;
-    t += 10u;
-    MissionOutputs out = step(&m, &in, t);
-    assert(m.state == MISSION_FOLLOW_LINE && !m.recovering && !out.line_lost);
-    assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW && motion_cmd_steering(&out.command) == 0 &&
-           motion_cmd_speed(&out.command) == (unsigned)MISSION_FOLLOW_SPEED_MMPS);
-
-    /* Past the centre gap with no known side: stop. */
-    while (m.state == MISSION_FOLLOW_LINE && robot_time_elapsed(t, m.line_seen_ms) <= LINE_CENTRE_GAP_MS) {
-        t += 10u; out = step(&m, &in, t);
-    }
+    MissionOutputs out = step(&m, &in, t += 10u);
     assert(m.state == MISSION_STOPPED && out.stop_now && out.line_lost);
-    assert(robot_time_elapsed(t, m.state_since_ms) == 0u);	/* stopped on the first release past the gap */
 
     /* Known side: after the gap, search toward it on an arc with both wheels
        turning, then rejoin after two fresh visible reads. */
@@ -367,15 +357,15 @@ static void test_line_loss_recovery_is_bounded(void)
     t = to_follow(&m2, &in2);
     in2.line_error = 25; t += 10u; step(&m2, &in2, t);
     in2.line = IR_LINE_LOST; in2.guidance_valid = false; in2.line_error = 0;
-    while (!m2.recovering && m2.state == MISSION_FOLLOW_LINE) {
+    while ((m2.state != MISSION_REACQUIRE) && m2.state == MISSION_FOLLOW_LINE) {
         t += 10u; out = step(&m2, &in2, t);
     }
     assert(m2.state == MISSION_REACQUIRE && motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW &&
            motion_cmd_steering(&out.command) == search_q && search_q < IR_SCALE_ONE);	/* inner wheel still turns */
     in2.line = IR_LINE_VISIBLE; in2.guidance_valid = true; in2.line_error = 25; t += 10u; step(&m2, &in2, t);
-    assert(m2.recovering);
+    assert((m2.state == MISSION_REACQUIRE));
     t += 10u; out = step(&m2, &in2, t);
-    assert(!m2.recovering && m2.state == MISSION_FOLLOW_LINE);
+    assert((m2.state != MISSION_REACQUIRE) && m2.state == MISSION_FOLLOW_LINE);
     out = step(&m2, &in2, t += 20u);
     assert(motion_cmd_steering(&out.command) == ref_p(25));	/* PID restarts after the search */
 
@@ -384,7 +374,7 @@ static void test_line_loss_recovery_is_bounded(void)
     t = to_follow(&m3, &in3);
     in3.line_error = -25; t += 10u; step(&m3, &in3, t);
     in3.line = IR_LINE_LOST; in3.guidance_valid = false; in3.line_error = 0;
-    for (uint32_t waited = 0u; waited < LINE_CENTRE_GAP_MS + RECOVERY_MS + 20u && m3.state != MISSION_STOPPED; waited += 10u) {
+    for (uint32_t waited = 0u; waited < RECOVERY_MS + 20u && m3.state != MISSION_STOPPED; waited += 10u) {
         t += 10u; out = step(&m3, &in3, t);
     }
     assert(m3.state == MISSION_STOPPED && out.stop_now && out.line_lost);
@@ -588,9 +578,27 @@ static void test_stop_cancels_every_phase(void)
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
 }
 
+static void test_run_network_loss_and_hump_speed(void)
+{
+    Mission m;
+    MissionInputs in = base(100u);
+    uint32_t t = to_follow(&m, &in);
+    in.start_blocked = true; /* connectivity lost after accepted local start */
+    MissionOutputs out = step(&m, &in, t += 20u);
+    assert(m.state == MISSION_FOLLOW_LINE && !out.stop_now);
+    unsigned normal = motion_cmd_speed(&out.command);
+    in.hump_active = true;
+    out = step(&m, &in, t += 20u);
+    assert(motion_cmd_speed(&out.command) == normal / 2u);
+    in.hump_active = false;
+    out = step(&m, &in, t += 20u);
+    assert(motion_cmd_speed(&out.command) == normal);
+}
+
 int main(void)
 {
     test_stop_cancels_every_phase();
+    test_run_network_loss_and_hump_speed();
     test_start_and_reset_never_move();
     test_start_gate();
     test_follow_and_stops();

@@ -3,7 +3,6 @@
 #include "../common/robot_data.h"
 #include "../common/robot_time.h"
 #include "../common/robot_snapshot.h"
-#include "../common/io_task.h"
 #include "../subsystem1/subsystem1.h"
 #include "../subsystem2/drv_encoder.h"
 #include "../subsystem2/subsystem2.h"
@@ -139,7 +138,8 @@ void s4_step(uint32_t now)
     else if (acquired && context.is_calibrated)
     {
         MotionHealth health = {0};
-        bool encoder_valid = s2_health(&health) >= E_OK && health.sequence != 0u &&
+        bool health_copied = s2_health_try(&health) >= E_OK;
+        bool encoder_valid = health_copied && health.sequence != 0u &&
             robot_time_elapsed(now, health.serviced_ms) <= SAFETY_STALE_MS &&
             (rd_fault_get(RD_OWNER_MOTION) & RD_FAULT_ENCODER) == 0u;
         if (!encoder_valid)
@@ -152,7 +152,11 @@ void s4_step(uint32_t now)
         {
             terrain_algo_invalidate_window(&context);
         }
-        if (context.state == TERRAIN_STATE_IMPACT)
+        bool impact = terrain_impact_pending(
+            (rd_fault_get(RD_OWNER_TERRAIN) & RD_FAULT_IMPACT) != 0u,
+            context.state == TERRAIN_STATE_IMPACT,
+            health_copied && motion_health_brake_acknowledged(&health));
+        if (impact)
         {
             rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
         }
@@ -179,9 +183,4 @@ ER subsystem4_init(void)
     mutex.mtxatr = TA_INHERIT;
     snapshot_mutex = tk_cre_mtx(&mutex);
     return snapshot_mutex > 0 ? E_OK : E_SYS;
-}
-
-ER subsystem4_start(void)
-{
-    return io_start();
 }

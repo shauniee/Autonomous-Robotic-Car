@@ -27,5 +27,6 @@ ER s2_reset_stop(void);
 /* Any core, startup only: latches stop and a permanent inhibit. */
 ER s2_inhibit_startup(void);
 ER s2_health(MotionHealth *health);
+ER s2_health_try(MotionHealth *health);
 
 #endif

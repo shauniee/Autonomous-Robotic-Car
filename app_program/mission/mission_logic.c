@@ -7,6 +7,8 @@
 #define LAST_ACTION_ID rd_mask(RD_MOTION_ACTION_BITS)
 
 static bool obstacle_ahead(const MissionInputs *in);
+static void handle_reacquire(Mission *m, const MissionInputs *in,
+    MissionOutputs *out);
 static void enter_bypass(Mission *m, const MissionInputs *in, MissionOutputs *out);
 
 void mission_init(Mission *m, uint32_t now_ms)
@@ -26,10 +28,6 @@ static void enter(Mission *m, MissionState next, uint32_t now_ms)
     m->state = next;
     m->state_since_ms = now_ms;
     line_pid_reset(m);	/* every run segment starts without PID history */
-    if (next == MISSION_FOLLOW_LINE)
-    {
-        m->line_seen_ms = now_ms;	/* following only starts on a visible line */
-    }
 }
 
 /* Line PID on the two-sensor error (right - left). It updates once per new IR
@@ -188,7 +186,6 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         m->broad_origin = in->travel_counts;
         m->broad_since_ms = in->now_ms;
         m->current_action = next_action_id(m);
-        m->recovering = false;
         m->phase = JUNCTION_PHASE_CROSS;
         enter(m, MISSION_NAVIGATE, in->now_ms);
         /* Include Motion's completion tolerance so DONE cannot occur before
@@ -239,67 +236,27 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
             to_stop(m, in, out, true);
             return;
         }
-        m->recovering = false;
         m->visible_streak = 0u;
         line_pid_reset(m);
         out->command = follow_command(in, MISSION_BROAD_SPEED_MMPS, 0, 1u);
         return;
     }
 
-    if (in->line == IR_LINE_VISIBLE && in->guidance_valid)
+    if (in->line == IR_LINE_LOST)
     {
-        m->line_seen_ms = in->now_ms;
-    }
-    if (!m->recovering && in->line == IR_LINE_LOST && in->usable_line &&
-        robot_time_elapsed(in->now_ms, m->line_seen_ms) < LINE_CENTRE_GAP_MS)
-    {
-        /* Both sensors white just after seeing the line: with the sensors on the
-           line's edges the line is between them, i.e. centred. Keep both wheels
-           driving under the PID (the error reads about zero) instead of searching. */
-        int steer = line_pid_steering(m, in);
-        out->command = follow_command(in, line_follow_speed(steer), steer, 1u);
-        return;
-    }
-    if (m->recovering)
-    {
-        /* Bounded recovery: two fresh visible reads rejoin the line. */
-        if (line_reacquired(m, in))
-        {
-            m->recovering = false;
-            enter(m, MISSION_FOLLOW_LINE, in->now_ms);
-            line_pid_reset(m); /* no derivative across the search gap */
-        }
-    }
-    else if (in->line == IR_LINE_LOST)
-    {
-        if (m->direction == 0 && APP_NO_GUARDS)
-        {
-            m->direction = 1;	/* bench build: search one side rather than stop */
-        }
         if (m->direction == 0)
         {
-            to_stop(m, in, out, true); /* never saw the line move: no side to search */
-            out->line_lost = true;
-            return;
-        }
-        m->recovering = true;
-        enter(m, MISSION_REACQUIRE, in->now_ms);
-        line_pid_reset(m);
-        m->recovery_since_ms = in->now_ms;
-        m->visible_streak = 0u;
-        m->in_broad = false;
-    }
-    if (m->recovering)
-    {
-        if (!APP_NO_GUARDS && robot_time_elapsed(in->now_ms, m->recovery_since_ms) >= RECOVERY_MS)
-        {
+            /* D07 has not defined an initial sweep without a known side. */
             to_stop(m, in, out, true);
             out->line_lost = true;
             return;
         }
-        /* Search arc at MAX_STEER: both wheels keep turning, toward the last side. */
-        int search_q = (int)lroundf(MAX_STEER * (float)IR_SCALE_ONE);
-        out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS * 0.5f, m->direction > 0 ? search_q : -search_q, 1u);
+        enter(m, MISSION_REACQUIRE, in->now_ms);
+        m->recovery_since_ms = in->now_ms;
+        m->visible_streak = 0u;
+        m->confirmed_sample_ms = in->line_sampled_ms;
+        m->in_broad = false;
+        handle_reacquire(m, in, out);
         return;
     }
 
@@ -488,7 +445,6 @@ static void handle_bypass(Mission *m, const MissionInputs *in, MissionOutputs *o
         if (line_reacquired(m, in))
         {
             m->direction = 0;
-            m->recovering = false;
             enter(m, MISSION_FOLLOW_LINE, in->now_ms);
             out->command = stop_command(in->now_ms);
             return;
@@ -508,7 +464,7 @@ static void handle_bypass(Mission *m, const MissionInputs *in, MissionOutputs *o
 static void handle_junction_turn(Mission *m, const MissionInputs *in,
     MissionOutputs *out)
 {
-    if (obstacle_ahead(in) ||
+    if (m->phase > JUNCTION_PHASE_CONFIRM || obstacle_ahead(in) ||
         robot_time_elapsed(in->now_ms, m->state_since_ms) >=
             MOTION_ACTION_TIMEOUT_MS)
     {
@@ -546,7 +502,6 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
         if (line_reacquired(m, in))
         {
             m->in_broad = false;
-            m->recovering = false;
             enter(m, MISSION_FOLLOW_LINE, in->now_ms);
             return;
         }
@@ -598,7 +553,6 @@ static void handle_reacquire(Mission *m, const MissionInputs *in,
     }
     if (line_reacquired(m, in))
     {
-        m->recovering = false;
         enter(m, MISSION_FOLLOW_LINE, in->now_ms);
         return;
     }

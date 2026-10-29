@@ -7,11 +7,12 @@
 #include "../subsystem2/subsystem2.h"
 #include "../subsystem5/subsystem5.h"
 #include "../subsystem1/subsystem1.h"
+#include "../subsystem1/s1_bridge.h"
 #include "../subsystem2/drv_encoder.h"
 #include "../common/buttons.h"
 #include "../common/robot_time.h"
 
-static _Atomic uint8_t published_state;	/* writer: Mission task; 8 states, 3 bits */
+static _Atomic uint8_t published_state;	/* writer: Mission task; 7 states, 3 logical bits */
 
 MissionState mission_state(void)
 {
@@ -61,7 +62,9 @@ static void mission_task(INT stacd, void *exinf)
             mission.state == MISSION_REACQUIRE ||
             (mission.state == MISSION_NAVIGATE &&
              (mission.phase == JUNCTION_PHASE_CROSS ||
-              mission.phase == JUNCTION_PHASE_CONFIRM));
+              mission.phase == JUNCTION_PHASE_CONFIRM)) ||
+            (mission.state == MISSION_BYPASS &&
+             mission.bypass_step == BYPASS_REACQUIRE);
         safety_step(line_required);
         ButtonInputs buttons = drv_buttons_read();
         if (buttons.gp21_down || mission.state == MISSION_STOPPED)
@@ -94,16 +97,20 @@ static void mission_task(INT stacd, void *exinf)
             terrain_calibrated(terrain.terrain);
         uint32_t terrain_state = terrain_state_code(terrain.terrain);
         barcode_event_t barcode = {0};
+        bool have_barcode = barcode_pop(&barcode);
         MissionInputs in = {
             .now_ms = now,
             .start_pressed = event == BUTTON_EVENT_PRESSED,
             .mapped = barcode_mapped(),
-            .start_blocked = rd_fault_start_blocked(),
+            .start_blocked = rd_fault_start_blocked() || !s1_bridge_ready() ||
+                !s4_startup_complete() || !copied || !snapshot.sample_fresh ||
+                !healthy || health.sequence == 0u ||
+                robot_time_elapsed(now, health.serviced_ms) > SAFETY_STALE_MS,
             .stop_down = buttons.gp21_down,
             .safety_latched = safety_latched_causes() != 0u,
             .motion_stopped = !healthy || motion_health_stopped(&health),
             .inputs_ok = healthy && (!line_required ||
-                (copied && snapshot.sample_fresh)),
+                (copied && snapshot.sample_fresh && snapshot.normalized_valid)),
             .calibration_valid = snapshot.calibration_valid,
             .guidance_valid = snapshot.guidance_valid,
             .usable_line = snapshot.normalized_valid && snapshot.capture_kind == IR_CAPTURE_NONE,
@@ -127,7 +134,7 @@ static void mission_task(INT stacd, void *exinf)
             .profile_valid = have_profile && profile.valid,
             .left_clearance_mm = profile.left_clearance_mm,
             .right_clearance_mm = profile.right_clearance_mm,
-            .have_barcode = barcode_pop(&barcode),
+            .have_barcode = have_barcode,
             .barcode_action = barcode_event_action(&barcode),
             .barcode_letter = barcode_event_letter(&barcode)};
 

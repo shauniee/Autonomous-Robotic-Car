@@ -49,7 +49,7 @@ void s1_event(mqtt_event_kind_t kind, uint8_t arg, uint16_t arg2)
     {
         rd_word_publish(&last_depth_mm, arg2);
     }
-    if (tk_loc_mtx(event_mutex, RD_SNAPSHOT_LOCK_MS) >= E_OK)
+    if (tk_loc_mtx(event_mutex, TMO_POL) >= E_OK)
     {
         (void)s1_log_push(&event_log, &event);
         (void)tk_unl_mtx(event_mutex);
@@ -68,8 +68,8 @@ static void gather(mqtt_telemetry_t *t, uint8_t sequence)
     uint32_t barcode = rd_word_read(&last_barcode);
     S3IrSnapshot line = {0};
     ObstacleProfile profile = {0};
-    bool have_line = s3_ir_copy(&line);
-    bool have_profile = s5_profile_copy(&profile) >= E_OK && profile.valid;
+    bool have_line = s3_ir_try_copy(&line);
+    bool have_profile = s5_profile_try_copy(&profile) >= E_OK && profile.valid;
     *t = (mqtt_telemetry_t){
         .sequence = sequence,
         .mission_state = (uint8_t)mission_state(),
@@ -176,7 +176,7 @@ void s1_step(uint32_t now)
     }
     for (unsigned i = 0u; i < S1_EVENTS_PER_RELEASE; ++i)
     {
-        if (tk_loc_mtx(event_mutex, RD_SNAPSHOT_LOCK_MS) < E_OK)
+        if (tk_loc_mtx(event_mutex, TMO_POL) < E_OK)
         {
             break;
         }
@@ -194,16 +194,11 @@ uint32_t s1_event_drops(void)
     uint32_t total = rd_word_read(&missed_events[0]);
     uint32_t other = rd_word_read(&missed_events[1]);
     total = UINT32_MAX - total < other ? UINT32_MAX : total + other;
-    if (tk_loc_mtx(event_mutex, RD_SNAPSHOT_LOCK_MS) >= E_OK)
+    if (tk_loc_mtx(event_mutex, TMO_POL) >= E_OK)
     {
         other = event_log.dropped;
         (void)tk_unl_mtx(event_mutex);
         total = UINT32_MAX - total < other ? UINT32_MAX : total + other;
     }
     return total;
-}
-
-ER subsystem1_start(void)
-{
-    return E_OK; /* I/O owns the bounded reporting step. */
 }

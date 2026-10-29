@@ -135,6 +135,10 @@ static void test_word_boundaries(void)
 
 static void test_evidence_and_invalid_window(void)
 {
+    assert(terrain_impact_pending(false, true, false));
+    assert(terrain_impact_pending(true, false, false));
+    assert(terrain_impact_pending(true, true, true));
+    assert(!terrain_impact_pending(true, false, true));
     S4Snapshot sample = {.sampled_ms = 100u, .serviced_ms = 100u,
         .sequence = 1u, .acquisition_valid = 1u};
     assert(terrain_evidence_fresh(&sample, 160u, 60u));

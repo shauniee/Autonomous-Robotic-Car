@@ -49,10 +49,10 @@ void s5_side_watch(bool on, int16_t angle_deg)
     rd_word_publish(&side_command, s5_side_watch_pack(on, angle_deg));
 }
 
-ER s5_profile_copy(ObstacleProfile *out)
+static ER profile_copy(ObstacleProfile *out, TMO wait)
 {
-    if (profile_mutex <= 0) return E_OBJ;
-    ER er = tk_loc_mtx(profile_mutex, RD_SNAPSHOT_LOCK_MS);
+    if (out == NULL || profile_mutex <= 0) return E_OBJ;
+    ER er = tk_loc_mtx(profile_mutex, wait);
     if (er < E_OK) return er;
     bool ready = profile_ready;
     if (ready) *out = profile;
@@ -143,14 +143,21 @@ typedef struct
     uint32_t scan_started_ms, sent_us, settle_since_ms, next_ping_ms;
     uint32_t left_origin, right_origin;
     uint32_t misses;
-    uint8_t count, planned, coarse, id;
-    uint8_t phase;
+    uint16_t count : 4;
+    uint16_t planned : 4;
+    uint16_t coarse : 4;
+    uint16_t id : 4;
+    uint8_t phase : 2;
     uint8_t initialized : 1;
     uint8_t ready : 1;
     uint8_t scanning : 1;
-    int16_t angle;
+    int8_t angle : 7;
 } s5_acquisition_t;
 
+_Static_assert(S5_SCAN_CAPACITY <= 15u,
+    "scan counts must fit their four-bit fields");
+_Static_assert((2 * SERVO_MAX_DEG) / S5_COARSE_STEP_DEG + 1 <= S5_SCAN_CAPACITY,
+    "coarse scan must fit fixed capture storage");
 static s5_acquisition_t acquisition;
 
 static void publish_scan(s5_scan_state_t state, uint8_t id)
@@ -168,6 +175,10 @@ static void cancel_echo(void)
 
 static bool set_angle(int16_t angle, uint32_t now)
 {
+    if (angle < -SERVO_MAX_DEG || angle > SERVO_MAX_DEG)
+    {
+        return false;
+    }
     cancel_echo();
     acquisition.angle = angle;
     acquisition.settle_since_ms = now;
@@ -267,7 +278,7 @@ void s5_step(uint32_t now)
             rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
         }
     }
-    if (!acquisition.ready)
+    if (!acquisition.ready || acquisition.phase > S5_ACQUIRE_ECHO)
     {
         return;
     }
@@ -371,7 +382,12 @@ void s5_step(uint32_t now)
     }
 }
 
-ER subsystem5_start(void)
+ER s5_profile_copy(ObstacleProfile *out)
 {
-    return E_OK; /* Mission owns acquisition; no Obstacle task. */
+    return profile_copy(out, RD_SNAPSHOT_LOCK_MS);
+}
+
+ER s5_profile_try_copy(ObstacleProfile *out)
+{
+    return profile_copy(out, TMO_POL);
 }

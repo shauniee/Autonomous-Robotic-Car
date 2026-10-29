@@ -29,5 +29,7 @@ unsigned s1_bridge_take(uint8_t *out, unsigned capacity);
 void s1_bridge_put(const uint8_t *frame, unsigned length);
 /* Link state from the transport; sets the Network fault byte only. */
 void s1_bridge_link(bool wifi_up, bool broker_up);
+/* Boot is disconnected. Mission uses this only as a local-start prerequisite. */
+bool s1_bridge_ready(void);
 
 #endif /* S1_BRIDGE_H */

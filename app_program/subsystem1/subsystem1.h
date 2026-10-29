@@ -4,7 +4,6 @@
 #include "../app.h"
 #include "mqtt_frame.h"
 ER subsystem1_init(void);
-ER subsystem1_start(void);
 void s1_step(uint32_t now_ms);
 uint32_t s1_event_drops(void);
 

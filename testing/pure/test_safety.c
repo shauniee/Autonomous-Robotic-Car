@@ -81,6 +81,7 @@ int main(void)
 
     /* S2-U06: the real reset service uses this predicate while interrupts
        are masked. A stop arriving after the acknowledged brake refuses reset. */
+    assert(!motion_stop_reset_allowed(false, true, 1u, 0u, false)); /* boot */
     assert(!motion_stop_reset_allowed(false, true, 2u, 1u, false));
     assert(motion_stop_reset_allowed(false, true, 2u, 2u, false));
     assert(!motion_stop_reset_allowed(true, true, 2u, 2u, false));

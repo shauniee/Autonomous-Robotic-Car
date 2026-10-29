@@ -20,6 +20,8 @@ typedef struct
     _Atomic unsigned head, tail;
 } in_ring_t;
 
+static rd_word_t link_state; /* sole writer: kernel transport */
+
 static out_ring_t outgoing;
 static in_ring_t incoming;
 
@@ -73,8 +75,14 @@ unsigned s1_bridge_receive(uint8_t *out, unsigned capacity)
     return pop(incoming.slots, S1_INCOMING_DEPTH, &incoming.head, &incoming.tail, out, capacity);
 }
 
+bool s1_bridge_ready(void)
+{
+    return rd_word_read(&link_state) == 3u;
+}
+
 void s1_bridge_link(bool wifi_up, bool broker_up)
 {
+    rd_word_publish(&link_state, (wifi_up ? 1u : 0u) | (broker_up ? 2u : 0u));
     /* The transport (core 0) is the only writer of the Network byte. */
     if (wifi_up) rd_fault_clear(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST);
     else rd_fault_set(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST);

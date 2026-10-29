@@ -106,14 +106,13 @@ typedef struct
 
 typedef struct
 {
-    MissionState state;
-    MissionJunctionPhase phase;
+    uint8_t state : 3;
+    uint8_t phase : 3;
     barcode_action_t held;	/* barcode command held for the next cross junction */
     uint32_t state_since_ms, recovery_since_ms;
     uint32_t broad_origin;	/* travel count where the current broad-black run began */
     uint32_t broad_since_ms; /* start of this broad-black encounter, wraps */
     bool in_broad;
-    bool recovering;
     float turn_target;	/* degrees, + left */
     int direction;		/* last steering side: -1, 0, +1 */
     float line_integral;	/* line PID integral term, steering units */
@@ -123,7 +122,6 @@ typedef struct
     int line_steer_q;		/* PID output held until the next IR sample */
     uint32_t confirmed_sample_ms; /* last sample counted for line confirmation */
     uint32_t pause_since_ms;
-    uint32_t line_seen_ms;	/* last fresh VISIBLE read while following */
     unsigned visible_streak;
     uint8_t action_id;
     uint8_t current_action;	/* ID of the Motion action in progress */
