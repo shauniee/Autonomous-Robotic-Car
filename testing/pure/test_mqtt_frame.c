@@ -126,9 +126,32 @@ static void test_boundaries_and_rejections(void)
     assert(mqtt_decode_ack(buf, MQTT_LEN_ACK, &da) == MQTT_DECODE_RANGE);
 }
 
+/* S1-U13: each owner byte retains every bit independently on the wire. */
+static void test_fault_bytes(void)
+{
+    for (unsigned owner = 0u; owner < MQTT_FAULT_BYTES; ++owner)
+    {
+        for (unsigned bit = 0u; bit < 8u; ++bit)
+        {
+            mqtt_telemetry_t t = sample(), back;
+            mqtt_type_t type;
+            uint8_t frame[MQTT_LEN_TELEMETRY];
+            memset(t.faults, 0, sizeof t.faults);
+            t.faults[owner] = (uint8_t)(1u << bit);
+            assert(mqtt_encode_telemetry(frame, sizeof frame,
+                MQTT_TYPE_TELEMETRY, &t) == sizeof frame);
+            assert(frame[4u + owner] == t.faults[owner]);
+            assert(mqtt_decode_telemetry(frame, sizeof frame, &type, &back) == MQTT_DECODE_OK);
+            assert(memcmp(t.faults, back.faults, sizeof t.faults) == 0);
+        }
+    }
+    puts("S1-U13: PASS (six fault bytes, all 48 walking bits)");
+}
+
 int main(void)
 {
     test_golden();
+    test_fault_bytes();
     test_boundaries_and_rejections();
     printf("mqtt_frame: PASS (telemetry %u bytes)\n", MQTT_LEN_TELEMETRY);
     return 0;

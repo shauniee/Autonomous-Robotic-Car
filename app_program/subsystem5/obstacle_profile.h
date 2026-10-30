@@ -93,19 +93,21 @@ static inline int16_t s5_side_watch_angle(uint32_t word)
 
 _Static_assert(S5_SCAN_STATE_COUNT == (1 << S5_SCAN_STATE_BITS), "scan state must fill 3 bits");
 
-/* Builds the profile from 5..S5_SCAN_CAPACITY rays; false (out unchanged)
-   when no ray echoed. Rays without an echo are skipped; a side whose
-   outermost ray has no echo is unknown and reports zero clearance. */
-bool s5_profile_build(const ObstacleRay *rays, unsigned count, ObstacleProfile *out);
-
-/* Fine angles around the nearest valid coarse ray (at most `max`, within the
-   sweep limit, excluding angles already measured). Returns how many. */
-unsigned s5_fine_angles(const ObstacleRay *coarse, unsigned count, int16_t *out, unsigned max);
-
 /* Encode/decode the scan state. Decode maps an out-of-range code to
    S5_SCAN_FAILED; encode rejects one (returns false). */
 bool s5_scan_state_pack(s5_scan_state_t state, uint32_t *word);
 s5_scan_state_t s5_scan_state_unpack(uint32_t code);
+
+/* Scan word: state in bits 0..2, scan id (0..15) in bits 3..6. */
+static inline uint32_t s5_scan_id_pack(uint8_t id)
+{
+    return (uint32_t)id << S5_SCAN_STATE_BITS;
+}
+
+static inline uint8_t s5_scan_id(uint32_t word)
+{
+    return (uint8_t)((word >> S5_SCAN_STATE_BITS) & 0x0Fu);
+}
 
 /* A scan runs only while stationary and on time; cancel wins. */
 s5_scan_state_t s5_scan_guard(bool cancel, bool expired, bool stationary);

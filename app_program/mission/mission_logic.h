@@ -103,20 +103,19 @@ typedef struct
     uint8_t phase : 3;
     barcode_action_t held;	/* barcode command held for the next cross junction */
     recovery_control_t recovery;
-    uint32_t state_since_ms, recovery_since_ms;
+    uint32_t state_since_ms;
     uint32_t broad_origin;	/* travel count where the current broad-black run began */
     uint32_t broad_since_ms; /* start of this broad-black encounter, wraps */
     uint8_t in_broad : 1;
     uint8_t junction_open : 1;
     uint8_t junction_qualified : 1;
     uint32_t junction_sampled_ms;
-    float turn_target;	/* degrees, + left */
-    int direction;		/* last steering side: -1, 0, +1 */
-    float line_integral;	/* line PID integral term, steering units */
-    float line_prev_error;	/* filtered line error at line_pid_ms, -1..+1 */
+    uint8_t turn_code : 2; /* 0 none, 1 left, 2 right, 3 U-turn */
+    int16_t line_integral_q; /* steering units /32767, +/-LINE_I_LIMIT */
+    int16_t line_prev_error_q; /* filtered error /32767, -1..+1 */
     uint32_t line_pid_ms;	/* IR acquisition time of the last PID update */
-    bool line_pid_primed;	/* a previous sample exists for the derivative */
-    int line_steer_q;		/* PID output held until the next IR sample */
+    uint8_t line_pid_primed : 1;	/* a previous sample exists for the derivative */
+    int8_t line_steer_q;		/* PID output held until the next IR sample */
     uint32_t confirmed_sample_ms; /* last sample counted for line confirmation */
     uint32_t pause_since_ms;
     unsigned visible_streak;

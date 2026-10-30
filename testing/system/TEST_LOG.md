@@ -5,6 +5,7 @@
 - [1. Test cases](#1-test-cases)
 - [2. Results](#2-results)
 - [3. Final memory and message size (SYS-11)](#3-final-memory-and-message-size-sys-11)
+- [Current resource audit (SYS-12)](#current-resource-audit-sys-12)
 - [Documentation alignment — 2026-10-29](#documentation-alignment--2026-10-29)
 
 Retired template definitions: SYS-01 illustrative ten-second WiFi reading; SYS-02 unfilled manual placeholder. No template result was recorded. Full mission report trials T01-T16 remain pending. No source commit or hardware result is fabricated.
@@ -85,3 +86,79 @@ team.md, but no continuity, rail, polarity, calibration, timing, bypass or
 full-course trial was executed. All corresponding current-image physical
 acceptance remains pending; [INT-17](../integration/logs/2026-10-29_INT-17_completion.txt)
 records the full-plan BLOCKED audit. This is not a physical PASS or FAIL.
+
+## Current resource audit (SYS-12)
+
+Procedure defined 2026-10-30: perform the INT-24 host/four-profile build and
+Cortex-M0+ probe procedure; save exact base HEAD plus working-source manifest,
+compiler/SDK versions, ELF text/data/bss and image hashes. Cross-check persistent
+symbols against target layouts. Record inter-task data copies separately from
+MQTT frames. Expected frame lengths remain 23/11/5/3/2 bytes. This extends the
+pre-restructure SYS-11 record without replacing or reusing it. Static allocated
+RAM is data+bss; it is not measured live RAM, stack margin or heap high-water.
+Final accepted-commit rerun and T15 timing remain pending.
+
+2026-10-30 result: **PASS (host/build/static only)**, base commit
+`62ee5226e16a3c501d94998291944753c9662dfc` plus the exact
+[working-source manifest](../integration/logs/2026-10-30_INT-24-accepted-manifest.json).
+Measured with Arm GNU 13.2.Rel1 (GCC 13.2.1), Pico SDK 2.2.0, macOS host;
+SMP=1, CONSOLE=usb_cdc, WIFI=cyw43, CRASH_REPORT=0. Offline means NET=none,
+MQTT=0 (radio driver remains linked); wireless means NET=lwip, MQTT=1.
+TEST=0/1 selects normal/TEST. This differs from SYS-11's WIFI=none/toolchain;
+these numbers do not establish a restructure-only saving.
+
+| Profile | text | data | bss | Static allocated RAM (data+bss) |
+| --- | ---: | ---: | ---: | ---: |
+| offline-test | 323840 | 384 | 26456 | 26840 |
+| offline-normal | 321756 | 384 | 26448 | 26832 |
+| wireless-test | 378688 | 392 | 84128 | 84520 |
+| wireless-normal | 376608 | 392 | 84120 | 84512 |
+
+[Machine-readable sizes and 24 persistent object cross-checks](../integration/logs/2026-10-30_INT-24-accepted-resources.json)
+match the [target probes](../integration/logs/2026-10-30_INT-24-accepted-abi.txt)
+and per-profile `size`, symbol and image-SHA files under `integration/logs/`
+(prefix `2026-10-30_INT-24-accepted-`). The existing configured three 2048-byte
+stacks are requested allocations, not measured free stack. Runtime heap/stack
+high-water marks, peak RAM and T15 remain pending.
+
+| Copy / storage contract | Target bytes | Persistent instances / linked storage |
+| --- | ---: | --- |
+| Mission -> Motion command | 12 | one `latest`, 12 bytes |
+| Motion -> readers health | 12 | one `progress`, 12 bytes |
+| S3 -> readers snapshot | 40 | one `latest`, 40 bytes |
+| Terrain -> readers `S4Snapshot` | 20 | two: `snapshot` and I/O-private `latest.0`, 40 bytes total |
+| S5 range sample | 16 | two Mission samples + two reporting mirrors, 64 bytes total |
+| S5 profile snapshot | 24 | composed copy: 14-byte profile + 6-byte evidence + 4-byte sampled time; not an additional persistent 24-byte object |
+| S5 range group | 12 | embedded in 100-byte acquisition object |
+| S5 ray | 4 | nine entries (36 bytes) embedded in acquisition object |
+| S1 event log / event entry | 168 / 10 | one log with 16 packed entries |
+| Mapping request / reply word | 4 / 4 | one each; five 4-byte tickets/counters plus one-byte sequence separately |
+| Terrain published / startup word | 4 / 4 | one each, separate from the snapshots |
+| Kernel TX / RX bridge | 104 / 56 | one each; slots include length and frame capacity, with head/tail words |
+| Mission / recovery / bypass state | 168 / 20 / 84 | Mission is task-local; recovery and bypass embedded in it, not independent BSS objects |
+
+Local codec adapter structures measure telemetry 30, event 10, mapping 5 and
+ACK 2 bytes. They are never transmitted as native structs. The
+[host golden-vector checks](../integration/logs/2026-10-30_INT-24-accepted-host.txt)
+reconfirm MQTT frame lengths **23/11/5/3/2 bytes**, including the unchanged
+snapshot body. No extra generic task-message queue is inferred from these sizes.
+
+No firmware was executed/flashed. No-lost-functionality physical acceptance,
+stop latency, WCET/jitter, ISR timing, missed deadlines, ring occupancy and stack
+margin remain unmeasured. Re-run on the accepted committed image; complete the
+mission-readiness checklist and T15 before claiming final product acceptance.
+
+2026-10-30 subsequent working-tree refresh, INT-25: the bounded event-lock fix
+adds two single-writer 32-bit diagnostic counters (8 bytes total). Fresh builds,
+target probes and [25 persistent object cross-checks](../integration/logs/2026-10-30_INT-25-accepted-resources.json)
+pass at the [new manifest](../integration/logs/2026-10-30_INT-25-accepted-manifest.json).
+The INT-24 records above remain historical and are not overwritten.
+
+| Profile | text | data | bss | Static allocated RAM (data+bss) |
+| --- | ---: | ---: | ---: | ---: |
+| offline-test | 323880 | 384 | 26464 | 26848 |
+| offline-normal | 321796 | 384 | 26456 | 26840 |
+| wireless-test | 378728 | 392 | 84136 | 84528 |
+| wireless-normal | 376648 | 392 | 84128 | 84520 |
+
+No firmware execution, lock-contention timing, live memory or physical pass.

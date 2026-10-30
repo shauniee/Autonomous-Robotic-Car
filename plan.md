@@ -256,6 +256,12 @@ work beyond their scope must receive its own issue before a branch/PR.
 - Append all evidence and video links; never overwrite results or commit videos,
   credentials, ELF, UF2 or map files.
 
+Working-tree software evidence was refreshed on 2026-10-30 as
+[SYS-12](testing/system/TEST_LOG.md#current-resource-audit-sys-12) / INT-24:
+Mission stored float history converted, four profiles rebuilt, target layouts
+and inter-task copy sizes measured. Accepted-commit rerun, live memory/timing
+and physical trials above remain open.
+
 ## Feature acceptance matrix
 
 | Feature | Code focus | Verification / existing test family |
@@ -353,3 +359,9 @@ includes the D07 moving sweep, the D06 reset decision, accepted coverage/rear-ed
 original-line bypass behavior, calibration and measured physical timing/stack
 limits, and three consecutive unchanged-image course trials. A pin map, compiled
 image, synthetic profile or host replay cannot supply those measurements.
+
+
+The 2026-10-30 repository-finding rerun is recorded as
+[INT-20](testing/integration/TEST_LOG.md#repository-findings--int-20). The completion
+checker now reads its appended audit and source manifest; INT-16/17 remain
+historical evidence. Hardware acceptance and pending decisions remain separate.

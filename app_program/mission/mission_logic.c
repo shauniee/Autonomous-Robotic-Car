@@ -18,9 +18,67 @@ void mission_init(Mission *m, uint32_t now_ms)
 
 static void line_pid_reset(Mission *m)
 {
-    m->line_integral = 0.0f;
+    m->line_integral_q = 0;
     m->line_pid_primed = false;
     m->line_steer_q = 0;
+}
+
+/* Private history: /32767 preserves exact +/-1 endpoints. Float is local
+   computation only; clamp before narrowing and never store INT16_MIN. */
+#define MISSION_PID_SCALE 32767.0f
+_Static_assert(LINE_I_LIMIT <= 1.0f, "integral history scale requires limit <=1");
+_Static_assert(MAX_STEER <= 1.0f, "held steering must fit signed Q7");
+
+static int16_t mission_pid_encode(float value)
+{
+    if (!isfinite(value))
+    {
+        return 0;
+    }
+    value = fminf(fmaxf(value, -1.0f), 1.0f);
+    return (int16_t)lroundf(value * MISSION_PID_SCALE);
+}
+
+static float mission_line_integral_get(const Mission *m)
+{
+    return (float)m->line_integral_q / MISSION_PID_SCALE;
+}
+
+static void mission_line_integral_set(Mission *m, float value)
+{
+    m->line_integral_q = mission_pid_encode(
+        fminf(fmaxf(value, -LINE_I_LIMIT), LINE_I_LIMIT));
+}
+
+static float mission_line_prev_error_get(const Mission *m)
+{
+    return (float)m->line_prev_error_q / MISSION_PID_SCALE;
+}
+
+static void mission_line_prev_error_set(Mission *m, float value)
+{
+    m->line_prev_error_q = mission_pid_encode(value);
+}
+
+static float mission_turn_target_get(const Mission *m)
+{
+    switch (m->turn_code)
+    {
+    case 1u:
+        return 90.0f;
+    case 2u:
+        return -90.0f;
+    case 3u:
+        return 180.0f;
+    default:
+        return 0.0f;
+    }
+}
+
+static void mission_turn_target_set(Mission *m, barcode_action_t action)
+{
+    m->turn_code = action == BARCODE_LEFT ? 1u :
+        (action == BARCODE_RIGHT ? 2u : (action == BARCODE_U_TURN ? 3u : 0u));
 }
 
 static void enter(Mission *m, MissionState next, uint32_t now_ms)
@@ -39,30 +97,39 @@ static void enter(Mission *m, MissionState next, uint32_t now_ms)
    steering limited to MAX_STEER. */
 static int line_pid_steering(Mission *m, const MissionInputs *in)
 {
+    if (m->line_integral_q == INT16_MIN || m->line_prev_error_q == INT16_MIN)
+    {
+        line_pid_reset(m);
+    }
     if (m->line_pid_primed && in->line_sampled_ms == m->line_pid_ms)
     {
         return m->line_steer_q;
     }
     float error = (float)in->line_error / (float)IR_SCALE_ONE;
+    float integral = mission_line_integral_get(m);
     float derivative = 0.0f;
     float dt = (float)IR_SAMPLE_MS / 1000.0f;	/* nominal step for the first sample */
     uint32_t dt_ms = in->line_sampled_ms - m->line_pid_ms;
     if (m->line_pid_primed && dt_ms > 0u && dt_ms <= IR_MAX_GAP_MS)
     {
         dt = (float)dt_ms / 1000.0f;
-        error = m->line_prev_error + (error - m->line_prev_error) * dt / (LINE_ERROR_TAU_MS / 1000.0f + dt);
-        derivative = (error - m->line_prev_error) / dt;
-        m->line_integral = fminf(fmaxf(m->line_integral + LINE_KI * error * dt, -LINE_I_LIMIT), LINE_I_LIMIT);
+        float prior_error = mission_line_prev_error_get(m);
+        error = prior_error + (error - prior_error) * dt /
+            (LINE_ERROR_TAU_MS / 1000.0f + dt);
+        derivative = (error - prior_error) / dt;
+        integral = fminf(fmaxf(integral + LINE_KI * error * dt,
+            -LINE_I_LIMIT), LINE_I_LIMIT);
     }
-    float steer = LINE_KP * error + m->line_integral + LINE_KD * derivative;
+    float steer = LINE_KP * error + integral + LINE_KD * derivative;
     float previous = (float)m->line_steer_q / (float)IR_SCALE_ONE;
     float step = LINE_STEER_RATE * dt;
     steer = fminf(fmaxf(steer, previous - step), previous + step);
     steer = fminf(fmaxf(steer, -MAX_STEER), MAX_STEER);
-    m->line_prev_error = error;
+    mission_line_prev_error_set(m, error);
+    mission_line_integral_set(m, integral);
     m->line_pid_ms = in->line_sampled_ms;
     m->line_pid_primed = true;
-    m->line_steer_q = (int)lroundf(steer * (float)IR_SCALE_ONE);
+    m->line_steer_q = (int8_t)lroundf(steer * (float)IR_SCALE_ONE);
     return m->line_steer_q;
 }
 
@@ -147,7 +214,6 @@ static void handle_ready(Mission *m, const MissionInputs *in, MissionOutputs *ou
         out->start_refused = true;
         return;
     }
-    m->direction = 0;
     m->visible_streak = 0u;
     m->in_broad = false;
     m->held = BARCODE_UNMAPPED;
@@ -234,14 +300,14 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
                 m->phase = action == BARCODE_U_TURN ?
                     JUNCTION_PHASE_PAUSE_WAIT : JUNCTION_PHASE_TURN;
                 m->current_action = next_action_id(m);
-                m->turn_target = action == BARCODE_LEFT ? 90.0f : (action == BARCODE_RIGHT ? -90.0f : 180.0f);
+                mission_turn_target_set(m, action);
                 enter(m, MISSION_NAVIGATE, in->now_ms);
                 out->event_kind = MQTT_EVENT_TURN;
                 out->event_arg = (uint8_t)action;
                 if (m->phase == JUNCTION_PHASE_TURN)
                 {
                     out->command = action_command(MOTION_MODE_TURN,
-                        MISSION_TURN_SPEED_MMPS, m->turn_target,
+                        MISSION_TURN_SPEED_MMPS, mission_turn_target_get(m),
                         m->current_action, in->now_ms);
                 }
                 return;
@@ -282,7 +348,6 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
             return;
         }
         enter(m, MISSION_REACQUIRE, in->now_ms);
-        m->recovery_since_ms = in->now_ms;
         recovery_input_t initial = {.now_ms = in->now_ms,
             .count = {in->wheel_count[0], in->wheel_count[1]},
             .sampled_ms = in->line_sampled_ms};
@@ -300,7 +365,6 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         return;
     }
     int steer = line_pid_steering(m, in);
-    if (steer != 0) m->direction = steer > 0 ? 1 : -1;
     out->command = follow_command(in, line_follow_speed(steer), steer, 1u);
 }
 
@@ -539,7 +603,7 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
     }
     out->command = m->phase == JUNCTION_PHASE_TURN
         ? action_command(MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS,
-            m->turn_target, m->current_action, in->now_ms)
+            mission_turn_target_get(m), m->current_action, in->now_ms)
         : action_command(MOTION_MODE_DISTANCE, MISSION_CLEAR_SPEED_MMPS,
             MISSION_CLEAR_MM, m->current_action, in->now_ms);
 }

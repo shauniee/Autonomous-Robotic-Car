@@ -27,8 +27,9 @@ user-confirmed; measured timing/geometry/uncertainty still need evidence.
 
 ## Interfaces and contract
 
-Current APIs `s5_front_word`, `s5_side_word`, `s5_scan_request`, `s5_scan_cancel`,
-`s5_scan_word`, `s5_side_watch` and `s5_profile_copy` are reusable boundaries.
+Current APIs `s5_range_samples`, `s5_range_try_copy`, `s5_scan_request`, `s5_scan_cancel`,
+`s5_scan_word`, `s5_side_watch`, `s5_profile_snapshot` and `s5_profile_try_copy`
+are reusable boundaries.
 Advance trigger/Echo/servo-settle/scan phases by timestamps and short capture ISRs;
 never busy-wait through Echo or servo movement. Full/cancel/deadline outcomes are
 explicit. Commanded servo angle is not a measured angle.

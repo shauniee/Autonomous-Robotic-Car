@@ -44,8 +44,7 @@ static bool pose_step(bypass_control_t *control, const bypass_input_t *input)
         return false;
     }
     control->edge_counts += (uint32_t)edges;
-    float heading = ((float)total[1] - total[0]) / ENC_COUNTS_PER_MM /
-        TRACK_WIDTH_MM * 5729.57795f;
+    float heading = enc_heading_deg(total[0], total[1]) * 100.0f;
     if (fabsf(heading) > 18000.0f)
     {
         return false;
@@ -116,6 +115,13 @@ static int expected_heading(const bypass_control_t *control)
     return 0;
 }
 
+static float front_usable_mm(const bypass_input_t *input)
+{
+    return input->front_mm - fmaxf(0.0f,
+        BYPASS_BODY_LENGTH_MM * 0.5f - S5_SONAR_FORWARD_MM) -
+        BYPASS_CLEARANCE_MM - BYPASS_FRONT_RESERVE_MM;
+}
+
 static bool front_supported(const bypass_control_t *control, const bypass_input_t *input)
 {
     if (!input->front_valid || input->front_sequence == 0u ||
@@ -124,9 +130,7 @@ static bool front_supported(const bypass_control_t *control, const bypass_input_
         return false;
     }
     int32_t moved = enc_travel_signed(enc_mean(input->count[0], input->count[1]), input->front_count);
-    float clearance = input->front_mm - fmaxf(0.0f,
-        BYPASS_BODY_LENGTH_MM * 0.5f - S5_SONAR_FORWARD_MM) -
-        BYPASS_CLEARANCE_MM - BYPASS_FRONT_RESERVE_MM;
+    float clearance = front_usable_mm(input);
     return moved >= 0 && clearance > (float)moved / ENC_COUNTS_PER_MM &&
         fabsf((float)control->heading_cdeg / 100.0f - expected_heading(control)) <=
             BYPASS_RETURN_HEADING_DEG;
@@ -212,13 +216,19 @@ static void side_observation(bypass_control_t *control, const bypass_input_t *in
     }
     else if (input->side_mm > (uint32_t)control->baseline_mm + BYPASS_EDGE_ENTER_MM)
     {
+        if (control->edge_streak == 0u)
+        {
+            /* Keep the first edge position while later samples confirm it. */
+            control->edge_forward_q8 = control->forward_q8;
+        }
         if (control->edge_streak < BYPASS_EDGE_SAMPLES)
         {
             ++control->edge_streak;
         }
         if (control->edge_streak >= BYPASS_EDGE_SAMPLES && control->route != BYPASS_ROUTE_REAR)
         {
-            float rear = forward_mm(control) + control->baseline_mm *
+            float rear = (float)control->edge_forward_q8 / BYPASS_Q8 +
+                S5_SONAR_FORWARD_MM + control->baseline_mm *
                 cosf(SERVO_MAX_DEG * 0.0174532925f);
             float clear = rear + hypotf(BYPASS_BODY_LENGTH_MM * 0.5f,
                 BYPASS_BODY_WIDTH_MM * 0.5f) + BYPASS_CLEARANCE_MM;
@@ -230,7 +240,7 @@ static void side_observation(bypass_control_t *control, const bypass_input_t *in
             control->rear_clear_q8 = (int32_t)lroundf(clear * BYPASS_Q8);
             control->route = BYPASS_ROUTE_REAR;
             float depth = fmaxf(0.0f, rear - control->obstacle_front_mm);
-            control->depth_mm = (uint16_t)(depth >= 65535.0f ? 65535u : lroundf(depth));
+            control->depth_mm = (uint16_t)lroundf(fminf(depth, 65535.0f));
             output->depth_event = true;
             output->depth_mm = control->depth_mm;
         }
@@ -363,9 +373,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
                 }
                 else
                 {
-                    float usable = input->front_mm - fmaxf(0.0f,
-                        BYPASS_BODY_LENGTH_MM * 0.5f - S5_SONAR_FORWARD_MM) -
-                        BYPASS_CLEARANCE_MM - BYPASS_FRONT_RESERVE_MM;
+                    float usable = front_usable_mm(input);
                     float target = fminf(remaining, fminf(BYPASS_CHUNK_MM, usable));
                     if (target <= MOTION_DIST_TOL_MM)
                     {

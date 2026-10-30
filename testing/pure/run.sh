@@ -29,17 +29,19 @@ $CC $CFLAGS testing/pure/test_mission_pending.c app_program/mission/mission_logi
 $CC $CFLAGS testing/pure/test_mission_mapping.c app_program/mission/mission_mapping.c \
     app_program/common/robot_data.c -o "$build_dir/test_mission_mapping"
 $CC $CFLAGS testing/pure/test_echo_range.c -o "$build_dir/test_echo_range"
-$CC $CFLAGS testing/pure/test_obstacle_profile.c app_program/subsystem5/obstacle_profile.c -lm \
+$CC $CFLAGS testing/pure/test_obstacle_profile.c app_program/subsystem5/obstacle_profile.c \
     -o "$build_dir/test_obstacle_profile"
 $CC $CFLAGS testing/pure/test_range_filter.c app_program/subsystem5/range_filter.c \
     -o "$build_dir/test_range_filter"
 $CC $CFLAGS testing/pure/test_profile_edges.c app_program/subsystem5/profile_edges.c -lm \
     -o "$build_dir/test_profile_edges"
-$CC $CFLAGS testing/pure/test_mqtt_frame.c app_program/subsystem1/mqtt_frame.c -o "$build_dir/test_mqtt_frame"
+$CC $CFLAGS testing/pure/test_mqtt_frame.c app_program/subsystem1/mqtt_frame.c \
+    app_program/common/robot_data.c -o "$build_dir/test_mqtt_frame"
 $CC $CFLAGS testing/pure/test_terrain.c testing/pure/terrain_float_reference.c \
     app_program/subsystem4/terrain_algo.c app_program/common/robot_data.c -lm \
     -o "$build_dir/test_terrain"
-$CC $CFLAGS testing/pure/test_s1_report.c app_program/subsystem1/s1_report.c app_program/subsystem1/mqtt_frame.c \
+$CC $CFLAGS testing/pure/test_s1_report.c app_program/subsystem1/s1_report.c \
+    app_program/subsystem1/mqtt_frame.c app_program/common/robot_data.c \
     -o "$build_dir/test_s1_report"
 $CC $CFLAGS testing/pure/test_s1_stress.c app_program/subsystem1/s1_bridge.c app_program/common/robot_data.c \
     -o "$build_dir/test_s1_stress"

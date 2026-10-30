@@ -13,8 +13,6 @@ enum { ECHO_IDLE, ECHO_ARMED, ECHO_HIGH, ECHO_DONE };
 static _Atomic unsigned echo_state;
 static _Atomic uint32_t pulse_us;
 static uint32_t rise_us;			/* handler-private */
-static rd_word_t front_word;			/* writer: the obstacle task */
-static rd_word_t side_word;			/* writer: the obstacle task */
 static rd_word_t scan_word;			/* writer: the obstacle task */
 static ID profile_mutex;
 static s5_profile_evidence_t profile_evidence;
@@ -34,14 +32,8 @@ static bool profile_ready;			/* guarded by profile_mutex */
 /* Mission -> Obstacle requests: one writer per counter (no atomic RMW on M0+). */
 static _Atomic uint32_t scan_requests, scan_served, cancel_requests, cancel_served;
 static _Atomic uint8_t requested_scan_id;
-static rd_word_t side_command;			/* writer: Mission; bit 0 on, bits 1-7 signed servo angle */
+static rd_word_t side_command;			/* writer: Mission; bit 0 on, bits 1-8 signed servo angle */
 
-uint32_t s5_front_word(void)
-{
-    return rd_word_read(&front_word);
-}
-
-uint32_t s5_side_word(void) { return rd_word_read(&side_word); }
 uint32_t s5_scan_word(void) { return rd_word_read(&scan_word); }
 
 void s5_scan_request(uint8_t scan_id)
@@ -193,7 +185,7 @@ static void publish_scan(s5_scan_state_t state, uint8_t id)
 {
     uint32_t word = 0u;
     (void)s5_scan_state_pack(state, &word);
-    rd_word_publish(&scan_word, word | ((uint32_t)id << S5_SCAN_STATE_BITS));
+    rd_word_publish(&scan_word, word | s5_scan_id_pack(id));
 }
 
 static void cancel_echo(void)
@@ -305,15 +297,15 @@ static void range_complete(uint32_t range, uint32_t now)
         range_samples[1].word = word;
         range_samples[1].sampled_ms = now;
         ++range_samples[1].sequence;
-        rd_word_publish(&side_word, word);
     }
     else
     {
         uint32_t word = echo_pack(range, now);
         range_samples[0].word = word;
         range_samples[0].sampled_ms = now;
+        range_samples[0].travel_counts = enc_mean(
+            drv_encoder_count(ENCODER_LEFT), drv_encoder_count(ENCODER_RIGHT));
         ++range_samples[0].sequence;
-        rd_word_publish(&front_word, word);
         if (echo_note(&acquisition.misses, range != ECHO_RANGE_INVALID))
         {
             rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
@@ -461,11 +453,6 @@ void s5_step(uint32_t now)
     {
         range_complete(ECHO_RANGE_INVALID, now);
     }
-}
-
-ER s5_profile_copy(ObstacleProfile *out)
-{
-    return profile_copy(out, RD_SNAPSHOT_LOCK_MS);
 }
 
 ER s5_profile_try_copy(ObstacleProfile *out)

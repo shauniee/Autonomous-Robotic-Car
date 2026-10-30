@@ -169,8 +169,8 @@ enum {
     RD_FAULT_BARCODE_CAPTURE_OVERFLOW = 1u << 1,	/* report only */
     RD_FAULT_BARCODE_EVENT_OVERFLOW = 1u << 2,	/* report only */
 
-    RD_FAULT_IMU = 1u << 0,		/* start-blocking */
-    RD_FAULT_CALIBRATION_FAILED = 1u << 1,	/* start-blocking */
+    RD_FAULT_IMU = 1u << 0,		/* report only */
+    RD_FAULT_CALIBRATION_FAILED = 1u << 1,	/* report only */
     RD_FAULT_IMPACT = 1u << 2,		/* start-blocking, run-stopping */
 
     RD_FAULT_NO_ECHO = 1u << 0,		/* report only: open space gives no echo */

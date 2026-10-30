@@ -1,4 +1,5 @@
 #include "mqtt_frame.h"
+#include "../common/robot_data.h"
 
 #define HDR(type) ((uint8_t)((MQTT_FRAME_VERSION << 4) | ((unsigned)(type) & 0xFu)))
 
@@ -134,20 +135,9 @@ mqtt_decode_t mqtt_decode_event(const uint8_t *f, unsigned length, mqtt_event_t 
    0 header | 1 sequence | 2..4 little-endian 24 bits: 4 x 5-bit letters in
    bits 0-19 (left in bits 0-4), bits 20-23 zero                              */
 
-static bool letters_ok(const uint8_t l[4])
-{
-    uint32_t seen = 0u;
-    for (unsigned i = 0u; i < 4u; ++i)
-    {
-        if (l[i] > 25u || (seen & (1u << l[i])) != 0u) return false;
-        seen |= 1u << l[i];
-    }
-    return true;
-}
-
 unsigned mqtt_encode_mapping(uint8_t *out, unsigned capacity, const mqtt_mapping_t *m)
 {
-    if (out == 0 || m == 0 || capacity < MQTT_LEN_MAPPING || !letters_ok(m->letters)) return 0u;
+    if (out == 0 || m == 0 || capacity < MQTT_LEN_MAPPING || !rd_mapping_letters_valid(m->letters)) return 0u;
     uint32_t packed = 0u;
     for (unsigned i = 0u; i < 4u; ++i) packed |= (uint32_t)m->letters[i] << (5u * i);
     out[0] = HDR(MQTT_TYPE_MAPPING);
@@ -169,7 +159,7 @@ mqtt_decode_t mqtt_decode_mapping(const uint8_t *f, unsigned length, mqtt_mappin
     if ((packed >> 20) != 0u) return MQTT_DECODE_RESERVED;
     uint8_t letters[4];
     for (unsigned i = 0u; i < 4u; ++i) letters[i] = (uint8_t)((packed >> (5u * i)) & 0x1Fu);
-    if (!letters_ok(letters)) return MQTT_DECODE_RANGE;
+    if (!rd_mapping_letters_valid(letters)) return MQTT_DECODE_RANGE;
     m->sequence = f[1];
     for (unsigned i = 0u; i < 4u; ++i) m->letters[i] = letters[i];
     return MQTT_DECODE_OK;

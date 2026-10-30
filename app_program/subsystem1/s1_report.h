@@ -1,7 +1,7 @@
 /*
  *	s1_report.h
- *	Kernel-free Reporting logic: the event-log ring, telemetry assembly and
- *	the mapping-command flow. subsystem1.c supplies the sources and the
+ *	Kernel-free Reporting logic: the event-log ring and telemetry clamping.
+ *	subsystem1.c supplies the sources, mapping hand-off and the
  *	transport; nothing here touches the kernel.
  */
 
@@ -63,17 +63,5 @@ unsigned s1_log_count(const s1_event_log_t *log);
 /* Clamps a gathered telemetry record to its field widths in place, so the
    encoder never rejects it. */
 void s1_clamp(mqtt_telemetry_t *t);
-
-/* ---- Mapping command -------------------------------------------------------
-   install: called only when the robot is stopped; returns true when Mission
-   installed the letters. Returns the acknowledgement to send, or false in
-   *send when the frame is not a mapping at all. A valid mapping is acknowledged
-   only after the install attempt, never on receipt alone. */
-typedef bool (*s1_install_fn)(const uint8_t letters[4]);
-
-typedef enum { S1_COMMAND_IGNORED, S1_COMMAND_MAPPING, S1_COMMAND_SNAPSHOT } s1_command_t;
-
-s1_command_t s1_handle_command(const uint8_t *frame, unsigned length, bool robot_stopped,
-                               s1_install_fn install, mqtt_ack_t *ack, bool *send_ack);
 
 #endif /* S1_REPORT_H */

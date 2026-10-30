@@ -27,7 +27,7 @@ snapshot requests are the accepted PC inputs; no remote movement authority.
 | Path | Existing code / target contract |
 | --- | --- |
 | Telemetry | `subsystem1.c` gathers coherent producer values; target skips busy optional data and bounds work |
-| Events | `s1_event`, `s1_report.c`: 16-entry log, oldest overwritten and drops counted; target must synchronize Mission/core-1 and Terrain/core-0 producers |
+| Events | `s1_event`, `s1_report.c`: 16-entry log under a cross-core mutex; insertion waits up to the existing 2 ms snapshot timeout, failure increments a saturating per-core diagnostic; oldest overwritten on full ring with a separate drop count |
 | Bridge | `s1_bridge.c/.h`: TX depth 4, RX depth 2, maximum frame 23 bytes; full/oversized frames dropped; no waiting in WiFi context |
 | Mapping | Four distinct A-Z letters; target bounded I/O-to-Mission hand-off, installed only READY/STOPPED, ACK after outcome |
 | MQTT callbacks | Current command topic is matched before return; payload fragments are copied into bounded staging then RX. No retained callback pointers; any future multi-topic RX needs copied topic metadata |
