@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;background:#121212;color:#f2f2f2;font:15px/1.3 "Arial Narrow",Arial,sans-serif}
+header{display:flex;justify-content:space-between;padding:20px 36px;border-bottom:1px solid #333}h1{font-size:20px;letter-spacing:.1em}.lamp{color:#ffb000}
+table{width:calc(100% - 72px);margin:18px 36px;border-collapse:separate;border-spacing:0 6px}th{text-align:left;font-size:12px;color:#999;letter-spacing:.1em;padding:0 12px}
+td{background:#1d1d1d;padding:14px 12px;font-size:26px;letter-spacing:.08em;text-transform:uppercase}td.r{color:#c8352b}td.a{color:#ffb000}
+.map{display:flex;align-items:center;gap:14px;margin:6px 36px;padding:18px;background:#1d1d1d}.f{width:70px;height:84px;background:#0b0b0b;border-top:2px solid #2a2a2a;display:grid;place-items:center;font-size:52px;font-weight:700}.fl{font-size:12px;color:#999;text-align:center;margin-top:6px}
+button{margin-left:auto;height:52px;padding:0 30px;background:#ffb000;color:#121212;border:0;font:700 18px Arial;letter-spacing:.06em}
+</style></head><body>
+<header><h1>ROBOT TELEMETRY · CSC01</h1><div><span class="lamp">● LIVE</span> &nbsp; FRAME 4127 · ROBOT ONLINE</div></header>
+<div class="map"><span style="font-size:14px;color:#999;width:120px">BARCODE<br>MAPPING</span>
+<div><div class="f">A</div><div class="fl">LEFT</div></div><div><div class="f">B</div><div class="fl">RIGHT</div></div><div><div class="f">C</div><div class="fl">STRAIGHT</div></div><div><div class="f">D</div><div class="fl">U-TURN</div></div>
+<span style="margin-left:24px;color:#ffb000">ACK SEQ 7 · OK</span><button>SEND MAPPING</button></div>
+<table><tr><th>SUBSYSTEM</th><th>STATE</th><th>READING</th><th>DETAIL</th><th>FAULT</th></tr>
+<tr><td>MISSION</td><td class="r">STOPPED</td><td>#4127</td><td>GP21 TO RESET</td><td class="r">LINE LOST</td></tr>
+<tr><td>LINE IR</td><td class="r">LOST</td><td>Z → RIGHT</td><td>LAST BARCODE</td><td>—</td></tr>
+<tr><td>MOTION</td><td>IDLE</td><td>0 / 0 MM/S</td><td>ACTION 5</td><td>—</td></tr>
+<tr><td>OBSTACLE</td><td>CLEAR</td><td>312 MM</td><td>420 × 170 MM</td><td class="a">NO ECHO (CLEARED)</td></tr>
+<tr><td>TERRAIN</td><td>FLAT</td><td>3 HUMPS</td><td>MAX 18 MM</td><td>—</td></tr>
+<tr><td>NETWORK</td><td>ONLINE</td><td>0.4 S</td><td>BROKER OK</td><td>—</td></tr></table>
+<table><tr><th>TIME</th><th>EVENT</th><th>DETAIL</th><th>ENCODERS</th></tr>
+<tr><td>41.23</td><td>BARCODE</td><td>Z → RIGHT</td><td>1820 · 1795</td></tr><tr><td>31.05</td><td>HUMP</td><td>18 MM</td><td>1340 · 1331</td></tr></table>
+</body></html>

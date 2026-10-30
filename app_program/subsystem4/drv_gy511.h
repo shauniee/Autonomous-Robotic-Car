@@ -22,6 +22,7 @@ typedef struct
 
 /* Hardware lifecycle */
 bool drv_gy511_init(void);
-bool drv_gy511_read_accel(Gy511RawAxes *out_raw);
+typedef enum { GY511_SAMPLE_ERROR, GY511_SAMPLE_PENDING, GY511_SAMPLE_FRESH } gy511_sample_result_t;
+gy511_sample_result_t drv_gy511_sample(Gy511RawAxes *out_raw);
 
 #endif /* DRV_GY511_H */

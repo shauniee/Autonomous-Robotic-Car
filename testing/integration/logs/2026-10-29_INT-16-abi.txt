@@ -1,0 +1,11 @@
+3 sizeof_ObstacleRay
+6 sizeof_s5_profile_evidence_t
+12 sizeof_MotionCommand
+12 sizeof_MotionHealth
+12 sizeof_s5_profile_config_t
+12 sizeof_s5_range_group_t
+12 sizeof_s5_range_sample_t
+14 sizeof_ObstacleProfile
+20 sizeof_S4Snapshot
+32 sizeof_TerrainContext
+100 sizeof_Mission

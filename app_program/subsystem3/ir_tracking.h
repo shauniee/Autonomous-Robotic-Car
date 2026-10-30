@@ -112,13 +112,13 @@ typedef struct
 } IrTracker;
 
 /* Valid guidance is fresh calibrated VISIBLE data, never motion permission.
-   Negative error/steering means left; positive means right. */
+   error = right black fraction - left black fraction (sensors on the edges).
+   Negative means the line moved left (steer left); positive means right. */
 typedef struct
 {
     bool valid;
     IrLine line;
     int8_t error;	/* -IR_SCALE_ONE..+IR_SCALE_ONE */
-    int8_t steering;	/* -IR_SCALE_ONE..+IR_SCALE_ONE */
     uint32_t sampled_ms;
 } IrTrackingOutput;
 
@@ -132,7 +132,7 @@ void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
 IrReading ir_tracking_reading(IrRaw raw, const IrCalibration *calibration);
 IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now);
 /* Portable data for S1 and future Mission consumers; no wire format implied.
-   Invalid fraction/error/steering fields are zero; use validity flags. */
+   Invalid fraction/error fields are zero; use validity flags. */
 typedef struct
 {
     uint32_t sequence;
@@ -142,8 +142,7 @@ typedef struct
     IrCalibration calibration;
     uint8_t left_fraction;	/* 0..IR_SCALE_ONE */
     uint8_t right_fraction;
-    int8_t error;		/* -IR_SCALE_ONE..+IR_SCALE_ONE */
-    int8_t steering;
+    int8_t error;		/* right - left, see IrTrackingOutput */
     IrLine line;
     IrCaptureKind capture_kind;
     IrCaptureResult capture_result;

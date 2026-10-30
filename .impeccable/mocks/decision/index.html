@@ -1,0 +1,132 @@
+<!doctype html><meta charset="utf-8"><title>Dashboard directions</title><style>body{margin:16px;font:15px system-ui;background:#eee}h2{margin:24px 0 8px}.f{width:720px;height:450px;overflow:hidden;border:1px solid #999}.f iframe{width:1440px;height:900px;border:0;transform:scale(.5);transform-origin:0 0}</style><h2>1. Swiss Grid Bulletin (the roll)</h2><div class=f><iframe srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;background:#f3f1ec;color:#111;font:15px/1.35 &quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif;background-image:repeating-linear-gradient(90deg,transparent 0 calc(1440px/12 - 1px),rgba(17,17,17,.06) calc(1440px/12 - 1px) calc(1440px/12))}
+header{display:flex;align-items:baseline;justify-content:space-between;padding:22px 40px 14px;border-bottom:2px solid #111}
+h1{font-size:15px;font-weight:700;letter-spacing:.02em}.meta{display:flex;gap:28px;font-size:13px}.ok{color:#1f8a4c}.warn{color:#d99a00}.bad{color:#e2231a}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);column-gap:0}
+.cell{padding:18px 20px 22px;border-top:4px solid #111}.cell.fault{border-top:12px solid #e2231a}
+.lab{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.state{font-size:52px;font-weight:700;letter-spacing:-.02em;line-height:1;margin-top:14px}
+.sub{font-size:13px;margin-top:8px;font-variant-numeric:tabular-nums}
+.c3{grid-column:span 3}.c2{grid-column:span 2}.c4{grid-column:span 4}.c8{grid-column:span 8}
+.map{background:#111;color:#f3f1ec;padding:20px;border-top:4px solid #111}
+.map .row{display:flex;gap:10px;margin-top:14px}.map label{display:flex;flex-direction:column;gap:6px;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.map input{width:64px;height:64px;font:700 36px &quot;Helvetica Neue&quot;,sans-serif;text-align:center;border:0;background:#f3f1ec;color:#111}
+.map button{margin-top:14px;width:100%;height:44px;border:0;background:#e2231a;color:#fff;font:700 15px &quot;Helvetica Neue&quot;,sans-serif}
+.map .ack{margin-top:10px;font-size:13px}
+main{padding:0 40px}section.block{margin-top:28px}
+svg{display:block;margin-top:12px}
+ul{list-style:none;padding:0;margin-top:10px;font-size:13px;font-variant-numeric:tabular-nums}li{padding:7px 0;border-top:1px solid rgba(17,17,17,.15)}li s{color:#888}
+&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;header&gt;&lt;h1&gt;Robot Telemetry — CSC01&lt;/h1&gt;&lt;div class=&quot;meta&quot;&gt;&lt;span class=&quot;ok&quot;&gt;● Dashboard connected&lt;/span&gt;&lt;span class=&quot;ok&quot;&gt;● Robot online&lt;/span&gt;&lt;span&gt;Live · frame #4127&lt;/span&gt;&lt;/div&gt;&lt;/header&gt;
+&lt;main&gt;
+&lt;div class=&quot;grid&quot;&gt;
+ &lt;div class=&quot;cell c3 fault&quot;&gt;&lt;div class=&quot;lab&quot;&gt;Mission&lt;/div&gt;&lt;div class=&quot;state bad&quot;&gt;STOPPED&lt;/div&gt;&lt;div class=&quot;sub&quot;&gt;Fault: line lost · press GP21 to reset&lt;/div&gt;&lt;/div&gt;
+ &lt;div class=&quot;c3 map&quot;&gt;&lt;div class=&quot;lab&quot;&gt;Barcode mapping&lt;/div&gt;&lt;div class=&quot;row&quot;&gt;
+  &lt;label&gt;Left&lt;input value=&quot;A&quot;&gt;&lt;/label&gt;&lt;label&gt;Right&lt;input value=&quot;B&quot;&gt;&lt;/label&gt;&lt;label&gt;Straight&lt;input value=&quot;C&quot;&gt;&lt;/label&gt;&lt;label&gt;U-turn&lt;input value=&quot;D&quot;&gt;&lt;/label&gt;&lt;/div&gt;
+  &lt;button&gt;Send mapping&lt;/button&gt;&lt;div class=&quot;ack&quot;&gt;ACK seq 7 · OK installed · mapped=yes&lt;/div&gt;&lt;/div&gt;
+ &lt;div class=&quot;cell c3&quot;&gt;&lt;div class=&quot;lab&quot;&gt;Line (IR)&lt;/div&gt;&lt;div class=&quot;state bad&quot;&gt;LOST&lt;/div&gt;&lt;div class=&quot;sub&quot;&gt;Last barcode Z → RIGHT&lt;/div&gt;&lt;/div&gt;
+ &lt;div class=&quot;cell c3&quot;&gt;&lt;div class=&quot;lab&quot;&gt;Motion&lt;/div&gt;&lt;div class=&quot;state&quot;&gt;IDLE&lt;/div&gt;&lt;div class=&quot;sub&quot;&gt;Action 5 · L 0 · R 0 mm/s&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;grid&quot; style=&quot;margin-top:22px&quot;&gt;
+ &lt;div class=&quot;cell c3&quot;&gt;&lt;div class=&quot;lab&quot;&gt;Obstacle&lt;/div&gt;&lt;div class=&quot;state&quot;&gt;312&lt;span style=&quot;font-size:22px&quot;&gt; mm&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;sub&quot;&gt;Last 420 × 170 mm&lt;/div&gt;&lt;/div&gt;
+ &lt;div class=&quot;cell c3&quot;&gt;&lt;div class=&quot;lab&quot;&gt;Terrain&lt;/div&gt;&lt;div class=&quot;state&quot;&gt;3&lt;span style=&quot;font-size:22px&quot;&gt; humps&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;sub&quot;&gt;Max 18 mm&lt;/div&gt;&lt;/div&gt;
+ &lt;div class=&quot;cell c3&quot;&gt;&lt;div class=&quot;lab&quot;&gt;Encoders&lt;/div&gt;&lt;div class=&quot;state&quot; style=&quot;font-size:34px&quot;&gt;1820 / 1795&lt;/div&gt;&lt;div class=&quot;sub&quot;&gt;Left / right counts&lt;/div&gt;&lt;/div&gt;
+ &lt;div class=&quot;cell c3 fault&quot;&gt;&lt;div class=&quot;lab&quot;&gt;Active faults&lt;/div&gt;&lt;div class=&quot;state bad&quot; style=&quot;font-size:28px&quot;&gt;Mission: line lost&lt;/div&gt;&lt;div class=&quot;sub&quot;&gt;&lt;s&gt;Obstacle: no echo&lt;/s&gt; cleared 41.2 s&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;grid block&quot;&gt;
+ &lt;div class=&quot;c8&quot; style=&quot;padding-right:24px&quot;&gt;&lt;div class=&quot;lab&quot;&gt;Wheel speed, mm/s, last 60 s&lt;/div&gt;
+ &lt;svg width=&quot;900&quot; height=&quot;200&quot;&gt;&lt;line x1=&quot;0&quot; y1=&quot;100&quot; x2=&quot;900&quot; y2=&quot;100&quot; stroke=&quot;#111&quot; stroke-opacity=&quot;.2&quot;/&gt;&lt;polyline fill=&quot;none&quot; stroke=&quot;#111&quot; stroke-width=&quot;2&quot; points=&quot;0,100 80,60 200,58 320,62 420,64 520,70 600,100 900,100&quot;/&gt;&lt;polyline fill=&quot;none&quot; stroke=&quot;#e2231a&quot; stroke-width=&quot;2&quot; points=&quot;0,100 80,62 200,64 320,56 420,60 520,74 600,100 900,100&quot;/&gt;&lt;line x1=&quot;600&quot; y1=&quot;0&quot; x2=&quot;600&quot; y2=&quot;200&quot; stroke=&quot;#e2231a&quot; stroke-dasharray=&quot;4 4&quot;/&gt;&lt;/svg&gt;&lt;/div&gt;
+ &lt;div class=&quot;c4&quot;&gt;&lt;div class=&quot;lab&quot;&gt;Events and acknowledgements&lt;/div&gt;&lt;ul&gt;
+  &lt;li&gt;41.23 s · BARCODE Z → RIGHT · L 1820 R 1795&lt;/li&gt;&lt;li&gt;38.90 s · TURN RIGHT · L 1702 R 1688&lt;/li&gt;&lt;li&gt;31.05 s · HUMP height 18 mm&lt;/li&gt;&lt;li&gt;&lt;s&gt;12.40 s · MAPPING ACK seq 6 · BUSY (robot moving)&lt;/s&gt;&lt;/li&gt;&lt;li&gt;10.02 s · MAPPING ACK seq 7 · OK&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/main&gt;&lt;/body&gt;&lt;/html&gt;
+"></iframe></div><h2>2. MRT Line Map (my pick)</h2><div class=f><iframe srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;background:#fff;color:#1a1a1a;font:15px/1.35 &quot;Helvetica Neue&quot;,Arial,sans-serif}
+header{height:64px;background:#1a1a1a;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 32px}h1{font-size:18px}
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;background:#009645;color:#fff;font-size:13px;font-weight:700;margin-left:8px}
+main{padding:24px 32px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.t{border:1px solid #ddd;border-radius:10px;padding:16px;position:relative;padding-left:62px}.code{position:absolute;left:14px;top:16px;width:36px;height:36px;border-radius:50%;color:#fff;font-weight:700;display:grid;place-items:center;font-size:13px}
+.lab{font-size:12px;color:#666;text-transform:uppercase;letter-spacing:.06em}.v{font-size:30px;font-weight:700;margin-top:4px}.s{font-size:13px;color:#555;margin-top:2px}
+.alert{border:2px solid #d42e12;background:#fff3f1}
+.map{grid-column:span 2;grid-row:span 2;border:1px solid #ddd;border-radius:10px;padding:18px}
+.map .r{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}.map label{font-size:12px;color:#666}.map input{display:block;width:100%;height:64px;margin-top:6px;border:2px solid #1a1a1a;border-radius:8px;font:700 34px Arial;text-align:center}
+.map button{margin-top:16px;height:44px;padding:0 24px;border:0;border-radius:8px;background:#005ec4;color:#fff;font-weight:700;font-size:15px}.ack{margin-top:10px;font-size:13px;color:#009645;font-weight:700}
+.route{grid-column:1/-1;border:1px solid #ddd;border-radius:10px;padding:18px}
+svg text{font:12px Arial}
+&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;header&gt;&lt;h1&gt;Robot Telemetry · CSC01&lt;/h1&gt;&lt;div&gt;&lt;span class=&quot;pill&quot;&gt;Connected&lt;/span&gt;&lt;span class=&quot;pill&quot;&gt;Robot online&lt;/span&gt;&lt;span class=&quot;pill&quot; style=&quot;background:#fa9e0d&quot;&gt;Frame 0.4 s&lt;/span&gt;&lt;/div&gt;&lt;/header&gt;
+&lt;main&gt;
+&lt;div class=&quot;t alert&quot;&gt;&lt;div class=&quot;code&quot; style=&quot;background:#d42e12&quot;&gt;MS&lt;/div&gt;&lt;div class=&quot;lab&quot;&gt;Mission&lt;/div&gt;&lt;div class=&quot;v&quot; style=&quot;color:#d42e12&quot;&gt;STOPPED&lt;/div&gt;&lt;div class=&quot;s&quot;&gt;Fault: line lost&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;map&quot;&gt;&lt;div class=&quot;lab&quot;&gt;Barcode mapping — four mission-day letters&lt;/div&gt;&lt;div class=&quot;r&quot;&gt;
+&lt;label&gt;Left&lt;input value=&quot;A&quot;&gt;&lt;/label&gt;&lt;label&gt;Right&lt;input value=&quot;B&quot;&gt;&lt;/label&gt;&lt;label&gt;Straight&lt;input value=&quot;C&quot;&gt;&lt;/label&gt;&lt;label&gt;U-turn&lt;input value=&quot;D&quot;&gt;&lt;/label&gt;&lt;/div&gt;
+&lt;button&gt;Send mapping&lt;/button&gt;&lt;div class=&quot;ack&quot;&gt;ACK seq 7 · OK installed&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;t&quot;&gt;&lt;div class=&quot;code&quot; style=&quot;background:#009645&quot;&gt;LN&lt;/div&gt;&lt;div class=&quot;lab&quot;&gt;Line (IR)&lt;/div&gt;&lt;div class=&quot;v&quot;&gt;LOST&lt;/div&gt;&lt;div class=&quot;s&quot;&gt;Last barcode Z → RIGHT&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;t&quot;&gt;&lt;div class=&quot;code&quot; style=&quot;background:#9900aa&quot;&gt;MO&lt;/div&gt;&lt;div class=&quot;lab&quot;&gt;Motion&lt;/div&gt;&lt;div class=&quot;v&quot;&gt;IDLE&lt;/div&gt;&lt;div class=&quot;s&quot;&gt;L 0 · R 0 mm/s&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;t&quot;&gt;&lt;div class=&quot;code&quot; style=&quot;background:#fa9e0d&quot;&gt;OB&lt;/div&gt;&lt;div class=&quot;lab&quot;&gt;Obstacle&lt;/div&gt;&lt;div class=&quot;v&quot;&gt;312 mm&lt;/div&gt;&lt;div class=&quot;s&quot;&gt;Last 420 × 170 mm&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;t&quot;&gt;&lt;div class=&quot;code&quot; style=&quot;background:#9d5b25&quot;&gt;TR&lt;/div&gt;&lt;div class=&quot;lab&quot;&gt;Terrain&lt;/div&gt;&lt;div class=&quot;v&quot;&gt;3 humps&lt;/div&gt;&lt;div class=&quot;s&quot;&gt;Max 18 mm&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;t&quot;&gt;&lt;div class=&quot;code&quot; style=&quot;background:#005ec4&quot;&gt;EN&lt;/div&gt;&lt;div class=&quot;lab&quot;&gt;Encoders&lt;/div&gt;&lt;div class=&quot;v&quot;&gt;1820 / 1795&lt;/div&gt;&lt;div class=&quot;s&quot;&gt;Left / right&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;t alert&quot; style=&quot;grid-column:span 1&quot;&gt;&lt;div class=&quot;code&quot; style=&quot;background:#d42e12&quot;&gt;!&lt;/div&gt;&lt;div class=&quot;lab&quot;&gt;Faults&lt;/div&gt;&lt;div class=&quot;v&quot; style=&quot;font-size:20px&quot;&gt;Mission: line lost&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;route&quot;&gt;&lt;div class=&quot;lab&quot;&gt;Run route (from event record)&lt;/div&gt;
+&lt;svg width=&quot;1340&quot; height=&quot;150&quot;&gt;&lt;line x1=&quot;20&quot; y1=&quot;60&quot; x2=&quot;1320&quot; y2=&quot;60&quot; stroke=&quot;#009645&quot; stroke-width=&quot;10&quot; stroke-linecap=&quot;round&quot;/&gt;
+&lt;g fill=&quot;#fff&quot; stroke=&quot;#1a1a1a&quot; stroke-width=&quot;3&quot;&gt;&lt;circle cx=&quot;40&quot; cy=&quot;60&quot; r=&quot;12&quot;/&gt;&lt;circle cx=&quot;300&quot; cy=&quot;60&quot; r=&quot;12&quot;/&gt;&lt;circle cx=&quot;560&quot; cy=&quot;60&quot; r=&quot;12&quot;/&gt;&lt;circle cx=&quot;820&quot; cy=&quot;60&quot; r=&quot;12&quot;/&gt;&lt;circle cx=&quot;1080&quot; cy=&quot;60&quot; r=&quot;12&quot;/&gt;&lt;/g&gt;
+&lt;circle cx=&quot;1300&quot; cy=&quot;60&quot; r=&quot;14&quot; fill=&quot;#d42e12&quot;/&gt;
+&lt;text x=&quot;20&quot; y=&quot;100&quot;&gt;START 0.0 s&lt;/text&gt;&lt;text x=&quot;270&quot; y=&quot;100&quot;&gt;BARCODE A → LEFT&lt;/text&gt;&lt;text x=&quot;530&quot; y=&quot;100&quot;&gt;HUMP 18 mm&lt;/text&gt;&lt;text x=&quot;790&quot; y=&quot;100&quot;&gt;OBSTACLE 170 mm&lt;/text&gt;&lt;text x=&quot;1040&quot; y=&quot;100&quot;&gt;BARCODE Z → RIGHT&lt;/text&gt;&lt;text x=&quot;1240&quot; y=&quot;100&quot; fill=&quot;#d42e12&quot;&gt;LINE LOST 41.9 s&lt;/text&gt;
+&lt;text x=&quot;270&quot; y=&quot;120&quot; fill=&quot;#666&quot;&gt;8.1 s · L 410&lt;/text&gt;&lt;text x=&quot;530&quot; y=&quot;120&quot; fill=&quot;#666&quot;&gt;31.1 s · L 1340&lt;/text&gt;&lt;/svg&gt;&lt;/div&gt;
+&lt;/main&gt;&lt;/body&gt;&lt;/html&gt;
+"></iframe></div><h2>3. Split-Flap Board</h2><div class=f><iframe srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;background:#121212;color:#f2f2f2;font:15px/1.3 &quot;Arial Narrow&quot;,Arial,sans-serif}
+header{display:flex;justify-content:space-between;padding:20px 36px;border-bottom:1px solid #333}h1{font-size:20px;letter-spacing:.1em}.lamp{color:#ffb000}
+table{width:calc(100% - 72px);margin:18px 36px;border-collapse:separate;border-spacing:0 6px}th{text-align:left;font-size:12px;color:#999;letter-spacing:.1em;padding:0 12px}
+td{background:#1d1d1d;padding:14px 12px;font-size:26px;letter-spacing:.08em;text-transform:uppercase}td.r{color:#c8352b}td.a{color:#ffb000}
+.map{display:flex;align-items:center;gap:14px;margin:6px 36px;padding:18px;background:#1d1d1d}.f{width:70px;height:84px;background:#0b0b0b;border-top:2px solid #2a2a2a;display:grid;place-items:center;font-size:52px;font-weight:700}.fl{font-size:12px;color:#999;text-align:center;margin-top:6px}
+button{margin-left:auto;height:52px;padding:0 30px;background:#ffb000;color:#121212;border:0;font:700 18px Arial;letter-spacing:.06em}
+&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;header&gt;&lt;h1&gt;ROBOT TELEMETRY · CSC01&lt;/h1&gt;&lt;div&gt;&lt;span class=&quot;lamp&quot;&gt;● LIVE&lt;/span&gt; &amp;nbsp; FRAME 4127 · ROBOT ONLINE&lt;/div&gt;&lt;/header&gt;
+&lt;div class=&quot;map&quot;&gt;&lt;span style=&quot;font-size:14px;color:#999;width:120px&quot;&gt;BARCODE&lt;br&gt;MAPPING&lt;/span&gt;
+&lt;div&gt;&lt;div class=&quot;f&quot;&gt;A&lt;/div&gt;&lt;div class=&quot;fl&quot;&gt;LEFT&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div class=&quot;f&quot;&gt;B&lt;/div&gt;&lt;div class=&quot;fl&quot;&gt;RIGHT&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div class=&quot;f&quot;&gt;C&lt;/div&gt;&lt;div class=&quot;fl&quot;&gt;STRAIGHT&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;div class=&quot;f&quot;&gt;D&lt;/div&gt;&lt;div class=&quot;fl&quot;&gt;U-TURN&lt;/div&gt;&lt;/div&gt;
+&lt;span style=&quot;margin-left:24px;color:#ffb000&quot;&gt;ACK SEQ 7 · OK&lt;/span&gt;&lt;button&gt;SEND MAPPING&lt;/button&gt;&lt;/div&gt;
+&lt;table&gt;&lt;tr&gt;&lt;th&gt;SUBSYSTEM&lt;/th&gt;&lt;th&gt;STATE&lt;/th&gt;&lt;th&gt;READING&lt;/th&gt;&lt;th&gt;DETAIL&lt;/th&gt;&lt;th&gt;FAULT&lt;/th&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;MISSION&lt;/td&gt;&lt;td class=&quot;r&quot;&gt;STOPPED&lt;/td&gt;&lt;td&gt;#4127&lt;/td&gt;&lt;td&gt;GP21 TO RESET&lt;/td&gt;&lt;td class=&quot;r&quot;&gt;LINE LOST&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;LINE IR&lt;/td&gt;&lt;td class=&quot;r&quot;&gt;LOST&lt;/td&gt;&lt;td&gt;Z → RIGHT&lt;/td&gt;&lt;td&gt;LAST BARCODE&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;MOTION&lt;/td&gt;&lt;td&gt;IDLE&lt;/td&gt;&lt;td&gt;0 / 0 MM/S&lt;/td&gt;&lt;td&gt;ACTION 5&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;OBSTACLE&lt;/td&gt;&lt;td&gt;CLEAR&lt;/td&gt;&lt;td&gt;312 MM&lt;/td&gt;&lt;td&gt;420 × 170 MM&lt;/td&gt;&lt;td class=&quot;a&quot;&gt;NO ECHO (CLEARED)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;TERRAIN&lt;/td&gt;&lt;td&gt;FLAT&lt;/td&gt;&lt;td&gt;3 HUMPS&lt;/td&gt;&lt;td&gt;MAX 18 MM&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;NETWORK&lt;/td&gt;&lt;td&gt;ONLINE&lt;/td&gt;&lt;td&gt;0.4 S&lt;/td&gt;&lt;td&gt;BROKER OK&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;table&gt;&lt;tr&gt;&lt;th&gt;TIME&lt;/th&gt;&lt;th&gt;EVENT&lt;/th&gt;&lt;th&gt;DETAIL&lt;/th&gt;&lt;th&gt;ENCODERS&lt;/th&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;41.23&lt;/td&gt;&lt;td&gt;BARCODE&lt;/td&gt;&lt;td&gt;Z → RIGHT&lt;/td&gt;&lt;td&gt;1820 · 1795&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;31.05&lt;/td&gt;&lt;td&gt;HUMP&lt;/td&gt;&lt;td&gt;18 MM&lt;/td&gt;&lt;td&gt;1340 · 1331&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/body&gt;&lt;/html&gt;
+"></iframe></div><h2>4. Graphite Console</h2><div class=f><iframe srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;background:#16181d;color:#d6d9df;font:14px/1.4 system-ui,sans-serif}
+header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #2c3038}h1{font-size:14px;font-variant:small-caps;letter-spacing:.06em}
+.g{display:grid;grid-template-columns:340px 1fr 420px;height:852px}.p{border-right:1px solid #2c3038;padding:14px 16px}.h{font-variant:small-caps;color:#8a90a0;letter-spacing:.06em;margin-bottom:10px}
+.r{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #2c3038;font-family:ui-monospace,Menlo,monospace}.ok{color:#87d96c}.bad{color:#f28779}.acc{color:#5ccfe6}
+.in{display:flex;gap:10px;margin-top:8px}.in label{font-size:12px;color:#8a90a0}.in input{display:block;width:72px;height:56px;margin-top:4px;background:#1f2228;border:1px solid #2c3038;color:#fff;font:600 28px ui-monospace,Menlo;text-align:center;border-radius:4px}
+.send{margin-top:40px;padding-top:16px;border-top:1px dashed #2c3038}button{height:40px;padding:0 20px;background:#5ccfe6;border:0;border-radius:4px;color:#16181d;font-weight:700}
+&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;header&gt;&lt;h1&gt;robot telemetry · csc01&lt;/h1&gt;&lt;div&gt;&lt;span class=&quot;ok&quot;&gt;● connected&lt;/span&gt; &amp;nbsp; &lt;span class=&quot;ok&quot;&gt;● robot online&lt;/span&gt; &amp;nbsp; frame #4127 · 0.4 s&lt;/div&gt;&lt;/header&gt;
+&lt;div class=&quot;g&quot;&gt;
+&lt;div class=&quot;p&quot;&gt;&lt;div class=&quot;h&quot;&gt;status&lt;/div&gt;
+&lt;div class=&quot;r&quot;&gt;&lt;span&gt;mission&lt;/span&gt;&lt;span class=&quot;bad&quot;&gt;STOPPED&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;r&quot;&gt;&lt;span&gt;line&lt;/span&gt;&lt;span class=&quot;bad&quot;&gt;LOST&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;r&quot;&gt;&lt;span&gt;motion&lt;/span&gt;&lt;span&gt;IDLE&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;r&quot;&gt;&lt;span&gt;obstacle&lt;/span&gt;&lt;span&gt;312 mm&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;r&quot;&gt;&lt;span&gt;terrain&lt;/span&gt;&lt;span&gt;3 humps · max 18&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;r&quot;&gt;&lt;span&gt;encoders&lt;/span&gt;&lt;span&gt;1820 / 1795&lt;/span&gt;&lt;/div&gt;
+&lt;div class=&quot;h&quot; style=&quot;margin-top:20px&quot;&gt;faults&lt;/div&gt;&lt;div class=&quot;r bad&quot;&gt;&lt;span&gt;Mission&lt;/span&gt;&lt;span&gt;line lost&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;p&quot;&gt;&lt;div class=&quot;h&quot;&gt;wheel speed · mm/s · 60 s&lt;/div&gt;&lt;svg width=&quot;640&quot; height=&quot;260&quot;&gt;&lt;polyline fill=&quot;none&quot; stroke=&quot;#5ccfe6&quot; stroke-width=&quot;2&quot; points=&quot;0,130 80,70 300,72 460,80 520,130 640,130&quot;/&gt;&lt;polyline fill=&quot;none&quot; stroke=&quot;#f28779&quot; stroke-width=&quot;2&quot; points=&quot;0,130 80,74 300,66 460,86 520,130 640,130&quot;/&gt;&lt;/svg&gt;
+&lt;div class=&quot;h&quot; style=&quot;margin-top:20px&quot;&gt;events&lt;/div&gt;&lt;div class=&quot;r&quot;&gt;&lt;span&gt;41.23 s&lt;/span&gt;&lt;span&gt;BARCODE Z → RIGHT&lt;/span&gt;&lt;span&gt;1820 · 1795&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;r&quot;&gt;&lt;span&gt;31.05 s&lt;/span&gt;&lt;span&gt;HUMP 18 mm&lt;/span&gt;&lt;span&gt;1340 · 1331&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;r&quot;&gt;&lt;span&gt;10.02 s&lt;/span&gt;&lt;span class=&quot;ok&quot;&gt;MAPPING ACK seq 7 OK&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;p&quot; style=&quot;border-right:0&quot;&gt;&lt;div class=&quot;h&quot;&gt;barcode mapping&lt;/div&gt;&lt;div class=&quot;in&quot;&gt;&lt;label&gt;left&lt;input value=&quot;A&quot;&gt;&lt;/label&gt;&lt;label&gt;right&lt;input value=&quot;B&quot;&gt;&lt;/label&gt;&lt;label&gt;straight&lt;input value=&quot;C&quot;&gt;&lt;/label&gt;&lt;label&gt;u-turn&lt;input value=&quot;D&quot;&gt;&lt;/label&gt;&lt;/div&gt;
+&lt;div style=&quot;margin-top:12px&quot; class=&quot;acc&quot;&gt;installed: A B C D · seq 7&lt;/div&gt;
+&lt;div class=&quot;send&quot;&gt;&lt;button&gt;Send mapping&lt;/button&gt;&lt;div style=&quot;margin-top:8px;color:#8a90a0;font-size:12px&quot;&gt;accepted only while READY or STOPPED&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;
+"></iframe></div><h2>5. Category standard</h2><div class=f><iframe srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;background:#f6f7f9;color:#111827;font:15px/1.4 system-ui,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;padding:18px 28px}h1{font-size:20px}.pill{display:inline-block;margin-left:8px;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:600;background:#dcfce7;color:#15803d}
+main{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:0 28px}.c{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px}.l{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}.b{font-size:28px;font-weight:700;margin-top:4px}.s{font-size:13px;color:#6b7280}
+.bad{color:#b91c1c}.m{grid-column:span 2}.m .r{display:flex;gap:10px;margin-top:10px}.m input{width:64px;height:52px;border:1px solid #d1d5db;border-radius:8px;font:700 26px system-ui;text-align:center}.m button{height:52px;padding:0 20px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:600}
+.w{grid-column:1/-1}
+&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;header&gt;&lt;h1&gt;Robot Telemetry&lt;/h1&gt;&lt;div&gt;&lt;span class=&quot;pill&quot;&gt;Connected&lt;/span&gt;&lt;span class=&quot;pill&quot;&gt;Robot online&lt;/span&gt;&lt;span class=&quot;pill&quot;&gt;Live&lt;/span&gt;&lt;/div&gt;&lt;/header&gt;
+&lt;main&gt;
+&lt;div class=&quot;c&quot;&gt;&lt;div class=&quot;l&quot;&gt;Mission&lt;/div&gt;&lt;div class=&quot;b bad&quot;&gt;STOPPED&lt;/div&gt;&lt;div class=&quot;s&quot;&gt;Frame #4127&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;c m&quot;&gt;&lt;div class=&quot;l&quot;&gt;Barcode mapping&lt;/div&gt;&lt;div class=&quot;r&quot;&gt;&lt;input value=&quot;A&quot;&gt;&lt;input value=&quot;B&quot;&gt;&lt;input value=&quot;C&quot;&gt;&lt;input value=&quot;D&quot;&gt;&lt;button&gt;Send&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;s&quot; style=&quot;margin-top:6px&quot;&gt;Left · Right · Straight · U-turn — ACK seq 7 OK&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;c&quot;&gt;&lt;div class=&quot;l&quot;&gt;Active faults&lt;/div&gt;&lt;div class=&quot;b bad&quot; style=&quot;font-size:18px&quot;&gt;Mission: line lost&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;c&quot;&gt;&lt;div class=&quot;l&quot;&gt;Line&lt;/div&gt;&lt;div class=&quot;b&quot;&gt;LOST&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;c&quot;&gt;&lt;div class=&quot;l&quot;&gt;Motion&lt;/div&gt;&lt;div class=&quot;b&quot;&gt;IDLE&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;c&quot;&gt;&lt;div class=&quot;l&quot;&gt;Obstacle&lt;/div&gt;&lt;div class=&quot;b&quot;&gt;312 mm&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;c&quot;&gt;&lt;div class=&quot;l&quot;&gt;Terrain&lt;/div&gt;&lt;div class=&quot;b&quot;&gt;3 humps&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;c w&quot;&gt;&lt;div class=&quot;l&quot;&gt;Wheel speed&lt;/div&gt;&lt;svg width=&quot;1330&quot; height=&quot;160&quot;&gt;&lt;polyline fill=&quot;none&quot; stroke=&quot;#2563eb&quot; stroke-width=&quot;2&quot; points=&quot;0,80 120,40 700,44 900,80 1330,80&quot;/&gt;&lt;polyline fill=&quot;none&quot; stroke=&quot;#db2777&quot; stroke-width=&quot;2&quot; points=&quot;0,80 120,44 700,40 900,80 1330,80&quot;/&gt;&lt;/svg&gt;&lt;/div&gt;
+&lt;/main&gt;&lt;/body&gt;&lt;/html&gt;
+"></iframe></div>

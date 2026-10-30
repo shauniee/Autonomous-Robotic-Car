@@ -12,7 +12,6 @@
 #include "../../../../app_program/subsystem1/s1_bridge.h"
 #include <tm/tmonitor.h>
 #include <string.h>
-#include <stdio.h>
 
 #ifndef MQTT_USERNAME
 #define MQTT_USERNAME ""
@@ -197,9 +196,23 @@ static bool configure(void)
         return false;
     }
     cyw43_hal_get_mac(CYW43_HAL_MAC_WLAN0, mac);
-    int n = snprintf(client_id, sizeof client_id, "%s-%02x%02x%02x%02x%02x%02x", MQTT_CLIENT_ID,
-                     mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    return n > 0 && (unsigned)n < sizeof client_id;
+    /* "<id>-<12 hex MAC digits>"; formatted by hand because newlib stdio
+     * needs syscalls this kernel does not provide. */
+    static const char hex[] = "0123456789abcdef";
+    size_t len = strlen(MQTT_CLIENT_ID);
+    if (len == 0 || len + 1 + 2 * sizeof mac >= sizeof client_id)
+    {
+        return false;
+    }
+    memcpy(client_id, MQTT_CLIENT_ID, len);
+    client_id[len++] = '-';
+    for (size_t i = 0; i < sizeof mac; i++)
+    {
+        client_id[len++] = hex[mac[i] >> 4];
+        client_id[len++] = hex[mac[i] & 0x0f];
+    }
+    client_id[len] = '\0';
+    return true;
 }
 
 static void connect_now(void)

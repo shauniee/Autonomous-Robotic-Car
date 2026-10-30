@@ -1,8 +1,8 @@
 /* Host test for app_program/subsystem3/ir_tracking.[ch] (spec #100, ticket
    #105): replays raw ADC pairs through the public calls (capture, sample,
    output, snapshot build) and checks the scaled-integer path against the
-   float reference it replaced: identical line state, fractions, error and
-   steering within one 1/127 step. */
+   float reference it replaced: identical line state, fractions and the
+   two-sensor error within one 1/127 step. */
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -28,9 +28,10 @@ static IrLine ref_classify(float l, float r, IrLine previous)
     return IR_LINE_VISIBLE;
 }
 
-static float ref_steering(float error)
+/* Two-sensor error: right black fraction minus left black fraction. */
+static float ref_error(float left_fraction, float right_fraction)
 {
-    return ref_clamp(IR_KP * error, -IR_MAX_CORRECTION, IR_MAX_CORRECTION) / IR_MAX_CORRECTION;
+    return right_fraction - left_fraction;
 }
 
 /* ---- Replay -------------------------------------------------------------- */
@@ -76,23 +77,22 @@ static unsigned replay(IrRaw black, IrRaw white)
             float lf = ref_fraction(raw.left, black.left, white.left);
             float rf = ref_fraction(raw.right, black.right, white.right);
             ref_line = ref_classify(lf, rf, ref_line);
-            float error = rf - lf;
+            float error = ref_error(lf, rf);
 
             IrTrackingOutput out = ir_tracking_output(&t, now);
             assert(out.line == ref_line);
             assert(out.valid == (ref_line == IR_LINE_VISIBLE));
             if (out.valid) {
                 assert(near(out.error, error));
-                assert(near(out.steering, ref_steering(error)));
             } else {
-                assert(out.error == 0 && out.steering == 0);
+                assert(out.error == 0);
             }
 
             S3IrSnapshot s = ir_snapshot_build(&t, ++seq, now);
             assert(s.normalized_valid && s.line == ref_line && s.guidance_valid == out.valid);
             assert(fabsf(s.left_fraction - lf * IR_SCALE_ONE) <= 0.5f);	/* nearest step */
             assert(fabsf(s.right_fraction - rf * IR_SCALE_ONE) <= 0.5f);
-            assert(near(s.error, error) && s.steering == out.steering);
+            assert(near(s.error, error));
             IrRaw back = ir_raw_word_raw(s.raw);
             assert(back.left == raw.left && back.right == raw.right && ir_raw_word_valid(s.raw));
             ++steps;
@@ -107,14 +107,13 @@ static void test_bounds_and_staleness(void)
     calibrate(&t, (IrRaw){3500u, 3400u}, (IrRaw){400u, 500u});
     feed(&t, (IrRaw){4095u, 0u});		/* full black left, full white right */
     S3IrSnapshot s = ir_snapshot_build(&t, 1u, now);
-    assert(s.left_fraction == IR_SCALE_ONE && s.right_fraction == 0u && s.error == -IR_SCALE_ONE);
+    assert(s.left_fraction == IR_SCALE_ONE && s.right_fraction == 0u && s.error == -IR_SCALE_ONE);	/* line left: steer left */
     feed(&t, (IrRaw){0u, 4095u});
     s = ir_snapshot_build(&t, 2u, now);
-    assert(s.error == IR_SCALE_ONE);
-    if (s.guidance_valid) assert(s.steering > 0);	/* positive means right */
+    assert(s.error == IR_SCALE_ONE);	/* line right: steer right */
     /* A stale sample clears the scaled fields. */
     ir_snapshot_refresh(&s, now + IR_MAX_GAP_MS + 1u);
-    assert(!s.normalized_valid && s.left_fraction == 0u && s.error == 0 && s.steering == 0);
+    assert(!s.normalized_valid && s.left_fraction == 0u && s.error == 0);
 }
 
 static void test_raw_word(void)

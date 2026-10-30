@@ -1,4 +1,5 @@
 #include "s1_report.h"
+#include <stddef.h>
 
 /* Private accessors: no caller manipulates packed bits directly. */
 enum
@@ -88,6 +89,26 @@ bool s1_log_pop(s1_event_log_t *log, mqtt_event_t *event)
     if (count == 0u) return false;
     unsigned oldest = (s1_log_head(log) + S1_EVENT_CAPACITY - count) % S1_EVENT_CAPACITY;
     s1_event_unpack(event, &log->events[oldest]);
+    s1_log_set_indices(log, s1_log_head(log), count - 1u);
+    return true;
+}
+
+bool s1_log_post_oldest(s1_event_log_t *log, s1_post_fn post)
+{
+    unsigned count = s1_log_count(log);
+    if (count == 0u || post == NULL)
+    {
+        return false;
+    }
+    unsigned oldest = (s1_log_head(log) + S1_EVENT_CAPACITY - count) % S1_EVENT_CAPACITY;
+    mqtt_event_t event;
+    s1_event_unpack(&event, &log->events[oldest]);
+    uint8_t frame[MQTT_FRAME_MAX];
+    unsigned length = mqtt_encode_event(frame, sizeof frame, &event);
+    if (length == 0u || !post(frame, length))
+    {
+        return false;
+    }
     s1_log_set_indices(log, s1_log_head(log), count - 1u);
     return true;
 }

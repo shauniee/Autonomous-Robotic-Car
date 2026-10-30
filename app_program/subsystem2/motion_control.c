@@ -97,7 +97,8 @@ static float clampf(float v, float bound)
     return v > bound ? bound : (v < -bound ? -bound : v);
 }
 
-/* PID on counts/s with conditional anti-windup. dt in seconds. */
+/* Feedforward (static friction + speed) plus PID on counts/s, conditional
+   anti-windup. dt in seconds. */
 static float wheel_duty(WheelPid *p, float target_cps, float speed_cps, float dt)
 {
     if (fabsf(target_cps) < 0.001f) {
@@ -106,7 +107,9 @@ static float wheel_duty(WheelPid *p, float target_cps, float speed_cps, float dt
     }
     float error = target_cps - speed_cps;
     float integral = p->integral + error * dt;
-    float output = MOTION_KP * error + MOTION_KI * integral - MOTION_KD * (speed_cps - p->previous_speed) / dt;
+    float friction = target_cps > 0.0f ? MOTION_KS : -MOTION_KS;	/* duty to start turning at all */
+    float output = friction + MOTION_KF * target_cps + MOTION_KP * error + MOTION_KI * integral -
+                   MOTION_KD * (speed_cps - p->previous_speed) / dt;
     if (fabsf(output) <= MOTION_MAX_DUTY || output * error < 0.0f) {
         p->integral = integral;
     }
@@ -211,8 +214,10 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         }
     }
 
-    /* Stall: a wheel told to move but not moving for MOTION_STALL_MS. */
-    for (int w = 0; w < 2; ++w) {
+    /* Stall: a wheel told to move but not moving for MOTION_STALL_MS.
+       The bench build (NOGUARDS=1) skips it so a slow or noisy encoder never
+       brakes the run. */
+    for (int w = 0; w < 2 && !APP_NO_GUARDS; ++w) {
         if (fabsf(target_cps[w]) < MOTION_STATIONARY_CPS || fabsf(speed_cps[w]) >= MOTION_STATIONARY_CPS) {
             c->stalled_since_ms[w] = in->now_ms;
         } else if (robot_time_elapsed(in->now_ms, c->stalled_since_ms[w]) >= MOTION_STALL_MS) {

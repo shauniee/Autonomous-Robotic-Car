@@ -1,0 +1,35 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./config/mosquitto-lab.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "127.0.0.1", "-t", "healthcheck", "-m", "ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.mqtt
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # The decoder reads scales from these headers; never mount Wi-Fi secrets.
+      - ./app_program/common:/app_program/common:ro
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    restart: unless-stopped
+
+  firmware:
+    profiles: [build]
+    build: .
+    working_dir: /work
+    volumes:
+      - .:/work
+    command: ["make", "-C", "build_make", "-j8", "SMP=1", "CONSOLE=usb_cdc", "WIFI=cyw43", "NET=lwip", "MQTT=1", "CRASH_REPORT=0", "TEST=1"]

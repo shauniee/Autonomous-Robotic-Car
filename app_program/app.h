@@ -33,10 +33,10 @@ IMPORT ID app_start_task(FP entry, PRI pri, UW prc, const char *name);
 
 /* ---------------------------------------------------------------------
  *  Every subsystem provides these.  usermain() calls ALL the _init()
- *  functions first and only then ALL the _start() functions, so every
+ *  functions before starting Motion, Mission and I/O, so every
  *  kernel object exists before any task can use it.
  *    subsystemN_init()   create this subsystem's kernel objects
- *    subsystemN_start()  create and start this subsystem's tasks
+ *    Task entry points are declared by Motion, Mission and common/io_task.h
  *    subsystemN_test()   on-target tests, only in test builds (make TEST=1)
  * --------------------------------------------------------------------- */
 IMPORT ER subsystem1_init(void);
@@ -45,11 +45,7 @@ IMPORT ER subsystem3_init(void);
 IMPORT ER subsystem4_init(void);
 IMPORT ER subsystem5_init(void);
 
-IMPORT ER subsystem1_start(void);
 IMPORT ER subsystem2_start(void);
-IMPORT ER subsystem3_start(void);
-IMPORT ER subsystem4_start(void);
-IMPORT ER subsystem5_start(void);
 
 #if APP_TEST
 IMPORT void subsystem1_test(void);

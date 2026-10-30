@@ -40,7 +40,7 @@ typedef struct
    The combined 9 bits reside in one 16-bit storage unit. A push into a
    full ring overwrites the oldest event and saturates dropped; the newest
    events are retained. The ring is externally synchronised by its caller
-   (subsystem1.c masks core-1 interrupts during each push/pop). */
+   (subsystem1.c uses a bounded cross-core mutex). */
 typedef struct
 {
     s1_packed_event_t events[S1_EVENT_CAPACITY];
@@ -55,6 +55,9 @@ _Static_assert(sizeof(s1_event_log_t) == 168u, "event ring layout changed unexpe
 void s1_log_init(s1_event_log_t *log);
 bool s1_log_push(s1_event_log_t *log, const mqtt_event_t *event);
 bool s1_log_pop(s1_event_log_t *log, mqtt_event_t *event); /* oldest first */
+typedef bool (*s1_post_fn)(const uint8_t *frame, unsigned length);
+/* Retains the oldest event if posting fails. Caller synchronizes the ring. */
+bool s1_log_post_oldest(s1_event_log_t *log, s1_post_fn post);
 unsigned s1_log_count(const s1_event_log_t *log);
 
 /* Clamps a gathered telemetry record to its field widths in place, so the

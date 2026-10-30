@@ -20,11 +20,21 @@ $CC $CFLAGS testing/pure/test_barcode.c app_program/subsystem3/barcode_decode.c 
 $CC $CFLAGS testing/pure/test_ir_tracking.c app_program/subsystem3/ir_tracking.c -lm \
     -o "$build_dir/test_ir_tracking"
 $CC $CFLAGS testing/pure/test_safety.c app_program/common/robot_data.c -o "$build_dir/test_safety"
-$CC $CFLAGS testing/pure/test_mission.c app_program/subsystem3/mission_logic.c \
+$CC $CFLAGS -DMISSION_BYPASS_RELEASED=1 -DMISSION_RECOVERY_RELEASED=1 testing/pure/test_mission.c app_program/mission/mission_logic.c \
+    app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
     app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_mission"
+$CC $CFLAGS testing/pure/test_mission_pending.c app_program/mission/mission_logic.c \
+    app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
+    app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_mission_pending"
+$CC $CFLAGS testing/pure/test_mission_mapping.c app_program/mission/mission_mapping.c \
+    app_program/common/robot_data.c -o "$build_dir/test_mission_mapping"
 $CC $CFLAGS testing/pure/test_echo_range.c -o "$build_dir/test_echo_range"
 $CC $CFLAGS testing/pure/test_obstacle_profile.c app_program/subsystem5/obstacle_profile.c -lm \
     -o "$build_dir/test_obstacle_profile"
+$CC $CFLAGS testing/pure/test_range_filter.c app_program/subsystem5/range_filter.c \
+    -o "$build_dir/test_range_filter"
+$CC $CFLAGS testing/pure/test_profile_edges.c app_program/subsystem5/profile_edges.c -lm \
+    -o "$build_dir/test_profile_edges"
 $CC $CFLAGS testing/pure/test_mqtt_frame.c app_program/subsystem1/mqtt_frame.c -o "$build_dir/test_mqtt_frame"
 $CC $CFLAGS testing/pure/test_terrain.c testing/pure/terrain_float_reference.c \
     app_program/subsystem4/terrain_algo.c app_program/common/robot_data.c -lm \
@@ -44,8 +54,12 @@ $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
 "$build_dir/test_ir_tracking"
 "$build_dir/test_safety"
 "$build_dir/test_mission"
+"$build_dir/test_mission_pending"
+"$build_dir/test_mission_mapping"
 "$build_dir/test_echo_range"
 "$build_dir/test_obstacle_profile"
+"$build_dir/test_range_filter"
+"$build_dir/test_profile_edges"
 "$build_dir/test_mqtt_frame"
 "$build_dir/test_terrain"
 "$build_dir/test_s1_report"

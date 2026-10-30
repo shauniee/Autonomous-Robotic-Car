@@ -10,7 +10,11 @@ int main(void)
     ObstacleRay rays[5] = {s5_ray_make(-60, 1500u, true), s5_ray_make(-30, 700u, true), s5_ray_make(0, 400u, true), s5_ray_make(30, 700u, true), s5_ray_make(60, 1500u, true)};
     ObstacleProfile p = {0};
     assert(s5_profile_build(rays, 5u, &p) && p.valid);
-    assert(p.closest_angle_deg == 0 && p.closest_mm == 400u && p.obstacle_forward_mm == 400 && p.obstacle_left_mm == 0);
+    assert(p.closest_angle_deg == 0);
+    assert(p.obstacle_forward_mm == (int16_t)lroundf(400.0f + S5_SONAR_FORWARD_MM));
+    assert(p.obstacle_left_mm == (int16_t)lroundf(S5_SONAR_LEFT_MM));
+    assert(p.closest_mm == (uint16_t)lroundf(hypotf(
+        400.0f + S5_SONAR_FORWARD_MM, S5_SONAR_LEFT_MM)));
     assert(p.width_mm > 0u && p.left_clearance_mm > 0u && p.right_clearance_mm > 0u);
 
     /* Obstacle to the left: more clearance to the right than a centred one has. */
@@ -65,12 +69,12 @@ int main(void)
 
     /* Minimum-bit packing retains the complete signed angle and 16-bit
        measurement. Both structures are checked against Cortex-M0+ layout. */
-    assert(sizeof(ObstacleRay) == 3u && sizeof(ObstacleProfile) == 14u);
+    assert(sizeof(ObstacleRay) == 4u && sizeof(ObstacleProfile) == 14u);
     for (int angle = -SERVO_MAX_DEG; angle <= SERVO_MAX_DEG; ++angle) {
         ObstacleRay roundtrip = s5_ray_make((int16_t)angle, 65535u, true);
         assert(roundtrip.valid && roundtrip.angle_deg == angle && roundtrip.range_mm == 65535u);
         uint32_t packed = s5_side_watch_pack(true, (int16_t)angle);
-        assert((packed & 1u) != 0u && (packed & ~0xFFu) == 0u);
+        assert((packed & 1u) != 0u && (packed & ~0x1FFu) == 0u);
         assert(s5_side_watch_angle(packed) == angle);
     }
     ObstacleRay invalid = s5_ray_make((int16_t)(SERVO_MAX_DEG + 1), 42u, true);

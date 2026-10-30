@@ -4,7 +4,7 @@ FROM ubuntu:24.04
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      ca-certificates git make g++ gcc-arm-none-eabi libnewlib-arm-none-eabi \
+      ca-certificates git make g++ python3 gcc-arm-none-eabi libnewlib-arm-none-eabi \
  && rm -rf /var/lib/apt/lists/*
 
 ENV PICO_SDK_PATH=/opt/pico-sdk

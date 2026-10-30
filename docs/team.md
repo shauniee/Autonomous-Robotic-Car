@@ -1,9 +1,5 @@
 # Team, hardware and workflow
 
-Single owner of: members, subsystem ownership, pins and wiring, task/kernel-object budget, cross-subsystem interfaces and coding rules. Build, flash and bring-up: [README](../README.md#getting-started). Requirements, data widths and pending decisions: [project-specs](project-specs.md). Shared-data rules and MQTT frame: [architecture](architecture.md).
-
-A **subsystem** is one student's folder (may hold several tasks and peripherals); a **task** is a thread of execution; a **peripheral** is a hardware block. Only the owner edits a subsystem's folders; request the owner's review for other changes. All members join integration, debugging, system testing and demonstration.
-
 ## Contents
 
 - [1. Members and subsystems](#1-members-and-subsystems)
@@ -15,19 +11,28 @@ A **subsystem** is one student's folder (may hold several tasks and peripherals)
 - [4. Interfaces between subsystems](#4-interfaces-between-subsystems)
 - [5. Coding rules](#5-coding-rules)
 
+Single owner of: members, subsystem ownership, pins/wiring, current kernel-object inventory and coding rules. Architecture owns target scheduling and cross-subsystem contracts. Build, flash and bring-up: [README](../README.md#getting-started). Requirements, data widths and pending decisions: [project-specs](project-specs.md). Shared-data rules and MQTT frame: [architecture](architecture.md).
+
+A **subsystem** is one student's folder (may hold several tasks and peripherals); a **task** is a thread of execution; a **peripheral** is a hardware block. Subsystem owners retain responsibility for their folders; coordinate firmware changes with the owner. This documentation reconciliation is authorized by Nicholas. All members join integration, debugging, system testing and demonstration.
+
 ## 1. Members and subsystems
 
 | # | Subsystem | Student ID | GitHub | Code | Tests | Guide |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | **Shaun, Communications:** WiFi/MQTT, telemetry, reporting | 2500629 | shauniee | [app_program/subsystem1/](../app_program/subsystem1/) | [testing/subsystem1/](../testing/subsystem1/) | [subsystem1](architecture/subsystem1.md) |
 | 2 | **Mahesha, Motion:** motors, encoders, wheel PID, motion APIs | 2503973 | itsjustmdawg | [app_program/subsystem2/](../app_program/subsystem2/) | [testing/subsystem2/](../testing/subsystem2/) | [subsystem2](architecture/subsystem2.md) |
-| 3 | **Nicholas, Line, Barcode, Mission/Safety:** IR, barcode, coordination, integration | 2501552 | nicholas-bay | [app_program/subsystem3/](../app_program/subsystem3/) | [testing/subsystem3/](../testing/subsystem3/) | [subsystem3](architecture/subsystem3.md) |
+| 3 | **Nicholas, Line, Barcode, Mission integration:** IR, barcode, coordination, integration | 2501552 | nicholas-bay | [app_program/subsystem3/](../app_program/subsystem3/) | [testing/subsystem3/](../testing/subsystem3/) | [subsystem3](architecture/subsystem3.md) |
 | 4 | **Darrius, Terrain:** IMU processing, motion classification, hump measurement | 2500360 | Galaxius03 | [app_program/subsystem4/](../app_program/subsystem4/) | [testing/subsystem4/](../testing/subsystem4/) | [subsystem4](architecture/subsystem4.md) |
 | 5 | **Jia Jing, Obstacle:** sonar, servo scanning, obstacle profiling | 2502825 | JJLOLLOL | [app_program/subsystem5/](../app_program/subsystem5/) | [testing/subsystem5/](../testing/subsystem5/) | [subsystem5](architecture/subsystem5.md) |
 
 Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [week13-plan](week13-plan.md#4-video-recording). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
 
-**Current capabilities (software state, not physical proof).** S3 reads/calibrates two IR sensors and produces P steering; a separate line-following task uses the S2 request/stop/health interface (physical baseline pending). Optional S1 reporting gives telemetry, heartbeat and status-only subscription via the kernel service (S3 adapter pending). Barcode buffering, provisional A-Z decoding and mapping/event APIs are implemented but **boot disabled** without measured configuration and an encoder/GPIO provider. Pending: encoder feedback, physical barcode capture, IMU/sonar acquisition, full Mission/Safety. Compilation or retained software evidence does not establish a physical tracking run, barcode scan or verified motor operation.
+**Implementation status.** Pinned remote source and local-checkpoint differences
+are inventoried in [plan](../plan.md#remote-implementation-inventory). The code
+contains Motion PID/actions, Mission/Safety, line/barcode, Terrain, Obstacle and
+Reporting modules; this is not physical acceptance. Older smaller bench/task
+arrangements are historical. Target coordination is in [architecture](architecture.md).
+Nicholas reviews this documentation plan; subsystem responsibilities remain.
 
 ## 2. Pins
 
@@ -48,12 +53,14 @@ Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [
 | GP16 | Nicholas | Barcode IR DOUT, Grove 4; AOUT disconnected |
 | GP17 | Unclaimed | Grove 4 second signal unused |
 | GP18 | Unclaimed | Onboard RGB LEDs; no firmware owner |
-| GP20 | Nicholas | Onboard active-low capture/start/reset; proposed Safety input |
-| GP21 | Nicholas | Onboard active-low stop/cancel; independent stop path |
+| GP20 | Nicholas | Onboard active-low calibration/start; target fresh start only after eligible reset |
+| GP21 | Nicholas | Onboard active-low stop/cancel; target eligible release-to-ready handshake |
 | GP22 | Nicholas | Onboard PWM buzzer; mute switch controls audibility |
 | GP26 | Nicholas | Left line IR AOUT, Grove 5 / ADC0; disconnect Grove 6 shared GP26 contact |
 | GP27 | Nicholas | Right line IR AOUT, Grove 6 / ADC1 |
 | GP28 | Mahesha | Left encoder A, Grove 7, red; ADC2-capable but used digitally; open battery jumper |
+
+User confirmation 2026-10-29: physical wiring matches this allocation and sonar electrical behavior is confirmed; motor/encoder polarity is not confirmed. This does not append a measured test result.
 
 ### Supply and wires
 
@@ -88,55 +95,50 @@ Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [
 
 ## 3. Task priorities and kernel object budget
 
-Smaller number = higher priority. Priorities 1-4 are kernel (initial task 1, USB 3, WiFi 4, all core 0). `TP_PRC1` core 0; `TP_PRC2` core 1; 0 any. Application tasks use core 1 in SMP builds.
+[Architecture](architecture.md#tasks) owns the only target task/core/scheduling
+table. [Plan inventory](../plan.md#remote-implementation-inventory) owns pinned
+current-source task settings. Keep Motion/Mission on core 1 and I/O on core 0;
+no core swap. Existing priorities/periods are retained provisionally with user authorization;
+D13 physical scheduling acceptance remains pending.
+`TP_PRC1` means core 0 and `TP_PRC2` core 1; lower priority number runs first.
 
-**Current bench**
+Working software allocation inventory after #130–#133 (excluding kernel/driver
+allocations; not measured live high-water marks):
 
-| Subsystem | Tasks (name - priority - core) |
+| Application object | Allocation / ownership |
 | --- | --- |
-| Shaun | No application task; optional snapshot mutex only |
-| Mahesha | `motion_task` - 13 - core 1; 20 ms or stop wake-up |
-| Nicholas line/barcode | `task_s_task` - 12 - core 1; buttons 10 ms, paired ADC 20 ms |
-| Nicholas bench coordination | `line_follow_task` - 14 - core 1; local controls, snapshot-to-Motion requests every 10 ms |
-| Darrius, Jia Jing | Inactive |
+| Tasks | Motion and Mission on core 1, I/O on core 0: exactly three creation call sites |
+| Mutexes | Five: Motion command/health, line snapshot, S5 profile, cross-core events, Terrain evidence |
+| Event flags | One persistent Motion stop/inhibit flag |
+| Static rings | Existing barcode capture/events and S1 bridge/events; no generic bus |
+| Task stacks | 2048 bytes requested each, 6144 bytes total requested; final stack margins unmeasured |
 
-**Proposed full robot** (team acceptance not recorded)
-
-| Subsystem | Tasks (name - priority - core) |
-| --- | --- |
-| Shaun | Reporting bridge - 20 - core 1; network events / reporting interval |
-| Mahesha | Motion - 13 - core 1; 20 ms / stop |
-| Nicholas | Safety - 12 - core 1, 10 ms / events; Mission - 14 - core 1, 20 ms / events; Line and Barcode - 15 - core 1, ADC 20 ms / barcode IRQ |
-| Darrius | Terrain - 16 - core 1; 20 ms fresh-data polling |
-| Jia Jing | Obstacle - 17 - core 1; bounded acquisition states |
-
-Record every new task; agree priority changes before integration. Kernel network priority stays 4.
-
-**Kernel object budget** (limits in [config/config.h](../config/config.h) are total capacities; current application allocations exclude kernel/driver objects; changes need shared-config agreement)
-
-| Object | Limit | Shaun | Mahesha | Nicholas | Darrius | Jia Jing |
-| --- | --- | --- | --- | --- | --- | --- |
-| Task | 32 | 0 | 1 | 2 | 0 | 0 |
-| Event flag | 16 | 0 | 1 | 0 | 0 | 0 |
-| Mutex | 12 | 0 or 1 | 1 | 2 | 0 | 0 |
-| Semaphore 16; mailbox, message buffer, fixed pool, variable pool, cyclic, alarm handler 12 each | - | 0 | 0 | 0 | 0 | 0 |
-
-Shaun attempts one mutex with `MQTT=1`, none with `MQTT=0`; allocation failure disables optional diagnostics and permits local startup. Mahesha's request and health copies share one mutex; persistent stop uses one event flag. Nicholas owns two private mutexes (line snapshot; barcode service/configuration/event FIFO). Barcode uses static 64-edge and eight-event storage, no message buffer or extra task. Both S3 tasks use the existing 2048-byte stack; barcode stack/timing margins unmeasured. Create all subsystem objects before starting application tasks; required init failure prevents startup, optional telemetry failure may skip reporting. Measure stack margin and total object usage (including kernel services) before the proposed task split.
+Limits in [config/config.h](../config/config.h) are total capacities, including
+kernel/driver objects. Recount actual allocations and measure memory after task
+consolidation; no invented savings or margin. Required control initialization
+failure inhibits startup. Optional data failure is handled by the central policy;
+normal mission readiness still requires operational WiFi and MQTT.
 
 ## 4. Interfaces between subsystems
 
-The provider creates and owns each shared object; objects stay private behind public APIs. Agree new formats/ownership before coding. Team agreement is not recorded for any row.
+Each provider owns private storage and exposes coherent accessors. Current APIs
+are inventoried in subsystem guides; target authority/sharing/freshness is owned
+by [architecture](architecture.md#shared-data-rules).
 
-| ID | From to To | Mechanism | Object / API | Data / meaning |
-| --- | --- | --- | --- | --- |
-| IF-01 | Nicholas to Mahesha | Latest value under Mahesha priority-inheritance mutex | `request_mutex` (private); `s2_publish()` | `MotionRequest`: duties, enabled flag, original sample time |
-| IF-02 | Nicholas to Mahesha | Persistent event flag + wake-up, independent of request mutex | `stop_flag`, `motion_tid` (private); `s2_stop()` / `s2_reset_stop()` | Stop latch; fresh local reset invalidates old request |
-| IF-03 | Mahesha to Nicholas | Coherent health copy under mutex; stop flag read separately | `s2_health()` | `MotionHealth`: software service progress and latch; no physical brake/stationarity acknowledgement |
-| IF-04 | IR tracker to Nicholas coordinator | In-task typed value; no kernel object | `ir_tracking_output()` | `IrTrackingOutput`: validity, line condition, signed error/steering, sample time |
-| IF-05 | Nicholas to Shaun to kernel network | Latest value under optional Shaun mutex; `TMO_POL` both sides | `telemetry_mutex` (private); `s1_telemetry_update()` / `s1_telemetry_copy()` | `S1Telemetry`; busy/unavailable skips diagnostics |
-| IF-06 | Unclaimed | - | - | - |
+| Path | Ownership / target rule |
+| --- | --- |
+| Mission to Motion | One latest packed command, bounded mutex copy; Motion owns feedback and stop latch |
+| Local GP21 to Motion | Independent input check, persistent stop; no command-mutex/telemetry dependency |
+| S3 evidence to Mission | Bounded in-task sensing/decoder steps; retain original acquisition times |
+| Mission to S5 | Scan/side-watch intent and bounded acquisition steps, never a second motor writer |
+| Terrain to Mission/Motion | Core-0 coherent evidence with age/validity; no cross-core runtime `s2_stop()` call |
+| I/O to Mission mapping | Bounded hand-off; Mission installs whole mapping while stopped and returns result before ACK |
+| Mission/Terrain to Reporting | Cross-core event synchronization required; same-core DI/EI is insufficient |
+| Reporting to kernel MQTT | Opaque bounded TX/RX bridge; only WiFi context invokes networking APIs |
 
-IF-01 to IF-04 limits, expiry and ordering: [subsystem2](architecture/subsystem2.md) and [subsystem3](architecture/subsystem3.md). IF-05: [subsystem1](architecture/subsystem1.md). Full-robot message/queue contracts are proposed in [architecture](architecture.md) without allocated object IDs. Each cross-subsystem interface needs an [integration test record](../testing/integration/TEST_LOG.md); implementation or a saved software result does not establish physical acceptance.
+Record changed interface layouts before coding and append integration results in
+[testing/integration/TEST_LOG.md](../testing/integration/TEST_LOG.md). A valid
+software copy or brake acknowledgement is not physical stationarity.
 
 ## 5. Coding rules
 
@@ -147,7 +149,7 @@ Apply to new or changed application code (imported kernel need not be reformatte
 - **Data:** fixed-width ints where width matters; packed bits for stored/shared flags; `bool` only for locals/returns; `const` for immutable. Consistent unsigned literals; justify narrowing casts; avoid signed bit ops. Initialize before use; explicit invalid codes. `float` only for justified local computation (`f` suffix, finite/range checks); stored/shared values are fixed point with documented scale (widths and scales in [project-specs](project-specs.md)). In-RAM packed state may use bit-fields; wire formats (MQTT) use explicit masks/shifts with documented byte order, never native structs, padding or bit-field order.
 - **Minimum-bit:** each field gets `ceil(log2(values))` bits including the invalid code; record range, unit, signedness, scale, rounding, invalid code, overflow behavior in project-specs before converting. Exclusive states use one encoded value; coexisting faults use independent bits. Combine fields in one unit only with a shared writer. Access via `module_field_get()/_set()`; no caller masks. Loop counters/temporaries exempt. Test min, max and invalid code; overflow saturates or faults as documented.
 - **Control:** check return codes; safe failure responses; `default` in switches; document fallthrough. Bound polling, waits, retries, buffers, actions; validate counts/indices/inputs; keep acquisition time; wrap-safe elapsed time.
-- **Concurrency:** `volatile` is for hardware/async access, not synchronization. Share data only via the three patterns in [architecture](architecture.md): one-word snapshot (single store/load), mutex copy above 32 bits, ISR-to-task ring. One writer per storage unit; only it does RMW. Packed data shared with a core-1 ISR updates inside `DI`/`EI`; packed data written from both cores needs a mutex or RP2040 hardware spinlock (`DI` masks only the local core). ISRs: capture, signal, return; no blocking, formatting, decoding, allocation; use `_task`/`_isr` names.
+- **Concurrency:** `volatile` is for hardware/async access, not synchronization. Share data only via the three patterns in [architecture](architecture.md): one-word snapshot (single store/load), mutex copy above 32 bits, ISR-to-task ring. One writer per storage unit; only it does RMW. Packed data shared with an ISR on the same core updates inside `DI`/`EI`; packed data written from both cores needs a mutex or RP2040 hardware spinlock (`DI` masks only the local core). ISRs: capture, signal, return; no blocking, formatting, decoding, allocation; use `_task`/`_isr` names.
 - **Ownership:** one motor writer, separate peripheral owners, kernel-only networking; Stop must not depend on diagnostics queues or the request mutex. No credentials in version control.
 
 **Review checklist:** purpose/API/units/ownership clear, no duplicate mutable state; style consistent; inputs, casts, arithmetic, finite values, bounds checked; hardware actions bounded, failures inhibit unsafe output; shared values synchronized, cached observations keep acquisition time; stop, stale data and reset keep the contract; no ISR blocking, foreign motor writes, student network calls or committed credentials; packed fields match project-specs, use accessors, have boundary tests; one writer per storage unit; evidence names source/profile (a build is not hardware proof).
