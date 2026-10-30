@@ -30,7 +30,7 @@ Wrong wiring can damage the Pico or a sensor, so nothing is powered until this p
 | --- | --- | --- | --- |
 | MR-01 | Every wire against the pin table in [team](../docs/team.md#2-pins), by continuity | All match; no unclaimed pin is connected | Photo of the wiring |
 | MR-02 | Grove 6 GP26 contact disconnected; GP28 battery-sense jumper open | No continuity on either | - |
-| MR-03 | Sonar Echo HIGH level, measured before connecting to GP2 | At most 3.3 V | Measured volts (D05) |
+| MR-03 | Sonar Echo HIGH level, measured before connecting to GP3 | At most 3.3 V | Measured volts (D05) |
 | MR-04 | Power bank polarity at VIN+/VIN-; one power source at a time | Correct polarity; USB disconnected during battery runs | - |
 | MR-05 | 3V3 and VSYS while both motors and the servo run | Measured and agreed; no brownout reset | Minimum volts on each rail (Tribunal A6) |
 
