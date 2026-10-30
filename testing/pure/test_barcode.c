@@ -104,6 +104,31 @@ static void test_alphabet_vectors(void)
     }
 }
 
+static void test_noisy_approach(void)
+{
+    uint32_t widths[29];
+    char symbol = 0;
+    barcode_orientation_t orientation = BARCODE_FORWARD;
+    elements("nwnnwnwnn", "wnnnnwnnw", "nwnnwnwnn", false,
+        10u, 30u, widths);
+    start(0u);
+    assert(step(100u, &symbol, &orientation) == BARCODE_NO_RESULT);
+    assert(step(5u, &symbol, &orientation) == BARCODE_NO_RESULT);
+    /* Reject the false frame, retaining this edge as the real frame start. */
+    assert(step(200u, &symbol, &orientation) == BARCODE_BAD_WIDTH);
+    barcode_result_t result = BARCODE_NO_RESULT;
+    for (unsigned i = 0u; i < BARCODE_ELEMENTS; ++i)
+    {
+        result = step(widths[i], &symbol, &orientation);
+        if (i + 1u < BARCODE_ELEMENTS)
+        {
+            assert(result == BARCODE_NO_RESULT);
+        }
+    }
+    assert(result == BARCODE_DECODED);
+    assert(symbol == 'A' && orientation == BARCODE_FORWARD);
+}
+
 static void test_rejections(void)
 {
     uint32_t w[29]; char s; barcode_orientation_t o;
@@ -204,6 +229,7 @@ int main(void)
 {
     test_samples();
     test_alphabet_vectors();
+    test_noisy_approach();
     test_rejections();
     test_rearm();
     test_mapping();

@@ -317,10 +317,10 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Scan state | scan word bits 0-2, Obstacle | 8 states (IDLE, SETTLING, COARSE, FINE, DONE, FAILED, CANCELLED, SIDE_WATCH) | out-of-range decodes as FAILED | 3 | encoded value |
 | Scan ID | scan word bits 3-6, Mission request | 0-15 | wraps | 4 | mask/shift |
 | Range, front / side | echo word, Obstacle | 0-8190 mm, nearest mm | 8191 or valid flag clear = no echo, never clear space; saturates to invalid | 13+1+16 (time low 16) | mask/shift |
-| Obstacle profile (geometry) | mutex-copied `ObstacleProfile`, S5 | closest angle -75..+75, valid flag; 4 unsigned mm measurements 0-65535; 2 signed mm coordinates | clamp to 16-bit limits; invalid profile not published | angle 8 + valid 1 + 6x16 = 105 logical; 112 stored (`sizeof` 14 bytes) | signed angle byte, validity bit in a separate byte, other 16-bit words |
-| ObstacleRay scan entry | `ObstacleRay` array, private S5 task | angle -75..+75; valid 0/1; range mm 0-65535 | invalid angle rejected by constructor, no echo = validity clear; range ignored | 8 + 1 + 16 = 25 logical bits; 32 stored bits (`sizeof` 4 bytes) | GNU C packed signed angle byte, validity byte and unaligned 16-bit range |
+| Obstacle profile (geometry) | mutex-copied `ObstacleProfile`, S5 | closest angle -20..+20, valid flag; 4 unsigned mm measurements 0-65535; 2 signed mm coordinates | clamp to 16-bit limits; invalid profile not published | angle 6 + valid 1 + 6x16 = 103 logical; 112 stored (`sizeof` 14 bytes) | signed angle byte, validity bit in a separate byte, other 16-bit words |
+| ObstacleRay scan entry | `ObstacleRay` array, private S5 task | angle -20..+20; valid 0/1; range mm 0-65535 | invalid angle rejected by constructor, no echo = validity clear; range ignored | 6 + 1 + 16 = 23 logical bits; 32 stored bits (`sizeof` 4 bytes) | GNU C packed signed angle byte, validity byte and unaligned 16-bit range |
 | Obstacle width / depth | profile width; depth from encoder travel | 0-65535 mm / counts | saturates | 16 | unsigned |
-| Side-watch servo angle / enabled | `side_command` atomic word, Mission writer | -75..+75 degrees / yes-no | clamped to sweep; value sign-extended on read | 8 + 1 logical; 32 stored (shared atomic word) | bits 1..8 signed angle, bit 0 enabled; accessors (#111) |
+| Side-watch servo angle / enabled | `side_command` atomic word, Mission writer | -20..+20 degrees / yes-no | clamped to sweep; value sign-extended on read | 6 + 1 logical; 32 stored (shared atomic word) | bits 1..8 signed angle, bit 0 enabled; accessors (#111) |
 
 ### Mission and Safety
 
@@ -419,7 +419,7 @@ Software restructure storage contract (2026-10-29, #131–#133; no new wire fiel
 | Mapping progress, one writer per counter | Request/reply tickets plus private submit/consume/take counters, modulo 2^32 | One outstanding request through reply consumption; no overwrite | 32 each |
 | Terrain evidence, I/O | Existing terrain word, acquisition/service ms and attempt sequence uint32; acquisition validity 1 bit | Pending data does not renew acquisition time; copy/age/validity required; timestamps wrap | 4 x 32 + 1 logical; naturally aligned 20-byte snapshot |
 | IMU startup outcome, I/O | 0 pending, 1 calibrated, 2 failed | Missing IMU publishes failed; never interpreted as calibrated | 2 / one 32-bit word |
-| S5 step phase/flags, Mission | Phase 0..2 + initialized/ready/scanning; scan counts 0..9, scan ID 0..15, angle -75..75 | Fixed nine-ray capacity; deadline/cancel/movement abort; no echo invalid | 2+3 bits; counts 4 each, ID 4, signed angle 8 |
+| S5 step phase/flags, Mission | Phase 0..2 + initialized/ready/scanning; scan counts 0..9, scan ID 0..15, angle -20..20 | Fixed nine-ray capacity; deadline/cancel/movement abort; no echo invalid | 2+3 bits; counts 4 each, ID 4, signed angle 6 (stored in 8) |
 | Link readiness, kernel WiFi | bit 0 WiFi, bit 1 broker; boot 0 | Both required for local start; run loss report-only | 2 / one 32-bit word |
 | Event drops, event-mutex holder / one writer per core | `s1_event_log_t.dropped` counts ring overflow; `lock_misses[2]` counts failed bounded event-insertion locks (Mission core 1, Terrain core 0), one atomic uint32 per core; bridge-full returns false for retry | Each count saturates at UINT32_MAX; insertion waits at most the existing 2 ms snapshot-lock timeout; counters are debugger diagnostics, not new MQTT fields or delivery acknowledgements | 32 each; 64 stored for the two lock-miss words |
 
@@ -502,19 +502,50 @@ across accepted starts and stops until reboot. Numerical proposals may now be
 implemented, with physical release inhibited. This supersedes the earlier
 "keep choices pending" instruction for preparing proposals, not calibration.
 
+User steering, 2026-10-30: normal line tracking has priority. Standalone
+recovery starts only after both sensors continuously report white/white
+(`IR_LINE_LOST`) for more than 1000 ms of fresh acquisitions. Until then,
+hold the last tracking steering and its tracking speed; a visible line resumes
+PID updates immediately. Any non-LOST classification resets the loss interval.
+Invalid or stale sensing still stops movement rather than extending the grace
+period. A sampling gap beyond the existing IR freshness budget cannot count
+toward continuous loss.
+
+Loss qualification storage: `line_lost_since_ms` and `line_lost_sampled_ms`
+are unsigned 32-bit acquisition timestamps, in milliseconds modulo 2^32,
+with wrap-safe elapsed subtraction and no rounding. `line_loss_pending` is
+one logical bit packed beside Mission's existing encounter flags; zero makes
+both timestamps inactive (all timestamp values, including zero, are valid).
+Each state transition clears the pending flag. No shared or wire fields change.
+
 Uncalibrated software proposals for review (not course limits/module ratings):
 
 | Setting | Proposal / purpose | Physical acceptance |
 | --- | --- | --- |
-| Recovery | 30 mm/s, steering magnitude 96/127, 30 s / 900 mm total budget, 5 degree target tolerance | D03/D07/D08/D13 pending |
+| Recovery | 270 mm/s, steering magnitude 76/127, 30 s / 1200 mm total budget, 5 degree target tolerance and overshoot allowance | Revised trial after stalls at 30 and 90 mm/s; wheel targets match the current tracking curve range; D03/D07/D08/D13 pending |
 | Recovery alignment | Original heading within 15 degrees; absolute error <=25/127 for three distinct acquisitions | D04/D07/D10 pending |
+| Bypass line alignment | 30 mm/s, independently configured from standalone recovery | D04/D07/D10 pending |
 | Scan | Three samples, at least two valid; depth enter/exit bands 30/60 mm; two adjacent rays; model range uncertainty 10 mm | D05/D10 pending; uncertainty is a proposed model input, not sensor accuracy |
-| Servo sampling | Proposed +/-75 degrees to observe lateral gaps at a 150 mm trigger; existing 300 ms settle and 60 ms repeat | Verify endpoints/mounting before release, D05 |
+| Servo sampling | User-requested +/-20 degree travel; coarse rays -20/-10/0/+10/+20 degrees and 5 degree edge refinement; existing 300 ms settle and 60 ms repeat | Verify endpoints/mounting before release, D05 |
 | Bypass | 60 mm/s, <=50 mm motion chunks, 90 s / 4000 mm whole budget; <=2 s / two completed groups per sensing phase | D02/D03/D05/D07/D08/D13 pending |
 | Bypass geometry | Body length/width 200/180 mm, 30 mm clearance; offset >=250 mm, <=600 mm; conservative obstacle width >=200 mm | Proposals only; measure full swept envelope, D03 |
 | Rear-edge / return | Two distinct qualified side groups; 150/100 mm enter/release jump; <=1500 mm pass, <=250 mm baseline search; return within 25 mm lateral / 5 degrees and three distinct tracking acquisitions | D02/D05/D07/D10 pending |
 | Height quality | Raw acceleration norm 900..1100 mg, wheel speed difference <=30 mm/s, speed change <=30 mm/s per fresh sample, 200 ms steady data before a height window | D06/D07/D10 pending; suppress unqualified height results |
 | Retry / reverse | One stationary rescan; no autonomous reverse without rear-coverage support | Retry is a proposal; reverse remains unsupported |
+
+Recovery trial revision, 2026-10-30: 270 mm/s with 76/127 steering requests
+approximately 108/432 mm/s, comparable to the current tracker's maximum
+steering at its reduced curve speed. This comparison is not a measured minimum
+moving speed. The larger arc radius requires approximately 930 mm for four
+nominal target legs; the proposed total travel budget is 1200 mm to leave
+alignment margin. Nominal targets stay +/-70 degrees; a discrete sample up to
+the existing 5-degree tolerance beyond a target must still allow reversal.
+Heading beyond target plus tolerance fails the search. These revised settings
+need physical acceptance. Nicholas subsequently requested disabling the motor-stall
+guard for the current trial (`MOTION_STALL_GUARD_ENABLED=0`), independently
+of `APP_NO_GUARDS`. Command freshness, local stop, action deadlines and
+recovery limits remain active. Host tests cover both disabled and enabled
+stall configurations; this is not physical acceptance.
 
 Storage contract before implementation: recovery keeps two 32-bit encoder origins,
 32-bit start/acquisition times and one byte of phase/leg/confirmation flags.
@@ -528,8 +559,9 @@ It is valid only while the edge confirmation streak is nonzero; a new streak
 replaces it. Pose overflow fails the bypass before capture. Confirmed rear
 position adds the sonar forward mount and baseline ray's forward projection to
 this first position, keeping depth and return clearance in the profile's frame.
-At proposed +/-75 degree servo angles, angle needs eight signed bits; ray validity
-needs one more bit. `ObstacleRay` becomes four packed bytes; `ObstacleProfile`
+At the user-requested +/-20 degree servo limits, angle needs six signed bits;
+ray validity needs one more bit. Existing eight-bit angle storage is retained
+to preserve the current layouts; commands and constructors enforce the sweep. `ObstacleRay` becomes four packed bytes; `ObstacleProfile`
 remains 14 bytes because its previous alignment byte holds validity. Side-watch
 uses eight angle bits plus one enable bit in its existing atomic word. Terrain
 adds one window-quality bit beside its existing classification/result flags;

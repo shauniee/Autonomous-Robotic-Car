@@ -85,6 +85,7 @@ static void enter(Mission *m, MissionState next, uint32_t now_ms)
 {
     m->state = next;
     m->state_since_ms = now_ms;
+    m->line_loss_pending = 0u;
     line_pid_reset(m);	/* every run segment starts without PID history */
 }
 
@@ -252,6 +253,10 @@ static void observe_junction(Mission *m, const MissionInputs *in)
 
 static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *out)
 {
+    if (in->line != IR_LINE_LOST)
+    {
+        m->line_loss_pending = 0u;
+    }
     if (in->have_barcode && in->barcode_action != BARCODE_UNMAPPED)
     {
         m->held = in->barcode_action; /* the newest read replaces an unused one */
@@ -340,6 +345,30 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
 
     if (in->line == IR_LINE_LOST)
     {
+        /* White/white is usable evidence; failed or old acquisition is not. */
+        if (!in->usable_line ||
+            robot_time_elapsed(in->now_ms, in->line_sampled_ms) > IR_MAX_GAP_MS)
+        {
+            to_stop(m, in, out, true);
+            return;
+        }
+        if (!m->line_loss_pending ||
+            robot_time_elapsed(in->line_sampled_ms,
+                m->line_lost_sampled_ms) > IR_MAX_GAP_MS)
+        {
+            m->line_loss_pending = 1u;
+            m->line_lost_since_ms = in->line_sampled_ms;
+        }
+        m->line_lost_sampled_ms = in->line_sampled_ms;
+        if (robot_time_elapsed(in->line_sampled_ms,
+                m->line_lost_since_ms) <= MISSION_LINE_LOST_MS)
+        {
+            /* Keep the last tracking correction through a brief white gap.
+               Renew freshness from IR, never from this loop's wall clock. */
+            out->command = follow_command(in,
+                line_follow_speed(m->line_steer_q), m->line_steer_q, 1u);
+            return;
+        }
         if (!MISSION_RECOVERY_RELEASED)
         {
             /* Physical release is independent of the proposed search policy. */

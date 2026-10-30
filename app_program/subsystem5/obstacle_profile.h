@@ -31,7 +31,7 @@ typedef enum
     S5_SCAN_STATE_COUNT		/* 8: exactly fills 3 bits */
 } s5_scan_state_t;
 
-/* Each ray: 8-bit signed proposed servo angle (-75..75), 1-bit validity,
+/* Each ray: 8-bit signed proposed servo angle (bounded by SERVO_MAX_DEG), 1-bit validity,
    16-bit range. Attribute packed prevents unwanted byte padding; this
    array is task-private, and the wider profile is mutex-copied. */
 typedef struct __attribute__((packed))

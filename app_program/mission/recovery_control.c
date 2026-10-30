@@ -22,7 +22,8 @@ void recovery_control_step(recovery_control_t *control, const recovery_input_t *
         robot_time_elapsed(input->now_ms, input->sampled_ms) > IR_MAX_GAP_MS ||
         robot_time_elapsed(input->now_ms, control->started_ms) >= RECOVERY_MS ||
         left < 0 || right < 0 || travel >= RECOVERY_TRAVEL_MM ||
-        fabsf(heading) > RECOVERY_TARGET_DEG || control->leg >= 4u ||
+        fabsf(heading) > RECOVERY_TARGET_DEG + RECOVERY_TARGET_TOL_DEG ||
+        control->leg >= 4u ||
         control->phase == RECOVERY_FAILED)
     {
         control->phase = RECOVERY_FAILED;

@@ -18,19 +18,10 @@
 /* IR owns the ADC, no two tasks will not amend the same counter while reading the ADC */
 static unsigned polls;
 
-static bool pool_within_limit(void)
-{
-    return (polls < ADC_POLL_LIMIT);
-}
-
-static bool time_within_limit(uint32_t started)
-{
-    return ((uint32_t)(robot_time_us() - started) < ADC_BUDGET_US);
-}
-
 static bool budget_available(uint32_t started)
 {
-    return pool_within_limit() && time_within_limit(started);
+    return (polls < ADC_POLL_LIMIT) &&
+        ((uint32_t)(robot_time_us() - started) < ADC_BUDGET_US);
 }
 
 static bool wait_for_bit(uint32_t register_address, uint32_t bit_mask, uint32_t started)
@@ -44,16 +35,6 @@ static bool wait_for_bit(uint32_t register_address, uint32_t bit_mask, uint32_t 
         }
     }
     return budget_available(started);
-}
-
-static bool wait_for_adc_ready(uint32_t started)
-{
-    return wait_for_bit(ADC_CONTROL, ADC_READY, started);
-}
-
-static bool wait_for_adc_reset(uint32_t started)
-{
-    return wait_for_bit(RESETS_RESET_DONE, RESETS_RESET_ADC, started);
 }
 
 static void configure_adc_pin(unsigned pin)
@@ -71,7 +52,7 @@ static void configure_adc_pin(unsigned pin)
 /* Select an input and return the control bits needed for conversions */
 static uint32_t adc_select_channel(unsigned mux)
 {
-    uint32_t control = ADC_ENABLE | (mux << ADC_CHANNEL_SHIFT) | ADC_ERROR;
+    uint32_t control = ADC_ENABLE | (mux << ADC_CHANNEL_SHIFT);
     out_w(ADC_CONTROL, control);
     return control;
 }
@@ -80,7 +61,8 @@ static uint32_t adc_select_channel(unsigned mux)
 static bool adc_read_once(uint32_t control, uint32_t *value, uint32_t started)
 {
     out_w(ADC_CONTROL, control | ADC_START_ONCE);
-    if (!wait_for_adc_ready(started) || ((in_w(ADC_CONTROL) & ADC_ERROR) != 0u))
+    if (!wait_for_bit(ADC_CONTROL, ADC_READY, started) ||
+        ((in_w(ADC_CONTROL) & ADC_ERROR) != 0u))
     {
         return false;
     }
@@ -120,7 +102,7 @@ bool drv_ir_tracking_init(void)
 
     /* Bring the ADC out of reset */
     clr_w(RESETS_RESET, RESETS_RESET_ADC);
-    if (!wait_for_adc_reset(started))
+    if (!wait_for_bit(RESETS_RESET_DONE, RESETS_RESET_ADC, started))
     {
         return false;
     }
@@ -129,7 +111,7 @@ bool drv_ir_tracking_init(void)
     configure_adc_pin(IR_LEFT_PIN);
     
     out_w(ADC_CONTROL, ADC_ENABLE);
-    return wait_for_adc_ready(started);
+    return wait_for_bit(ADC_CONTROL, ADC_READY, started);
 }
 
 bool drv_ir_tracking_read(IrRaw *raw)

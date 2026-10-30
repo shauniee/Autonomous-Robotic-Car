@@ -15,6 +15,13 @@
 - [Rear-edge geometry — INT-23](#rear-edge-geometry--int-23)
 - [Resource and binary-protocol audit — INT-24](#resource-and-binary-protocol-audit--int-24)
 - [Event contention and unused-path cleanup — INT-25](#event-contention-and-unused-path-cleanup--int-25)
+- [Recovery stop diagnostics — INT-26](#recovery-stop-diagnostics--int-26)
+- [Recovery stall tuning — INT-27](#recovery-stall-tuning--int-27)
+- [Sustained line-loss qualification — INT-28](#sustained-line-loss-qualification--int-28)
+- [Recovery failure inputs — INT-29](#recovery-failure-inputs--int-29)
+- [Forward FOLLOW slowdown — INT-30](#forward-follow-slowdown--int-30)
+- [Recovery wheel-speed range — INT-31](#recovery-wheel-speed-range--int-31)
+- [Stall configuration integration — INT-32](#stall-configuration-integration--int-32)
 
 Template example INT-01/02 retired: S2-to-S3 sample flow (at least five in two seconds) and S3-to-S4 summary flow (at least two in 3.5 seconds). No template result was recorded. Logs refer to the uncommitted migration's source manifest plus base HEAD; they do not claim HEAD is the tested source. Formal on-target trials require a recorded committed revision.
 
@@ -369,3 +376,208 @@ Normal static RAM is now 26840 bytes offline and 84520 bytes wireless, an
 23/11/5/3/2 bytes; no new telemetry field. No firmware was executed/flashed.
 Host coverage exercises `mission_mapping`, not the kernel-bound `s1_step`
 transport dispatch; target lock-contention/saturation and timing remain pending.
+
+## Recovery stop diagnostics — INT-26
+
+Recorded after execution, 2026-10-30: wireless normal build with `TEST=0`,
+`NOGUARDS=0` and the working-tree recovery release enabled. Added console
+reporting of actual safety cause bits, transient Motion stall details after
+braking, owner faults and producer ages. No navigation thresholds changed.
+
+| Date | ID | Source | Tester | Result | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | INT-26 | Base `cc3edb3dd7c92ec76fb2be742171818095fdc49f` plus working-diff/source hashes | Codex | PASS (build only); hardware diagnosis pending | [Build and observations](logs/2026-10-30_INT-26-diagnostics-build.json) |
+
+Build exit 0; UF2 SHA-256 and source hashes are in the evidence. The new
+image was not flashed. The connected robot reported REACQUIRE/RUNNING,
+encoder changes and then STOPPED with a safety latch. Its flashed revision
+is unknown, so these observations are not a firmware/physical pass for this
+build. The old console only prints latch truth, and 500 ms telemetry may
+miss the stall fault cleared by Motion after braking. Existing Terrain
+calibration-failed and Obstacle no-echo reports do not identify this stop.
+A repeat using the new diagnostic image is needed before attributing the
+stop to stall, a producer deadline or another safety cause.
+
+## Recovery stall tuning — INT-27
+
+Procedure defined before software checks, 2026-10-30: run the existing
+kernel-free Mission tests with recovery/bypass explicitly enabled, and
+Mission pending-policy tests with both explicitly disabled. Build the
+wireless normal (`TEST=0`, `NOGUARDS=0`) firmware. Expect bounded recovery
+and existing stop policy to pass; no physical recovery pass is implied.
+The new standalone recovery speed is a 90 mm/s trial proposal after two
+console-reported motor stalls at 30 mm/s with steering -96. Bypass line
+alignment retains 30 mm/s under its own constant. New static checks bound
+the outer-wheel target for both commands.
+
+Observed on the connected robot before the change (flashed revision not
+independently verified; user reports flashing INT-26 image):
+
+```text
+[MISSION] state=REACQUIRE
+[MOTION] motor stall: mode=1 action=1 speed_mmps=30 steering_q=-96 left=96 right=157
+[SAFETY] causes=2 gp21=0 fault=1 line_stale=0 motion_stale=0 motion_faults=1 terrain_faults=2 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=0 latched=2 inputs_ok=1 motion_stopped=1 motion_status=0
+```
+
+A second attempt reported the same stall command with left=253, right=416
+and the same safety cause/fault bytes. Neither attempt establishes which
+wheel stalled or a calibrated minimum wheel speed. The proposed speed
+requests approximately 22/158 mm/s at full search steering, versus 7/53
+previously. A repeat physical run is needed to establish whether the higher
+command prevents stall and completes the sweep/reacquisition.
+
+| Date | ID | Source | Tester | Result | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | INT-27 | Base `cc3edb3dd7c92ec76fb2be742171818095fdc49f` plus source/diff hashes | Codex | PASS (two host binaries and wireless normal build); physical recovery pending | [Manifest](logs/2026-10-30_INT-27-manifest.json), [host](logs/2026-10-30_INT-27-host.txt), [build](logs/2026-10-30_INT-27-build.txt) |
+
+The compiler reported no warnings in this incremental build. No image
+was flashed by Codex and no recovery pass is claimed at the new speed.
+The new minimum/outer-wheel limits remain uncalibrated. Firmware stall,
+stop-button, stale-input, time, travel and heading guards remain enabled.
+
+## Sustained line-loss qualification — INT-28
+
+Procedure defined before execution, 2026-10-30: run the complete existing
+host suite with new Mission regression scenarios for the user-requested
+continuous white/white interval. Check first loss, exactly 1000 ms (still
+FOLLOW_LINE), more than 1000 ms (REACQUIRE), holding tracking steering/speed
+with original acquisition freshness, visible-line reset, acquisition-gap
+reset, stale cached input stop, local stop, zero timestamp and wraparound.
+Retain bounded recovery/alignment tests. Explicitly compile disabled-policy
+fixtures with both release flags zero regardless of the selected firmware
+configuration. Build wireless normal firmware with TEST=0/NOGUARDS=0;
+record source/image hashes. Expected: host/build PASS, no changed motor
+ownership, stop/freshness policy, barcode routing or bypass behavior.
+Physical tracking and one-second loss timing require a subsequent trial.
+
+| Date | ID | Source | Tester | Result | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | INT-28 | Base `cc3edb3dd7c92ec76fb2be742171818095fdc49f` plus source/diff hashes | Codex | PASS (full host suite and wireless normal build); physical run pending | [Manifest](logs/2026-10-30_INT-28-manifest.json), [host](logs/2026-10-30_INT-28-host.txt), [build](logs/2026-10-30_INT-28-build.txt) |
+
+All host scenarios and decoder/stress checks pass, including the strict
+more-than-one-second boundary and wraparound. Build exit 0 with no warnings;
+linked text/data/BSS are 377796/396/84132 bytes. The new timestamps are
+Mission-local stack state, with one pending bit packed into existing flags.
+No physical timing, tracking, recovery or stack-headroom pass is claimed.
+Codex did not flash or command the robot.
+
+## Recovery failure inputs — INT-29
+
+2026-10-30 connected-console observation: several attempts show
+FOLLOW_LINE -> REACQUIRE -> STOPPED, with `gp21=0 latched=0 inputs_ok=1
+motion_stopped=0 motion_status=1`. This differs from the earlier motor
+stall. It indicates Mission requested the stop, but the old log does not
+identify which recovery precondition/bound failed. Flashed source/image
+was not independently verified; no physical pass is claimed.
+
+Procedure defined before build: compile wireless normal firmware with
+TEST=0/NOGUARDS=0 after adding an exceptional recovery-failure console
+snapshot. Expect build PASS and no control-policy changes. Diagnostics
+run after the STOP request and command, and print Mission-local copies of
+original failure inputs: elapsed time, signed encoder travel, heading,
+mean travel, leg, IR usability/age and front obstacle validity/age/range.
+No new persistent fields or wire data. Actual failure attribution needs a
+repeat capture using this image; do not infer a cause from old logs.
+
+| Date | ID | Source | Tester | Result | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | INT-29 | Base `cc3edb3dd7c92ec76fb2be742171818095fdc49f` plus source/diff hashes | Codex | PASS (build only); physical failure attribution pending | [Manifest](logs/2026-10-30_INT-29-manifest.json), [build](logs/2026-10-30_INT-29-build.txt) |
+
+Build exit 0; linked text/data/BSS 378200/396/84132 bytes. No image
+flashed by Codex. Existing INT-28 host evidence covers unchanged control
+policy; no new host behavior test was added for console-only diagnostics.
+
+## Forward FOLLOW slowdown — INT-30
+
+2026-10-30 connected console reports two REACQUIRE failures after 40 ms:
+left_counts=-25/right_counts=2 and left_counts=-24/right_counts=0;
+heading_cdeg=675/600, travel_mm=-6, leg=0, usable_ir=1, ir_age_ms=0.
+Both stop records have gp21=0/latched=0/inputs_ok=1/motion_stopped=0/
+motion_status=1. Reverse signed encoder travel triggers the recovery
+guard. User-reported diagnostic image identity was not independently read
+back. This does not prove hardware encoder polarity or identify PWM at
+the physical failure.
+
+Procedure before execution: reproduce the tracking-to-recovery slowdown
+with the actual Motion controller, unchanged FOLLOW action ID, and fresh
+positive encoder travel from the preceding faster release. Expect the new
+forward-output assertion to fail before the fix; save the actual duty.
+Then constrain FOLLOW to forward/zero output with saturation-aware integral
+updates, preserving signed DISTANCE/TURN control. Run the full host suite
+(including reverse-distance and pivot tests) and build wireless normal
+firmware TEST=0/NOGUARDS=0. Preserve one-second loss qualification and all
+recovery stop limits. Physical movement/polarity and recovery remain
+pending until a subsequent measured run.
+
+| Date | ID | Source | Tester | Result | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | INT-30 | Base `cc3edb3dd7c92ec76fb2be742171818095fdc49f` plus source/diff hashes | Codex | Regression reproduced; PASS (full host suite and build); physical fix pending | [Manifest](logs/2026-10-30_INT-30-manifest.json), [before](logs/2026-10-30_INT-30-red-host.txt), [after](logs/2026-10-30_INT-30-host.txt), [build](logs/2026-10-30_INT-30-build.txt) |
+
+Before fix the actual controller produced left duty=-0.116496 and right
+duty=0.128173; the nonnegative FOLLOW assertion failed (exit -6). After
+fix the same trace gives left=0/right=0.128173, then resumes positive
+output without negative integral windup. Full host suite passes, including
+reverse DISTANCE, pivot TURN, stall/expiry, one-second line-loss qualification
+and recovery bounds. Wireless normal build exits 0 with no warnings;
+text/data/BSS 378232/396/84132 bytes. No firmware flashed by Codex and no
+physical recovery/polarity pass. The reproduced software reversal is a
+mechanism consistent with the encoder failure, not proof of physical PWM
+or encoder polarity during the observed robot run.
+
+## Recovery wheel-speed range — INT-31
+
+2026-10-30 connected console: FOLLOW_LINE -> REACQUIRE, then
+`[MOTION] motor stall: mode=1 action=1 speed_mmps=90 steering_q=-96 left=2214 right=1583`.
+Safety causes=2, motion_faults=1, line_stale=0, motion_stale=0,
+line_age_ms=0, motion_age_ms=10. The delay did enter recovery; the search
+then stalled. Running-image identity and which wheel stalled were not
+independently established. No physical success claimed.
+
+Procedure before checks: run the full host suite with a regression
+requiring the recovery inner-wheel target to reach the normal maximum-
+steering tracking range. Add a four-leg forward-only encoder trajectory
+with +/-71-degree endpoint samples (within target tolerance), encoder wrap,
+and failure beyond 75 degrees or after four legs. Preserve the diagnosed
+90 mm/s/-96 reversal fixture independent of current tuning. Build wireless
+normal TEST=0/NOGUARDS=0. Expect host/build PASS and the one-second trigger
+and safety guards unchanged. The 270 mm/s/76 steering and 1200 mm budget
+are trial settings, not measured minimum speeds or proven recovery motion.
+Physical confirmation remains pending.
+
+| Date | ID | Source | Tester | Result | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | INT-31 | Base `cc3edb3dd7c92ec76fb2be742171818095fdc49f` plus source/diff hashes | Codex | PASS (full host suite and build); physical sweep pending | [Manifest](logs/2026-10-30_INT-31-manifest.json), [host](logs/2026-10-30_INT-31-host.txt), [build](logs/2026-10-30_INT-31-build.txt) |
+
+Full host suite and wireless normal build pass. Synthetic sweep completes
+all four forward-travel legs within the revised budget and stops after
+exhaustion; 71-degree samples reverse while 76 degrees fails. The test
+uses synthetic encoder positions, not a calibrated moving plant. The
+original one-second qualification and 90/-96 reverse-power regression
+still pass. Build has no warnings; text/data/BSS 378236/396/84132 bytes.
+The new image was not flashed by Codex. The selected wheel-speed range
+and larger budget are proposals requiring physical verification.
+
+
+## Stall configuration integration — INT-32
+
+2026-10-30: Nicholas confirmed the pending default-disabled motor-stall guard
+is intentional and requested updated documentation/tests before publication.
+The first host-suite attempt failed compilation because the guard definition
+was nested inside the recovery override conditional. Give the guard its own
+override conditional. Before rerun: require the full host suite to cover the
+default disabled guard (stuck wheel continues until command expiry) and an
+explicit enabled guard (stuck wheel fails and brakes). Existing local stop,
+command expiry, action deadlines and recovery bounds must remain covered.
+Build all four standard firmware profiles sequentially. Record precommit source
+hashes and base revision; these checks do not establish physical acceptance.
+
+Host result: PASS, including both stall configurations. The initial added
+expiry assertion ran before expiry and failed; its output is preserved in
+[red host output](logs/2026-10-30_INT-32-red-host.txt). Advancing the simulated
+clock beyond expiry gives the expected brake/failure. Accepted output:
+[host suite](logs/2026-10-30_INT-32-host.txt),
+[source manifest](logs/2026-10-30_INT-32-manifest.json), base
+`cc3edb3dd7c92ec76fb2be742171818095fdc49f`. Tester: Codex. Build verification
+follows integration with current main; no physical result claimed.

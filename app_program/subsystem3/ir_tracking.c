@@ -247,7 +247,11 @@ void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
     if (!valid)
     {
         tracker->reading = (IrReading){0};
-        tracker->line = IR_LINE_UNKNOWN;
+        /* Retain loss hysteresis; invalid readings still publish UNKNOWN. */
+        if (tracker->line != IR_LINE_LOST)
+        {
+            tracker->line = IR_LINE_UNKNOWN;
+        }
         ir_tracking_cancel_capture(tracker, IR_CAPTURE_INVALID_SAMPLE);
         return;
     }
@@ -320,8 +324,7 @@ S3IrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t sequence,
     snapshot.calibration_valid =
         ir_tracking_reading(tracker->calibration.black,
                             &tracker->calibration).valid;
-    IrReading reading = ir_tracking_reading(ir_raw_word_raw(tracker->raw),
-        &tracker->calibration);
+    IrReading reading = tracker->reading;
     snapshot.normalized_valid = ir_raw_word_valid(snapshot.raw) && reading.valid &&
         (tracker->capture_kind == IR_CAPTURE_NONE);
     if (snapshot.normalized_valid)
