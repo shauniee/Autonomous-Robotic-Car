@@ -1,5 +1,7 @@
 #include "app.h"
 #include "subsystem2/subsystem2.h"
+#include "mission/mission.h"
+#include "common/io_task.h"
 
 /*
  * Create and start one task (declared in app.h for every subsystem).
@@ -73,30 +75,29 @@ EXPORT INT usermain(void)
 	app_timebase_init(); // time in ms
 
 	// every subsystem creates its kernel objects
-	REQUIRE(subsystem1_init());
 	REQUIRE(subsystem2_init());
+	REQUIRE(subsystem1_init());
 	REQUIRE(subsystem3_init());
 	REQUIRE(subsystem4_init());
 	REQUIRE(subsystem5_init());
 
-	// every subsystem starts its tasks
-	REQUIRE(subsystem1_start());
+	/* Exactly three application tasks. Producers initialize peripheral capture
+	   on their owning core; all kernel objects already exist. */
 	REQUIRE(subsystem2_start());
+	REQUIRE(io_start());
 #if !APP_TEST
-	REQUIRE(subsystem3_start());
+	REQUIRE(mission_start());
 #endif
-	REQUIRE(subsystem4_start());
-	REQUIRE(subsystem5_start());
 
 #if APP_TEST
-	tm_printf((UB*)"S1, S2, S4 and S5 started; S3 starts after startup tests.\n");
+	tm_printf((UB*)"Motion and I/O started; Mission starts after startup tests.\n");
 	tm_printf((UB*)"[TEST] === test run start ===\n");
 	subsystem1_test();
 	subsystem2_test();
 	subsystem4_test();
 	subsystem5_test();
 	tm_printf((UB*)"[TEST] === test run end ===\n");
-	REQUIRE(subsystem3_start());
+	REQUIRE(mission_start());
 #endif
 	tm_printf((UB*)"all subsystems started\n\n");
 

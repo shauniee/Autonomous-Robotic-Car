@@ -1,0 +1,399 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-29T15:23:01+00:00",
+  "title": "Design System: Robot Telemetry",
+  "extensions": {
+    "colorMeta": {
+      "board": {
+        "role": "neutral",
+        "displayName": "Board",
+        "canonical": "#121212",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#3d3d3d",
+          "#5b5b5b",
+          "#797979",
+          "#989898",
+          "#b6b6b6",
+          "#d4d4d4",
+          "#f2f2f2"
+        ]
+      },
+      "cell": {
+        "role": "neutral",
+        "displayName": "Cell Face",
+        "canonical": "#1d1d1d",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#3d3d3d",
+          "#5b5b5b",
+          "#797979",
+          "#989898",
+          "#b6b6b6",
+          "#d4d4d4",
+          "#f2f2f2"
+        ]
+      },
+      "cell-hi": {
+        "role": "neutral",
+        "displayName": "Raised Cell",
+        "canonical": "#262626",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#3d3d3d",
+          "#5b5b5b",
+          "#797979",
+          "#989898",
+          "#b6b6b6",
+          "#d4d4d4",
+          "#f2f2f2"
+        ]
+      },
+      "seam": {
+        "role": "neutral",
+        "displayName": "Seam",
+        "canonical": "#0a0a0a",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#3d3d3d",
+          "#5b5b5b",
+          "#797979",
+          "#989898",
+          "#b6b6b6",
+          "#d4d4d4",
+          "#f2f2f2"
+        ]
+      },
+      "frame": {
+        "role": "neutral",
+        "displayName": "Frame",
+        "canonical": "#2e2e2e",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#3d3d3d",
+          "#5b5b5b",
+          "#797979",
+          "#989898",
+          "#b6b6b6",
+          "#d4d4d4",
+          "#f2f2f2"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#f2f2f2",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#3d3d3d",
+          "#5b5b5b",
+          "#797979",
+          "#989898",
+          "#b6b6b6",
+          "#d4d4d4",
+          "#f2f2f2"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "canonical": "#b8b8b8",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#3d3d3d",
+          "#5b5b5b",
+          "#797979",
+          "#989898",
+          "#b6b6b6",
+          "#d4d4d4",
+          "#f2f2f2"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3",
+        "canonical": "#8a8a8a",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#3d3d3d",
+          "#5b5b5b",
+          "#797979",
+          "#989898",
+          "#b6b6b6",
+          "#d4d4d4",
+          "#f2f2f2"
+        ]
+      },
+      "amber": {
+        "role": "primary",
+        "displayName": "Signal Amber",
+        "canonical": "#ffb000",
+        "tonalRamp": [
+          "#2f250e",
+          "#674d13",
+          "#a77810",
+          "#efa604",
+          "#f3ba3c",
+          "#eccb7f",
+          "#eedeba",
+          "#f8f4ec"
+        ]
+      },
+      "amber-hover": {
+        "role": "primary",
+        "displayName": "Amber Hover",
+        "canonical": "#ffc340",
+        "tonalRamp": [
+          "#2f250e",
+          "#674c13",
+          "#a77710",
+          "#efa504",
+          "#f3ba3c",
+          "#ecca7f",
+          "#eedeba",
+          "#f8f4ec"
+        ]
+      },
+      "red": {
+        "role": "secondary",
+        "displayName": "Fault Text Red",
+        "canonical": "#ff5a4a",
+        "tonalRamp": [
+          "#2f110e",
+          "#671a13",
+          "#a71d10",
+          "#ef1804",
+          "#f34c3c",
+          "#ec897f",
+          "#eebfba",
+          "#f8edec"
+        ]
+      },
+      "red-lamp": {
+        "role": "secondary",
+        "displayName": "Stop Red",
+        "canonical": "#c8352b",
+        "tonalRamp": [
+          "#291514",
+          "#582522",
+          "#8c312a",
+          "#c5372d",
+          "#d3645c",
+          "#d99793",
+          "#e5c5c3",
+          "#f6efee"
+        ]
+      },
+      "red-cell": {
+        "role": "secondary",
+        "displayName": "Fault Wash",
+        "canonical": "#3a1512",
+        "tonalRamp": [
+          "#271716",
+          "#532a27",
+          "#833933",
+          "#b7453b",
+          "#c86e67",
+          "#d29d99",
+          "#e2c8c6",
+          "#f5f0ef"
+        ]
+      },
+      "green": {
+        "role": "secondary",
+        "displayName": "Healthy Green",
+        "canonical": "#5fd38a",
+        "tonalRamp": [
+          "#15281c",
+          "#255537",
+          "#308650",
+          "#36bc68",
+          "#63cc8a",
+          "#97d5ae",
+          "#c5e3d0",
+          "#eff6f1"
+        ]
+      },
+      "steel": {
+        "role": "tertiary",
+        "displayName": "Steel",
+        "canonical": "#8fb3d0",
+        "tonalRamp": [
+          "#181f25",
+          "#2c3f4e",
+          "#3c5e7a",
+          "#497ea9",
+          "#729cbd",
+          "#9fb8cc",
+          "#c9d5df",
+          "#f0f3f5"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The four mapping letters only (42px on phones)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Board data cells; State cells bold; row names and faults at 20px."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Page title and acknowledgement headline; button text at 18px."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Event log and running text, tabular figures."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Column headers and section headings in Ink 3."
+      }
+    },
+    "fontStatus": {
+      "state": "provisional",
+      "note": "System condensed stack pending a redistributable open-licence condensed face from the team, to be embedded as a base64 subset."
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "flap",
+        "value": "240ms cubic-bezier(.16, 1, .3, 1); rotateX(-88deg) perspective(200px), opacity .2 to 1; 16ms stagger per changed character",
+        "purpose": "A changed cell flips only its changed characters, once. Plain update over 40 characters or under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stack",
+        "value": "1100px"
+      },
+      {
+        "name": "phone",
+        "value": "720px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Send Button",
+      "kind": "button",
+      "refersTo": "button-send",
+      "description": "The single primary action: sends the four-letter mapping while the robot is stopped.",
+      "html": "<button class=\"ds-btn-send\">Send mapping</button>",
+      "css": ".ds-btn-send { height: 56px; padding: 0 28px; border: 0; border-radius: 2px; background: #ffb000; color: #121212; cursor: pointer; font: 700 18px var(--face, \"DIN Condensed\", \"Bahnschrift\", \"Arial Narrow\", \"Roboto Condensed\", \"Helvetica Neue\", sans-serif); letter-spacing: .1em; text-transform: uppercase; } .ds-btn-send:hover { background: #ffc340; } .ds-btn-send:focus-visible { outline: 2px solid #ffb000; outline-offset: 2px; }"
+    },
+    {
+      "name": "Send Button (disabled)",
+      "kind": "button",
+      "refersTo": "button-send-disabled",
+      "description": "Shown until the mapping is valid and the robot is stopped.",
+      "html": "<button class=\"ds-btn-send-off\" disabled>Send mapping</button>",
+      "css": ".ds-btn-send-off { height: 56px; padding: 0 28px; border: 0; border-radius: 2px; background: #2e2e2e; color: #8a8a8a; cursor: not-allowed; font: 700 18px var(--face, \"DIN Condensed\", \"Bahnschrift\", \"Arial Narrow\", \"Roboto Condensed\", \"Helvetica Neue\", sans-serif); letter-spacing: .1em; text-transform: uppercase; }"
+    },
+    {
+      "name": "Letter Cell",
+      "kind": "input",
+      "refersTo": "letter-cell",
+      "description": "One mission-day letter, styled as a split flap with its caption.",
+      "html": "<label class=\"ds-letter\">Left<input maxlength=\"1\" value=\"A\"></label>",
+      "css": ".ds-letter { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 12px 10px; background: #1d1d1d; font: 13px var(--face, \"DIN Condensed\", \"Bahnschrift\", \"Arial Narrow\", \"Roboto Condensed\", \"Helvetica Neue\", sans-serif); letter-spacing: .1em; text-transform: uppercase; color: #b8b8b8; } .ds-letter input { width: 68px; height: 80px; padding: 0; border: 0; border-top: 2px solid #2e2e2e; border-radius: 2px; background: #262626; color: #f2f2f2; font: 700 54px/1 var(--face, \"DIN Condensed\", \"Bahnschrift\", \"Arial Narrow\", \"Roboto Condensed\", \"Helvetica Neue\", sans-serif); text-align: center; text-transform: uppercase; caret-color: #ffb000; background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #121212 calc(50% - 1px), #121212 calc(50% + 1px), transparent calc(50% + 1px)); } .ds-letter input:focus-visible { outline: 2px solid #ffb000; outline-offset: -2px; }"
+    },
+    {
+      "name": "Header Lamps",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Link, robot and frame-age lamps in the header bar.",
+      "html": "<div class=\"ds-lamps\"><span class=\"ds-lamp ok\">Dashboard live</span><span class=\"ds-lamp warn\">Frames stale</span><span class=\"ds-lamp bad\">Robot offline</span></div>",
+      "css": ".ds-lamps { display: flex; flex-wrap: wrap; gap: 6px 20px; padding: 16px 24px; background: #121212; font: 14px var(--face, \"DIN Condensed\", \"Bahnschrift\", \"Arial Narrow\", \"Roboto Condensed\", \"Helvetica Neue\", sans-serif); letter-spacing: .08em; text-transform: uppercase; color: #b8b8b8; } .ds-lamp::before { content: ''; display: inline-block; width: 9px; height: 9px; margin-right: 7px; border-radius: 50%; background: #8a8a8a; vertical-align: 1px; } .ds-lamp.ok::before { background: #5fd38a; } .ds-lamp.warn::before { background: #ffb000; } .ds-lamp.bad::before { background: #c8352b; } .ds-lamp.warn { color: #ffb000; } .ds-lamp.bad { color: #ff5a4a; }"
+    },
+    {
+      "name": "Subsystem Board",
+      "kind": "custom",
+      "refersTo": "board-cell",
+      "description": "Fixed rows by fixed columns; row lamp leads; faulted rows flood with the fault wash.",
+      "html": "<table class=\"ds-board\"><thead><tr><th>Subsystem</th><th>State</th><th>Reading</th><th>Fault</th></tr></thead><tbody><tr class=\"ok\"><td>Mission</td><td class=\"st\">FOLLOW_LINE</td><td>-</td><td class=\"fa\">-</td></tr><tr class=\"warn\"><td>Obstacle</td><td class=\"st\">SCAN</td><td>-</td><td class=\"fa\">-</td></tr><tr class=\"bad\"><td>Motion</td><td class=\"st\">FAILED</td><td>-</td><td class=\"fa\"><span class=\"on\">Fault</span></td></tr></tbody></table>",
+      "css": ".ds-board { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 2px; background: #0a0a0a; border: 1px solid #2e2e2e; font-family: var(--face, \"DIN Condensed\", \"Bahnschrift\", \"Arial Narrow\", \"Roboto Condensed\", \"Helvetica Neue\", sans-serif); font-variant-numeric: tabular-nums; } .ds-board th { padding: 10px 16px 8px; background: #121212; font-size: 13px; font-weight: 700; letter-spacing: .14em; text-align: left; text-transform: uppercase; color: #8a8a8a; } .ds-board td { padding: 14px 16px; background: #1d1d1d; color: #f2f2f2; font-size: 26px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-board td:first-child { position: relative; padding-left: 30px; color: #b8b8b8; font-size: 20px; } .ds-board td:first-child::before { content: ''; position: absolute; left: 12px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: #2e2e2e; } .ds-board tr.ok td:first-child::before { background: #5fd38a; } .ds-board tr.warn td:first-child::before { background: #ffb000; } .ds-board tr.warn td.st { color: #ffb000; } .ds-board tr.bad td { background: #3a1512; } .ds-board tr.bad td:first-child::before { background: #c8352b; } .ds-board td.st { font-weight: 700; } .ds-board tr.bad td.st { color: #c8352b; } .ds-board td.fa { font-size: 20px; color: #8a8a8a; } .ds-board td.fa .on { color: #ff5a4a; }"
+    },
+    {
+      "name": "Acknowledgement Cell",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Mapping outcome on the strip: green accepted, amber pending, red refused.",
+      "html": "<div class=\"ds-ack\"><b>Installed</b><span>Robot acknowledged the mapping.</span></div>",
+      "css": ".ds-ack { display: inline-flex; flex-direction: column; gap: 4px; padding: 12px 18px; background: #1d1d1d; font-family: var(--face, \"DIN Condensed\", \"Bahnschrift\", \"Arial Narrow\", \"Roboto Condensed\", \"Helvetica Neue\", sans-serif); } .ds-ack b { font-size: 22px; letter-spacing: .08em; text-transform: uppercase; color: #5fd38a; } .ds-ack span { font-size: 14px; color: #b8b8b8; }"
+    },
+    {
+      "name": "Event Log Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Departures-style list of events and acknowledgements on a framed panel.",
+      "html": "<div class=\"ds-panel\"><ol class=\"ds-log\"><li><time>10:42:07</time><span class=\"ok\">Mapping accepted</span></li><li><time>10:41:55</time><span class=\"no\">Mapping refused</span></li></ol></div>",
+      "css": ".ds-panel { background: #1d1d1d; border: 1px solid #2e2e2e; padding: 14px 16px; color: #f2f2f2; font: 16px/1.3 var(--face, \"DIN Condensed\", \"Bahnschrift\", \"Arial Narrow\", \"Roboto Condensed\", \"Helvetica Neue\", sans-serif); font-variant-numeric: tabular-nums; } .ds-log { list-style: none; margin: 0; padding: 0; } .ds-log li { display: grid; grid-template-columns: 6.5em 1fr; gap: 12px; padding: 7px 0; border-top: 1px solid #0a0a0a; } .ds-log li:first-child { border-top: 0; } .ds-log time { color: #ffb000; } .ds-log .ok { color: #5fd38a; } .ds-log .no { color: #8a8a8a; text-decoration: line-through; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Concourse Departure Board",
+    "overview": "The robot's state reads like a split-flap departure board: fixed rows per subsystem, fixed columns, and only the cells change. A near-black board carries matte cell faces separated by hairline seams; white condensed capitals sit in those cells, and a lamp at the head of each row tells the state before any number is read. Nothing floats: every reading has a permanent address on the board.\n\nDensity is high and deliberate. The board is read standing at a lab bench, half-watching the robot, so type is large, upper-case and tabular, and colour is held back for meaning. Amber means warning, stale or pending; red means stop or fault; green means healthy or installed. Cleared states dim to the third ink rather than disappearing.\n\nThe one motion in the system is the flap: when a cell's text changes, only the changed characters turn over, one after another, once.",
+    "keyCharacteristics": [
+      "Dark board, matte cells, 2px seams; no floating tiles.",
+      "Condensed upper-case capitals with tabular figures everywhere.",
+      "Row lamps carry state; colour is semantic, never decorative.",
+      "Cleared and stale states dim instead of vanishing.",
+      "Character-by-character flip on change, removed under reduced motion."
+    ],
+    "rules": [
+      {
+        "name": "The Lamp Semantics Rule",
+        "body": "Amber is warning, stale or pending; red is stop or fault; green is healthy or installed. No colour appears for any other reason, and amber is never reused as a decorative accent.",
+        "section": "colors"
+      },
+      {
+        "name": "The Dim, Don't Vanish Rule",
+        "body": "A cleared fault or a stale stream drops to Ink 3; it stays in its cell so the team can see what was there.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Reds Rule",
+        "body": "Stop Red is for dots and large bold State text only; any red text smaller than that uses Fault Text Red.",
+        "section": "colors"
+      },
+      {
+        "name": "The Capitals Rule",
+        "body": "Every board, lamp, button and heading string is set in upper case with positive tracking (0.06-0.14em). Only helper sentences and log text stay in sentence case.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Figures are tabular everywhere; a changing number must never shift its neighbours.",
+        "section": "typography"
+      },
+      {
+        "name": "The Fixed Address Rule",
+        "body": "Rows and columns do not move or reorder with data; Mission is always the first row. Only the content of cells changes.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Board Rule",
+        "body": "Depth is gutter and tone, never shadow or blur.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do give every new reading a fixed cell on the board grid, separated by the 2px Seam gutter inside a 1px Frame.",
+      "Do keep amber, red and green to their lamp meanings, and use Fault Text Red for any red text below large bold sizes.",
+      "Do dim cleared or stale values to Ink 3 rather than removing them.",
+      "Do set board text in upper-case condensed capitals with tabular figures.",
+      "Do route every changing cell through the flap, and honour reduced motion with a plain update.",
+      "Do style standard buttons and inputs as cells, keeping native elements."
+    ],
+    "donts": [
+      "Don't build floating tiles or card grids; the board is one framed grid.",
+      "Don't add shadows, blur or gradients for depth; depth is tone and gutter. The letter cell's split line is the one gradient, and it draws a seam.",
+      "Don't round corners beyond 2px; only lamp dots are circular.",
+      "Don't animate anything other than a changed cell's characters.",
+      "Don't treat the system condensed stack as the final face; replace it with an embedded redistributable condensed face when one is supplied."
+    ]
+  }
+}

@@ -1,12 +1,5 @@
 # Mission readiness checklist
 
-Ordered physical checks that decide whether the robot is ready for a full run. Code and host tests cover only part of the project; these checks prove the robot itself works. Work top to bottom: each phase assumes the earlier phases passed.
-
-- Record every result as a row in [system/TEST_LOG.md](system/TEST_LOG.md) with the `MR-nn` ID, date, commit, tester, PASS/FAIL and the measured value, following [Run and record](README.md#run-and-record).
-- **Record** names the value to write down and, where it replaces a placeholder, the constant in `app_program/common/robot_config.h` and the pending decision (Dnn) in [project-specs](../docs/project-specs.md#pending-decisions). After changing a constant, rebuild and repeat the checks that depend on it.
-- Where no accepted target exists, the pass condition is "measured and agreed": the team records the value and agrees the limit in the pending-decisions register. Never pass a check on a build or a host test alone.
-- The `T` column links each check to the planned integrated trials in [testing](README.md#planned-integrated-trials).
-
 ## Contents
 
 - [Phase 0: Electrical, before power (T01)](#phase-0-electrical-before-power-t01)
@@ -15,6 +8,19 @@ Ordered physical checks that decide whether the robot is ready for a full run. C
 - [Phase 3: Motion calibration (normal firmware, battery, on the floor) (T05)](#phase-3-motion-calibration-normal-firmware-battery-on-the-floor-t05)
 - [Phase 4: Each feature on a test track (T03, T04, T07, T09, T10, T11, T13)](#phase-4-each-feature-on-a-test-track-t03-t04-t07-t09-t10-t11-t13)
 - [Phase 5: Full mission rehearsal (T15, T16)](#phase-5-full-mission-rehearsal-t15-t16)
+- [Phase 6: Final timing and looping acceptance (T14, T15, T16)](#phase-6-final-timing-and-looping-acceptance-t14-t15-t16)
+
+Ordered physical checks that decide whether the robot is ready for a full run. Code and host tests cover only part of the project; these checks establish acceptance only for the recorded image, setup and limits. Work top to bottom: each phase assumes the earlier phases passed.
+
+- Record every result as a row in [system/TEST_LOG.md](system/TEST_LOG.md) with the `MR-nn` ID, date, commit, tester, PASS/FAIL and the measured value, following [Run and record](README.md#run-and-record).
+- **Record** names the value to write down and, where it replaces a placeholder, the constant in `app_program/common/robot_config.h` and the pending decision (Dnn) in [project-specs](../docs/project-specs.md#pending-decisions). After changing a constant, rebuild and repeat the checks that depend on it.
+- Where no accepted target exists, the pass condition is "measured and agreed": the team records the value and agrees the limit in the pending-decisions register. Never pass a check on a build or a host test alone.
+- The `T` column links each check to the planned integrated trials in [testing](README.md#planned-integrated-trials).
+
+Target procedure revision: 2026-10-29, aligned to [plan](../plan.md).
+Existing results retain their historical procedure/source meaning; this page does
+not convert old observations into target passes. #117 tracks physical work and
+remains open. Agree pending numeric limits before corresponding PASS decisions.
 
 ## Phase 0: Electrical, before power (T01)
 
@@ -35,11 +41,11 @@ Proves the robot cannot move unexpectedly and that the laptop link works before 
 | ID | Check | Pass when | Record |
 | --- | --- | --- | --- |
 | MR-06 | Flash the TEST image on USB | Console prints the `[TEST]` lines; motors stay braked | Console log |
-| MR-07 | Press GP21, then reset with a fresh GP20 press | STOP, then READY; wheels never turn | - |
+| MR-07 | Press GP21, release after cause clearance/brake; then fresh GP20; test held buttons and a persistent fault | STOPPED then eligible READY without starting; persistent fault stays STOPPED; TEST wheels never turn | - |
 | MR-08 | `mqtt_client.py monitor` with the wireless image | A TELEMETRY line about every 500 ms with `mapped=NO` | Saved monitor output |
 | MR-09 | Press GP20 to start without a mapping | Console `start refused: no barcode mapping`; state stays READY | - |
 | MR-10 | `mqtt_client.py map A B C D` while stopped; repeat while following; reboot | `ACK ... OK` and `mapped=yes`; `BUSY` while moving; `mapped=NO` after reboot | - |
-| MR-11 | Power off, disconnect the IMU, boot, map and press GP20 | Start refused; telemetry shows `Terrain: IMU`; reconnect the IMU powered off afterwards | - |
+| MR-11 | Power off, disconnect the IMU, boot, map and press GP20 | Bounded boot calibration attempt fails visibly before IR calibration is allowed; IMU failure is flagged, but start is allowed once IR/Motion/mapping/WiFi/MQTT qualify; reconnect powered off afterwards | - |
 
 ## Phase 2: Each sensor alone (T03, T04, T06, T08)
 
@@ -47,7 +53,7 @@ Each value measured here replaces a placeholder that later behaviour depends on.
 
 | ID | Check | Pass when | Record |
 | --- | --- | --- | --- |
-| MR-12 | Line IR raw ADC over black and white at the mounted height and course lighting; then GP20 black/white calibration | Contrast at least `IR_MIN_CONTRAST`; one chirp then two chirps; `Line: IR invalid` clears | Raw black/white per sensor (D04) |
+| MR-12 | Line IR raw ADC over black and white at the mounted height and course lighting; then GP20 black/white calibration | After bounded boot IMU calibration outcome, contrast at least the validated `IR_MIN_CONTRAST`; one chirp then two chirps; `Line: IR invalid` clears | Raw black/white per sensor (D04) |
 | MR-13 | Barcode IR (GP16) level over black and over white | Level differs consistently | Which level means black: `BARCODE_BLACK_HIGH` (D04) |
 | MR-14 | Turn each wheel one revolution forward by hand, three times | Counts increase on both wheels, repeatably; no encoder fault | Counts per revolution: `ENC_COUNTS_PER_REV`; signs: `*_ENCODER_SIGN` (D03) |
 | MR-15 | Force an encoder fault (wiggle a connector), then spin the wheel by hand | `Motion: encoder` appears, then clears after spinning | - |
@@ -67,7 +73,7 @@ Turns, distances and barcode widths all come from encoder travel, so these value
 | MR-22 | 90 degrees left, 90 degrees right, 180 degrees; five each | Final heading error measured and agreed (Tribunal proposal: at most 5 degrees) | Errors per turn (D07) |
 | MR-23 | Repeat MR-22 with one wheel on a hump | Error measured and compared with MR-22 (M3 requires accuracy to hold) | Errors with one wheel raised |
 | MR-24 | Press GP21 at follow speed | Robot stops; distance measured and agreed | Stopping distance (D08) |
-| MR-25 | Hold one wheel while driving | `Motion: motor stall` and a latched stop; a GP20 reset works afterwards | Time to detect (`MOTION_STALL_MS`, D07) |
+| MR-25 | Hold one wheel while driving | `Motion: motor stall` and a latched stop; cause-clear GP21 press/release returns READY without restarting | Time to detect (`MOTION_STALL_MS`, D07) |
 
 ## Phase 4: Each feature on a test track (T03, T04, T07, T09, T10, T11, T13)
 
@@ -76,14 +82,14 @@ Each feature is tested alone before the full course.
 | ID | Check | Pass when | Record |
 | --- | --- | --- | --- |
 | MR-26 | Follow a loop with straights and curves, three laps, under two lighting conditions (M1) | Stays on the line every lap | Laps completed; speed used |
-| MR-27 | Printed barcodes, both travel directions, at follow speed; include one unmapped letter and one damaged print (M2) | Each mapped letter appears in an `EVENT BARCODE` line with the right action; damaged prints are not decoded as a wrong letter | Reads, misses and misreads per letter (D01) |
-| MR-28 | Barcode before a cross junction for each of left, right, straight and U-turn (M3) | The turn happens at the junction, not at the barcode | Junction offset from the print (D02) |
-| MR-29 | Reference humps of known heights up to 30 mm ([hump requirement](../docs/project-specs.md#course-rules)): the lower practice ramp, one slightly below and one at or near 30 mm; three passes each (M4, M5). First confirm on the robot that a 30 mm-or-lower single-wheel ramp crosses the climb-entry threshold | Hump count matches; reported height measured and agreed against the reference; maximum kept | Reported vs actual per hump (D06) |
-| MR-30 | Box on the line with space on both sides; repeat with a wall close on one side (M6-M9) | Stops, scans, bypasses on the side with more space, reports width and depth, rejoins the original line | Width/depth vs measured box (D02, D05) |
+| MR-27 | Printed course barcodes in both directions at operating speed; verify incomplete capture rejects rather than invents a character (M2) | Same correct character/action in both directions; one pending action per encounter; no two-second blind delay or guessed character | Reads, misses and misreads per letter (D01) |
+| MR-28 | Barcode before a cross junction for each of left, right, straight and U-turn (M3) | Action occurs once at the detected junction at variable spacing, follows the chosen outgoing route and never undoes it; U-turn includes requested about-200 ms stationary pause; no pending command crosses straight with requested minimum 25 mm, physical tolerance agreed | Junction offset from the print (D02) |
+| MR-29 | Reference humps of known heights up to 30 mm ([hump requirement](../docs/project-specs.md#course-rules)): the lower practice ramp, one slightly below and one at or near 30 mm; three passes each (M4, M5). First confirm on the robot that a 30 mm-or-lower single-wheel ramp crosses the climb-entry threshold | Half normal tracking speed during valid encounter; count/height/max/events correct; reference error and valid-completion behavior measured and agreed | Reported vs actual per hump (D06) |
+| MR-30 | Reference obstacles across 100-200 mm width, with both sides open then one restricted; vary position/background/material (M6-M9) | Stops, scans, bypasses on the side with more space, reports width and depth, rejoins the original line | Width/depth error, repeatability/uncertainty, chosen gap, clearance, bypass time and reacquisition success (D02, D05, D10) |
 | MR-31 | Boxes blocking both sides | Robot stops instead of bypassing | - |
-| MR-32 | Lift the robot off the line while following | Bounded search, then STOP with `Mission: line lost` | - |
+| MR-32 | Induce healthy-sensor line loss while following; separately freeze/fail acquisition | Moving left/right sweep within agreed angle/travel/two-attempt budget, either sensor initiates alignment, stable intended-line tracking resumes; exhausted search stops; stale acquisition does not enter blind search | Sweep sequence, travel, time and false-line acceptance (D07) |
 | MR-33 | Stop the broker during a run, then restart it | Robot keeps driving; `Network: broker lost` shows after reconnect | - |
-| MR-34 | Finish marker | Robot stops at the finish | Finish convention (D02, still undecided) |
+| MR-34 | Retired: former finish-marker check (robot stops at finish; finish convention was undecided) | Not run/reused for the endless target; use newly allocated MR-40 | Preserve any historical MR-34 evidence |
 
 ## Phase 5: Full mission rehearsal (T15, T16)
 
@@ -91,7 +97,20 @@ The assessment rewards repeatable runs, so the robot is mission-ready only when 
 
 | ID | Check | Pass when | Record |
 | --- | --- | --- | --- |
-| MR-35 | Mission-day routine: fresh boot, connect to the broker, `map` with unfamiliar letters (e.g. A straight, Z U-turn, W left, F right), calibrate, start | Mapping acknowledged and accepted without recompiling | Time from boot to start |
-| MR-36 | Full course with line, barcodes, junctions, humps and an obstacle | Course completed; every barcode action correct; hump heights and obstacle reported | Run time (about 5 minutes expected); features working |
+| MR-35 | Mission-day routine: fresh boot, connect to the broker, `map` with unfamiliar letters (e.g. A straight, Z U-turn, W left, F right), attempt stationary IMU calibration before IR calibration, connect/map, then fresh local start | Mapping acknowledged after installation without recompiling; unavailable WiFi/MQTT or failed required IR/Motion blocks start | Time from boot to start |
+| MR-36 | Full course with line, barcodes, junctions, humps and an obstacle | Observed loop session completes its planned encounters, every junction action correct without reversal, hump/obstacle values reported; GP21 ends session, no automatic COMPLETE | Run time (about 5 minutes expected); features working |
 | MR-37 | Repeat MR-36 twice more without changing code or constants | Three consecutive successful runs | Run times and any differences |
 | MR-38 | Rebuild the route from the saved `monitor` output | Event times and encoder counts give the order of barcodes, turns, humps and obstacles | Saved output and reconstruction |
+
+## Phase 6: Final timing and looping acceptance (T14, T15, T16)
+
+These future cases claim no result. MR-39 was already referenced in #117;
+MR-40 is a newly allocated endless-operation check, not reuse of retired MR-34.
+
+| ID | Check | Pass when | Record |
+| --- | --- | --- | --- |
+| MR-39 | Final-image concurrent load: line acquisition, Mission/Motion, IMU timeout, barcode/Echo IRQ, servo, telemetry and reconnect; separate TEST and normal loads | Agreed D13 periods/budgets/margins met; no required stale-data replay; local stop independent of queue load | Exact image/profile, line-to-output latency, WCET/release jitter, missed deadlines, IRQ edge rate/time, stack/RAM and ring high-water marks; host/TEST is not full motor-load acceptance |
+| MR-40 | Revisit the same loop junction with/without pending actions; run repeated feature cycles, then GP21; interrupt WiFi/MQTT mid-run | No automatic finish or undo; healthy local run survives network loss; new start requires WiFi/MQTT; GP21 stops, eligible release returns READY, fresh GP20 starts | Session encounters, stop reasons, action/event order, reference video and unchanged image/constants |
+
+Watchdog fault injection remains a separate pending D15/SYS-06 procedure; do not
+mark it PASS based on tick setup. Select reset policy and verify outputs first.

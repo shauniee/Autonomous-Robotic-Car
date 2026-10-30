@@ -13,23 +13,28 @@
 #ifndef ROBOT_CONFIG_H
 #define ROBOT_CONFIG_H
 
-/* --- Tasks ---------------------------------------------------------- */
+/* Bench-only build (make NOGUARDS=1): automatic guards off (Safety faults,
+   start blocking, motor-stall brake, line-loss stop), GP21 still stops. */
+#ifndef APP_NO_GUARDS
+#define APP_NO_GUARDS 0
+#endif
+
+/* --- Tasks: provisional existing defaults, physical acceptance D13 ---- */
 #define TASK_STACK_SIZE		2048	/* bytes; tm_printf needs ~1 KB */
-#define SAFETY_PRI		11
-#define S3_PRI_LINE		12
 #define S2_PRI_MOTION		13
 #define FOLLOW_PRIORITY		14
-#define S4_PRI_TERRAIN		16
+#define IO_PRIORITY 16 /* provisional existing Terrain priority; D13 */
+#define IO_PERIOD_MS 10u /* existing calibration cadence; D13 */
 
 /* --- S1 communications --------------------------------------------- */
-#define S1_PRI_REPORTING	20
 #define S1_TELEMETRY_PERIOD_MS	500u
 #define S1_REPORT_PERIOD_MS	50u	/* Reporting release: requests and events are served at this rate */
 #define S1_EVENT_CAPACITY	16u	/* event-log ring; oldest overwritten, drops counted */
+#define S1_REQUESTS_PER_RELEASE 2u /* bounded by incoming bridge depth */
 #define S1_EVENTS_PER_RELEASE	2u
 
 /* --- S2 motion ------------------------------------------------------ */
-#define MOTION_MAX_DUTY		.35f	/* PROVISIONAL (D07) */
+#define MOTION_MAX_DUTY		.80f	/* PROVISIONAL (D07): raised from .35 for 240 mm/s; check motor/driver rating */
 #define MOTION_TARGET_MAX_MM 2000.0f /* D07: bounded by longest Mission leg; hardware validation pending */
 #define MOTION_EXPIRY_MS	60u	/* PROVISIONAL (D07): sample age limit */
 #define MOTOR_WRAP		999u	/* 20 kHz at 125 MHz with divider below */
@@ -40,7 +45,7 @@
 /* Encoder: one wrapping count per wheel (ARCHITECTURE, Encoder contract). */
 #define ENC_COUNT_BITS		16u
 #define ENC_COUNT_MASK		(ENC_COUNT_BITS >= 32u ? 0xFFFFFFFFu : ((1u << (ENC_COUNT_BITS % 32u)) - 1u))	/* PROVISIONAL (D03): width from counts/rev and longest segment */
-#define LEFT_ENCODER_SIGN	1	/* PROVISIONAL (D03): polarity */
+#define LEFT_ENCODER_SIGN	-1	/* MEASURED 2026-10-28: counts fell while the rewired left wheel drove forward */
 #define RIGHT_ENCODER_SIGN	1	/* PROVISIONAL (D03): polarity */
 /* An encoder fault clears after this many valid counts (both wheels) with
    no new invalid transition: 64 counts are 16 complete quadrature cycles,
@@ -54,11 +59,24 @@
 #define ENC_RIGHT_B_PIN		0u
 
 /* Motion geometry and control. UNMEASURED PLACEHOLDERS until #32 measures
-   them (D03 geometry, D07 gains/thresholds, D08 stationary threshold). */
+   them (D03 geometry, D07 gains/thresholds, D08 stationary threshold).
+
+   WHEEL SPEED TUNING (watch "speed L= R=" in mqtt_client.py monitor while
+   following a straight line):
+   - Both wheels run FASTER than commanded -> lower MOTION_KF.
+   - Both wheels run SLOWER than commanded -> raise MOTION_KF (or MOTION_KI).
+   - Wheel speed swings up and down on a straight -> lower MOTION_KP.
+   - Wheels reach the commanded speed too slowly -> raise MOTION_KI a little.
+   - A slow (inner) wheel stops or reports "motor stall" -> raise MOTION_KS;
+     a wheel creeps when it should be nearly still -> lower MOTION_KS.
+   - Wheels cannot reach the speed at all -> MOTION_MAX_DUTY is the cap
+     (check the motor/driver rating before raising it). */
 #define ENC_COUNTS_PER_REV	360.0f	/* PROVISIONAL (D03): decoded counts per wheel rev */
 #define WHEEL_DIAMETER_MM	65.0f	/* PROVISIONAL (D03) */
 #define TRACK_WIDTH_MM		130.0f	/* PROVISIONAL (D03) */
-#define MOTION_SPEED_MAX_MMPS	300.0f	/* PROVISIONAL (D07): commanded speed limit */
+#define MOTION_SPEED_MAX_MMPS	500.0f	/* PROVISIONAL (D07): speed limit; the 9-bit command field holds 511 */
+#define MOTION_KS		0.10f	/* PROVISIONAL (D07): static-friction duty added whenever a wheel must turn; raise if a slow wheel stalls */
+#define MOTION_KF		0.0007f	/* PROVISIONAL (D07): feedforward duty per target count/s; measured plant ~1240 count/s per duty (.0011 overshot) */
 #define MOTION_KP		0.0003f	/* PROVISIONAL (D07): duty per count/s */
 #define MOTION_KI		0.0010f	/* PROVISIONAL (D07) */
 #define MOTION_KD		0.0000f	/* PROVISIONAL (D07) */
@@ -76,45 +94,89 @@
 #define IR_MAX_GAP_MS		60u
 #define IR_CAPTURE_MS		500u
 #define IR_CAPTURE_MIN_SAMPLES	25u
-#define IR_MIN_CONTRAST		300u	/* PROVISIONAL (D04) */
-#define IR_MAX_CORRECTION	0.10f	/* PROVISIONAL (D04) */
-#define IR_KP			0.05f	/* PROVISIONAL (D07) */
-#define IR_WHITE_ENTER		0.15f	/* PROVISIONAL (D04) */
+#define IR_MIN_CONTRAST		300u	/* PROVISIONAL (D04): calibration rejected (three chirps) if black-white is smaller; fix by sensor height */
+#define IR_WHITE_ENTER		0.15f	/* PROVISIONAL (D04): both below this black fraction = white/white (LOST) */
 #define IR_WHITE_EXIT		0.25f	/* PROVISIONAL (D04) */
-#define IR_BROAD_BLACK		0.85f	/* PROVISIONAL (D04) */
+#define IR_BROAD_BLACK		0.85f	/* PROVISIONAL (D04): both above this = broad black (junction/finish) */
 #define IR_LEFT_PIN		26u
 #define IR_RIGHT_PIN		27u
 #define ADC_BUDGET_US		2000u
 #define ADC_POLL_LIMIT		4096u
 #define ADC_AVERAGE_COUNT	8u
 
-#define SAFETY_PERIOD_MS	10u
 #define SAFETY_STALE_MS		60u	/* PROVISIONAL (D07): required-producer age limit */
 #define SAFETY_BOOT_GRACE_MS	1500u	/* producers may be silent this long after boot */
 #define INPUT_PERIOD_MS		10u
 #define REPORT_PERIOD_MS	500u
 #define FOLLOW_PERIOD_MS	10u
-#define RECOVERY_MS		500u	/* PROVISIONAL (D07) */
+/* Software proposals, all physical releases remain off until measured. */
+#ifndef APP_PHYSICAL_RELEASE
+#define APP_PHYSICAL_RELEASE 0
+#endif
+#ifndef MISSION_RECOVERY_RELEASED
+#define MISSION_RECOVERY_RELEASED 0
+#endif
+#define RECOVERY_MS 30000u
+#define RECOVERY_TRAVEL_MM 900u
+#define RECOVERY_SPEED_MMPS 30u
+#define RECOVERY_STEER_Q 96
+#define RECOVERY_TARGET_DEG 70
+#define RECOVERY_TARGET_TOL_DEG 5
+#define RECOVERY_ALIGN_HEADING_DEG 15
+#define RECOVERY_ALIGN_ERROR_Q 25
+#define MISSION_CONFIRM_SAMPLES 3u
 #define BASE_DUTY		0.25f	/* PROVISIONAL (D07) */
 #define BROAD_DUTY		0.20f	/* PROVISIONAL (D07) */
-#define MAX_STEER		0.40f	/* keeps both wheels within MOTION_MAX_DUTY */
+#define MAX_STEER		0.60f	/* steering limit; also the line-search arc. Keeps both wheels within MOTION_MAX_DUTY */
+/* Line PID on the two-sensor error (right - left black fraction, -1..+1; the
+   sensors sit on the 18 mm line's edges), output in steering units (+-1 = full
+   differential, then limited to MAX_STEER). The IR edge is nearly binary, so
+   the error is low-pass filtered first and D is off.
+   Both wheels always drive: left = speed * (1 + steering), right = speed *
+   (1 - steering), so at MAX_STEER 0.60 the slower wheel still runs at 40%.
+
+   LINE TRACKING TUNING (change one value, rebuild, flash, recalibrate):
+   - Zig-zags / jerks left-right on straights -> lower LINE_KP, or raise
+     LINE_ERROR_TAU_MS (smoother but slower to react).
+   - Runs wide or leaves the line on curves -> raise LINE_KP, then
+     LINE_CURVE_SLOWDOWN (slows more in curves), then MAX_STEER.
+   - Slow side-to-side sway, or sits off-centre on long straights -> lower
+     LINE_KI (sway) or raise it a little (steady offset).
+   - Swings across the line when it finds it again (after a gap or search)
+     -> lower LINE_STEER_RATE; reacts too slowly entering curves -> raise it.
+   - Faster overall -> raise MISSION_FOLLOW_SPEED_MMPS. The build checks that
+     the fastest wheel (follow speed x LINE_PEAK_WHEEL, about 1.04 now) stays
+     within MOTION_SPEED_MAX_MMPS (at most 511, the command field). */
+#define LINE_KP			0.50f	/* PROVISIONAL (D07): steering per unit error */
+#define LINE_KI			0.30f	/* PROVISIONAL (D07): steering per unit error x s */
+#define LINE_KD			0.000f	/* PROVISIONAL (D07): steering per unit error / s */
+#define LINE_I_LIMIT		0.40f	/* cap on the integral term, steering units (anti-windup) */
+#define LINE_ERROR_TAU_MS	60.0f	/* PROVISIONAL (D07): error low-pass time constant */
+#define LINE_CURVE_SLOWDOWN	0.40f	/* PROVISIONAL (D07): speed cut at MAX_STEER (0.4 = 60% speed) */
+#define LINE_STEER_RATE		3.0f	/* PROVISIONAL (D07): max steering change per second (0 to MAX_STEER in 0.2 s) */
 
 /* --- Mission (S3). UNMEASURED PLACEHOLDERS until #59/#61 (D01, D02, D07) ----- */
-#define MISSION_FOLLOW_SPEED_MMPS	120.0f	/* PROVISIONAL (D07) */
+#define MISSION_FOLLOW_SPEED_MMPS	450.0f	/* PROVISIONAL (D07): straight-line follow speed, mm/s; search runs at half */
 #define MISSION_BROAD_SPEED_MMPS	90.0f	/* PROVISIONAL (D07): crossing broad black */
+#define MISSION_BROAD_FORWARD_MM 25.0f /* requested minimum crossing travel */
 #define MISSION_TURN_SPEED_MMPS		100.0f	/* PROVISIONAL (D07) */
 #define MISSION_CLEAR_SPEED_MMPS	100.0f	/* PROVISIONAL (D07) */
 #define MISSION_CLEAR_MM		60.0f	/* PROVISIONAL (D02): drive clear of a junction after a turn */
 #define MISSION_JUNCTION_MIN_COUNTS	6u	/* PROVISIONAL (D02): broad black this long is a junction */
-#define MISSION_FINISH_COUNTS		120u	/* PROVISIONAL (D02): broad black this long is the finish */
+/* Physical envelope/coverage release is pending D02/D03/D05/D07. The
+   synthetic host fixture may explicitly enable the policy to exercise it. */
+#ifndef MISSION_BYPASS_RELEASED
+#define MISSION_BYPASS_RELEASED 0
+#endif
 /* Bypass (D02, D12; curved sections out of scope until D12 is answered). */
-#define MISSION_OBSTACLE_STOP_MM	250u	/* PROVISIONAL (D02): front range that triggers a bypass */
+#define MISSION_OBSTACLE_STOP_MM	150u	/* user-confirmed trigger distance, D16 */
 #define MISSION_STATIONARY_MS		150u	/* encoders unchanged this long before a scan */
 #define MISSION_BYPASS_OFFSET_MM	250.0f	/* PROVISIONAL (D02): sideways offset to the parallel leg */
 #define MISSION_BYPASS_MIN_CLEAR_MM	300u	/* PROVISIONAL (D02): side clearance needed to try */
 #define MISSION_PASS_JUMP_MM		150u	/* PROVISIONAL (D05): side range jump marking pass-by */
 #define MISSION_PASS_LEG_MM		2000.0f	/* longest parallel leg before the bypass fails */
-#define MISSION_BYPASS_TIMEOUT_MS	45000u	/* whole bypass must finish by then */
+#define MISSION_BYPASS_TIMEOUT_MS	90000u	/* whole bypass must finish by then */
+#define MISSION_UTURN_PAUSE_MS 200u /* requested duration; stationary reference provisional D02/D08 */
 #define MISSION_START_WAIT_MS		200u	/* wait for Motion to leave its stop latch */
 
 /* --- S3 barcode ---------------------------------------------------- */
@@ -135,6 +197,8 @@
 #define BARCODE_SERVICE_BUDGET	16u
 
 /* --- S4 terrain ---------------------------------------------------- */
+#define TERRAIN_CALIBRATION_PERIOD_MS 10u
+#define TERRAIN_CALIBRATION_TIMEOUT_MS 2000u /* existing bounded startup attempt */
 #define TERRAIN_PERIOD_MS	20u
 #define GY511_TIMEOUT_US	5000u
 #define ACCEL_MG_PER_LSB	0.002f	/* g per digit: 2 mg/digit at +/- 4 g, high resolution (LSM303DLHC) */
@@ -149,7 +213,6 @@
 #define HUMP_CALIB_FACTOR	1.15f	/* PROVISIONAL (D06) */
 
 /* --- S5 obstacle --------------------------------------------------- */
-#define S5_PRI_OBSTACLE		17
 #define SONAR_REPEAT_MS		60u	/* PROVISIONAL (D05): trigger-to-trigger */
 #define SONAR_TIMEOUT_US	30000u	/* no echo after this long */
 #define SONAR_MIN_PULSE_US	150u	/* shorter than this is not a real echo */
@@ -159,14 +222,61 @@
 #define SERVO_PIN		12u
 #define SERVO_CENTRE_US		1500u	/* PROVISIONAL (D05): faces forward */
 #define SERVO_US_PER_DEG	10u	/* PROVISIONAL (D05): endpoints and scale */
-#define SERVO_MAX_DEG		60	/* sweep limit either side of forward */
+#define SERVO_MAX_DEG		75	/* PROPOSAL D05: validate endpoints before physical release */
 #define SERVO_SETTLE_MS		300u	/* PROVISIONAL (D05) */
 #define S5_COARSE_STEP_DEG	30	/* coarse rays at -60,-30,0,30,60 relative to forward */
 #define S5_FINE_STEP_DEG	10	/* fine rays around the closest coarse ray */
-#define S5_SONAR_FORWARD_MM	0.0f	/* PROVISIONAL (D05): sensor offset from the reference point */
+#define S5_SONAR_FORWARD_MM	100.0f	/* PROPOSAL: front mount relative to body centre, measure D05 */
 #define S5_SONAR_LEFT_MM	0.0f	/* PROVISIONAL (D05) */
 #define S5_BODY_LENGTH_MM	200.0f	/* PROVISIONAL (D02): car envelope */
 #define S5_CLEARANCE_MM		30.0f	/* PROVISIONAL (D02) */
+/* Proposed D05 settings for software verification, not calibrated limits.
+   Physical release remains inhibited; zero/invalid overrides fail closed. */
+#ifndef S5_SCAN_GROUP_SAMPLES
+#define S5_SCAN_GROUP_SAMPLES 3u
+#endif
+#ifndef S5_SCAN_MIN_VALID
+#define S5_SCAN_MIN_VALID 2u
+#endif
+#ifndef S5_PROFILE_DEPTH_ENTER_MM
+#define S5_PROFILE_DEPTH_ENTER_MM 30u
+#endif
+#ifndef S5_PROFILE_DEPTH_EXIT_MM
+#define S5_PROFILE_DEPTH_EXIT_MM 60u
+#endif
+#ifndef S5_PROFILE_ADJACENT_RAYS
+#define S5_PROFILE_ADJACENT_RAYS 2u
+#endif
+#ifndef S5_PROFILE_RANGE_ERROR_MM
+#define S5_PROFILE_RANGE_ERROR_MM 10u /* proposed model input, not sensor accuracy */
+#endif
+#define BYPASS_SPEED_MMPS 60u
+#define BYPASS_CHUNK_MM 50u
+#define BYPASS_TRAVEL_MM 4000u
+#define BYPASS_SENSE_TIMEOUT_MS 2000u
+#define BYPASS_SENSE_ATTEMPTS 2u
+#define BYPASS_BODY_WIDTH_MM 180u
+#define BYPASS_BODY_LENGTH_MM 200u
+#define BYPASS_CLEARANCE_MM 30u
+#define BYPASS_MAX_OFFSET_MM 600u
+#define BYPASS_FRONT_RESERVE_MM 50u
+#define BYPASS_FRONT_MAX_AGE_MS 400u
+#define BYPASS_PASS_MAX_MM 1500u
+#define BYPASS_BASELINE_SEARCH_MM 250u
+#define BYPASS_SIDE_PRESENT_MM 500u
+#define BYPASS_EDGE_SAMPLES 2u
+#define BYPASS_EDGE_ENTER_MM 150u
+#define BYPASS_EDGE_EXIT_MM 100u
+#define BYPASS_RETURN_LATERAL_MM 25u
+#define BYPASS_RETURN_HEADING_DEG 5u
+#define BYPASS_REACQUIRE_MM 100u
+#define MISSION_SCAN_RETRIES 1u
+#define TERRAIN_QUALITY_MIN_MG 900u
+#define TERRAIN_QUALITY_MAX_MG 1100u
+#define TERRAIN_QUALITY_SPEED_CHANGE_MMPS 30u
+#define TERRAIN_QUALITY_WHEEL_DIFF_MMPS 30u
+#define TERRAIN_QUALITY_STEADY_MS 200u
+#define S5_EXPECTED_MAX_WIDTH_MM 200u /* supplied obstacle width upper bound */
 #define S5_SCAN_DEADLINE_MS	8000u	/* a scan that has not finished by then fails */
 #define ECHO_PIN		2	/* PROVISIONAL (D05): <= 3.3 V before connecting */
 #define TRIGGER_PIN		3
@@ -195,6 +305,10 @@ _Static_assert(IR_MAX_GAP_MS > IR_SAMPLE_MS, "IR gap limit below sample period")
 _Static_assert(IR_CAPTURE_MS / IR_SAMPLE_MS >= IR_CAPTURE_MIN_SAMPLES,
 	"IR capture window cannot reach its minimum sample count");
 _Static_assert(IR_MIN_CONTRAST < IR_ADC_MAX, "IR contrast exceeds ADC range");
+_Static_assert(LINE_ERROR_TAU_MS >= 0.0f && LINE_CURVE_SLOWDOWN >= 0.0f && LINE_CURVE_SLOWDOWN < 1.0f,
+	"line filter and curve slowdown must be in range");
+_Static_assert(LINE_KP >= 0.0f && LINE_KI >= 0.0f && LINE_KD >= 0.0f && LINE_I_LIMIT >= 0.0f,
+	"line PID gains must be non-negative");
 _Static_assert(IR_WHITE_ENTER < IR_WHITE_EXIT && IR_WHITE_EXIT < IR_BROAD_BLACK,
 	"IR classification thresholds must be ordered");
 _Static_assert(ADC_AVERAGE_COUNT >= 1u && ADC_AVERAGE_COUNT <= 16u,
@@ -215,27 +329,53 @@ _Static_assert(BARCODE_EVENT_CAPACITY >= 1u, "barcode event queue empty");
 _Static_assert(ENC_COUNT_BITS >= 8u && ENC_COUNT_BITS <= 32u, "encoder count width out of range");
 _Static_assert((LEFT_ENCODER_SIGN == 1 || LEFT_ENCODER_SIGN == -1) &&
 	(RIGHT_ENCODER_SIGN == 1 || RIGHT_ENCODER_SIGN == -1), "encoder sign must be +1 or -1");
+_Static_assert(MOTION_SPEED_MAX_MMPS < 511.0f, "commanded speed must fit the 9-bit command field");
+_Static_assert(MOTION_KF >= 0.0f && MOTION_KS >= 0.0f && MOTION_KS < MOTION_MAX_DUTY,
+	"feedforward terms must be non-negative and below the duty limit");
 _Static_assert(MOTION_SPEED_MAX_MMPS > 0.0f && WHEEL_DIAMETER_MM > 0.0f &&
 	TRACK_WIDTH_MM > 0.0f && ENC_COUNTS_PER_REV > 0.0f, "motion geometry must be positive");
 _Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS, "stall limit must precede the action timeout");
-_Static_assert(MISSION_JUNCTION_MIN_COUNTS < MISSION_FINISH_COUNTS && MISSION_FINISH_COUNTS < ENC_COUNT_MASK / 2u,
-	"junction and finish lengths must be ordered within the encoder wrap");
-_Static_assert(MISSION_FOLLOW_SPEED_MMPS * (1.0f + MAX_STEER) <= MOTION_SPEED_MAX_MMPS &&
+_Static_assert(MISSION_BROAD_FORWARD_MM > 0.0f &&
+    MISSION_BROAD_FORWARD_MM + MOTION_DIST_TOL_MM <= MOTION_TARGET_MAX_MM,
+    "crossing distance plus completion tolerance must fit the Motion target");
+/* Fastest wheel while following: f(s) = (1 - k*s/S) * (1 + s) times the follow
+   speed, for steering s in 0..S (S = MAX_STEER, k = LINE_CURVE_SLOWDOWN). f peaks
+   at s = (S/k - 1) / 2, clamped to 0..S. */
+#define LINE_PEAK_S_RAW	(LINE_CURVE_SLOWDOWN > 0.0f ? (MAX_STEER / LINE_CURVE_SLOWDOWN - 1.0f) * 0.5f : MAX_STEER)
+#define LINE_PEAK_S	(LINE_PEAK_S_RAW < 0.0f ? 0.0f : (LINE_PEAK_S_RAW > MAX_STEER ? MAX_STEER : LINE_PEAK_S_RAW))
+#define LINE_PEAK_WHEEL	((1.0f - LINE_CURVE_SLOWDOWN * LINE_PEAK_S / MAX_STEER) * (1.0f + LINE_PEAK_S))
+_Static_assert(MISSION_FOLLOW_SPEED_MMPS * LINE_PEAK_WHEEL <= MOTION_SPEED_MAX_MMPS &&
+	MISSION_FOLLOW_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS &&
 	MISSION_TURN_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS && MISSION_CLEAR_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS,
 	"Mission speeds must stay within the Motion speed limit");
 _Static_assert(SONAR_TIMEOUT_US / 1000u < SONAR_REPEAT_MS && SONAR_MIN_PULSE_US < SONAR_TIMEOUT_US &&
 	SONAR_NO_ECHO_LIMIT >= 1u, "sonar timing: the timeout must fit inside the repeat interval");
 _Static_assert(SERVO_MAX_DEG > 0 && SERVO_MAX_DEG * (int)SERVO_US_PER_DEG < (int)SERVO_CENTRE_US &&
 	S5_COARSE_STEP_DEG > S5_FINE_STEP_DEG && S5_FINE_STEP_DEG > 0, "servo sweep out of range");
-_Static_assert(SAFETY_PRI < S3_PRI_LINE && SAFETY_PRI < S2_PRI_MOTION && SAFETY_PRI < FOLLOW_PRIORITY,
-	"Safety must outrank every task it supervises");
-_Static_assert(SAFETY_STALE_MS >= IR_SAMPLE_MS && SAFETY_PERIOD_MS <= MOTION_PERIOD_MS,
-	"Safety must release at least as often as Motion");
-_Static_assert(S3_PRI_LINE != S2_PRI_MOTION && S2_PRI_MOTION != FOLLOW_PRIORITY &&
-	S3_PRI_LINE != FOLLOW_PRIORITY, "task priorities must be distinct");
+_Static_assert(S2_PRI_MOTION < FOLLOW_PRIORITY,
+    "Motion must outrank Mission");
+_Static_assert(IO_PRIORITY > 4, "I/O stays below kernel WiFi/USB services");
+_Static_assert(SAFETY_STALE_MS >= IR_SAMPLE_MS &&
+    FOLLOW_PERIOD_MS <= SAFETY_STALE_MS && MOTION_PERIOD_MS <= SAFETY_STALE_MS,
+    "provisional producer limits must cover their release intervals");
+_Static_assert(GY511_TIMEOUT_US < IO_PERIOD_MS * 1000u,
+    "one I2C operation must not consume a whole I/O release");
 _Static_assert(PITCH_DESC_THRESH_DEG < 0.0f && PITCH_CLIMB_THRESH_DEG > 0.0f,
 	"pitch thresholds must straddle zero");
 _Static_assert(S1_TELEMETRY_PERIOD_MS % S1_REPORT_PERIOD_MS == 0u && S1_EVENT_CAPACITY >= 4u,
 	"telemetry period must be a whole number of Reporting releases");
 
+_Static_assert(APP_PHYSICAL_RELEASE == 0 || APP_PHYSICAL_RELEASE == 1,
+    "physical release must be explicit");
+_Static_assert(MISSION_CONFIRM_SAMPLES > 0u && MISSION_CONFIRM_SAMPLES <= 7u,
+    "confirmation counters use three bits");
+_Static_assert(BYPASS_TRAVEL_MM <= 4095u && BYPASS_SENSE_ATTEMPTS <= 3u &&
+    BYPASS_EDGE_SAMPLES > 0u && BYPASS_EDGE_SAMPLES <= 7u,
+    "bounded bypass storage must fit its fields");
+_Static_assert(RECOVERY_STEER_Q > 0 && RECOVERY_STEER_Q < 127 &&
+    RECOVERY_SPEED_MMPS > 0u && RECOVERY_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS &&
+    RECOVERY_TRAVEL_MM * ENC_COUNTS_PER_REV /
+        (3.14159265f * WHEEL_DIAMETER_MM) < ENC_COUNT_MASK / 2u,
+    "recovery must creep with both wheels inside the encoder half range");
+_Static_assert(MISSION_SCAN_RETRIES <= 1u, "one bounded stationary rescan");
 #endif /* ROBOT_CONFIG_H */

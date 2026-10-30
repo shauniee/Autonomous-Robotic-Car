@@ -78,6 +78,32 @@ static void test_samples(void)
     }
 }
 
+static void test_alphabet_vectors(void)
+{
+    /* Canonical Code 39 A-Z encodings, independently checked against ZXing's
+       CHARACTER_ENCODINGS (not obtained by calling this decoder's table):
+       https://github.com/zxing/zxing/blob/master/core/src/main/java/com/google/zxing/oned/Code39Reader.java */
+    static const uint16_t reference[] = {
+        0x109u, 0x049u, 0x148u, 0x019u, 0x118u, 0x058u, 0x00Du,
+        0x10Cu, 0x04Cu, 0x01Cu, 0x103u, 0x043u, 0x142u, 0x013u,
+        0x112u, 0x052u, 0x007u, 0x106u, 0x046u, 0x016u, 0x181u,
+        0x0C1u, 0x1C0u, 0x091u, 0x190u, 0x0D0u};
+    for (unsigned letter = 0u; letter < 26u; ++letter)
+    {
+        char pattern[10];
+        for (unsigned element = 0u; element < 9u; ++element)
+        {
+            pattern[element] = (reference[letter] & (1u << (8u - element))) != 0u ? 'w' : 'n';
+        }
+        pattern[9] = '\0';
+        for (unsigned reverse = 0u; reverse < 2u; ++reverse)
+        {
+            sample(pattern, (char)('A' + letter), reverse != 0u, 10u, 30u, 0xFFF0u);
+            sample(pattern, (char)('A' + letter), reverse != 0u, 20u, 60u, 0xFF00u);
+        }
+    }
+}
+
 static void test_rejections(void)
 {
     uint32_t w[29]; char s; barcode_orientation_t o;
@@ -177,6 +203,7 @@ static void test_event_packing(void)
 int main(void)
 {
     test_samples();
+    test_alphabet_vectors();
     test_rejections();
     test_rearm();
     test_mapping();

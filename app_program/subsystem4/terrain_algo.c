@@ -165,3 +165,14 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t
             break;
     }
 }
+
+void terrain_algo_invalidate_window(TerrainContext *ctx)
+{
+    ctx->rise_q = 0u;
+    ctx->flat_run = 0u;
+    ctx->height_valid = false;
+    if (ctx->state != TERRAIN_STATE_IMPACT)
+    {
+        ctx->state = TERRAIN_STATE_FLAT;
+    }
+}

@@ -1,9 +1,5 @@
 # S3 IR service test log
 
-Owner Nicholas / 2501552. Retired template S3-U01 covered example statistics bounds/minimum/maximum; no template result was recorded and the ID is not reused.
-
-Host methods below describe historical checks whose runners are retired; saved results and firmware self-tests remain.
-
 ## Contents
 
 - [1. Test cases](#1-test-cases)
@@ -13,6 +9,13 @@ Host methods below describe historical checks whose runners are retired; saved r
 - [5. Test-source relocation verification — 2026-10-09](#5-test-source-relocation-verification--2026-10-09)
 - [6. Startup test stack correction — 2026-10-09](#6-startup-test-stack-correction--2026-10-09)
 - [7. Minimum-bit final memory (S3-M01) — 2026-10-27](#7-minimum-bit-final-memory-s3-m01--2026-10-27)
+- [8. Both-black forward (S3-BF01) — 2026-10-28](#8-both-black-forward-s3-bf01--2026-10-28)
+- [9. Minimum crossing distance (S3-BF02) — 2026-10-28](#9-minimum-crossing-distance-s3-bf02--2026-10-28)
+- [Documentation alignment — 2026-10-29](#documentation-alignment--2026-10-29)
+
+Owner Nicholas / 2501552. Retired template S3-U01 covered example statistics bounds/minimum/maximum; no template result was recorded and the ID is not reused.
+
+Host methods below describe historical checks whose runners are retired; saved results and firmware self-tests remain.
 
 ## 1. Test cases
 
@@ -51,7 +54,7 @@ The current S3 service does not drive motors, feed a whole-system watchdog or pu
 
 ## 3. Current firmware run instructions
 
-S3 fixtures and assertions live here in `ir_self_test.c/.h` and `subsystem3_test.c/.h`. `firmware.mk` adds them only with TEST=1 through the shared Make include. Use the `subsystem3_test()` hook already called by `app_main.c`; the private production mutex retains only a TEST bridge, with its assertions defined here. Build profiles and pending integration are recorded in the realignment tracking issue (#62); the intended calibration/data API is in [Line Tracking](../../docs/architecture/LINE_TRACKING.md).
+S3 fixtures and assertions live here in `ir_self_test.c/.h` and `subsystem3_test.c/.h`. `firmware.mk` adds them only with TEST=1 through the shared Make include. Use the `subsystem3_test()` hook already called by `app_main.c`; the private production mutex retains only a TEST bridge, with its assertions defined here. Build profiles and pending integration are recorded in the realignment tracking issue (#62); the intended calibration/data API is in [Line Tracking](../../docs/architecture/subsystem3.md).
 
 In TEST builds, S1/S2/S4/S5 tasks start first while the S3 acquisition task remains stopped. Open the serial monitor, release GP20, then press and release GP20 to start the complete firmware self-test suite. The button gate requires about 30 ms stable release/press/release and prints a waiting message every second. S3 acquisition begins only after the suite finishes, so the start press is not treated as a calibration press and its periodic diagnostics are easy to capture. A build is not an executed self-test pass. The millivalues divide by 1000 to obtain the public −1…+1 sensor values; use the printed validity flags.
 
@@ -134,3 +137,69 @@ The [bit-usage data contract](../../docs/project-specs.md#s3-bit-usage-data-cont
 
 Host results above are separate from firmware results. S3-M02 (on-target loop timing) and the physical line-follow run are not part of this record; they are pending on the robot.
 
+
+## 8. Both-black forward (S3-BF01) — 2026-10-28
+
+Case: use calibrated, usable BROAD_BLACK inputs with `guidance_valid=false`.
+Expect straight FOLLOW at the configured broad speed; preserve sample time;
+stop at the forward interval boundary; resume normal tracking on an early
+exit; rearm on a new encounter. GP21 and unusable snapshots must interrupt
+movement. Check elapsed time across uint32 wrap and retain junction/finish
+cases with realistic invalid broad-black guidance.
+
+Result: PASS, host only, `testing/pure/run.sh` exit 0; tester: Codex.
+Base commit: `5e6a45b768e7e2c2f8d69ba18c0360b6680d87de`, plus uncommitted
+working-tree changes identified by the [source manifest](logs/2026-10-28_S3-BF01_both-black-forward_manifest.json).
+All host tests passed; [captured output](logs/2026-10-28_S3-BF01_both-black-forward.txt).
+No hardware was used, firmware flashed, or physical movement verified.
+The provisional forward interval requires physical calibration (D02/D07).
+
+## 9. Minimum crossing distance (S3-BF02) — 2026-10-28
+
+Supersedes the timed S3-BF01 behavior. Case: usable BROAD_BLACK with invalid
+PID guidance must request DISTANCE for 25 mm plus Motion's 3 mm completion
+tolerance. Early visible sensing must not shorten the action. Preserve action
+ID and acquisition time; accept only matching DONE. Remaining black must
+continue straight without another distance action or mission completion.
+Check GP21, unusable sensing, failed action, front obstacle and absolute timeout
+across timer wrap; retain held-barcode turns after crossing.
+
+Result: PASS, host suite `testing/pure/run.sh` exit 0; tester: Codex.
+Wireless normal Docker build (`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip
+MQTT=1 CRASH_REPORT=0 TEST=0 NOGUARDS=0`) also exited 0 and produced the UF2.
+Base commit `5e6a45b768e7e2c2f8d69ba18c0360b6680d87de` plus uncommitted changes:
+[source and image manifest](logs/2026-10-28_S3-BF02_manifest.json),
+[host output](logs/2026-10-28_S3-BF02_crossing-25mm.txt),
+[Docker build output](logs/2026-10-28_S3-BF02_docker-build.txt).
+No flash or physical distance verification was performed. Geometry/calibration
+and a distinct finish criterion remain pending (D02/D03/D07).
+
+## Documentation alignment — 2026-10-29
+
+Planning note only; no test was executed and no historical result is changed.
+The [central plan](../../plan.md) owns future implementation sequence;
+[mission-readiness](../mission-readiness.md) owns target physical procedures.
+Earlier task splits, GP20 reset flows, JSON messages, watchdog assumptions and
+configured timing targets describe their recorded revisions. Do not interpret
+them as target passes. Use the applicable procedure revision, exact source and
+new evidence filenames for reruns; never overwrite evidence or reuse retired IDs.
+
+Link-maintenance note: the obsolete guide destination above now resolves to its
+current owning guide; historical case expectations and results are unchanged.
+
+New case S3-U14, defined before the continuation run: thin black patches may
+trigger the bounded minimum crossing but must not consume a held barcode based
+on subsequent white-surface travel. Qualification requires distinct black
+acquisitions and black-surface encoder travel. Straight/unmapped junctions also
+need two distinct outgoing acquisitions; stale/repeated snapshots do not rearm.
+Expected software behavior only; mounting and junction centre remain D02/D04.
+
+New case S3-U15: all 26 Code 39 payloads in both orientations and two encoder
+scales, including count wrap, against the canonical [ZXing Code39Reader table](https://github.com/zxing/zxing/blob/master/core/src/main/java/com/google/zxing/oned/Code39Reader.java).
+Expected: same requested A-Z letter, correct orientation, complete framed
+capture only. These standard-design fixtures do not verify issued print scales,
+mounted sensing, course framing or physical decode reliability.
+
+| Date | ID | Source | Result | Evidence / limits |
+| --- | --- | --- | --- | --- |
+| 2026-10-29 | S3-U14 / S3-U15 | Base `044889041aac67b78742f3b7004cd545755349fb` plus [working-source manifest](../integration/logs/2026-10-29_INT-16-manifest.json) | PASS (host only) | [Host output](../integration/logs/2026-10-29_INT-16-host.txt); Actual-black qualification, straight outgoing confirmation, A-Z orientation/scale fixtures; software only |

@@ -1,11 +1,12 @@
 # S1 test log
 
-Owner: Shaun / communications. S1 now owns the optional latest S3 snapshot and bounded encoder, with one mutex and no task. Retired template IDs: S1-U01 cyclic handler, S1-U02 sleeping LED task, S1-U03 GP19 LED at 2 Hz. No template result was recorded. Heartbeat/status reporting and a status-only subscription are restored from the earlier S1 branch in the existing kernel service. No Pico hardware result is claimed.
-
 ## Contents
 
 - [1. Test cases](#1-test-cases)
 - [2. Results](#2-results)
+- [Documentation alignment — 2026-10-29](#documentation-alignment--2026-10-29)
+
+Owner: Shaun / communications. S1 now owns the optional latest S3 snapshot and bounded encoder, with one mutex and no task. Retired template IDs: S1-U01 cyclic handler, S1-U02 sleeping LED task, S1-U03 GP19 LED at 2 Hz. No template result was recorded. Heartbeat/status reporting and a status-only subscription are restored from the earlier S1 branch in the existing kernel service. No Pico hardware result is claimed.
 
 ## 1. Test cases
 
@@ -28,3 +29,13 @@ Historical migration status: no S1 project results were recorded while this subs
 | 2026-10-08 | S1-U04 | Wireless TEST image | On-target run pending | PENDING | No Pico console log | Compiled self-check is not an executed on-target result |
 | 2026-10-09 | S1-U08 | [restoration manifest](../integration/logs/2026-10-09_s1-restore_evidence.json) | Codex laptop run | PASS | [laptop check](../integration/logs/2026-10-09_s1-restore_laptop-check.txt) | Actual helper/localhost broker, synthetic fixture; not Pico transport |
 | 2026-10-09 | S1-U04/U06/U07 | Same manifest, wireless TEST UF2 checksum | On-target run pending | PENDING | [TEST build](../integration/logs/2026-10-09_s1-restore_wireless-test-build.txt) | Compiled self-checks, not executed on Pico |
+
+## Documentation alignment — 2026-10-29
+
+Planning note only; no test was executed and no historical result is changed.
+The [central plan](../../plan.md) owns future implementation sequence;
+[mission-readiness](../mission-readiness.md) owns target physical procedures.
+Earlier task splits, GP20 reset flows, JSON messages, watchdog assumptions and
+configured timing targets describe their recorded revisions. Do not interpret
+them as target passes. Use the applicable procedure revision, exact source and
+new evidence filenames for reruns; never overwrite evidence or reuse retired IDs.

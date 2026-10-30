@@ -1,7 +1,5 @@
 # Week 13 plan
 
-Deferred work for the Week 13 submission. The requirement it closes is in [project-specs](project-specs.md#4-change-in-requirement-minimum-bit-data-representation). Nothing here is started; each item names its owner.
-
 ## Contents
 
 - [1. Remaining minimum-bit conversions](#1-remaining-minimum-bit-conversions)
@@ -14,24 +12,19 @@ Deferred work for the Week 13 submission. The requirement it closes is in [proje
 
 ## 1. Remaining minimum-bit conversions
 
-These fields still use plain types where the [data table](project-specs.md#5-data-representation-table-week-13) asks for a justified packed form. Each owner either packs the field behind accessors or records why it is exempt (loop counters and short-lived task-local temporaries are exempt).
+The [central plan](../plan.md) is the implementation roadmap; this page owns
+submission evidence and video indexing only. Earlier conversion lists are stale:
+remote main already contains packed Motion command/health, S3 data, Terrain
+context, S5 profiles and S1 event storage. Do not redo those conversions blindly.
+The [data table](project-specs.md#5-data-representation-table-week-13) owns widths;
+existing size results remain source-pinned history.
 
-| Owner | Field | Current form | Table row / issue |
-| --- | --- | --- | --- |
-| S2 Mahesha | `MotionCommand` (mode, speed, steering/target, action ID, sample time) | struct of enum, floats and `uint32_t` (`motion_control.h`) | Motion command, #51 |
-| S2 Mahesha | `MotionHealth` | struct of `uint32_t` and bools (`subsystem2.h`) | not in the table yet |
-| S3 Nicholas | `S3IrSnapshot` normalised readings, steering, flags | floats, seven bools, 32-bit sequence/age (`ir_tracking.h`) | Line sensor readings, #52 |
-| S3 Nicholas | `barcode_edge_t` encoder counts | 2 x 32 bits; table says 2 x 16 (`drv_barcode.h`) | Barcode edge ring entry |
-| S3 Nicholas | `barcode_event_t` | 32-bit counts, `char`, two enums (`barcode_decode.h`) | Decoded barcode event, #52 |
-| S3 Nicholas | Mission state | enum stored in a `uint32_t` (`mission.c`); 3 bits needed | Mission state |
-| S4 Darrius | `TerrainContext` | floats, enum, bools (`terrain_algo.h`); task-local, so justify exemption or pack | Terrain rows, #53 |
-| S5 Jia Jing | `ObstacleProfile` / `ObstacleRay` | seven 16-bit fields plus bool (`obstacle_profile.h`) | Quantized obstacle profile, #54 |
-| S5 Jia Jing | Side-watch command angle | 16-bit field for a 7-bit signed angle (`subsystem5.c`) | Servo angle |
-| S1 Shaun | Event log entries | unpacked `mqtt_event_t` in RAM (`s1_report.h`) | Event record |
-| S1 Shaun | Event frame | kind uses a byte (4 bits needed); arg2 is 16 bits for a 3-bit barcode action | Event record |
-| All | Fault bit positions | agree across firmware, docs and decoder; owner confirmation pending ([status](architecture.md#fault-bitmask)) | Fault bitmask, #113 |
-
-Convert one field at a time and rerun `testing/pure/run.sh` after each, as Tribunal risk R3 recommends.
+Audit only fields added/changed by the restructure: seven-state Mission encoding,
+mode-specific progress/age inputs, Terrain freshness, mapping hand-off, cross-core
+event synchronization and new scan/recovery parameters. Justify bounds, units,
+invalid codes and overflow before converting. Retain schema v2 and the full
+obstacle-depth argument; it is not reducible to a three-bit barcode action.
+Re-run relevant boundary tests and final target-compiler size probes after changes.
 
 ## 2. Evidence to produce
 
@@ -39,7 +32,7 @@ Convert one field at a time and rerun `testing/pure/run.sh` after each, as Tribu
 | --- | --- | --- |
 | Final RAM usage | Build command and toolchain recorded with the result (the [historical baseline](project-specs.md#historical-baseline-issue-22-not-required) command is a usable template), then `arm-none-eabi-size`; record text/data/bss and `sizeof` probes for the converted structs | Shaun |
 | Final message size | Exact frame lengths from [architecture](architecture.md#mqtt-binary-protocol-schema-version-2) (telemetry 23 bytes in schema v2, which added line status, mapped flag, Mission fault byte and obstacle width/depth to the 18-byte v1 frame) and inter-task message sizes, recorded with the exact commit (#55) | Shaun |
-| No lost functionality | All host tests pass, plus the [mission-readiness checklist](../testing/mission-readiness.md) on the robot | All |
+| No lost functionality | Relevant host tests and four profiles pass, plus the [mission-readiness checklist](../testing/mission-readiness.md) on the robot | All |
 | No unacceptable timing degradation | Integrated trial T15 in [testing](../testing/README.md#planned-integrated-trials): release jitter, missed deadlines, stop latency under load | All |
 
 ## 3. Test records to revisit

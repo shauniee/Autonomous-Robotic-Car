@@ -4,17 +4,10 @@
 
 /* Float tunables in thousandths, folded at compile time. */
 #define IR_MILLI(x) ((int32_t)((x) * 1000.0f + 0.5f))
-#define IR_STEER_GAIN_MILLI IR_MILLI(IR_KP / IR_MAX_CORRECTION)
 
 static int32_t clamp(int32_t value, int32_t lower, int32_t upper)
 {
     return value < lower ? lower : (value > upper ? upper : value);
-}
-
-/* Nearest integer of num / 1000, halves away from zero. */
-static int32_t round_milli(int32_t num)
-{
-    return num >= 0 ? (num + 500) / 1000 : -((-num + 500) / 1000);
 }
 
 static bool raw_valid(IrRaw raw)
@@ -80,6 +73,7 @@ IrReading ir_tracking_reading(IrRaw raw, const IrCalibration *calibration)
         calibration->white.left);
     reading.right_fraction = fraction(raw.right, calibration->black.right,
         calibration->white.right);
+    /* Two-sensor tracking: one sensor on each line edge; centred reads equal. */
     reading.error = (int8_t)(reading.right_fraction - reading.left_fraction);
     reading.valid = true;
     return reading;
@@ -280,10 +274,7 @@ IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
     output.valid = usable && (output.line == IR_LINE_VISIBLE);
     if (output.valid)
     {
-        /* steering = clamp(KP * error, +-MAX_CORRECTION) / MAX_CORRECTION */
-        output.error = tracker->reading.error;
-        output.steering = (int8_t)clamp(round_milli(output.error * IR_STEER_GAIN_MILLI),
-            -IR_SCALE_ONE, IR_SCALE_ONE);
+        output.error = tracker->reading.error;	/* Mission's line PID turns this into steering */
     }
     return output;
 }
@@ -306,7 +297,6 @@ void ir_snapshot_refresh(S3IrSnapshot *snapshot, uint32_t now)
         snapshot->left_fraction = 0u;
         snapshot->right_fraction = 0u;
         snapshot->error = 0;
-        snapshot->steering = 0;
         snapshot->line = IR_LINE_UNKNOWN;
     }
 }
@@ -342,7 +332,6 @@ S3IrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t sequence,
     }
     IrTrackingOutput output = ir_tracking_output(tracker, now);
     snapshot.guidance_valid = output.valid;
-    snapshot.steering = output.steering;
     snapshot.line = output.line;
     ir_snapshot_refresh(&snapshot, now);
     return snapshot;

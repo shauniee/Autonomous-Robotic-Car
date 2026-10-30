@@ -1,0 +1,54 @@
+{
+  "source_commit": "407cbfa362a91db81706b255664a9425be0c33f6",
+  "task_creation_sites": [
+    "app_program/subsystem2/subsystem2.c",
+    "app_program/mission/mission.c",
+    "app_program/common/io_task.c"
+  ],
+  "mutex_creation_sites": [
+    "app_program/subsystem2/subsystem2.c",
+    "app_program/subsystem5/subsystem5.c",
+    "app_program/subsystem4/subsystem4.c",
+    "app_program/subsystem3/subsystem3.c",
+    "app_program/subsystem1/subsystem1.c"
+  ],
+  "event_flag_creation_sites": [
+    "app_program/subsystem2/subsystem2.c"
+  ],
+  "requested_stack_bytes_per_task": 2048,
+  "requested_application_stack_bytes": 6144,
+  "foreign_motor_calls": [],
+  "application_network_calls": [],
+  "physical_measurements": "not performed",
+  "linked_sizes": {
+    "mtk3pico_smp1_usb_cdc_wifi.elf": {
+      "text": 314060,
+      "data": 384,
+      "bss": 26368,
+      "flash_file_sha256": "9149e1992992643f309da57d360c2505d2e6a78f06f2afd77b29e27bfe2bad9d"
+    },
+    "mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.elf": {
+      "text": 368840,
+      "data": 392,
+      "bss": 84040,
+      "flash_file_sha256": "f0b8be128f1e5922c223f812f9e597fe3b24f5f02035e01deec51c3e151fc3e0"
+    },
+    "mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.elf": {
+      "text": 370920,
+      "data": 392,
+      "bss": 84048,
+      "flash_file_sha256": "e1f85b83d2a1adb874301d5437f73e79561ae743ed5133ba7383a1a4117a7995"
+    },
+    "mtk3pico_smp1_usb_cdc_wifi_test.elf": {
+      "text": 316144,
+      "data": 384,
+      "bss": 26376,
+      "flash_file_sha256": "15a6390a03a8a9c97488f5a8fad70f3ea9fa21dd000f5d16f50b8d092bc40934"
+    }
+  },
+  "linked_task_symbols": [
+    "motion_task",
+    "mission_task",
+    "io_task"
+  ]
+}

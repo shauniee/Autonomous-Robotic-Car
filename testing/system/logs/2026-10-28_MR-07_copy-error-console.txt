@@ -1,0 +1,21 @@
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+all subsystems started
+
+wifi: cyw43_utk_task starting (proc 1)
+[MISSION] state=CALIBRATE
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+[MISSION] state=STOP
+[MISSION] stop: gp21=0 latched=0 inputs_ok=0
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[SAFETY] latched causes=0x4 (1 GP21, 2 fault, 4 stale line, 8 stale motion) line_seen=0 line_age=0 motion_seen=1 motion_age=10 up=1960 copied=0 copy_err=-50
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)

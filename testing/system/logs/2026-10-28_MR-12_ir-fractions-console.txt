@@ -1,0 +1,342 @@
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+[TEST] S3 snapshot mutex creation returned=2
+[TEST] S3 snapshot mutex published=2
+S1, S2, S4 and S5 started; S3 starts after startup tests.
+[TEST] === test run start ===
+[TEST] S1-U04 PASS  binary telemetry round-trip and length check
+[TEST] subsystem1 SUMMARY 1 passed, 0 failed
+[TEST] S2-U03 PASS  command freshness gate; outputs inhibited
+[TEST] subsystem2 SUMMARY 1 passed, 0 failed
+[TEST] === Subsystem 4 (Terrain / GY-511) Bench Check ===
+[TEST] S4 Calibrated: 0 | State: 0 | Hump count: 0
+[TEST] S4 Max Hump Peak: 0 mm (Valid: 1)
+[TEST] === S4 Check Complete ===
+[TEST] S5: inactive; hardware checks PENDING
+[TEST] === test run end ===
+[TEST] S3 snapshot mutex id before task start=2
+[TEST] S3 task start result=8
+[IR] buttons GP20_down=0 GP21_down=0
+all subsystems started
+
+[IR] seq=1 ADC L=165 R=156 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+wifi: cyw43_utk_task starting (proc 1)
+[MISSION] state=CALIBRATE MOTOR_INHIBITED
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+[IR] seq=26 ADC L=168 R=162 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=51 ADC L=169 R=157 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+wifi: joining configured network ...
+[IR] seq=76 ADC L=169 R=139 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] seq=101 ADC L=169 R=166 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=126 ADC L=166 R=159 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=151 ADC L=171 R=161 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=176 ADC L=171 R=161 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=201 ADC L=165 R=159 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=226 ADC L=176 R=163 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+wifi: link status -> joined AP, no IP yet (2)
+wifi: link up, ip=172.20.10.4
+mqtt: ready
+[IR] seq=251 ADC L=173 R=161 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=276 ADC L=172 R=169 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=301 ADC L=168 R=158 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=326 ADC L=168 R=163 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=351 ADC L=166 R=158 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=376 ADC L=170 R=164 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=401 ADC L=162 R=159 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=426 ADC L=166 R=161 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=451 ADC L=167 R=154 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=476 ADC L=169 R=158 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=501 ADC L=157 R=150 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=526 ADC L=266 R=383 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=551 ADC L=177 R=205 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=576 ADC L=182 R=193 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=601 ADC L=174 R=193 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=626 ADC L=181 R=193 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=651 ADC L=181 R=198 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=676 ADC L=175 R=210 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=701 ADC L=177 R=199 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=726 ADC L=185 R=189 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=751 ADC L=181 R=205 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=776 ADC L=177 R=200 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=801 ADC L=179 R=193 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=826 ADC L=179 R=203 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=851 ADC L=182 R=193 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=876 ADC L=196 R=206 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=901 ADC L=762 R=847 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=926 ADC L=541 R=702 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=951 ADC L=547 R=698 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=976 ADC L=539 R=700 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1001 ADC L=538 R=701 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] buttons GP20_down=1 GP21_down=0
+[IR] seq=1026 ADC L=469 R=598 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=1 GP21_down=0 SENSOR_ONLY
+[IR] buttons GP20_down=0 GP21_down=0
+[IR] seq=1051 ADC L=511 R=671 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=pending age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1076 ADC L=511 R=663 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=black_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1101 ADC L=183 R=183 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=black_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1126 ADC L=158 R=146 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=black_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1151 ADC L=155 R=149 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=black_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1176 ADC L=147 R=148 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=black_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] buttons GP20_down=1 GP21_down=0
+[IR] seq=1201 ADC L=152 R=155 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=pending age_ms=0 GP20_down=1 GP21_down=0 SENSOR_ONLY
+[IR] buttons GP20_down=0 GP21_down=0
+[MISSION] state=READY MOTOR_INHIBITED
+[IR] seq=1226 ADC L=151 R=138 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1251 ADC L=151 R=150 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1276 ADC L=153 R=150 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1301 ADC L=158 R=145 acquired=1 fresh=1 fraction_of_127 L=2 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1326 ADC L=133 R=136 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1351 ADC L=142 R=141 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1376 ADC L=141 R=146 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1401 ADC L=538 R=150 acquired=1 fresh=1 fraction_of_127 L=127 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1426 ADC L=523 R=143 acquired=1 fresh=1 fraction_of_127 L=127 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1451 ADC L=522 R=154 acquired=1 fresh=1 fraction_of_127 L=127 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1476 ADC L=532 R=146 acquired=1 fresh=1 fraction_of_127 L=127 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1501 ADC L=519 R=148 acquired=1 fresh=1 fraction_of_127 L=127 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1526 ADC L=529 R=150 acquired=1 fresh=1 fraction_of_127 L=127 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1551 ADC L=525 R=151 acquired=1 fresh=1 fraction_of_127 L=127 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1576 ADC L=528 R=147 acquired=1 fresh=1 fraction_of_127 L=127 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1601 ADC L=524 R=150 acquired=1 fresh=1 fraction_of_127 L=127 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1626 ADC L=528 R=153 acquired=1 fresh=1 fraction_of_127 L=127 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1651 ADC L=521 R=147 acquired=1 fresh=1 fraction_of_127 L=127 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1676 ADC L=216 R=155 acquired=1 fresh=1 fraction_of_127 L=23 R=1 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1701 ADC L=151 R=968 acquired=1 fresh=1 fraction_of_127 L=0 R=127 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1726 ADC L=160 R=983 acquired=1 fresh=1 fraction_of_127 L=3 R=127 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1751 ADC L=150 R=980 acquired=1 fresh=1 fraction_of_127 L=0 R=127 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1776 ADC L=155 R=975 acquired=1 fresh=1 fraction_of_127 L=1 R=127 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1801 ADC L=153 R=976 acquired=1 fresh=1 fraction_of_127 L=0 R=127 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1826 ADC L=154 R=978 acquired=1 fresh=1 fraction_of_127 L=1 R=127 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1851 ADC L=155 R=973 acquired=1 fresh=1 fraction_of_127 L=1 R=127 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1876 ADC L=151 R=970 acquired=1 fresh=1 fraction_of_127 L=0 R=127 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1901 ADC L=150 R=976 acquired=1 fresh=1 fraction_of_127 L=0 R=127 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1926 ADC L=151 R=961 acquired=1 fresh=1 fraction_of_127 L=0 R=127 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1951 ADC L=173 R=167 acquired=1 fresh=1 fraction_of_127 L=8 R=4 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1976 ADC L=155 R=150 acquired=1 fresh=1 fraction_of_127 L=1 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2001 ADC L=155 R=145 acquired=1 fresh=1 fraction_of_127 L=1 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2026 ADC L=156 R=147 acquired=1 fresh=1 fraction_of_127 L=1 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2051 ADC L=156 R=149 acquired=1 fresh=1 fraction_of_127 L=1 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2076 ADC L=155 R=145 acquired=1 fresh=1 fraction_of_127 L=1 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2101 ADC L=144 R=149 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2126 ADC L=153 R=143 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2151 ADC L=151 R=149 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2176 ADC L=148 R=153 acquired=1 fresh=1 fraction_of_127 L=0 R=1 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2201 ADC L=154 R=149 acquired=1 fresh=1 fraction_of_127 L=1 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2226 ADC L=255 R=171 acquired=1 fresh=1 fraction_of_127 L=37 R=5 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2251 ADC L=215 R=144 acquired=1 fresh=1 fraction_of_127 L=23 R=0 valid=1 calibrated=1 line=lost capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2276 ADC L=248 R=147 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2301 ADC L=240 R=147 acquired=1 fresh=1 fraction_of_127 L=32 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2326 ADC L=246 R=152 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2351 ADC L=246 R=149 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2376 ADC L=246 R=150 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2401 ADC L=248 R=150 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2426 ADC L=242 R=157 acquired=1 fresh=1 fraction_of_127 L=32 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2451 ADC L=242 R=154 acquired=1 fresh=1 fraction_of_127 L=32 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2476 ADC L=247 R=148 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2501 ADC L=247 R=156 acquired=1 fresh=1 fraction_of_127 L=34 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2526 ADC L=246 R=153 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2551 ADC L=247 R=154 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2576 ADC L=247 R=146 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2601 ADC L=250 R=156 acquired=1 fresh=1 fraction_of_127 L=35 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2626 ADC L=241 R=150 acquired=1 fresh=1 fraction_of_127 L=32 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2651 ADC L=246 R=151 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2676 ADC L=243 R=148 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2701 ADC L=246 R=152 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2726 ADC L=238 R=146 acquired=1 fresh=1 fraction_of_127 L=31 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2751 ADC L=246 R=150 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2776 ADC L=247 R=150 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2801 ADC L=251 R=152 acquired=1 fresh=1 fraction_of_127 L=36 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2826 ADC L=246 R=152 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2851 ADC L=250 R=156 acquired=1 fresh=1 fraction_of_127 L=35 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2876 ADC L=246 R=147 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2901 ADC L=245 R=150 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2926 ADC L=248 R=144 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2951 ADC L=246 R=156 acquired=1 fresh=1 fraction_of_127 L=34 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2976 ADC L=251 R=150 acquired=1 fresh=1 fraction_of_127 L=36 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3001 ADC L=246 R=153 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3026 ADC L=240 R=147 acquired=1 fresh=1 fraction_of_127 L=32 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3051 ADC L=252 R=142 acquired=1 fresh=1 fraction_of_127 L=36 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3076 ADC L=248 R=152 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3101 ADC L=240 R=149 acquired=1 fresh=1 fraction_of_127 L=32 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3126 ADC L=254 R=152 acquired=1 fresh=1 fraction_of_127 L=37 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3151 ADC L=242 R=159 acquired=1 fresh=1 fraction_of_127 L=32 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3176 ADC L=246 R=149 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3201 ADC L=249 R=153 acquired=1 fresh=1 fraction_of_127 L=35 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3226 ADC L=241 R=149 acquired=1 fresh=1 fraction_of_127 L=32 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3251 ADC L=235 R=150 acquired=1 fresh=1 fraction_of_127 L=30 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3276 ADC L=253 R=148 acquired=1 fresh=1 fraction_of_127 L=36 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3301 ADC L=247 R=147 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3326 ADC L=250 R=148 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3351 ADC L=249 R=149 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3376 ADC L=250 R=151 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3401 ADC L=248 R=152 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3426 ADC L=250 R=150 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3451 ADC L=251 R=146 acquired=1 fresh=1 fraction_of_127 L=36 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3476 ADC L=246 R=140 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3501 ADC L=250 R=148 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3526 ADC L=246 R=148 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3551 ADC L=247 R=151 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3576 ADC L=247 R=144 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3601 ADC L=246 R=148 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3626 ADC L=242 R=153 acquired=1 fresh=1 fraction_of_127 L=32 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3651 ADC L=241 R=143 acquired=1 fresh=1 fraction_of_127 L=32 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3676 ADC L=249 R=151 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3701 ADC L=249 R=150 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3726 ADC L=247 R=155 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3751 ADC L=243 R=155 acquired=1 fresh=1 fraction_of_127 L=33 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3776 ADC L=250 R=146 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3801 ADC L=247 R=147 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3826 ADC L=242 R=152 acquired=1 fresh=1 fraction_of_127 L=32 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3851 ADC L=240 R=142 acquired=1 fresh=1 fraction_of_127 L=32 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3876 ADC L=239 R=152 acquired=1 fresh=1 fraction_of_127 L=31 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3901 ADC L=242 R=152 acquired=1 fresh=1 fraction_of_127 L=32 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3926 ADC L=245 R=151 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3951 ADC L=251 R=153 acquired=1 fresh=1 fraction_of_127 L=36 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3976 ADC L=247 R=154 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4001 ADC L=248 R=153 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4026 ADC L=245 R=157 acquired=1 fresh=1 fraction_of_127 L=33 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4051 ADC L=254 R=140 acquired=1 fresh=1 fraction_of_127 L=37 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4076 ADC L=244 R=154 acquired=1 fresh=1 fraction_of_127 L=33 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4101 ADC L=254 R=154 acquired=1 fresh=1 fraction_of_127 L=37 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4126 ADC L=247 R=148 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4151 ADC L=244 R=146 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4176 ADC L=245 R=157 acquired=1 fresh=1 fraction_of_127 L=33 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4201 ADC L=252 R=153 acquired=1 fresh=1 fraction_of_127 L=36 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4226 ADC L=253 R=158 acquired=1 fresh=1 fraction_of_127 L=36 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4251 ADC L=241 R=149 acquired=1 fresh=1 fraction_of_127 L=32 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4276 ADC L=243 R=141 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4301 ADC L=244 R=149 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4326 ADC L=250 R=148 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4351 ADC L=245 R=151 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4376 ADC L=249 R=152 acquired=1 fresh=1 fraction_of_127 L=35 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4401 ADC L=245 R=154 acquired=1 fresh=1 fraction_of_127 L=33 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4426 ADC L=241 R=153 acquired=1 fresh=1 fraction_of_127 L=32 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4451 ADC L=243 R=146 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4476 ADC L=246 R=145 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4501 ADC L=247 R=143 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4526 ADC L=245 R=151 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4551 ADC L=249 R=147 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4576 ADC L=246 R=153 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4601 ADC L=248 R=150 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4626 ADC L=248 R=153 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4651 ADC L=251 R=150 acquired=1 fresh=1 fraction_of_127 L=36 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4676 ADC L=247 R=152 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4701 ADC L=253 R=157 acquired=1 fresh=1 fraction_of_127 L=36 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4726 ADC L=239 R=154 acquired=1 fresh=1 fraction_of_127 L=31 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4751 ADC L=243 R=142 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4776 ADC L=240 R=153 acquired=1 fresh=1 fraction_of_127 L=32 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4801 ADC L=251 R=152 acquired=1 fresh=1 fraction_of_127 L=36 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4826 ADC L=244 R=152 acquired=1 fresh=1 fraction_of_127 L=33 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4851 ADC L=251 R=146 acquired=1 fresh=1 fraction_of_127 L=36 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4876 ADC L=244 R=156 acquired=1 fresh=1 fraction_of_127 L=33 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4901 ADC L=242 R=152 acquired=1 fresh=1 fraction_of_127 L=32 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4926 ADC L=250 R=154 acquired=1 fresh=1 fraction_of_127 L=35 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4951 ADC L=245 R=149 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=4976 ADC L=243 R=149 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5001 ADC L=240 R=153 acquired=1 fresh=1 fraction_of_127 L=32 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5026 ADC L=247 R=147 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5051 ADC L=246 R=152 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5076 ADC L=246 R=150 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5101 ADC L=250 R=148 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5126 ADC L=248 R=151 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5151 ADC L=253 R=156 acquired=1 fresh=1 fraction_of_127 L=36 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5176 ADC L=251 R=153 acquired=1 fresh=1 fraction_of_127 L=36 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5201 ADC L=245 R=151 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5226 ADC L=245 R=153 acquired=1 fresh=1 fraction_of_127 L=33 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5251 ADC L=246 R=154 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5276 ADC L=248 R=154 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5301 ADC L=248 R=156 acquired=1 fresh=1 fraction_of_127 L=34 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5326 ADC L=250 R=149 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5351 ADC L=242 R=147 acquired=1 fresh=1 fraction_of_127 L=32 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5376 ADC L=243 R=147 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5401 ADC L=247 R=153 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5426 ADC L=241 R=149 acquired=1 fresh=1 fraction_of_127 L=32 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5451 ADC L=250 R=154 acquired=1 fresh=1 fraction_of_127 L=35 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5476 ADC L=249 R=149 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5501 ADC L=244 R=150 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5526 ADC L=246 R=153 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5551 ADC L=242 R=149 acquired=1 fresh=1 fraction_of_127 L=32 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5576 ADC L=249 R=147 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5601 ADC L=251 R=156 acquired=1 fresh=1 fraction_of_127 L=36 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5626 ADC L=245 R=147 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5651 ADC L=247 R=151 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5676 ADC L=245 R=148 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5701 ADC L=238 R=156 acquired=1 fresh=1 fraction_of_127 L=31 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5726 ADC L=247 R=152 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5751 ADC L=250 R=146 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5776 ADC L=247 R=150 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5801 ADC L=239 R=148 acquired=1 fresh=1 fraction_of_127 L=31 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5826 ADC L=245 R=152 acquired=1 fresh=1 fraction_of_127 L=33 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5851 ADC L=252 R=152 acquired=1 fresh=1 fraction_of_127 L=36 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5876 ADC L=250 R=152 acquired=1 fresh=1 fraction_of_127 L=35 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5901 ADC L=248 R=151 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5926 ADC L=246 R=153 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5951 ADC L=248 R=152 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=5976 ADC L=242 R=153 acquired=1 fresh=1 fraction_of_127 L=32 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6001 ADC L=238 R=147 acquired=1 fresh=1 fraction_of_127 L=31 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6026 ADC L=242 R=155 acquired=1 fresh=1 fraction_of_127 L=32 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6051 ADC L=250 R=147 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6076 ADC L=247 R=154 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6101 ADC L=253 R=154 acquired=1 fresh=1 fraction_of_127 L=36 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6126 ADC L=251 R=149 acquired=1 fresh=1 fraction_of_127 L=36 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6151 ADC L=247 R=144 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6176 ADC L=245 R=148 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6201 ADC L=243 R=153 acquired=1 fresh=1 fraction_of_127 L=33 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6226 ADC L=248 R=148 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6251 ADC L=248 R=150 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6276 ADC L=246 R=148 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6301 ADC L=246 R=156 acquired=1 fresh=1 fraction_of_127 L=34 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6326 ADC L=250 R=152 acquired=1 fresh=1 fraction_of_127 L=35 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6351 ADC L=240 R=156 acquired=1 fresh=1 fraction_of_127 L=32 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6376 ADC L=247 R=142 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6401 ADC L=247 R=154 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6426 ADC L=250 R=155 acquired=1 fresh=1 fraction_of_127 L=35 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6451 ADC L=245 R=150 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6476 ADC L=238 R=141 acquired=1 fresh=1 fraction_of_127 L=31 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6501 ADC L=245 R=152 acquired=1 fresh=1 fraction_of_127 L=33 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6526 ADC L=254 R=150 acquired=1 fresh=1 fraction_of_127 L=37 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6551 ADC L=244 R=154 acquired=1 fresh=1 fraction_of_127 L=33 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6576 ADC L=252 R=157 acquired=1 fresh=1 fraction_of_127 L=36 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6601 ADC L=246 R=155 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6626 ADC L=246 R=146 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6651 ADC L=242 R=155 acquired=1 fresh=1 fraction_of_127 L=32 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6676 ADC L=247 R=157 acquired=1 fresh=1 fraction_of_127 L=34 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6701 ADC L=248 R=150 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6726 ADC L=244 R=150 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6751 ADC L=253 R=152 acquired=1 fresh=1 fraction_of_127 L=36 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6776 ADC L=245 R=150 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6801 ADC L=250 R=150 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6826 ADC L=246 R=143 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6851 ADC L=241 R=146 acquired=1 fresh=1 fraction_of_127 L=32 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6876 ADC L=248 R=152 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6901 ADC L=247 R=151 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6926 ADC L=244 R=144 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6951 ADC L=248 R=141 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=6976 ADC L=245 R=152 acquired=1 fresh=1 fraction_of_127 L=33 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7001 ADC L=247 R=157 acquired=1 fresh=1 fraction_of_127 L=34 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7026 ADC L=246 R=148 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7051 ADC L=246 R=151 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7076 ADC L=244 R=150 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7101 ADC L=247 R=146 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7126 ADC L=245 R=148 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7151 ADC L=246 R=151 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7176 ADC L=248 R=148 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7201 ADC L=254 R=148 acquired=1 fresh=1 fraction_of_127 L=37 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7226 ADC L=245 R=152 acquired=1 fresh=1 fraction_of_127 L=33 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7251 ADC L=252 R=149 acquired=1 fresh=1 fraction_of_127 L=36 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7276 ADC L=245 R=148 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7301 ADC L=244 R=156 acquired=1 fresh=1 fraction_of_127 L=33 R=2 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7326 ADC L=249 R=153 acquired=1 fresh=1 fraction_of_127 L=35 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7351 ADC L=246 R=147 acquired=1 fresh=1 fraction_of_127 L=34 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7376 ADC L=248 R=153 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7401 ADC L=246 R=154 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7426 ADC L=243 R=150 acquired=1 fresh=1 fraction_of_127 L=33 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7451 ADC L=253 R=142 acquired=1 fresh=1 fraction_of_127 L=36 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7476 ADC L=250 R=151 acquired=1 fresh=1 fraction_of_127 L=35 R=0 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7501 ADC L=248 R=153 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=7526 ADC L=247 R=153 acquired=1 fresh=1 fraction_of_127 L=34 R=1 valid=1 calibrated=1 line=visible capture=white_captured age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY

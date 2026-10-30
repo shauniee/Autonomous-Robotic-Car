@@ -1,6 +1,4 @@
-# Subsystem 3: Line tracking, barcode and Mission/Safety
-
-**Owner:** Nicholas. Parent: [architecture](../architecture.md) (task table, authority, shared-data rules). Requirements and pending decisions: [project specs](../project-specs.md#pending-decisions). Pins and kernel budget: [team](../team.md). Motion interface: [subsystem 2](subsystem2.md). Telemetry: [subsystem 1](subsystem1.md). Implementation and physical-validation status is tracked in issue #62.
+# Subsystem 3: Line tracking and barcode
 
 ## Contents
 
@@ -10,10 +8,10 @@
   - [2.2 Calibration workflow](#22-calibration-workflow)
   - [2.3 Normalization, classification and guidance](#23-normalization-classification-and-guidance)
 - [3. Barcode](#3-barcode)
-  - [3.1 Scope (implemented in software; disabled at boot)](#31-scope-implemented-in-software-disabled-at-boot)
-  - [3.2 States](#32-states)
+  - [3.1 Scope](#31-scope)
+  - [3.2 Capture and encounter lifecycle](#32-capture-and-encounter-lifecycle)
   - [3.3 Widths and measured configuration](#33-widths-and-measured-configuration)
-  - [3.4 Encoder and interrupt adapter (proposed integration)](#34-encoder-and-interrupt-adapter-proposed-integration)
+  - [3.4 Encoder and interrupt adapter](#34-encoder-and-interrupt-adapter)
 - [4. Interfaces and contract](#4-interfaces-and-contract)
   - [4.1 Source modules](#41-source-modules)
   - [4.2 Line snapshot API](#42-line-snapshot-api)
@@ -22,230 +20,173 @@
 - [5. Data and fault bits](#5-data-and-fault-bits)
 - [6. Mission and Safety (summary; owned by architecture)](#6-mission-and-safety-summary-owned-by-architecture)
 - [7. Status](#7-status)
-  - [7.1 Implemented (software only; no physical evidence)](#71-implemented-software-only-no-physical-evidence)
-  - [7.2 Proposed / not established](#72-proposed--not-established)
+  - [7.1 Implemented software](#71-implemented-software)
+  - [7.2 Proposed or not established](#72-proposed-or-not-established)
 - [8. Open items](#8-open-items)
 
 ## 1. Functionality
 
-S3 has three parts.
+Owner Nicholas. Target S3 retains line acquisition, calibration, guidance and
+barcode capture/decoding; Mission coordination moves to `app_program/mission/`.
+No separate S3 or Safety task in target. [Plan](../../plan.md) owns work order,
+[architecture](../architecture.md#mission-loop) owns Mission/controls/recovery,
+[specs](../project-specs.md) owns course facts/data widths and
+[team](../team.md#2-pins) owns wiring.
 
-- **Line tracking.** Acquires a complete pair of analogue IR readings (left GP26/ADC0, right GP27/ADC1), calibrates each sensor independently, classifies line visibility and computes memoryless proportional (P) guidance. Owns the calibration buttons and buzzer feedback.
-- **Barcode.** The third IR sensor's comparator DOUT (GP16) detects transitions in the adjacent barcode lane. Capture records ordered edge timestamps and encoder context; task-level decoding measures bars and spaces, validates a frame and emits one mapped navigation event. AOUT is disconnected.
-- **Mission/Safety.** Mission (priority 14, 20 ms) owns navigation decisions and mapping acceptance. Safety (priority 12, 10 ms) owns the GP21 stop latch, the run-stopping fault check, freshness checks and stop authority independent of Mission and Reporting. Their behaviour is defined in [architecture](../architecture.md#subsystem-summaries) and summarised in section 6.
-
-Boundaries:
-
-- S3 sensing never controls motors and never formats or sends telemetry. S1 reads S3 observations and owns encoding and transmission. S2 alone writes motor PWM.
-- A line observation, steering value, plausible ADC count or decoded barcode does not establish movement permission, physical centering or sensor connectivity.
-- S3 does not enable or feed a whole-system watchdog; that policy belongs to Safety.
+Two analogue tracking sensors GP26/ADC0 and GP27/ADC1 follow the 18 mm line;
+GP16 digital IR reads the left barcode lane. A single black barcode reading
+cannot identify a character or junction. Read a complete frame using encoder
+travel; continue line acquisition while capture is active. Keep decoding bounded
+per Mission release and never wait for an entire print or manoeuvre.
 
 ## 2. Line tracking
 
 ### 2.1 Acquisition and calibration bounds (implemented in software)
 
-- Acquire GP26 and GP27 every nominal 20 ms. After each mux change discard one conversion, then average eight.
-- The complete pair has a 2 ms budget and an independent 4096-poll cap (covers a stalled timer). Publish a complete pair or an explicit failed acquisition, never a partial pair. Failed driver reads leave the caller's destination unchanged.
-- ADC data is 12-bit (0-4095). Acquisition time is paired-read completion time; copying or publishing cached data never refreshes it. Timestamp arithmetic is unsigned wrap-safe.
-- A capture needs at least 25 distinct acquisition timestamps spanning at least 500 ms from its first sample. The first sample must arrive within 60 ms of the request; later gaps over 60 ms cancel capture. Duplicate timestamps do not count.
-- Each channel needs at least 300 counts of black/white contrast. Independent spans and opposite polarities are supported.
+Reuse paired ADC acquisition and bounded conversion timeout/polling. Do not publish
+a half-updated pair. Preserve original sample time; failed acquisition and failed
+calibration produce explicit invalidity, not a plausible zero reading. Tunables
+live in `robot_config.h`; current periods/thresholds are not calibrated target limits.
+Raw range and Q7 fractions/error are defined in the [data table](../project-specs.md#5-data-representation-table-week-13).
 
 ### 2.2 Calibration workflow
 
-Calibration is RAM-only and must use the mounted sensor height, lighting and surface. A completed pair survives normal operation and capture cancellation; reboot clears it. The buzzer mute switch must allow feedback.
-
-| Phase | Action / response |
-| --- | --- |
-| Need black | Release GP20 at least 30 ms, place both sensors on black, fresh debounced GP20 press |
-| Capture black | Hold pose until completion: one 100 ms buzz |
-| Need white | Release GP20, place both sensors on white, fresh press |
-| Capture white | Hold pose: two 100 ms buzzes separated by 100 ms silence on valid completion |
-| Calibrated | Sampling and guidance continue; GP20 is then application start/reset control |
-| Cancel / rejection | GP21 cancels capture immediately and inhibits new capture while held; cancellation or rejection gives three buzzes |
-
-GP20 needs a stable 30 ms release before arming and a stable 30 ms press to trigger; a button held at boot cannot trigger repeated captures. GP21 dominates simultaneous inputs and releasing it does not replay a GP20 press made while held. GP20 during capture is rejected as busy; GP20 cannot replace a completed valid pair. Buzzes are asynchronous.
-
-```mermaid
-stateDiagram-v2
-    [*] --> NeedBlack
-    NeedBlack --> CaptureBlack: Fresh GP20 press
-    CaptureBlack --> NeedWhite: Complete, one buzz
-    CaptureBlack --> NeedBlack: Cancel, gap or invalid sample
-    NeedWhite --> CaptureWhite: Fresh GP20 press
-    CaptureWhite --> Calibrated: Valid contrast, two buzzes
-    CaptureWhite --> NeedWhite: Cancel, gap or invalid sample
-    CaptureWhite --> NeedBlack: Failed contrast
-    Calibrated --> NeedBlack: Reboot
-```
-
-Cancelling black leaves the pair cleared; cancelling white keeps completed black; failed white contrast clears both. During capture, normalized readings and guidance are unavailable. Typed capture results distinguish waiting, pending, black/white completion, unsupported kind, busy, cancel held, sample gap, invalid sample, contrast failure, missing black and cancellation. Display strings are labels, not command IDs.
+Target: stationary boot IMU calibration attempt completes/fails visibly before
+IR calibration is enabled. IR black capture then white capture uses GP20 while
+stopped, one chirp then two for an accepted pair (rejection three chirps).
+Calibrate each mounted sensor independently under course lighting. Keep motion
+inhibited throughout. GP21 cancels/stops. Local stop keeps valid references;
+reboot clears RAM-only references. Target GP20 starts only after prerequisites;
+the current software workflow is in README.
 
 ### 2.3 Normalization, classification and guidance
 
-```text
-black_fraction = clamp((raw - white) / (black - white), 0, 1)
-normalized     = 2 * black_fraction - 1          (-1 white, +1 black)
-error          = right_black_fraction - left_black_fraction
-correction     = clamp(0.10 * error, -0.10, +0.10)
-steering       = correction / 0.10               (-1 left ... +1 right)
-```
+Preserve normalized black fractions, signed two-sensor error and explicit UNKNOWN,
+VISIBLE, LOST and BROAD_BLACK classification. Thresholds remain provisional D04/D07.
+UNKNOWN from failed/stale acquisition differs from fresh white/white loss.
+Line guidance and S2 wheel PID are different loops; preserve existing guidance
+until tuning is verified, and never call P-only code physically validated PID.
+Remote main guidance is P-based; the local checkpoint adds Mission line-loop tuning.
 
-Equal sensor values do not prove centering. No integral/derivative history is stored.
-
-| Class | Meaning |
-| --- | --- |
-| UNKNOWN | Missing, invalid, stale, uncalibrated or capture-active observation |
-| LOST | Both fractions < 0.15; stays lost while both < 0.25 |
-| VISIBLE | Fresh calibrated observation outside LOST/BROAD_BLACK |
-| BROAD_BLACK | Both fractions > 0.85; an observation only, not a junction, barcode or finish event |
-
-White < 0.15; partial 0.15-0.85 inclusive; black > 0.85. Age 60 ms is accepted, 61 ms is stale. Only VISIBLE authorizes valid guidance; fresh LOST/BROAD_BLACK still expose normalized values and error but give invalid guidance and zero steering.
-
-| Left / right | Guidance (usable data) |
-| --- | --- |
-| White / white | LOST; Mission decides recovery |
-| White / partial or black | Correct right |
-| Partial / white | Correct left |
-| Partial / partial | Signed difference; equal gives zero |
-| Partial / black | Correct right |
-| Black / white or partial | Correct left |
-| Black / black | BROAD_BLACK; Mission decides |
+At a confirmed no-command junction request at least 25 mm straight crossing travel,
+then track/acquire outgoing line. BROAD_BLACK is evidence, not automatic finish
+or sufficient proof of junction centre. Qualification uses mounting and encoder
+travel, pending D02/D04/D07. Target line loss enters bounded moving sweep recovery;
+it does not universally latch on the first white sample.
 
 ## 3. Barcode
 
-### 3.1 Scope (implemented in software; disabled at boot)
+### 3.1 Scope
 
-Capture buffering, a provisional Code 39 decoder, mapping and a copied event FIFO are implemented. **The scanner boots disabled**: measured configuration, S2 encoder feedback and an agreed GPIO dispatcher are not supplied, so no physical scan or barcode navigation is established.
+Decode all A-Z in either print traversal direction as the same character. Use
+Code 39 as selected design, with actual framing/print tolerances verified under
+D01. Four distinct action letters are received over MQTT; no compiled mission-day
+mapping. Decoder patterns may be compiled. Missing mapping blocks start.
+Incomplete/noisy captures must not guess characters; no complex damaged-print
+recovery is required for the expected intact course prints.
 
-The first version supports uppercase A-Z in `*X*` frames in either orientation. This is a provisional project choice, not a confirmed course symbology (decision D01). The briefing requires the full alphabet, commands held until the cross junction, and Wi-Fi mapping changes without recompilation; S3 supplies a local mapping API, but S1's current status-only protocol does not implement that route. Mission, not the decoder, requests encoder-based navigation from Motion. Line sampling continues concurrently and barcode capture cannot overwrite its snapshot.
+### 3.2 Capture and encounter lifecycle
 
-### 3.2 States
-
-```mermaid
-stateDiagram-v2
-    [*] --> Disabled
-    Disabled --> WaitQuietZone: Configured
-    WaitQuietZone --> CaptureFrame: Frame entry
-    CaptureFrame --> WaitRearm: 29 complete widths
-    CaptureFrame --> WaitQuietZone: Partial or timeout
-    WaitRearm --> WaitRearm: Trailing quiet verified, decode and queue once
-    WaitRearm --> WaitQuietZone: Rearm clearance reached
-    WaitRearm --> WaitQuietZone: Reject frame
-    CaptureFrame --> Fault: Capture overflow
-    WaitRearm --> Fault: Queue overflow
-    WaitQuietZone --> Fault: Capture loss
-    WaitQuietZone --> Disabled: GP21 or explicit reset
-    Fault --> Disabled: Cause clear and reset
-```
-
-Public states: `BARCODE_DISABLED`, `_WAIT_QUIET`, `_CAPTURE`, `_WAIT_REARM`, `_FAULT`. Disabled state never authorizes movement. Every letter starts UNMAPPED; neither conflicting ABCD source example is adopted. Unknown, partial or malformed frames are rejected outcomes. Capture loss and queue overflow latch faults, reported independently of diagnostics; Mission/Safety apply the stop response.
+Reuse the bounded quiet-zone/capture/rearm decoder and static edge/event storage.
+Each encounter yields at most one action; direction reversal and overflow reject
+untrustworthy partial context. No two-second global scanner blind delay. Revisit
+of a print after a completed encounter can produce a new command; exact rearm
+distance remains D01. Event orientation is evidence, not a reversed action mapping.
 
 ### 3.3 Widths and measured configuration
 
-- Widths use mean calibrated wheel displacement in micrometres, never elapsed time or PWM demand. Invalid or stale context, changed encoder epoch, backwards timestamps, changed counts at an unchanged timestamp, direction reversal, excess travel, wheel disagreement and expired deadlines reject the encounter. No timed fallback exists; bar count alone never identifies a symbol.
-- `*X*` has 29 alternating elements (three 9-element characters plus two narrow inter-character spaces). Fit narrow/wide classes across the frame, require three wide elements per character, both framing patterns and one A-Z payload. No checksum, extended ASCII or multi-letter frame is accepted.
-- `barcode_config_t` has no ready-to-drive defaults. Supply: distance per count for each wheel, narrow-width range, wide:narrow ratio limits, tolerance, leading/trailing quiet clearance, rearm clearance, per-step and whole-frame travel bounds, wheel disagreement, encoder-age bound, edge-gap and absolute frame deadlines, and black polarity (permille, micrometres, microseconds). Ring size, service budget and event capacity are software defaults, not physical limits. Encoder quantization and capture latency must resolve the narrowest element at the intended speed.
+Bar widths come from calibrated encoder displacement, not elapsed time, PWM or
+bar count. Measure polarity, narrow/wide bounds, quiet zone, print scale, sensor
+position and barcode/junction spacing. Existing default constants are provisional.
+Validate both directions at operating speeds and distinguish capture failure
+from an unsupported inferred letter. Pending D01/D03/D04.
 
-### 3.4 Encoder and interrupt adapter (proposed integration)
+### 3.4 Encoder and interrupt adapter
 
-No S2 code is added. The provider supplies two bounded callbacks:
-
-- `read_task`: actual GP16 level, coherent left/right counts (wrap modulo 2^32), validity/reset epoch, encoder acquisition and observation times (hardware TIMER microseconds). It also runs briefly with local interrupts masked: no kernel calls, locks, allocation or retries. Measure its maximum duration and edge/encoder association uncertainty before enabling.
-- `set_enabled_task`: enable or disable GP16 edges through an agreed GPIO-bank dispatcher that calls `drv_barcode_edge_isr(events, sampled_us, encoder)` once per edge on core 1. It never replaces USB, encoder or Echo handlers.
-
-GPIO bank interrupts are shared and the USB SDK shim is not a general dispatcher. Both rise and fall flags together latch capture loss. Successful configuration sets only GP16 to input with pulls disabled; verify the comparator's safe output level. Boot and unconfigured operation touch neither the pin nor a GPIO interrupt.
+Reuse `drv_barcode` behind the shared core-1 GPIO dispatcher, never replace encoder
+or Echo handlers. ISR captures level and coherent wheel counts then returns;
+decoding occurs in bounded Mission work. Retain count wrapping/epoch assumptions
+from current accessors and reject lost capture order. Verify hardware initialization
+and enable path rather than claiming a host decode proves physical capture.
 
 ## 4. Interfaces and contract
 
 ### 4.1 Source modules
 
-| File | Role |
-| --- | --- |
-| `subsystem3.c/.h` | Initialization, task start, protected line-snapshot copy (`s3_ir_copy`); the supported external interface. Also holds the Line/Barcode task (core 1; 10 ms input/feedback, 20 ms acquisition; missed releases skipped): ADC, calibration buttons, buzzer, barcode service |
-| `drv_ir_tracking.c/.h` | ADC register access |
-| `ir_tracking.c/.h` | References, normalization, visibility, P guidance; snapshot packaging that invalidates stale copies |
-| `drv_barcode.c/.h` | GP16 edge ISR and the timestamp ring |
-| `barcode_decode.c/.h` | Host-tested bar-width framing and Code 39 A-Z decode; portable types |
-| `barcode.c/.h` | Scanner state, mapping, copied event queue; public API |
-| `mission.c/.h`, `mission_logic.c/.h`, `safety.c/.h`, `safety_logic.h` | Mission and Safety tasks; `*_logic` files are kernel-free and host-tested |
-
-The task services a bounded number of captured barcode records per 10 ms release, after due ADC work, and writes no motors or network data. [architecture](../architecture.md#tasks) lists Line/Barcode at priority 15 and Safety at 12 and governs; `app_program/common/robot_config.h` currently sets 11 and 12 (to be reconciled).
+`subsystem3.c/.h` owns bounded `s3_step` and a line snapshot;
+`drv_ir_tracking` and `ir_tracking` acquire/classify; `drv_barcode`, `barcode_decode`
+and `barcode` capture/decode/map events. `app_program/mission/` now owns the
+coordinator and bounded safety helpers; no input/Safety task is created.
 
 ### 4.2 Line snapshot API
 
-```c
-bool s3_ir_copy(S3IrSnapshot *snapshot);
-```
-
-Returns false immediately on null input, unavailable initialization, busy mutex or kernel error; ignore the destination on failure. Task context only. Before any acquisition an initialized service returns a coherent snapshot with `have_sample=false`.
-
-| Fields | Meaning |
-| --- | --- |
-| `raw`, `have_sample`, `acquisition_valid` | Latest attempted pair; missing attempt vs failed/valid acquisition |
-| `calibration`, `contrast`, `calibration_valid` | References and spans |
-| `normalized_left/right`, `normalized_valid` | Values in [-1,1] |
-| `line`, `error`, `steering`, `guidance_valid` | Visibility, observational error, P steering (valid only when fresh VISIBLE) |
-| `capture_kind`, `capture_result` | Current phase and typed outcome |
-| `sample_fresh`, `sampled_ms`, `sample_age_ms` | Valid acquisition age <= 60 ms; original attempt time; wrap-safe age at copy (zero before first sample) |
-| `sequence` | Advances per distinct acquisition attempt including failed ones; wraps as `uint32_t` |
-
-Invalid normalized/error/steering values are zero with explicit validity flags; stale reads keep raw data and acquisition time but return UNKNOWN. Read success alone does not mean valid sensing. S3 creates one priority-inheritance mutex (handle published with C11 release/acquire atomics); both writer and reader use `TMO_POL`, so contention skips a publication or read and never delays acquisition. The struct is not a wire format.
+`s3_ir_copy` currently copies under a private mutex; preserve validity and original
+sample time. A successful copy is not fresh/usable sensing. Mission-local copies
+may be simplified after consolidation, while core-0 Reporting still needs coherent
+bounded access; do not remove synchronization merely because one task was merged.
 
 ### 4.3 Barcode API
 
-Declared in `barcode.h`; core-1 task context only; none is ISR-safe.
-
-| API | Contract |
-| --- | --- |
-| `barcode_init()` | Claims GP16 on the dispatcher; false on failure |
-| `barcode_set_mapping(letters)` | Four distinct letters A-Z indexed by action; refused while scanning or if invalid |
-| `barcode_mapped()` | True once four letters are installed; Mission's start gate and telemetry read it |
-| `barcode_start()` / `barcode_stop()` | Mission only. Start is refused until a mapping is installed and drops stale events; the S3 task applies start/stop at its next release, resetting the frame and the barcode overflow bits |
-| `barcode_service(cancel)` | Once per release: drain ring with a fixed edge budget, assemble and decode, queue events; GP21 (`cancel`) stops scanning |
-| `barcode_pop(event)` | Exactly one consumer (Mission); false when empty |
-
-Unmapped letters are never queued as actions. A successful decode or pop never grants movement permission; Mission rejects stale context before acting.
+Reuse `barcode_mapped`, mapping validation, start/stop and `barcode_pop` with one
+consumer. Current capacities: 64 captured edges, eight decoded events; overflow
+is explicit, not permission to replay an older action. Target Mission owns mapping
+installation and navigation; core-0 I/O submits mapping requests asynchronously.
+ACK follows installation. Stop drops pending actions, retains mapping/display.
 
 ### 4.4 Interface to S2 (Motion)
 
-Owned by [subsystem 2](subsystem2.md); the S3-side expectations are:
-
-- `MotionRequest.left/.right`: finite forward duty fractions 0-0.35 (not measured speeds; reverse not requestable). `.sampled_ms` is the original paired IR acquisition time (age <= 60 ms accepted); republishing cached data must not refresh it. `.enabled=false` brakes without clearing the stop latch.
-- `s2_publish()`: bounded latest-value copy; check the return, failure means local inhibition and the independent stop path. `s2_stop()`: persistent stop and wake-up; every stop invalidates the previous brake acknowledgement. `s2_reset_stop()`: needs the latest stop's brake acknowledgement; failure keeps the consumer stopped; never commands movement. `s2_health()`: use only after a successful read; `stopped` and `brake_acknowledged` indicate software state, not stationarity.
-- Runtime stop/reset callers share Motion's core 1; cross-core stop/reset is unsupported. One authorized request producer; any Mission/Obstacle handover needs agreement.
-
-**Proposed S2 capabilities for barcode navigation** (requirements for owner review, no API signatures agreed): coherent encoder feedback (counts, direction, time, sequence, validity, units); bounded ISR-safe association of barcode edges with encoder context; per-wheel speed PID; left/right/straight/U-turn actions via calibrated distance/angle targets; unique action ID with lease, absolute deadline and active/done/failed status (lease renewal must not restart the action; completion retained until acknowledged); cancellation on stop, expiry, fault, stall or obstacle; measured stationarity (brake acknowledgement alone is insufficient). Do not guess mappings, turn geometry, reverse permission, tolerances, lease durations or stall thresholds; unresolved values go to D03, D07, D08, D10 and D01/D02 in [project specs](../project-specs.md#pending-decisions).
+Mission is the only command producer. S3 never writes motors. See the central
+[mode-dependent contract](../architecture.md#motion-command-contract) rather than
+maintaining a second list of stop/freshness rules.
 
 ## 5. Data and fault bits
 
-- The line snapshot (section 4.2) is the S3 data product; barcode status and events come from section 4.3. S1 maps typed fields into its own telemetry format and must not serialize native layout. The shared word-snapshot, mutex-copy and ISR-ring patterns are in [architecture](../architecture.md#shared-data-rules).
-- The S3 task alone writes the Line fault byte: bit 0 IR invalid (no reading, or a calibrated reading out of range; blocks a start), bit 1 barcode capture overflow, bit 2 barcode event overflow (per run, report-only, cleared when the scanner stops). The Mission task writes its own byte: bit 0 line lost (report-only). Policy: [fault bitmask](../architecture.md#fault-bitmask).
+Keep packed fields/accessors and historical [ADR 0001](../adr/0001-base-2-scaled-integers.md).
+Target seven Mission states plus invalid fit three logical bits while retaining
+the existing four-bit wire slot; review numeric state/decoder compatibility.
+Line/Obstacle/Mission fault bytes become Mission-written; preserve wire positions.
+Policy: [fault table](../architecture.md#fault-bitmask).
 
 ## 6. Mission and Safety (summary; owned by architecture)
 
-[architecture](../architecture.md#subsystem-summaries) is authoritative; this is a pointer, not a second definition.
-
-- Mission is a single `switch` with one handler per state. Candidate states: Calibrating, Ready, FollowLine, Navigation, Scan, Bypass, Reacquire, Stopped, Fault, Complete (final list and bit width set in the Mission issue). A decoded command is held until the next cross junction, then executed as a Motion action. A GP20 start is refused until four letters are mapped and while a start-blocking fault is set. Line loss allows bounded recovery before stopping. Arbitration order: stop/fault, required-data freshness, obstacle, navigation, line following.
-- Mission writes one packed command every 20 ms (mode, speed and steering or target, action ID, source-sample acquisition time); Motion brakes on a sample older than the age limit (D07). Safety or GP21 sets the persistent stop flag; reset needs a fresh local GP20 press with the cause cleared.
-- Mission and Safety are proposed target design, not implemented here, except the bench policy below.
+[Architecture](../architecture.md#mission-loop) is authoritative. Barcode is held
+to the next junction, consumed once and followed onto the selected outgoing route.
+U-turn pauses about 200 ms while stopped then turns once; no turn is undone.
+Safety becomes small Mission/Motion functions; Motion independently enforces stop.
+Calibration/mapping are READY prerequisites; no CALIBRATE/COMPLETE target states.
 
 ## 7. Status
 
-### 7.1 Implemented (software only; no physical evidence)
+### 7.1 Implemented software
 
-- Paired acquisition, calibration, classification, P guidance, snapshot API, buzzer/button handling.
-- Barcode capture ring, decoder, mapping, event FIFO, public API; scanner disabled at boot.
-- Removal of S3 firmware fixtures, runner and startup hooks was kept at Nicholas's request; no new testing added. Historical evidence stays under `testing/subsystem3/`. TEST-only periodic console diagnostics (about every 500 ms) are observations, not assertions.
+At remote `5e6a45b`, input/calibration, P guidance, barcode decoder/service,
+Mission/Safety and their separate task startup paths exist. Local `4b00e20`
+adds line-loop/crossing/timing-related changes; those are not remote-main behavior.
+Preserve [S3 results](../../testing/subsystem3/TEST_LOG.md) exactly; neither inventory
+nor saved host results claims a final-image physical run.
 
-### 7.2 Proposed / not established
+### 7.2 Proposed or not established
 
-Barcode navigation end to end; encoder feedback and action interface from S2; full Mission/Safety; measured barcode configuration. No physical tracking, stopping, scan or navigation result is claimed. Builds, firmware self-checks, console states and software brake acknowledgement are not physical evidence.
+The working three-task integration and GP21-release controls are implemented and
+software-tested. Requested sweep geometry, mounted junction confirmation and
+end-to-end bidirectional barcode navigation still need decisions/calibration.
+White/white is no longer assumed to prove centering; a known-side bounded arc is
+retained provisionally, and unknown-side loss stops. Outgoing turn confirmation
+counts distinct acquisitions; U-turn pause is measured from encoder stationarity
+in software, with its physical reference still D02/D08. Do not describe all Motion/Mission code as absent
+or reuse historical bench statements as present status.
 
 ## 8. Open items
 
-- Reconcile the bench controller documentation with source and startup wiring; review the single-producer boundary with S2 before motor trials.
-- Raised-wheel check of motor identity, forward polarity and steering sign; verify boot brake, GP21 stop, acknowledgement and restart; measure brake timing and physical stopping; record motor asymmetry at equal duty.
-- Baseline measurements: mounted height/spacing, calibration ranges, lighting, surface, power, noise, latency, loss classification; straight/curve, broad-black, controlled-loss and recovery-timeout trials.
-- Barcode: comparator threshold/polarity and safe output level, sensor placement separate from the line pair, print scale, orientation, encoder-callback WCET, GPIO dispatcher agreement, symbology and mapping route (D01, D02, D04, D11).
-- Planned physical cases (T02, T03, T04, T05, T11, T14, T15 in [testing](../../testing/README.md)) and barcode planning labels BC-P01 to BC-P07 (known A/Z at both scales; partial/malformed/unknown/reverse frames; speed variation; one event per encounter and rearm; capture/FIFO overflow and stale context; concurrent ADC, local stop and bursts; four mapped actions with original-line recovery). BC labels are not permanent test IDs; allocate permanent IDs before running and never reuse retired ones. Results: [S3 testing](../../testing/subsystem3/TEST_LOG.md).
-- Electrical module facts and wiring live in [team](../team.md#2-pins); units, sample patterns and course geometry in [project specs](../project-specs.md).
+D01/D02/D03/D04/D07/D13 own missing values. Validate MR-12/13/26/27/28/32, T03/T04/
+T05/T11/T14/T15; test command-once, loop junction re-entry, partial capture rejection,
+stale producers and stop during every phase. Allocate new case IDs before use;
+never rewrite existing S3-BF or other evidence for this target.
+
+Continuation correction: junction qualification counts distinct usable black
+acquisitions and travel before the first black exit. Completing the forced
+minimum crossing after black ends cannot turn a thin patch into a confirmed
+junction or consume its held barcode. Qualified straight/unmapped crossings
+also enter outgoing-line confirmation before ordinary tracking. All A-Z now
+have both-orientation/two-scale host fixtures; physical print/mounting tests
+remain pending.

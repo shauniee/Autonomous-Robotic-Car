@@ -1,12 +1,16 @@
 # System architecture
 
-Target design for `main`. It implements the requirements and change requirement in [project-specs](project-specs.md) with the fewest mechanisms that meet them. [Tribunal 1](additional-docs/tribunal1.md) records the Week 8 plan: task ownership, priorities, RTOS interfaces and authority boundaries are unchanged from it, except for the four [post-Tribunal decisions](#post-tribunal-decisions). Pre-realignment code is on branch `legacy-main`; the fuller integration is on branch `uat` as a port source.
-
-Related: pins, wiring and task budget in [team](team.md); data widths and scales in [project-specs](project-specs.md); subsystem detail in [S1](architecture/subsystem1.md), [S2](architecture/subsystem2.md), [S3](architecture/subsystem3.md), [S4](architecture/subsystem4.md), [S5](architecture/subsystem5.md).
-
 ## Contents
 
+- [Plan status and scope](#plan-status-and-scope)
 - [Tasks](#tasks)
+- [Core allocation implications](#core-allocation-implications)
+- [Mission loop](#mission-loop)
+  - [Startup and local controls](#startup-and-local-controls)
+  - [Barcode and junction lifecycle](#barcode-and-junction-lifecycle)
+  - [Recovery and encounter coordination](#recovery-and-encounter-coordination)
+- [Source layout](#source-layout)
+- [Implementation order and acceptance](#implementation-order-and-acceptance)
 - [Authority](#authority)
 - [Shared-data rules](#shared-data-rules)
   - [Fault bitmask](#fault-bitmask)
@@ -27,137 +31,297 @@ Related: pins, wiring and task budget in [team](team.md); data widths and scales
   - [Golden vectors](#golden-vectors)
   - [Binary frame sizes](#binary-frame-sizes)
 
+## Plan status and scope
+
+Target contracts reconciled 2026-10-29. Implementation sequence and pinned remote
+source inventory live in [plan](../plan.md). These target contracts are not a
+claim of implemented firmware or physical acceptance. The working implementation now creates Motion, Mission and core-0 I/O only.
+The software verification and remaining calibration/feature gates are recorded in
+[plan status](../plan.md#software-implementation--2026-10-29). This does not make
+all target feature behavior below physically accepted. Requirements and calibrated values are
+owned by [project-specs](project-specs.md); wiring by [team](team.md).
+
+Keep micro T-Kernel, C/Pico SDK, five subsystem modules and binary MQTT schema v2.
+No core-number migration, generic event bus, new scheduler or watchdog framework.
+
 ## Tasks
 
-All application tasks run on core 1. The kernel WiFi/lwIP/MQTT task (`cyw43_utk_task`, priority 4) runs on core 0. Smaller number = higher priority.
+Exactly three application tasks; kernel boot/WiFi/USB activities remain additional
+RTOS tasks. Smaller numeric priority means higher scheduling priority.
 
-| Task | Owner | Priority | Release | Role |
-| --- | --- | --- | --- | --- |
-| Safety | Nicholas | 12 | 10 ms | GP21 stop latch, run-stopping fault check, freshness checks, stop authority |
-| Motion | Mahesha | 13 | 20 ms, or woken by stop | Sole motor writer; encoders, wheel PID, distance/turn actions |
-| Mission | Nicholas | 14 | 20 ms | Navigation decisions, state machine, mapping acceptance |
-| Line/Barcode | Nicholas | 15 | ADC 20 ms; GP16 edge IRQ | IR line snapshot, barcode capture and decode |
-| Terrain | Darrius | 16 | 20 ms | IMU calibration, pitch, humps, impact |
-| Obstacle | Jia Jing | 17 | Echo IRQ; trigger every 60 ms | Forward range, servo scans, profiles, side-watch |
-| Reporting | Shaun | 20 | Collect 20 ms; publish 500 ms | Binary telemetry, event record, snapshot replies, mapping hand-off |
+| Target task | Core | Responsibilities | Scheduling decision |
+| --- | --- | --- | --- |
+| Motion | 1 (`TP_PRC2`) | Motor outputs, wheel-speed loop, encoder actions, independent GP21/stop/expiry checks | Higher priority than Mission |
+| Mission | 1 (`TP_PRC2`) | Bounded line/barcode/sonar/servo steps, calibration controls, navigation, safety policy and mapping acceptance | Below Motion; bounded work then sleep |
+| `io_task` | 0 (`TP_PRC1`) | Bounded Terrain acquisition/calibration and Reporting steps | Below existing critical kernel services; numeric choice pending |
+
+WiFi/lwIP/MQTT service and USB stay on core 0 in their existing execution contexts.
+Existing numeric periods/priorities/ages are retained as explicitly provisional
+software defaults with user authorization on 2026-10-29. Physical WCET budgets,
+freshness margins and acceptance are still [D13](project-specs.md#pending-decisions). Existing source
+constants are recorded in [plan inventory](../plan.md#remote-implementation-inventory),
+not silently promoted to target values. Skip missed releases rather than replay
+an unbounded backlog; bound capture decoding, incoming requests and event draining.
+Only Motion performs wheel control; Mission scheduling authority does not outrank
+its braking deadlines. No separate Safety, Line, Obstacle, Terrain or Reporting task.
+
+## Core allocation implications
+
+Keep encoder/barcode/Echo capture under the existing core-1 GPIO dispatcher.
+I/O consolidation moves Terrain/Reporting application work, not WiFi/USB services.
+Never hold shared locks across I2C, servo settling, Echo wait, formatting or network
+work. Use bounded peripheral steps, acquisition timestamps and coherent copies.
+Measure network-load effects on IMU age and interrupt/control latency. Audit S1
+multi-producer events and mapping installation across cores: DI/EI protects only
+one core. The existing same-core event-log assumption cannot survive unchanged.
+
+## Mission loop
+
+Seven states: READY=0, FOLLOW_LINE=1, NAVIGATE=2, SCAN=3, BYPASS=4,
+REACQUIRE=5, STOPPED=6; code 7 is invalid and stops. The existing four-bit MQTT
+state slot is unchanged. `scripts/mqtt_client.py` uses these new meanings;
+recorded old-image state labels remain historical.
+Calibration/mapping readiness belongs inside READY, not extra top-level states.
+No automatic COMPLETE or finish-marker transition. A local stop or stopping guard
+ends movement, while healthy operation continues around the course indefinitely.
+
+```mermaid
+stateDiagram-v2
+    [*] --> READY
+    READY --> FOLLOW_LINE: fresh GP20 start and prerequisites valid
+    READY --> STOPPED: GP21 or stopping guard
+    FOLLOW_LINE --> NAVIGATE: confirmed junction
+    NAVIGATE --> FOLLOW_LINE: action done and outgoing line acquired
+    FOLLOW_LINE --> SCAN: blocking obstacle and stationary
+    SCAN --> BYPASS: supported clearance
+    SCAN --> STOPPED: blocked or timeout or failed evidence
+    BYPASS --> REACQUIRE: rear of vehicle clear
+    FOLLOW_LINE --> REACQUIRE: healthy sensors lose line
+    REACQUIRE --> FOLLOW_LINE: intended line confirmed
+    REACQUIRE --> STOPPED: budget exhausted or required evidence failed
+    NAVIGATE --> STOPPED: stop or fault or action timeout
+    BYPASS --> STOPPED: stop or hazard or inadequate coverage
+    FOLLOW_LINE --> STOPPED: stop or required producer failure
+    STOPPED --> READY: eligible GP21 release after brake and causes clear
+```
+
+GP21 and stopping guards apply in every state, including SCAN/READY. Scan/turn/
+recovery phases issue a bounded step and return. Arbitration: local stop/stopping
+fault, required-data freshness, obstacle hazards, active manoeuvre, junction
+instruction, ordinary line following. Do not blindly resume an interrupted action.
+
+### Startup and local controls
+
+- Boot inhibited. Attempt stationary IMU calibration before enabling IR calibration;
+  complete or fail the attempt within a bound and expose its outcome. IMU failure
+  is flagged and does not permanently prevent IR calibration or starting.
+- Start requires fresh functional line acquisition and valid calibration/guidance,
+  functional Motion/encoder service, an installed four-letter mapping, WiFi and
+  MQTT connected, no active stopping cause and a fresh local GP20 press.
+- Connectivity is a readiness prerequisite, not remote motion authority. Mission
+  observes connection state; network callbacks never call start/stop/motor APIs.
+- GP21 press requests immediate persistent stop. Its debounced release may clear
+  the latch only after Motion serviced braking and stopping causes cleared; it
+  returns READY and never starts motion. A fault stop requires a deliberate fresh
+  GP21 press/release after cause clearance. GP20 subsequently starts.
+- Stop cancels active manoeuvres, scans and pending navigation; retain valid IR
+  calibration, installed mapping and last barcode display. Do not replay commands.
+  Operator repositions after a partial turn/bypass. Reboot still clears RAM-only
+  calibration/mapping; no nonvolatile retention is added.
+- Mapping replacement is accepted only while READY/STOPPED, installs atomically
+  through Mission and clears pending movement. It never starts the robot.
+
+### Barcode and junction lifecycle
+
+Decode A-Z identically in either scan direction. Store one character/action from
+the installed MQTT mapping and continue tracking until the next confirmed cross
+junction; its distance from the barcode varies. Mark the action consumed when
+navigation starts. Execute once and confirm encoder completion plus outgoing-line
+tracking; left/right continue on the chosen branch. U-turn reaches the junction,
+brakes, pauses about 200 ms, turns 180 degrees and tracks the return branch.
+Never undo a turn. Pause reference/placement tolerance is pending D02/D08.
+
+No pending instruction: continue straight using a requested minimum 25 mm crossing
+travel (`MISSION_BROAD_FORWARD_MM`), then acquire/track the outgoing line. This is
+not an accepted geometric clearance guarantee; sensor/axle offsets and completion
+tolerance need measurement. Confirm a junction using tracking evidence plus
+travel/geometry qualification. A single black barcode-sensor reading neither
+identifies a barcode nor proves a junction; barcode capture must not block junction
+checks. Exact mounted evidence is D01/D02/D04.
+
+Remove the two-second barcode blind delay. Use the decoder's bounded quiet-zone/
+encounter lifecycle to prevent repeated actions from the same print. A new visit
+may produce a new action. Incomplete/unknown captures do not guess a character;
+no elaborate damaged-print recovery. Multiple different barcodes before a junction
+remain a pending course/policy decision, not an invented queue of route choices.
+
+### Recovery and encounter coordination
+
+Healthy IR seeing white enters REACQUIRE, unlike missing/stale acquisition, which
+stops required movement. Requested recovery sweeps left/right up to 70 degrees
+while creeping, for two back-and-forth attempts; exact sequence, speed, travel
+cap and failure boundary await D07. Either sensor finding line initiates alignment;
+confirm stable intended-line tracking before resuming. Heading/travel evidence
+is required after bypass to avoid accepting an unrelated crossing.
+
+Humps remain concurrent with tracking; request half normal tracking speed during
+a valid encounter, settle at reduced speed for height estimation and restore after
+confirmed completion. Only valid completed humps update count/maximum; report
+measurements/events. Proposed stop retention/new-start reset is pending D06.
+
+For a blocking obstacle, brake and confirm stationarity before profiling. Bypass
+selects supported measured clearance, departs the line, follows the side, confirms
+rear-edge and full-car clearance, returns toward the original line and aligns.
+One servo sensor cannot look forward and sideways simultaneously: schedule fresh
+coverage and bounded travel. Reverse needs a supported bounded path; no blind
+rear-clearance assumption. A new hazard, unsupported route or exhausted action
+budget brakes/stops. Exact rescan/reverse policy awaits D02/D05/D07.
+
+## Source layout
+
+Target: `app_program/mission/` holds coordinator and small policy helpers;
+`app_program/common/` holds startup/shared contracts and I/O orchestration as
+appropriate. Keep `subsystem1/` through `subsystem5/` for their reusable modules.
+No separate Safety task. Move files/build/includes only with tested implementation
+stages in [plan](../plan.md#implementation-stages). `mqtt_utk.c` stays in the kernel
+library and only WiFi service context calls MQTT/lwIP.
+
+## Implementation order and acceptance
+
+[Plan](../plan.md#implementation-stages) is the single work sequence: preserve
+Motion checks (#130), consolidate Mission (#131), consolidate I/O (#132), integrate
+(#133), then physically calibrate/validate all features through #117. Align
+contracts first (#129). No host/build result is firmware or physical acceptance.
 
 ## Authority
 
-- Motion alone writes motor PWM.
-- Mission owns navigation decisions and accepts mapping changes, only while stopped. It refuses a start until four letters are mapped and while a start-blocking fault is set.
-- Safety holds stop authority independent of Mission and Reporting.
-- Line/Barcode, Terrain and Obstacle provide sensor evidence and never write motors.
-- Networking has no movement authority; network loss never stops otherwise healthy local autonomy.
-
-```mermaid
-flowchart TD
-    LB[Line/Barcode] -->|IR word, barcode events| Mission
-    Terrain -->|terrain word| Mission
-    Obstacle -->|range word, profile| Mission
-    Mission -->|scan / side-watch request| Obstacle
-    Mission -->|motion command| Motion
-    Motion -->|feedback word, encoder counts| Mission & LB & Terrain & Obstacle
-    Safety -->|stop event flag| Motion
-    LB & Terrain & Obstacle & Motion -->|own fault byte| Safety & Mission
-    Mission & Motion & LB & Terrain & Obstacle -->|snapshots| Reporting
-    Reporting <-->|binary frames| Kernel[Kernel MQTT adapter, core 0]
-    Kernel -->|mapping command| Reporting -->|mapping| Mission
-```
+- Motion alone writes motor PWM and owns the persistent motor stop latch.
+- Mission alone chooses movement, accepts mappings and coordinates local reset.
+- S3/S4/S5 supply evidence and helpers; they never independently drive motors.
+- Small safety functions are called by Mission/Motion, not a separate task.
+- Network work reports connectivity and transports configuration/diagnostics;
+  it never starts, stops or drives the robot. Loss during a run is report-only.
 
 ## Shared-data rules
 
-Exactly three sharing patterns. Each storage unit has one writer; only that writer performs read-modify-write on it.
+One writer per storage unit; only that writer performs read-modify-write.
 
-1. **Word snapshot.** A producer packs a snapshot of at most 32 bits into one aligned `uint32_t`, composes it in a register and publishes it with one store. Readers take one load and decode with accessors. An aligned 32-bit load/store is single-copy atomic on RP2040 across both cores: no lock, no torn snapshot.
-2. **Mutex copy.** Snapshots above 32 bits (obstacle profile, event record, telemetry aggregate) are copied under one priority-ceiling mutex covering only the bounded copy.
-3. **ISR-to-task ring.** Interrupts push timestamps into a single-producer/single-consumer ring (barcode edges, Echo edges). Scalars shared with an ISR on core 1 use a short `DI`/`EI` section.
+1. One aligned word snapshot: C11 release store/acquire load and field accessors.
+2. Larger snapshot: short bounded mutex copy (use existing priority-inheritance
+   primitives); never hold across I/O or formatting. Reporting skips busy data.
+3. Bounded capture/bridge rings: explicit producer/consumer ownership and full
+   policy. ISRs capture/signal/return; no blocking or allocation. Preserve sample
+   acquisition time. Existing SPSC transport rings are retained provisionally;
+   the professor's buffer diagram does not establish a required kernel primitive.
 
-No other mechanism: no custom PRIMASK code, no `volatile` as synchronisation, no lock-free retry loops. Fields are never read in place from another subsystem's storage (C cannot address a bit-field; in-place multi-field reads are not coherent).
+Same-core DI/EI is not cross-core synchronization. S1 events gain producers on
+both cores, so select bounded mutex/spinlock copies or per-producer rings before
+moving tasks. Mapping RX on core 0 must hand off to Mission on core 1 and wait
+asynchronously for installation outcome before ACK. Do not call Mission's mutable
+state from another task without the agreed copy/hand-off contract.
 
 ### Fault bitmask
 
-One byte per owner task; each owner sets and clears only its own bits, so no two writers share a storage unit. Every bit is reported over MQTT so the operator can correct it before the next attempt. Two masks in `robot_data.c` decide what else a bit does:
+Six existing owner bytes and positions remain wire-compatible. Owner denotes a
+module, not necessarily a separate task. Target writers: Motion byte by Motion;
+Line/Obstacle/Mission bytes by Mission; Terrain by I/O; Network by WiFi service.
+This table owns target policy. `robot_data.c` now leaves IMU/calibration failure report-only. Mission checks
+`s1_bridge_ready()` for local start; network loss does not stop an accepted run.
 
-- **Blocks start:** Mission refuses a GP20 start while the bit is set.
-- **Stops run:** Safety latches a stop when the bit is set; the latch holds until a GP20 reset with every cause cleared.
+| Condition / detector | Start response | During run | Clear/reset |
+| --- | --- | --- | --- |
+| GP21 / Motion local input | Block | Latch brake | Eligible GP21 release after serviced brake; GP20 starts separately |
+| Motion bit 0 stall / wheel controller | Block while active | Latch stop | Cause cleared plus local reset; threshold uncalibrated D07 |
+| Motion bit 1 encoder / invalid edges or failed capture | Block | Latch stop | Validated encoder recovery; existing 64-count rule is provisional D03 |
+| Line bit 0 acquisition invalid / S3 | Block | Stop if required acquisition invalid/stale | Valid readings/calibration and local reset |
+| Healthy line lost / Mission | No start on unusable line | Bounded REACQUIRE, then stop if exhausted | Line confirmed or operator reposition/reset |
+| Line bits 1/2 barcode capture/event overflow | Report | Report; never guess/replay an action | Existing encounter/run clearing behavior audited during integration |
+| Terrain bits 0/1 IMU acquisition/calibration failure | Flag, allow after bounded startup attempt | Flag; ordinary tracking continues | Successful reacquisition/calibration; no invented height |
+| Terrain bit 2 detected impact | Block while active | Latch stop | Cause cleared plus deliberate local reset |
+| Obstacle bit 0 no echo / S5 | Flag, not universal block | Flag; ordinary tracking continues; no inferred clear space | Fresh valid readings clear/report status |
+| Required scan/bypass evidence unavailable / Mission | Not ordinary readiness input | Brake/stop unsupported manoeuvre | Local reset after safe reposition/cause clearance |
+| Mission bit 0 recovery exhausted | Report historical reason | Already stopped | Clear on accepted new start |
+| Network bits 0/1 WiFi/broker unavailable | Mission blocks start | Report-only; healthy local run continues | Successful reconnect; no remote restart |
+| Expired command, failed required copy/progress or action deadline / Motion/Mission | Inhibit | Brake/stop | Fresh validated context plus local reset; no stale replay |
+| Startup control initialization failure or TEST | Inhibit | No enabled output | Startup failure requires correction/reboot; TEST remains inhibited |
 
-| Byte (writer) | Bit | Blocks start | Stops run | Why |
-| --- | --- | --- | --- | --- |
-| Motion (S2 task) | 0 motor stall | yes | yes | Driving into a stall can damage the car |
-| | 1 encoder fault | yes | yes | Turns and distances become wrong; clears after 64 valid counts (spin a wheel by hand) |
-| Line (S3 task) | 0 IR invalid | yes | no | No usable line reading; Mission stops itself if it cannot follow |
-| | 1 barcode capture overflow | no | no | Per run; cleared when the scanner stops |
-| | 2 barcode event overflow | no | no | Per run; cleared when the scanner stops |
-| Terrain (S4 task) | 0 IMU fault | yes | no | Hump data missing mid-run is reported, not a hazard |
-| | 1 IMU calibration failed | yes | no | As above |
-| | 2 impact | yes | yes | Collision |
-| Obstacle (S5 task) | 0 no echo | no | no | Open space gives no echo; never treated as clear space |
-| Mission (Mission task) | 0 line lost | no | no | Mission has already stopped; cleared at the next start |
-| Network (kernel task, core 0) | 0 Wi-Fi lost, 1 broker lost | no | no | Networking never starts or stops the robot |
-
-Bit positions agree in `robot_data.h`, this table, [project-specs](project-specs.md#fault-bitmask-app_programcommonrobot_datah-see-architecture-for-status) and `scripts/mqtt_client.py`; each owner confirms their byte in the #113 PR before it merges (no confirmation recorded yet). `scripts/mqtt_client.py --self-test` checks the decoder's bits per owner against `robot_data.h`.
+No new fault bit is invented without a data-contract review. Conditions lacking
+wire bits must still be observable through existing state/reason diagnostics.
 
 ## Motion command contract
 
-- Mission writes one packed command each 20 ms: mode (stop, follow, distance, turn), speed and steering or target, a small action ID, and the acquisition time of the sensor sample it was derived from.
-- Motion brakes when that sample is older than the configured age limit (D07). Copying or rewriting a command never refreshes its sample time.
-- Discrete actions report `IDLE`, `RUNNING`, `DONE` or `FAILED` with their action ID in Motion's feedback word. Mission starts the next action after seeing `DONE` for its ID; a new command replaces the old one. Only Motion writes the status.
-- Stop: Safety or GP21 sets a persistent event flag and wakes Motion, which brakes in that release. Reset needs a fresh local GP20 press with the cause cleared and never starts motion by itself. Zero commanded speed is not proof of stopping; stationarity comes from encoder counts.
+Mission is the only latest-command writer. Keep packed `MotionCommand`, action
+ID and coherent feedback. Repeating a command does not restart its encoder action
+or extend its absolute deadline. Preserve acquisition time; copying stale evidence
+never makes it fresh. No lease/generation/acknowledgement framework is added.
+
+| Movement | Required evidence | Not universally required |
+| --- | --- | --- |
+| FOLLOW_LINE / straight crossing | Mission progress, Motion/encoder health, fresh usable tracking acquisition | IMU/sonar/network availability mid-run |
+| Encoder turn/distance | Fresh Mission progress and encoder service; bounded action deadline; line evidence for acquisition/completion | Visible line throughout an in-place turn |
+| SCAN | Braked output plus measured stationarity; fresh scan samples/angles | Motion command implying stationarity |
+| BYPASS | Fresh encoder/Mission progress and mode-specific supported clearance/coverage | Side sample masquerading as forward sample |
+| REACQUIRE | Functional fresh IR, encoder/Mission progress, bounded heading/travel search | Visible line before search starts |
+
+Implemented software uses Motion service sequence/time, fresh IR acquisition for
+tracking/crossing/reacquisition and Mission release time for encoder-only actions.
+Motion enforces command expiry and the original absolute action deadline. Copies
+do not renew acquisition time. Existing age limits remain provisional D07/D13. Stop must not wait for the command mutex or diagnostics.
+Runtime stop/reset stays on Motion's core; Terrain publishes impact evidence and
+Motion/Mission observe it. Motion checks GP21 independently every release.
+Reset invalidates old commands and never enables output itself. Brake service
+acknowledgement is software progress; stationarity uses encoder evidence.
+Checks require Motion to execute and do not protect against a hung Motion/kernel.
+A watchdog tick setup alone is not a reset watchdog; further policy remains D15.
 
 ## Encoder contract
 
-- The encoder ISR keeps one fixed-width wrapping count per wheel. Width is set from measured counts per revolution and the longest segment any consumer measures (D03).
-- Each consumer (Motion actions, barcode bar widths, hump travel, bypass legs) stores its own origin and computes travel by modular subtraction. Nobody resets the shared count, so travel length is unbounded and consumers stay independent.
+ISR counts wrap at the justified width. Each consumer keeps its own origin and
+uses modular subtraction; nobody resets shared counts. Calibrate counts/revolution,
+wheel geometry and signs before distance/angle actions. Record shared GPIO IRQ
+edge rate and ISR time at maximum tested wheel speed. PIO is only a conditional
+follow-up if evidence shows the existing capture is inadequate.
 
 ## Subsystem summaries
 
-### S1 Communications ([subsystem1](architecture/subsystem1.md))
+### S1 Communications (subsystem1)
 
-- The kernel adapter (`lib/liblwip/sysdepend/pico_rp2040/mqtt_utk.c`) only connects, reconnects, publishes byte frames and hands received frames to Reporting. No application logic; no application headers beyond one S1 bridge header.
-- Three topics: telemetry (binary, every 500 ms and on snapshot request), command (binary snapshot request and mapping), status (retained online/offline last will and mapping acknowledgement).
-- Wire format: [MQTT binary protocol](#mqtt-binary-protocol-schema-version-2). Native structs are never sent.
-- Laptop side: `scripts/mqtt_client.py` (monitor, map, snapshot); usage in [README](../README.md#wireless-telemetry).
-- Mapping acknowledgement `{sequence, result}` means the complete mapping was validated and installed; receipt alone is not an acknowledgement.
+[Guide](architecture/subsystem1.md): bounded core-0 reporting functions; opaque
+TX/RX bridge to kernel MQTT; mapping ACK only after Mission installation.
 
-### S2 Motion ([subsystem2](architecture/subsystem2.md))
+### S2 Motion (subsystem2)
 
-Sole motor writer, encoder counts, wheel PID, distance/turn actions, stop handling. Contracts: [motion command](#motion-command-contract) and [encoder](#encoder-contract).
+[Guide](architecture/subsystem2.md): sole motor writer; wheel control, encoder
+actions and independent stop/expiry checks.
 
-### S3 Line, barcode and Mission ([subsystem3](architecture/subsystem3.md))
+### S3 Line, barcode and Mission (subsystem3)
 
-- **Line.** Two analogue IR channels (GP26/GP27), calibrated black/white, published as one word snapshot: normalised readings, line state, validity.
-- **Barcode.** The GP16 edge ISR pushes edge time and encoder position into a ring. The task measures bar widths from encoder travel, decodes Code 39 A-Z in either direction and queues decoded events (small fixed depth; overflow sets a fault bit).
-- **Mapping.** All 26 Code 39 patterns are compiled in; only the four letter-to-action assignments (left, right, straight, U-turn) arrive over MQTT. Boot state is unmapped, and Mission refuses a start until a mapping is installed.
-- **Mission.** One `switch` on state with one handler per state. Candidate states: Calibrating, Ready, FollowLine, Navigation, Scan, Bypass, Reacquire, Stopped, Fault, Complete; the final list and bit width are set in the Mission issue. A decoded barcode command is held until the next cross junction, then executed as a Motion action. Line loss allows a bounded recovery before stopping. Arbitration order: stop/fault, required-data freshness, obstacle, navigation, line following.
+[Guide](architecture/subsystem3.md): S3 retains line/barcode sensing/decoding;
+Mission coordination moves out. No independent S3 control thread in the target.
 
-### S4 Terrain ([subsystem4](architecture/subsystem4.md))
+### S4 Terrain (subsystem4)
 
-- Calibrate accelerometer bias while stationary at start.
-- Height accumulates sin(pitch) times encoder travel through each climb, crest and descent. Working values are 16-bit fixed point; reported height is packed to 7 bits with a defined scale (D06) and an invalid code.
-- Only a valid completed encounter adds a hump event and may update the maximum. An impact sets the run-stopping impact bit while the shock lasts; a hump in progress is abandoned.
+[Guide](architecture/subsystem4.md): core-0 bounded IMU/terrain functions; measured
+encoder travel, filtered pitch, valid completed hump results and impact evidence.
 
-### S5 Obstacle and bypass ([subsystem5](architecture/subsystem5.md), with Mission)
+### S5 Obstacle and bypass (subsystem5, with Mission)
 
-- Forward range is a word snapshot; no echo means unknown, never clear space.
-- When an obstacle blocks the line, Motion stops and Obstacle performs a stationary coarse scan (five rays) and a focused fine scan, producing location, width, closest point and left/right clearance. A ray without an echo is skipped; if a side's outermost ray has no echo, that side is unknown and reports zero clearance, so the bypass takes the measured side or stops.
-- Side-watch bypass: turn toward the side with more clearance, drive an offset leg, turn parallel, then drive the parallel leg with the servo held toward the obstacle. A range jump marks pass-by; encoder travel along the leg gives obstacle depth. Turn back, return the offset and reacquire the original line using expected heading and two fresh line observations. A second obstacle during bypass stops the robot.
+[Guide](architecture/subsystem5.md): bounded sonar/servo acquisition and uncertain
+width/clearance estimates; Mission owns supported bypass/original-line recovery.
 
 ## Time
 
-- Kernel milliseconds drive freshness and control; hardware TIMER microseconds time barcode and Echo edges. Each domain stays explicit.
-- Timestamps may be stored narrow; all age calculations use unsigned wrap-safe subtraction, and each width is justified in [project-specs](project-specs.md).
-- Storage, waits, retries and actions are bounded. ISRs capture, signal and return.
+Keep kernel milliseconds and hardware microsecond capture domains explicit.
+Use unsigned wrap-safe elapsed arithmetic and justified field widths. No unbounded
+polling, waits, retries, frame backlog or movement phases. Slow MQTT cannot prove
+short latency; measure directly on the final image.
 
 ## Post-Tribunal decisions
 
-Agreed 2026-10-25 as change type "Simplified". Each keeps the Tribunal's intent while removing machinery the requirements do not need.
-
-| Tribunal 1 record | Adopted design | Reason |
-| --- | --- | --- |
-| Leased Motion commands renewed without moving the original sensor time; results retained until acknowledged | Timestamped command rewritten every 20 ms; Motion brakes on stale sample time; DONE/FAILED with action ID; no renewal, epochs, acknowledgement or two-phase reset | One producer and one consumer on one core. Staleness is the only hazard a lease guards against, and the sample time already covers it. A single status writer removes the acknowledgement race. |
-| Full 26-entry mapping replacement with four acknowledgement slots | Four 5-bit letters (20 bits) and one `{sequence, result}` acknowledgement | The rule announces exactly four letters. 3 bytes instead of 26 entries; one acknowledgement state instead of a queue. |
-| Encoder distance reset at every barcode | Fixed-width wrapping counts with per-consumer origins | A missed barcode leaves the interval unbounded, and a shared reset breaks other consumers (Tribunal Version C gap 3). |
-| Mutex-protected copies for every snapshot | One-word snapshots by single store/load; mutex copies only above 32 bits | Atomic on RP2040 across cores, no lock time, no torn reads. Meets risks R1 and R4 with a single writer. |
+Historical Tribunal mechanisms are preserved in the [Tribunal record](additional-docs/tribunal1.md).
+The active simplification retains timestamped commands, bounded action IDs,
+four-letter runtime mapping, per-consumer encoder origins and word snapshots.
+New target decisions are owned above, not an alternative historical architecture.
 
 ## MQTT binary protocol, schema version 2
 
@@ -229,7 +393,7 @@ in a shared 16-bit field; time, encoder positions and arg2 stay 16-bit.
 Invalid kinds and arguments above 127 are rejected rather than truncated.
 Ring head (0-15) and count (0-16) share a 16-bit packed word, with
 32-bit saturating `dropped`. Accessors isolate the bit operations; the
-existing core-1 interrupt-masked push/pop boundaries remain in place.
+existing same-core interrupt-masked push/pop boundaries remain in the current implementation. During I/O consolidation, audit producer/consumer placement: local interrupt masking does not protect a cross-core ring.
 Expected target ring storage is 168 bytes, including padding; confirm with
 `testing/subsystem3/sizeof_probe.sh testing/subsystem1/sizeof_probe.c`.
 This is a RAM layout change only: `mqtt_encode_event`, the laptop decoder
@@ -261,3 +425,16 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 | Mapping | up to 512 bytes on `uat` | 5 bytes |
 
 Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Final message-size and RAM evidence: [SYS-11](../testing/system/TEST_LOG.md#3-final-memory-and-message-size-sys-11).
+
+Implementation limits: the coordinator retains a bounded last-side recovery arc
+until D07 defines the requested moving sweep; unknown-side loss stops. S5 scans
+now have bounded median groups and qualified edge/model estimation. Their
+operating settings are unset by user choice, and physical bypass release remains
+inhibited. Supported forward/side scheduling, rear-edge/original-line acceptance
+and the deferred operating policies remain Stage 8 work. These are not accepted floor
+features. Terrain publishes original acquisition/service times under a mutex;
+impact remains asserted until a fresh non-impact sample observes serviced braking.
+S1 events use a short cross-core mutex; events stay in the ring when the TX bridge
+is full. Overflow overwrites oldest entries, and lock misses are separately
+saturating per-core counters exposed by `s1_event_drops()`. Mapping uses a single
+outstanding word hand-off; only Mission installs/rejects before I/O ACKs.

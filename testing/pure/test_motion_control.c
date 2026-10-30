@@ -73,14 +73,14 @@ static void test_invalid_and_stop(void)
        brake when a damaged producer bypasses the accessor. */
     MotionCommand invalid = {0};
     assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, NAN, 0, 0, 1u, 0u));
-    assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, 301.0f, 0, 0, 1u, 0u));
+    assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, MOTION_SPEED_MAX_MMPS + 1.0f, 0, 0, 1u, 0u));
     assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, 50.0f, 0, 128, 1u, 0u));
     assert(!motion_command_set(&invalid, MOTION_MODE_TURN, 50.0f, 720.0f, 0, 1u, 0u));
     assert(!motion_command_set(&invalid, MOTION_MODE_DISTANCE, 50.0f, 2001.0f, 0, 1u, 0u));
     assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, 50.0f, 0, 0, 64u, 0u));
     assert(!motion_command_set(&invalid, MOTION_MODE_DISTANCE, 0.0f, 100.0f, 0, 1u, 0u));
     MotionCommand bad[] = {
-        {.speed_action = 301u, .mode_steering = MOTION_MODE_FOLLOW},
+        {.speed_action = (uint16_t)(MOTION_SPEED_MAX_MMPS + 1.0f), .mode_steering = MOTION_MODE_FOLLOW},
         {.speed_action = 50u, .mode_steering = 0xFC00u | MOTION_MODE_FOLLOW},
         {.speed_action = 50u, .mode_steering = MOTION_MODE_FOLLOW, .target = 2001},
         {.speed_action = 50u, .mode_steering = MOTION_MODE_TURN, .target = 720},
