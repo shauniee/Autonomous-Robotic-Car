@@ -41,8 +41,8 @@ Nicholas reviews this documentation plan; subsystem responsibilities remain.
 | GP23, GP24, GP25, GP29 | Kernel (reserved) | Pico W radio/internal signals; never allocate externally |
 | GP0 | Mahesha | Right encoder B, Grove 1, green; UART0 console/crash conflict |
 | GP1 | Mahesha | Right encoder A, Grove 1, red; UART0 console/crash conflict |
-| GP2 | Jia Jing | Reported HC-SR04P Echo, Grove 2; shares Maker port |
-| GP3 | Jia Jing | Reported HC-SR04P Trig, Grove 2; shares Maker port |
+| GP2 | Jia Jing | Reported HC-SR04P Trig, Grove 2; shares Maker port |
+| GP3 | Jia Jing | Reported HC-SR04P Echo, Grove 2; shares Maker port |
 | GP4 | Darrius | GY-511 SDA, Grove 3 / I2C0 |
 | GP5 | Darrius | GY-511 SCL, Grove 3 / I2C0 |
 | GP6, GP13, GP14, GP15, GP19 | Unclaimed | Check carrier sharing before allocation |
@@ -66,7 +66,7 @@ User confirmation 2026-10-29: physical wiring matches this allocation and sonar 
 
 - Power bank: red to green terminal VIN+, black to VIN-. Verify polarity.
 - Encoders: white to 3V3, blue to GND. Line/barcode IR: VCC to 3V3, GND to GND; both line DOUT wires stay disconnected.
-- GY-511: Vin to 3V3, GND to GND; separate `3.3`, INT1, INT2, DRDY disconnected. Reported HC-SR04P: VCC to 3V3, GND to GND; verify variant and Echo HIGH before connection.
+- GY-511: Vin to 3V3, GND to GND; separate `3.3`, INT1, INT2, DRDY disconnected. Reported HC-SR04P: VCC to 3V3, GND to GND, Trig to GP2, Echo to GP3; verify variant and Echo HIGH (at most 3.3 V) before connection.
 - SG90: red to +, brown to -; verify carrier silkscreen and supply rail.
 
 ### Wiring conflicts
