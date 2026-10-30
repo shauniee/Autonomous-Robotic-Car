@@ -1,0 +1,12 @@
+Stage 0: PASS — Contracts/docs reconciled; pending decisions remain explicit.
+Stage 1: PARTIAL — Stop/reset software verified; physical button-to-brake delay remains unmeasured.
+Stage 2: PARTIAL — Coordinator/junction software verified; requested sweep policy remains pending D07.
+Stage 3: PARTIAL — Bounded I/O/handoffs compile and host checks pass; on-target I2C/load and startup verification unavailable.
+Stage 4: PARTIAL — Three tasks and start gates verified in software; polarity, physical vertical slice, WCET and stack margins unmeasured.
+Stage 5: BLOCKED — No robot trials: motor/encoder polarity, geometry, PID/line tuning and stopping distance unavailable.
+Stage 6: PARTIAL — A-Z/orientation and junction software fixtures pass; mounted barcode/junction trials unavailable.
+Stage 7: PARTIAL — Terrain age/impact/software estimation exists; height calibration and proposed new-run reset remain pending D06.
+Stage 8: PARTIAL — Median/qualified-edge software implemented; operating settings, physical envelope, forward/side coverage and reliable bypass release remain pending.
+Stage 9: BLOCKED — Working-tree Mission float-history conversion, static RAM and task-copy/wire sizes measured in SYS-12/INT-24. Accepted-commit rerun, T15/live memory, physical mixed mission, uncertainty measurements and three unchanged-image accepted trials remain pending.
+Overall: BLOCKED
+Software evidence is current. This audit does not execute hardware or set physical limits.

@@ -23,8 +23,7 @@
 #define MQTT_USERNAME    ""
 #define MQTT_PASSWORD    ""
 #define MQTT_TOPIC           "robot/s3/telemetry"
-#define MQTT_HEARTBEAT_TOPIC "robot/s3/heartbeat"
 #define MQTT_STATUS_TOPIC    "robot/s3/status"
-#define MQTT_REQUEST_TOPIC   "robot/s3/request"
+#define MQTT_COMMAND_TOPIC   "robot/s3/request"
 
 #endif /* WIFI_SECRETS_H */

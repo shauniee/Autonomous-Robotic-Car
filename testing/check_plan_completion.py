@@ -6,8 +6,10 @@ from pathlib import Path
 import sys
 
 root = Path(__file__).resolve().parents[1]
-record = root / 'testing/integration/logs/2026-10-29_INT-17_completion.json'
-if not record.exists():
+# Append new audits instead of rewriting historical evidence.
+record = max((root / 'testing/integration/logs').glob('*completion.json'),
+             default=None)
+if record is None:
     raise SystemExit('Completion evidence record is missing; no completion claim.')
 audit = json.loads(record.read_text())
 manifest = json.loads((root / audit['source_manifest']).read_text())

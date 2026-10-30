@@ -27,6 +27,7 @@ typedef struct
     int32_t forward_q8 : 21;
     int32_t left_q8 : 21;
     int32_t rear_clear_q8 : 21;
+    int32_t edge_forward_q8 : 21;
     int16_t heading_cdeg, offset_mm, pass_start_mm, obstacle_front_mm;
     int16_t action_target;
     uint16_t baseline_mm, depth_mm;

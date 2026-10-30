@@ -232,7 +232,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | S1 RAM event entry: kind/arg/time/encoder counts/arg2 | `s1_packed_event_t` in event ring, S1 | kind 1-4, arg 0-127, remaining fields 0-65535 | invalid kind/arg rejected without changing ring; time/counts wrap | 3 / 7 / 16 / 2x16 / 16 = 74 logical bits; 80 stored (10 bytes incl. 6 spare bits) | 16-bit kind/arg field + 4x16-bit fields, accessor pack/unpack (#112) |
 | S1 event ring indices | `s1_event_log_t.indices`, S1 | head 0-15; count 0-16 | valid operations maintain ranges | 4 / 5 = 9 logical bits; 16 stored (7 spare bits) | masks/shifts in internal accessors (#112) |
 | S1 event ring drop count | `s1_event_log_t.dropped`, S1 | 0-4294967295 drops | saturates at max | 32 | `uint32_t`, count saturates (#112) |
-| S1 event ring storage | `s1_event_log_t`, 16 entries | 16x10-byte entries + packed indices + 32-bit drop counter | target compiler layout asserted; target probe pending | 1344 stored bits (168 bytes, including 16 padding bits) | `sizeof` asserted; probe `testing/subsystem1/sizeof_probe.c` (#112) |
+| S1 event ring storage | `s1_event_log_t`, 16 entries | 16x10-byte entries + packed indices + 32-bit drop counter | target compiler layout asserted; current target probe recorded in SYS-12 | 1344 stored bits (168 bytes, including 16 padding bits) | `sizeof` asserted; probe `testing/subsystem1/sizeof_probe.c` (#112) |
 | Mapping acknowledgement {sequence, result} | 3-byte frame | sequence 0-255; result 0-3 | result above 3 rejected; sequence wraps | 8 / 8 (2 used) | bytes |
 
 ### S2 Motion (encoder width provisional until D03; one constant `ENC_COUNT_BITS` in `robot_config.h`; branches #29, #31)
@@ -253,7 +253,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; fractions 0..1 as 0..127; error and steering -1..+1 as -127..+127 | validity flags; averaged ADC saturates at 4095; fractions clamp to 0..127 | 12 each; 7 each; 8 each | struct; scaled integers ([ADR 0001](adr/0001-base-2-scaled-integers.md)) |
 | Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 16 (wrapped encoder counts at the edge); level 1 | overflow sets fault bit; new edge dropped | 16+16+1 | struct |
 | Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1 (one 16-bit word) + 16+16 | packed word + 2 counts, accessors in `barcode_decode.h` |
-| Mission state | Mission writer | Target: READY, FOLLOW_LINE, NAVIGATE, SCAN, BYPASS, REACQUIRE, STOPPED; 7 valid states + invalid | invalid input inhibits movement | 3 logical (existing 4-bit wire slot retained) | Target encoding/decoder compatibility must be reviewed before code change; current remote enum includes CALIBRATE/COMPLETE |
+| Mission state | Mission writer | READY, FOLLOW_LINE, NAVIGATE, SCAN, BYPASS, REACQUIRE, STOPPED; implemented codes 0..6, 7 invalid | invalid input inhibits movement | 3 logical (existing 4-bit wire slot retained) | Implemented 3-bit private state and atomic published byte; schema-v2 wire slot remains 4 bits; decoder uses seven-state labels |
 | Broad-black encounter start | `Mission.broad_since_ms`, Mission writer | uint32 milliseconds, modulo 2^32 | meaningful only while `in_broad`; unsigned elapsed subtraction handles wrap | 32 | private timestamp; no wire format |
 | Existing Safety latched cause | current Safety task | 4 cause bits (GP21, fault, stale line, stale motion) | 0 = not latched | 4 | Existing implementation only; retire task after equivalent Motion checks; target causes/width reviewed before conversion |
 
@@ -308,7 +308,7 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Terrain counters | `calib_count` / `flat_run`, S4 task | 0-100 / 0-10 | calibrated stops count at 100; flat run resets at 10 | 7 / 4 | C bit-fields (#110) |
 | Terrain private state / validity flags | `TerrainContext.state`, `height_valid`, `is_calibrated` | 0-4 / flag / flag | state 5-7 unused | 3 / 1 / 1 | C bit-fields (#110) |
 | Terrain private hump last/max codes | `TerrainContext.last_hump_code`, `max_hump_code` | 0-126; 127 invalid | saturates and retains max | 7 / 7 | C bit-fields (#110) |
-| Complete persistent TerrainContext | `TerrainContext`, S4 task | as above; 20 ms processing | D06 physical calibration pending; replay old float path for parity | target compiler `sizeof` to be recorded | `testing/subsystem4/sizeof_probe.c` (#110) |
+| Complete persistent TerrainContext | `TerrainContext`, S4 task | as above; 20 ms processing | D06 physical calibration pending; replay old float path for parity | 32 bytes on the current target compiler (SYS-12) | `testing/subsystem4/sizeof_probe.c` (#110) |
 
 ### S5 Obstacle (proposed; branches #48, #49)
 
@@ -317,10 +317,10 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Scan state | scan word bits 0-2, Obstacle | 8 states (IDLE, SETTLING, COARSE, FINE, DONE, FAILED, CANCELLED, SIDE_WATCH) | out-of-range decodes as FAILED | 3 | encoded value |
 | Scan ID | scan word bits 3-6, Mission request | 0-15 | wraps | 4 | mask/shift |
 | Range, front / side | echo word, Obstacle | 0-8190 mm, nearest mm | 8191 or valid flag clear = no echo, never clear space; saturates to invalid | 13+1+16 (time low 16) | mask/shift |
-| Obstacle profile (geometry) | mutex-copied `ObstacleProfile`, S5 | closest angle -60..+60, valid flag; 4 unsigned mm measurements 0-65535; 2 signed mm coordinates | clamp to 16-bit limits; invalid profile not published | angle 7 + valid 1 + 6x16 = 104 logical; 112 stored (`sizeof` 14 bytes) | bit-fields for angle/valid, other 16-bit words (#111) |
-| ObstacleRay scan entry | `ObstacleRay` array, private S5 task | angle -60..+60; valid 0/1; range mm 0-65535 | invalid angle rejected by constructor, no echo = invalid + zero range | 7 + 1 + 16 = 24 stored bits (`sizeof` 3 bytes) | GNU C packed angle/valid byte + unaligned 16-bit range (#111) |
+| Obstacle profile (geometry) | mutex-copied `ObstacleProfile`, S5 | closest angle -75..+75, valid flag; 4 unsigned mm measurements 0-65535; 2 signed mm coordinates | clamp to 16-bit limits; invalid profile not published | angle 8 + valid 1 + 6x16 = 105 logical; 112 stored (`sizeof` 14 bytes) | signed angle byte, validity bit in a separate byte, other 16-bit words |
+| ObstacleRay scan entry | `ObstacleRay` array, private S5 task | angle -75..+75; valid 0/1; range mm 0-65535 | invalid angle rejected by constructor, no echo = validity clear; range ignored | 8 + 1 + 16 = 25 logical bits; 32 stored bits (`sizeof` 4 bytes) | GNU C packed signed angle byte, validity byte and unaligned 16-bit range |
 | Obstacle width / depth | profile width; depth from encoder travel | 0-65535 mm / counts | saturates | 16 | unsigned |
-| Side-watch servo angle / enabled | `side_command` atomic word, Mission writer | -60..+60 degrees / yes-no | clamped to sweep; value sign-extended on read | 7 + 1 logical; 32 stored (shared atomic word) | bits 1..7 signed angle, bit 0 enabled; accessors (#111) |
+| Side-watch servo angle / enabled | `side_command` atomic word, Mission writer | -75..+75 degrees / yes-no | clamped to sweep; value sign-extended on read | 8 + 1 logical; 32 stored (shared atomic word) | bits 1..8 signed angle, bit 0 enabled; accessors (#111) |
 
 ### Mission and Safety
 
@@ -419,13 +419,31 @@ Software restructure storage contract (2026-10-29, #131–#133; no new wire fiel
 | Mapping progress, one writer per counter | Request/reply tickets plus private submit/consume/take counters, modulo 2^32 | One outstanding request through reply consumption; no overwrite | 32 each |
 | Terrain evidence, I/O | Existing terrain word, acquisition/service ms and attempt sequence uint32; acquisition validity 1 bit | Pending data does not renew acquisition time; copy/age/validity required; timestamps wrap | 4 x 32 + 1 logical; naturally aligned 20-byte snapshot |
 | IMU startup outcome, I/O | 0 pending, 1 calibrated, 2 failed | Missing IMU publishes failed; never interpreted as calibrated | 2 / one 32-bit word |
-| S5 step phase/flags, Mission | Phase 0..2 + initialized/ready/scanning; scan counts 0..9, scan ID 0..15, angle -60..60 | Fixed nine-ray capacity; deadline/cancel/movement abort; no echo invalid | 2+3 bits; counts 4 each, ID 4, signed angle 7 |
+| S5 step phase/flags, Mission | Phase 0..2 + initialized/ready/scanning; scan counts 0..9, scan ID 0..15, angle -75..75 | Fixed nine-ray capacity; deadline/cancel/movement abort; no echo invalid | 2+3 bits; counts 4 each, ID 4, signed angle 8 |
 | Link readiness, kernel WiFi | bit 0 WiFi, bit 1 broker; boot 0 | Both required for local start; run loss report-only | 2 / one 32-bit word |
-| Event drops, I/O and Mission | Existing ring overflow plus one per-core failure counter, uint32 | Saturate at UINT32_MAX; no ACK/delivery claim | 32 each |
+| Event drops, event-mutex holder / one writer per core | `s1_event_log_t.dropped` counts ring overflow; `lock_misses[2]` counts failed bounded event-insertion locks (Mission core 1, Terrain core 0), one atomic uint32 per core; bridge-full returns false for retry | Each count saturates at UINT32_MAX; insertion waits at most the existing 2 ms snapshot-lock timeout; counters are debugger diagnostics, not new MQTT fields or delivery acknowledgements | 32 each; 64 stored for the two lock-miss words |
 
-These describe software storage, not physical calibration. Existing private
-Mission PID/action float history is retained from the checkpoint; the final
-minimum-bit/resource audit remains Stage 9 work. MQTT byte counts stay unchanged;
+Mission private history conversion contract (2026-10-30; software precision,
+not a physical tuning or accuracy claim; one Mission writer):
+
+| Field | Range / scale / rounding | Invalid / overflow | Logical / stored bits |
+| --- | --- | --- | --- |
+| Filtered previous line error | -1..+1, signed integer /32767; nearest, ties away from zero | -32768 unused; primed bit gates history; finite local calculation clamps before storage | 16 / 16 |
+| Integral steering contribution | +/-`LINE_I_LIMIT` (currently 0.40); signed integer /32767; nearest, ties away from zero | -32768 unused; reset zero; computation clamps to configured limit before storage; limit constrained to <=1 | 15 at current limit / 16; resolution chosen for host float-reference comparison, physical acceptance D07 pending |
+| Held steering | -127..127, signed Q7; existing output rounding retained | -128 unused; output clamps to `MAX_STEER` | 8 / 8 |
+| PID primed | no/yes, Mission private | reset false | 1 / 1 in a private byte |
+| Junction turn | 0 none, 1 left (+90 degrees), 2 right (-90), 3 U-turn (+180) | none yields zero target (Motion rejects a zero turn); only coordinator sets codes | 2 / 2 in private byte |
+
+Float remains only in local PID/filter/geometry computation, where existing
+gains and rate limits use fractional seconds. Persistent PID history uses the
+scales above; quantization is at storage boundaries, with no wire change.
+The /32767 scale provides exact +/-1 endpoints and half-step storage error
+<=1/65534. Host comparison against the prior float controller is software
+evidence only; cumulative error and physical steering still require D07/T15.
+Current working-tree target ABI, static RAM and inter-task copy sizes are
+recorded in [SYS-12](../testing/system/TEST_LOG.md#current-resource-audit-sys-12).
+The accepted-commit minimum-bit/resource audit remains Stage 9 work.
+MQTT byte counts stay unchanged;
 the seven-state meaning replaces the old CALIBRATE/COMPLETE state labels, so
 clients must use the updated state table. Historical golden bytes remain intact.
 
@@ -466,7 +484,9 @@ black acquisitions may qualify the existing encoder-distance threshold; forced
 No mounted geometric tolerance is claimed by these software flags.
 
 Continuation storage: `s5_range_sample_t` contains the existing packed word plus
-full 32-bit acquisition time and sequence (12 bytes). Mission owns its current
+full 32-bit acquisition time, sequence and wrapped mean encoder count at
+range completion (16 bytes). The count uses the existing unsigned encoder-count
+scale and wrap rules; Mission uses it to debit travel since the front reading. Mission owns its current
 front/side pair; a separate pair is copied under the existing profile mutex for
 optional core-0 reporting, preserving original times when publication is busy.
 `s5_profile_snapshot_t` combines the 14-byte profile, six-byte edge/model evidence
@@ -502,6 +522,12 @@ Bypass keeps bounded encoder odometry in signed Q8 millimetres (21 logical bits
 per axis within +/-4000 mm), signed centidegree heading, 32-bit timestamps/counts,
 16-bit bounded leg/range results and encoded phase/flags. These are private
 Mission state; no new task, route planner, event bus or network command is added.
+The first qualifying rear-edge position is retained in signed Q8 millimetres
+(21 logical bits, +/-4000 mm, copied without rounding from forward odometry).
+It is valid only while the edge confirmation streak is nonzero; a new streak
+replaces it. Pose overflow fails the bypass before capture. Confirmed rear
+position adds the sonar forward mount and baseline ray's forward projection to
+this first position, keeping depth and return clearance in the profile's frame.
 At proposed +/-75 degree servo angles, angle needs eight signed bits; ray validity
 needs one more bit. `ObstacleRay` becomes four packed bytes; `ObstacleProfile`
 remains 14 bytes because its previous alignment byte holds validity. Side-watch

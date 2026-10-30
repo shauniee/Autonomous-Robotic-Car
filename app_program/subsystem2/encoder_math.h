@@ -16,6 +16,13 @@
 #define ENC_COUNTS_PER_MM (ENC_COUNTS_PER_REV / (3.14159265f * WHEEL_DIAMETER_MM))
 #define ENC_QUAD_INVALID 2	/* skipped state or both channels changed */
 
+/* Heading in degrees from signed wheel travel counts; positive turns left. */
+static inline float enc_heading_deg(int32_t left, int32_t right)
+{
+    return ((float)right - (float)left) / ENC_COUNTS_PER_MM /
+        TRACK_WIDTH_MM * 57.2957795f;
+}
+
 /* Quadrature step between two 2-bit levels (A*2+B): +1, -1, 0 (no change),
    or ENC_QUAD_INVALID. Gray sequence 00,01,11,10 counts up. */
 static inline int enc_quad_step(unsigned before, unsigned after)

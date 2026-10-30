@@ -18,7 +18,9 @@ _Static_assert(S1_FRAME_MAX >= MQTT_FRAME_MAX, "bridge slots must hold the large
 
 static s1_event_log_t event_log; /* guarded by event_mutex across cores */
 static ID event_mutex;
-static rd_word_t missed_events[2]; /* one saturating counter per producer core */
+/* Each core is its own counter's sole writer. Atomic load/store permits
+   diagnostic reads without a cross-core RMW or a second contended lock. */
+static rd_word_t lock_misses[2];
 static rd_word_t last_barcode;		/* writer: s1_event callers (Mission); letter | action << 5 */
 static rd_word_t last_depth_mm;		/* writer: s1_event callers (Mission); latest obstacle depth */
 
@@ -49,16 +51,23 @@ void s1_event(mqtt_event_kind_t kind, uint8_t arg, uint16_t arg2)
     {
         rd_word_publish(&last_depth_mm, arg2);
     }
-    if (tk_loc_mtx(event_mutex, TMO_POL) >= E_OK)
+    if (tk_loc_mtx(event_mutex, RD_SNAPSHOT_LOCK_MS) >= E_OK)
     {
         (void)s1_log_push(&event_log, &event);
         (void)tk_unl_mtx(event_mutex);
     }
     else
     {
-        unsigned core = tk_get_prc() == 1 ? 0u : 1u;
-        uint32_t missed = rd_word_read(&missed_events[core]);
-        rd_word_publish(&missed_events[core], missed == UINT32_MAX ? missed : missed + 1u);
+        /* tk_get_prc is 1-based; callers are pinned to cores 0 and 1. */
+        unsigned core = (unsigned)tk_get_prc() - 1u;
+        if (core < 2u)
+        {
+            uint32_t misses = rd_word_read(&lock_misses[core]);
+            if (misses != UINT32_MAX)
+            {
+                rd_word_publish(&lock_misses[core], misses + 1u);
+            }
+        }
     }
 }
 
@@ -191,18 +200,4 @@ void s1_step(uint32_t now)
             break;
         }
     }
-}
-
-uint32_t s1_event_drops(void)
-{
-    uint32_t total = rd_word_read(&missed_events[0]);
-    uint32_t other = rd_word_read(&missed_events[1]);
-    total = UINT32_MAX - total < other ? UINT32_MAX : total + other;
-    if (tk_loc_mtx(event_mutex, TMO_POL) >= E_OK)
-    {
-        other = event_log.dropped;
-        (void)tk_unl_mtx(event_mutex);
-        total = UINT32_MAX - total < other ? UINT32_MAX : total + other;
-    }
-    return total;
 }
