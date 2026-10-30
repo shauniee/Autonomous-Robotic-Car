@@ -109,6 +109,9 @@ typedef struct
     uint8_t in_broad : 1;
     uint8_t junction_open : 1;
     uint8_t junction_qualified : 1;
+    uint8_t line_loss_pending : 1;
+    uint32_t line_lost_since_ms; /* first white/white acquisition in this run */
+    uint32_t line_lost_sampled_ms; /* latest qualifying IR acquisition */
     uint32_t junction_sampled_ms;
     uint8_t turn_code : 2; /* 0 none, 1 left, 2 right, 3 U-turn */
     int16_t line_integral_q; /* steering units /32767, +/-LINE_I_LIMIT */

@@ -352,17 +352,101 @@ static void test_crossing_never_completes_mission(void)
     assert(m.state == MISSION_FOLLOW_LINE);
 }
 
+static MissionOutputs enter_line_recovery(Mission *m, MissionInputs *in,
+    uint32_t *t)
+{
+    in->line = IR_LINE_LOST;
+    in->guidance_valid = false;
+    MissionOutputs out = step(m, in, *t += 10u);
+    assert(m->state == MISSION_FOLLOW_LINE);
+    for (unsigned elapsed = 0u; elapsed < MISSION_LINE_LOST_MS; elapsed += 10u)
+    {
+        out = step(m, in, *t += 10u);
+        assert(m->state == MISSION_FOLLOW_LINE);
+        assert(!out.stop_now);
+    }
+    return step(m, in, *t += 1u); /* strictly more than one second */
+}
+
+static void test_line_loss_qualification(void)
+{
+    Mission m;
+    MissionInputs in = base(100u);
+    uint32_t t = to_follow(&m, &in);
+    in.line_error = 80;
+    MissionOutputs out = step(&m, &in, t += 10u);
+    int steer = motion_cmd_steering(&out.command);
+    unsigned speed = motion_cmd_speed(&out.command);
+    assert(steer != 0);
+    in.line = IR_LINE_LOST;
+    in.guidance_valid = false;
+    for (unsigned i = 0u; i < 80u; ++i)
+    {
+        out = step(&m, &in, t += 10u);
+        assert(m.state == MISSION_FOLLOW_LINE);
+        assert(motion_cmd_steering(&out.command) == steer);
+        assert(motion_cmd_speed(&out.command) == speed);
+        assert(out.command.sampled_ms == in.line_sampled_ms);
+    }
+    /* A single visible sample returns control to PID and resets the timer. */
+    in.line = IR_LINE_VISIBLE;
+    in.guidance_valid = true;
+    out = step(&m, &in, t += 10u);
+    assert(m.state == MISSION_FOLLOW_LINE && !m.line_loss_pending);
+    out = enter_line_recovery(&m, &in, &t);
+    assert(m.state == MISSION_REACQUIRE);
+
+    /* Zero acquisition time and a timer crossing UINT32_MAX both work. */
+    const uint32_t starts[] = {UINT32_MAX - 9u, UINT32_MAX - 500u};
+    for (unsigned i = 0u; i < sizeof(starts) / sizeof(starts[0]); ++i)
+    {
+        in = base(starts[i]);
+        to_follow(&m, &in);
+        t = starts[i];
+        out = enter_line_recovery(&m, &in, &t);
+        assert(m.state == MISSION_REACQUIRE);
+    }
+
+    /* Missing acquisition intervals cannot be counted as continuous loss. */
+    in = base(100u);
+    t = to_follow(&m, &in);
+    in.line = IR_LINE_LOST;
+    in.guidance_valid = false;
+    step(&m, &in, t += 10u);
+    out = step(&m, &in, t += MISSION_LINE_LOST_MS + 1u);
+    assert(m.state == MISSION_FOLLOW_LINE);
+    assert(m.line_lost_since_ms == in.line_sampled_ms);
+    /* Reusing that cached sample cannot start recovery; it becomes stale. */
+    in.now_ms += IR_MAX_GAP_MS + 1u;
+    mission_step(&m, &in, &out);
+    assert(m.state == MISSION_STOPPED && out.stop_now);
+    assert(!m.line_loss_pending);
+
+    in = base(100u);
+    t = to_follow(&m, &in);
+    in.line = IR_LINE_LOST;
+    in.guidance_valid = false;
+    step(&m, &in, t += 10u);
+    in.stop_down = true;
+    out = step(&m, &in, t += 10u);
+    assert(m.state == MISSION_STOPPED && out.stop_now);
+    assert(!m.line_loss_pending);
+}
+
 static void test_line_loss_recovery_is_bounded(void)
 {
     Mission m;
     MissionInputs in = base(100u);
     uint32_t t = to_follow(&m, &in);
-    in.line = IR_LINE_LOST;
-    in.guidance_valid = false;
-    MissionOutputs out = step(&m, &in, t += 10u);
+    MissionOutputs out = enter_line_recovery(&m, &in, &t);
     assert(m.state == MISSION_REACQUIRE);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
     assert(motion_cmd_steering(&out.command) == -RECOVERY_STEER_Q);
+    float inner_mmps = motion_cmd_speed(&out.command) *
+        (1.0f - (float)RECOVERY_STEER_Q / 127.0f);
+    float tracking_curve_inner = MISSION_FOLLOW_SPEED_MMPS *
+        (1.0f - LINE_CURVE_SLOWDOWN) * (1.0f - MAX_STEER);
+    assert(inner_mmps >= tracking_curve_inner);
 
     /* A repeated acquisition cannot complete alignment. */
     in.line = IR_LINE_VISIBLE;
@@ -380,11 +464,57 @@ static void test_line_loss_recovery_is_bounded(void)
     out = step(&m, &in, t += 20u);
     assert(motion_cmd_steering(&out.command) == ref_p(0));
 
-    in.line = IR_LINE_LOST;
-    in.guidance_valid = false;
-    step(&m, &in, t += 10u);
+    enter_line_recovery(&m, &in, &t);
     out = step(&m, &in, t += RECOVERY_MS);
     assert(m.state == MISSION_STOPPED && out.stop_now && out.line_lost);
+}
+
+static void test_recovery_sweep_targets(void)
+{
+    recovery_control_t control;
+    recovery_input_t in = {.now_ms = 100u, .sampled_ms = 100u,
+        .count = {0xFFF0u, 0xFFF0u}, .functional = true};
+    recovery_output_t out;
+    recovery_control_begin(&control, &in);
+    recovery_control_step(&control, &in, &out);
+    assert(out.phase == RECOVERY_SEARCH && out.steering_q < 0);
+    /* Distinct endpoint samples can overshoot the nominal target slightly.
+       All wheel travel is forward and wraps through the encoder boundary. */
+    const int heading_deg[] = {71, -71, 71, -71};
+    const int mean_mm[] = {200, 450, 700, 950};
+    for (unsigned i = 0u; i < 4u; ++i)
+    {
+        float difference = heading_deg[i] / 57.2957795f *
+            TRACK_WIDTH_MM * ENC_COUNTS_PER_MM;
+        int32_t left = (int32_t)lroundf(mean_mm[i] * ENC_COUNTS_PER_MM -
+            difference * 0.5f);
+        int32_t right = (int32_t)lroundf(mean_mm[i] * ENC_COUNTS_PER_MM +
+            difference * 0.5f);
+        in.count[0] = enc_advance(0xFFF0u, left);
+        in.count[1] = enc_advance(0xFFF0u, right);
+        in.now_ms += 100u;
+        in.sampled_ms = in.now_ms;
+        recovery_control_step(&control, &in, &out);
+        assert(control.leg == i + 1u);
+        if (i < 3u)
+        {
+            assert(out.phase == RECOVERY_SEARCH);
+            assert((i & 1u) == 0u ? out.steering_q > 0 : out.steering_q < 0);
+        }
+        else
+        {
+            assert(out.phase == RECOVERY_FAILED); /* four legs exhausted */
+        }
+    }
+    /* The overshoot allowance remains bounded. */
+    in.count[0] = in.count[1] = 0u;
+    recovery_control_begin(&control, &in);
+    float difference = 76.0f / 57.2957795f *
+        TRACK_WIDTH_MM * ENC_COUNTS_PER_MM;
+    in.count[0] = (uint32_t)lroundf(200.0f * ENC_COUNTS_PER_MM - difference * 0.5f);
+    in.count[1] = (uint32_t)lroundf(200.0f * ENC_COUNTS_PER_MM + difference * 0.5f);
+    recovery_control_step(&control, &in, &out);
+    assert(out.phase == RECOVERY_FAILED);
 }
 
 /* ---- Bypass ------------------------------------------------------------ */
@@ -478,15 +608,15 @@ static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm)
         }
         fresh_front(&in, t + 10u);
         in.side_valid = true;
-        in.side_mm = m.bypass.forward_q8 / 256 > 250 ? 600u : 300u;
+        in.side_mm = m.bypass.forward_q8 / 256 > 250 ? 700u : 400u;
         in.side_sampled_ms = t + 10u;
         in.side_sequence++;
         out = bstep(&m, &in, &t);
         if (out.event_kind == MQTT_EVENT_OBSTACLE)
         {
-            /* First edge at ~300 mm, mount +100 mm, ray +78 mm,
+            /* First edge at ~300 mm, mount +100 mm, ray +376 mm,
                profile front at 150 mm; allow 2 mm encoder quantization. */
-            assert(fabsf((float)out.event_arg2 - 328.0f) <= 2.0f);
+            assert(fabsf((float)out.event_arg2 - 626.0f) <= 2.0f);
             depth_seen = true;
         }
     }
@@ -775,7 +905,9 @@ int main(void)
     test_both_black_forward();
     test_barcode_hold_and_junction();
     test_crossing_never_completes_mission();
+    test_line_loss_qualification();
     test_line_loss_recovery_is_bounded();
+    test_recovery_sweep_targets();
     test_bypass_full_sequence();
     test_bypass_failures();
     puts("mission: PASS");

@@ -114,12 +114,16 @@
 #define APP_PHYSICAL_RELEASE 0
 #endif
 #ifndef MISSION_RECOVERY_RELEASED
-#define MISSION_RECOVERY_RELEASED 0
+#define MISSION_RECOVERY_RELEASED 1
+#endif
+#ifndef MOTION_STALL_GUARD_ENABLED
+#define MOTION_STALL_GUARD_ENABLED 0 /* user-requested trial configuration */
 #endif
 #define RECOVERY_MS 30000u
-#define RECOVERY_TRAVEL_MM 900u
-#define RECOVERY_SPEED_MMPS 30u
-#define RECOVERY_STEER_Q 96
+#define MISSION_LINE_LOST_MS 1000u /* user: recover only after >1 s white/white */
+#define RECOVERY_TRAVEL_MM 1200u /* PROPOSAL D07: wider arcs plus alignment */
+#define RECOVERY_SPEED_MMPS 270u /* PROPOSAL D07: tracking curve speed */
+#define RECOVERY_STEER_Q 76 /* tracking's ~0.6 steering; avoid a slow inner wheel */
 #define RECOVERY_TARGET_DEG 70
 #define RECOVERY_TARGET_TOL_DEG 5
 #define RECOVERY_ALIGN_HEADING_DEG 15
@@ -156,7 +160,7 @@
 #define LINE_STEER_RATE		3.0f	/* PROVISIONAL (D07): max steering change per second (0 to MAX_STEER in 0.2 s) */
 
 /* --- Mission (S3). UNMEASURED PLACEHOLDERS until #59/#61 (D01, D02, D07) ----- */
-#define MISSION_FOLLOW_SPEED_MMPS	450.0f	/* PROVISIONAL (D07): straight-line follow speed, mm/s; search runs at half */
+#define MISSION_FOLLOW_SPEED_MMPS	450.0f	/* PROVISIONAL (D07): straight-line follow speed, mm/s */
 #define MISSION_BROAD_SPEED_MMPS	90.0f	/* PROVISIONAL (D07): crossing broad black */
 #define MISSION_BROAD_FORWARD_MM 25.0f /* requested minimum crossing travel */
 #define MISSION_TURN_SPEED_MMPS		100.0f	/* PROVISIONAL (D07) */
@@ -176,6 +180,7 @@
 #define MISSION_PASS_JUMP_MM		150u	/* PROVISIONAL (D05): side range jump marking pass-by */
 #define MISSION_PASS_LEG_MM		2000.0f	/* longest parallel leg before the bypass fails */
 #define MISSION_BYPASS_TIMEOUT_MS	90000u	/* whole bypass must finish by then */
+#define BYPASS_LINE_SPEED_MMPS 30u /* PROPOSAL D07: final line alignment */
 #define MISSION_UTURN_PAUSE_MS 200u /* requested duration; stationary reference provisional D02/D08 */
 #define MISSION_START_WAIT_MS		200u	/* wait for Motion to leave its stop latch */
 
@@ -222,10 +227,10 @@
 #define SERVO_PIN		12u
 #define SERVO_CENTRE_US		1500u	/* PROVISIONAL (D05): faces forward */
 #define SERVO_US_PER_DEG	10u	/* PROVISIONAL (D05): endpoints and scale */
-#define SERVO_MAX_DEG		75	/* PROPOSAL D05: validate endpoints before physical release */
+#define SERVO_MAX_DEG		20	/* requested +/-20 degrees; calibrate D05 */
 #define SERVO_SETTLE_MS		300u	/* PROVISIONAL (D05) */
-#define S5_COARSE_STEP_DEG	30	/* coarse rays at -60,-30,0,30,60 relative to forward */
-#define S5_FINE_STEP_DEG	10	/* fine rays around the closest coarse ray */
+#define S5_COARSE_STEP_DEG	10	/* coarse rays at -20,-10,0,10,20 */
+#define S5_FINE_STEP_DEG	5	/* refine edges within the servo limits */
 #define S5_SONAR_FORWARD_MM	100.0f	/* PROPOSAL: front mount relative to body centre, measure D05 */
 #define S5_SONAR_LEFT_MM	0.0f	/* PROVISIONAL (D05) */
 #define S5_BODY_LENGTH_MM	200.0f	/* PROVISIONAL (D02): car envelope */
@@ -351,6 +356,7 @@ _Static_assert(MISSION_FOLLOW_SPEED_MMPS * LINE_PEAK_WHEEL <= MOTION_SPEED_MAX_M
 _Static_assert(SONAR_TIMEOUT_US / 1000u < SONAR_REPEAT_MS && SONAR_MIN_PULSE_US < SONAR_TIMEOUT_US &&
 	SONAR_NO_ECHO_LIMIT >= 1u, "sonar timing: the timeout must fit inside the repeat interval");
 _Static_assert(SERVO_MAX_DEG > 0 && SERVO_MAX_DEG * (int)SERVO_US_PER_DEG < (int)SERVO_CENTRE_US &&
+	SERVO_MAX_DEG > S5_COARSE_STEP_DEG &&
 	S5_COARSE_STEP_DEG > S5_FINE_STEP_DEG && S5_FINE_STEP_DEG > 0, "servo sweep out of range");
 _Static_assert(S2_PRI_MOTION < FOLLOW_PRIORITY,
     "Motion must outrank Mission");
@@ -373,9 +379,14 @@ _Static_assert(BYPASS_TRAVEL_MM <= 4095u && BYPASS_SENSE_ATTEMPTS <= 3u &&
     BYPASS_EDGE_SAMPLES > 0u && BYPASS_EDGE_SAMPLES <= 7u,
     "bounded bypass storage must fit its fields");
 _Static_assert(RECOVERY_STEER_Q > 0 && RECOVERY_STEER_Q < 127 &&
-    RECOVERY_SPEED_MMPS > 0u && RECOVERY_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS &&
+    RECOVERY_SPEED_MMPS > 0u &&
+    RECOVERY_SPEED_MMPS * (1.0f + RECOVERY_STEER_Q / 127.0f) <=
+        MOTION_SPEED_MAX_MMPS &&
     RECOVERY_TRAVEL_MM * ENC_COUNTS_PER_REV /
         (3.14159265f * WHEEL_DIAMETER_MM) < ENC_COUNT_MASK / 2u,
     "recovery must creep with both wheels inside the encoder half range");
+_Static_assert(BYPASS_LINE_SPEED_MMPS > 0u &&
+    BYPASS_LINE_SPEED_MMPS * 2u <= MOTION_SPEED_MAX_MMPS,
+    "bypass line steering must keep both wheel targets within the speed limit");
 _Static_assert(MISSION_SCAN_RETRIES <= 1u, "one bounded stationary rescan");
 #endif /* ROBOT_CONFIG_H */

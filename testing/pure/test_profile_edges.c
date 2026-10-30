@@ -11,12 +11,12 @@
    Their dimensions are test inputs, never claims about the mounted robot. */
 static void scene(ObstacleRay rays[S5_SCAN_CAPACITY], unsigned width_mm)
 {
-    const int angles[] = {-60, -30, -20, -10, 0, 10, 20, 30, 60};
+    const int angles[] = {-20, -15, -10, -5, 0, 5, 10, 15, 20};
     for (unsigned i = 0u; i < S5_SCAN_CAPACITY; ++i)
     {
         float angle = angles[i] * DEG_TO_RAD;
-        float lateral = 250.0f * tanf(angle);
-        float plane = fabsf(lateral) <= (float)width_mm * 0.5f ? 250.0f : 1000.0f;
+        float lateral = 400.0f * tanf(angle);
+        float plane = fabsf(lateral) <= (float)width_mm * 0.5f ? 400.0f : 1000.0f;
         rays[i] = s5_ray_make((int16_t)angles[i], (uint16_t)lroundf(plane / cosf(angle)), true);
     }
 }
@@ -25,7 +25,7 @@ int main(void)
 {
     const s5_profile_config_t config = {.depth_enter_mm = 30u, .depth_exit_mm = 60u,
         .background_separation_mm = 50u, .range_uncertainty_mm = 2u,
-        .planning_width_mm = 200u, .adjacent_rays = 2u, .maximum_gap_deg = 30u};
+        .planning_width_mm = 200u, .adjacent_rays = 2u, .maximum_gap_deg = S5_COARSE_STEP_DEG};
     ObstacleRay rays[S5_SCAN_CAPACITY];
     ObstacleProfile profile = {0};
     s5_profile_evidence_t evidence = {0};
@@ -86,13 +86,13 @@ int main(void)
     unknown.adjacent_rays = 0u;
     assert(!s5_profile_estimate(rays, S5_SCAN_CAPACITY, NULL, &unknown, &profile, &evidence));
     /* Fine sampling follows wide-object edges instead of only its centre. */
-    ObstacleRay coarse[5] = {s5_ray_make(-60, 2000u, true),
-        s5_ray_make(-30, 173u, true), s5_ray_make(0, 150u, true),
-        s5_ray_make(30, 173u, true), s5_ray_make(60, 2000u, true)};
+    ObstacleRay coarse[5] = {s5_ray_make(-20, 2000u, true),
+        s5_ray_make(-10, 406u, true), s5_ray_make(0, 400u, true),
+        s5_ray_make(10, 406u, true), s5_ray_make(20, 2000u, true)};
     int16_t fine[4];
     unsigned count = s5_profile_fine_angles(coarse, 5u, &config, fine, 4u);
-    assert(count == 4u);
-    assert(fine[0] == -40 && fine[1] == -50 && fine[2] == 40 && fine[3] == 50);
+    assert(count == 2u);
+    assert(fine[0] == -15 && fine[1] == 15);
     assert(s5_profile_fine_angles(coarse, 5u, &config, fine, 0u) == 0u);
     puts("profile_edges: PASS (synthetic widths, conservative planning, unknowns and outlier rejection)");
     return 0;

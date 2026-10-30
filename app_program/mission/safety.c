@@ -45,11 +45,27 @@ void safety_step(bool line_required)
     uint32_t held = rd_word_read(&latched);
     if (causes != 0u)
     {
+        /* Capture transient owner faults before Motion clears them at rest. */
+        uint8_t motion_faults = rd_fault_get(RD_OWNER_MOTION);
+        uint8_t terrain_faults = rd_fault_get(RD_OWNER_TERRAIN);
         if (held == 0u)
         {
             (void)s2_stop();
         }
         rd_word_publish(&latched, held | causes);
+        if ((causes & ~held) != 0u)
+        {
+            /* Diagnostics follow the stop request and latch publication. */
+            tm_printf((UB *)"[SAFETY] causes=%u gp21=%d fault=%d "
+                "line_stale=%d motion_stale=%d motion_faults=%u "
+                "terrain_faults=%u line_age_ms=%u motion_age_ms=%u\n",
+                (unsigned)causes, (int)in.stop_button,
+                (int)((causes & SAFETY_CAUSE_FAULT) != 0u),
+                (int)((causes & SAFETY_CAUSE_STALE_LINE) != 0u),
+                (int)((causes & SAFETY_CAUSE_STALE_MOTION) != 0u),
+                (unsigned)motion_faults, (unsigned)terrain_faults,
+                (unsigned)in.line_age_ms, (unsigned)in.motion_age_ms);
+        }
     }
     if (safety_reset_step(&reset_state, event, causes,
             health_read && motion_health_brake_acknowledged(&health)))

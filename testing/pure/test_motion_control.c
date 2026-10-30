@@ -155,9 +155,22 @@ static void test_stall_and_timeout(void)
         out = sim_step(&s, &cmd, false, 0);
         stalled = out.stall;
     }
-    assert(stalled && out.status == RD_MOTION_FAILED && out.duty[0] == 0.0f && out.duty[1] == 0.0f);
-    out = sim_step(&s, &cmd, false, 0);			/* FAILED holds for the same ID */
-    assert(out.status == RD_MOTION_FAILED && out.action_id == 9u);
+    if (MOTION_STALL_GUARD_ENABLED)
+    {
+        assert(stalled && out.status == RD_MOTION_FAILED &&
+            out.duty[0] == 0.0f && out.duty[1] == 0.0f);
+        out = sim_step(&s, &cmd, false, 0);
+        assert(out.status == RD_MOTION_FAILED && out.action_id == 9u);
+    }
+    else
+    {
+        assert(!stalled && out.status == RD_MOTION_RUNNING);
+        assert(out.duty[1] > 0.0f);
+        s.now += MOTION_EXPIRY_MS + 1u;
+        out = sim_step(&s, &cmd, true, 0);
+        assert(out.status == RD_MOTION_FAILED &&
+            out.duty[0] == 0.0f && out.duty[1] == 0.0f);
+    }
 
     /* A stale sample during a discrete action fails it and brakes. */
     Sim t; sim_init(&t);
@@ -182,6 +195,40 @@ static void test_follow_steering(void)
     assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f && out.status == RD_MOTION_RUNNING);
 }
 
+static void test_follow_slowdown_never_reverses(void)
+{
+    /* Tracking -> recovery keeps FOLLOW action 1 but sharply reduces speed.
+       Inject forward encoder travel from the preceding faster command. */
+    MotionController control;
+    motion_control_reset(&control);
+    MotionInput in = {.now_ms = 1000u, .count = {100u, 100u}};
+    MotionOutput out;
+    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+        MISSION_FOLLOW_SPEED_MMPS, 0.0f, 0, 1u, in.now_ms);
+    motion_control_step(&control, &cmd, &in, &out);
+    in.now_ms += MOTION_PERIOD_MS;
+    in.count[0] += 16u;
+    in.count[1] += 16u;
+    /* Preserve the actual diagnosed input even if search tuning changes. */
+    cmd = motion_command_make(MOTION_MODE_FOLLOW, 90.0f,
+        0.0f, -96, 1u, in.now_ms);
+    motion_control_step(&control, &cmd, &in, &out);
+    printf("tracking -> recovery slowdown: left duty=%f right duty=%f\n",
+        (double)out.duty[0], (double)out.duty[1]);
+    fflush(stdout);
+    assert(out.status == RD_MOTION_RUNNING && !out.stall);
+    assert(out.duty[0] >= 0.0f && out.duty[1] >= 0.0f);
+    /* The saturated controller must recover rather than winding below zero. */
+    for (unsigned i = 0u; i < 5u; ++i)
+    {
+        in.now_ms += MOTION_PERIOD_MS;
+        cmd.sampled_ms = in.now_ms;
+        motion_control_step(&control, &cmd, &in, &out);
+        assert(out.duty[0] >= 0.0f && out.duty[1] >= 0.0f);
+    }
+    assert(out.duty[0] > 0.0f && out.duty[1] > 0.0f);
+}
+
 int main(void)
 {
     test_freshness_and_rewrite();
@@ -189,6 +236,7 @@ int main(void)
     test_distance_turn_actions();
     test_stall_and_timeout();
     test_follow_steering();
+    test_follow_slowdown_never_reverses();
     puts("motion_control: PASS");
     return 0;
 }

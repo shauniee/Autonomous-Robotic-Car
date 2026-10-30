@@ -7,6 +7,7 @@
 - [2026-10-27 — Minimum-bit obstacle packing candidate (#111)](#2026-10-27--minimum-bit-obstacle-packing-candidate-111)
 - [Documentation alignment — 2026-10-29](#documentation-alignment--2026-10-29)
 - [Current helper coverage — INT-25](#current-helper-coverage--int-25)
+- [Servo travel limit — S5-U05](#servo-travel-limit--s5-u05)
 
 Owner: Jia Jing / obstacle. Inactive placeholder. Retired template definitions: S5-U01 task-context example; S5-U02 unfilled manual placeholder. No template result was recorded. No subsystem hardware test is claimed.
 
@@ -56,3 +57,17 @@ fine-angle selection used by firmware. All host checks and four firmware builds
 pass at the [INT-25 manifest](../integration/logs/2026-10-30_INT-25-accepted-manifest.json);
 [host output](../integration/logs/2026-10-30_INT-25-accepted-host.txt). No target
 servo/echo, accuracy or physical bypass acceptance follows from this cleanup.
+
+## Servo travel limit — S5-U05
+
+Procedure defined 2026-10-30: run `testing/pure/run.sh` on the host with the
+requested +/-20 degree configuration. Expect packed-ray boundary rejection and
+side-watch clamping, synthetic profile/edge fixtures within the reduced sweep,
+and Mission bypass geometry checks to pass. Synthetic faces use a 400 mm plane
+to expose both edges within the smaller field of view; this is a fixture, not
+a physical range or coverage acceptance. No hardware, firmware execution, wiring
+or power is involved; D05 centre/scale/settle calibration remains pending.
+
+| Date | ID | Source | Result | Evidence / limits |
+| --- | --- | --- | --- | --- |
+| 2026-10-30 | S5-U05 | Base `cc3edb3dd7c92ec76fb2be742171818095fdc49f` plus [working-source manifest](logs/2026-10-30_S5-U05-manifest.json) | PASS (host only) | [Host suite output](logs/2026-10-30_S5-U05-host.txt); no physical servo/echo or bypass acceptance |
