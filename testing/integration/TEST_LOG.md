@@ -581,3 +581,12 @@ clock beyond expiry gives the expected brake/failure. Accepted output:
 [source manifest](logs/2026-10-30_INT-32-manifest.json), base
 `cc3edb3dd7c92ec76fb2be742171818095fdc49f`. Tester: Codex. Build verification
 follows integration with current main; no physical result claimed.
+
+Integration result after rebasing onto main `dc67845`: PASS host suite and
+all four standard firmware builds, NOGUARDS=0. Exact tested commit:
+`e66836812c85efc5872a955995e66c5c005ca362`. Two upstream lwIP unused-function warnings (one in
+each wireless build), no build errors. Preserved evidence:
+[integrated host](logs/2026-10-30_INT-32-integrated-host.txt),
+[build](logs/2026-10-30_INT-32-build.txt),
+[image checksums](logs/2026-10-30_INT-32-integrated-manifest.json).
+Tester: Codex, 2026-10-30. No firmware flashed and no physical pass claimed.
