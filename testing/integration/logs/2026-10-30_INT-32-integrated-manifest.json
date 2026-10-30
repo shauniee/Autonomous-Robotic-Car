@@ -1,0 +1,14 @@
+{
+  "tested_commit": "e66836812c85efc5872a955995e66c5c005ca362",
+  "host": "PASS full suite, default disabled and explicitly enabled stall guard",
+  "build": "PASS all four standard profiles, NOGUARDS=0",
+  "warnings": "upstream lwIP mqtt_msg_type_to_str unused in both wireless builds",
+  "images_sha256": {
+    "mtk3pico_smp1_usb_cdc_wifi_test.uf2": "ef956e9e21a152c796d59faa4b62b96434a696e8aff42b0ff3104ac0cbf7889b",
+    "mtk3pico_smp1_usb_cdc_wifi.uf2": "e44ecc87268d66f4337d40a0a9a3b0b76db38967e7fdf6cf97520151cd900d50",
+    "mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2": "bd438c4df5c6833a87a92494657a699e5a0ab15c6f73118817a4cc5822445996",
+    "mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2": "83f33113687f2d8d0482f659cf7ef22f5960453d3389e829df4fabc1aca7f9a7"
+  },
+  "flashed": false,
+  "physical_result": "not performed"
+}

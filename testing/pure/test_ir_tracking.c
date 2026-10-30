@@ -116,6 +116,30 @@ static void test_bounds_and_staleness(void)
     assert(!s.normalized_valid && s.left_fraction == 0u && s.error == 0);
 }
 
+static void test_lost_after_invalid_sample(void)
+{
+    IrTracker tracker;
+    calibrate(&tracker, (IrRaw){3500u, 3500u}, (IrRaw){500u, 500u});
+    feed(&tracker, (IrRaw){500u, 500u});
+    assert(ir_tracking_output(&tracker, now).line == IR_LINE_LOST);
+    now += IR_SAMPLE_MS;
+    ir_tracking_sample(&tracker, (IrRaw){500u, 500u}, false, now);
+    IrTrackingOutput output = ir_tracking_output(&tracker, now);
+    assert(output.line == IR_LINE_UNKNOWN && !output.valid);
+    S3IrSnapshot snapshot = ir_snapshot_build(&tracker, 1u, now);
+    assert(snapshot.line == IR_LINE_UNKNOWN && !snapshot.normalized_valid &&
+        !snapshot.guidance_valid);
+    feed(&tracker, (IrRaw){1100u, 1100u}); /* 0.2 black: below exit threshold. */
+    output = ir_tracking_output(&tracker, now);
+    assert(output.line == IR_LINE_LOST && !output.valid);
+    snapshot = ir_snapshot_build(&tracker, 2u, now);
+    assert(snapshot.line == IR_LINE_LOST && snapshot.normalized_valid &&
+        !snapshot.guidance_valid);
+    feed(&tracker, (IrRaw){1400u, 1400u}); /* 0.3 black: leave LOST. */
+    output = ir_tracking_output(&tracker, now);
+    assert(output.line == IR_LINE_VISIBLE && output.valid);
+}
+
 static void test_raw_word(void)
 {
     const uint16_t values[] = {0u, 1u, 2048u, 4094u, 4095u};
@@ -147,6 +171,7 @@ int main(void)
     steps += replay((IrRaw){300u, 450u}, (IrRaw){3900u, 3700u});	/* inverted polarity */
     steps += replay((IrRaw){2100u, 2300u}, (IrRaw){1700u, 1900u});	/* low contrast */
     test_bounds_and_staleness();
+    test_lost_after_invalid_sample();
     printf("ir_tracking: PASS (%u replayed samples)\n", steps);
     return 0;
 }

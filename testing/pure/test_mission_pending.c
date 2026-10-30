@@ -52,6 +52,17 @@ int main(void)
     in.now_ms += 10u;
     in.line_sampled_ms = in.now_ms;
     mission_step(&mission, &in, &out);
+    assert(mission.state == MISSION_FOLLOW_LINE && !out.stop_now);
+    for (unsigned elapsed = 0u; elapsed < MISSION_LINE_LOST_MS; elapsed += 10u)
+    {
+        in.now_ms += 10u;
+        in.line_sampled_ms = in.now_ms;
+        mission_step(&mission, &in, &out);
+        assert(mission.state == MISSION_FOLLOW_LINE && !out.stop_now);
+    }
+    ++in.now_ms;
+    in.line_sampled_ms = in.now_ms;
+    mission_step(&mission, &in, &out);
     assert(mission.state == MISSION_STOPPED && out.line_lost && out.stop_now);
     puts("mission_pending: PASS (150 mm trigger; unreleased bypass stays stopped)");
     return 0;

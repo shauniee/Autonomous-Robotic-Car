@@ -1,0 +1,5 @@
+/tmp/s3-noisy-barcode: exit -6
+Assertion failed: (result == BARCODE_DECODED), function test_noisy_approach, file test_barcode.c, line 128.
+
+/tmp/s3-lost-ir: exit -6
+Assertion failed: (output.line == IR_LINE_LOST && !output.valid), function test_lost_after_invalid_sample, file test_ir_tracking.c, line 134.

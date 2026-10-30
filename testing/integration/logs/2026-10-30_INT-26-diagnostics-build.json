@@ -1,0 +1,63 @@
+{
+  "case": "INT-26",
+  "date": "2026-10-30",
+  "kind": "diagnostics firmware build; no flash or physical pass",
+  "base_commit": "cc3edb3dd7c92ec76fb2be742171818095fdc49f",
+  "tracked_working_diff_sha256": "2649e47b54058c6a08d3c81b7aba88dd67e7ee273c73d1d3f2440b8bad8aae70",
+  "source_sha256": {
+    "app_program/mission/mission.c": "1004742bd855bca316166c357b5e6c2725b68b6ced23b40d65465daf878fddcd",
+    "app_program/mission/safety.c": "287f5a87805a62f444314031bda39ab2bd20083a4410f13575c6ce64fe0bc636",
+    "app_program/subsystem2/subsystem2.c": "2765b6d25d79288ab034c16516f6bc1d55ab3a1ed2f15859a803f19b6d6bae3a",
+    "app_program/common/robot_config.h": "87aaac7df22e8007cb100b643ec0556abb9d614b4c9d95e5c44aff0f0c0248b7"
+  },
+  "command": "docker compose run --rm --no-deps --user \"$(id -u):$(id -g)\" firmware make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0",
+  "exit_code": 0,
+  "linked_size_bytes": {
+    "text": 377276,
+    "data": 396,
+    "bss": 84132
+  },
+  "image": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2",
+  "image_sha256": "d0370840deeaa629ad5acf6c4a77ce3d55fa55a1f5f9753d16894fb097f64bf3",
+  "live_observation": {
+    "flashed_revision": "unknown; cannot attribute running image to build or base commit",
+    "serial": [
+      "[MISSION] state=REACQUIRE",
+      "[MISSION] state=STOPPED",
+      "[MISSION] stop: gp21=0 latched=1 inputs_ok=1"
+    ],
+    "telemetry_during_reacquire": [
+      {
+        "mission": "REACQUIRE",
+        "motion": "RUNNING",
+        "line": "LOST",
+        "left": 161,
+        "right": 65474,
+        "fault_bytes": [
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "mission": "REACQUIRE",
+        "motion": "RUNNING",
+        "line": "LOST",
+        "left": 166,
+        "right": 65492,
+        "fault_bytes": [
+          0,
+          0,
+          2,
+          1,
+          0,
+          0
+        ]
+      }
+    ],
+    "conclusion": "Safety latch observed; exact cause unavailable in old console. No motor-stall cause confirmed; periodic telemetry may miss faults cleared at rest."
+  }
+}

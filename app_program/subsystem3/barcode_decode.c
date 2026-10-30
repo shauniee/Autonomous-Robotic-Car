@@ -222,6 +222,11 @@ barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
     if (width > BARCODE_MAX_ELEMENT_COUNTS)
     {
         drop(f);
+        /* A long white run can also be the next frame's quiet zone. */
+        if (!run_was_black && black && width >= BARCODE_QUIET_COUNTS)
+        {
+            f->state = BARCODE_FRAME_CAPTURE;
+        }
         return BARCODE_BAD_WIDTH;
     }
     f->widths[f->count++] = width;

@@ -203,3 +203,28 @@ mounted sensing, course framing or physical decode reliability.
 | Date | ID | Source | Result | Evidence / limits |
 | --- | --- | --- | --- | --- |
 | 2026-10-29 | S3-U14 / S3-U15 | Base `044889041aac67b78742f3b7004cd545755349fb` plus [working-source manifest](../integration/logs/2026-10-29_INT-16-manifest.json) | PASS (host only) | [Host output](../integration/logs/2026-10-29_INT-16-host.txt); Actual-black qualification, straight outgoing confirmation, A-Z orientation/scale fixtures; software only |
+
+
+New case S3-U16 (2026-10-30), defined before running: after a 100-count
+white approach, a 5-count black blip and a 200-count white gap, feed the
+complete forward A fixture. Expect BAD_WIDTH for the discarded false frame,
+then DECODED A from the real frame without another quiet zone.
+
+New case S3-U17 (2026-10-30), defined before running: calibrate black=3500,
+white=500 on both channels; feed white to enter LOST, fail acquisition, then
+feed raw=1100 (0.2 black) and raw=1400 (0.3 black). Expect UNKNOWN/invalid
+output during failure, LOST/no guidance at 0.2, and VISIBLE/guidance at 0.3.
+Snapshots must preserve the same validity and classification behavior.
+Host fixtures only; no wiring, power or hardware calibration used.
+
+| Date | ID | Source | Tester | Result | Evidence / limits |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | S3-U16 / S3-U17 | Base `cc3edb3dd7c92ec76fb2be742171818095fdc49f` plus [working-source manifest](logs/2026-10-30_S3-U16-U17-manifest.json) | Codex | FAIL before fix, PASS after fix (host only) | [Original regression failures](logs/2026-10-30_S3-U16-U17-red-host.txt); [targeted host output](logs/2026-10-30_S3-U16-U17-targeted-host.txt), including 3516 IR replay samples |
+
+The ADC helper consolidation and removal of the read-only ERR write passed
+[strict Cortex-M0+ syntax checking](logs/2026-10-30_S3-U16-U17-driver-syntax.txt).
+The [full host suite attempt](logs/2026-10-30_S3-U16-U17-host.txt) failed before
+S3 compilation because existing Motion edits reference undefined
+`MOTION_STALL_GUARD_ENABLED`. Native firmware compilation was unavailable
+(`arm-none-eabi-gcc` absent from PATH); Docker socket access was denied in the
+sandbox. No linked firmware, ADC hardware protocol or physical pass is claimed.

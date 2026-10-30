@@ -157,8 +157,11 @@ remain a pending course/policy decision, not an invented queue of route choices.
 
 ### Recovery and encounter coordination
 
-Healthy IR seeing white enters REACQUIRE, unlike missing/stale acquisition, which
-stops required movement. Requested recovery sweeps left/right up to 70 degrees
+Healthy white/white IR must persist through the
+[line-loss qualification interval](project-specs.md#pending-decisions)
+before entering REACQUIRE. During qualification, retain tracking steering;
+visible line resumes PID updates and clears the pending loss. Missing/stale
+acquisition still stops required movement. Requested recovery sweeps left/right up to 70 degrees
 while creeping, for two back-and-forth attempts; exact sequence, speed, travel
 cap and failure boundary await D07. Either sensor finding line initiates alignment;
 confirm stable intended-line tracking before resuming. Heading/travel evidence
@@ -231,7 +234,7 @@ This table owns target policy. `robot_data.c` now leaves IMU/calibration failure
 | Condition / detector | Start response | During run | Clear/reset |
 | --- | --- | --- | --- |
 | GP21 / Motion local input | Block | Latch brake | Eligible GP21 release after serviced brake; GP20 starts separately |
-| Motion bit 0 stall / wheel controller | Block while active | Latch stop | Cause cleared plus local reset; threshold uncalibrated D07 |
+| Motion bit 0 stall / wheel controller (detection disabled in current trial; see [trial settings](project-specs.md#pending-decisions)) | Block while active | Latch stop | Cause cleared plus local reset; threshold uncalibrated D07 |
 | Motion bit 1 encoder / invalid edges or failed capture | Block | Latch stop | Validated encoder recovery; existing 64-count rule is provisional D03 |
 | Line bit 0 acquisition invalid / S3 | Block | Stop if required acquisition invalid/stale | Valid readings/calibration and local reset |
 | Healthy line lost / Mission | No start on unusable line | Bounded REACQUIRE, then stop if exhausted | Line confirmed or operator reposition/reset |
@@ -254,6 +257,12 @@ Mission is the only latest-command writer. Keep packed `MotionCommand`, action
 ID and coherent feedback. Repeating a command does not restart its encoder action
 or extend its absolute deadline. Preserve acquisition time; copying stale evidence
 never makes it fresh. No lease/generation/acknowledgement framework is added.
+
+FOLLOW wheel targets are nonnegative. When the wheel PID reduces speed, its
+output is limited to forward power or zero, with integral anti-windup at both
+output limits; overspeed must not command reverse power. Explicit DISTANCE and
+TURN actions retain signed wheel control. Zero power and this software limit
+do not prove physical stationarity or calibrated motor/encoder polarity.
 
 | Movement | Required evidence | Not universally required |
 | --- | --- | --- |

@@ -470,7 +470,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
     }
     else if (control->work == BYPASS_WORK_LINE)
     {
-        output->command = motion_command_make(MOTION_MODE_FOLLOW, RECOVERY_SPEED_MMPS,
+        output->command = motion_command_make(MOTION_MODE_FOLLOW, BYPASS_LINE_SPEED_MMPS,
             0.0f, input->line_visible ? input->line_steering_q : 0,
             1u, input->line_ms);
     }

@@ -157,6 +157,8 @@ static void mission_task(INT stacd, void *exinf)
             .barcode_letter = barcode_event_letter(&barcode)};
 
         MissionOutputs out;
+        bool was_recovering = mission.state == MISSION_REACQUIRE &&
+            !mission.reacquire_bypass;
         mission_step(&mission, &in, &out);
 
         if (out.stop_now && s2_stop() < E_OK)
@@ -205,6 +207,30 @@ static void mission_task(INT stacd, void *exinf)
             tm_printf((UB *)"[MISSION] command write failed; stopping\n");
             (void)s2_stop();
         }
+        if (was_recovering && out.line_lost)
+        {
+            /* Report only after STOP has been requested and commanded.
+               These are Mission's original failure inputs, not a later sample. */
+            int32_t left = enc_travel_signed(in.wheel_count[0],
+                mission.recovery.origin[0]);
+            int32_t right = enc_travel_signed(in.wheel_count[1],
+                mission.recovery.origin[1]);
+            float heading = enc_heading_deg(left, right);
+            float travel = ((float)left + (float)right) * 0.5f /
+                ENC_COUNTS_PER_MM;
+            tm_printf((UB *)"[RECOVERY] failed: elapsed_ms=%u "
+                "left_counts=%d right_counts=%d heading_cdeg=%d "
+                "travel_mm=%d leg=%u usable_ir=%d ir_age_ms=%u "
+                "front_valid=%d front_age_ms=%u front_mm=%u\n",
+                (unsigned)robot_time_elapsed(in.now_ms,
+                    mission.recovery.started_ms),
+                (int)left, (int)right, (int)(heading * 100.0f),
+                (int)travel, (unsigned)mission.recovery.leg,
+                (int)in.usable_line,
+                (unsigned)robot_time_elapsed(in.now_ms, in.line_sampled_ms),
+                (int)in.front_valid, (unsigned)in.front_age_ms,
+                (unsigned)in.front_mm);
+        }
         atomic_store_explicit(&published_state, (uint8_t)mission.state, memory_order_release);
         if (mission.state != reported)
         {
@@ -212,8 +238,11 @@ static void mission_task(INT stacd, void *exinf)
             tm_printf((UB *)"[MISSION] state=%s%s\n", state_names[mission.state], APP_TEST ? " MOTOR_INHIBITED" : "");
             if (mission.state == MISSION_STOPPED)
             {
-                tm_printf((UB *)"[MISSION] stop: gp21=%d latched=%d inputs_ok=%d\n",
-                          (int)in.stop_down, (int)in.safety_latched, (int)in.inputs_ok);
+                tm_printf((UB *)"[MISSION] stop: gp21=%d latched=%u "
+                    "inputs_ok=%d motion_stopped=%d motion_status=%u\n",
+                    (int)in.stop_down, (unsigned)safety_latched_causes(),
+                    (int)in.inputs_ok, (int)in.motion_stopped,
+                    (unsigned)in.motion_status);
             }
         }
         tk_dly_tsk(robot_time_next_delay(&release, FOLLOW_PERIOD_MS, robot_time_ms()));

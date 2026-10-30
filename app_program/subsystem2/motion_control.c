@@ -92,14 +92,10 @@ bool motion_command_fresh(const MotionCommand *cmd, uint32_t now_ms)
            robot_time_elapsed(now_ms, cmd->sampled_ms) <= MOTION_EXPIRY_MS;
 }
 
-static float clampf(float v, float bound)
-{
-    return v > bound ? bound : (v < -bound ? -bound : v);
-}
-
 /* Feedforward (static friction + speed) plus PID on counts/s, conditional
    anti-windup. dt in seconds. */
-static float wheel_duty(WheelPid *p, float target_cps, float speed_cps, float dt)
+static float wheel_duty(WheelPid *p, float target_cps, float speed_cps, float dt,
+    bool forward_only)
 {
     if (fabsf(target_cps) < 0.001f) {
         *p = (WheelPid){.previous_speed = speed_cps};
@@ -110,11 +106,17 @@ static float wheel_duty(WheelPid *p, float target_cps, float speed_cps, float dt
     float friction = target_cps > 0.0f ? MOTION_KS : -MOTION_KS;	/* duty to start turning at all */
     float output = friction + MOTION_KF * target_cps + MOTION_KP * error + MOTION_KI * integral -
                    MOTION_KD * (speed_cps - p->previous_speed) / dt;
-    if (fabsf(output) <= MOTION_MAX_DUTY || output * error < 0.0f) {
+    /* FOLLOW slows a forward wheel without driving it backward. Discrete
+       turn/distance actions retain signed control. Anti-windup must include
+       the zero lower limit so overspeed cannot accumulate reverse effort. */
+    float lower = forward_only ? 0.0f : -MOTION_MAX_DUTY;
+    float bounded = fminf(fmaxf(output, lower), MOTION_MAX_DUTY);
+    if (output == bounded || (output - bounded) * error < 0.0f)
+    {
         p->integral = integral;
     }
     p->previous_speed = speed_cps;
-    return clampf(output, MOTION_MAX_DUTY);
+    return bounded;
 }
 
 static void brake(MotionOutput *out, rd_motion_status_t status, uint8_t id)
@@ -217,7 +219,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
     /* Stall: a wheel told to move but not moving for MOTION_STALL_MS.
        The bench build (NOGUARDS=1) skips it so a slow or noisy encoder never
        brakes the run. */
-    for (int w = 0; w < 2 && !APP_NO_GUARDS; ++w) {
+    for (int w = 0; w < 2 && MOTION_STALL_GUARD_ENABLED && !APP_NO_GUARDS; ++w) {
         if (fabsf(target_cps[w]) < MOTION_STATIONARY_CPS || fabsf(speed_cps[w]) >= MOTION_STATIONARY_CPS) {
             c->stalled_since_ms[w] = in->now_ms;
         } else if (robot_time_elapsed(in->now_ms, c->stalled_since_ms[w]) >= MOTION_STALL_MS) {
@@ -229,7 +231,8 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
     }
 
     for (int w = 0; w < 2; ++w) {
-        out->duty[w] = wheel_duty(&c->pid[w], target_cps[w], speed_cps[w], dt);
+        out->duty[w] = wheel_duty(&c->pid[w], target_cps[w], speed_cps[w], dt,
+            motion_cmd_mode(cmd) == MOTION_MODE_FOLLOW);
     }
     out->status = RD_MOTION_RUNNING;
     out->action_id = c->action_id;

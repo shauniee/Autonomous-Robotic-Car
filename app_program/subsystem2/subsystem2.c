@@ -266,6 +266,17 @@ static void motion_task(INT stacd, void *exinf)
                 s2_stop();
             }
         }
+        if (out.stall)
+        {
+            /* Outputs have already been braked; report before this fault clears. */
+            tm_printf((UB *)"[MOTION] motor stall: mode=%u action=%u "
+                "speed_mmps=%u steering_q=%d left=%u right=%u\n",
+                (unsigned)motion_cmd_mode(&command),
+                (unsigned)motion_cmd_action(&command),
+                (unsigned)motion_cmd_speed(&command),
+                (int)motion_cmd_steering(&command),
+                (unsigned)in.count[0], (unsigned)in.count[1]);
+        }
         /* Fixed-rate release; a stop wake-up services immediately without shifting it. */
         tk_slp_tsk(robot_time_next_delay(&release, MOTION_PERIOD_MS, robot_time_ms()));
         tk_can_wup(TSK_SELF);

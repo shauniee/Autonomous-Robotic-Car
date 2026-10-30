@@ -1,0 +1,6 @@
+robot_time: PASS
+encoder_math: PASS
+stress: 5000000 reads checked, 0 torn
+robot_data: PASS
+Assertion failed: (out.status == RD_MOTION_FAILED && out.duty[0] == 0.0f && out.duty[1] == 0.0f), function test_stall_and_timeout, file test_motion_control.c, line 171.
+testing/pure/run.sh: line 56: 23408 Abort trap: 6           "$build_dir/test_motion_control"

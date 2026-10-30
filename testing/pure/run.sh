@@ -15,6 +15,8 @@ $CC $CFLAGS testing/pure/test_robot_time.c -o "$build_dir/test_robot_time"
 $CC $CFLAGS testing/pure/test_encoder_math.c -o "$build_dir/test_encoder_math"
 $CC $CFLAGS testing/pure/test_motion_control.c app_program/subsystem2/motion_control.c \
     app_program/common/robot_data.c -lm -o "$build_dir/test_motion_control"
+$CC $CFLAGS -DMOTION_STALL_GUARD_ENABLED=1 testing/pure/test_motion_control.c app_program/subsystem2/motion_control.c \
+    app_program/common/robot_data.c -lm -o "$build_dir/test_motion_control_guarded"
 $CC $CFLAGS testing/pure/test_barcode.c app_program/subsystem3/barcode_decode.c \
     app_program/common/robot_data.c -o "$build_dir/test_barcode"
 $CC $CFLAGS testing/pure/test_ir_tracking.c app_program/subsystem3/ir_tracking.c -lm \
@@ -23,7 +25,7 @@ $CC $CFLAGS testing/pure/test_safety.c app_program/common/robot_data.c -o "$buil
 $CC $CFLAGS -DMISSION_BYPASS_RELEASED=1 -DMISSION_RECOVERY_RELEASED=1 testing/pure/test_mission.c app_program/mission/mission_logic.c \
     app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
     app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_mission"
-$CC $CFLAGS testing/pure/test_mission_pending.c app_program/mission/mission_logic.c \
+$CC $CFLAGS -DMISSION_BYPASS_RELEASED=0 -DMISSION_RECOVERY_RELEASED=0 testing/pure/test_mission_pending.c app_program/mission/mission_logic.c \
     app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
     app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_mission_pending"
 $CC $CFLAGS testing/pure/test_mission_mapping.c app_program/mission/mission_mapping.c \
@@ -52,6 +54,7 @@ $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
 "$build_dir/test_encoder_math"
 "$build_dir/test_robot_data"
 "$build_dir/test_motion_control"
+"$build_dir/test_motion_control_guarded"
 "$build_dir/test_barcode"
 "$build_dir/test_ir_tracking"
 "$build_dir/test_safety"
