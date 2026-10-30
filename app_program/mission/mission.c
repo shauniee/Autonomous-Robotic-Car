@@ -96,6 +96,7 @@ static void mission_task(INT stacd, void *exinf)
             robot_time_elapsed(now, scan_profile.sampled_ms) <= S5_SCAN_DEADLINE_MS &&
             scan_profile.evidence.left_edge_valid && scan_profile.evidence.right_edge_valid;
         ObstacleProfile profile = scan_profile.profile;
+        uint32_t scan = s5_scan_word();
         S4Snapshot terrain = {0};
         bool have_terrain = s4_copy(&terrain) &&
             terrain_evidence_fresh(&terrain, now, SAFETY_STALE_MS) &&
@@ -123,7 +124,7 @@ static void mission_task(INT stacd, void *exinf)
             .line_error = snapshot.error,
             .line_sampled_ms = snapshot.sampled_ms,
             .wheel_count = {left_now, right_now},
-            .travel_counts = enc_mean(drv_encoder_count(ENCODER_LEFT), drv_encoder_count(ENCODER_RIGHT)),
+            .travel_counts = enc_mean(left_now, right_now),
             .motion_status = rd_motion_feedback_status(feedback),
             .motion_action = (uint8_t)rd_motion_feedback_action(feedback),
             .hump_active = have_terrain &&
@@ -133,12 +134,22 @@ static void mission_task(INT stacd, void *exinf)
             .stationary = robot_time_elapsed(now, still_since) >= MISSION_STATIONARY_MS,
             .front_valid = range_copied && front_sample.sequence != 0u && echo_valid(front),
             .front_age_ms = robot_time_elapsed(now, front_sample.sampled_ms),
+            .front_sampled_ms = front_sample.sampled_ms,
+            .front_sequence = front_sample.sequence,
+            .front_travel_counts = front_sample.travel_counts,
             .front_mm = echo_range(front),
             .side_valid = range_copied && side_sample.sequence != 0u && echo_valid(side) &&
                 robot_time_elapsed(now, side_sample.sampled_ms) <= 3u * SONAR_REPEAT_MS,
             .side_mm = echo_range(side),
-            .scan_state = s5_scan_state_unpack(s5_scan_word() & rd_mask(S5_SCAN_STATE_BITS)),
+            .side_sampled_ms = side_sample.sampled_ms,
+            .side_sequence = side_sample.sequence,
+            .scan_state = s5_scan_state_unpack(scan & rd_mask(S5_SCAN_STATE_BITS)),
+            .scan_id = s5_scan_id(scan),
             .profile_valid = have_profile && profile.valid,
+            .profile_closest_mm = profile.closest_mm,
+            .profile_planning_mm = scan_profile.evidence.planning_width_mm,
+            .profile_forward_mm = profile.obstacle_forward_mm,
+            .profile_left_mm = profile.obstacle_left_mm,
             .left_clearance_mm = profile.left_clearance_mm,
             .right_clearance_mm = profile.right_clearance_mm,
             .have_barcode = have_barcode,
@@ -178,7 +189,7 @@ static void mission_task(INT stacd, void *exinf)
         }
         if (out.scan_request)
         {
-            s5_scan_request(0u);
+            s5_scan_request(out.scan_id);
         }
         if (out.scan_cancel)
         {

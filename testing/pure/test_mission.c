@@ -484,7 +484,9 @@ static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm)
         out = bstep(&m, &in, &t);
         if (out.event_kind == MQTT_EVENT_OBSTACLE)
         {
-            assert(out.event_arg2 > 0u);
+            /* First edge at ~300 mm, mount +100 mm, ray +78 mm,
+               profile front at 150 mm; allow 2 mm encoder quantization. */
+            assert(fabsf((float)out.event_arg2 - 328.0f) <= 2.0f);
             depth_seen = true;
         }
     }
@@ -610,7 +612,81 @@ static void test_line_pid(void)
     assert(motion_cmd_steering(&o2.command) > 0);
     /* Leaving FOLLOW discards the history. */
     in2.stop_down = true; t += 10u; step(&m2, &in2, t);
-    assert(m2.state == MISSION_STOPPED && !m2.line_pid_primed && m2.line_integral == 0.0f);
+    assert(m2.state == MISSION_STOPPED && !m2.line_pid_primed && m2.line_integral_q == 0);
+}
+
+/* INT-24: persistent scaled history versus the prior float algorithm.
+   Exercise both saturation signs, variable dt, timestamp wrap and invalid
+   storage reset. One Q7 count is a software comparison bound, not tuning. */
+static void test_missing_echo_policy(void)
+{
+    Mission m;
+    MissionInputs in = base(100u);
+    uint32_t t = to_follow(&m, &in);
+    in.front_valid = false;
+    MissionOutputs out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_FOLLOW_LINE);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
+
+    in = base(100u);
+    into_scanning(&m, &in, &t, 800u, 400u);
+    out = bstep(&m, &in, &t);
+    complete_action(&in, &out);
+    fresh_front(&in, t + 10u);
+    out = bstep(&m, &in, &t);
+    assert(m.bypass.route == BYPASS_ROUTE_OFFSET);
+    fresh_front(&in, t + 10u);
+    out = bstep(&m, &in, &t);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
+    in.motion_status = RD_MOTION_RUNNING;
+    in.front_valid = false;
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_STOPPED && out.stop_now);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    puts("INT-24 no echo: PASS (tracking report-only; bypass offset stops)");
+}
+
+static void test_line_history_storage(void)
+{
+    for (unsigned scenario = 0u; scenario < 3u; ++scenario)
+    {
+        Mission m;
+        MissionInputs in = base(UINT32_MAX - 1000u);
+        uint32_t t = to_follow(&m, &in);
+        RefPid ref = {0};
+        unsigned max_delta = 0u;
+        for (unsigned i = 0u; i < 10000u; ++i)
+        {
+            int error = scenario == 0u ? 127 : -127;
+            if (scenario == 2u)
+            {
+                error = (int)((i * 73u) % 255u) - 127;
+            }
+            t += 10u + i % 4u * 10u;
+            in.line_error = (int8_t)error;
+            MissionOutputs out = step(&m, &in, t);
+            int expected = ref_pid(&ref, error, t);
+            int got = motion_cmd_steering(&out.command);
+            unsigned delta = (unsigned)(got > expected ? got - expected : expected - got);
+            if (delta > max_delta)
+            {
+                max_delta = delta;
+            }
+            assert(delta <= 1u);
+            assert(m.line_integral_q != INT16_MIN);
+            assert(m.line_prev_error_q != INT16_MIN);
+            assert(fabsf((float)m.line_integral_q / 32767.0f) <=
+                LINE_I_LIMIT + 1.0f / 65534.0f);
+        }
+        printf("mission scaled history: scenario %u, 10000 samples, max Q7 delta %u\n",
+            scenario, max_delta);
+        m.line_integral_q = INT16_MIN;
+        m.line_prev_error_q = INT16_MIN;
+        in.line_error = 0;
+        MissionOutputs out = step(&m, &in, t + 20u);
+        assert(m.line_integral_q == 0 && m.line_prev_error_q == 0);
+        assert(motion_cmd_steering(&out.command) == 0);
+    }
 }
 
 static void test_stop_cancels_every_phase(void)
@@ -694,6 +770,8 @@ int main(void)
     test_start_gate();
     test_follow_and_stops();
     test_line_pid();
+    test_line_history_storage();
+    test_missing_echo_policy();
     test_both_black_forward();
     test_barcode_hold_and_junction();
     test_crossing_never_completes_mission();

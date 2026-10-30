@@ -435,6 +435,6 @@ and the deferred operating policies remain Stage 8 work. These are not accepted 
 features. Terrain publishes original acquisition/service times under a mutex;
 impact remains asserted until a fresh non-impact sample observes serviced braking.
 S1 events use a short cross-core mutex; events stay in the ring when the TX bridge
-is full. Overflow overwrites oldest entries, and lock misses are separately
-saturating per-core counters exposed by `s1_event_drops()`. Mapping uses a single
+is full. Overflow overwrites oldest entries; lock misses drop the new event.
+Neither kind of drop is exposed in telemetry. Mapping uses a single
 outstanding word hand-off; only Mission installs/rejects before I/O ACKs.

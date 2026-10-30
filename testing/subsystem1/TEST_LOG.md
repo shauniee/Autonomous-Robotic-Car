@@ -4,9 +4,10 @@
 
 - [1. Test cases](#1-test-cases)
 - [2. Results](#2-results)
+- [Binary protocol replacement cases — 2026-10-30](#binary-protocol-replacement-cases--2026-10-30)
 - [Documentation alignment — 2026-10-29](#documentation-alignment--2026-10-29)
 
-Owner: Shaun / communications. S1 now owns the optional latest S3 snapshot and bounded encoder, with one mutex and no task. Retired template IDs: S1-U01 cyclic handler, S1-U02 sleeping LED task, S1-U03 GP19 LED at 2 Hz. No template result was recorded. Heartbeat/status reporting and a status-only subscription are restored from the earlier S1 branch in the existing kernel service. No Pico hardware result is claimed.
+Owner: Shaun / communications. Current S1 runs bounded reporting in I/O, uses the cross-core event mutex and kernel TX/RX bridge; it has no application task. Retired template IDs: S1-U01 cyclic handler, S1-U02 sleeping LED task, S1-U03 GP19 LED at 2 Hz. No template result was recorded. The historical restoration below used heartbeat/status JSON; current binary cases are defined in the replacement section. No Pico hardware result is claimed.
 
 ## 1. Test cases
 
@@ -39,3 +40,44 @@ Earlier task splits, GP20 reset flows, JSON messages, watchdog assumptions and
 configured timing targets describe their recorded revisions. Do not interpret
 them as target passes. Use the applicable procedure revision, exact source and
 new evidence filenames for reruns; never overwrite evidence or reuse retired IDs.
+
+## Binary protocol replacement cases — 2026-10-30
+
+Procedure revision only: retire S1-U04 through S1-U08 for current acceptance.
+Their JSON/fake-kernel/localhost definitions and results above remain historical;
+none is reused. The firmware codec self-check now prints S1-U09. Its compiled
+presence does not establish an on-target pass. Current test definitions:
+
+| ID | Scope / method | Expected |
+| --- | --- | --- |
+| S1-U09 | Binary schema-v2 codec; `test_mqtt_frame.c`, firmware startup subset | Golden bytes, exact 23/11/5/3/2 lengths, short/oversized buffers, version/type/reserved/range rejection; snapshot reply shares telemetry body |
+| S1-U10 | Reporting/events/mapping; `test_s1_report.c`, `test_mission_mapping.c` | Packed events round-trip; bounded overflow/drop saturation; backpressure retains oldest; stopped install precedes ACK; busy/invalid mapping rejected; 100000 concurrent request/reply exchanges |
+| S1-U11 | Kernel bridge stress; `test_s1_stress.c` | 300000 frames without corruption/reordering; 5000000 word reads without tearing; no networking or motor authority added |
+| S1-U12 | Binary laptop helper; `scripts/mqtt_client.py --self-test` | Same schema-v2 vectors and seven-state labels; no claim of broker/Pico transport from self-test |
+| S1-U13 | Six owner fault bytes; `test_mqtt_frame.c`, `test_robot_data.c`, `test_safety.c` | All 48 walking bits round-trip in bytes 4..9; per-owner start/stop masks tested independently; report-only bits remain report-only |
+| S1-M01 | Pending physical binary subscription; T12/T13 | Current Pico-originated telemetry and mapping ACK, all six fault bytes under controlled fault injection, reconnect with no stale replay; record flashed image and raw subscriber capture |
+
+Missing sonar echo is **not** a universal stop cause: the
+[central fault policy](../../docs/architecture.md#fault-bitmask) permits ordinary
+tracking with a report-only no-echo bit. Bypass offset requires supported front
+range and brakes on unknown range. INT-24 tests both software contexts. T08/T10
+and S1-M01 must capture the actual fault byte, motor response and timing on the
+robot; these physical observations are still pending.
+
+| Date | IDs | Source | Tester | Result | Evidence / limits |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | S1-U09..U13 | Base `62ee5226e16a3c501d94998291944753c9662dfc` plus [working-source manifest](../integration/logs/2026-10-30_INT-24-accepted-manifest.json) | Codex | PASS (host only) | [Full suite](../integration/logs/2026-10-30_INT-24-accepted-host.txt); codec, reporting, mapping, bridge, helper and fault masks. Firmware startup subset compiled in both TEST profiles; execution pending |
+| 2026-10-30 | S1-M01 | Current-image trial to record | Operator pending | PENDING | No Pico subscription, controlled physical fault injection or timing capture executed |
+
+2026-10-30 procedure follow-up, INT-25: remove the unused synchronous
+`s1_handle_command` tests. S1-U10 now exercises event reporting in
+`test_s1_report.c` and the actual asynchronous hand-off separately in
+`test_mission_mapping.c`; this does not execute kernel-bound `s1_step`.
+[Host suite](../integration/logs/2026-10-30_INT-25-accepted-host.txt) passes at the
+[INT-25 working-source manifest](../integration/logs/2026-10-30_INT-25-accepted-manifest.json).
+All four profiles compile. Insertion uses the existing 2 ms mutex timeout;
+failed acquisitions increment single-writer per-core saturating diagnostic
+words (`lock_misses[0]` Terrain/I/O, `[1]` Mission). Ring overwrite drops remain
+separate. No new MQTT counters or physical delivery claim is added.
+Actual cross-core contention, forced timeout and UINT32_MAX saturation require
+controlled on-target injection; those checks have not been executed.

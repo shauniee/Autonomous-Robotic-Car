@@ -6,6 +6,7 @@
 - [Results](#results)
 - [2026-10-27 — Minimum-bit obstacle packing candidate (#111)](#2026-10-27--minimum-bit-obstacle-packing-candidate-111)
 - [Documentation alignment — 2026-10-29](#documentation-alignment--2026-10-29)
+- [Current helper coverage — INT-25](#current-helper-coverage--int-25)
 
 Owner: Jia Jing / obstacle. Inactive placeholder. Retired template definitions: S5-U01 task-context example; S5-U02 unfilled manual placeholder. No template result was recorded. No subsystem hardware test is claimed.
 
@@ -44,3 +45,14 @@ New cases for the full-plan continuation (defined before accepted runs):
 | Date | ID | Source | Result | Evidence / limits |
 | --- | --- | --- | --- | --- |
 | 2026-10-29 | S5-U03 / S5-U04 | Base `044889041aac67b78742f3b7004cd545755349fb` plus [working-source manifest](../integration/logs/2026-10-29_INT-16-manifest.json) | PASS (host only) | [Host output](../integration/logs/2026-10-29_INT-16-host.txt); Bounded median/edge/model helpers and invalid/no-echo cases; synthetic fixture settings, not enabled production calibration |
+
+## Current helper coverage — INT-25
+
+2026-10-30: removed unused `s5_profile_build` / `s5_fine_angles` and their
+surrogate host cases. Historical results above remain source-pinned. The
+current `test_obstacle_profile.c` covers scan state/ID/guard and packed ray /
+side-watch representations; `test_profile_edges.c` covers the estimator and
+fine-angle selection used by firmware. All host checks and four firmware builds
+pass at the [INT-25 manifest](../integration/logs/2026-10-30_INT-25-accepted-manifest.json);
+[host output](../integration/logs/2026-10-30_INT-25-accepted-host.txt). No target
+servo/echo, accuracy or physical bypass acceptance follows from this cleanup.

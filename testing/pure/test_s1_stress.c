@@ -49,8 +49,38 @@ static void *frame_producer(void *arg)
     return NULL;
 }
 
+static void check_reconnect(void)
+{
+    uint8_t frame[] = {1u, 2u, 3u};
+    uint8_t received[S1_FRAME_MAX];
+    assert(!s1_bridge_post(frame, sizeof frame));
+    s1_bridge_link(true, true);
+    for (unsigned cycle = 0u; cycle < 25u; ++cycle)
+    {
+        for (unsigned i = 0u; i < S1_OUTGOING_DEPTH; ++i)
+        {
+            assert(s1_bridge_post(frame, sizeof frame));
+        }
+        assert(!s1_bridge_post(frame, sizeof frame));
+        s1_bridge_link(cycle % 2u == 0u, false);
+        assert(!s1_bridge_ready());
+        assert(s1_bridge_take(received, sizeof received) == 0u);
+        assert(!s1_bridge_post(frame, sizeof frame));
+        s1_bridge_link(true, true);
+        assert(s1_bridge_take(received, sizeof received) == 0u);
+        frame[0] = (uint8_t)cycle;
+        assert(s1_bridge_post(frame, sizeof frame));
+        /* An unchanged online report must preserve fresh queued data. */
+        s1_bridge_link(true, true);
+        assert(s1_bridge_take(received, sizeof received) == sizeof frame);
+        assert(memcmp(frame, received, sizeof frame) == 0);
+    }
+    s1_bridge_link(false, false);
+}
+
 int main(void)
 {
+    check_reconnect();
     assert(!s1_bridge_ready());
     s1_bridge_link(true, false);
     assert(!s1_bridge_ready());

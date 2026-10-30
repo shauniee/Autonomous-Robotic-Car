@@ -32,7 +32,7 @@ MOTION = ["IDLE", "RUNNING", "DONE", "FAILED"]
 LINE = ["UNKNOWN", "VISIBLE", "LOST", "BROAD_BLACK"]
 ACTION = ["UNMAPPED", "LEFT", "RIGHT", "STRAIGHT", "U_TURN"]
 EVENT_KIND = {1: "BARCODE", 2: "HUMP", 3: "OBSTACLE", 4: "TURN"}
-ACK_RESULT = ["OK", "BUSY (robot moving)", "INVALID letters", "MALFORMED"]
+ACK_RESULT = ["OK", "BUSY", "INVALID letters", "MALFORMED"]
 # One byte per owner, rd_owner_t order; bit names follow app_program/common/robot_data.h.
 FAULTS = [
     ("Motion", ["motor stall", "encoder"]),

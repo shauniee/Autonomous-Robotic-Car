@@ -1,0 +1,499 @@
+build_make/mtk3pico_smp1_usb_cdc_wifi 2.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     320728   268435712
+.time_critical.tinyusb       476   268756440
+.ARM.exidx                     8   268756916
+vector                       192   536870912
+.data                        384   536871104
+.bss                       26264   536871488
+.debug_info               491759           0
+.debug_abbrev              98575           0
+.debug_loclists           229069           0
+.debug_aranges             11352           0
+.debug_rnglists            33576           0
+.debug_macro              223313           0
+.debug_line               384611           0
+.debug_str               1089746           0
+.comment                      38           0
+.ARM.attributes               42           0
+.debug_frame               28152           0
+.debug_line_str              227           0
+Total                    2938768
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi 3.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     320868   268435712
+.time_critical.tinyusb       476   268756580
+.ARM.exidx                     8   268757056
+vector                       192   536870912
+.data                        384   536871104
+.bss                       26256   536871488
+.debug_info               455312           0
+.debug_abbrev              83744           0
+.debug_loclists           202595           0
+.debug_aranges              9480           0
+.debug_rnglists            31526           0
+.debug_macro              224090           0
+.debug_line               366686           0
+.debug_str               1084472           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               28124           0
+.debug_line_str              390           0
+Total                    2834969
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi 4.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     320824   268435712
+.time_critical.tinyusb       476   268756536
+.ARM.exidx                     8   268757012
+vector                       192   536870912
+.data                        384   536871104
+.bss                       26256   536871488
+.debug_info               455452           0
+.debug_abbrev              83739           0
+.debug_loclists           202478           0
+.debug_aranges              9464           0
+.debug_rnglists            31545           0
+.debug_macro              224090           0
+.debug_line               366705           0
+.debug_str               1084496           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               28076           0
+.debug_line_str              390           0
+Total                    2834941
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     321016   268435712
+.time_critical.tinyusb       476   268756728
+.ARM.exidx                     8   268757204
+vector                       192   536870912
+.data                        384   536871104
+.bss                       26256   536871488
+.debug_info               456479           0
+.debug_abbrev              83761           0
+.debug_loclists           202344           0
+.debug_aranges              9464           0
+.debug_rnglists            31583           0
+.debug_macro              224096           0
+.debug_line               366756           0
+.debug_str               1084758           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               28072           0
+.debug_line_str              390           0
+Total                    2836401
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt 2.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     375508   268435712
+.time_critical.tinyusb       476   268811220
+.ARM.exidx                     8   268811696
+vector                       192   536870912
+.data                        396   536871104
+.bss                       83932   536871500
+.debug_info               634870           0
+.debug_abbrev             122483           0
+.debug_loclists           311455           0
+.debug_aranges             14368           0
+.debug_rnglists            40974           0
+.debug_macro              254363           0
+.debug_line               497745           0
+.debug_str               1158651           0
+.comment                      38           0
+.ARM.attributes               42           0
+.debug_frame               37480           0
+.debug_line_str              371           0
+Total                    3533608
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt 3.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     375720   268435712
+.time_critical.tinyusb       476   268811432
+.ARM.exidx                     8   268811908
+vector                       192   536870912
+.data                        392   536871104
+.bss                       83928   536871496
+.debug_info               598372           0
+.debug_abbrev             107612           0
+.debug_loclists           284993           0
+.debug_aranges             12464           0
+.debug_rnglists            38924           0
+.debug_macro              255400           0
+.debug_line               491415           0
+.debug_str               1153744           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               37452           0
+.debug_line_str              622           0
+Total                    3442080
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt 4.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     375676   268435712
+.time_critical.tinyusb       476   268811388
+.ARM.exidx                     8   268811864
+vector                       192   536870912
+.data                        392   536871104
+.bss                       83928   536871496
+.debug_info               598512           0
+.debug_abbrev             107607           0
+.debug_loclists           284876           0
+.debug_aranges             12448           0
+.debug_rnglists            38943           0
+.debug_macro              255400           0
+.debug_line               491434           0
+.debug_str               1153768           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               37404           0
+.debug_line_str              622           0
+Total                    3442052
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     375868   268435712
+.time_critical.tinyusb       476   268811580
+.ARM.exidx                     8   268812056
+vector                       192   536870912
+.data                        392   536871104
+.bss                       83928   536871496
+.debug_info               599539           0
+.debug_abbrev             107629           0
+.debug_loclists           284742           0
+.debug_aranges             12448           0
+.debug_rnglists            38981           0
+.debug_macro              255406           0
+.debug_line               491485           0
+.debug_str               1154030           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               37400           0
+.debug_line_str              622           0
+Total                    3443512
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test 2.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     377588   268435712
+.time_critical.tinyusb       476   268813300
+.ARM.exidx                     8   268813776
+vector                       192   536870912
+.data                        396   536871104
+.bss                       83940   536871500
+.debug_info               638869           0
+.debug_abbrev             123676           0
+.debug_loclists           312364           0
+.debug_aranges             14512           0
+.debug_rnglists            41191           0
+.debug_macro              256387           0
+.debug_line               503703           0
+.debug_str               1159420           0
+.comment                      38           0
+.ARM.attributes               42           0
+.debug_frame               37680           0
+.debug_line_str              371           0
+Total                    3551109
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test 3.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     377588   268435712
+.time_critical.tinyusb       476   268813300
+.ARM.exidx                     8   268813776
+vector                       192   536870912
+.data                        396   536871104
+.bss                       83940   536871500
+.debug_info               638869           0
+.debug_abbrev             123676           0
+.debug_loclists           312364           0
+.debug_aranges             14512           0
+.debug_rnglists            41191           0
+.debug_macro              256387           0
+.debug_line               503703           0
+.debug_str               1159420           0
+.comment                      38           0
+.ARM.attributes               42           0
+.debug_frame               37680           0
+.debug_line_str              371           0
+Total                    3551109
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test 4.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     377588   268435712
+.time_critical.tinyusb       476   268813300
+.ARM.exidx                     8   268813776
+vector                       192   536870912
+.data                        396   536871104
+.bss                       83940   536871500
+.debug_info               638869           0
+.debug_abbrev             123676           0
+.debug_loclists           312364           0
+.debug_aranges             14512           0
+.debug_rnglists            41191           0
+.debug_macro              256387           0
+.debug_line               503703           0
+.debug_str               1159420           0
+.comment                      38           0
+.ARM.attributes               42           0
+.debug_frame               37680           0
+.debug_line_str              371           0
+Total                    3551109
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test 5.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     377800   268435712
+.time_critical.tinyusb       476   268813512
+.ARM.exidx                     8   268813988
+vector                       192   536870912
+.data                        392   536871104
+.bss                       83936   536871496
+.debug_info               602371           0
+.debug_abbrev             108805           0
+.debug_loclists           285895           0
+.debug_aranges             12608           0
+.debug_rnglists            39141           0
+.debug_macro              257464           0
+.debug_line               497757           0
+.debug_str               1154513           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               37652           0
+.debug_line_str              622           0
+Total                    3459998
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test 6.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     377756   268435712
+.time_critical.tinyusb       476   268813468
+.ARM.exidx                     8   268813944
+vector                       192   536870912
+.data                        392   536871104
+.bss                       83936   536871496
+.debug_info               602511           0
+.debug_abbrev             108800           0
+.debug_loclists           285778           0
+.debug_aranges             12592           0
+.debug_rnglists            39160           0
+.debug_macro              257464           0
+.debug_line               497776           0
+.debug_str               1154537           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               37604           0
+.debug_line_str              622           0
+Total                    3459970
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     377948   268435712
+.time_critical.tinyusb       476   268813660
+.ARM.exidx                     8   268814136
+vector                       192   536870912
+.data                        392   536871104
+.bss                       83936   536871496
+.debug_info               603538           0
+.debug_abbrev             108822           0
+.debug_loclists           285644           0
+.debug_aranges             12592           0
+.debug_rnglists            39198           0
+.debug_macro              257470           0
+.debug_line               497827           0
+.debug_str               1154799           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               37600           0
+.debug_line_str              622           0
+Total                    3461430
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_test 2.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     313396   268435712
+.time_critical.tinyusb       476   268749108
+.ARM.exidx                     8   268749584
+vector                       192   536870912
+.data                        384   536871104
+.bss                       25872   536871488
+.debug_info               434282           0
+.debug_abbrev              80834           0
+.debug_loclists           189673           0
+.debug_aranges              9248           0
+.debug_rnglists            29858           0
+.debug_macro              223562           0
+.debug_line               354325           0
+.debug_str               1080983           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               27196           0
+.debug_line_str              390           0
+Total                    2771045
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_test 3.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     322812   268435712
+.time_critical.tinyusb       476   268758524
+.ARM.exidx                     8   268759000
+vector                       192   536870912
+.data                        384   536871104
+.bss                       26272   536871488
+.debug_info               495758           0
+.debug_abbrev              99768           0
+.debug_loclists           229978           0
+.debug_aranges             11496           0
+.debug_rnglists            33793           0
+.debug_macro              225337           0
+.debug_line               390569           0
+.debug_str               1090515           0
+.comment                      38           0
+.ARM.attributes               42           0
+.debug_frame               28352           0
+.debug_line_str              227           0
+Total                    2956273
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_test 4.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     322952   268435712
+.time_critical.tinyusb       476   268758664
+.ARM.exidx                     8   268759140
+vector                       192   536870912
+.data                        384   536871104
+.bss                       26264   536871488
+.debug_info               459311           0
+.debug_abbrev              84937           0
+.debug_loclists           203497           0
+.debug_aranges              9624           0
+.debug_rnglists            31743           0
+.debug_macro              226154           0
+.debug_line               373028           0
+.debug_str               1085241           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               28324           0
+.debug_line_str              390           0
+Total                    2852891
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_test 5.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     322952   268435712
+.time_critical.tinyusb       476   268758664
+.ARM.exidx                     8   268759140
+vector                       192   536870912
+.data                        384   536871104
+.bss                       26264   536871488
+.debug_info               459311           0
+.debug_abbrev              84937           0
+.debug_loclists           203497           0
+.debug_aranges              9624           0
+.debug_rnglists            31743           0
+.debug_macro              226154           0
+.debug_line               373028           0
+.debug_str               1085241           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               28324           0
+.debug_line_str              390           0
+Total                    2852891
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_test 6.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     322908   268435712
+.time_critical.tinyusb       476   268758620
+.ARM.exidx                     8   268759096
+vector                       192   536870912
+.data                        384   536871104
+.bss                       26264   536871488
+.debug_info               459451           0
+.debug_abbrev              84932           0
+.debug_loclists           203380           0
+.debug_aranges              9608           0
+.debug_rnglists            31762           0
+.debug_macro              226154           0
+.debug_line               373047           0
+.debug_str               1085265           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               28276           0
+.debug_line_str              390           0
+Total                    2852863
+
+
+
+build_make/mtk3pico_smp1_usb_cdc_wifi_test.elf  :
+section                     size        addr
+boot2                        256   268435456
+.text                     323100   268435712
+.time_critical.tinyusb       476   268758812
+.ARM.exidx                     8   268759288
+vector                       192   536870912
+.data                        384   536871104
+.bss                       26264   536871488
+.debug_info               460478           0
+.debug_abbrev              84954           0
+.debug_loclists           203246           0
+.debug_aranges              9608           0
+.debug_rnglists            31800           0
+.debug_macro              226160           0
+.debug_line               373098           0
+.debug_str               1085527           0
+.comment                      68           0
+.ARM.attributes               42           0
+.debug_frame               28272           0
+.debug_line_str              390           0
+Total                    2854323
+
+

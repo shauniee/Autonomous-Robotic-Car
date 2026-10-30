@@ -1,0 +1,238 @@
+{
+  "base_head": "62ee5226e16a3c501d94998291944753c9662dfc",
+  "source_manifest": "testing/integration/logs/2026-10-30_INT-25-accepted-manifest.json",
+  "profiles": {
+    "offline-test": {
+      "text": 323880,
+      "data": 384,
+      "bss": 26464,
+      "static_ram_bytes": 26848
+    },
+    "offline-normal": {
+      "text": 321796,
+      "data": 384,
+      "bss": 26456,
+      "static_ram_bytes": 26840
+    },
+    "wireless-test": {
+      "text": 378728,
+      "data": 392,
+      "bss": 84136,
+      "static_ram_bytes": 84528
+    },
+    "wireless-normal": {
+      "text": 376648,
+      "data": 392,
+      "bss": 84128,
+      "static_ram_bytes": 84520
+    }
+  },
+  "persistent_checks": [
+    {
+      "module": "subsystem1",
+      "symbol": "lock_misses",
+      "element_bytes": 4,
+      "count": 2,
+      "object_bytes": 8,
+      "match": true
+    },
+    {
+      "module": "subsystem1",
+      "symbol": "event_log",
+      "element_bytes": 168,
+      "count": 1,
+      "object_bytes": 168,
+      "match": true
+    },
+    {
+      "module": "subsystem2",
+      "symbol": "latest",
+      "element_bytes": 12,
+      "count": 1,
+      "object_bytes": 12,
+      "match": true
+    },
+    {
+      "module": "subsystem2",
+      "symbol": "progress",
+      "element_bytes": 12,
+      "count": 1,
+      "object_bytes": 12,
+      "match": true
+    },
+    {
+      "module": "subsystem3",
+      "symbol": "latest",
+      "element_bytes": 40,
+      "count": 1,
+      "object_bytes": 40,
+      "match": true
+    },
+    {
+      "module": "drv_barcode",
+      "symbol": "ring",
+      "element_bytes": 6,
+      "count": 64,
+      "object_bytes": 384,
+      "match": true
+    },
+    {
+      "module": "barcode",
+      "symbol": "events",
+      "element_bytes": 6,
+      "count": 8,
+      "object_bytes": 48,
+      "match": true
+    },
+    {
+      "module": "barcode",
+      "symbol": "frame",
+      "element_bytes": 156,
+      "count": 1,
+      "object_bytes": 156,
+      "match": true
+    },
+    {
+      "module": "subsystem4",
+      "symbol": "context",
+      "element_bytes": 32,
+      "count": 1,
+      "object_bytes": 32,
+      "match": true
+    },
+    {
+      "module": "subsystem4",
+      "symbol": "latest.0",
+      "element_bytes": 20,
+      "count": 1,
+      "object_bytes": 20,
+      "match": true
+    },
+    {
+      "module": "subsystem4",
+      "symbol": "snapshot",
+      "element_bytes": 20,
+      "count": 1,
+      "object_bytes": 20,
+      "match": true
+    },
+    {
+      "module": "subsystem4",
+      "symbol": "terrain_word",
+      "element_bytes": 4,
+      "count": 1,
+      "object_bytes": 4,
+      "match": true
+    },
+    {
+      "module": "subsystem4",
+      "symbol": "startup_outcome",
+      "element_bytes": 4,
+      "count": 1,
+      "object_bytes": 4,
+      "match": true
+    },
+    {
+      "module": "subsystem5",
+      "symbol": "range_samples",
+      "element_bytes": 16,
+      "count": 2,
+      "object_bytes": 32,
+      "match": true
+    },
+    {
+      "module": "subsystem5",
+      "symbol": "report_samples",
+      "element_bytes": 16,
+      "count": 2,
+      "object_bytes": 32,
+      "match": true
+    },
+    {
+      "module": "subsystem5",
+      "symbol": "profile",
+      "element_bytes": 14,
+      "count": 1,
+      "object_bytes": 14,
+      "match": true
+    },
+    {
+      "module": "subsystem5",
+      "symbol": "profile_evidence",
+      "element_bytes": 6,
+      "count": 1,
+      "object_bytes": 6,
+      "match": true
+    },
+    {
+      "module": "subsystem5",
+      "symbol": "profile_sampled_ms",
+      "element_bytes": 4,
+      "count": 1,
+      "object_bytes": 4,
+      "match": true
+    },
+    {
+      "module": "mission_mapping",
+      "symbol": "request_word",
+      "element_bytes": 4,
+      "count": 1,
+      "object_bytes": 4,
+      "match": true
+    },
+    {
+      "module": "mission_mapping",
+      "symbol": "reply_word",
+      "element_bytes": 4,
+      "count": 1,
+      "object_bytes": 4,
+      "match": true
+    },
+    {
+      "module": "mission_mapping",
+      "symbol": "requested",
+      "element_bytes": 4,
+      "count": 1,
+      "object_bytes": 4,
+      "match": true
+    },
+    {
+      "module": "mission_mapping",
+      "symbol": "replied",
+      "element_bytes": 4,
+      "count": 1,
+      "object_bytes": 4,
+      "match": true
+    },
+    {
+      "module": "mission_mapping",
+      "symbol": "submitted",
+      "element_bytes": 4,
+      "count": 1,
+      "object_bytes": 4,
+      "match": true
+    },
+    {
+      "module": "mission_mapping",
+      "symbol": "consumed",
+      "element_bytes": 4,
+      "count": 1,
+      "object_bytes": 4,
+      "match": true
+    },
+    {
+      "module": "mission_mapping",
+      "symbol": "taken",
+      "element_bytes": 4,
+      "count": 1,
+      "object_bytes": 4,
+      "match": true
+    }
+  ],
+  "extra_symbols": {
+    "acquisition": 100,
+    "incoming_bridge": 56,
+    "outgoing_bridge": 104
+  },
+  "scope": "Static target ABI and allocated data+bss only. Mission is task-local, not a persistent BSS instance. No live stack/heap/timing measurements."
+}

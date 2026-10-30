@@ -1,0 +1,26 @@
+robot_time: PASS
+encoder_math: PASS
+stress: 5000000 reads checked, 0 torn
+robot_data: PASS
+motion_control: PASS
+barcode: PASS
+ir_tracking: PASS (3516 replayed samples)
+safety / S2-U06 reset brake ordering: PASS
+mission scaled history: scenario 0, 10000 samples, max Q7 delta 0
+mission scaled history: scenario 1, 10000 samples, max Q7 delta 0
+mission scaled history: scenario 2, 10000 samples, max Q7 delta 1
+mission: PASS
+mission_pending: PASS (150 mm trigger; unreleased bypass stays stopped)
+mission_mapping: 100000 concurrent exchanges passed
+mission_mapping: PASS (receipt/install/reply ordering, busy and invalid)
+echo_range: PASS
+obstacle_profile: PASS
+range_filter: PASS (outliers, unknown groups, boundaries, bounded lifecycle)
+profile_edges: PASS (synthetic widths, conservative planning, unknowns and outlier rejection)
+mqtt_frame: PASS (telemetry 23 bytes)
+terrain: PASS
+s1_event storage: 10-byte entry, 168-byte ring (host layout)
+s1_report: PASS
+stress: 5000000 word reads checked (0 torn), 300000 frames checked (0 corrupt or out of order)
+s1_stress: PASS
+mqtt_client self-test: PASS

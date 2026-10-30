@@ -57,6 +57,10 @@ static unsigned pop(slot_t *slots, unsigned depth, _Atomic unsigned *head, _Atom
 
 bool s1_bridge_post(const uint8_t *frame, unsigned length)
 {
+    if (!s1_bridge_ready())
+    {
+        return false;
+    }
     return push(outgoing.slots, S1_OUTGOING_DEPTH, &outgoing.head, &outgoing.tail, frame, length);
 }
 
@@ -82,6 +86,13 @@ bool s1_bridge_ready(void)
 
 void s1_bridge_link(bool wifi_up, bool broker_up)
 {
+    /* Only the transport consumes TX slots. Flush at loss and reconnection:
+       a producer already posting at loss may publish after the first flush. */
+    if (!wifi_up || !broker_up || !s1_bridge_ready())
+    {
+        unsigned head = atomic_load_explicit(&outgoing.head, memory_order_acquire);
+        atomic_store_explicit(&outgoing.tail, head, memory_order_release);
+    }
     rd_word_publish(&link_state, (wifi_up ? 1u : 0u) | (broker_up ? 2u : 0u));
     /* The transport (core 0) is the only writer of the Network byte. */
     if (wifi_up) rd_fault_clear(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST);

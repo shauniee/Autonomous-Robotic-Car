@@ -18,7 +18,7 @@
 #define S1_OUTGOING_DEPTH 4u
 #define S1_INCOMING_DEPTH 2u
 
-/* I/O side (core 0). post: false when the ring is full (frame dropped). */
+/* I/O side (core 0). post: false while offline or when the ring is full. */
 bool s1_bridge_post(const uint8_t *frame, unsigned length);
 /* Returns the length written to out, or 0 when nothing is waiting. */
 unsigned s1_bridge_receive(uint8_t *out, unsigned capacity);
@@ -27,7 +27,8 @@ unsigned s1_bridge_receive(uint8_t *out, unsigned capacity);
 unsigned s1_bridge_take(uint8_t *out, unsigned capacity);
 /* Frames longer than S1_FRAME_MAX or arriving to a full ring are dropped. */
 void s1_bridge_put(const uint8_t *frame, unsigned length);
-/* Link state from the transport; sets the Network fault byte only. */
+/* Link state from transport; updates Network faults and discards queued TX
+   on loss/reconnection. Never changes motion or Mission state. */
 void s1_bridge_link(bool wifi_up, bool broker_up);
 /* Boot is disconnected. Mission uses this only as a local-start prerequisite. */
 bool s1_bridge_ready(void);

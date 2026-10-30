@@ -205,7 +205,7 @@ void s3_step(uint32_t now, bool calibration_enabled)
         return;
     }
     S3IrSnapshot snapshot = ir_snapshot_build(&tracker, sequence, now);
-    /* Report-only fault (it blocks a start): no reading, or a calibrated
+    /* Start-blocking fault: no reading, or a calibrated
        reading outside the calibrated range. */
     if (!ir_raw_word_valid(snapshot.raw) || (snapshot.calibration_valid && !snapshot.normalized_valid))
     {

@@ -3,7 +3,7 @@
 #include "drv_barcode.h"
 #include "../common/robot_data.h"
 
-static rd_word_t mapping_word;			/* writer: Reporting task via mission_set_mapping */
+static rd_word_t mapping_word;			/* writer: Mission via barcode_set_mapping */
 static _Atomic bool run_wanted;			/* writer: Mission (barcode_start/stop) */
 static barcode_frame_t frame;			/* S3 task only */
 static barcode_event_t events[BARCODE_EVENT_CAPACITY];

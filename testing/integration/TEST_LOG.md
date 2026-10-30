@@ -9,6 +9,12 @@
 - [Software restructure — 2026-10-29](#software-restructure--2026-10-29)
 - [Docker tooling — INT-18](#docker-tooling--int-18)
 - [PR integration gate — INT-19](#pr-integration-gate--int-19)
+- [Repository findings — INT-20](#repository-findings--int-20)
+- [Scan ID regression and cleanup — INT-21](#scan-id-regression-and-cleanup--int-21)
+- [Completion record selection — INT-22](#completion-record-selection--int-22)
+- [Rear-edge geometry — INT-23](#rear-edge-geometry--int-23)
+- [Resource and binary-protocol audit — INT-24](#resource-and-binary-protocol-audit--int-24)
+- [Event contention and unused-path cleanup — INT-25](#event-contention-and-unused-path-cleanup--int-25)
 
 Template example INT-01/02 retired: S2-to-S3 sample flow (at least five in two seconds) and S3-to-S4 summary flow (at least two in 3.5 seconds). No template result was recorded. Logs refer to the uncommitted migration's source manifest plus base HEAD; they do not claim HEAD is the tested source. Formal on-target trials require a recorded committed revision.
 
@@ -193,3 +199,173 @@ Follow-up results 2026-10-29, Codex, source commit
 - [Final source manifest](logs/2026-10-29_INT-19-final-manifest.json) records the
   committed source tested. No flashed image, physical acceptance, calibrated
   limit, or release-gate change is claimed. Earlier failure outputs remain intact.
+
+
+## Repository findings — INT-20
+
+Procedure defined 2026-10-30 before validation: rerun the kernel-free host suite,
+including 25 full-ring link-loss/reconnect cycles (both broker-only and Wi-Fi
+loss). Expect no queued frames after reconnect, offline posts rejected and fresh
+online frames retained. Inspect Mission adapter scan ID, profile geometry,
+range timestamps/sequences and encoder-count wiring. Build all four documented
+firmware profiles sequentially with SMP=1, USB CDC, CYW43 and CRASH_REPORT=0;
+expect successful linking and UF2 conversion. Preserve source hashes and image
+hashes. Run the completion audit against new evidence; expect current software
+evidence with physical stages still BLOCKED/PARTIAL, never physical acceptance.
+
+Interface revision: range samples now retain the wrapped mean encoder count at
+front-range completion for bypass travel accounting; storage is documented in
+[project-specs](../../docs/project-specs.md). S1 rejects offline TX posts and the
+transport flushes TX on loss/reconnection. Removed unused range-word getters and
+event-drop getter/counters; no telemetry wire format change.
+
+| Date | ID | Source | Result | Evidence |
+| --- | --- | --- | --- | --- |
+| 2026-10-30 | INT-20 | Base `62ee5226e16a3c501d94998291944753c9662dfc` plus exact working-tree manifest | PASS (host/build/static); full-plan BLOCKED | [Manifest](logs/2026-10-30_INT-20-manifest.json), [host suite](logs/2026-10-30_INT-20-host-verified.txt), four `verified-build` logs, [profile image hashes](logs/2026-10-30_INT-20-profile-images.json), [completion audit](logs/2026-10-30_INT-20-completion.json) |
+
+Native Arm GNU 13.2.Rel1 and Pico SDK 2.2.0; no flash or physical trial. Host
+suite includes reconnect checks, 5,000,000 coherent word reads and 300,000 frames
+with zero tears/corruptions/order failures. All four named profile images linked
+and converted to UF2. The profile-image JSON identifies only these four outputs;
+an old iCloud duplicate (`test 2.uf2`) in wildcard listings is not a tested image.
+Earlier local run/build outputs are preserved under their distinct filenames.
+Existing application signedness and upstream lwIP unused-function warnings remain;
+no build errors. Static review confirms all Mission input fields are supplied,
+scan state/ID share one snapshot, requests use output IDs, and removed APIs have
+no remaining active references. Source is uncommitted; base HEAD alone does not
+identify the tested tree. Historical INT-17 evidence is preserved.
+
+## Scan ID regression and cleanup — INT-21
+
+Procedure defined 2026-10-30: run `sh testing/pure/run.sh`, then build offline
+and wireless, normal and TEST profiles sequentially using Arm GNU 13.2.Rel1
+and Pico SDK 2.2.0. Expected: all host checks pass, scan IDs 0..15 round-trip
+through the shared publisher packing and Mission reader for every scan state,
+all four profiles link, and the bypass depth signedness warning is absent.
+Check removed `s5_profile_copy` has no active source/documentation references.
+No wiring, power or calibration applies; no firmware execution or physical trial.
+
+| Date | ID | Source | Tester | Result | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | INT-21 | Base `62ee5226e16a3c501d94998291944753c9662dfc` plus working-source hashes | Codex | PASS (host/build only) | [Manifest](logs/2026-10-30_INT-21-manifest.json), [host](logs/2026-10-30_INT-21-host.txt), [offline TEST](logs/2026-10-30_INT-21-build-offline-test.txt), [offline normal](logs/2026-10-30_INT-21-build-offline-normal.txt), [wireless TEST](logs/2026-10-30_INT-21-build-wireless-test.txt), [wireless normal](logs/2026-10-30_INT-21-build-wireless-normal.txt), [image hashes](logs/2026-10-30_INT-21-images.json) |
+
+All host tests passed with warnings treated as errors, including scan ID/state
+round trips for all 128 combinations and isolation from reserved high bits.
+All four firmware profiles linked and produced UF2 images. The bypass depth
+signedness warning is absent; wireless builds retain only the upstream lwIP
+`mqtt_msg_type_to_str` unused-function warning. Static search found no remaining
+`s5_profile_copy` references in application code or subsystem documentation.
+No firmware was flashed or executed; these results do not establish physical
+obstacle or bypass behavior. The manifest identifies the uncommitted source;
+base HEAD alone does not identify the tested tree.
+
+## Completion record selection — INT-22
+
+Procedure: run `python3 testing/check_plan_completion.py` after adding the INT-21
+completion record. Expect selection of the newest dated completion JSON, current
+source hashes and exit code 1 for the existing BLOCKED physical stages, rather
+than exit code 2 for stale evidence. No wiring, power or calibration applies.
+
+The appended [INT-21 completion record](logs/2026-10-30_INT-21-completion.json)
+references the existing INT-21 manifest, host/build logs and image hashes. Stage
+assessments remain unchanged from INT-20; no new physical acceptance is claimed.
+
+| Date | ID | Source | Tester | Result | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | INT-22 | Base `62ee5226e16a3c501d94998291944753c9662dfc` plus checker SHA-256 in evidence; INT-21 manifest identifies application source | Codex | PASS (completion checker only); full-plan BLOCKED | [Checker output and source hash](logs/2026-10-30_INT-22-completion-check.txt) |
+
+All 161 INT-21 manifest entries match the working tree. The checker selects
+INT-21 automatically, reports current software evidence and exits 1 as expected.
+Historical evidence is preserved. No firmware was built, flashed or executed in
+this validation.
+
+## Rear-edge geometry — INT-23
+
+Procedure defined 2026-10-30: run `sh testing/pure/run.sh` with warnings treated
+as errors. Expect both bypass-side fixtures to report depth 328 +/-2 mm from
+the first qualifying side observation (~300 mm forward), the proposed 100 mm
+sonar mount, 300 mm baseline at 75 degrees and 150 mm profile front. Confirm
+the full bypass and recovery regressions pass with shared encoder heading and
+front-clearance helpers. Capture source SHA-256 hashes and base HEAD before
+execution. No wiring, power or calibration applies; this is host-only evidence.
+
+| Date | ID | Source | Tester | Result | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | INT-23 | Base `62ee5226e16a3c501d94998291944753c9662dfc` plus exact working-source hashes | Codex | PASS (host only) | [Manifest](logs/2026-10-30_INT-23-manifest.json), [host suite](logs/2026-10-30_INT-23-host.txt) |
+
+All host checks passed, including the expected depth assertion on both bypass
+sides, full return/reacquisition sequences and existing recovery checks.
+`git diff --check` passed. No firmware build, flash or physical trial was run.
+Previous completion/build evidence remains historical and does not identify
+these changed sources; this case records only the host suite on the new source.
+
+## Resource and binary-protocol audit — INT-24
+
+Procedure defined 2026-10-30 before the final run: run the host suite with
+warnings as errors, including 30000 PID samples versus the previous float
+controller (<=1 Q7 count difference), reset/invalid-history cases, six-byte
+fault walking bits, and no-echo tracking versus bypass policy. Build all four
+current profiles sequentially using Arm GNU 13.2.Rel1 / Pico SDK 2.2.0.
+Probe all subsystem layouts plus current integration snapshots on Cortex-M0+;
+record linked text/data/bss, allocated RAM (data+bss), object symbol sizes,
+inter-task copy sizes and image hashes. Capture base HEAD and source hashes.
+Expected: software passes, matching ABI assertions, unchanged wire sizes
+23/11/5/3/2 bytes. No physical, WCET, stack high-water or T15 pass is inferred.
+No hardware, wiring, power or calibration applies to these host/build checks.
+
+| Date | ID | Source | Tester | Result | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | INT-24 / SYS-12 | Base `62ee5226e16a3c501d94998291944753c9662dfc` plus exact working-source hashes | Codex | PASS (host/build/static); full-plan BLOCKED | [Manifest](logs/2026-10-30_INT-24-accepted-manifest.json), [host](logs/2026-10-30_INT-24-accepted-host.txt), [ABI](logs/2026-10-30_INT-24-accepted-abi.txt), [resource cross-check](logs/2026-10-30_INT-24-accepted-resources.json); four `accepted-build` logs and per-profile `accepted-images` hashes |
+
+All four builds pass; wireless profiles retain the upstream lwIP unused-function
+warning, with no application warnings. The PID comparison covers 30000 samples:
+constant +/- full error gives zero Q7 difference; varying error gives maximum
+one count. State transitions, turn actions, same-sample hold, invalid-history
+reset, both bypass sides and no-echo moving-offset stop regressions pass.
+S1-U09..U13 replace the retired JSON acceptance cases; TEST startup execution
+and binary Pico transport remain pending. SYS-12 owns the size interpretation.
+
+Exploratory outputs are preserved: `host-initial` failed compilation on a
+misspelled enum identifier (corrected to BARCODE_U_TURN); `host` used an invalid
+fixture assumption that an unknown reading while already stopped for sensing
+immediately changes Mission state. The corrected fixture injects echo loss
+during an active offset and confirms STOP. `final-host` passes; `final-abi`
+stopped on removed S3 steering fields in the old probe. The probe now measures
+only current fields. These earlier outputs are not accepted passes. Current
+accepted source hashes were verified unchanged after the build/probe checks.
+
+No firmware/physical run or T15 was executed. Final accepted-commit resource
+and minimum-bit review, live memory/timing and mission trials remain pending.
+
+## Event contention and unused-path cleanup — INT-25
+
+Procedure defined 2026-10-30 before execution: run the kernel-free host suite,
+including the real `mission_mapping` hand-off and `profile_edges` estimator;
+remove tests for deleted `s1_handle_command`, `s5_profile_build` and
+`s5_fine_angles`. Build the four offline/wireless normal/TEST profiles using
+Arm GNU 13.2.Rel1 and Pico SDK 2.2.0. Run current target size probes and save
+linked size/symbol/image hashes. Verify no references to deleted APIs remain,
+`lock_misses` occupies two 32-bit words, insertion uses the 2 ms bounded lock,
+and no M0+ atomic RMW helper is introduced. Expect host/build/static checks to
+pass and binary frames unchanged. Actual contended-lock timeout/increment and
+saturation on the dual-core target require an on-target fault-injection trial;
+host tests do not execute `subsystem1.c` or prove scheduler timing.
+
+| Date | ID | Source | Tester | Result | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | INT-25 | Base `62ee5226e16a3c501d94998291944753c9662dfc` plus working-source hashes | Codex | PASS (host/build/static); full-plan BLOCKED | [Manifest](logs/2026-10-30_INT-25-accepted-manifest.json), [host](logs/2026-10-30_INT-25-accepted-host.txt), [static](logs/2026-10-30_INT-25-accepted-static.txt), [ABI](logs/2026-10-30_INT-25-accepted-abi.txt), [resources](logs/2026-10-30_INT-25-accepted-resources.json); four `accepted-build` logs and per-profile `accepted-images` SHA-256 files |
+
+The host suite and all four builds pass; wireless profiles retain only the
+upstream lwIP unused-function warning. Active Mission mapping-hand-off and
+profile-edge tests pass. Deleted APIs/types are absent from application and
+host-test sources. The target object retains the 8-byte `lock_misses` array
+and has no atomic helper dependency; 25 persistent object size cross-checks
+pass. Per-core counters use only load/store, with no shared RMW. Event insertion
+requests the existing 2 ms timeout; I/O posting keeps TMO_POL and retains the
+oldest event on bridge failure. BUSY no longer implies motion.
+
+Normal static RAM is now 26840 bytes offline and 84520 bytes wireless, an
+8-byte increase from INT-24 for the two diagnostic words. MQTT sizes remain
+23/11/5/3/2 bytes; no new telemetry field. No firmware was executed/flashed.
+Host coverage exercises `mission_mapping`, not the kernel-bound `s1_step`
+transport dispatch; target lock-contention/saturation and timing remain pending.

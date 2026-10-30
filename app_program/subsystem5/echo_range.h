@@ -53,7 +53,9 @@ static inline bool echo_note(uint32_t *misses, bool got_echo)
 typedef struct
 {
     uint32_t word, sampled_ms, sequence;
+    uint32_t travel_counts; /* wrapped mean encoder count at range completion */
 } s5_range_sample_t;
+_Static_assert(sizeof(s5_range_sample_t) == 16u, "range evidence ABI");
 
 static inline bool s5_range_sample_fresh(const s5_range_sample_t *sample,
     uint32_t now, uint32_t maximum_age_ms)

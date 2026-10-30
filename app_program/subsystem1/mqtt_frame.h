@@ -96,7 +96,7 @@ typedef struct
 typedef enum
 {
     MQTT_ACK_OK,
-    MQTT_ACK_BUSY,		/* robot is moving: mapping refused */
+    MQTT_ACK_BUSY,		/* mapping hand-off occupied or Mission not READY/STOPPED */
     MQTT_ACK_INVALID,	/* letters not four distinct A..Z */
     MQTT_ACK_MALFORMED
 } mqtt_ack_result_t;
