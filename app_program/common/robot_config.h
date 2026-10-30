@@ -278,8 +278,8 @@
 #define TERRAIN_QUALITY_STEADY_MS 200u
 #define S5_EXPECTED_MAX_WIDTH_MM 200u /* supplied obstacle width upper bound */
 #define S5_SCAN_DEADLINE_MS	8000u	/* a scan that has not finished by then fails */
-#define ECHO_PIN		2	/* PROVISIONAL (D05): <= 3.3 V before connecting */
-#define TRIGGER_PIN		3
+#define ECHO_PIN		3	/* PROVISIONAL (D05): <= 3.3 V before connecting */
+#define TRIGGER_PIN		2
 
 /* --- Shared inputs and outputs ------------------------------------- */
 #define BUTTON_GP20		20u
