@@ -228,3 +228,9 @@ S3 compilation because existing Motion edits reference undefined
 `MOTION_STALL_GUARD_ENABLED`. Native firmware compilation was unavailable
 (`arm-none-eabi-gcc` absent from PATH); Docker socket access was denied in the
 sandbox. No linked firmware, ADC hardware protocol or physical pass is claimed.
+
+New cases S3-U18 / S3-U19 (2026-10-30), defined before running: validate minimum-contrast boundaries in both polarities, incomplete/out-of-range references and failed same-colour capture; cancel a white recapture and verify cached samples cannot restore guidance until a new acquisition; verify freshness at and beyond the age limit across timestamp wrap. Existing replay and invalid-acquisition hysteresis cases must still pass. Host-only fixtures; no physical calibration or hardware operation.
+
+| Date | ID | Source | Tester | Result | Evidence / limits |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | S3-U18 / S3-U19 | Base `8be851b` plus [source manifest](logs/2026-10-30_S3-U18-U19-manifest.json) | Codex | PASS (host only) | [Build](logs/2026-10-30_S3-U18-U19-build.txt), [test output](logs/2026-10-30_S3-U18-U19-host.txt). MSVC x64 C11, optimized, warnings as errors; 3516 replay samples plus calibration/cancellation/wrap checks and existing invalid-acquisition hysteresis. Docker engine unavailable; no GNU/Arm firmware build or physical pass. |

@@ -163,6 +163,82 @@ static void test_raw_word(void)
     assert(!ir_raw_word_valid(s.raw) && !s.normalized_valid);
 }
 
+/* S3-U18: validation boundaries agree across normalization and snapshots. */
+static void test_calibration_validation(void)
+{
+    assert(!ir_tracking_reading((IrRaw){0u, 0u}, NULL).valid);
+    for (unsigned inverted = 0u; inverted < 2u; ++inverted)
+    {
+        for (unsigned span = IR_MIN_CONTRAST - 1u;
+             span <= IR_MIN_CONTRAST; ++span)
+        {
+            IrTracker tracker;
+            ir_tracking_init(&tracker);
+            IrRaw low = {500u, 500u};
+            IrRaw high = {(uint16_t)(500u + span),
+                (uint16_t)(500u + IR_MIN_CONTRAST)};
+            tracker.calibration = (IrCalibration){
+                .black = inverted ? low : high,
+                .white = inverted ? high : low,
+                .black_set = true, .white_set = true};
+            bool expected = span == IR_MIN_CONTRAST;
+            assert(ir_tracking_reading(low, &tracker.calibration).valid ==
+                expected);
+            assert(ir_snapshot_build(&tracker, 0u, 0u).calibration_valid ==
+                expected);
+            tracker.calibration.white_set = false;
+            assert(!ir_snapshot_build(&tracker, 0u, 0u).calibration_valid);
+            tracker.calibration.white_set = true;
+            tracker.calibration.black.right = IR_ADC_MAX + 1u;
+            assert(!ir_snapshot_build(&tracker, 0u, 0u).calibration_valid);
+        }
+    }
+    IrTracker tracker;
+    ir_tracking_init(&tracker);
+    assert(ir_tracking_capture(&tracker, IR_CAPTURE_BLACK, now));
+    for (unsigned i = 0u; i <= IR_CAPTURE_MS / IR_SAMPLE_MS; ++i)
+    {
+        feed(&tracker, (IrRaw){500u, 500u});
+    }
+    assert(ir_tracking_capture(&tracker, IR_CAPTURE_WHITE, now));
+    for (unsigned i = 0u; i <= IR_CAPTURE_MS / IR_SAMPLE_MS; ++i)
+    {
+        feed(&tracker, (IrRaw){500u, 500u});
+    }
+    assert(tracker.capture_result == IR_CAPTURE_CONTRAST);
+    assert(!ir_snapshot_build(&tracker, 0u, now).calibration_valid);
+}
+
+/* S3-U19: cancellation cannot revive a cached reading; age wraps safely. */
+static void test_cancel_and_wrapped_freshness(void)
+{
+    IrTracker tracker;
+    calibrate(&tracker, (IrRaw){3500u, 3500u}, (IrRaw){500u, 500u});
+    feed(&tracker, (IrRaw){2000u, 2000u});
+    assert(ir_tracking_output(&tracker, now).valid);
+    assert(ir_tracking_capture(&tracker, IR_CAPTURE_WHITE, now));
+    S3IrSnapshot snapshot = ir_snapshot_build(&tracker, 1u, now);
+    assert(snapshot.calibration_valid && !snapshot.normalized_valid);
+    ir_tracking_cancel_capture(&tracker, IR_CAPTURE_CANCELLED);
+    /* A duplicate acquisition time is still the old sample. */
+    ir_tracking_sample(&tracker, (IrRaw){2000u, 2000u}, true, now);
+    snapshot = ir_snapshot_build(&tracker, 2u, now);
+    assert(snapshot.calibration_valid && !snapshot.normalized_valid &&
+        !snapshot.guidance_valid && snapshot.line == IR_LINE_UNKNOWN);
+    feed(&tracker, (IrRaw){2000u, 2000u});
+    assert(ir_snapshot_build(&tracker, 3u, now).guidance_valid);
+
+    uint32_t sampled = UINT32_MAX - IR_MAX_GAP_MS / 2u;
+    ir_tracking_sample(&tracker, (IrRaw){2000u, 2000u}, true, sampled);
+    snapshot = ir_snapshot_build(&tracker, 4u, sampled + IR_MAX_GAP_MS);
+    assert(snapshot.sampled_ms == sampled && snapshot.sample_fresh &&
+        snapshot.guidance_valid);
+    ir_snapshot_refresh(&snapshot, sampled + IR_MAX_GAP_MS + 1u);
+    assert(snapshot.sampled_ms == sampled && !snapshot.sample_fresh &&
+        !snapshot.normalized_valid && !snapshot.guidance_valid &&
+        snapshot.line == IR_LINE_UNKNOWN && snapshot.error == 0);
+}
+
 int main(void)
 {
     test_raw_word();
@@ -172,6 +248,8 @@ int main(void)
     steps += replay((IrRaw){2100u, 2300u}, (IrRaw){1700u, 1900u});	/* low contrast */
     test_bounds_and_staleness();
     test_lost_after_invalid_sample();
+    test_calibration_validation();
+    test_cancel_and_wrapped_freshness();
     printf("ir_tracking: PASS (%u replayed samples)\n", steps);
     return 0;
 }

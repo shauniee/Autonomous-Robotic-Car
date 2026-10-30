@@ -53,19 +53,25 @@ static int fraction_cmp(uint16_t raw, uint16_t black, uint16_t white, int32_t mi
     return (scaled > 0) - (scaled < 0);
 }
 
-IrReading ir_tracking_reading(IrRaw raw, const IrCalibration *calibration)
+/* Reference validity does not require normalizing a sensor sample. */
+static bool calibration_valid(const IrCalibration *calibration)
 {
-    IrReading reading = {0};
     if ((calibration == NULL) || !calibration->black_set ||
-        !calibration->white_set || !raw_valid(raw) ||
+        !calibration->white_set ||
         !raw_valid(calibration->black) || !raw_valid(calibration->white))
     {
-        return reading;
+        return false;
     }
     int left_span = (int)calibration->black.left - calibration->white.left;
     int right_span = (int)calibration->black.right - calibration->white.right;
-    if ((abs(left_span) < (int)IR_MIN_CONTRAST) ||
-        (abs(right_span) < (int)IR_MIN_CONTRAST))
+    return (abs(left_span) >= (int)IR_MIN_CONTRAST) &&
+        (abs(right_span) >= (int)IR_MIN_CONTRAST);
+}
+
+IrReading ir_tracking_reading(IrRaw raw, const IrCalibration *calibration)
+{
+    IrReading reading = {0};
+    if (!raw_valid(raw) || !calibration_valid(calibration))
     {
         return reading;
     }
@@ -188,7 +194,7 @@ static void capture_sample(IrTracker *tracker, IrRaw raw, uint32_t now)
     {
         tracker->calibration.white = average;
         tracker->calibration.white_set = true;
-        if (ir_tracking_reading(average, &tracker->calibration).valid)
+        if (calibration_valid(&tracker->calibration))
         {
             tracker->capture_result = IR_CAPTURE_WHITE_DONE;
         }
@@ -321,9 +327,7 @@ S3IrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t sequence,
     snapshot.capture_kind = tracker->capture_kind;
     snapshot.capture_result = tracker->capture_result;
     snapshot.have_sample = tracker->have_sample;
-    snapshot.calibration_valid =
-        ir_tracking_reading(tracker->calibration.black,
-                            &tracker->calibration).valid;
+    snapshot.calibration_valid = calibration_valid(&tracker->calibration);
     IrReading reading = tracker->reading;
     snapshot.normalized_valid = ir_raw_word_valid(snapshot.raw) && reading.valid &&
         (tracker->capture_kind == IR_CAPTURE_NONE);
