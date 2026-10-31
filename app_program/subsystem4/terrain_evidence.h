@@ -6,6 +6,17 @@
 #include "../common/robot_time_math.h"
 #include "../subsystem2/encoder_math.h"
 
+typedef struct
+{
+    uint32_t sampled_ms, steady_since_ms;
+    int16_t speed_mmps;
+    uint8_t primed : 1;
+    uint8_t steady : 1;
+} TerrainTravelQuality;
+
+bool terrain_travel_qualified(TerrainTravelQuality *quality,
+    uint32_t now, const int32_t delta[2], bool acquisition_qualified);
+
 /* Pending acquisition retains travel; failure discards its entire window. */
 static inline float terrain_travel_take(uint32_t origin[2],
     const uint32_t count[2], bool acquired, bool discard)
