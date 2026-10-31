@@ -44,7 +44,10 @@ unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type
     if (out == 0 || t == 0 || capacity < MQTT_LEN_TELEMETRY ||
         (type != MQTT_TYPE_TELEMETRY && type != MQTT_TYPE_SNAPSHOT_REPLY) ||
         t->mission_state > 15u || t->motion_status > 3u || t->line_status > 3u || t->motion_action > 63u ||
-        t->hump_max > 127u || t->front_mm > 8191u || t->barcode_letter > 31u || t->barcode_action > 7u)
+        t->hump_max > 127u || (t->hump_valid && t->hump_max == 127u) ||
+        t->front_mm > 8191u || (t->front_valid && t->front_mm == 8191u) ||
+        (t->barcode_letter > 25u && t->barcode_letter != MQTT_NO_LETTER) ||
+        t->barcode_action > 4u)
     {
         return 0u;
     }
@@ -73,7 +76,12 @@ mqtt_decode_t mqtt_decode_telemetry(const uint8_t *f, unsigned length, mqtt_type
     if (ty != MQTT_TYPE_TELEMETRY && ty != MQTT_TYPE_SNAPSHOT_REPLY) return MQTT_DECODE_TYPE;
     if ((f[3] & 0x80u) != 0u || (f[17] & 0xC0u) != 0u) return MQTT_DECODE_RESERVED;
     uint8_t letter = f[18] & 0x1Fu;
-    if (letter > 25u && letter != MQTT_NO_LETTER) return MQTT_DECODE_RANGE;
+    uint16_t front = get16(&f[16]);
+    if ((letter > 25u && letter != MQTT_NO_LETTER) || (f[18] >> 5) > 4u ||
+        f[15] == 0xFFu || front == 0x3FFFu)
+    {
+        return MQTT_DECODE_RANGE;
+    }
     *type = ty;
     t->sequence = f[1];
     t->mission_state = f[2] & 0xFu;
@@ -87,7 +95,6 @@ mqtt_decode_t mqtt_decode_telemetry(const uint8_t *f, unsigned length, mqtt_type
     t->hump_count = f[14];
     t->hump_max = f[15] & 0x7Fu;
     t->hump_valid = (f[15] & 0x80u) != 0u;
-    uint16_t front = get16(&f[16]);
     t->front_mm = front & 0x1FFFu;
     t->front_valid = (front & 0x2000u) != 0u;
     t->barcode_letter = letter;

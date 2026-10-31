@@ -25,9 +25,9 @@ unsigned s1_bridge_receive(uint8_t *out, unsigned capacity);
 
 /* Transport side (core 0). take: length written, or 0 when nothing is waiting. */
 unsigned s1_bridge_take(uint8_t *out, unsigned capacity);
-/* Frames longer than S1_FRAME_MAX or arriving to a full ring are dropped. */
+/* Offline frames, oversized frames and frames arriving to a full ring drop. */
 void s1_bridge_put(const uint8_t *frame, unsigned length);
-/* Link state from transport; updates Network faults and discards queued TX
+/* Link state from transport; updates Network faults and discards queued TX/RX
    on loss/reconnection. Never changes motion or Mission state. */
 void s1_bridge_link(bool wifi_up, bool broker_up);
 /* Boot is disconnected. Mission uses this only as a local-start prerequisite. */

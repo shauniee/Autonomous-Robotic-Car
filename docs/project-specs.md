@@ -335,6 +335,8 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Pitch estimate | `TerrainContext.pitch_cdeg`, S4 task | -9000..9000 centidegrees | rounded nearest 0.01 degree | 15 logical, 16 stored | `int16_t` (#110) |
 | Terrain counters | `calib_count` / `flat_run`, S4 task | 0-100 / 0-10 | calibrated stops count at 100; flat run resets at 10 | 7 / 4 | C bit-fields (#110) |
 | Terrain private state / validity flags | `TerrainContext.state`, `height_valid`, `is_calibrated` | 0-4 / flag / flag | state 5-7 unused | 3 / 1 / 1 | C bit-fields (#110) |
+| Terrain encounter quality | `TerrainContext.window_qualified`, S4 task | one flag, cleared by any unqualified sample until the next climb | zero suppresses encounter count/height updates | 1 | C bit-field |
+| Terrain travel quality history | `TerrainTravelQuality`, S4 task | previous fresh acquisition and steady-start times, modulo 2^32 ms; prior mean signed speed -32767..32767 mm/s, nearest; primed/steady flags | invalid acquisition, gap, reverse, overflow, speed change or wheel mismatch restarts steady qualification; no wire changes | 2 x 32 + 16 + 2 logical bits | integer timestamps/speed and packed flags; 12 bytes including alignment |
 | Terrain private hump last/max codes | `TerrainContext.last_hump_code`, `max_hump_code` | 0-126; 127 invalid | saturates and retains max | 7 / 7 | C bit-fields (#110) |
 | Complete persistent TerrainContext | `TerrainContext`, S4 task | as above; 20 ms processing | D06 physical calibration pending; replay old float path for parity | 32 bytes on the current target compiler (SYS-12) | `testing/subsystem4/sizeof_probe.c` (#110) |
 

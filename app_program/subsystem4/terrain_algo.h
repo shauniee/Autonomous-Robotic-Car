@@ -37,7 +37,7 @@ _Static_assert(sizeof(TerrainCalibSum) == 9u, "TerrainCalibSum must use 69 bits 
 /* This is private persistent state of the one Terrain task, not a cross-core
    snapshot. Public telemetry uses terrain_pack(), an atomic 32-bit word.
    0..100 calibration samples: 7 bits; 0..10 flat-run: 4 bits;
-   state 0..4: 3 bits; height/calibrated flags: 1 bit each.
+   state 0..4: 3 bits; height/calibrated/window-quality flags: 1 bit each.
    Last/max codes are 7 bits each. */
 typedef struct {
     TerrainFilterQ16 filtered_accel_q16;
@@ -52,6 +52,7 @@ typedef struct {
     uint8_t state : 3;
     uint8_t height_valid : 1;
     uint8_t is_calibrated : 1;
+    uint8_t window_qualified : 1;
 } TerrainContext;
 
 _Static_assert(sizeof(TerrainContext) <= 36u, "TerrainContext packing regressed");
@@ -59,8 +60,10 @@ _Static_assert(sizeof(TerrainContext) <= 36u, "TerrainContext packing regressed"
 void terrain_algo_init(TerrainContext *ctx);
 bool terrain_algo_calibrate_sample(TerrainContext *ctx, const Gy511RawAxes *raw);
 /* Local travel includes half counts from averaging the two wheel deltas. */
-void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float delta_counts);
+void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw,
+    float delta_counts, bool travel_qualified);
 void terrain_algo_invalidate_window(TerrainContext *ctx);
 void terrain_algo_calibration_restart(TerrainContext *ctx);
+bool terrain_acceleration_qualified(const Gy511RawAxes *raw);
 
 #endif /* TERRAIN_ALGO_H */

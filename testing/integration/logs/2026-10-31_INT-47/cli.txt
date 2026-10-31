@@ -1,0 +1,7 @@
+REQUEST ACK seq 9: OK
+REQUEST ACK seq 9: BUSY
+REQUEST ACK seq 9: INVALID request
+REQUEST ACK seq 9: MALFORMED
+REQUEST ACK seq 9: ?4
+SNAPSHOT #42 state=NAVIGATE motion=FAILED(id 5) line=VISIBLE mapped=yes | counts L=4660 R=22136 speed n/a | humps=3 max=120 mm | front=4304 mm | barcode=B->STRAIGHT | obstacle width=420 mm depth=170 mm | faults: Motion: motor stall, Line: barcode capture overflow, Terrain: impact, Mission: line lost, Network: WiFi lost, Network: broker lost
+mqtt CLI: PASS (OK/rejected/unknown ACKs, sequence matching, snapshot)

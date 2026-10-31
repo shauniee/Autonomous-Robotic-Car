@@ -123,6 +123,8 @@ void s1_clamp(mqtt_telemetry_t *t)
     t->line_status = clamp8(t->line_status, 3u);
     t->hump_max = clamp8(t->hump_max, 127u);
     t->front_mm = (uint16_t)(t->front_mm > 8191u ? 8191u : t->front_mm);
+    t->front_valid = t->front_valid && t->front_mm != 8191u;
+    t->hump_valid = t->hump_valid && t->hump_max != 127u;
     t->barcode_letter = t->barcode_letter > 25u ? MQTT_NO_LETTER : t->barcode_letter;
-    t->barcode_action = clamp8(t->barcode_action, 7u);
+    t->barcode_action = t->barcode_action > 4u ? 0u : t->barcode_action;
 }

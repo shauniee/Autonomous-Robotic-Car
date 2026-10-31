@@ -78,8 +78,19 @@ def frame_type(frame):
 
 
 def decode_telemetry(f):
+    if frame_type(f) not in (TELEMETRY, SNAPSHOT_REPLY):
+        raise ValueError("not a telemetry frame")
     left, right = struct.unpack_from("<HH", f, 10)
     (front,) = struct.unpack_from("<H", f, 16)
+    if f[3] & 0x80 or front & 0xC000:
+        raise ValueError("telemetry reserved bits set")
+    code = f[18] & 0x1F
+    if (code > 25 and code != 31) or f[18] >> 5 > 4:
+        raise ValueError("invalid barcode letter/action")
+    if front & 0x2000 and front & 0x1FFF == 0x1FFF:
+        raise ValueError("invalid range marked valid")
+    if f[15] == 0xFF:
+        raise ValueError("invalid hump height marked valid")
     width, depth = struct.unpack_from("<HH", f, 19)
     return {
         "sequence": f[1], "mission": name(MISSION, f[2] & 0xF), "motion": name(MOTION, (f[2] >> 4) & 3),
@@ -93,6 +104,10 @@ def decode_telemetry(f):
 
 
 def decode_event(f):
+    if frame_type(f) != EVENT:
+        raise ValueError("not an event frame")
+    if f[1] & 0xF0 or f[1] not in EVENT_KIND:
+        raise ValueError("invalid event kind/reserved bits")
     kind, arg, time_ms, left, right, arg2 = f[1] & 0xF, f[2], *struct.unpack_from("<HHHH", f, 3)
     detail = {1: f"letter {letter(arg)} -> {name(ACTION, arg2)}", 2: f"height {arg * HUMP_MM_PER_CODE:g} mm",
               3: f"depth {arg2} mm", 4: f"turn {name(ACTION, arg)}"}.get(kind, f"arg {arg} arg2 {arg2}")
@@ -320,6 +335,32 @@ def self_test():
     ack = dashboard_message(bytes([0x25, 0x07, 0x01]), Motion())
     assert ack["type"] == "ack" and ack["sequence"] == 7 and not ack["ok"] and ack["result"].startswith("BUSY")
     assert [len(bits) for _, bits in FAULTS] == header_fault_widths(), "FAULTS disagrees with robot_data.h"
+    bad_telemetry = []
+    for index, value in ((3, GOLDEN_TELEMETRY[3] | 0x80),
+                         (17, GOLDEN_TELEMETRY[17] | 0x40),
+                         (18, 26), (18, 5 << 5), (15, 0xFF)):
+        frame = bytearray(GOLDEN_TELEMETRY)
+        frame[index] = value
+        bad_telemetry.append(frame)
+    frame = bytearray(GOLDEN_TELEMETRY)
+    frame[16:18] = (0x3FFF).to_bytes(2, "little")
+    bad_telemetry.append(frame)
+    bad_events = [bytes([0x22, kind]) + GOLDEN_EVENT[2:] for kind in (0, 5, 0x11)]
+    for frame in bad_telemetry + bad_events:
+        history = Motion()
+        try:
+            dashboard_message(bytes(frame), history)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"accepted malformed frame {frame.hex()}")
+        assert history.last is None
+    # Valid zero is a measurement; the invalid sentinel without validity is absent.
+    frame = bytearray(GOLDEN_TELEMETRY)
+    frame[16:18] = (0x2000).to_bytes(2, "little")
+    assert decode_telemetry(frame)["front_mm"] == 0
+    frame[16:18] = (0x1FFF).to_bytes(2, "little")
+    assert decode_telemetry(frame)["front_mm"] is None
     print("mqtt_client self-test: PASS")
     return 0
 
