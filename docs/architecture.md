@@ -141,10 +141,11 @@ tracking; left/right continue on the chosen branch. U-turn reaches the junction,
 brakes, pauses about 200 ms, turns 180 degrees and tracks the return branch.
 Never undo a turn. Pause reference/placement tolerance is pending D02/D08.
 
-No pending instruction: continue straight using a requested minimum 25 mm crossing
-travel (`MISSION_BROAD_FORWARD_MM`), then acquire/track the outgoing line. This is
-not an accepted geometric clearance guarantee; sensor/axle offsets and completion
-tolerance need measurement. Confirm a junction using tracking evidence plus
+Cross broad black with straight FOLLOW commands, without a fixed-distance
+advance. On leaving a qualified encounter, consume the pending instruction or
+continue straight through outgoing-line confirmation. There is no pre-turn
+DISTANCE action or completion gate. See the [junction revision](project-specs.md#mission-day-barcode-rule).
+Confirm a junction using tracking evidence plus
 travel/geometry qualification. A single black barcode-sensor reading neither
 identifies a barcode nor proves a junction; barcode capture must not block junction
 checks. Exact mounted evidence is D01/D02/D04.
@@ -161,9 +162,11 @@ Healthy white/white IR must persist through the
 [line-loss qualification interval](project-specs.md#pending-decisions)
 before entering REACQUIRE. During qualification, retain tracking steering;
 visible line resumes PID updates and clears the pending loss. Missing/stale
-acquisition still stops required movement. Requested recovery sweeps left/right up to 70 degrees
-while creeping, for two back-and-forth attempts; exact sequence, speed, travel
-cap and failure boundary await D07. Either sensor finding line initiates alignment;
+acquisition still stops required movement. Standalone recovery brakes and waits for encoder stationarity, then pivots
+left/right through the provisional wider sweep defined in
+[project specs](project-specs.md#pending-decisions), for two back-and-forth
+attempts. It brakes before each reversal. Either sensor finding line immediately
+brakes the sweep and initiates small pivot corrections;
 confirm stable intended-line tracking before resuming. Heading/travel evidence
 is required after bypass to avoid accepting an unrelated crossing.
 
@@ -203,7 +206,9 @@ contracts first (#129). No host/build result is firmware or physical acceptance.
 - S3/S4/S5 supply evidence and helpers; they never independently drive motors.
 - Small safety functions are called by Mission/Motion, not a separate task.
 - Network work reports connectivity and transports configuration/diagnostics;
-  it never starts, stops or drives the robot. Loss during a run is report-only.
+  it never starts, stops or writes motor outputs. Loss during a run is report-only.
+  The user-authorized [junction testing exception](project-specs.md#mission-day-barcode-rule)
+  transports one direction request to Mission, which alone accepts and executes it.
 
 ## Shared-data rules
 
@@ -282,6 +287,19 @@ Reset invalidates old commands and never enables output itself. Brake service
 acknowledgement is software progress; stationarity uses encoder evidence.
 Checks require Motion to execute and do not protect against a hung Motion/kernel.
 A watchdog tick setup alone is not a reset watchdog; further policy remains D15.
+
+The wheel-speed controller bounds duty to the requested wheel direction:
+overspeed produces braking, not opposite drive. The position controller may
+still reverse the requested direction to correct positional overshoot; turns
+retain opposite signed wheel targets. This is software policy, not physical
+PID calibration or evidence of healthy encoders.
+
+During a TURN, each wheel remains braked after first entering the existing
+angle tolerance, even if it drifts while its partner finishes. DONE still
+requires both current positions within tolerance. Unresolved drift reaches
+the existing action timeout and FAILED; a prior arrival cannot mask it.
+Arrival latches reset with every new action or controller reset. This prevents
+endpoint reactivation without changing gains or calibrated tolerances.
 
 ## Encoder contract
 
@@ -435,8 +453,8 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 
 Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Final message-size and RAM evidence: [SYS-11](../testing/system/TEST_LOG.md#3-final-memory-and-message-size-sys-11).
 
-Implementation limits: the coordinator retains a bounded last-side recovery arc
-until D07 defines the requested moving sweep; unknown-side loss stops. S5 scans
+Implementation limits: standalone recovery uses bounded stationary pivot sweeps;
+physical speed/geometry acceptance remains D07. S5 scans
 now have bounded median groups and qualified edge/model estimation. Their
 operating settings are unset by user choice, and physical bypass release remains
 inhibited. Supported forward/side scheduling, rear-edge/original-line acceptance
@@ -447,3 +465,11 @@ S1 events use a short cross-core mutex; events stay in the ring when the TX brid
 is full. Overflow overwrites oldest entries; lock misses drop the new event.
 Neither kind of drop is exposed in telemetry. Mapping uses a single
 outstanding word hand-off; only Mission installs/rejects before I/O ACKs.
+
+Junction-test extension (schema v2, type 7): three bytes `27 sequence action`,
+with action codes 1 left, 2 right, 3 straight, 4 U-turn, upper five bits zero.
+Sent to `/request`, non-retained. Uses the existing type-5 ACK: OK means Mission
+queued the instruction, not that the physical turn succeeded. BUSY includes
+non-FOLLOW_LINE, existing manual instruction, junction encounter or occupied
+hand-off. Consecutive duplicate direction sequences are rejected without replay.
+See [owning test policy](project-specs.md#mission-day-barcode-rule).

@@ -1,0 +1,36 @@
+[
+  {
+    "freshness": "No readings received.",
+    "height": 900,
+    "scrollHeight": 900,
+    "scrollWidth": 1440,
+    "sendDisabled": true,
+    "url": "?mode=empty",
+    "width": 1440
+  },
+  {
+    "freshness": "Stream stale — showing last received readings.",
+    "height": 900,
+    "scrollHeight": 900,
+    "scrollWidth": 1440,
+    "sendDisabled": true,
+    "url": "?mode=stale",
+    "width": 1440
+  },
+  {
+    "freshness": "Latest received readings.",
+    "height": 900,
+    "scrollHeight": 900,
+    "scrollWidth": 1440,
+    "sendDisabled": true,
+    "url": "?mode=invalid",
+    "width": 1440
+  },
+  {
+    "height": 768,
+    "mode": "compact",
+    "scrollHeight": 830,
+    "scrollWidth": 1366,
+    "width": 1366
+  }
+]

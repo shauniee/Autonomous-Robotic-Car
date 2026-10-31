@@ -1,0 +1,9 @@
+REQUEST ACK seq 57: OK
+ACK result=0, CLI exit=0
+REQUEST ACK seq 57: BUSY
+ACK result=1, CLI exit=0
+REQUEST ACK seq 57: INVALID request
+ACK result=2, CLI exit=0
+REQUEST ACK seq 57: MALFORMED
+ACK result=3, CLI exit=0
+Defect reproduced: BUSY, INVALID and MALFORMED all exit successfully.

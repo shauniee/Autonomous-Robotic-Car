@@ -77,8 +77,8 @@ static void rise_add(TerrainContext *ctx, float tenths_mm) {
     ctx->rise_q = next <= 0.0f ? 0u : (next >= 65535.0f ? 65535u : (uint16_t)(next + 0.5f));
 }
 
-void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t delta_counts) {
-    float delta_dist_mm = (float)delta_counts / ENC_COUNTS_PER_MM;
+void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float delta_counts) {
+    float delta_dist_mm = delta_counts / ENC_COUNTS_PER_MM;
     if (!ctx->is_calibrated) return;
 
     /* Local float values exist only inside this one processing release;

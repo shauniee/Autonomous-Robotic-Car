@@ -167,6 +167,20 @@ void s1_step(uint32_t now)
         {
             post_snapshot(MQTT_TYPE_SNAPSHOT_REPLY, &sequence);
         }
+        else if (type == MQTT_TYPE_JUNCTION_TEST)
+        {
+            uint8_t seq, action;
+            mqtt_decode_t decoded = mqtt_decode_junction_test(in, length, &seq, &action);
+            if (decoded == MQTT_DECODE_OK && mission_direction_submit(seq, action))
+            {
+                continue;
+            }
+            pending_ack = (mqtt_ack_t){.sequence = in[1],
+                .result = decoded == MQTT_DECODE_OK ? MQTT_ACK_BUSY :
+                    (decoded == MQTT_DECODE_RANGE ? MQTT_ACK_INVALID : MQTT_ACK_MALFORMED)};
+            ack_pending = 1u;
+            break;
+        }
         else if (type == MQTT_TYPE_MAPPING)
         {
             mqtt_mapping_t mapping;

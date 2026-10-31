@@ -34,7 +34,6 @@ typedef enum
 
 typedef enum
 {
-    JUNCTION_PHASE_CROSS,
     JUNCTION_PHASE_PAUSE_WAIT,
     JUNCTION_PHASE_PAUSE,
     JUNCTION_PHASE_TURN,
@@ -57,14 +56,13 @@ typedef struct
     int8_t line_error;		/* S3 right - left error, Q7; + means steer right */
     uint32_t line_sampled_ms;
     uint32_t wheel_count[2];
-    uint32_t travel_counts;	/* mean of both wheel counts, wrapped */
     rd_motion_status_t motion_status;
     uint8_t motion_action;
     bool hump_active; /* fresh calibrated Terrain encounter */
     bool stationary;		/* encoders unchanged for MISSION_STATIONARY_MS */
     bool front_valid;
     uint32_t front_age_ms;
-    uint32_t front_sampled_ms, front_sequence, front_travel_counts;
+    uint32_t front_sampled_ms, front_sequence, front_wheel_count[2];
     uint32_t front_mm;		/* front range; meaningful only if front_valid */
     bool side_valid;
     uint32_t side_mm, side_sampled_ms, side_sequence;
@@ -104,8 +102,9 @@ typedef struct
     barcode_action_t held;	/* barcode command held for the next cross junction */
     recovery_control_t recovery;
     uint32_t state_since_ms;
-    uint32_t broad_origin;	/* travel count where the current broad-black run began */
+    uint32_t broad_origin[2]; /* wheel counts at broad-black entry */
     uint32_t broad_since_ms; /* start of this broad-black encounter, wraps */
+    uint8_t manual_held : 1; /* test direction protects held from barcode replacement */
     uint8_t in_broad : 1;
     uint8_t junction_open : 1;
     uint8_t junction_qualified : 1;
@@ -115,7 +114,7 @@ typedef struct
     uint32_t junction_sampled_ms;
     uint8_t turn_code : 2; /* 0 none, 1 left, 2 right, 3 U-turn */
     int16_t line_integral_q; /* steering units /32767, +/-LINE_I_LIMIT */
-    int16_t line_prev_error_q; /* filtered error /32767, -1..+1 */
+    int16_t line_prev_error_q; /* filtered error or binary target /32767, -1..+1 */
     uint32_t line_pid_ms;	/* IR acquisition time of the last PID update */
     uint8_t line_pid_primed : 1;	/* a previous sample exists for the derivative */
     int8_t line_steer_q;		/* PID output held until the next IR sample */
@@ -132,6 +131,8 @@ typedef struct
     uint8_t reacquire_bypass : 1;
 
 } Mission;
+
+bool mission_queue_direction(Mission *mission, uint8_t action);
 
 void mission_init(Mission *m, uint32_t now_ms);
 void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out);

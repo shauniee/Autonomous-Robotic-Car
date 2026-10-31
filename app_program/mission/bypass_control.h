@@ -23,7 +23,7 @@ typedef struct
     uint32_t origin[2], previous[2];
     uint32_t started_ms, phase_ms, action_ms, line_started_ms;
     uint32_t sensor_sequence, line_sampled_ms, edge_counts;
-    uint32_t chunk_origin;
+    uint32_t chunk_origin[2];
     int32_t forward_q8 : 21;
     int32_t left_q8 : 21;
     int32_t rear_clear_q8 : 21;
@@ -44,7 +44,7 @@ typedef struct
 {
     uint32_t now_ms, count[2];
     bool stationary, cancel, functional;
-    uint32_t front_ms, front_sequence, front_count, front_mm;
+    uint32_t front_ms, front_sequence, front_count[2], front_mm;
     uint32_t side_ms, side_sequence, side_mm;
     bool front_valid, side_valid;
     uint32_t line_ms;

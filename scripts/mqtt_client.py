@@ -4,7 +4,7 @@
   map L R S U      send the four mission-day letters (left, right, straight, U-turn)
   snapshot         request one telemetry snapshot
   serve            live web dashboard at http://127.0.0.1:8080 (scripts/dashboard.html);
-                   the dashboard can also send the mapping
+                   the dashboard can send mappings and next-junction test directions
   --self-test      decode the golden vectors shared with testing/pure/test_mqtt_frame.c
 
 Frame layouts: docs/architecture.md (MQTT binary protocol). Speed and
@@ -24,15 +24,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 VERSION = 2
-TELEMETRY, EVENT, SNAPSHOT_REPLY, MAPPING, ACK, SNAPSHOT_REQUEST = 1, 2, 3, 4, 5, 6
-LENGTHS = {TELEMETRY: 23, EVENT: 11, SNAPSHOT_REPLY: 23, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2}
+TELEMETRY, EVENT, SNAPSHOT_REPLY, MAPPING, ACK, SNAPSHOT_REQUEST, JUNCTION_TEST = 1, 2, 3, 4, 5, 6, 7
+LENGTHS = {TELEMETRY: 23, EVENT: 11, SNAPSHOT_REPLY: 23, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3}
 
 MISSION = ["READY", "FOLLOW_LINE", "NAVIGATE", "SCAN", "BYPASS", "REACQUIRE", "STOPPED"]
 MOTION = ["IDLE", "RUNNING", "DONE", "FAILED"]
 LINE = ["UNKNOWN", "VISIBLE", "LOST", "BROAD_BLACK"]
 ACTION = ["UNMAPPED", "LEFT", "RIGHT", "STRAIGHT", "U_TURN"]
 EVENT_KIND = {1: "BARCODE", 2: "HUMP", 3: "OBSTACLE", 4: "TURN"}
-ACK_RESULT = ["OK", "BUSY", "INVALID letters", "MALFORMED"]
+ACK_RESULT = ["OK", "BUSY", "INVALID request", "MALFORMED"]
 # One byte per owner, rd_owner_t order; bit names follow app_program/common/robot_data.h.
 FAULTS = [
     ("Motion", ["motor stall", "encoder"]),
@@ -168,7 +168,7 @@ def describe(frame, motion):
     if kind == EVENT:
         return decode_event(frame)
     if kind == ACK:
-        return f"MAPPING ACK seq {frame[1]}: {name(ACK_RESULT, frame[2])}"
+        return f"REQUEST ACK seq {frame[1]}: {name(ACK_RESULT, frame[2])}"
     return f"frame type {kind}"
 
 
@@ -196,6 +196,7 @@ class Dashboard:
         self.status = None
         page = (Path(__file__).resolve().parent / "dashboard.html").read_bytes()
         origin = f"http://127.0.0.1:{port}"
+        self.send_direction = None
         self.send_mapping = None	# set by main once the MQTT client exists; returns the sequence sent
         dashboard = self
 
@@ -236,23 +237,33 @@ class Dashboard:
                     self.send_error(404)
 
             def do_POST(self):
-                # Another site open in the same browser could post here; only this page may map.
-                if self.path != "/map" or self.headers.get("Origin") != origin \
+                # Another site open in the same browser could post here; only this page may submit requests.
+                if self.path not in ("/map", "/direction") or self.headers.get("Origin") != origin \
                         or self.headers.get("Content-Type") != "application/json":
                     self.send_error(403)
                     return
                 try:
                     body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", 0)), 256)))
-                    letters = mapping_letters(body.get("letters", ""))
+                    if self.path == "/map":
+                        value = mapping_letters(body.get("letters", ""))
+                    else:
+                        value = body.get("action")
+                        if type(value) is not int or not 1 <= value <= 4:
+                            value = None
                 except (ValueError, AttributeError, TypeError):
-                    letters = None
-                if not letters:
-                    self.send_error(400, "map needs four distinct letters A-Z")
+                    value = None
+                if not value:
+                    self.send_error(400, "needs four distinct letters A-Z or a direction action 1..4")
                     return
-                if not dashboard.send_mapping:
+                sender = dashboard.send_mapping if self.path == "/map" else dashboard.send_direction
+                if not sender:
                     self.send_error(503, "not connected to the broker")
                     return
-                reply = json.dumps({"sequence": dashboard.send_mapping(letters), "letters": letters}).encode()
+                try:
+                    reply = json.dumps({"sequence": sender(value)}).encode()
+                except RuntimeError:
+                    self.send_error(503, "broker disconnected")
+                    return
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
@@ -260,6 +271,7 @@ class Dashboard:
 
         # Docker publishes this unauthenticated server only on host loopback.
         self.server = ThreadingHTTPServer((host, port), Handler)
+        origin = f"http://127.0.0.1:{self.server.server_port}"
         self.server.daemon_threads = True
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
 
@@ -287,6 +299,12 @@ def mapping_frame(sequence, letters):
     return bytes([VERSION << 4 | MAPPING, sequence]) + packed.to_bytes(3, "little")
 
 
+def direction_frame(sequence, action):
+    if type(action) is not int or not 1 <= action <= 4:
+        raise ValueError("junction direction must be 1..4")
+    return bytes([VERSION << 4 | JUNCTION_TEST, sequence, action])
+
+
 def self_test():
     t = decode_telemetry(GOLDEN_TELEMETRY)
     assert frame_type(GOLDEN_TELEMETRY) == TELEMETRY and t["sequence"] == 0x2A and t["mission"] == "NAVIGATE"
@@ -296,6 +314,7 @@ def self_test():
     assert t["barcode_action"] == "STRAIGHT" and (t["obstacle_width_mm"], t["obstacle_depth_mm"]) == (420, 170)
     assert "BARCODE: letter Z -> RIGHT" in decode_event(GOLDEN_EVENT)
     assert mapping_frame(7, "ABCD") == GOLDEN_MAPPING
+    assert direction_frame(7, 4) == bytes([0x27, 7, 4])
     assert mapping_letters("abcd") == "ABCD" and mapping_letters(["W", "F", "a", "Z"]) == "WFAZ"
     assert not any(mapping_letters(bad) for bad in ("ABCA", "ABC", "ABCDE", "AB1D", "ABÇD", ""))
     ack = dashboard_message(bytes([0x25, 0x07, 0x01]), Motion())
@@ -329,6 +348,7 @@ def main():
         parser.exit(1, "Install: python -m pip install -r scripts/requirements-mqtt.txt\n")
 
     ready, done = threading.Event(), threading.Event()
+    exit_code = 1
     sequence = int(time.time()) & 0xFF
     motion = Motion()
     dashboard = Dashboard(args.http_port, args.http_host) if args.action == "serve" else None
@@ -345,6 +365,7 @@ def main():
         ready.set()
 
     def on_message(client, userdata, message):
+        nonlocal exit_code
         if dashboard and message.topic.endswith("/status"):
             dashboard.push({"type": "status", "online": message.payload == b"1"})
             return
@@ -364,11 +385,13 @@ def main():
             return
         if args.action == "monitor":
             print(line, flush=True)
-        elif args.action == "map" and line.startswith(f"MAPPING ACK seq {sequence}:"):
+        elif args.action == "map" and frame_type(message.payload) == ACK and message.payload[1] == sequence:
             print(line, flush=True)
+            exit_code = 0 if message.payload[2] == 0 else 1
             done.set()
         elif args.action == "snapshot" and line.startswith("SNAPSHOT"):
             print(line, flush=True)
+            exit_code = 0
             done.set()
 
     client.on_connect = on_connect
@@ -380,12 +403,17 @@ def main():
             raise RuntimeError("timed out connecting to the broker")
         if args.action in ("monitor", "serve"):
             if dashboard:
-                def send_mapping(letters):
+                send_lock = threading.Lock()
+                def send_request(value, encode):
                     nonlocal sequence
-                    sequence = (sequence + 1) & 0xFF
-                    client.publish(args.root + "/request", mapping_frame(sequence, letters), qos=1)
-                    return sequence
-                dashboard.send_mapping = send_mapping
+                    with send_lock:
+                        if not client.is_connected():
+                            raise RuntimeError("broker disconnected")
+                        sequence = (sequence + 1) & 0xFF
+                        client.publish(args.root + "/request", encode(sequence, value), qos=1)
+                        return sequence
+                dashboard.send_mapping = lambda letters: send_request(letters, mapping_frame)
+                dashboard.send_direction = lambda action: send_request(action, direction_frame)
                 print(f"Dashboard: http://127.0.0.1:{args.http_port}/ ; Ctrl+C to exit.", flush=True)
             else:
                 print("Monitoring; Ctrl+C to exit.", flush=True)
@@ -395,7 +423,7 @@ def main():
         client.publish(args.root + "/request", payload, qos=1).wait_for_publish(timeout=5)
         if not done.wait(8):
             raise RuntimeError("no reply from the robot (is it online and stopped?)")
-        return 0
+        return exit_code
     except KeyboardInterrupt:
         return 0
     except (OSError, RuntimeError) as error:

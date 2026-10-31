@@ -76,9 +76,9 @@ or a test PASS. Motor/encoder polarity still requires verification. Start needs
 functional IR/Motion, mapping, WiFi and MQTT. IMU calibration is attempted at boot
 before IR calibration; IMU failure is flagged but permits operation. During a run
 IR/Motion failure stops; ordinary IMU/sonar/network loss is report-only. Requested
-hump speed is half normal tracking speed; requested moving recovery is left/right
-70-degree sweeps for two back-and-forth attempts, with exact travel/sequence still
-pending. Local stop retains calibration, mapping and last barcode display, but
+hump speed is half normal tracking speed. The original moving 70-degree
+recovery request was superseded by the stationary wider sweep revision in
+[pending decisions](#pending-decisions). Local stop retains calibration, mapping and last barcode display, but
 cancels pending movement. GP21 release may reset after cause clearance/brake;
 GP20 starts separately. No two-second barcode disabling rule remains.
 
@@ -111,7 +111,7 @@ The default project is an autonomous robot car on a predefined course, using onb
 | Bypass | Leave the line, travel round without line guidance, keep observing until passed |
 | After bypass | Rejoin the original line and resume |
 | U-turn detail | At the junction, brake, pause approximately 200 ms, turn 180 degrees and track the return branch; never undo the turn (user request; pause reference pending D02/D08) |
-| No pending barcode at junction | Continue straight with requested minimum 25 mm crossing travel; physical clearance/tolerance pending D07 |
+| No pending barcode at junction | Continue straight using sensing and junction qualification; no fixed 25 mm advance (user revision 2026-10-30) |
 | End of run | Endless healthy operation; local GP21 or a stopping guard ends movement, no automatic finish marker |
 
 ### Course rules
@@ -125,7 +125,35 @@ The default project is an autonomous robot car on a predefined course, using onb
 | Obstacles | Static, block the line; width 100-200 mm in supplied professor clarification. Straight-only placement is the user-selected operating assumption; inconsistent earlier source wording remains D12. |
 | Map | Undisclosed until demonstration |
 
+Implemented Motion storage extension (INT-38): `MotionController.turn_arrived`
+is two bits, one arrival latch per wheel for the current TURN action; zero at
+reset/new action. Private to Motion. Arrival uses the existing angle tolerance,
+not a new calibrated limit; no claim of physical settling or angle accuracy.
+
+Junction behavior revision confirmed by Nicholas 2026-10-30: remove the fixed
+25 mm advance entirely, including no-command and queued-turn encounters.
+Continue straight across broad black using sensing; retain the existing
+qualification and turn trigger at the first usable exit from a qualified black
+encounter. No distance-action completion gate remains before a turn.
+The separate post-turn clearance action remains provisional under D02/D07.
+
 ### Mission-day barcode rule
+
+Junction testing exception confirmed by Nicholas 2026-10-30: dashboard direction
+buttons may submit one pending left/right/straight/U-turn instruction while
+FOLLOW_LINE and before a junction encounter. Mission accepts/rejects it and
+executes it once at the next confirmed cross junction. It overrides a held
+barcode; subsequent barcode reads cannot replace it. Another manual instruction
+is BUSY until consumption or cancellation. Local start, readiness and stopping
+guards still apply; this does not remotely start motion. Stop clears it.
+
+Storage: direction request uses action 1..4 in request-word bits 29..31
+(3 bits; 0 means mapping, 5..7 invalid), sequence remains bits 21..28.
+Mission stores a one-bit manual-held flag; the existing held action is reused.
+The I/O duplicate guard stores the last direction sequence (8 bits) plus a
+one-bit valid flag, rejecting consecutive duplicate submissions as BUSY.
+Wire type 7 is three bytes: 0x27, sequence, action in bits 0..2; upper five bits
+are reserved zero. Invalid actions are rejected, never coerced.
 
 Confirmed by Nicholas 2026-10-14: alphabet A-Z; the instructor announces exactly four distinct letters on mission day (left, right, straight, U-turn); no recompilation afterwards. The four assignments load over WiFi as runtime configuration.
 
@@ -389,7 +417,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D04 | Mounted IR position/spacing/height, contrast/noise/lighting range and barcode black polarity; wiring user-confirmed, measured sensing margins still pending | S3 |
 | D05 | Sonar electrical behavior user-confirmed; retain recorded Echo-voltage evidence when available. Calibrate repeat interval/range/servo centre/endpoints/settling, sample groups/median/edge hysteresis, coverage and width-estimation uncertainty | S5 |
 | D06 | Stationary boot IMU calibration before IR: bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Confirm half-speed completion and proposed results-retained-on-stop/new-start-reset lifecycle | S4 / Nicholas |
-| D07 | Wheel/line gains, speed/duty/distance/turn/stall limits; 25 mm crossing tolerance; exact moving +/-70 degree sweep sequence for two back-and-forth attempts, creep speed, travel budget and stable intended-line confirmation; bypass/depth/clearance budgets | Owners / Nicholas |
+| D07 | Wheel/line gains, speed/duty/distance/turn/stall limits; stationary wider pivot sweep sequence for two back-and-forth attempts, pivot speed, wheel excursion budget and stable intended-line confirmation; bypass/depth/clearance budgets | Owners / Nicholas |
 | D08 | Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | S2 / Nicholas |
 | D09 | Instructor WiFi/broker settings; normal mission requires both before starting, loss mid-run report-only. Decide whether professor buffer wording requires literal RTOS message buffers; existing bounded TX/RX rings retained provisionally | S1 / Nicholas |
 | D10 | Agree first-cut lateral/turn/height/width error, recovery travel and repeatability targets before corresponding physical PASS; label proposals separately from course thresholds | Nicholas |
@@ -419,7 +447,7 @@ Software restructure storage contract (2026-10-29, #131–#133; no new wire fiel
 | Mapping progress, one writer per counter | Request/reply tickets plus private submit/consume/take counters, modulo 2^32 | One outstanding request through reply consumption; no overwrite | 32 each |
 | Terrain evidence, I/O | Existing terrain word, acquisition/service ms and attempt sequence uint32; acquisition validity 1 bit | Pending data does not renew acquisition time; copy/age/validity required; timestamps wrap | 4 x 32 + 1 logical; naturally aligned 20-byte snapshot |
 | IMU startup outcome, I/O | 0 pending, 1 calibrated, 2 failed | Missing IMU publishes failed; never interpreted as calibrated | 2 / one 32-bit word |
-| S5 step phase/flags, Mission | Phase 0..2 + initialized/ready/scanning; scan counts 0..9, scan ID 0..15, angle -20..20 | Fixed nine-ray capacity; deadline/cancel/movement abort; no echo invalid | 2+3 bits; counts 4 each, ID 4, signed angle 6 (stored in 8) |
+| S5 step phase/flags, Mission | Phase 0..2 + initialized/ready/scanning; scan counts 0..9, scan ID 0..15, commanded and target angles -20..20 integer degrees | Fixed nine-ray capacity; deadline/cancel/movement abort; no echo invalid; angle targets outside range rejected, no rounding | 2+3 bits; counts 4 each, ID 4, two signed 6-bit angle fields |
 | Link readiness, kernel WiFi | bit 0 WiFi, bit 1 broker; boot 0 | Both required for local start; run loss report-only | 2 / one 32-bit word |
 | Event drops, event-mutex holder / one writer per core | `s1_event_log_t.dropped` counts ring overflow; `lock_misses[2]` counts failed bounded event-insertion locks (Mission core 1, Terrain core 0), one atomic uint32 per core; bridge-full returns false for retry | Each count saturates at UINT32_MAX; insertion waits at most the existing 2 ms snapshot-lock timeout; counters are debugger diagnostics, not new MQTT fields or delivery acknowledgements | 32 each; 64 stored for the two lock-miss words |
 
@@ -428,7 +456,7 @@ not a physical tuning or accuracy claim; one Mission writer):
 
 | Field | Range / scale / rounding | Invalid / overflow | Logical / stored bits |
 | --- | --- | --- | --- |
-| Filtered previous line error | -1..+1, signed integer /32767; nearest, ties away from zero | -32768 unused; primed bit gates history; finite local calculation clamps before storage | 16 / 16 |
+| Filtered previous line error, or requested steering target when `LINE_BINARY_RAMP=1` | -1..+1 (binary target bounded by `MAX_STEER`), signed integer /32767; nearest, ties away from zero | -32768 unused; primed bit gates history; finite local calculation clamps before storage; binary target restarts on reversal/zero/gap/reset | 16 / 16 |
 | Integral steering contribution | +/-`LINE_I_LIMIT` (currently 0.40); signed integer /32767; nearest, ties away from zero | -32768 unused; reset zero; computation clamps to configured limit before storage; limit constrained to <=1 | 15 at current limit / 16; resolution chosen for host float-reference comparison, physical acceptance D07 pending |
 | Held steering | -127..127, signed Q7; existing output rounding retained | -128 unused; output clamps to `MAX_STEER` | 8 / 8 |
 | PID primed | no/yes, Mission private | reset false | 1 / 1 in a private byte |
@@ -479,14 +507,23 @@ corresponding manoeuvre; no provisional values are silently enabled.
 Junction qualifier correction: Mission records the 32-bit timestamp of the last
 qualification sample and two one-bit flags (black encounter still open, qualified)
 beside its one-bit broad-encounter flag in one private byte. Only distinct usable
-black acquisitions may qualify the existing encoder-distance threshold; forced
-25 mm crossing travel after black has ended cannot qualify an earlier thin patch.
+black acquisitions may qualify the existing encoder-distance threshold; travel
+after black has ended cannot qualify an earlier thin patch.
 No mounted geometric tolerance is claimed by these software flags.
 
 Continuation storage: `s5_range_sample_t` contains the existing packed word plus
-full 32-bit acquisition time, sequence and wrapped mean encoder count at
-range completion (16 bytes). The count uses the existing unsigned encoder-count
-scale and wrap rules; Mission uses it to debit travel since the front reading. Mission owns its current
+full 32-bit acquisition time, sequence and two wheel counts at
+range completion (20 bytes). Counts and consumer-owned origins use unsigned
+32-bit storage, masked to `ENC_COUNT_BITS` (currently 16; supported up to 32).
+Travel is the mean of each wheel's signed modular displacement from its own
+origin, computed locally with half-count precision. Each displacement must stay
+below its encoder half range; wheel lifetime counts need not remain close.
+Mission retains two junction origins; bypass retains two front-reading and
+reacquisition origins. Terrain keeps separate previous-poll counts for stationary
+checks and two integration origins, retained across pending samples. Fresh
+samples consume integration travel; errors, stale data or invalid Motion
+evidence discard the window and reset those origins. No timestamp is renewed
+by pending acquisition. Mission owns its current
 front/side pair; a separate pair is copied under the existing profile mutex for
 optional core-0 reporting, preserving original times when publication is busy.
 `s5_profile_snapshot_t` combines the 14-byte profile, six-byte edge/model evidence
@@ -522,8 +559,8 @@ Uncalibrated software proposals for review (not course limits/module ratings):
 
 | Setting | Proposal / purpose | Physical acceptance |
 | --- | --- | --- |
-| Recovery | 270 mm/s, steering magnitude 76/127, 30 s / 1200 mm total budget, 5 degree target tolerance and overshoot allowance | Revised trial after stalls at 30 and 90 mm/s; wheel targets match the current tracking curve range; D03/D07/D08/D13 pending |
-| Recovery alignment | Original heading within 15 degrees; absolute error <=25/127 for three distinct acquisitions | D04/D07/D10 pending |
+| Recovery | Stop and confirm encoder stationarity; pivot +100, -100, +100, -100 degrees; 180 mm/s per wheel; 30 s / 1200 mm mean absolute wheel excursion bound; 5 degree endpoint/overshoot tolerance | User requested wider stop-then-sweep trial; D03/D07/D08/D13 pending |
+| Recovery alignment | Brake on visible line; <=10 degree pivots toward sensor error; absolute error <=25/127 for three distinct stationary acquisitions at the found heading | D04/D07/D10 pending |
 | Bypass line alignment | 30 mm/s, independently configured from standalone recovery | D04/D07/D10 pending |
 | Scan | Three samples, at least two valid; depth enter/exit bands 30/60 mm; two adjacent rays; model range uncertainty 10 mm | D05/D10 pending; uncertainty is a proposed model input, not sensor accuracy |
 | Servo sampling | User-requested +/-20 degree travel; coarse rays -20/-10/0/+10/+20 degrees and 5 degree edge refinement; existing 300 ms settle and 60 ms repeat | Verify endpoints/mounting before release, D05 |
@@ -566,3 +603,28 @@ remains 14 bytes because its previous alignment byte holds validity. Side-watch
 uses eight angle bits plus one enable bit in its existing atomic word. Terrain
 adds one window-quality bit beside its existing classification/result flags;
 completed count/maximum/last results are never reset on accepted starts.
+
+
+User recovery revision, 2026-10-30: REACQUIRE must stop forward travel and
+sweep wider because the moving arc is not finding/tracking the line. The
+current software proposal supersedes the earlier moving +/-70 degree trial:
+stop, confirm stationarity, then pivot to +100/-100/+100/-100 degrees from
+the stopped pose. Brake and confirm stationarity before reversing. A visible
+line brakes the sweep immediately, then bounded 10-degree corrections center
+it. Confirmation uses three distinct stationary acquisitions, without forcing
+the robot back toward its loss heading. This only applies to standalone loss;
+bypass retains its original-line pose checks. The 180 mm/s wheel speed and
+100-degree extent are uncalibrated proposals, not measured limits. The 30 s
+budget includes braking; the 1200 mm bound now measures mean absolute wheel
+excursion from the stopped pose, not cumulative travel. Four legs and the
+timeout bound oscillation. Freshness, stop, front hazard and action failure
+still abort recovery.
+
+Recovery storage revision before implementation: phase has five values plus
+invalid (3 logical bits; unused codes fail), leg 0..4 (3 bits), confirmation
+0..3 (3 bits, configurable through 7), and active-turn flag (1 bit). Held
+relative turn target is signed whole degrees -360..360 (10-bit signed bit-field,
+-512 reserved invalid, nearest rounding with ties away from zero; heading
+bounds and Motion construction reject out-of-range values). Two encoder
+origins and two unsigned 32-bit timestamps retain their existing wrap rules.
+All storage is private to Mission; no shared or wire layout changes.

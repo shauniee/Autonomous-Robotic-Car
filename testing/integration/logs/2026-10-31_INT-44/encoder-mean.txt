@@ -1,0 +1,2 @@
+Both wheels moved forward (+1, +2); enc_mean delta=-32766 counts
+Defect reproduced: forward wheel increments became a large reverse delta.

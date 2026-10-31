@@ -60,9 +60,9 @@ Open decisions (not implemented; do not present as working):
 
 ## Evidence on Hand
 
-- Existing dashboard: `scripts/dashboard.html` (card grid, wheel-speed chart, faults, events; light/dark).
+- Existing dashboard: `scripts/dashboard.html` (single-screen dark ledger, Mission state vocabulary, S1–S5 health, sensor readings, custom barcode mapping, wheel-speed chart and event log).
 - Decoder and server: `scripts/mqtt_client.py` with golden vectors shared with `testing/pure/test_mqtt_frame.c`.
-- No recorded screenshots or videos of the dashboard in use. Do not invent readings, calibrated limits or thresholds; unknown values belong in [pending decisions](docs/project-specs.md#pending-decisions).
+- Synthetic dashboard screenshot fixtures and host results live under `testing/integration/logs/`; they are not physical observations. Do not invent readings, calibrated limits or thresholds; unknown values belong in [pending decisions](docs/project-specs.md#pending-decisions).
 
 ## Product Principles
 

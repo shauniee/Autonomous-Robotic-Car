@@ -13,6 +13,9 @@
 #include "hardware/irq.h"
 #include "hardware/structs/timer.h"
 #include "cyw43.h"
+#if APP_TEST
+#include <tm/tmonitor.h>
+#endif
 
 extern int32_t tk_dly_tsk(uint32_t delay);
 
@@ -90,6 +93,10 @@ int hw_claim_unused_from_range(uint8_t *bits, bool required, uint bit_lsb,
         }
     }
     hw_claim_unlock(saved);
+#if APP_TEST
+    tm_printf((const unsigned char *)"wifi: resource claim %s -> %d\n",
+              message, found);
+#endif
     if(found < 0 && required) panic(message);
     return found;
 }
@@ -120,7 +127,21 @@ uint64_t time_us_64(void)
 
 void cyw43_delay_ms(uint32_t ms)
 {
+#if APP_TEST
+    /* Radio-task-owned, capped startup trace; never log credentials. */
+    static uint32_t trace_count;
+    bool trace = trace_count < 12u;
+    if (trace) {
+        ++trace_count;
+        tm_printf((const unsigned char *)"wifi: delay %u ms begin\n", ms);
+    }
+#endif
     (void)tk_dly_tsk((ms == 0)? 1: ms);
+#if APP_TEST
+    if (trace) {
+        tm_printf((const unsigned char *)"wifi: delay %u ms end\n", ms);
+    }
+#endif
 }
 
 void cyw43_delay_us(uint32_t us)
