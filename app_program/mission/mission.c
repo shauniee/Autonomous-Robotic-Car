@@ -39,7 +39,7 @@ static void mission_task(INT stacd, void *exinf)
     for (;;)
     {
         now = robot_time_ms();
-        s3_step(now, s4_startup_complete());
+        s3_step(now);
         mqtt_mapping_t mapping;
         uint8_t direction;
         if (mission_mapping_take(&mapping, &direction))
@@ -78,6 +78,14 @@ static void mission_task(INT stacd, void *exinf)
             button_disarm(&start_button);
         }
         ButtonEvent event = button_update(&start_button, buttons.gp20_down, now);
+        if (event != BUTTON_EVENT_NONE)
+        {
+            tm_printf((UB *)"[MISSION] GP20 %s state=%s GP21_down=%d\n",
+                event == BUTTON_EVENT_PRESSED ? "pressed" :
+                (event == BUTTON_EVENT_RELEASED ? "released" :
+                    "ignored: release GP20 then press again"),
+                state_names[mission.state], (int)buttons.gp21_down);
+        }
 
         S3IrSnapshot snapshot = {0};
         MotionHealth health = {0};
@@ -123,9 +131,8 @@ static void mission_task(INT stacd, void *exinf)
             .motion_stopped = !healthy || motion_health_stopped(&health),
             .inputs_ok = healthy && (!line_required ||
                 (copied && snapshot.sample_fresh && snapshot.normalized_valid)),
-            .calibration_valid = snapshot.calibration_valid,
             .guidance_valid = snapshot.guidance_valid,
-            .usable_line = snapshot.normalized_valid && snapshot.capture_kind == IR_CAPTURE_NONE,
+            .usable_line = snapshot.normalized_valid,
             .line = snapshot.line,
             .line_error = snapshot.error,
             .line_sampled_ms = snapshot.sampled_ms,
@@ -177,7 +184,22 @@ static void mission_task(INT stacd, void *exinf)
         }
         if (out.start_refused)
         {
-            tm_printf((UB *)"[MISSION] start refused: %s (reported in telemetry)\n", in.mapped ? "fault set" : "no barcode mapping");
+            tm_printf((UB *)"[MISSION] start refused: mapped=%d "
+                "start_blocked=%d motion_stopped=%d safety_latched=%d "
+                "guidance=%d line=%u ir_fresh=%d network_ready=%d "
+                "imu_startup_done=%d motion_fresh=%d TEST=%d\n",
+                (int)in.mapped, (int)in.start_blocked,
+                (int)in.motion_stopped, (int)in.safety_latched,
+                (int)in.guidance_valid, (unsigned)in.line,
+                (int)(copied && snapshot.sample_fresh),
+                (int)s1_bridge_ready(), (int)s4_startup_complete(),
+                (int)(healthy && health.sequence != 0u &&
+                    robot_time_elapsed(now, health.serviced_ms) <=
+                        SAFETY_STALE_MS), APP_TEST);
+            tm_printf((UB *)"[MISSION] start faults: motion=%u line=%u "
+                "terrain=%u\n", (unsigned)rd_fault_get(RD_OWNER_MOTION),
+                (unsigned)rd_fault_get(RD_OWNER_LINE),
+                (unsigned)rd_fault_get(RD_OWNER_TERRAIN));
         }
         if (out.line_lost)
         {

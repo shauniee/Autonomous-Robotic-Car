@@ -52,9 +52,9 @@ typedef struct
     bool safety_latched;	/* Safety has latched a stop */
     bool motion_stopped;	/* Motion is in its stop latch */
     bool inputs_ok;		/* IR snapshot copied and Motion health read */
-    bool calibration_valid, guidance_valid, usable_line;
+    bool guidance_valid, usable_line;
     IrLine line;
-    int8_t line_error;		/* S3 right - left error, Q7; + means steer right */
+    int8_t line_error;		/* S3 right - left, Q7; + right black, steer left */
     uint32_t line_sampled_ms;
     uint32_t wheel_count[2];
     rd_motion_status_t motion_status;
@@ -103,7 +103,7 @@ typedef struct
     barcode_action_t held;	/* barcode command held for the next cross junction */
     recovery_control_t recovery;
     uint32_t state_since_ms;
-    uint32_t broad_origin[2]; /* broad entry or straight-segment exit pose */
+    uint32_t broad_origin[2]; /* broad entry or active navigation phase origin */
     uint32_t broad_since_ms; /* start of this broad-black encounter, wraps */
     uint8_t manual_held : 1; /* test direction protects held from barcode replacement */
     uint8_t in_broad : 1;
@@ -114,11 +114,7 @@ typedef struct
     uint32_t line_lost_sampled_ms; /* latest LOST acquisition, for continuity */
     uint32_t junction_sampled_ms;
     uint8_t turn_code : 2; /* 0 none, 1 left, 2 right, 3 U-turn */
-    int16_t line_integral_q; /* steering units /32767, +/-LINE_I_LIMIT */
-    int16_t line_prev_error_q; /* filtered error or binary target /32767, -1..+1 */
-    uint32_t line_pid_ms;	/* IR acquisition time of the last PID update */
-    uint8_t line_pid_primed : 1;	/* a previous sample exists for the derivative */
-    int8_t line_steer_q;		/* PID output held until the next IR sample */
+    int8_t line_steer_q; /* fixed digital correction; zero on white/white */
     uint32_t confirmed_sample_ms; /* last sample counted for line confirmation */
     uint32_t pause_since_ms;
     unsigned visible_streak;

@@ -111,10 +111,11 @@ instruction, ordinary line following. Do not blindly resume an interrupted actio
 
 ### Startup and local controls
 
-- Boot inhibited. Attempt stationary IMU calibration before enabling IR calibration;
+- Boot inhibited. Attempt stationary IMU calibration;
   complete or fail the attempt within a bound and expose its outcome. IMU failure
-  is flagged and does not permanently prevent IR calibration or starting.
-- Start requires fresh functional line acquisition and valid calibration/guidance,
+  is flagged and does not permanently prevent starting. Digital IR has no
+  software calibration workflow.
+- Start requires fresh functional line acquisition and valid digital guidance,
   functional Motion/encoder service, an installed four-letter mapping, WiFi and
   MQTT connected, no active stopping cause and a fresh local GP20 press.
 - Connectivity is a readiness prerequisite, not remote motion authority. Mission
@@ -141,12 +142,13 @@ brakes, pauses about 200 ms, turns 180 degrees and tracks the return branch.
 Never undo a turn. Pause reference/placement tolerance is pending D02/D08.
 
 Cross broad black with straight FOLLOW commands, without a fixed-distance
-advance. On leaving a qualified encounter, consume the pending instruction or
+advance. With a queued instruction, consume it and enter navigation on the
+first fresh both-black tracking sample, without travel qualification or waiting
+for black exit. With no queued instruction, leave a qualified encounter and
 drive straight for the requested encoder-measured segment at normal follow
 speed, then resume tracking without outgoing-line confirmation. There is no pre-turn
 DISTANCE action or completion gate. See the [junction revision](project-specs.md#mission-day-barcode-rule).
-Confirm a junction using tracking evidence plus
-travel/geometry qualification. A single black barcode-sensor reading neither
+No-command crossings retain tracking evidence plus travel/geometry qualification. A single black barcode-sensor reading neither
 identifies a barcode nor proves a junction; barcode capture must not block junction
 checks. Exact mounted evidence is D01/D02/D04.
 
@@ -247,7 +249,7 @@ This table owns target policy. `robot_data.c` now leaves IMU/calibration failure
 | GP21 / Motion local input | Block | Latch brake | Eligible GP21 release after serviced brake; GP20 starts separately |
 | Motion bit 0 stall / wheel controller (detection disabled in current trial; see [trial settings](project-specs.md#pending-decisions)) | Block while active | Latch stop | Cause cleared plus local reset; threshold uncalibrated D07 |
 | Motion bit 1 encoder / invalid edges or failed capture | Block | Latch stop | Validated encoder recovery; existing 64-count rule is provisional D03 |
-| Line bit 0 acquisition invalid / S3 | Block | Stop if required acquisition invalid/stale | Valid readings/calibration and local reset |
+| Line bit 0 acquisition invalid / S3 | Block | Stop if required acquisition invalid/stale | Valid digital readings and local reset |
 | Healthy line lost / Mission | No start on unusable line | Bounded REACQUIRE, then stop if exhausted | Line confirmed or operator reposition/reset |
 | Line bits 1/2 barcode capture/event overflow | Report | Report; never guess/replay an action | Existing encounter/run clearing behavior audited during integration |
 | Terrain bits 0/1 IMU acquisition/calibration failure | Flag, allow after bounded startup attempt | Flag; ordinary tracking continues | Successful reacquisition/calibration; no invented height |

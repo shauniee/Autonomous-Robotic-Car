@@ -169,26 +169,29 @@ No active CMake target. The local checkpoint includes an optional dashboard; it 
 1. Check pins and conflicts ([team](docs/team.md#2-pins)). The user confirms documented wiring; actual active software and physical acceptance depend on the exact flashed revision. See [task ownership](docs/architecture.md#tasks) and the exact flashed source.
 2. Hold BOOTSEL while connecting USB; release when **RPI-RP2** appears; copy the matching **TEST** UF2 to the drive (WSL: `explorer.exe build_make`). The Pico reboots.
 3. Open USB serial at 115200: `screen /dev/tty.usbmodem<device> 115200` (Linux `/dev/ttyACM0`; Windows PuTTY/Serial Monitor on the COM port). Quit screen: Ctrl-A, K.
-4. Inspect startup, `[TEST] <ID> PASS|FAIL`, `[IR] ... SENSOR_ONLY` / `[LINE] ... MOTOR_INHIBITED`. Console output reports acquisition/calibration/state, not motor movement or measured duty. Record failures via [testing](testing/README.md).
+4. Inspect startup, `[TEST] <ID> PASS|FAIL`, `[IR] ... SENSOR_ONLY` / `[LINE] ... MOTOR_INHIBITED`. Console output reports digital acquisition/state, not motor movement or measured duty. Record failures via [testing](testing/README.md).
 5. Before normal physical use: verify motor/encoder polarity and record raised-wheel baseline and stop response. Flash the normal image, disconnect USB, connect the battery/power bank alone. Use camera/scope and optional wireless observations as physical evidence.
 
 ### Calibration and local controls
 
-The table below describes the working software control flow; physical release is pending the plan's calibration gates. Calibration is RAM-only; use the real mounting and surface. Enable audible buzzer feedback using its mute switch.
+The table below describes the working software control flow; physical release is pending the plan's calibration gates. IMU calibration is RAM-only; verify digital IR with the real mounting and surface. Enable audible buzzer feedback using its mute switch.
 
-Target startup/control instructions are owned by [architecture](docs/architecture.md#startup-and-local-controls): bounded boot IMU calibration attempt before IR calibration; WiFi/MQTT required at start; eligible GP21 release returns READY, then fresh GP20 starts. This reset behavior is implemented in the working source.
+Target startup/control instructions are owned by [architecture](docs/architecture.md#startup-and-local-controls): bounded boot IMU calibration attempt; digital IR needs no software calibration; WiFi/MQTT required at start; eligible GP21 release returns READY, then fresh GP20 starts. This reset behavior is implemented in the working source.
 
 | Step | Action | Expected response |
 | --- | --- | --- |
-| Black | Stopped/Ready, release then press GP20 with both sensors over black; hold through capture | One chirp on completed capture |
-| White | Release then press GP20 over white; hold through capture | Two chirps valid pair; three rejection |
 | Map | `python3 scripts/mqtt_client.py map <L> <R> <S> <U> --broker <ip>` while stopped | `MAPPING ACK ... OK`; telemetry shows `mapped=yes` |
-| Start | Sensors on visible line, release then press GP20 | FOLLOW_LINE if mapped, calibration/data qualify and no start-blocking fault; otherwise refused and reported in telemetry. TEST still inhibits motors |
-| Stop | Press GP21 | Persistent stop; capture cancelled |
-| Reset | Clear cause; freshly press GP21, then release after braking is serviced | STOPPED to READY; valid calibration kept; no movement. A separate fresh GP20 press starts |
+| Start | Sensors on visible line, release then press GP20 | FOLLOW_LINE if mapped, fresh digital IR/data qualify and no start-blocking fault; otherwise refused and reported in telemetry. TEST still inhibits motors |
+| Stop | Press GP21 | Persistent stop; barcode scanning stopped |
+| Reset | Clear cause; freshly press GP21, then release after braking is serviced | STOPPED to READY; IMU calibration kept; no movement. A separate fresh GP20 press starts |
 | Restart | Release GP20, press again on a visible line | Fresh start; held buttons never restart |
 
-Capture duration/contrast and classification: [subsystem3](docs/architecture/subsystem3.md). Starting on fully white or broad black is rejected. Reboot replaces a completed calibration; failed white contrast clears both references. A plausible raw ADC value does not prove correct wiring. Controls are local; USB text commands and MQTT calibration/start/stop are retired. If capture is rejected, keep stopped and check connection, height, lighting, surface, raw contrast. If the controller stops, record the reason before reset. Software state does not prove the wheels are stationary.
+Digital classification: [subsystem3](docs/architecture/subsystem3.md). No IR
+black/white capture or calibration presses are needed. Both white means forward;
+both black means junction and cannot start a run. Check DOUT wiring, black
+polarity and comparator thresholds before physical use. Controls are local;
+GP20 starts and GP21 stops/resets. If stopped, record the reason before reset.
+Software state does not prove the wheels are stationary.
 
 ### Wireless telemetry
 

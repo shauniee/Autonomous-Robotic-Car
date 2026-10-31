@@ -56,8 +56,8 @@ Nicholas reviews this documentation plan; subsystem responsibilities remain.
 | GP20 | Nicholas | Onboard active-low calibration/start; target fresh start only after eligible reset |
 | GP21 | Nicholas | Onboard active-low stop/cancel; target eligible release-to-ready handshake |
 | GP22 | Nicholas | Onboard PWM buzzer; mute switch controls audibility |
-| GP26 | Nicholas | Left line IR AOUT, Grove 5 / ADC0; disconnect Grove 6 shared GP26 contact |
-| GP27 | Nicholas | Right line IR AOUT, Grove 6 / ADC1 |
+| GP26 | Nicholas | Left line IR DOUT, Grove 5 / digital input; disconnect Grove 6 shared GP26 contact |
+| GP27 | Nicholas | Right line IR DOUT, Grove 6 / digital input |
 | GP28 | Mahesha | Left encoder A, Grove 7, red; ADC2-capable but used digitally; open battery jumper |
 
 User confirmation 2026-10-29: physical wiring matches this allocation and sonar electrical behavior is confirmed; motor/encoder polarity is not confirmed. This does not append a measured test result.
@@ -65,13 +65,13 @@ User confirmation 2026-10-29: physical wiring matches this allocation and sonar 
 ### Supply and wires
 
 - Power bank: red to green terminal VIN+, black to VIN-. Verify polarity.
-- Encoders: white to 3V3, blue to GND. Line/barcode IR: VCC to 3V3, GND to GND; both line DOUT wires stay disconnected.
+- Encoders: white to 3V3, blue to GND. Line/barcode IR: VCC to 3V3, GND to GND; connect line DOUT to GP26/GP27; both line AOUT wires stay disconnected.
 - GY-511: Vin to 3V3, GND to GND; separate `3.3`, INT1, INT2, DRDY disconnected. Reported HC-SR04P: VCC to 3V3, GND to GND, Trig to GP2, Echo to GP3; verify variant and Echo HIGH (at most 3.3 V) before connection.
 - SG90: red to +, brown to -; verify carrier silkscreen and supply rail.
 
 ### Wiring conflicts
 
-- Grove 5 and Grove 6 share GP26; joining analogue outputs is unsafe, keep the Grove 6 GP26 contact disconnected.
+- Grove 5 and Grove 6 share GP26; joining independent sensor outputs is unsafe, keep the Grove 6 GP26 contact disconnected.
 - GP28 battery sensing stays disconnected via its jumper while GP28 is the left encoder.
 - UART0 console/crash reporting claim GP0/GP1: use `CONSOLE=usb_cdc CRASH_REPORT=0` with encoders attached.
 - Grove 2 and the Maker port share GP2/GP3; do not attach independent devices to both.

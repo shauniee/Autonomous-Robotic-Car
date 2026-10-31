@@ -8,7 +8,7 @@
 
 
 ER subsystem3_init(void);
-void s3_step(uint32_t now_ms, bool calibration_enabled);
+void s3_step(uint32_t now_ms);
 /* 
  * Coherent copy; waits at most 2 ms for the publisher. False means null,
  * uninitialized, or lock/unlock error;

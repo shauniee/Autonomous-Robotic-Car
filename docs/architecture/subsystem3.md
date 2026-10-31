@@ -4,9 +4,9 @@
 
 - [1. Functionality](#1-functionality)
 - [2. Line tracking](#2-line-tracking)
-  - [2.1 Acquisition and calibration bounds (implemented in software)](#21-acquisition-and-calibration-bounds-implemented-in-software)
-  - [2.2 Calibration workflow](#22-calibration-workflow)
-  - [2.3 Normalization, classification and guidance](#23-normalization-classification-and-guidance)
+  - [2.1 Digital acquisition](#21-digital-acquisition)
+  - [2.2 Local controls](#22-local-controls)
+  - [2.3 Digital classification and guidance](#23-digital-classification-and-guidance)
 - [3. Barcode](#3-barcode)
   - [3.1 Scope](#31-scope)
   - [3.2 Capture and encounter lifecycle](#32-capture-and-encounter-lifecycle)
@@ -24,16 +24,18 @@
   - [7.2 Proposed or not established](#72-proposed-or-not-established)
 - [8. Open items](#8-open-items)
 
+- [Digital tracking revision (2026-10-31)](#digital-tracking-revision-2026-10-31)
+
 ## 1. Functionality
 
-Owner Nicholas. Target S3 retains line acquisition, calibration, guidance and
+Owner Nicholas. Target S3 retains line acquisition, digital guidance and
 barcode capture/decoding; Mission coordination moves to `app_program/mission/`.
 No separate S3 or Safety task in target. [Plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns work order,
 [architecture](../architecture.md#mission-loop) owns Mission/controls/recovery,
 [specs](../project-specs.md) owns course facts/data widths and
 [team](../team.md#2-pins) owns wiring.
 
-Two analogue tracking sensors GP26/ADC0 and GP27/ADC1 follow the 18 mm line;
+Two digital tracking sensors GP26 and GP27 follow the 18 mm line;
 GP16 digital IR reads the left barcode lane. A single black barcode reading
 cannot identify a character or junction. Read a complete frame using encoder
 travel; continue line acquisition while capture is active. Keep decoding bounded
@@ -41,53 +43,27 @@ per Mission release and never wait for an entire print or manoeuvre.
 
 ## 2. Line tracking
 
-### 2.1 Acquisition and calibration bounds (implemented in software)
+### 2.1 Digital acquisition
 
-Reuse paired ADC acquisition and bounded conversion timeout/polling. Do not publish
-a half-updated pair. Preserve original sample time; failed acquisition and failed
-calibration produce explicit invalidity, not a plausible zero reading. Tunables
-live in `robot_config.h`; current periods/thresholds are not calibrated target limits.
-Raw range and Q7 fractions/error are defined in the [data table](../project-specs.md#5-data-representation-table-week-13).
+DOUT GPIO sampling acquires both inputs from one register snapshot every
+`IR_SAMPLE_MS`. Preserve acquisition time and reject invalid/stale readings.
+No ADC acquisition, black/white references, capture accumulators or software
+IR calibration are used. IMU boot calibration remains independent.
 
-### 2.2 Calibration workflow
+### 2.2 Local controls
 
-Target: stationary boot IMU calibration attempt completes/fails visibly before
-IR calibration is enabled. IR black capture then white capture uses GP20 while
-stopped, one chirp then two for an accepted pair (rejection three chirps).
-Calibrate each mounted sensor independently under course lighting. Keep motion
-inhibited throughout. GP21 cancels/stops. Local stop keeps valid references;
-reboot clears RAM-only references. Target GP20 starts only after prerequisites;
-the current software workflow is in README.
+GP20 starts when Mission prerequisites are met; GP21 stops/resets.
+There is no IR calibration button sequence or calibration buzzer feedback.
+Check each module's comparator threshold and `IR_BLACK_LEVEL` against actual
+black/white surfaces. Wiring is owned by [team](../team.md#2-pins).
 
-### 2.3 Normalization, classification and guidance
+### 2.3 Digital classification and guidance
 
-Preserve normalized black fractions, signed two-sensor error and explicit UNKNOWN,
-VISIBLE, LOST and BROAD_BLACK classification. Thresholds remain provisional D04/D07.
-UNKNOWN from failed/stale acquisition differs from fresh white/white loss.
-Line guidance and S2 wheel PID are different loops; preserve existing guidance
-until tuning is verified, and never call P-only code physically validated PID.
-Remote main guidance is P-based; the local checkpoint adds Mission line-loop tuning.
-
-`LINE_BINARY_RAMP` in `robot_config.h` selects guidance at build time: 0
-(default) keeps the existing filtered PID; 1 uses only the sign of the paired
-sensor error. Rebuild and flash after changing it. Binary mode requests
-`LINE_BINARY_START` steering, builds by `LINE_BINARY_RATE` per second of
-fresh same-direction acquisitions up to `MAX_STEER`, and clears buildup on
-reversal, zero error, acquisition gap or controller reset. Output still uses
-the steering slew limit and curve slowdown; line I/D are bypassed. Start/rate
-are provisional D07 tuning values, not physical passes. Wheel-speed PID,
-analogue wiring/calibration and line classifications are retained. This is
-two-sensor direction tracking, not single-sensor left-edge following.
-It does not resolve black/black curve/junction ambiguity (D02/D04/D07).
-Standalone recovery hands usable visible sensing back to tracking immediately; see the
-[recovery contract](../architecture.md#recovery-and-encounter-coordination).
-
-At a no-turn junction use the requested straight encoder segment, then resume
-tracking without visible confirmation. See the
-[junction revision](../project-specs.md#mission-day-barcode-rule). BROAD_BLACK is evidence, not automatic finish
-or sufficient proof of junction centre. Qualification uses mounting and encoder
-travel, pending D02/D04/D07. Target line loss enters bounded stop-then-pivot sweep recovery;
-it does not universally latch on the first white sample.
+Left-only black steers right, right-only black steers left, both white drives
+forward and both black immediately starts a queued direction; unqueued crossings retain qualification. Fixed
+steering replaces line PID/filter/ramp; Motion retains wheel-speed PID.
+UNKNOWN means invalid/stale input. White/white cannot distinguish centred
+travel from a lost line. Existing junction action and stop policies remain.
 
 ## 3. Barcode
 
@@ -173,7 +149,7 @@ Policy: [fault table](../architecture.md#fault-bitmask).
 to the next junction, consumed once and followed onto the selected outgoing route.
 U-turn pauses about 200 ms while stopped then turns once; no turn is undone.
 Safety becomes small Mission/Motion functions; Motion independently enforces stop.
-Calibration/mapping are READY prerequisites; no CALIBRATE/COMPLETE target states.
+Fresh digital guidance/mapping are READY prerequisites; no CALIBRATE/COMPLETE target states.
 
 ## 7. Status
 
@@ -210,3 +186,44 @@ junction or consume its held barcode. Qualified straight/unmapped crossings
 use the straight-segment revision above before ordinary tracking. All A-Z now
 have both-orientation/two-scale host fixtures; physical print/mounting tests
 remain pending.
+
+## Digital tracking revision (2026-10-31)
+
+Line tracking now samples DOUT on GP26 (left) and GP27 (right) as GPIO.
+Disconnect AOUT before connecting DOUT. `IR_BLACK_LEVEL` is 1 (HIGH black, LOW white), changed after both-white
+was reported as broad black with the previous LOW-black setting;
+verify polarity with each module over black and white and adjust its comparator
+potentiometer. This wiring/polarity is a required change, not an observed pass.
+No software black/white capture is needed; GP20 is available for local start.
+
+Left-only black steers right, right-only black steers left, both white drives
+forward and both black immediately starts a queued direction; unqueued crossings retain qualification. White/white cannot distinguish centred travel from losing the line with this
+sensor arrangement. Stale/invalid acquisition still stops through existing safety.
+
+Line PID/filter/ramp history is removed; wheel-speed PID remains in Motion.
+Normal tracking is 70 mm/s (double the prior 35). A single black sensor
+requests full differential correction: inside wheel 0, outside wheel 140 mm/s.
+This is provisional physical tuning, not a measured curve-tracking pass.
+With no queued instruction, broad-black entry holds half tracking speed (35)
+until qualified black exit. Queued directions enter navigation on the first
+fresh usable both-black sample, without waiting for travel or black exit.
+Straight navigation ramps from 35 to 70 over its 25 mm exit distance.
+Left/right/U-turn navigation ramps from 35 to 70 over the combined pivot wheel
+arc and 60 mm clear distance; it does not restart at half speed for the clear
+phase. The U-turn's stationary pause remains. Ramp progress comes from signed,
+wrap-safe encoders and is clamped to 0..1; elapsed time without motion cannot
+increase speed. Confirmation uses full tracking speed, then tracking resumes.
+Motion retains its approach braking at action endpoints, so the ramp is a
+requested speed ceiling, not a promise of constant physical acceleration or
+full measured wheel speed at the pivot endpoint. Hump reductions remain.
+No-command junction qualification, action limits, stop and obstacle policies remain.
+IR calibration/capture state and APIs are removed entirely. Digital endpoint
+fields retain their Q7 scale for steering consumers, with no stored references.
+These paragraphs supersede analogue tracking descriptions earlier in this guide.
+
+Mounted steering correction (2026-10-31): with pins confirmed correct, the user
+observed left-black turning left and right-black turning right. Mission now
+maps left-black error -127 to steering -127 and right-black +127 to +127,
+reversing the previous correction. The shared mapping also feeds bypass line
+following. GPIO assignments, normalization and queued-junction handling remain.
+Physical confirmation of this change is pending.

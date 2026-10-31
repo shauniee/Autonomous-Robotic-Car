@@ -16,50 +16,6 @@ void mission_init(Mission *m, uint32_t now_ms)
     *m = (Mission){.state = MISSION_READY, .state_since_ms = now_ms};
 }
 
-static void line_pid_reset(Mission *m)
-{
-    m->line_integral_q = 0;
-    m->line_pid_primed = false;
-    m->line_steer_q = 0;
-}
-
-/* Private history: /32767 preserves exact +/-1 endpoints. Float is local
-   computation only; clamp before narrowing and never store INT16_MIN. */
-#define MISSION_PID_SCALE 32767.0f
-_Static_assert(LINE_I_LIMIT <= 1.0f, "integral history scale requires limit <=1");
-_Static_assert(MAX_STEER <= 1.0f, "held steering must fit signed Q7");
-
-static int16_t mission_pid_encode(float value)
-{
-    if (!isfinite(value))
-    {
-        return 0;
-    }
-    value = fminf(fmaxf(value, -1.0f), 1.0f);
-    return (int16_t)lroundf(value * MISSION_PID_SCALE);
-}
-
-static float mission_line_integral_get(const Mission *m)
-{
-    return (float)m->line_integral_q / MISSION_PID_SCALE;
-}
-
-static void mission_line_integral_set(Mission *m, float value)
-{
-    m->line_integral_q = mission_pid_encode(
-        fminf(fmaxf(value, -LINE_I_LIMIT), LINE_I_LIMIT));
-}
-
-static float mission_line_prev_error_get(const Mission *m)
-{
-    return (float)m->line_prev_error_q / MISSION_PID_SCALE;
-}
-
-static void mission_line_prev_error_set(Mission *m, float value)
-{
-    m->line_prev_error_q = mission_pid_encode(value);
-}
-
 static float mission_turn_target_get(const Mission *m)
 {
     switch (m->turn_code)
@@ -86,89 +42,52 @@ static void enter(Mission *m, MissionState next, uint32_t now_ms)
     m->state = next;
     m->state_since_ms = now_ms;
     m->line_loss_pending = 0u;
-    line_pid_reset(m);	/* every run segment starts without PID history */
+    m->line_steer_q = 0;
 }
 
-/* Line PID on the two-sensor error (right - left). It updates once per new IR
-   acquisition (dt from acquisition times) and holds its output between
-   samples. The nearly binary IR edge makes the error step, so it is first
-   low-pass filtered (LINE_ERROR_TAU_MS); P, I and D all act on the filtered
-   error. The steering may change by at most LINE_STEER_RATE per second, so a
-   line found again after a gap is rejoined gently. The result is signed Q7
-   steering limited to MAX_STEER. LINE_BINARY_RAMP instead uses only the raw
-   error sign; previous-error storage holds its bounded steering target. */
-static int line_pid_steering(Mission *m, const MissionInputs *in)
+/* Steering sign follows the mounted robot's observed turn direction. */
+static int line_digital_steering(Mission *m, const MissionInputs *in)
 {
-    if (m->line_integral_q == INT16_MIN || m->line_prev_error_q == INT16_MIN)
-    {
-        line_pid_reset(m);
-    }
-    if (m->line_pid_primed && in->line_sampled_ms == m->line_pid_ms)
-    {
-        return m->line_steer_q;
-    }
-    float error = (float)in->line_error / (float)IR_SCALE_ONE;
-    float integral = mission_line_integral_get(m);
-    float derivative = 0.0f;
-    float dt = (float)IR_SAMPLE_MS / 1000.0f;	/* nominal step for the first sample */
-    uint32_t dt_ms = in->line_sampled_ms - m->line_pid_ms;
-    bool continuous = m->line_pid_primed && dt_ms > 0u &&
-        dt_ms <= IR_MAX_GAP_MS;
-    if (continuous)
-    {
-        dt = (float)dt_ms / 1000.0f;
-    }
-    float steer;
-    if (LINE_BINARY_RAMP)
-    {
-        float prior = continuous ? mission_line_prev_error_get(m) : 0.0f;
-        bool same_side = (error > 0.0f && prior > 0.0f) ||
-            (error < 0.0f && prior < 0.0f);
-        float magnitude = same_side ?
-            fminf(fabsf(prior) + LINE_BINARY_RATE * dt, MAX_STEER) :
-            LINE_BINARY_START;
-        error = error > 0.0f ? magnitude :
-            (error < 0.0f ? -magnitude : 0.0f);
-        integral = 0.0f;
-        steer = error;
-        if (!continuous)
-        {
-            m->line_steer_q = 0;
-        }
-        /* shortcut: sign alone cannot distinguish curves from junctions;
-           revise qualification after mounted curve/junction trials. */
-    }
-    else
-    {
-        if (continuous)
-        {
-            float prior_error = mission_line_prev_error_get(m);
-            error = prior_error + (error - prior_error) * dt /
-                (LINE_ERROR_TAU_MS / 1000.0f + dt);
-            derivative = (error - prior_error) / dt;
-            integral = fminf(fmaxf(integral + LINE_KI * error * dt,
-                -LINE_I_LIMIT), LINE_I_LIMIT);
-        }
-        steer = LINE_KP * error + integral + LINE_KD * derivative;
-    }
-    float previous = (float)m->line_steer_q / (float)IR_SCALE_ONE;
-    float step = LINE_STEER_RATE * dt;
-    steer = fminf(fmaxf(steer, previous - step), previous + step);
-    steer = fminf(fmaxf(steer, -MAX_STEER), MAX_STEER);
-    mission_line_prev_error_set(m, error);
-    mission_line_integral_set(m, integral);
-    m->line_pid_ms = in->line_sampled_ms;
-    m->line_pid_primed = true;
-    m->line_steer_q = (int8_t)lroundf(steer * (float)IR_SCALE_ONE);
+    int correction = (int)lroundf(MAX_STEER * IR_SCALE_ONE);
+    m->line_steer_q = in->line_error < 0 ? -correction :
+        (in->line_error > 0 ? correction : 0);
     return m->line_steer_q;
 }
 
-/* Follow speed slows with steering so a curve gets time to be corrected:
-   full speed straight, (1 - LINE_CURVE_SLOWDOWN) of it at MAX_STEER. */
 static float line_follow_speed(int steer_q)
 {
-    float share = fminf((float)abs(steer_q) / (MAX_STEER * (float)IR_SCALE_ONE), 1.0f);
-    return floorf(MISSION_FOLLOW_SPEED_MMPS * (1.0f - LINE_CURVE_SLOWDOWN * share));
+    (void)steer_q;
+    return MISSION_FOLLOW_SPEED_MMPS;
+}
+
+/* Ramp by completed travel, not elapsed time: a stalled robot never gains
+   speed. Reuse broad_origin for the active navigation phase's encoder pose.
+   Turns and their clear distance form one ramp, without a reset at CLEAR. */
+static float junction_speed(const Mission *m, const MissionInputs *in)
+{
+    float travelled = enc_mean_travel(in->wheel_count, m->broad_origin) /
+        ENC_COUNTS_PER_MM;
+    float total = MISSION_STRAIGHT_MM;
+    if (m->phase != JUNCTION_PHASE_STRAIGHT)
+    {
+        float degrees = mission_turn_target_get(m);
+        float arc = fabsf(degrees) * 0.00872664626f * TRACK_WIDTH_MM;
+        total = arc + MISSION_CLEAR_MM;
+        if (m->phase == JUNCTION_PHASE_TURN)
+        {
+            float heading = enc_heading_deg(
+                enc_travel_signed(in->wheel_count[0], m->broad_origin[0]),
+                enc_travel_signed(in->wheel_count[1], m->broad_origin[1]));
+            float share = fminf(fmaxf(heading / degrees, 0.0f), 1.0f);
+            travelled = share * arc;
+        }
+        else
+        {
+            travelled += arc;
+        }
+    }
+    float progress = fminf(fmaxf(travelled / total, 0.0f), 1.0f);
+    return floorf(MISSION_FOLLOW_SPEED_MMPS * (0.5f + 0.5f * progress));
 }
 
 static uint8_t next_action_id(Mission *m)
@@ -187,7 +106,7 @@ static MotionCommand stop_command(uint32_t now_ms)
    fail closed as a STOP command rather than being truncated. */
 static MotionCommand action_command(motion_mode_t mode, float speed, float target, uint8_t id, uint32_t now_ms)
 {
-    return motion_command_make(mode, speed, target, 0, id, now_ms);
+    return motion_command_make(mode, floorf(speed), target, 0, id, now_ms);
 }
 
 static MotionCommand follow_command(const MissionInputs *in, float speed, int steering_q, uint8_t id)
@@ -196,7 +115,7 @@ static MotionCommand follow_command(const MissionInputs *in, float speed, int st
     {
         speed *= 0.5f;
     }
-    return motion_command_make(MOTION_MODE_FOLLOW, speed, 0.0f,
+    return motion_command_make(MOTION_MODE_FOLLOW, floorf(speed), 0.0f,
                                steering_q, id, in->line_sampled_ms);
 }
 
@@ -240,7 +159,7 @@ static void handle_ready(Mission *m, const MissionInputs *in, MissionOutputs *ou
         return;
     }
     if (!in->mapped || in->start_blocked || in->motion_stopped ||
-        in->safety_latched || !in->guidance_valid || !in->calibration_valid)
+        in->safety_latched || !in->guidance_valid)
     {
         out->start_refused = true;
         return;
@@ -322,12 +241,14 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
     }
     observe_junction(m, in);
 
-    if (m->in_broad && !broad && in->usable_line)
+    bool queued_junction = broad && m->held != BARCODE_UNMAPPED &&
+        robot_time_elapsed(in->now_ms, in->line_sampled_ms) <= IR_MAX_GAP_MS;
+    if (queued_junction || (m->in_broad && !broad && in->usable_line))
     {
         m->in_broad = false;
-        if (m->junction_qualified)
+        if (queued_junction || m->junction_qualified)
         {
-            /* Cross junction: execute the held command, else carry straight on. */
+            /* A queued direction starts on the first fresh both-black sample. */
             barcode_action_t action = m->held;
             m->held = BARCODE_UNMAPPED;
             m->manual_held = 0u;
@@ -337,13 +258,15 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
                     JUNCTION_PHASE_PAUSE_WAIT : JUNCTION_PHASE_TURN;
                 m->current_action = next_action_id(m);
                 mission_turn_target_set(m, action);
+                m->broad_origin[0] = in->wheel_count[0];
+                m->broad_origin[1] = in->wheel_count[1];
                 enter(m, MISSION_NAVIGATE, in->now_ms);
                 out->event_kind = MQTT_EVENT_TURN;
                 out->event_arg = (uint8_t)action;
                 if (m->phase == JUNCTION_PHASE_TURN)
                 {
                     out->command = action_command(MOTION_MODE_TURN,
-                        MISSION_TURN_SPEED_MMPS, mission_turn_target_get(m),
+                        junction_speed(m, in), mission_turn_target_get(m),
                         m->current_action, in->now_ms);
                 }
                 return;
@@ -352,7 +275,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
             m->broad_origin[0] = in->wheel_count[0];
             m->broad_origin[1] = in->wheel_count[1];
             enter(m, MISSION_NAVIGATE, in->now_ms);
-            out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS,
+            out->command = follow_command(in, junction_speed(m, in),
                 0, 1u);
             return;
         }
@@ -363,7 +286,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         /* Track straight across broad black without a fixed-distance action.
            Qualification and the encounter deadline remain independent. */
         m->visible_streak = 0u;
-        line_pid_reset(m);
+        m->line_steer_q = 0;
         out->command = follow_command(in, MISSION_BROAD_SPEED_MMPS, 0, 1u);
         return;
     }
@@ -419,7 +342,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         to_stop(m, in, out, true);
         return;
     }
-    int steer = line_pid_steering(m, in);
+    int steer = line_digital_steering(m, in);
     out->command = follow_command(in, line_follow_speed(steer), steer, 1u);
 }
 
@@ -446,7 +369,7 @@ static bypass_input_t bypass_input(Mission *m, const MissionInputs *in)
         .line_functional = in->usable_line,
         .line_visible = in->line == IR_LINE_VISIBLE && in->guidance_valid,
         .line_error_q = in->line_error,
-        .line_steering_q = (int8_t)line_pid_steering(m, in),
+        .line_steering_q = (int8_t)line_digital_steering(m, in),
         .motion_status = in->motion_status, .motion_action = in->motion_action};
 }
 
@@ -580,7 +503,7 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
             handle_follow(m, in, out);
             return;
         }
-        out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS, 0, 1u);
+        out->command = follow_command(in, junction_speed(m, in), 0, 1u);
         return;
     }
     if (m->phase == JUNCTION_PHASE_PAUSE_WAIT)
@@ -603,6 +526,8 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
             MISSION_UTURN_PAUSE_MS)
         {
             m->phase = JUNCTION_PHASE_TURN;
+            m->broad_origin[0] = in->wheel_count[0];
+            m->broad_origin[1] = in->wheel_count[1];
         }
         else
         {
@@ -615,6 +540,7 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
         {
             m->in_broad = false;
             enter(m, MISSION_FOLLOW_LINE, in->now_ms);
+            handle_follow(m, in, out);
             return;
         }
         if (!in->usable_line)
@@ -622,7 +548,7 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
             to_stop(m, in, out, true);
             return;
         }
-        out->command = follow_command(in, MISSION_BROAD_SPEED_MMPS, 0, 1u);
+        out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS, 0, 1u);
         return;
     }
     bool mine = in->motion_action == m->current_action;
@@ -636,6 +562,8 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
         if (m->phase == JUNCTION_PHASE_TURN)
         {
             m->phase = JUNCTION_PHASE_CLEAR;
+            m->broad_origin[0] = in->wheel_count[0];
+            m->broad_origin[1] = in->wheel_count[1];
             m->current_action = next_action_id(m);
         }
         else
@@ -647,9 +575,9 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
         }
     }
     out->command = m->phase == JUNCTION_PHASE_TURN
-        ? action_command(MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS,
+        ? action_command(MOTION_MODE_TURN, junction_speed(m, in),
             mission_turn_target_get(m), m->current_action, in->now_ms)
-        : action_command(MOTION_MODE_DISTANCE, MISSION_CLEAR_SPEED_MMPS,
+        : action_command(MOTION_MODE_DISTANCE, junction_speed(m, in),
             MISSION_CLEAR_MM, m->current_action, in->now_ms);
 }
 

@@ -90,17 +90,9 @@
 #define IR_ADC_MAX		4095u
 #define IR_SAMPLE_MS		20u
 #define IR_MAX_GAP_MS		60u
-#define IR_CAPTURE_MS		500u
-#define IR_CAPTURE_MIN_SAMPLES	25u
-#define IR_MIN_CONTRAST		300u	/* PROVISIONAL (D04): calibration rejected (three chirps) if black-white is smaller; fix by sensor height */
-#define IR_WHITE_ENTER		0.15f	/* PROVISIONAL (D04): both below this black fraction = white/white (LOST) */
-#define IR_WHITE_EXIT		0.25f	/* PROVISIONAL (D04) */
-#define IR_BROAD_BLACK		0.85f	/* PROVISIONAL (D04): both above this = broad black (junction/finish) */
 #define IR_LEFT_PIN		26u
 #define IR_RIGHT_PIN		27u
-#define ADC_BUDGET_US		2000u
-#define ADC_POLL_LIMIT		4096u
-#define ADC_AVERAGE_COUNT	8u
+
 
 #define SAFETY_STALE_MS		60u	/* PROVISIONAL (D07): required-producer age limit */
 #define SAFETY_BOOT_GRACE_MS	1500u	/* producers may be silent this long after boot */
@@ -128,47 +120,16 @@
 #define MISSION_CONFIRM_SAMPLES 3u
 #define BASE_DUTY		0.25f	/* PROVISIONAL (D07) */
 #define BROAD_DUTY		0.20f	/* PROVISIONAL (D07) */
-#define MAX_STEER		0.55f	/* tracking steering limit */
-/* Line PID on the two-sensor error (right - left black fraction, -1..+1; the
-   sensors sit on the 18 mm line's edges), output in steering units (+-1 = full
-   differential, then limited to MAX_STEER). The IR edge is nearly binary, so
-   the error is low-pass filtered first and D is off.
-   Both wheels always drive: left = speed * (1 + steering), right = speed *
-   (1 - steering), so at MAX_STEER 0.60 the slower wheel still runs at 40%.
-
-   LINE TRACKING TUNING (change one value, rebuild, flash, recalibrate):
-   - Zig-zags / jerks left-right on straights -> lower LINE_KP, or raise
-     LINE_ERROR_TAU_MS (smoother but slower to react).
-   - Runs wide or leaves the line on curves -> raise LINE_KP, then
-     LINE_CURVE_SLOWDOWN (slows more in curves), then MAX_STEER.
-   - Slow side-to-side sway, or sits off-centre on long straights -> lower
-     LINE_KI (sway) or raise it a little (steady offset).
-   - Swings across the line when it finds it again (after a gap or search)
-     -> lower LINE_STEER_RATE; reacts too slowly entering curves -> raise it.
-   - Faster overall -> raise MISSION_FOLLOW_SPEED_MMPS. The build checks that
-     the fastest wheel (follow speed x LINE_PEAK_WHEEL, about 1.04 now) stays
-     within MOTION_SPEED_MAX_MMPS (at most 511, the command field). */
-#define LINE_KP			0.40f	/* PROVISIONAL (D07): steering per unit error */
-#define LINE_KI			0.35f	/* PROVISIONAL (D07): steering per unit error x s */
-#define LINE_KD			0.000f	/* PROVISIONAL (D07): steering per unit error / s */
-#define LINE_I_LIMIT		0.40f	/* cap on the integral term, steering units (anti-windup) */
-#define LINE_ERROR_TAU_MS	60.0f	/* PROVISIONAL (D07): error low-pass time constant */
-#define LINE_CURVE_SLOWDOWN	0.40f	/* PROVISIONAL (D07): speed cut at MAX_STEER (0.4 = 60% speed) */
-#define LINE_STEER_RATE		3.0f	/* PROVISIONAL (D07): max steering change per second (0 to MAX_STEER in 0.2 s) */
-
-/* Rebuild with 1 for binary direction + bounded buildup; 0 retains PID.
-   Both modes use the existing two-sensor mounting and classifications. */
-#ifndef LINE_BINARY_RAMP
-#define LINE_BINARY_RAMP 0
-#endif
-#define LINE_BINARY_START 0.12f /* PROVISIONAL (D07): initial steering magnitude */
-#define LINE_BINARY_RATE 0.80f /* PROVISIONAL (D07): buildup per second, to MAX_STEER */
+#define MAX_STEER		1.0f	/* digital correction: inside wheel stops */
+/* Digital line tracking uses a fixed correction magnitude MAX_STEER.
+   White reported as black with LOW polarity; use HIGH for black. */
+#define IR_BLACK_LEVEL 1u
 
 /* --- Mission (S3). UNMEASURED PLACEHOLDERS until #59/#61 (D01, D02, D07) ----- */
-#define MISSION_FOLLOW_SPEED_MMPS 70.0f /* D07: scaled to measured counts/mm */
-#define MISSION_BROAD_SPEED_MMPS 14.0f /* D07: preserves prior count speed */
-#define MISSION_TURN_SPEED_MMPS 15.0f /* D07: preserves prior count speed */
-#define MISSION_CLEAR_SPEED_MMPS 15.0f /* D07: preserves prior count speed */
+#define MISSION_FOLLOW_SPEED_MMPS 70.0f /* user: double 35 mm/s */
+#define MISSION_BROAD_SPEED_MMPS (MISSION_FOLLOW_SPEED_MMPS * 0.5f)
+#define MISSION_TURN_SPEED_MMPS MISSION_FOLLOW_SPEED_MMPS
+#define MISSION_CLEAR_SPEED_MMPS MISSION_FOLLOW_SPEED_MMPS
 #define MISSION_CLEAR_MM		60.0f	/* PROVISIONAL (D02): drive clear of a junction after a turn */
 #define MISSION_STRAIGHT_MM 25u /* user: straight exit before tracking */
 #define MISSION_JUNCTION_MIN_COUNTS	6u	/* PROVISIONAL (D02): broad black this long is a junction */
@@ -185,6 +146,7 @@
 #define MISSION_PASS_JUMP_MM		150u	/* PROVISIONAL (D05): side range jump marking pass-by */
 #define MISSION_PASS_LEG_MM		2000.0f	/* longest parallel leg before the bypass fails */
 #define MISSION_BYPASS_TIMEOUT_MS	90000u	/* whole bypass must finish by then */
+#define BYPASS_TURN_SPEED_MMPS 7u /* existing bypass pivot speed */
 #define BYPASS_LINE_SPEED_MMPS 5u /* D07: scaled final line alignment */
 #define MISSION_UTURN_PAUSE_MS 200u /* requested duration; stationary reference provisional D02/D08 */
 #define MISSION_START_WAIT_MS		200u	/* wait for Motion to leave its stop latch */
@@ -314,22 +276,7 @@ _Static_assert(BROAD_DUTY <= MOTION_MAX_DUTY, "broad-black duty must stay within
 _Static_assert(MOTION_EXPIRY_MS > 2u * FOLLOW_PERIOD_MS,
 	"motion sample age limit must span at least two follow releases");
 _Static_assert(IR_MAX_GAP_MS > IR_SAMPLE_MS, "IR gap limit below sample period");
-_Static_assert(IR_CAPTURE_MS / IR_SAMPLE_MS >= IR_CAPTURE_MIN_SAMPLES,
-	"IR capture window cannot reach its minimum sample count");
-_Static_assert(IR_MIN_CONTRAST < IR_ADC_MAX, "IR contrast exceeds ADC range");
-_Static_assert(LINE_ERROR_TAU_MS >= 0.0f && LINE_CURVE_SLOWDOWN >= 0.0f && LINE_CURVE_SLOWDOWN < 1.0f,
-	"line filter and curve slowdown must be in range");
-_Static_assert(LINE_KP >= 0.0f && LINE_KI >= 0.0f && LINE_KD >= 0.0f && LINE_I_LIMIT >= 0.0f,
-	"line PID gains must be non-negative");
-_Static_assert(LINE_BINARY_RAMP == 0 || LINE_BINARY_RAMP == 1,
-    "binary line tracking toggle must be 0 or 1");
-_Static_assert(LINE_BINARY_START > 0.0f && LINE_BINARY_START <= MAX_STEER &&
-    LINE_BINARY_RATE > 0.0f && LINE_STEER_RATE > 0.0f,
-    "binary steering start and rates must be positive and bounded");
-_Static_assert(IR_WHITE_ENTER < IR_WHITE_EXIT && IR_WHITE_EXIT < IR_BROAD_BLACK,
-	"IR classification thresholds must be ordered");
-_Static_assert(ADC_AVERAGE_COUNT >= 1u && ADC_AVERAGE_COUNT <= 16u,
-	"ADC average count out of range");
+_Static_assert(IR_BLACK_LEVEL <= 1u, "digital black level must be 0 or 1");
 _Static_assert(IR_SAMPLE_MS >= INPUT_PERIOD_MS, "IR sampled faster than the input task runs");
 _Static_assert((BARCODE_EDGE_CAPACITY & (BARCODE_EDGE_CAPACITY - 1u)) == 0u,
 	"barcode edge ring capacity must be a power of two");
@@ -354,13 +301,10 @@ _Static_assert(MOTION_SPEED_MAX_MMPS > 0.0f && ENC_COUNTS_PER_MM > 0.0f &&
 _Static_assert(MOTION_TARGET_MAX_MM * ENC_COUNTS_PER_MM < ENC_COUNT_MASK / 2u,
     "distance targets must fit encoder signed half range");
 _Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS, "stall limit must precede the action timeout");
-/* Fastest wheel while following: f(s) = (1 - k*s/S) * (1 + s) times the follow
-   speed, for steering s in 0..S (S = MAX_STEER, k = LINE_CURVE_SLOWDOWN). f peaks
-   at s = (S/k - 1) / 2, clamped to 0..S. */
-#define LINE_PEAK_S_RAW	(LINE_CURVE_SLOWDOWN > 0.0f ? (MAX_STEER / LINE_CURVE_SLOWDOWN - 1.0f) * 0.5f : MAX_STEER)
-#define LINE_PEAK_S	(LINE_PEAK_S_RAW < 0.0f ? 0.0f : (LINE_PEAK_S_RAW > MAX_STEER ? MAX_STEER : LINE_PEAK_S_RAW))
-#define LINE_PEAK_WHEEL	((1.0f - LINE_CURVE_SLOWDOWN * LINE_PEAK_S / MAX_STEER) * (1.0f + LINE_PEAK_S))
-_Static_assert(MISSION_FOLLOW_SPEED_MMPS * LINE_PEAK_WHEEL <= MOTION_SPEED_MAX_MMPS &&
+_Static_assert(MAX_STEER > 0.0f && MAX_STEER <= 1.0f &&
+    MISSION_FOLLOW_SPEED_MMPS >= 2.0f && MISSION_STRAIGHT_MM > 0u &&
+    MISSION_CLEAR_MM > 0.0f, "navigation ramp and steering must be bounded");
+_Static_assert(MISSION_FOLLOW_SPEED_MMPS * (1.0f + MAX_STEER) <= MOTION_SPEED_MAX_MMPS &&
 	MISSION_FOLLOW_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS &&
 	MISSION_TURN_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS && MISSION_CLEAR_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS,
 	"Mission speeds must stay within the Motion speed limit");

@@ -5,7 +5,8 @@
 #include <stdint.h>
 #include "../common/robot_config.h"
 
-/* RP2040 ADC RESULT is 12 bits: 0 through (2^12 - 1). */
+/* Digital raw readings are GPIO levels 0 or 1. Legacy 12-bit packing and
+   snapshot fields remain for telemetry/API compatibility. */
 
 /* Base-2 scaled integers (ADR 0001): a 0..1 fraction is stored as 0..127 and
    a signed -1..+1 value as -127..+127 (int8_t). Divide by IR_SCALE_ONE only
@@ -46,14 +47,6 @@ static inline bool ir_raw_word_valid(IrRawWord word)
     return (word >> IR_RAW_VALID_BIT & 1u) != 0u;
 }
 
-typedef struct
-{
-    IrRaw black;
-    IrRaw white;
-    bool black_set;
-    bool white_set;
-} IrCalibration;
-
 typedef enum
 {
     IR_LINE_UNKNOWN,
@@ -65,55 +58,25 @@ typedef enum
 typedef struct
 {
     bool valid;
-    uint8_t left_fraction;	/* 0..IR_SCALE_ONE: white..black */
+    uint8_t left_fraction;	/* digital: 0 white, IR_SCALE_ONE black */
     uint8_t right_fraction;
     int8_t error;		/* right - left, -IR_SCALE_ONE..+IR_SCALE_ONE */
 } IrReading;
 
-typedef enum
-{
-    IR_CAPTURE_NONE,
-    IR_CAPTURE_BLACK,
-    IR_CAPTURE_WHITE
-} IrCaptureKind;
-
-typedef enum
-{
-    IR_CAPTURE_WAITING,
-    IR_CAPTURE_PENDING,
-    IR_CAPTURE_BLACK_DONE,
-    IR_CAPTURE_WHITE_DONE,
-    IR_CAPTURE_UNSUPPORTED,
-    IR_CAPTURE_BUSY,
-    IR_CAPTURE_CANCEL_HELD,
-    IR_CAPTURE_GAP,
-    IR_CAPTURE_INVALID_SAMPLE,
-    IR_CAPTURE_CONTRAST,
-    IR_CAPTURE_NEED_BLACK,
-    IR_CAPTURE_CANCELLED
-} IrCaptureResult;
-
 typedef struct
 {
     IrLine line;
-    IrCalibration calibration;
     IrReading reading;
     IrRawWord raw;		/* latest pair; valid flag = sample valid */
     bool have_sample;
     uint32_t sample_ms;
-    IrCaptureKind capture_kind;
-    uint32_t capture_requested_ms;
-    uint32_t capture_first_ms;
-    uint32_t capture_last_ms;
-    uint32_t capture_count;
-    uint32_t capture_left_sum;
-    uint32_t capture_right_sum;
-    IrCaptureResult capture_result;
 } IrTracker;
 
-/* Valid guidance is fresh calibrated VISIBLE data, never motion permission.
-   error = right black fraction - left black fraction (sensors on the edges).
-   Negative means the line moved left (steer left); positive means right. */
+/* Valid guidance is fresh digital VISIBLE data, never motion permission.
+   error is -127 left black, +127 right black, 0 both white.
+   Both white is forward; both black is a junction, without guidance.
+   Mission maps left black to negative steering, right black to positive,
+   matching the mounted robot's observed direction. */
 typedef struct
 {
     bool valid;
@@ -123,13 +86,10 @@ typedef struct
 } IrTrackingOutput;
 
 void ir_tracking_init(IrTracker *tracker);
-bool ir_tracking_capture(IrTracker *tracker, IrCaptureKind kind, uint32_t now);
-void ir_tracking_cancel_capture(IrTracker *tracker, IrCaptureResult result);
-void ir_tracking_check_time(IrTracker *tracker, uint32_t now);
 /* now is paired acquisition completion time, not publication time. */
 void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
                         uint32_t now);
-IrReading ir_tracking_reading(IrRaw raw, const IrCalibration *calibration);
+IrReading ir_tracking_reading(IrRaw raw);
 IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now);
 /* Portable data for S1 and future Mission consumers; no wire format implied.
    Invalid fraction/error fields are zero; use validity flags. */
@@ -139,15 +99,11 @@ typedef struct
     uint32_t sampled_ms;
     uint32_t sample_age_ms;
     IrRawWord raw;		/* valid flag = acquisition valid */
-    IrCalibration calibration;
     uint8_t left_fraction;	/* 0..IR_SCALE_ONE */
     uint8_t right_fraction;
     int8_t error;		/* right - left, see IrTrackingOutput */
     IrLine line;
-    IrCaptureKind capture_kind;
-    IrCaptureResult capture_result;
     bool have_sample;
-    bool calibration_valid;
     bool sample_fresh;
     bool normalized_valid;
     bool guidance_valid;
@@ -160,7 +116,6 @@ void ir_snapshot_refresh(S3IrSnapshot *snapshot, uint32_t now);
 
 #if APP_TEST
 const char *ir_tracking_line_name(IrLine line);
-const char *ir_tracking_capture_name(IrCaptureResult result);
 #endif
 
 #endif

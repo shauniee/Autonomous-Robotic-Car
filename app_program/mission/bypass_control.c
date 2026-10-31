@@ -463,7 +463,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
     output->side_angle_deg = (int16_t)(-side * SERVO_MAX_DEG);
     if (control->work == BYPASS_WORK_TURN)
     {
-        output->command = motion_command_make(MOTION_MODE_TURN, MISSION_TURN_SPEED_MMPS,
+        output->command = motion_command_make(MOTION_MODE_TURN, BYPASS_TURN_SPEED_MMPS,
             control->action_target, 0, control->action_id, input->now_ms);
     }
     else if (control->work == BYPASS_WORK_DRIVE)

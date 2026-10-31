@@ -1583,3 +1583,158 @@ Local dashboard was rebuilt/restarted to apply the same decoder scale
 No firmware flashed or powered motion commanded. Actual angle depends on the
 still-provisional track width and slip; distance repeatability, achieved speed,
 wheel PID calibration and physical jitter/stop acceptance remain pending.
+
+## INT-69: Digital IR tracking and half-speed navigation
+
+2026-10-31, Codex, host-only PASS. Base commit
+`4365e10b516c2479339cd48a7a3f2e7d8e01c26e` plus working-tree identity in
+[manifest](logs/2026-10-31_INT-69/source-manifest.json).
+Procedure/expected: enumerate all four GPIO states, reject invalid/stale data,
+check immediate fixed steering and 35 mm/s follow, and run existing Mission
+junction/stop/bypass/recovery and unreleased-policy regressions.
+GCC C11 `-O2 -Wall -Wextra -Werror`: all three affected host executables passed;
+[commands/output](logs/2026-10-31_INT-69/host-results.txt).
+No board connected, flashed image, firmware build or physical pass. WSL compiler
+lookup found no compiler; full MSYS shell runner could not resolve its tools.
+Synthetic LOST tests preserve fallback behavior; real digital white/white now
+means forward and cannot detect loss independently. DOUT wiring, black LOW
+polarity, sensor thresholds and reduced-speed motion require physical verification.
+
+## INT-70: Remove digital IR software calibration
+
+2026-10-31, Codex, host-only PASS. Base commit
+`4365e10b516c2479339cd48a7a3f2e7d8e01c26e` with working-tree identity in
+[manifest](logs/2026-10-31_INT-70/source-manifest.json).
+Procedure/expected: remove IR calibration/capture symbols from application and
+current pure tests; verify four digital states, invalid/stale rejection, Mission
+start/stop/navigation/bypass and disabled recovery policy. Compile IR with and
+without APP_TEST. No calibration flag or captures are supplied by any fixture.
+All four GCC host builds/executions passed with warnings treated as errors;
+[commands/output](logs/2026-10-31_INT-70/host-results.txt). Source search found no
+remaining IR calibration/capture APIs, enums or gating fields in application/current
+pure tests; `git diff --check` passed. IMU calibration is unchanged.
+No firmware build, flashed image or physical result is claimed.
+
+## INT-71: Correct digital IR polarity
+
+2026-10-31, Codex, host-only PASS. User reports both sensors on white were
+classified broad black with LOW-black configuration. Changed `IR_BLACK_LEVEL`
+to HIGH black / LOW white. This is an inference from reported behavior;
+physical black/white verification on both modules remains pending.
+Explicit LOW/LOW -> VISIBLE/zero-error and HIGH/HIGH -> BROAD_BLACK regression,
+plus four digital states and invalid/stale checks, passed with GCC C11 warnings
+as errors. [Output](logs/2026-10-31_INT-71/host-results.txt),
+[source identity](logs/2026-10-31_INT-71/source-manifest.json), base commit
+`4365e10b516c2479339cd48a7a3f2e7d8e01c26e` plus working-tree manifest.
+No firmware build/flash or physical pass.
+
+## INT-72: Stronger digital steering and junction speed ramp
+
+2026-10-31, Codex, host-only PASS. Base commit
+`4365e10b516c2479339cd48a7a3f2e7d8e01c26e` plus
+[working-tree manifest](logs/2026-10-31_INT-72/source-manifest.json).
+Procedure/expected: tracking 70 mm/s with +/-127 steering, junction entry 35,
+straight/left/right/U-turn navigation starts at 35 and ramps by encoder travel
+toward 70, continuous across turn/clear, holds speed without travel, handles
+encoder wrap, and stops immediately on GP21. U-turn pause and existing Mission
+obstacle/stale/deadline policy must remain. Straight navigation reaches full
+speed at return to tracking; clear endpoint and confirmation request full speed.
+GCC C11 O2 Wall Wextra Werror builds/executions passed: Mission (with released
+features for synthetic coverage), unreleased policy, digital IR and Motion.
+[Commands/output](logs/2026-10-31_INT-72/host-results.txt).
+No firmware build, flash or physical pass. Requested speed is a ceiling;
+Motion approach braking remains, so physical acceleration and curve performance
+need mounted validation. Bypass pivot retains its previous 7 mm/s setting.
+
+## INT-73: Reverse digital tracking correction
+
+2026-10-31, Codex, host-only PASS. User clarified left-only black must steer
+right and right-only black must steer left. Reverse the shared Mission digital
+steering helper used for tracking and bypass line alignment; sensor error,
+GPIO mapping, black polarity and barcode turn directions retain their meaning.
+Expected: -127 sensor error -> +127 steering (right); +127 -> -127 (left);
+white/white -> zero. Explicit direction assertions and existing Mission
+navigation/stop/ramp/bypass and unreleased-policy tests passed with GCC C11
+O2 Wall Wextra Werror. [Commands/output](logs/2026-10-31_INT-73/host-results.txt),
+[source manifest](logs/2026-10-31_INT-73/source-manifest.json), base commit
+`4365e10b516c2479339cd48a7a3f2e7d8e01c26e` plus recorded working-tree sources.
+No firmware build, flash or hardware validation.
+
+## INT-74: Diagnose GP20 start while Mission displays READY
+
+2026-10-31, Codex. User reports GP20 leaves the display at READY; cause is
+unconfirmed without a detected-button/refusal log. Added normal-build logs for
+GP20 pressed/released/ignored and replaced generic refusal output with start
+prerequisites, IR line/freshness, network/IMU/Motion readiness, TEST profile and
+fault bytes. No start or safety policy changed.
+Host-only PASS: independently block mapping, start readiness, Motion latch and
+IR guidance; assert each refuses while READY, clearing it does not auto-start,
+and a new start event then enters FOLLOW. Existing Mission regression suite
+also passed under GCC C11 O2 Wall Wextra Werror.
+[Commands/output](logs/2026-10-31_INT-74/host-results.txt),
+[source manifest](logs/2026-10-31_INT-74/source-manifest.json), base commit
+`4365e10b516c2479339cd48a7a3f2e7d8e01c26e` plus working-tree sources.
+The host test does not compile the kernel-bound logging adapter or exercise
+physical GP20. Firmware build/flash, console diagnosis and hardware fix remain
+unverified; this change improves diagnosis and does not claim the cause is fixed.
+
+## INT-75: Verify digital IR through Mission and wheel outputs
+
+2026-10-31, Codex. User requirement: left black turns right, right black
+turns left, queued navigation begins on the first both-black sample.
+Host probe asserts raw digital reads through real IR normalization, Mission
+and Motion control: 1/0 -> positive left duty/zero right; 0/1 -> zero left/
+positive right; 0/0 -> equal positive duties. PASS for FOLLOW tracking.
+Requirement mismatch reproduced: queued LEFT remains held on both-black entry
+and after six-count qualification; TURN begins only on black exit.
+Also reproduced: READY refuses start on both-black (guidance invalid), and
+NAVIGATE/STRAIGHT suppresses a valid left-black steering correction for 25 mm.
+Existing digital IR and Mission regressions PASS; those tests encode the
+current delayed junction/straight-exit behaviour, not the requested trigger.
+[Probe/output](logs/2026-10-31_INT-75/host-results.txt),
+[source manifest](logs/2026-10-31_INT-75/source-manifest.json) records base HEAD
+and exact working-tree source hashes. Application source unchanged.
+No firmware build/flash or physical verification; hardware cause of reported
+single-sensor failure remains unconfirmed.
+
+## INT-76: Execute queued direction on first fresh both-black sample
+
+2026-10-31, Codex. User-authorized trigger change: a held barcode or manually
+queued direction is consumed when FOLLOW first sees fresh usable both-black.
+It enters NAVIGATE in the same decision, without encoder qualification or black
+exit. Left/right request TURN immediately; straight starts its existing measured
+segment; U-turn enters its existing stationary pause. No-command encounters
+retain qualification. Existing stop, freshness, obstacle and action guards remain.
+Host GCC C11 O2 Wall Wextra Werror PASS: all four directions from both queue
+sources, zero travel before trigger, single consumption/repeated black, existing
+Mission navigation/ramp/stop tests and unreleased-policy regressions.
+Updated the synthetic crossing helper to avoid moving encoders after queued
+navigation already starts; preserved the no-command qualification tests.
+[Host output](logs/2026-10-31_INT-76/host-results.txt),
+[pending-policy output](logs/2026-10-31_INT-76/pending-results.txt),
+[source identity](logs/2026-10-31_INT-76/source-manifest.json).
+Wireless normal Docker firmware build PASS after retry with Docker access:
+[build log](logs/2026-10-31_INT-76/firmware-build-retry.txt),
+[profile and UF2 checksum](logs/2026-10-31_INT-76/build-result.json).
+Not flashed or physically tested. A brief both-black patch now deliberately
+triggers a queued instruction; mounted junction placement remains unmeasured.
+
+## INT-77: Reverse mounted IR steering correction
+
+2026-10-31, Codex. User reports physical left-black turns left and right-black
+turns right with correct sensor pins; requests swapping the correction.
+Reverse the sign once in shared line_digital_steering: left-black error -127
+now produces steering -127, right-black +127 produces +127. Zero stays zero.
+This also reaches bypass line guidance through the existing shared helper.
+Pin assignments, raw polarity and junction/encoder turn targets unchanged.
+Updated explicit direction assertions and shared test reference.
+Host GCC C11 O2 Wall Wextra Werror Mission and pending-policy tests PASS,
+including immediate queued-junction, ramps and stop regressions.
+[Host output](logs/2026-10-31_INT-77/host-results.txt),
+[pending output](logs/2026-10-31_INT-77/pending-results.txt),
+[source identity](logs/2026-10-31_INT-77/source-manifest.json).
+Wireless normal firmware build PASS:
+[build log](logs/2026-10-31_INT-77/firmware-build.txt),
+[profile and UF2 checksum](logs/2026-10-31_INT-77/build-result.json).
+Not flashed or physically tested; opposite physical steering is expected based
+on the user's observation, not established by the host simulation.

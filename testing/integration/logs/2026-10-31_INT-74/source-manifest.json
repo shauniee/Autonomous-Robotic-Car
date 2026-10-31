@@ -1,0 +1,9 @@
+{
+  "base_head": "4365e10b516c2479339cd48a7a3f2e7d8e01c26e",
+  "sha256": {
+    "app_program/mission/mission.c": "0eb5c4b5813844a8dca7b1983af40b157849b484b8d207f72db1006614e3b36f",
+    "app_program/mission/mission_logic.c": "8350e88eef4367845ddb3ae8e5abc00d05ea76d624285afaba90dcca537a3246",
+    "app_program/common/buttons.c": "bc79eaedfcbb6a0d8689e79b963f47939dc60546a00614432c32ab77c2e9ad79",
+    "testing/pure/test_mission.c": "b5f8d2735924d7ff6b87dac24073d92c46e153fce5cd777077af65e5006e4baa"
+  }
+}

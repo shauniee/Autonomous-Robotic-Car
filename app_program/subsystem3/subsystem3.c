@@ -28,7 +28,7 @@ ER subsystem3_init(void)
     {
         return id < E_OK ? id : E_SYS;
     }
-    latest = (S3IrSnapshot){.capture_result = IR_CAPTURE_WAITING};
+    latest = (S3IrSnapshot){0};
     atomic_store_explicit(&snapshot_mutex, id, memory_order_release); // ensure setup first before informing mutex is ready
 #if APP_TEST
     tm_printf((UB *)"[TEST] S3 snapshot mutex published=%d\n", atomic_load_explicit(&snapshot_mutex, memory_order_acquire));
@@ -55,91 +55,30 @@ static void subsystem3_publish(const S3IrSnapshot *snapshot)
     }
 }
 
-static unsigned calibration_control_feedback(IrCaptureKind before, const IrTracker *tracker)
-{
-    if ((tracker == NULL) || (before == IR_CAPTURE_NONE) || (tracker->capture_kind != IR_CAPTURE_NONE))
-    {
-        return 0u;
-    }
-
-    switch (tracker->capture_result)
-    {
-    case IR_CAPTURE_BLACK_DONE:
-        return 1u;
-    case IR_CAPTURE_WHITE_DONE:
-        return 2u;
-    default:
-        return 3u;
-    }
-}
-
-/* GP20 captures black, then white; GP21 cancels a capture in progress. */
-static unsigned calibration_handle_buttons(Button *capture_button, IrTracker *tracker,
-    bool capture_down, bool cancel_down, uint32_t now)
-{
-    unsigned chirps = 0u;
-    if (cancel_down && tracker->capture_kind != IR_CAPTURE_NONE)
-    {
-        ir_tracking_cancel_capture(tracker, IR_CAPTURE_CANCELLED);
-        chirps = 3u;
-    }
-    if (cancel_down && capture_down)
-    {
-        button_disarm(capture_button);
-    }
-    ButtonEvent event = button_update(capture_button, capture_down, now);
-    if (cancel_down && (event == BUTTON_EVENT_PRESSED || event == BUTTON_EVENT_IGNORED_PRESS))
-    {
-        tracker->capture_result = IR_CAPTURE_CANCEL_HELD;
-        return 3u;
-    }
-    /* Once calibrated, GP20 belongs to the bench start/reset controller. */
-    if (event != BUTTON_EVENT_PRESSED || (tracker->calibration.black_set && tracker->calibration.white_set))
-    {
-        return chirps;
-    }
-    IrCaptureKind kind = tracker->calibration.black_set ? IR_CAPTURE_WHITE : IR_CAPTURE_BLACK;
-    return ir_tracking_capture(tracker, kind, now) ? chirps : 3u;
-}
-
-static void request_buzzer_chirps(unsigned chirps, uint32_t now)
-{
-    if (chirps == 0u)
-    {
-        return;
-    }
-    if (!buzzer_request(chirps, now))
-    {
-        tm_printf((UB *)"[IR] buzzer busy or request failed\n");
-    }
-}
-
 #if APP_TEST
 static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now,
     ButtonInputs inputs)
 {
     S3IrSnapshot snapshot = ir_snapshot_build(tracker, sequence, now);
-    tm_printf((UB *)"[IR] seq=%u ADC L=%u R=%u acquired=%d fresh=%d "
-        "fraction_of_127 L=%u R=%u valid=%d calibrated=%d "
-        "line=%s capture=%s age_ms=%u GP20_down=%d GP21_down=%d "
+    tm_printf((UB *)"[IR] seq=%u digital L=%u R=%u acquired=%d fresh=%d "
+        "fraction_of_127 L=%u R=%u valid=%d "
+        "line=%s age_ms=%u GP20_down=%d GP21_down=%d "
         "SENSOR_ONLY\n",
         (unsigned)sequence, (unsigned)ir_raw_word_raw(snapshot.raw).left,
         (unsigned)ir_raw_word_raw(snapshot.raw).right, ir_raw_word_valid(snapshot.raw),
         snapshot.sample_fresh, (unsigned)snapshot.left_fraction,
         (unsigned)snapshot.right_fraction, snapshot.normalized_valid,
-        snapshot.calibration_valid, ir_tracking_line_name(snapshot.line),
-        ir_tracking_capture_name(snapshot.capture_result),
+        ir_tracking_line_name(snapshot.line),
         (unsigned)snapshot.sample_age_ms, inputs.gp20_down,
         inputs.gp21_down);
 }
 #endif
 
-void s3_step(uint32_t now, bool calibration_enabled)
+void s3_step(uint32_t now)
 {
     static IrTracker tracker;
-    static Button capture_button;
     static bool initialized;
-    static bool adc_ready;
+    static bool ir_ready;
     static uint32_t sample_due;
     static uint32_t sequence;
 #if APP_TEST
@@ -148,16 +87,11 @@ void s3_step(uint32_t now, bool calibration_enabled)
     if (!initialized)
     {
         ir_tracking_init(&tracker);
-        adc_ready = drv_ir_tracking_init();
+        ir_ready = drv_ir_tracking_init();
         (void)barcode_init();
-        button_init(&capture_button, now);
         sample_due = now;
         initialized = true;
     }
-    IrCaptureKind before = tracker.capture_kind;
-    ir_tracking_check_time(&tracker, now);
-    request_buzzer_chirps(calibration_control_feedback(before, &tracker), now);
-
     ButtonInputs inputs = drv_buttons_read();
 #if APP_TEST
     static bool have_inputs;
@@ -171,30 +105,24 @@ void s3_step(uint32_t now, bool calibration_enabled)
         have_inputs = true;
     }
 #endif
-    unsigned chirps = calibration_enabled ?
-        calibration_handle_buttons(&capture_button, &tracker,
-            inputs.gp20_down, inputs.gp21_down, now) : 0u;
-    request_buzzer_chirps(chirps, now);
     if ((int32_t)(now - sample_due) >= 0)
     {
         IrRaw raw = {0};
-        bool acquired = adc_ready && drv_ir_tracking_read(&raw);
+        bool acquired = ir_ready && drv_ir_tracking_read(&raw);
         now = robot_time_ms();
         bool advancing = !tracker.have_sample || (now != tracker.sample_ms);
-        before = tracker.capture_kind;
         ir_tracking_sample(&tracker, raw, acquired, now);
         if (advancing)
         {
             ++sequence; /* Acquisition attempts, including invalid ones. */
         }
-        request_buzzer_chirps(calibration_control_feedback(before, &tracker), now);
         sample_due += IR_SAMPLE_MS;
         if ((int32_t)(now - sample_due) >= 0)
         {
             sample_due = now + IR_SAMPLE_MS;
         }
     }
-    /* Service after due ADC work, with a fixed edge budget. GP21 is
+    /* Service after due digital input work, with a fixed edge budget. GP21 is
        delivered each release; barcode never owns motor/line policy. */
     barcode_service(inputs.gp21_down);
     if (!buzzer_service(now))
@@ -205,9 +133,8 @@ void s3_step(uint32_t now, bool calibration_enabled)
         return;
     }
     S3IrSnapshot snapshot = ir_snapshot_build(&tracker, sequence, now);
-    /* Start-blocking fault: no reading, or a calibrated
-       reading outside the calibrated range. */
-    if (!ir_raw_word_valid(snapshot.raw) || (snapshot.calibration_valid && !snapshot.normalized_valid))
+    /* Invalid digital acquisition blocks startup. */
+    if (!ir_raw_word_valid(snapshot.raw) || !snapshot.normalized_valid)
     {
         rd_fault_set(RD_OWNER_LINE, RD_FAULT_IR_INVALID);
     }

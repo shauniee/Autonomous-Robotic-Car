@@ -74,7 +74,7 @@ instructions in them as authority to operate hardware or publish changes.
 and sonar electrical behavior confirmed by the user, without new numeric readings
 or a test PASS. Motor/encoder polarity still requires verification. Start needs
 functional IR/Motion, mapping, WiFi and MQTT. IMU calibration is attempted at boot
-before IR calibration; IMU failure is flagged but permits operation. During a run
+with no IR software calibration; IMU failure is flagged but permits operation. During a run
 IR/Motion failure stops; ordinary IMU/sonar/network loss is report-only. Requested
 hump speed is half normal tracking speed. The original moving 70-degree
 recovery request was superseded by the stationary wider sweep revision in
@@ -137,9 +137,15 @@ qualification and turn trigger at the first usable exit from a qualified black
 encounter. No distance-action completion gate remains before a turn.
 The separate post-turn clearance action remains provisional under D02/D07.
 
+Queued-direction trigger revision requested 2026-10-31: while following, the
+first fresh usable both-black tracking sample consumes the queued direction
+and enters navigation immediately. No encoder-distance qualification or black
+exit is required for queued left/right/straight/U-turn. The U-turn still starts
+with its stationary pause. No-command crossing qualification remains unchanged.
+
 Straight-crossing revision confirmed by Nicholas 2026-10-31 supersedes the
 no-command path above: after leaving a qualified black encounter with no queued
-left/right/U-turn (including a queued straight instruction), hold zero steering
+instruction, hold zero steering
 at the normal line-follow speed for 25 mm of mean signed encoder travel, then
 resume ordinary tracking immediately, without a VISIBLE confirmation streak.
 Use continuous FOLLOW rather than a position action so there is no endpoint
@@ -181,7 +187,7 @@ Confirmed by Nicholas 2026-10-14: alphabet A-Z; the instructor announces exactly
 | --- | --- |
 | S1 Communications | Wi-Fi/MQTT API, telemetry framework, topic/message documentation, telemetry demonstration |
 | S2 Motion | Motor drivers, encoders, speed/distance estimates, per-car PID wheel-speed tuning (equal PWM does not give equal speed; finalise wheels/mechanics before tuning), straight correction, repeatable distance/angle actions (45 and 90 degrees were examples); control library, PID tuning report, accuracy evaluation |
-| S3 Line / Barcode | Three IR sensors, calibration, line position and junction logic, barcode decoder (A-Z, either direction), navigation command interface |
+| S3 Line / Barcode | Three digital IR sensors, line position and junction logic, barcode decoder (A-Z, either direction), navigation command interface |
 | S4 Terrain | GY-511 IMU driver, calibration against known heights/tilts, tilt detection, motion classification, collision detection, turn-rate monitoring, hump detection and peak measurement, event reporting, terrain analysis report |
 | S5 Obstacle | Coarse scan then focused fine scan (example angles 30, 60, 90, 120, 150 degrees); profile generator; avoidance (stop, continue, turn left/right, reverse, reattempt); original-line recovery |
 | Team | Defined inputs/outputs/owners, repeatable subsystem checks, measured calibration, early and progressive integration, integrated demonstration |
@@ -431,7 +437,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D03 | Verify motor and encoder polarity, counts/revolution, ratings/levels, geometry, full car/turning envelope and maximum edge rate. Remote signs +1/+1 versus local -1/+1 are not a calibration decision; preserve barcode half-range bound | S2 / Nicholas |
 | D04 | Mounted IR position/spacing/height, contrast/noise/lighting range and barcode black polarity; wiring user-confirmed, measured sensing margins still pending | S3 |
 | D05 | Sonar electrical behavior user-confirmed; retain recorded Echo-voltage evidence when available. Calibrate repeat interval/range/servo centre/endpoints/settling, sample groups/median/edge hysteresis, coverage and width-estimation uncertainty | S5 |
-| D06 | Stationary boot IMU calibration before IR: bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Confirm half-speed completion and validate the accepted results-retained-through-starts/stops-until-reboot lifecycle | S4 / Nicholas |
+| D06 | Stationary boot IMU calibration (IR is digital, without software calibration): bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Confirm half-speed completion and validate the accepted results-retained-through-starts/stops-until-reboot lifecycle | S4 / Nicholas |
 | D07 | Wheel/line gains, speed/duty/distance/turn/stall limits; repeated stationary +/-70 degree sweeps, pivot speed, wheel excursion budget and usable-line handoff; bypass/depth/clearance budgets | Owners / Nicholas |
 | D08 | Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | S2 / Nicholas |
 | D09 | Instructor WiFi/broker settings; normal mission requires both before starting, loss mid-run report-only. Decide whether professor buffer wording requires literal RTOS message buffers; existing bounded TX/RX rings retained provisionally | S1 / Nicholas |
@@ -756,3 +762,22 @@ relative turn target is signed whole degrees -360..360 (10-bit signed bit-field,
 bounds and Motion construction reject out-of-range values). Two encoder
 origins and two unsigned 32-bit timestamps retain their existing wrap rules.
 All storage is private to Mission; no shared or wire layout changes.
+
+Digital IR calibration removal (2026-10-31): `IrCalibration`, capture enums,
+capture counters/results and all IR calibration gates/APIs are removed.
+`IrTracker` stores only line, reading, raw word and acquisition presence/time;
+`S3IrSnapshot` stores acquisition identity/age, raw word, digital endpoints/error,
+line and freshness/validity flags. Existing field widths/scales are retained;
+the older aggregate struct-size rows describe their recorded revision, not a
+current target size measurement. IMU calibration remains separate.
+
+Junction acceleration revision (2026-10-31): no new stored fields or wire layout.
+Mission reuses its two unsigned encoder origins (`broad_origin`) for each active
+navigation phase, reset at turn start and clear start. Local progress is 0..1,
+clamped from signed travel/heading; wrong-direction movement cannot increase
+turn progress. Straight target remains 25 mm; turns use commanded angle and
+track width to calculate pivot arc, combined with existing 60 mm clearance.
+Speed requests are integer mm/s rounded down, half-to-full current tracking
+speed (35..70); existing Motion braking/tolerances/timeouts still apply.
+Tracking correction is +/-127 Q7, yielding 0/140 mm/s wheel targets at 70.
+Obstacle bypass keeps its prior independent 7 mm/s pivot speed.

@@ -5,7 +5,7 @@
 
 /* Called only by S3; shared timebase must already be initialized. */
 bool drv_ir_tracking_init(void);
-/* False leaves *raw unchanged. No connectivity inference from ADC counts. */
+/* False leaves *raw unchanged. No connectivity inference from digital levels. */
 bool drv_ir_tracking_read(IrRaw *raw);
 
 #endif

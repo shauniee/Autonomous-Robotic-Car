@@ -28,9 +28,6 @@ $CC $CFLAGS -DMISSION_BYPASS_RELEASED=1 -DMISSION_RECOVERY_RELEASED=1 testing/pu
 $CC $CFLAGS -DMISSION_BYPASS_RELEASED=0 -DMISSION_RECOVERY_RELEASED=0 testing/pure/test_mission_pending.c app_program/mission/mission_logic.c \
     app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
     app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_mission_pending"
-$CC $CFLAGS -DLINE_BINARY_RAMP=1 -DMISSION_BYPASS_RELEASED=1 -DMISSION_RECOVERY_RELEASED=1 testing/pure/test_mission.c app_program/mission/mission_logic.c \
-    app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
-    app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_mission_binary"
 $CC $CFLAGS testing/pure/test_mission_mapping.c app_program/mission/mission_mapping.c \
     app_program/common/robot_data.c -o "$build_dir/test_mission_mapping"
 $CC $CFLAGS testing/pure/test_echo_range.c -o "$build_dir/test_echo_range"
@@ -63,7 +60,6 @@ $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
 "$build_dir/test_safety"
 "$build_dir/test_mission"
 "$build_dir/test_mission_pending"
-"$build_dir/test_mission_binary"
 "$build_dir/test_mission_mapping"
 "$build_dir/test_echo_range"
 "$build_dir/test_obstacle_profile"

@@ -8,7 +8,7 @@ int main(void)
     Mission mission;
     mission_init(&mission, 100u);
     MissionInputs in = {.now_ms = 100u, .start_pressed = true,
-        .mapped = true, .inputs_ok = true, .calibration_valid = true,
+        .mapped = true, .inputs_ok = true,
         .guidance_valid = true, .usable_line = true, .line = IR_LINE_VISIBLE,
         .line_sampled_ms = 100u};
     MissionOutputs out;
