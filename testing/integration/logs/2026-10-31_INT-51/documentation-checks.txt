@@ -1,0 +1,4 @@
+Source commit: fc9fa5d1af192433854d0440071e2954e32ee7d4
+PASS: 16 active Markdown guides; 336 local links/anchors; issue anchors; no active plan.md links; plan.md absent.
+PASS: all 44 prior pending items mapped to 10 groups; firmware and historical evidence unchanged.
+Verified isolated git archive; unrelated README ipconfig edit excluded.
