@@ -33,9 +33,10 @@
 
 ## Plan status and scope
 
-Target contracts reconciled 2026-10-29. Implementation sequence and pinned remote
-source inventory live in [plan](../plan.md). These target contracts are not a
-claim of implemented firmware or physical acceptance. The working implementation now creates Motion, Mission and core-0 I/O only.
+Contracts reconciled to the three-task implementation. The live work sequence
+and completion status are in [issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117),
+linked through [plan](../plan.md). The implementation creates Motion, Mission
+and core-0 I/O only; physical acceptance remains incomplete.
 The software verification and remaining calibration/feature gates are recorded in
 [plan status](../plan.md#software-implementation--2026-10-29). This does not make
 all target feature behavior below physically accepted. Requirements and calibrated values are
@@ -73,7 +74,8 @@ Never hold shared locks across I2C, servo settling, Echo wait, formatting or net
 work. Use bounded peripheral steps, acquisition timestamps and coherent copies.
 Measure network-load effects on IMU age and interrupt/control latency. Audit S1
 multi-producer events and mapping installation across cores: DI/EI protects only
-one core. The existing same-core event-log assumption cannot survive unchanged.
+one core. The implemented event log uses a bounded cross-core mutex; its contention and
+load margins still require on-target measurements.
 
 ## Mission loop
 
@@ -173,7 +175,8 @@ is required after bypass to avoid accepting an unrelated crossing.
 Humps remain concurrent with tracking; request half normal tracking speed during
 a valid encounter, settle at reduced speed for height estimation and restore after
 confirmed completion. Only valid completed humps update count/maximum; report
-measurements/events. Proposed stop retention/new-start reset is pending D06.
+measurements/events. Completed results persist across accepted starts/stops until
+reboot, as recorded in [project specs](project-specs.md#pending-decisions).
 
 For a blocking obstacle, brake and confirm stationarity before profiling. Bypass
 selects supported measured clearance, departs the line, follows the side, confirms
@@ -194,10 +197,11 @@ library and only WiFi service context calls MQTT/lwIP.
 
 ## Implementation order and acceptance
 
-[Plan](../plan.md#implementation-stages) is the single work sequence: preserve
-Motion checks (#130), consolidate Mission (#131), consolidate I/O (#132), integrate
-(#133), then physically calibrate/validate all features through #117. Align
-contracts first (#129). No host/build result is firmware or physical acceptance.
+[Issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns
+the live work sequence and incorporates #129–#133. The Motion/Mission/I/O
+refactor is implemented; remaining calibration, feature release and integrated
+acceptance follow that issue and the physical procedures. No host/build result
+is firmware execution or physical acceptance.
 
 ## Authority
 
@@ -456,9 +460,10 @@ Baseline figures come from the CR baseline evidence and the #22 census and are h
 Implementation limits: standalone recovery uses bounded stationary pivot sweeps;
 physical speed/geometry acceptance remains D07. S5 scans
 now have bounded median groups and qualified edge/model estimation. Their
-operating settings are unset by user choice, and physical bypass release remains
-inhibited. Supported forward/side scheduling, rear-edge/original-line acceptance
-and the deferred operating policies remain Stage 8 work. These are not accepted floor
+operating settings are provisional configured proposals, and physical bypass
+release remains inhibited. Supported forward/side coverage, rear-edge/original-line
+validation and any resulting implementation corrections remain in the
+[obstacle stage of #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#stage-5-obstacle-profiling-and-bypass-release). These are not accepted floor
 features. Terrain publishes original acquisition/service times under a mutex;
 impact remains asserted until a fresh non-impact sample observes serviced braking.
 S1 events use a short cross-core mutex; events stay in the ring when the TX bridge

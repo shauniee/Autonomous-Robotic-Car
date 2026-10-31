@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-31",
+  "source_commit": "565bae7e95668d172fe4b632a14209afc4b4b548",
+  "issues": 56,
+  "open": 6,
+  "closed": 50,
+  "completion_checker_exit": 2,
+  "existing_software_results": "INT-49 exact tested source 545a6a3; audited production/test paths unchanged",
+  "github_mutations": false
+}
