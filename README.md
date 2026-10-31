@@ -13,7 +13,7 @@
   - [Bring-up order and project tasks](#bring-up-order-and-project-tasks)
 - [Build and flash without Docker](#build-and-flash-without-docker)
 
-Start with the [central implementation plan](plan.md): verified remote baseline, agreed features, dependencies and acceptance. Target behavior is not yet implemented; unresolved settings live in [pending decisions](docs/project-specs.md#pending-decisions).
+Start with the [consolidated completion plan](plan.md), which points to the single live issue #117. The core software is implemented; physical calibration, timing and full mission acceptance remain incomplete. Unresolved limits live in [pending decisions](docs/project-specs.md#pending-decisions).
 
 An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, hump measurement, obstacle avoidance and WiFi telemetry. Firmware uses micro T-Kernel 3.0 on the RP2040. See [project specifications](docs/project-specs.md) for required outcomes and [Getting started](#getting-started) for what runs today.
 
@@ -99,7 +99,7 @@ Docker and [native](#build-and-flash-without-docker) builds can share `build_mak
 
 | Guide | Use it for |
 | --- | --- |
-| [Implementation plan](plan.md) | Central roadmap and pinned remote/local source distinction |
+| [Implementation plan](plan.md) | Entry point to the consolidated issue plan and source baseline |
 | [Project specifications](docs/project-specs.md) | Requirements, change requirement (minimum-bit), data table, assessment, pending decisions |
 | [Team](docs/team.md) | Owners, pins and wiring, task and kernel-object budget, interfaces, coding rules |
 | [Architecture](docs/architecture.md) | Target three-task contracts, looping Mission, stop/freshness rules, shared data and MQTT protocol |
@@ -226,13 +226,12 @@ Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--p
 
 ### Bring-up order and project tasks
 
-Follow [plan stages](plan.md#implementation-stages) for code changes and the
-[mission-readiness checklist](testing/mission-readiness.md) for physical checks.
-The plan starts with independent Motion protection, bounded Mission and I/O
-consolidation, then integrates/calibrates line, barcode junction actions, humps,
-obstacle profiling/bypass and mixed looping missions. No core swap or separate
-Safety task in target. Pending numeric values are recorded once in
-[project-specs](docs/project-specs.md#pending-decisions).
+Follow the [consolidated issue plan](plan.md#implementation-stages) and the
+[mission-readiness checklist](testing/mission-readiness.md). The three-task
+Motion/Mission/I/O refactor is implemented; remaining work is calibration,
+feature release, measured timing/load and mixed looping-mission acceptance.
+No core swap or separate Safety task is introduced. Pending numeric values
+remain in [project-specs](docs/project-specs.md#pending-decisions).
 
 ## Build and flash without Docker
 
@@ -268,8 +267,9 @@ Software verification on 2026-10-29 is recorded in the [integration log](testing
 
 Current continuation: obstacle triggering follows the resolved D16 decision in
 [project specs](docs/project-specs.md#pending-decisions). Scan/filter settings
-remain unset and physical bypass release is inhibited; encountering the trigger
-brakes and an unsupported scan stops. Do not interpret the passing synthetic
+are configured as provisional software proposals, and physical bypass release
+remains inhibited; encountering the trigger brakes and unsupported evidence stops
+the manoeuvre. Do not interpret the passing synthetic
 profile fixtures as an enabled full bypass. The user confirmed that physical
 trials are unavailable; [full-plan completion](plan.md#full-plan-continuation-audit)
 remains BLOCKED.

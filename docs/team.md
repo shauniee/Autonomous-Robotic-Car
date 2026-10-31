@@ -27,8 +27,8 @@ A **subsystem** is one student's folder (may hold several tasks and peripherals)
 
 Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [week13-plan](week13-plan.md#4-video-recording). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
 
-**Implementation status.** Pinned remote source and local-checkpoint differences
-are inventoried in [plan](../plan.md#remote-implementation-inventory). The code
+**Implementation status.** The current source baseline and consolidated issue
+plan are linked from [plan](../plan.md#remote-implementation-inventory). The code
 contains Motion PID/actions, Mission/Safety, line/barcode, Terrain, Obstacle and
 Reporting modules; this is not physical acceptance. Older smaller bench/task
 arrangements are historical. Target coordination is in [architecture](architecture.md).

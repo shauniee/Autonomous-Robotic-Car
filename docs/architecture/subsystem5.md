@@ -87,12 +87,13 @@ on Mission releases without waiting through a scan. Motion/cancel/deadline guard
 apply each step; front/side words are separate. Median groups, adjacent-ray edge hysteresis, edge-focused fine angles and optional
 empty-scene comparison now have bounded implementations and synthetic tests.
 Model uncertainty is distinct from planning width; unknown uncertainty provides
-no supported planning gap. Operating sample/threshold settings remain unset by
-user choice. `MISSION_BYPASS_RELEASED=0` prevents an unaccepted envelope/coverage
-policy from authorizing movement. Forward-coverage scheduling and accepted
-rear-edge/original-line bypass remain future work.
-The legacy bypass no longer treats a lost Echo as proof of a rear edge, but one
-valid range jump is still provisional and must not be claimed accepted.
+no supported planning gap. Operating sample/threshold settings are configured
+as provisional proposals in [project specs](../project-specs.md#pending-decisions). `MISSION_BYPASS_RELEASED=0` prevents an unaccepted envelope/coverage
+policy from authorizing movement. Forward/side coverage and rear-edge/original-line
+acceptance, including implementation corrections found during trials, remain
+tracked in [#117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117).
+The bypass helper uses qualified repeated side evidence; lost Echo never proves
+a rear edge. Its geometry and physical performance are still unaccepted.
 
 Servo commands now slew by one degree no faster than every `SERVO_STEP_MS`
 (proposed 50 ms), including recentring and side-watch moves. Acquisition waits

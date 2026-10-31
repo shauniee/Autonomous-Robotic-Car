@@ -2,6 +2,8 @@
 
 ## Contents
 
+- [Consolidated completion tracking — INT-50](#consolidated-completion-tracking--int-50)
+
 - [Terrain header build compatibility — INT-48](#terrain-header-build-compatibility--int-48)
 - [Barcode branch integration — INT-49](#barcode-branch-integration--int-49)
 
@@ -1041,3 +1043,25 @@ Main's S1/S4/decoder sources are unchanged by this integration. The historical
 S3-U20 failed full-build attempt and both audit records are preserved; the
 combined build above passes with the Terrain header fix now on main.
 No flashing, firmware execution, GPIO timing or physical barcode pass.
+
+## Consolidated completion tracking — INT-50
+
+Defined in [case](logs/2026-10-31_INT-50/case.json) before verification.
+Result 2026-10-31, tester Codex, exact documentation/source revision
+`30ec622432bc061418e2769aeb8f0359e1507109`: PASS for eight changed
+Markdown guides, 244 local links/anchors and inbound plan links, with firmware
+source unchanged from main `565bae7`
+([checks](logs/2026-10-31_INT-50/documentation-checks.txt)). Original test
+records and evidence are unchanged; append-only snapshots preserve the issue
+and PR115 before consolidation.
+
+Issue #117 now owns the live complete plan and remaining acceptance.
+Superseded #129–#133 and obsolete PR115 were closed with transfer comments;
+branches were preserved ([closure record](logs/2026-10-31_INT-50/github-closures.json)).
+The [appended all-stage audit](logs/2026-10-31_INT-50-completion.json) and
+[source manifest](logs/2026-10-31_INT-50/source-manifest.json) refresh the
+completion check: **exit 1 / BLOCKED**, not stale exit 2 or COMPLETE
+([output](logs/2026-10-31_INT-50/completion-check.txt)). This verifies
+record/source consistency, not robot operation. Existing INT-49 host/build
+evidence is reused for unchanged firmware; no new build, flash, firmware
+execution, physical calibration or timing pass was performed.
