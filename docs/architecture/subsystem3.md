@@ -106,6 +106,11 @@ Each encounter yields at most one action; direction reversal and overflow reject
 untrustworthy partial context. No two-second global scanner blind delay. Revisit
 of a print after a completed encounter can produce a new command; exact rearm
 distance remains D01. Event orientation is evidence, not a reversed action mapping.
+Enabling capture queues the current sensor level and coherent wheel counts so
+the first print can use the white approach as its quiet-zone reference. The
+quiet-zone distance must still be travelled after enabling; starting on a print
+does not authorize decoding a partial frame. Either print orientation is accepted
+while driving forward; backward wheel travel continues to reject the frame.
 
 ### 3.3 Widths and measured configuration
 
