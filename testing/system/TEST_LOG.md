@@ -31,6 +31,7 @@ Retired template definitions: SYS-01 illustrative ten-second WiFi reading; SYS-0
 | 2026-10-08 | SYS-03/04/05/06 | To record before trial | PENDING | No connected Pico; physical calibration/tracking/stop/reset cannot be performed in this session |
 | 2026-10-08 | SYS-07/08 | To record before trial | PENDING | Proportional refactor software checks only; barcode deferred, no physical trial performed |
 | 2026-10-08 | SYS-09/10 | To record before trial | PENDING | MQTT profiles built and host/local broker checks passed; no Pico flash, radio connection or physical trial performed for this addition |
+| 2026-10-30 | MR-17 | `8be851b` (source HEAD; flashed image not confirmed) | PENDING | User reports dashboard readings matched the board at 100/250/500/1000 mm and showed no echo in open space. Exact tape/dashboard readings and flashed-image checksum were not recorded; repeat or retrieve values before marking PASS. |
 
 Do not connect USB while the power bank is connected. Use camera/scope/operator records during battery trials; USB logs are collected only in the separate USB-only phase. Record actual wiring, calibrated references and exact flashed firmware checksum/revision in every result.
 
