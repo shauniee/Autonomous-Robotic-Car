@@ -909,3 +909,22 @@ Only logged build warnings are the existing upstream lwIP unused function.
 [Manifest](logs/2026-10-31_INT-45/manifest.json) source hashes were verified
 against the committed files. No firmware execution, physical calibration,
 stop timing or floor acceptance is claimed.
+
+INT-45 continuation, 2026-10-31, tester Codex: PR #139 at exact revision
+`ec86fcf18f9fe0ff0f15d8ee6b2fbbe680ca9c6b` received a failed GitHub check
+before any job steps started: account payments/spending limit blocked Actions
+([annotation](logs/2026-10-31_INT-45/github-ci-blocked.json)). This is an
+environment failure, not a test failure. The local Linux C checks passed; the
+combined script then stopped because the existing `robot-build` image lacks
+Python ([output](logs/2026-10-31_INT-45/linux-host-and-size.txt)). The remaining
+Linux decoder check passed in the existing Python dashboard image
+([output](logs/2026-10-31_INT-45/linux-python.txt)), and the ARM size probe passed
+separately ([output](logs/2026-10-31_INT-45/arm-size.txt)). MotionCommand and
+MotionHealth remain 12 bytes on that target compiler.
+
+The user subsequently requested disabling CI. Removed automatic push and
+pull-request triggers; manual workflow_dispatch retains the regression/build
+commands for explicit runs. README describes this change. No software changes
+affecting the passed host/firmware checks were made after the tested source
+commit; the final workflow/source identity is in
+[final manifest](logs/2026-10-31_INT-45/final-source-manifest.json).

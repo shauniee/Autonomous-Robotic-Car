@@ -1,12 +1,10 @@
-# Builds the four README profiles in the Docker build environment and uploads
+# Manually builds the four README profiles in Docker and uploads
 # the UF2 images. Wireless images use config/wifi_secrets.example.h, so they
 # carry placeholder credentials; build locally with your own secrets to connect.
 name: firmware
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # Automatic CI disabled at the user's request; keep manual verification.
   workflow_dispatch:
 
 jobs:

@@ -116,7 +116,7 @@ Each fact has one owning guide; other guides link to it. Assignment requirements
 | --- | --- |
 | `app_program/` | `app_main.c` startup, shared definitions and five subsystem folders; application drivers stay with their subsystem |
 | `build_make/` | Make profiles and generated firmware |
-| `Dockerfile`, `.github/workflows/` | Docker build environment and the CI workflow that builds the UF2 images |
+| `Dockerfile`, `.github/workflows/` | Docker build environment and manual workflow that builds UF2 images; automatic CI is disabled |
 | `config/` | Kernel/device configuration and ignored local credentials |
 | `kernel/`, `lib/`, `device/`, `include/`, `tools/` | Imported runtime, services, drivers, headers and conversion tools |
 | `docs/` | Project guides, five subsystem guides, the Week 13 plan and one additional document |
