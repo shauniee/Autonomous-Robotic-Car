@@ -67,7 +67,8 @@ static void mission_task(INT stacd, void *exinf)
         bool line_required = mission.state == MISSION_FOLLOW_LINE ||
             mission.state == MISSION_REACQUIRE ||
             (mission.state == MISSION_NAVIGATE &&
-             mission.phase == JUNCTION_PHASE_CONFIRM) ||
+             (mission.phase == JUNCTION_PHASE_CONFIRM ||
+              mission.phase == JUNCTION_PHASE_STRAIGHT)) ||
             (mission.state == MISSION_BYPASS &&
              mission.bypass.route == BYPASS_ROUTE_LINE);
         safety_step(line_required);
@@ -227,12 +228,12 @@ static void mission_task(INT stacd, void *exinf)
                 ENC_COUNTS_PER_MM;
             tm_printf((UB *)"[RECOVERY] failed: elapsed_ms=%u "
                 "left_counts=%d right_counts=%d heading_cdeg=%d "
-                "excursion_mm=%d leg=%u usable_ir=%d ir_age_ms=%u "
+                "excursion_mm=%d right=%u usable_ir=%d ir_age_ms=%u "
                 "front_valid=%d front_age_ms=%u front_mm=%u\n",
                 (unsigned)robot_time_elapsed(in.now_ms,
                     mission.recovery.started_ms),
                 (int)left, (int)right, (int)(heading * 100.0f),
-                (int)excursion, (unsigned)mission.recovery.leg,
+                (int)excursion, (unsigned)mission.recovery.right,
                 (int)in.usable_line,
                 (unsigned)robot_time_elapsed(in.now_ms, in.line_sampled_ms),
                 (int)in.front_valid, (unsigned)in.front_age_ms,

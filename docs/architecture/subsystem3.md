@@ -78,11 +78,12 @@ the steering slew limit and curve slowdown; line I/D are bypassed. Start/rate
 are provisional D07 tuning values, not physical passes. Wheel-speed PID,
 analogue wiring/calibration and line classifications are retained. This is
 two-sensor direction tracking, not single-sensor left-edge following.
-It does not resolve black/black curve/junction ambiguity or the near-zero
-alignment requirement for recovery with strictly binary sensors (D02/D04/D07).
+It does not resolve black/black curve/junction ambiguity (D02/D04/D07).
+Standalone recovery hands usable visible sensing back to tracking immediately; see the
+[recovery contract](../architecture.md#recovery-and-encounter-coordination).
 
-At a no-command junction continue straight using sensing, then confirm the
-outgoing line; no fixed-distance advance remains. See the
+At a no-turn junction use the requested straight encoder segment, then resume
+tracking without visible confirmation. See the
 [junction revision](../project-specs.md#mission-day-barcode-rule). BROAD_BLACK is evidence, not automatic finish
 or sufficient proof of junction centre. Qualification uses mounting and encoder
 travel, pending D02/D04/D07. Target line loss enters bounded stop-then-pivot sweep recovery;
@@ -206,6 +207,6 @@ Continuation correction: junction qualification counts distinct usable black
 acquisitions and travel before the first black exit. Travel
 after black ends cannot turn a thin patch into a confirmed
 junction or consume its held barcode. Qualified straight/unmapped crossings
-also enter outgoing-line confirmation before ordinary tracking. All A-Z now
+use the straight-segment revision above before ordinary tracking. All A-Z now
 have both-orientation/two-scale host fixtures; physical print/mounting tests
 remain pending.

@@ -1,0 +1,12 @@
+{
+  "base_commit": "8981d04620d5537e4f5b68980528b452b752abb1",
+  "sha256": {
+    "app_program/mission/recovery_control.c": "f86e6fea9b5235f8f72cb6549e42c78d6463668876bfcb1dd22e95f5929e7891",
+    "app_program/mission/recovery_control.h": "e94be8c0f91c3ea4edb208eb3a4ebd9e60e9221693e6443994a159a6c6b2c45b",
+    "app_program/common/robot_config.h": "054f7728b6b792172572f666a7d4f816aa03aff1c8f5e810528f10473f77339b",
+    "app_program/subsystem2/encoder_math.h": "e94743f62d3ceff0438e112f17dbf54a69e2cf26d37af7015cd99f91195c9b7d",
+    "app_program/subsystem2/drv_encoder.c": "ac44d6cde2201a4627867ac21e222d6812579e7e15ee292a1592fadda80e56b0",
+    "testing/integration/logs/2026-10-31_INT-64/angle.c": "fb06d10b1c9681cc4006ca9accd7c0053285edbc081b5e77235c81f17f0c81cd",
+    "testing/integration/logs/2026-10-31_INT-64/case.json": "91405ab88e68b427a046b9c9e6c8372be8bf14359d54a9ef26badb8a6e79e9c6"
+  }
+}

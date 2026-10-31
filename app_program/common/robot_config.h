@@ -34,7 +34,7 @@
 #define S1_EVENTS_PER_RELEASE	2u
 
 /* --- S2 motion ------------------------------------------------------ */
-#define MOTION_MAX_DUTY		.80f	/* PROVISIONAL (D07): raised from .35 for 240 mm/s; check motor/driver rating */
+#define MOTION_MAX_DUTY		.80f	/* PROVISIONAL (D07): retained duty cap; verify motor/driver rating */
 #define MOTION_TARGET_MAX_MM 2000.0f /* D07: bounded by longest Mission leg; hardware validation pending */
 #define MOTION_EXPIRY_MS	60u	/* PROVISIONAL (D07): sample age limit */
 #define MOTOR_WRAP		999u	/* 20 kHz at 125 MHz with divider below */
@@ -49,9 +49,8 @@
 #define RIGHT_ENCODER_SIGN	1	/* PROVISIONAL (D03): polarity */
 /* An encoder fault clears after this many valid counts (both wheels) with
    no new invalid transition: 64 counts are 16 complete quadrature cycles,
-   enough to show both channels switching cleanly, and a short hand spin of
-   a wheel (about 1/6 revolution at the provisional ENC_COUNTS_PER_REV)
-   proves the encoder again. PROVISIONAL (D03): revisit with measured counts/rev. */
+   enough to show both channels switching cleanly. This is a provisional
+   electrical-progress threshold, not a calibrated wheel-travel distance. */
 #define ENC_FAULT_CLEAR_COUNTS	64u
 #define ENC_LEFT_A_PIN		28u
 #define ENC_LEFT_B_PIN		7u
@@ -71,8 +70,7 @@
      a wheel creeps when it should be nearly still -> lower MOTION_KS.
    - Wheels cannot reach the speed at all -> MOTION_MAX_DUTY is the cap
      (check the motor/driver rating before raising it). */
-#define ENC_COUNTS_PER_REV	360.0f	/* PROVISIONAL (D03): decoded counts per wheel rev */
-#define WHEEL_DIAMETER_MM	65.0f	/* PROVISIONAL (D03) */
+#define ENC_COUNTS_PER_MM 11.649f /* INT-66: mean of both wheels over 500 mm */
 #define TRACK_WIDTH_MM		130.0f	/* PROVISIONAL (D03) */
 #define MOTION_SPEED_MAX_MMPS	500.0f	/* PROVISIONAL (D07): speed limit; the 9-bit command field holds 511 */
 #define MOTION_KS		0.10f	/* PROVISIONAL (D07): static-friction duty added whenever a wheel must turn; raise if a slow wheel stalls */
@@ -85,7 +83,7 @@
 #define MOTION_APPROACH_GAIN	4.0f	/* 1/s: speed = gain * remaining distance */
 #define MOTION_STATIONARY_CPS	5.0f	/* PROVISIONAL (D08): below this a wheel is stationary */
 #define MOTION_STALL_MS		400u	/* PROVISIONAL (D07) */
-#define MOTION_ACTION_TIMEOUT_MS 8000u	/* PROVISIONAL (D07) */
+#define MOTION_ACTION_TIMEOUT_MS 12000u /* D07 trial: corrected turn distances */
 #define MOTION_PERIOD_MS	20u
 
 /* --- S3 line ------------------------------------------------------- */
@@ -120,17 +118,17 @@
 #define MOTION_STALL_GUARD_ENABLED 0 /* user-requested trial configuration */
 #endif
 #define RECOVERY_MS 30000u
-#define MISSION_LINE_LOST_MS 1000u /* user: recover only after >1 s white/white */
+#define MISSION_LINE_LOST_MS 500u /* user: continuous fresh white/white */
 #define RECOVERY_TRAVEL_MM 1200u /* PROPOSAL D07: wheel excursion bound */
-#define RECOVERY_SPEED_MMPS 180u /* PROPOSAL D07: each pivot wheel */
-#define RECOVERY_TARGET_DEG 100 /* PROPOSAL D07: wider stationary sweep */
+#define RECOVERY_SPEED_MMPS 36u /* D07: preserves pre-calibration count speed */
+#define RECOVERY_TARGET_DEG 70 /* user: sweep each side of the stopped pose */
 #define RECOVERY_TARGET_TOL_DEG 5
-#define RECOVERY_ALIGN_STEP_DEG 10 /* bounded pivot toward visible line */
-#define RECOVERY_ALIGN_ERROR_Q 25
+#define RECOVERY_OVERSHOOT_DEG 20 /* PROPOSAL D07/D08: coast before reversal */
+#define RECOVERY_ALIGN_ERROR_Q 25 /* bypass original-line alignment only */
 #define MISSION_CONFIRM_SAMPLES 3u
 #define BASE_DUTY		0.25f	/* PROVISIONAL (D07) */
 #define BROAD_DUTY		0.20f	/* PROVISIONAL (D07) */
-#define MAX_STEER		0.60f	/* tracking steering limit */
+#define MAX_STEER		0.55f	/* tracking steering limit */
 /* Line PID on the two-sensor error (right - left black fraction, -1..+1; the
    sensors sit on the 18 mm line's edges), output in steering units (+-1 = full
    differential, then limited to MAX_STEER). The IR edge is nearly binary, so
@@ -150,8 +148,8 @@
    - Faster overall -> raise MISSION_FOLLOW_SPEED_MMPS. The build checks that
      the fastest wheel (follow speed x LINE_PEAK_WHEEL, about 1.04 now) stays
      within MOTION_SPEED_MAX_MMPS (at most 511, the command field). */
-#define LINE_KP			0.50f	/* PROVISIONAL (D07): steering per unit error */
-#define LINE_KI			0.30f	/* PROVISIONAL (D07): steering per unit error x s */
+#define LINE_KP			0.40f	/* PROVISIONAL (D07): steering per unit error */
+#define LINE_KI			0.35f	/* PROVISIONAL (D07): steering per unit error x s */
 #define LINE_KD			0.000f	/* PROVISIONAL (D07): steering per unit error / s */
 #define LINE_I_LIMIT		0.40f	/* cap on the integral term, steering units (anti-windup) */
 #define LINE_ERROR_TAU_MS	60.0f	/* PROVISIONAL (D07): error low-pass time constant */
@@ -167,11 +165,12 @@
 #define LINE_BINARY_RATE 0.80f /* PROVISIONAL (D07): buildup per second, to MAX_STEER */
 
 /* --- Mission (S3). UNMEASURED PLACEHOLDERS until #59/#61 (D01, D02, D07) ----- */
-#define MISSION_FOLLOW_SPEED_MMPS	450.0f	/* PROVISIONAL (D07): straight-line follow speed, mm/s */
-#define MISSION_BROAD_SPEED_MMPS	90.0f	/* PROVISIONAL (D07): crossing broad black */
-#define MISSION_TURN_SPEED_MMPS		100.0f	/* PROVISIONAL (D07) */
-#define MISSION_CLEAR_SPEED_MMPS	100.0f	/* PROVISIONAL (D07) */
+#define MISSION_FOLLOW_SPEED_MMPS 70.0f /* D07: scaled to measured counts/mm */
+#define MISSION_BROAD_SPEED_MMPS 14.0f /* D07: preserves prior count speed */
+#define MISSION_TURN_SPEED_MMPS 15.0f /* D07: preserves prior count speed */
+#define MISSION_CLEAR_SPEED_MMPS 15.0f /* D07: preserves prior count speed */
 #define MISSION_CLEAR_MM		60.0f	/* PROVISIONAL (D02): drive clear of a junction after a turn */
+#define MISSION_STRAIGHT_MM 25u /* user: straight exit before tracking */
 #define MISSION_JUNCTION_MIN_COUNTS	6u	/* PROVISIONAL (D02): broad black this long is a junction */
 /* Physical envelope/coverage release is pending D02/D03/D05/D07. The
    synthetic host fixture may explicitly enable the policy to exercise it. */
@@ -186,7 +185,7 @@
 #define MISSION_PASS_JUMP_MM		150u	/* PROVISIONAL (D05): side range jump marking pass-by */
 #define MISSION_PASS_LEG_MM		2000.0f	/* longest parallel leg before the bypass fails */
 #define MISSION_BYPASS_TIMEOUT_MS	90000u	/* whole bypass must finish by then */
-#define BYPASS_LINE_SPEED_MMPS 30u /* PROPOSAL D07: final line alignment */
+#define BYPASS_LINE_SPEED_MMPS 5u /* D07: scaled final line alignment */
 #define MISSION_UTURN_PAUSE_MS 200u /* requested duration; stationary reference provisional D02/D08 */
 #define MISSION_START_WAIT_MS		200u	/* wait for Motion to leave its stop latch */
 
@@ -263,7 +262,7 @@
 #ifndef S5_PROFILE_RANGE_ERROR_MM
 #define S5_PROFILE_RANGE_ERROR_MM 10u /* proposed model input, not sensor accuracy */
 #endif
-#define BYPASS_SPEED_MMPS 60u
+#define BYPASS_SPEED_MMPS 9u /* D07: scaled to measured counts/mm */
 #define BYPASS_CHUNK_MM 50u
 #define BYPASS_TRAVEL_MM 4000u
 #define BYPASS_SENSE_TIMEOUT_MS 2000u
@@ -350,8 +349,10 @@ _Static_assert((LEFT_ENCODER_SIGN == 1 || LEFT_ENCODER_SIGN == -1) &&
 _Static_assert(MOTION_SPEED_MAX_MMPS < 511.0f, "commanded speed must fit the 9-bit command field");
 _Static_assert(MOTION_KF >= 0.0f && MOTION_KS >= 0.0f && MOTION_KS < MOTION_MAX_DUTY,
 	"feedforward terms must be non-negative and below the duty limit");
-_Static_assert(MOTION_SPEED_MAX_MMPS > 0.0f && WHEEL_DIAMETER_MM > 0.0f &&
-	TRACK_WIDTH_MM > 0.0f && ENC_COUNTS_PER_REV > 0.0f, "motion geometry must be positive");
+_Static_assert(MOTION_SPEED_MAX_MMPS > 0.0f && ENC_COUNTS_PER_MM > 0.0f &&
+	TRACK_WIDTH_MM > 0.0f, "motion geometry must be positive");
+_Static_assert(MOTION_TARGET_MAX_MM * ENC_COUNTS_PER_MM < ENC_COUNT_MASK / 2u,
+    "distance targets must fit encoder signed half range");
 _Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS, "stall limit must precede the action timeout");
 /* Fastest wheel while following: f(s) = (1 - k*s/S) * (1 + s) times the follow
    speed, for steering s in 0..S (S = MAX_STEER, k = LINE_CURVE_SLOWDOWN). f peaks
@@ -391,9 +392,11 @@ _Static_assert(BYPASS_TRAVEL_MM <= 4095u && BYPASS_SENSE_ATTEMPTS <= 3u &&
 _Static_assert(RECOVERY_SPEED_MMPS > 0u &&
     RECOVERY_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS &&
     RECOVERY_TARGET_DEG > 0 && RECOVERY_TARGET_DEG <= 175 &&
-    RECOVERY_ALIGN_STEP_DEG > 0 && RECOVERY_ALIGN_STEP_DEG <= 10 &&
-    RECOVERY_TRAVEL_MM * ENC_COUNTS_PER_REV /
-        (3.14159265f * WHEEL_DIAMETER_MM) < ENC_COUNT_MASK / 2u,
+    RECOVERY_TARGET_TOL_DEG > 0 &&
+    RECOVERY_TARGET_TOL_DEG < RECOVERY_TARGET_DEG &&
+    RECOVERY_OVERSHOOT_DEG >= RECOVERY_TARGET_TOL_DEG &&
+    RECOVERY_TARGET_DEG + RECOVERY_OVERSHOOT_DEG <= 180 &&
+    RECOVERY_TRAVEL_MM * ENC_COUNTS_PER_MM < ENC_COUNT_MASK / 2u,
     "recovery pivots must fit Motion targets and encoder half range");
 _Static_assert(BYPASS_LINE_SPEED_MMPS > 0u &&
     BYPASS_LINE_SPEED_MMPS * 2u <= MOTION_SPEED_MAX_MMPS,

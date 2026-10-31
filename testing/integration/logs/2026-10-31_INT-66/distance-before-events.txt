@@ -1,0 +1,12 @@
+data: {"type": "status", "online": true}
+
+data: {"sequence": 74, "mission": "READY", "motion": "IDLE", "line": "UNKNOWN", "action_id": 0, "mapped": false, "faults": [], "left": 2210, "right": 9, "hump_count": 0, "hump_max_mm": null, "front_mm": 590, "barcode": "-", "barcode_action": "UNMAPPED", "obstacle_width_mm": 0, "obstacle_depth_mm": 0, "type": "telemetry", "speed_left": 0, "speed_right": 0, "direction": "stopped"}
+
+data: {"sequence": 75, "mission": "READY", "motion": "IDLE", "line": "UNKNOWN", "action_id": 0, "mapped": false, "faults": [], "left": 2210, "right": 9, "hump_count": 0, "hump_max_mm": null, "front_mm": 595, "barcode": "-", "barcode_action": "UNMAPPED", "obstacle_width_mm": 0, "obstacle_depth_mm": 0, "type": "telemetry", "speed_left": 0, "speed_right": 0, "direction": "stopped"}
+
+data: {"sequence": 76, "mission": "READY", "motion": "IDLE", "line": "UNKNOWN", "action_id": 0, "mapped": false, "faults": [], "left": 2210, "right": 9, "hump_count": 0, "hump_max_mm": null, "front_mm": 590, "barcode": "-", "barcode_action": "UNMAPPED", "obstacle_width_mm": 0, "obstacle_depth_mm": 0, "type": "telemetry", "speed_left": 0, "speed_right": 0, "direction": "stopped"}
+
+data: {"sequence": 77, "mission": "READY", "motion": "IDLE", "line": "UNKNOWN", "action_id": 0, "mapped": false, "faults": [], "left": 2210, "right": 9, "hump_count": 0, "hump_max_mm": null, "front_mm": 594, "barcode": "-", "barcode_action": "UNMAPPED", "obstacle_width_mm": 0, "obstacle_depth_mm": 0, "type": "telemetry", "speed_left": 0, "speed_right": 0, "direction": "stopped"}
+
+data: {"sequence": 78, "mission": "READY", "motion": "IDLE", "line": "UNKNOWN", "action_id": 0, "mapped": false, "faults": [], "left": 2210, "right": 9, "hump_count": 0, "hump_max_mm": null, "front_mm": 594, "barcode": "-", "barcode_action": "UNMAPPED", "obstacle_width_mm": 0, "obstacle_depth_mm": 0, "type": "telemetry", "speed_left": 0, "speed_right": 0, "direction": "stopped"}
+

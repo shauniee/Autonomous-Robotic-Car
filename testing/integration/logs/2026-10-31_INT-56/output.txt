@@ -1,0 +1,7 @@
+Unmapped junction + 2000 ms fresh LOST: NAVIGATE/CONFIRM, mode=1 speed=90 steer=0 action=1; no recovery
+Three distinct VISIBLE samples return to FOLLOW_LINE without barcode
+Clearance left offset=0 counts, right short=30 counts: left duty=0.000000 action=2
+Clearance left offset=12 counts, right short=30 counts: left duty=-0.341871 action=2
+Clearance left offset=-12 counts, right short=30 counts: left duty=0.519072 action=2
+Clearance left offset=12 counts, right short=30 counts: left duty=-0.521906 action=2
+Scripted true position drift can reactivate/reverse DISTANCE; not a physical jitter or encoder-noise measurement

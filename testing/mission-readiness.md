@@ -55,7 +55,7 @@ Each value measured here replaces a placeholder that later behaviour depends on.
 | --- | --- | --- | --- |
 | MR-12 | Line IR raw ADC over black and white at the mounted height and course lighting; then GP20 black/white calibration | After bounded boot IMU calibration outcome, contrast at least the validated `IR_MIN_CONTRAST`; one chirp then two chirps; `Line: IR invalid` clears | Raw black/white per sensor (D04) |
 | MR-13 | Barcode IR (GP16) level over black and over white | Level differs consistently | Which level means black: `BARCODE_BLACK_HIGH` (D04) |
-| MR-14 | Turn each wheel one revolution forward by hand, three times | Counts increase on both wheels, repeatably; no encoder fault | Counts per revolution: `ENC_COUNTS_PER_REV`; signs: `*_ENCODER_SIGN` (D03) |
+| MR-14 | Turn each wheel one revolution forward by hand, three times | Counts increase on both wheels, repeatably; no encoder fault | Record counts/revolution in project specs; effective rolling scale: `ENC_COUNTS_PER_MM`; signs: `*_ENCODER_SIGN` (D03) |
 | MR-15 | Force an encoder fault (wiggle a connector), then spin the wheel by hand | `Motion: encoder` appears, then clears after spinning | - |
 | MR-16 | Boot with the robot still; tilt the front up; tap the chassis sharply | No calibration fault; pitch rises when the nose is up; `Terrain: impact` and a latched stop on the tap | Pitch sign; tap level that triggers (D06) |
 | MR-17 | Sonar against a flat board at 100, 250, 500 and 1000 mm; then aim at open space | Reported range measured and agreed against a tape measure; open space shows `no echo` and the robot is **not** stopped | Error at each distance (D05) |
@@ -68,7 +68,7 @@ Turns, distances and barcode widths all come from encoder travel, so these value
 | ID | Check | Pass when | Record |
 | --- | --- | --- | --- |
 | MR-19 | Short forward command on each motor | Both wheels drive forward | `LEFT_FORWARD_A`, `RIGHT_FORWARD_A` (D03) |
-| MR-20 | Measure wheel diameter and track width with calipers | - | `WHEEL_DIAMETER_MM`, `TRACK_WIDTH_MM` (D03) |
+| MR-20 | Measure wheel diameter and track width with calipers | - | Record diameter as hardware evidence; `TRACK_WIDTH_MM` (D03); odometry uses direct rolling calibration |
 | MR-21 | Drive 1 m straight five times at follow speed | Distance and lateral error measured and agreed (Tribunal proposal: lateral error at most 10 mm) | Errors; PID gains `MOTION_KP/KI/KD` (D07) |
 | MR-22 | 90 degrees left, 90 degrees right, 180 degrees; five each | Final heading error measured and agreed (Tribunal proposal: at most 5 degrees) | Errors per turn (D07) |
 | MR-23 | Repeat MR-22 with one wheel on a hump | Error measured and compared with MR-22 (M3 requires accuracy to hold) | Errors with one wheel raised |

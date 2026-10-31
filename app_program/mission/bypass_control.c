@@ -29,12 +29,11 @@ static void fail(bypass_control_t *control)
 
 static bool pose_step(bypass_control_t *control, const bypass_input_t *input)
 {
-    int32_t delta[2], total[2];
+    int32_t delta[2];
     uint64_t edges = 0u;
     for (unsigned wheel = 0u; wheel < 2u; ++wheel)
     {
         delta[wheel] = enc_travel_signed(input->count[wheel], control->previous[wheel]);
-        total[wheel] = enc_travel_signed(input->count[wheel], control->origin[wheel]);
         edges += delta[wheel] < 0 ? (uint64_t)(-(int64_t)delta[wheel]) : (uint32_t)delta[wheel];
         control->previous[wheel] = input->count[wheel];
     }
@@ -44,7 +43,10 @@ static bool pose_step(bypass_control_t *control, const bypass_input_t *input)
         return false;
     }
     control->edge_counts += (uint32_t)edges;
-    float heading = enc_heading_deg(total[0], total[1]) * 100.0f;
+    /* Common forward travel may exceed a wheel's signed half range. */
+    int32_t difference = enc_travel_signed(input->count[1] - input->count[0],
+        control->origin[1] - control->origin[0]);
+    float heading = enc_heading_deg(0, difference) * 100.0f;
     if (fabsf(heading) > 18000.0f)
     {
         return false;

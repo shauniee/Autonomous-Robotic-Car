@@ -285,15 +285,15 @@ static void observe_junction(Mission *m, const MissionInputs *in)
 
 static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *out)
 {
+    if (in->line != IR_LINE_LOST)
+    {
+        m->line_loss_pending = 0u;
+    }
     if (m->in_broad && (!in->usable_line || obstacle_ahead(in) ||
         robot_time_elapsed(in->now_ms, m->broad_since_ms) >= MOTION_ACTION_TIMEOUT_MS))
     {
         to_stop(m, in, out, true);
         return;
-    }
-    if (in->line != IR_LINE_LOST)
-    {
-        m->line_loss_pending = 0u;
     }
     if (!m->manual_held && in->have_barcode &&
         in->barcode_action != BARCODE_UNMAPPED)
@@ -348,12 +348,12 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
                 }
                 return;
             }
-            /* Straight and unmapped crossings still confirm the outgoing
-               branch using distinct acquisitions before ordinary following. */
-            m->phase = JUNCTION_PHASE_CONFIRM;
-            m->visible_streak = 0u;
-            m->confirmed_sample_ms = in->line_sampled_ms;
+            m->phase = JUNCTION_PHASE_STRAIGHT;
+            m->broad_origin[0] = in->wheel_count[0];
+            m->broad_origin[1] = in->wheel_count[1];
             enter(m, MISSION_NAVIGATE, in->now_ms);
+            out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS,
+                0, 1u);
             return;
         }
     }
@@ -386,10 +386,8 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         }
         m->line_lost_sampled_ms = in->line_sampled_ms;
         if (robot_time_elapsed(in->line_sampled_ms,
-                m->line_lost_since_ms) <= MISSION_LINE_LOST_MS)
+                m->line_lost_since_ms) < MISSION_LINE_LOST_MS)
         {
-            /* Keep the last tracking correction through a brief white gap.
-               Renew freshness from IR, never from this loop's wall clock. */
             out->command = follow_command(in,
                 line_follow_speed(m->line_steer_q), m->line_steer_q, 1u);
             return;
@@ -406,10 +404,13 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
             .count = {in->wheel_count[0], in->wheel_count[1]},
             .sampled_ms = in->line_sampled_ms};
         recovery_control_begin(&m->recovery, &initial);
-        m->visible_streak = 0u;
-        m->confirmed_sample_ms = in->line_sampled_ms;
+        m->held = BARCODE_UNMAPPED;
+        m->manual_held = 0u;
+        m->reacquire_bypass = 0u;
         m->in_broad = false;
-        handle_reacquire(m, in, out);
+        out->stop_scanner = true;
+        out->scan_cancel = true;
+        out->side_watch_on = false;
         return;
     }
 
@@ -557,11 +558,29 @@ static void handle_scan(Mission *m, const MissionInputs *in, MissionOutputs *out
 static void handle_junction_turn(Mission *m, const MissionInputs *in,
     MissionOutputs *out)
 {
-    if (m->phase > JUNCTION_PHASE_CONFIRM || obstacle_ahead(in) ||
+    if (m->phase > JUNCTION_PHASE_STRAIGHT || obstacle_ahead(in) ||
         robot_time_elapsed(in->now_ms, m->state_since_ms) >=
             MOTION_ACTION_TIMEOUT_MS)
     {
         to_stop(m, in, out, true);
+        return;
+    }
+    if (m->phase == JUNCTION_PHASE_STRAIGHT)
+    {
+        if (!in->usable_line ||
+            robot_time_elapsed(in->now_ms, in->line_sampled_ms) > IR_MAX_GAP_MS)
+        {
+            to_stop(m, in, out, true);
+            return;
+        }
+        if (enc_mean_travel(in->wheel_count, m->broad_origin) >=
+            MISSION_STRAIGHT_MM * ENC_COUNTS_PER_MM)
+        {
+            enter(m, MISSION_FOLLOW_LINE, in->now_ms);
+            handle_follow(m, in, out);
+            return;
+        }
+        out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS, 0, 1u);
         return;
     }
     if (m->phase == JUNCTION_PHASE_PAUSE_WAIT)
@@ -642,7 +661,6 @@ static void handle_reacquire(Mission *m, const MissionInputs *in,
         .sampled_ms = in->line_sampled_ms, .functional = in->usable_line,
         .visible = in->line == IR_LINE_VISIBLE && in->guidance_valid,
         .hazard = obstacle_ahead(in), .cancel = in->stop_down,
-        .error_q = in->line_error,
         .stationary = in->stationary,
         .motion_done = in->motion_action == m->current_action &&
             in->motion_status == RD_MOTION_DONE,
@@ -658,6 +676,7 @@ static void handle_reacquire(Mission *m, const MissionInputs *in,
     else if (result.phase == RECOVERY_DONE)
     {
         enter(m, MISSION_FOLLOW_LINE, in->now_ms);
+        out->start_scanner = true;
     }
     else if (result.turn)
     {

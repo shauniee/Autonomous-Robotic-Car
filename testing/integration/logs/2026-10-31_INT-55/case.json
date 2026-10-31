@@ -1,0 +1,9 @@
+{
+  "id": "INT-55",
+  "date": "2026-10-31",
+  "base_commit": "8981d04620d5537e4f5b68980528b452b752abb1",
+  "procedure": "Run pure suite. Check off-center VISIBLE detection brakes actual Motion, returns IDLE feedback and reaches FOLLOW_LINE. Exercise cached, moving and interrupted visibility confirmation.",
+  "acceptance": "Three distinct stationary VISIBLE samples return to tracking without centering pivots; repeated/moving samples cannot confirm; loss clears confirmation; existing sweep, hazard, expiry and timeout guards pass.",
+  "profile": "Host C11; default and guarded Motion, PID and binary Mission.",
+  "hardware": "None; no firmware execution, wiring, power or calibration."
+}

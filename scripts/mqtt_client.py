@@ -56,7 +56,7 @@ def config_value(name, default):
     return float(match.group(1)) if match else default
 
 
-COUNTS_PER_MM = config_value("ENC_COUNTS_PER_REV", 360.0) / (3.14159265 * config_value("WHEEL_DIAMETER_MM", 65.0))
+COUNTS_PER_MM = config_value("ENC_COUNTS_PER_MM", 11.649)
 HUMP_MM_PER_CODE = config_value("HUMP_MM_PER_COUNT", 1.0)
 
 
@@ -198,6 +198,9 @@ def dashboard_message(frame, motion):
                  direction=measured[2] if measured else None)
         return t
     message = {"type": "event" if kind == EVENT else "ack" if kind == ACK else "other", "text": describe(frame, motion)}
+    if kind == EVENT and frame[1] == 3:
+        message.update(obstacle_depth_mm=struct.unpack_from("<H", frame, 9)[0],
+                       event_id=frame.hex())
     if kind == ACK:
         message.update(sequence=frame[1], result=name(ACK_RESULT, frame[2]), ok=frame[2] == 0)
     return message
@@ -321,6 +324,8 @@ def direction_frame(sequence, action):
 
 
 def self_test():
+    # INT-66 measured rolling distance must agree with the firmware scale.
+    assert abs((5833 + 5816) * 0.5 / COUNTS_PER_MM - 500.0) < 0.01
     t = decode_telemetry(GOLDEN_TELEMETRY)
     assert frame_type(GOLDEN_TELEMETRY) == TELEMETRY and t["sequence"] == 0x2A and t["mission"] == "NAVIGATE"
     assert t["motion"] == "FAILED" and t["line"] == "VISIBLE" and t["action_id"] == 5 and t["mapped"]
@@ -332,6 +337,11 @@ def self_test():
     assert direction_frame(7, 4) == bytes([0x27, 7, 4])
     assert mapping_letters("abcd") == "ABCD" and mapping_letters(["W", "F", "a", "Z"]) == "WFAZ"
     assert not any(mapping_letters(bad) for bad in ("ABCA", "ABC", "ABCDE", "AB1D", "ABÇD", ""))
+    obstacle = bytes([0x22, 3, 0]) + struct.pack("<HHHH", 10, 20, 30, 40)
+    event = dashboard_message(obstacle, Motion())
+    assert event["type"] == "event" and event["obstacle_depth_mm"] == 40
+    assert event["event_id"] == obstacle.hex() and "OBSTACLE" in event["text"]
+    assert "obstacle_depth_mm" not in dashboard_message(GOLDEN_EVENT, Motion())
     ack = dashboard_message(bytes([0x25, 0x07, 0x01]), Motion())
     assert ack["type"] == "ack" and ack["sequence"] == 7 and not ack["ok"] and ack["result"].startswith("BUSY")
     assert [len(bits) for _, bits in FAULTS] == header_fault_widths(), "FAULTS disagrees with robot_data.h"

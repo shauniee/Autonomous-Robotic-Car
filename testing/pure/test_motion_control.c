@@ -6,7 +6,7 @@
 #include "../../app_program/subsystem2/motion_control.h"
 
 #define PLANT_CPS_PER_DUTY 2000.0f
-#define MM_PER_COUNT (3.14159265f * WHEEL_DIAMETER_MM / ENC_COUNTS_PER_REV)
+#define MM_PER_COUNT (1.0f / ENC_COUNTS_PER_MM)
 
 typedef struct {
     MotionController ctl;
@@ -96,6 +96,39 @@ static void test_invalid_and_stop(void)
     MotionCommand stop = motion_command_make(MOTION_MODE_STOP, 200.0f, 0.0f, 0, 2u, 0u);
     out = sim_step(&s, &stop, false, 0);
     assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);		/* speed field ignored */
+}
+
+static void test_action_brake_handoff(void)
+{
+    for (unsigned mode = MOTION_MODE_DISTANCE; mode <= MOTION_MODE_TURN; ++mode)
+    {
+        for (unsigned cause = 0u; cause < 3u; ++cause)
+        {
+            Sim s;
+            sim_init(&s);
+            MotionCommand cmd = motion_command_make(mode, 100.0f,
+                90.0f, 0, 1u, s.now);
+            MotionOutput out = sim_step(&s, &cmd, false, 0);
+            assert(out.status == RD_MOTION_RUNNING);
+            MotionCommand stop = motion_command_make(MOTION_MODE_STOP,
+                0.0f, 0.0f, 0, 0u, s.now);
+            s.now += MOTION_EXPIRY_MS + 1u;
+            /* Explicit STOP, missing command, expired action respectively. */
+            out = sim_step(&s, cause == 0u ? &stop :
+                (cause == 1u ? 0 : &cmd), true, 0);
+            assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);
+            assert(out.status == (cause == 0u ?
+                RD_MOTION_IDLE : RD_MOTION_FAILED));
+            if (cause == 0u)
+            {
+                cmd = motion_command_make(mode, 100.0f,
+                    mode == MOTION_MODE_TURN ? -90.0f : 90.0f,
+                    0, 2u, s.now);
+                out = sim_step(&s, &cmd, false, 0);
+                assert(out.status == RD_MOTION_RUNNING);
+            }
+        }
+    }
 }
 
 static void run_to_done(Sim *s, MotionCommand *cmd, int max_steps, MotionOutput *out)
@@ -209,8 +242,8 @@ static void test_follow_slowdown_never_reverses(void)
     in.now_ms += MOTION_PERIOD_MS;
     in.count[0] += 16u;
     in.count[1] += 16u;
-    /* Preserve the actual diagnosed input even if search tuning changes. */
-    cmd = motion_command_make(MOTION_MODE_FOLLOW, 90.0f,
+    /* Preserve the old low-speed count target after correcting its mm label. */
+    cmd = motion_command_make(MOTION_MODE_FOLLOW, MISSION_BROAD_SPEED_MMPS,
         0.0f, -96, 1u, in.now_ms);
     motion_control_step(&control, &cmd, &in, &out);
     printf("tracking -> recovery slowdown: left duty=%f right duty=%f\n",
@@ -240,7 +273,7 @@ static void test_discrete_overspeed_does_not_reverse(void)
             MotionInput in = {.now_ms = 100u, .count = {0u, 0u}};
             float target = direction * (mode == MOTION_MODE_DISTANCE ? 28.0f : 90.0f);
             MotionCommand cmd = motion_command_make((motion_mode_t)mode,
-                90.0f, target, 0, 2u, in.now_ms);
+                MISSION_BROAD_SPEED_MMPS, target, 0, 2u, in.now_ms);
             MotionOutput out;
             motion_control_step(&control, &cmd, &in, &out);
             float goal = mode == MOTION_MODE_DISTANCE ? 28.0f * ENC_COUNTS_PER_MM :
@@ -301,7 +334,9 @@ static void test_turn_endpoint_does_not_reactivate(void)
         cmd.sampled_ms = in.now_ms;
         motion_control_step(&control, &cmd, &in, &out);
         assert(out.status == RD_MOTION_RUNNING && out.duty[0] == 0.0f);
-        for (int drift = -12; drift <= 12; drift += 24)
+        int excursion = (int)ceilf(TRACK_WIDTH_MM * 0.5f *
+            MOTION_ANGLE_TOL_DEG * 3.14159265f / 180.0f * ENC_COUNTS_PER_MM) + 12;
+        for (int drift = -excursion; drift <= excursion; drift += 2 * excursion)
         {
             in.count[0] = enc_advance(0u, -direction * (arc + drift));
             in.now_ms += MOTION_PERIOD_MS;
@@ -335,6 +370,7 @@ int main(void)
 {
     test_freshness_and_rewrite();
     test_invalid_and_stop();
+    test_action_brake_handoff();
     test_distance_turn_actions();
     test_stall_and_timeout();
     test_follow_steering();

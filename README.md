@@ -35,6 +35,10 @@ Docker supplies Mosquitto, the Python dashboard, the Arm compiler and Pico SDK 2
    local; never commit it. Rebuild firmware after changing it.
 
    ```sh
+   ipconfig getifaddr en0
+   ```
+
+   ```sh
    test -e config/wifi_secrets.h || cp config/wifi_secrets.example.h config/wifi_secrets.h
    docker compose up -d --build
    ```

@@ -1,0 +1,4 @@
+Command: cc -std=c11 -O2 -Wall -Wextra -Werror testing/integration/logs/2026-10-31_INT-60/transition.c app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o /tmp/arc-int60
+450 -> 90: braked first 2s=2 later 4s=0 reversed=0 final duty=0.065589..0.097533
+450 -> STOP -> 90: braked first 2s=0 later 4s=0 reversed=0 final duty=0.066404..0.098499
+INT-60: idealized transition assertions PASS; no physical friction claim

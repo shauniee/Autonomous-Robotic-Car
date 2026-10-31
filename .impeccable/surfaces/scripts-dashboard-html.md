@@ -26,11 +26,16 @@ One-screen bench ledger. Retain the dark board, condensed identity details
 and meaningful lamps; use readable system-sans data and atomic updates.
 First viewport: all seven Mission states with only the reported state marked;
 Mission faults in the top strip; five subsystem health/fault rows in S1–S5 order; every existing decoded
-sensor reading; four custom barcode letters and ACK; junction tests; speed
+sensor reading; a black/white IR checklist followed by four custom barcode
+letters and ACK, shown one step at a time; junction tests; speed
 chart and bounded event log. Configuration occupies a fixed right column.
 
 No sequential Mission progress, invented telemetry or remote start/stop.
 Mapping drafts and installed status are distinct. Stale data stays visible.
+Encoder readings flank the robot schematic in separate left/right columns.
+Use direction arrows for mapping and junction actions. Live schematic motion
+is encoder-derived; U-turn is available only as an explicitly labelled local
+preview. Reduced motion preserves a static pose and direction text.
 
 ## Acceptance
 

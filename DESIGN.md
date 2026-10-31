@@ -11,7 +11,7 @@
 ## Direction
 
 A compact bench ledger: stable addresses for Mission and every subsystem,
-with sensor detail and custom barcode configuration visible together.
+with sensor detail and a guided calibration/mapping sequence visible together.
 Retain the existing dark, square-cut board and semantic signal lamps;
 replace the tall departure-board composition with a single desktop overview.
 Product truth and offline constraints belong to [PRODUCT.md](PRODUCT.md).
@@ -43,14 +43,22 @@ chart/events lower band; local-control reminder.
 
 The workspace gives remaining width to telemetry and 350px to configuration,
 with a 16px gutter. Telemetry contains the five-row subsystem table and four
-sensor columns. Configuration contains mapping inputs, acknowledgement and
-Send mapping, followed by the existing junction-test controls. Keep Mission state and faults in the top strip; order subsystem rows S1–S5.
+sensor groups. The wider encoder group places separate left/right speed and
+count columns on either side of a top-down robot schematic. Configuration starts with a manual three-step checklist:
+black IR capture, white IR capture, then custom barcode mapping. Show one
+step's instructions at a time; reveal mapping inputs, acknowledgement and
+Send mapping only at step three. Follow with the existing junction-test
+controls. Keep Mission state and faults in the top strip; order subsystem rows S1–S5.
 Motion Reading is the encoder-derived direction (straight labelled Forward);
 Detail is left/right speed. S3/S4 Detail shows Calibrated when usable-line or
 valid-hump evidence confirms calibration, Fault / not calibrated for reported
 owner faults, and Calibration unknown otherwise. S5 retains dimensions.
 Telemetry cannot distinguish a U-turn from a left/right turn. Table faults wrap; never hide
 active faults behind ellipses. Event history scrolls within its own panel.
+The lower band includes numbered obstacle history, width × length without
+timestamps, from completion events received during this page session. Keep
+the latest 200 entries in a keyboard-scrollable list; unavailable width is
+explicit, and repeated telemetry never creates an entry.
 
 Use 24px horizontal page padding, 12px main gaps and 8–16px component padding.
 Above 1100px and below 800px high, reduce vertical padding/chart height.
@@ -71,11 +79,25 @@ completed obstacle dimensions remain labelled; raw IR/IMU/servo data is not
 implied. Update readings atomically without character-flip animation.
 
 Four native letter inputs map Left, Right, Straight and U-turn in that order.
+Direction labels and junction buttons use consistent stroked SVG arrows, with
+accessible names and hover titles retaining the direction words.
+Black/white progress is confirmed by the operator using local capture feedback,
+not inferred from telemetry. Keep the checklist in page memory; refresh starts
+at black. Restart checklist returns to black without changing the robot or
+discarding mapping drafts. Explain rejection recovery and RAM-only calibration.
 Input letters are drafts until an accepted ACK; telemetry only reports whether
 a mapping exists, not its four letters. Duplicate, incomplete, offline, stale
 and moving states disable Send with an explanation. ACK status shows accepted,
 refused or timed-out outcome. Local start/stop controls remain labelled.
 Junction tests retain the existing live FOLLOW_LINE gate and one-shot behaviour.
+
+The encoder schematic animates reported forward/reverse/left/right movement;
+stopped or unknown readings remain still. This is a direction diagram, not a
+position, heading, speed-scale or completed-turn measurement. Telemetry cannot
+identify U-turns. Four local arrow previews include U-turn, explicitly labelled
+Preview only; they never send commands or replace live encoder numbers. Live
+returns to the latest received direction. Stale/offline, hidden-page and
+offscreen diagrams pause; reduced motion uses static direction poses.
 
 ## Verification
 

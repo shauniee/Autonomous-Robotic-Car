@@ -132,8 +132,11 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
 {
     out->stall = false;
     if (cmd == 0 || motion_cmd_mode(cmd) == MOTION_MODE_STOP || !motion_command_fresh(cmd, in->now_ms)) {
-        /* An action cut short by a stale or missing sample has failed. */
-        bool was_running = c->active && c->status == RD_MOTION_RUNNING &&
+        /* Recovery brakes deliberately before aligning or reversing. */
+        bool requested_stop = cmd != 0 &&
+            motion_cmd_mode(cmd) == MOTION_MODE_STOP;
+        bool was_running = !requested_stop && c->active &&
+                           c->status == RD_MOTION_RUNNING &&
                            (c->mode == MOTION_MODE_DISTANCE || c->mode == MOTION_MODE_TURN);
         uint8_t id = c->action_id;
         motion_control_reset(c);

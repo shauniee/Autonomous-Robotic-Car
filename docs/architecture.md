@@ -142,7 +142,8 @@ Never undo a turn. Pause reference/placement tolerance is pending D02/D08.
 
 Cross broad black with straight FOLLOW commands, without a fixed-distance
 advance. On leaving a qualified encounter, consume the pending instruction or
-continue straight through outgoing-line confirmation. There is no pre-turn
+drive straight for the requested encoder-measured segment at normal follow
+speed, then resume tracking without outgoing-line confirmation. There is no pre-turn
 DISTANCE action or completion gate. See the [junction revision](project-specs.md#mission-day-barcode-rule).
 Confirm a junction using tracking evidence plus
 travel/geometry qualification. A single black barcode-sensor reading neither
@@ -157,16 +158,20 @@ remain a pending course/policy decision, not an invented queue of route choices.
 
 ### Recovery and encounter coordination
 
-Healthy white/white IR must persist through the
-[line-loss qualification interval](project-specs.md#pending-decisions)
-before entering REACQUIRE. During qualification, retain tracking steering;
-visible line resumes PID updates and clears the pending loss. Missing/stale
-acquisition still stops required movement. Standalone recovery brakes and waits for encoder stationarity, then pivots
-left/right through the provisional wider sweep defined in
-[project specs](project-specs.md#pending-decisions), for two back-and-forth
-attempts. It brakes before each reversal. Either sensor finding line immediately
-brakes the sweep and initiates small pivot corrections;
-confirm stable intended-line tracking before resuming. Heading/travel evidence
+Fresh usable white/white must persist for the qualification interval in
+[project specs](project-specs.md#pending-decisions) before ordinary tracking
+enters REACQUIRE, brakes and cancels navigation, barcode, scan and side-watch
+work. During qualification, hold the last tracking steering and its speed;
+line visibility or broad black clears the pending loss. Cached acquisitions
+cannot extend freshness, and gaps cannot qualify missing evidence.
+Missing/stale acquisition still stops required movement. Standalone recovery
+waits for encoder stationarity, then repeats left/right pivots through the
+extent and safety budgets in [project specs](project-specs.md#pending-decisions).
+It brakes before each reversal; endpoint and hard overshoot bounds are separate.
+Either sensor finding a usable VISIBLE line brakes the sweep and returns to
+tracking without a stationary confirmation streak; barcode capture restarts.
+See the
+[recovery handoff revision](project-specs.md#pending-decisions). Heading/travel evidence
 is required after bypass to avoid accepting an unrelated crossing.
 
 Humps remain concurrent with tracking; request half normal tracking speed during

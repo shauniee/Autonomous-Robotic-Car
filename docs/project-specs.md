@@ -111,7 +111,7 @@ The default project is an autonomous robot car on a predefined course, using onb
 | Bypass | Leave the line, travel round without line guidance, keep observing until passed |
 | After bypass | Rejoin the original line and resume |
 | U-turn detail | At the junction, brake, pause approximately 200 ms, turn 180 degrees and track the return branch; never undo the turn (user request; pause reference pending D02/D08) |
-| No pending barcode at junction | Continue straight using sensing and junction qualification; no fixed 25 mm advance (user revision 2026-10-30) |
+| No queued turn at junction | After a qualified black exit, drive straight for 25 mm at normal line-follow speed, then resume tracking without visible-sample confirmation (user revision 2026-10-31) |
 | End of run | Endless healthy operation; local GP21 or a stopping guard ends movement, no automatic finish marker |
 
 ### Course rules
@@ -136,6 +136,19 @@ Continue straight across broad black using sensing; retain the existing
 qualification and turn trigger at the first usable exit from a qualified black
 encounter. No distance-action completion gate remains before a turn.
 The separate post-turn clearance action remains provisional under D02/D07.
+
+Straight-crossing revision confirmed by Nicholas 2026-10-31 supersedes the
+no-command path above: after leaving a qualified black encounter with no queued
+left/right/U-turn (including a queued straight instruction), hold zero steering
+at the normal line-follow speed for 25 mm of mean signed encoder travel, then
+resume ordinary tracking immediately, without a VISIBLE confirmation streak.
+Use continuous FOLLOW rather than a position action so there is no endpoint
+deceleration or transition STOP. Ordinary hump speed reduction and fresh usable
+IR, stop, obstacle, Motion health and navigation deadline guards remain.
+Reuse `broad_origin[2]` for the straight segment's exit pose; private navigation
+phase 5 encodes this segment within the existing three-bit field. No wire or
+storage widths change. The 25 mm request is not measured travel accuracy; D03
+encoder geometry remains provisional. Queued-turn behavior is unchanged.
 
 ### Mission-day barcode rule
 
@@ -419,7 +432,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D04 | Mounted IR position/spacing/height, contrast/noise/lighting range and barcode black polarity; wiring user-confirmed, measured sensing margins still pending | S3 |
 | D05 | Sonar electrical behavior user-confirmed; retain recorded Echo-voltage evidence when available. Calibrate repeat interval/range/servo centre/endpoints/settling, sample groups/median/edge hysteresis, coverage and width-estimation uncertainty | S5 |
 | D06 | Stationary boot IMU calibration before IR: bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Confirm half-speed completion and validate the accepted results-retained-through-starts/stops-until-reboot lifecycle | S4 / Nicholas |
-| D07 | Wheel/line gains, speed/duty/distance/turn/stall limits; stationary wider pivot sweep sequence for two back-and-forth attempts, pivot speed, wheel excursion budget and stable intended-line confirmation; bypass/depth/clearance budgets | Owners / Nicholas |
+| D07 | Wheel/line gains, speed/duty/distance/turn/stall limits; repeated stationary +/-70 degree sweeps, pivot speed, wheel excursion budget and usable-line handoff; bypass/depth/clearance budgets | Owners / Nicholas |
 | D08 | Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | S2 / Nicholas |
 | D09 | Instructor WiFi/broker settings; normal mission requires both before starting, loss mid-run report-only. Decide whether professor buffer wording requires literal RTOS message buffers; existing bounded TX/RX rings retained provisionally | S1 / Nicholas |
 | D10 | Agree first-cut lateral/turn/height/width error, recovery travel and repeatability targets before corresponding physical PASS; label proposals separately from course thresholds | Nicholas |
@@ -562,12 +575,12 @@ Uncalibrated software proposals for review (not course limits/module ratings):
 
 | Setting | Proposal / purpose | Physical acceptance |
 | --- | --- | --- |
-| Recovery | Stop and confirm encoder stationarity; pivot +100, -100, +100, -100 degrees; 180 mm/s per wheel; 30 s / 1200 mm mean absolute wheel excursion bound; 5 degree endpoint/overshoot tolerance | User requested wider stop-then-sweep trial; D03/D07/D08/D13 pending |
-| Recovery alignment | Brake on visible line; <=10 degree pivots toward sensor error; absolute error <=25/127 for three distinct stationary acquisitions at the found heading | D04/D07/D10 pending |
-| Bypass line alignment | 30 mm/s, independently configured from standalone recovery | D04/D07/D10 pending |
+| Recovery | After 500 ms of continuous fresh white/white, brake then repeat +70/-70 degrees; 36 mm/s per wheel after rolling-scale correction; 30 s / 1200 mm mean absolute wheel excursion bound; 5 degree endpoint tolerance, separate 20 degree overshoot allowance | User requested qualified simplified sweep; D03/D07/D08/D13 pending |
+| Recovery handoff | Brake on usable VISIBLE from either sensor; resume tracking without centering or confirmation streak | D04/D07/D10 physical acceptance pending |
+| Bypass line alignment | 5 mm/s after rolling-scale correction, independently configured from standalone recovery | D04/D07/D10 pending |
 | Scan | Three samples, at least two valid; depth enter/exit bands 30/60 mm; two adjacent rays; model range uncertainty 10 mm | D05/D10 pending; uncertainty is a proposed model input, not sensor accuracy |
 | Servo sampling | User-requested +/-20 degree travel; coarse rays -20/-10/0/+10/+20 degrees and 5 degree edge refinement; existing 300 ms settle and 60 ms repeat | Verify endpoints/mounting before release, D05 |
-| Bypass | 60 mm/s, <=50 mm motion chunks, 90 s / 4000 mm whole budget; <=2 s / two completed groups per sensing phase | D02/D03/D05/D07/D08/D13 pending |
+| Bypass | 9 mm/s after rolling-scale correction, <=50 mm motion chunks, 90 s / 4000 mm whole budget; <=2 s / two completed groups per sensing phase | D02/D03/D05/D07/D08/D13 pending |
 | Bypass geometry | Body length/width 200/180 mm, 30 mm clearance; offset >=250 mm, <=600 mm; conservative obstacle width >=200 mm | Proposals only; measure full swept envelope, D03 |
 | Rear-edge / return | Two distinct qualified side groups; 150/100 mm enter/release jump; <=1500 mm pass, <=250 mm baseline search; return within 25 mm lateral / 5 degrees and three distinct tracking acquisitions | D02/D05/D07/D10 pending |
 | Height quality | Raw acceleration norm 900..1100 mg, wheel speed difference <=30 mm/s, speed change <=30 mm/s per fresh sample, 200 ms steady data before a height window | D06/D07/D10 pending; suppress unqualified height results |
@@ -623,7 +636,119 @@ excursion from the stopped pose, not cumulative travel. Four legs and the
 timeout bound oscillation. Freshness, stop, front hazard and action failure
 still abort recovery.
 
-Recovery storage revision before implementation: phase has five values plus
+User recovery handoff revision, 2026-10-31: supersedes the stationary
+centering step above for standalone recovery. Brake when either sensor sees
+a usable VISIBLE line, then confirm three distinct stationary VISIBLE
+acquisitions and return to line tracking regardless of left/right error.
+Ordinary tracking corrects the remaining offset; recovery no longer issues
+10-degree alignment pivots. Losing visibility clears confirmation and resumes
+the bounded sweep. Broad black alone does not confirm a trackable line.
+The >1 s white/white qualification and 150 ms encoder-stationarity check
+remain unchanged software settings, not measured timing results. Bypass
+original-line checks and recovery failure guards remain unchanged.
+
+User sweep revision, 2026-10-31: the reported short, slow single sweep calls
+for wider and faster back-and-forth search. Trial targets are now
++120/-120/+120/-120 degrees, with 240 mm/s maximum per pivot wheel.
+Keep braking and the 150 ms encoder-stationarity check at each reversal.
+Separate the 5-degree endpoint tolerance from a 20-degree overshoot allowance:
+coasting beyond an endpoint must not prematurely exhaust recovery, while
+absolute heading beyond 140 degrees still fails. The existing 30 s, four-leg
+and 1200 mm excursion bounds remain. These are uncalibrated software proposals;
+actual angles, wheel speed and stopping excursion remain pending D03/D07/D08.
+The stable-visible handoff above is retained. No storage or wire widths change;
+the largest reversal from the allowed heading is 260 degrees, within Motion's
+signed 360-degree target limit.
+
+User-reported D03 observation, 2026-10-31: in response to the requested
+one-full-wheel-revolution manual check with GP21 held, Nicholas supplied encoder
+counts 31142 before and 33655 after: delta 2513 decoded counts. Wheel identity,
+other-wheel scale and repeatability remain pending; this is not a completed
+calibration or independently measured physical acceptance. See
+[INT-65 observation](../testing/integration/logs/2026-10-31_INT-65/observation.json).
+The current 360-count setting underestimates this delta by a factor of 6.981;
+under existing diameter/track assumptions, it predicts a physical 10.03 degree
+turn for an estimated 70 degree pivot. Applying this scale also changes wheel
+speed targets, distances, telemetry and terrain integration, so motor-speed
+settings must be reconciled before a powered trial. No code calibration has
+been changed from this single-wheel observation.
+
+Follow-up D03 observation, 2026-10-31: Nicholas identified the 2513-count wheel
+as the right wheel. For the left wheel, after setup movement invalidated the
+first baseline, stable telemetry was 65501 before the requested manual forward
+revolution and 2454 after. Signed 16-bit wrap-safe travel is +2489 counts.
+Both observations are close to 2500 counts/revolution (difference 0.96% of
+their mean); manual angle placement and repeatability remain unmeasured.
+See [INT-66](../testing/integration/TEST_LOG.md#operator-assisted-encoder-calibration--int-66).
+At that observation stage, no encoder/motor setting had changed. A manual 500 mm straight rolling
+measurement is next to establish effective counts/mm without powered motion;
+awaiting the operator's positioned baseline.
+
+Applied rolling-scale revision, 2026-10-31: INT-66's operator-reported 500 mm
+manual straight roll produced left +5833 and right +5816 counts. Effective
+scales are 11.666 and 11.632 counts/mm; use their mean 11.649 counts/mm as the
+single odometry constant. Their relative difference is 0.292%; repeatability,
+measurement uncertainty, loaded slip and track width remain D03/D07. This
+direct rolling calibration replaces the provisional revolution/diameter
+formula; manual-revolution observations remain evidence, not runtime constants.
+No physical wheel diameter is inferred from the two different procedures.
+
+Speed reconciliation preserves approximately the previous encoder counts/s:
+follow 68, broad 14, turn/clear 15, recovery 36, bypass 9 and bypass alignment
+5 mm/s. These are whole-mm/s trial setpoints, not measured achieved speeds;
+wheel PID gains and duty cap are unchanged. The bounded action/navigation
+deadline becomes 12 s: a 180-degree pivot and post-turn clearance now represent
+their actual requested distance rather than an approximately one-seventh arc.
+The existing 30 s recovery deadline remains. Longest 2000 mm individual
+distance target is 23298 counts, within the signed 16-bit half range; the
+1200 mm recovery excursion is 13979 counts. Whole-bypass heading uses modular
+right-minus-left displacement so long forward travel cannot alias each
+wheel's signed origin subtraction; differential heading stays bounded to
+180 degrees. Shared/wire counters remain 16 bits. Live decoder reads the
+same direct counts/mm constant. INT-67 owns software verification; no powered
+angle, distance, speed-loop or stopping acceptance is implied.
+
+Simplified standalone recovery revision, 2026-10-31, supersedes the loss delay,
+sweep extent/leg count and stationary-visible confirmation above. During
+ordinary tracking, the first fresh usable white/white (LOST) acquisition brakes
+and cancels held/manual navigation, barcode work, scan and side-watch intent.
+Once stopped, pivot between +70 and -70 degrees from the stopped pose until
+either sensor produces usable VISIBLE line evidence; brake that pivot and
+return to ordinary tracking without a confirmation streak or centering step.
+Barcode capture restarts with old events dropped on return. BROAD_BLACK alone
+does not qualify as a trackable line. Repeat sweeps until the existing 30 s,
+wheel-excursion, heading, obstacle, freshness, stop or actuator-failure bound;
+there is no four-leg cutoff. Pivot speed remains the uncalibrated 240 mm/s
+trial setting, endpoint tolerance 5 degrees and overshoot allowance 20 degrees.
+Deliberate junction turns, the requested 25 mm straight segment and bypass
+return are separate policies and retain their existing behavior.
+
+Private storage revision: remove the two loss-qualification timestamps and
+pending bit from Mission. Recovery uses four phase values plus invalid (3 bits),
+one sweep-direction bit, one active-turn bit and the existing signed 10-bit
+relative target. Keep two 32-bit encoder origins and the 32-bit start time;
+remove confirmation count and stored acquisition time. No shared/wire change.
+
+Recovery takeover delay revision, 2026-10-31: supersedes immediate takeover
+above. Ordinary tracking retains its last steering and corresponding speed
+while fresh usable white/white persists for less than 500 ms. At >=500 ms,
+brake, cancel pending navigation/barcode/scan/side-watch work and enter the
+existing simplified +/-70 degree sweep. VISIBLE or BROAD_BLACK clears the
+pending loss; stale/invalid sensing and stop/hazard still fail immediately.
+Use original acquisition times, never loop wall time; a gap beyond the IR
+freshness budget restarts qualification rather than counting missing evidence.
+The 25 mm straight segment remains independent; if LOST at completion, ordinary
+tracking starts this qualification then. The sweep and immediate usable-line
+handoff remain unchanged. With the corrected nominal 68 mm/s setting, 500 ms
+represents 34 mm of commanded travel; achieved travel and safe trial limits
+remain unmeasured D07.
+
+Private loss-qualification storage is restored: unsigned 32-bit first/latest
+LOST acquisition timestamps in milliseconds modulo 2^32, wrap-safe subtraction,
+and one pending bit beside existing Mission flags. Timestamp zero is valid;
+the bit denotes activity. State changes clear it. No shared/wire fields change.
+
+Historical recovery storage revision before implementation: phase has five values plus
 invalid (3 logical bits; unused codes fail), leg 0..4 (3 bits), confirmation
 0..3 (3 bits, configurable through 7), and active-turn flag (1 bit). Held
 relative turn target is signed whole degrees -360..360 (10-bit signed bit-field,

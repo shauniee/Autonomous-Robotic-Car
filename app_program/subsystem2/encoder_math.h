@@ -12,8 +12,7 @@
 #include <stdint.h>
 #include "../common/robot_config.h"
 
-/* Counts per millimetre of wheel travel (geometry is PROVISIONAL, D03). */
-#define ENC_COUNTS_PER_MM (ENC_COUNTS_PER_REV / (3.14159265f * WHEEL_DIAMETER_MM))
+/* Measured rolling scale is owned by robot_config.h; track width remains D03. */
 #define ENC_QUAD_INVALID 2	/* skipped state or both channels changed */
 
 /* Heading in degrees from signed wheel travel counts; positive turns left. */

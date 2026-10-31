@@ -5,6 +5,21 @@
 
 int main(void)
 {
+    /* INT-66: independently recorded wheel deltas over the measured 500 mm. */
+    const uint32_t measured_before[2] = {2210u, 9u};
+    const uint32_t measured_after[2] = {8043u, 5825u};
+    float measured_mm = enc_mean_travel(measured_after, measured_before) /
+        ENC_COUNTS_PER_MM;
+    assert(measured_mm > 499.99f && measured_mm < 500.01f);
+    float left_mm = 5833.0f / ENC_COUNTS_PER_MM;
+    float right_mm = 5816.0f / ENC_COUNTS_PER_MM;
+    assert(left_mm > 499.0f && left_mm < 501.0f);
+    assert(right_mm > 499.0f && right_mm < 501.0f);
+    /* Preserve approximate pre-calibration count speed, not the old mm label. */
+    float follow_cps = MISSION_FOLLOW_SPEED_MMPS * ENC_COUNTS_PER_MM;
+    float recovery_cps = RECOVERY_SPEED_MMPS * ENC_COUNTS_PER_MM;
+    assert(follow_cps > 780.0f && follow_cps < 810.0f);
+    assert(recovery_cps > 410.0f && recovery_cps < 435.0f);
     /* Lifetime wheel separation must not affect local displacement. */
     const uint32_t before[2] = {1000u, 33767u};
     const uint32_t after[2] = {1001u, 33769u};
@@ -61,5 +76,6 @@ int main(void)
     assert(enc_travel(origin_b, origin_b) == 0u);
 
     puts("encoder_math: PASS");
+    puts("INT-67: measured rolling scale and preserved count-speed targets PASS");
     return 0;
 }

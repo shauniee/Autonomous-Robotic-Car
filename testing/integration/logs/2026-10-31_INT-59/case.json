@@ -1,0 +1,12 @@
+{
+  "id": "INT-59",
+  "date": "2026-10-31",
+  "scope": "User clarified jitter occurs while crossing straight without a turn. Audit only; no application changes.",
+  "procedure": [
+    "Qualify an unmapped straight crossing; record commands on entry, during LOST/visible confirmation, and exit. Repeat encounter to test repeated brake boundaries.",
+    "Feed a continuously fresh 90 mm/s FOLLOW into the existing idealized Motion test plant; measure duty range/zero/reverse counts after settling.",
+    "Compile and run existing Motion default/guarded and Mission PID/binary tests. Compare current source and UF2 with INT-58. Optionally read dashboard SSE for a bounded interval without issuing commands."
+  ],
+  "expected": "Report slow target, steering, stop boundaries, stable action identity and whether the nominal plant reproduces jitter. Clearly separate scripted software behavior from measured robot behavior.",
+  "physical_limits": "No running firmware hash, high-rate wheel counts/duties, mounted sensor geometry or calibrated motor friction model."
+}
