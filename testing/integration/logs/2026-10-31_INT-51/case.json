@@ -1,0 +1,13 @@
+{
+  "id": "INT-51",
+  "date": "2026-10-31",
+  "base_commit": "b398126ba7465463d38099c42ff0e3a4dcee1046",
+  "scope": "Remove redundant plan.md, point active guides to issue117 and condense the live checklist without dropping acceptance scope",
+  "checks": [
+    "Changed Markdown links and contents; no active local plan.md references",
+    "No firmware or historical evidence modified",
+    "Current completion audit returns BLOCKED exit1",
+    "Exactly one open issue117 and zero open PRs after cleanup merges"
+  ],
+  "physical": "NOT RUN"
+}

@@ -28,7 +28,7 @@ A **subsystem** is one student's folder (may hold several tasks and peripherals)
 Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [week13-plan](week13-plan.md#4-video-recording). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
 
 **Implementation status.** The current source baseline and consolidated issue
-plan are linked from [plan](../plan.md#remote-implementation-inventory). The code
+plan are linked from [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#status). The code
 contains Motion PID/actions, Mission/Safety, line/barcode, Terrain, Obstacle and
 Reporting modules; this is not physical acceptance. Older smaller bench/task
 arrangements are historical. Target coordination is in [architecture](architecture.md).
@@ -96,8 +96,8 @@ User confirmation 2026-10-29: physical wiring matches this allocation and sonar 
 ## 3. Task priorities and kernel object budget
 
 [Architecture](architecture.md#tasks) owns the only target task/core/scheduling
-table. [Plan inventory](../plan.md#remote-implementation-inventory) owns pinned
-current-source task settings. Keep Motion/Mission on core 1 and I/O on core 0;
+table. [robot_config.h](../app_program/common/robot_config.h) contains current
+provisional task settings. Keep Motion/Mission on core 1 and I/O on core 0;
 no core swap. Existing priorities/periods are retained provisionally with user authorization;
 D13 physical scheduling acceptance remains pending.
 `TP_PRC1` means core 0 and `TP_PRC2` core 1; lower priority number runs first.

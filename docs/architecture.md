@@ -33,14 +33,11 @@
 
 ## Plan status and scope
 
-Contracts reconciled to the three-task implementation. The live work sequence
-and completion status are in [issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117),
-linked through [plan](../plan.md). The implementation creates Motion, Mission
-and core-0 I/O only; physical acceptance remains incomplete.
-The software verification and remaining calibration/feature gates are recorded in
-[plan status](../plan.md#software-implementation--2026-10-29). This does not make
-all target feature behavior below physically accepted. Requirements and calibrated values are
-owned by [project-specs](project-specs.md); wiring by [team](team.md).
+[Issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns the live plan and completion status.
+The implementation creates Motion, Mission and core-0 I/O only; software
+checks do not establish physical calibration or acceptance. Requirements and
+calibrated values are owned by [project-specs](project-specs.md); wiring by
+[team](team.md).
 
 Keep micro T-Kernel, C/Pico SDK, five subsystem modules and binary MQTT schema v2.
 No core-number migration, generic event bus, new scheduler or watchdog framework.
@@ -60,7 +57,7 @@ WiFi/lwIP/MQTT service and USB stay on core 0 in their existing execution contex
 Existing numeric periods/priorities/ages are retained as explicitly provisional
 software defaults with user authorization on 2026-10-29. Physical WCET budgets,
 freshness margins and acceptance are still [D13](project-specs.md#pending-decisions). Existing source
-constants are recorded in [plan inventory](../plan.md#remote-implementation-inventory),
+constants are recorded in [robot_config.h](../app_program/common/robot_config.h),
 not silently promoted to target values. Skip missed releases rather than replay
 an unbounded backlog; bound capture decoding, incoming requests and event draining.
 Only Motion performs wheel control; Mission scheduling authority does not outrank
@@ -192,7 +189,7 @@ Target: `app_program/mission/` holds coordinator and small policy helpers;
 `app_program/common/` holds startup/shared contracts and I/O orchestration as
 appropriate. Keep `subsystem1/` through `subsystem5/` for their reusable modules.
 No separate Safety task. Move files/build/includes only with tested implementation
-stages in [plan](../plan.md#implementation-stages). `mqtt_utk.c` stays in the kernel
+stages in [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#remaining-plan). `mqtt_utk.c` stays in the kernel
 library and only WiFi service context calls MQTT/lwIP.
 
 ## Implementation order and acceptance
@@ -463,7 +460,7 @@ now have bounded median groups and qualified edge/model estimation. Their
 operating settings are provisional configured proposals, and physical bypass
 release remains inhibited. Supported forward/side coverage, rear-edge/original-line
 validation and any resulting implementation corrections remain in the
-[obstacle stage of #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#stage-5-obstacle-profiling-and-bypass-release). These are not accepted floor
+[remaining plan in #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#remaining-plan). These are not accepted floor
 features. Terrain publishes original acquisition/service times under a mutex;
 impact remains asserted until a fresh non-impact sample observes serviced braking.
 S1 events use a short cross-core mutex; events stay in the ring when the TX bridge

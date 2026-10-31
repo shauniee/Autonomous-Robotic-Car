@@ -12,7 +12,7 @@
 - [Test plan (Version B, all Open)](#test-plan-version-b-all-open)
 - [Remaining gaps](#remaining-gaps)
 
-Historical record only: task splits, leases, queue designs and proposed numerical targets below are not competing current contracts. The [central plan](../../plan.md) and [architecture](../architecture.md) supersede them for implementation.
+Historical record only: task splits, leases, queue designs and proposed numerical targets below are not competing current contracts. The [central plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) and [architecture](../architecture.md) supersede them for implementation.
 
 Condensed record of the Week 8 Tribunal 1 submission. Current requirements and open decisions live in [project-specs](../project-specs.md); owners and pins in [team](../team.md); coordination rules in [architecture](../architecture.md).
 

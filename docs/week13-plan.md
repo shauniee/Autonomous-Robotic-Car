@@ -12,7 +12,7 @@
 
 ## 1. Remaining minimum-bit conversions
 
-The [central plan](../plan.md) is the implementation roadmap; this page owns
+The [central plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) is the implementation roadmap; this page owns
 submission evidence and video indexing only. Earlier conversion lists are stale:
 remote main already contains packed Motion command/health, S3 data, Terrain
 context, S5 profiles and S1 event storage. Do not redo those conversions blindly.

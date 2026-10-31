@@ -11,7 +11,7 @@
 
 ## Functionality
 
-Owner Shaun. [Plan](../../plan.md) owns work sequence;
+Owner Shaun. [Plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns work sequence;
 [architecture](../architecture.md#tasks) owns target tasks/authority and
 [team](../team.md) owns pins/people. Target S1 Reporting runs as bounded steps in
 core-0 `io_task` in the working implementation; it is not a separate application task. Kernel WiFi/USB stay on

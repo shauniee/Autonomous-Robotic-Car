@@ -20,7 +20,7 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 
 | Need | Guide |
 | --- | --- |
-| Full feature implementation sequence and source baseline | [plan](plan.md) |
+| Full feature implementation sequence and source baseline | [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) |
 | Build, flash, calibrate, MQTT laptop tool, bring-up order | [README](README.md) |
 | Requirements, minimum-bit change requirement, data table, pending decisions | [project-specs](docs/project-specs.md) |
 | Tasks, authority, shared data, fault policy, MQTT frame layouts | [architecture](docs/architecture.md) |
