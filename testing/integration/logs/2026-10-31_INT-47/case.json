@@ -1,0 +1,9 @@
+{
+  "id": "INT-47",
+  "date": "2026-10-31",
+  "base_commit": "5e63fe0e90776eb834fd3d27ba438a0f8e017d8e",
+  "case": "Resolve INT-46: Terrain quality, connection-loss RX discard, strict laptop decoding",
+  "steps": ["Run host regressions including dynamic/window quality, reconnect and malformed frame negative vectors", "Run dashboard JavaScript, CLI and HTTP regressions", "Build all four SMP=1 USB-only README firmware profiles in an isolated local Docker container using placeholder credentials"],
+  "expected": "Unsupported height windows never add count/maximum; queued RX cannot survive a disconnect; malformed telemetry never reaches display or speed history; existing valid behavior and all firmware builds pass",
+  "limits": "Software verification only, no robot commands, flashing or physical acceptance"
+}

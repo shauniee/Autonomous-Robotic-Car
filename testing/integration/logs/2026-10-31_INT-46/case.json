@@ -1,0 +1,9 @@
+{
+  "id": "INT-46",
+  "date": "2026-10-31",
+  "source_commit": "5e63fe0e90776eb834fd3d27ba438a0f8e017d8e",
+  "scope": "Repository audit; no production changes or robot commands",
+  "steps": ["Review application, active runtime, tooling, build and documentation contracts", "Run existing pure, dashboard, CLI and HTTP tests", "Probe dynamic acceleration height acceptance, malformed laptop telemetry acceptance and RX survival across disconnect"],
+  "expected": "Existing regressions pass; probes assert and record observed defects, not correct behavior",
+  "limits": "Host/source review only; no firmware execution, physical pass or new firmware build"
+}

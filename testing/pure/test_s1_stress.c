@@ -62,11 +62,18 @@ static void check_reconnect(void)
             assert(s1_bridge_post(frame, sizeof frame));
         }
         assert(!s1_bridge_post(frame, sizeof frame));
+        s1_bridge_put(frame, sizeof frame);
         s1_bridge_link(cycle % 2u == 0u, false);
         assert(!s1_bridge_ready());
         assert(s1_bridge_take(received, sizeof received) == 0u);
         assert(!s1_bridge_post(frame, sizeof frame));
+        s1_bridge_put(frame, sizeof frame);
         s1_bridge_link(true, true);
+        assert(s1_bridge_receive(received, sizeof received) == 0u);
+        s1_bridge_put(frame, sizeof frame);
+        s1_bridge_link(true, true);
+        assert(s1_bridge_receive(received, sizeof received) == sizeof frame);
+        assert(memcmp(frame, received, sizeof frame) == 0);
         assert(s1_bridge_take(received, sizeof received) == 0u);
         frame[0] = (uint8_t)cycle;
         assert(s1_bridge_post(frame, sizeof frame));
@@ -75,6 +82,11 @@ static void check_reconnect(void)
         assert(s1_bridge_take(received, sizeof received) == sizeof frame);
         assert(memcmp(frame, received, sizeof frame) == 0);
     }
+    s1_bridge_put(frame, sizeof frame);
+    s1_bridge_link(false, false);
+    assert(s1_bridge_receive(received, sizeof received) == 0u);
+    s1_bridge_link(true, true);
+    assert(s1_bridge_receive(received, sizeof received) == 0u);
     s1_bridge_link(false, false);
 }
 

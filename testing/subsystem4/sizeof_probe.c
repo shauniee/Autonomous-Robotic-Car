@@ -1,5 +1,6 @@
 /* Cortex-M0+ compile-only storage evidence for #110. */
 #include "../../app_program/subsystem4/terrain_algo.h"
+#include "../../app_program/subsystem4/terrain_evidence.h"
 
 #define PROBE(name, n) char probe_##name[(n)]
 #define SIZE(type) PROBE(sizeof_##type, sizeof(type))
@@ -8,6 +9,7 @@
 SIZE(TerrainCalibSum);
 SIZE(TerrainFilterQ16);
 SIZE(TerrainContext);
+SIZE(TerrainTravelQuality);
 FIELD(TerrainContext, filtered_accel_q16);
 FIELD(TerrainContext, calib_sum);
 FIELD(TerrainContext, rise_q);

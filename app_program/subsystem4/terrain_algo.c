@@ -4,6 +4,7 @@
 
 #include <math.h>
 #include "terrain_algo.h"
+#include "terrain_evidence.h"
 #include "../common/robot_data.h"
 #include "../subsystem2/encoder_math.h"
 #include "../common/robot_config.h"
@@ -39,6 +40,46 @@ static int32_t filter_axis(int32_t previous, int16_t raw, int32_t sum, bool vert
     if (vertical) corrected += (int64_t)(1.0f / ACCEL_MG_PER_LSB + 0.5f) * RAW_Q_ONE;
     return saturate_q16(round_div((int64_t)previous * (FILTER_DIV - 1) + corrected,
                                   FILTER_DIV));
+}
+
+bool terrain_travel_qualified(TerrainTravelQuality *quality,
+    uint32_t now, const int32_t delta[2], bool acquisition_qualified)
+{
+    uint32_t elapsed = robot_time_elapsed(now, quality->sampled_ms);
+    bool primed = quality->primed != 0u;
+    quality->sampled_ms = now;
+    quality->primed = acquisition_qualified;
+    if (!acquisition_qualified || !primed || elapsed == 0u ||
+        elapsed > SAFETY_STALE_MS)
+    {
+        quality->steady = 0u;
+        quality->speed_mmps = 0;
+        return false;
+    }
+    float left = (float)delta[0] * 1000.0f /
+        (ENC_COUNTS_PER_MM * (float)elapsed);
+    float right = (float)delta[1] * 1000.0f /
+        (ENC_COUNTS_PER_MM * (float)elapsed);
+    float speed = (left + right) * 0.5f;
+    bool qualified = left >= 0.0f && right >= 0.0f &&
+        speed <= INT16_MAX &&
+        fabsf(left - right) <= TERRAIN_QUALITY_WHEEL_DIFF_MMPS &&
+        fabsf(speed - quality->speed_mmps) <=
+            TERRAIN_QUALITY_SPEED_CHANGE_MMPS;
+    quality->speed_mmps = speed >= 0.0f && speed <= INT16_MAX ?
+        (int16_t)lroundf(speed) : 0;
+    if (!qualified)
+    {
+        quality->steady = 0u;
+        return false;
+    }
+    if (!quality->steady)
+    {
+        quality->steady = 1u;
+        quality->steady_since_ms = now;
+    }
+    return robot_time_elapsed(now, quality->steady_since_ms) >=
+        TERRAIN_QUALITY_STEADY_MS;
 }
 
 void terrain_algo_init(TerrainContext *ctx)
@@ -77,7 +118,17 @@ static void rise_add(TerrainContext *ctx, float tenths_mm) {
     ctx->rise_q = next <= 0.0f ? 0u : (next >= 65535.0f ? 65535u : (uint16_t)(next + 0.5f));
 }
 
-void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float delta_counts) {
+bool terrain_acceleration_qualified(const Gy511RawAxes *raw)
+{
+    float magnitude_mg = sqrtf((float)raw->x * raw->x +
+        (float)raw->y * raw->y + (float)raw->z * raw->z) *
+        ACCEL_MG_PER_LSB * 1000.0f;
+    return magnitude_mg >= TERRAIN_QUALITY_MIN_MG &&
+        magnitude_mg <= TERRAIN_QUALITY_MAX_MG;
+}
+
+void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw,
+    float delta_counts, bool travel_qualified) {
     float delta_dist_mm = delta_counts / ENC_COUNTS_PER_MM;
     if (!ctx->is_calibrated) return;
 
@@ -110,6 +161,13 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
         ctx->state = TERRAIN_STATE_FLAT;
     }
 
+    bool qualified = travel_qualified && isfinite(delta_counts) &&
+        delta_counts >= 0.0f && terrain_acceleration_qualified(raw);
+    if (!qualified)
+    {
+        ctx->window_qualified = 0u;
+    }
+
     /* 5. Hump progression state machine (Figure 7) */
     switch (ctx->state) {
         case TERRAIN_STATE_FLAT:
@@ -117,6 +175,7 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
                 ctx->state = TERRAIN_STATE_CLIMBING;
                 ctx->rise_q = 0u;
                 ctx->height_valid = false;
+                ctx->window_qualified = qualified;
             }
             break;
 
@@ -150,7 +209,8 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
                 /* Complete climb-crest-descent window finished: only a valid, complete
                    encounter adds an event. */
                 float mm = ((float)ctx->rise_q / 10.0f) * HUMP_CALIB_FACTOR;
-                ctx->height_valid = mm >= (float)HUMP_MIN_HEIGHT_MM;
+                ctx->height_valid = ctx->window_qualified &&
+                    mm >= (float)HUMP_MIN_HEIGHT_MM;
                 if (ctx->height_valid) {
                     uint8_t code = (uint8_t)rd_sat_valid((uint32_t)(mm / (float)HUMP_MM_PER_COUNT + 0.5f), HUMP_RESULT_BITS);
                     ctx->last_hump_code = code;
@@ -171,6 +231,7 @@ void terrain_algo_invalidate_window(TerrainContext *ctx)
     ctx->rise_q = 0u;
     ctx->flat_run = 0u;
     ctx->height_valid = false;
+    ctx->window_qualified = 0u;
     if (ctx->state != TERRAIN_STATE_IMPACT)
     {
         ctx->state = TERRAIN_STATE_FLAT;

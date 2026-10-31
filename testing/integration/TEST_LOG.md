@@ -28,6 +28,7 @@
 - [One-screen dashboard — INT-41](#one-screen-dashboard--int-41)
 - [Subsystem health table revision — INT-43](#subsystem-health-table-revision--int-43)
 - [Toggleable binary steering buildup — INT-42](#toggleable-binary-steering-buildup--int-42)
+- [Repository audit — INT-46](#repository-audit--int-46)
 
 Template example INT-01/02 retired: S2-to-S3 sample flow (at least five in two seconds) and S3-to-S4 summary flow (at least two in 3.5 seconds). No template result was recorded. Logs refer to the uncommitted migration's source manifest plus base HEAD; they do not claim HEAD is the tested source. Formal on-target trials require a recorded committed revision.
 
@@ -928,3 +929,18 @@ commands for explicit runs. README describes this change. No software changes
 affecting the passed host/firmware checks were made after the tested source
 commit; the final workflow/source identity is in
 [final manifest](logs/2026-10-31_INT-45/final-source-manifest.json).
+
+## Repository audit — INT-46
+
+Case defined before targeted probes in [case definition](logs/2026-10-31_INT-46/case.json).
+Result 2026-10-31, tester Codex, exact source revision
+`5e63fe0e90776eb834fd3d27ba438a0f8e017d8e`: existing pure host, dashboard
+JavaScript, CLI and loopback HTTP suites PASS. Initial HTTP sandbox binding
+restriction was resolved by an authorized retry. Three P2 findings reproduced:
+acceleration-dominated data accepted as a valid hump, queued direction RX
+surviving connection loss, and malformed laptop telemetry accepted/displayed.
+The offline bridge delivery is reproduced; downstream Mission acceptance is a
+source-path finding. No production changes or new firmware/physical pass.
+See [audit, scope and limits](logs/2026-10-31_INT-46/audit.md) and
+[source manifest](logs/2026-10-31_INT-46/manifest.json).
+
