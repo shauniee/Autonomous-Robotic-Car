@@ -43,8 +43,9 @@ Hump processing is independent of top-level Mission states: climb, crest,
 descent, complete-window validation. Mission requests half normal tracking speed;
 settle at a steady reduced speed, filter pitch and account for acceleration/braking
 transients. Only a valid completed encounter increments count or updates maximum.
-Interrupted/incomplete estimates cannot overwrite a valid maximum. Proposed
-retain-on-stop/new-start-reset lifecycle awaits D06 confirmation.
+Interrupted/incomplete estimates cannot overwrite a valid maximum. Completed
+results persist through accepted starts/stops until reboot; see the accepted
+lifecycle in [project specs](../project-specs.md#pending-decisions).
 
 ## 3. Interfaces and contract
 
@@ -90,7 +91,7 @@ IMU/calibration faults report-only. The driver checks new-data status and bounds
 a whole init/read operation by its existing timeout. Pending data never renews
 sample time. Missing travel invalidates the current height window, retaining
 completed count/maximum. Mission requests half tracking speed on fresh calibrated
-encounters. Stop/new-run results reset remains deferred under D06.
+encounters. Completed results are retained through starts/stops until reboot.
 Height acceptance now requires the provisional acceleration-norm and wheel-motion
 quality settings in [project specs](../project-specs.md#pending-decisions), with
 200 ms of steady fresh evidence before a climb. Any failed sample disqualifies

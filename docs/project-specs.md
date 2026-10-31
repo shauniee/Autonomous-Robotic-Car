@@ -418,7 +418,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D03 | Verify motor and encoder polarity, counts/revolution, ratings/levels, geometry, full car/turning envelope and maximum edge rate. Remote signs +1/+1 versus local -1/+1 are not a calibration decision; preserve barcode half-range bound | S2 / Nicholas |
 | D04 | Mounted IR position/spacing/height, contrast/noise/lighting range and barcode black polarity; wiring user-confirmed, measured sensing margins still pending | S3 |
 | D05 | Sonar electrical behavior user-confirmed; retain recorded Echo-voltage evidence when available. Calibrate repeat interval/range/servo centre/endpoints/settling, sample groups/median/edge hysteresis, coverage and width-estimation uncertainty | S5 |
-| D06 | Stationary boot IMU calibration before IR: bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Confirm half-speed completion and proposed results-retained-on-stop/new-start-reset lifecycle | S4 / Nicholas |
+| D06 | Stationary boot IMU calibration before IR: bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Confirm half-speed completion and validate the accepted results-retained-through-starts/stops-until-reboot lifecycle | S4 / Nicholas |
 | D07 | Wheel/line gains, speed/duty/distance/turn/stall limits; stationary wider pivot sweep sequence for two back-and-forth attempts, pivot speed, wheel excursion budget and stable intended-line confirmation; bypass/depth/clearance budgets | Owners / Nicholas |
 | D08 | Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | S2 / Nicholas |
 | D09 | Instructor WiFi/broker settings; normal mission requires both before starting, loss mid-run report-only. Decide whether professor buffer wording requires literal RTOS message buffers; existing bounded TX/RX rings retained provisionally | S1 / Nicholas |
@@ -500,11 +500,12 @@ one-bit edge-valid flags. The model bound excludes unmeasured beam, mounting and
 object-shape effects. These remain D03/D05/D10 physical measurements, not a
 module accuracy rating. No MQTT fields are added.
 
-User steering, 2026-10-29: use the pin allocation in team.md; recovery/filtering
-operating settings and the proposed Terrain new-run reset lifecycle remain
-pending. New helper configuration uses explicit caller-supplied values in host
-fixtures. Unknown production settings are encoded as zero/invalid and stop the
-corresponding manoeuvre; no provisional values are silently enabled.
+Initial steering, 2026-10-29, kept recovery/filter operating choices and a
+proposed Terrain new-run reset pending. The later decisions and trial revisions
+below supersede that initial proposal: configured values remain provisional,
+physical bypass release remains inhibited, and Terrain results persist through
+accepted starts/stops until reboot. Unknown/invalid settings stop unsupported
+manoeuvres; configured proposals are not physical calibration.
 
 Junction qualifier correction: Mission records the 32-bit timestamp of the last
 qualification sample and two one-bit flags (black encounter still open, qualified)

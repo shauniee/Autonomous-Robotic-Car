@@ -17,7 +17,7 @@ Ordered physical checks that decide whether the robot is ready for a full run. C
 - Where no accepted target exists, the pass condition is "measured and agreed": the team records the value and agrees the limit in the pending-decisions register. Never pass a check on a build or a host test alone.
 - The `T` column links each check to the planned integrated trials in [testing](README.md#planned-integrated-trials).
 
-Target procedure revision: 2026-10-29, aligned to [plan](../plan.md).
+Current procedure revision: 2026-10-31, aligned to the [consolidated issue plan](../plan.md).
 Existing results retain their historical procedure/source meaning; this page does
 not convert old observations into target passes. #117 tracks physical work and
 remains open. Agree pending numeric limits before corresponding PASS decisions.
@@ -73,7 +73,7 @@ Turns, distances and barcode widths all come from encoder travel, so these value
 | MR-22 | 90 degrees left, 90 degrees right, 180 degrees; five each | Final heading error measured and agreed (Tribunal proposal: at most 5 degrees) | Errors per turn (D07) |
 | MR-23 | Repeat MR-22 with one wheel on a hump | Error measured and compared with MR-22 (M3 requires accuracy to hold) | Errors with one wheel raised |
 | MR-24 | Press GP21 at follow speed | Robot stops; distance measured and agreed | Stopping distance (D08) |
-| MR-25 | Hold one wheel while driving | `Motion: motor stall` and a latched stop; cause-clear GP21 press/release returns READY without restarting | Time to detect (`MOTION_STALL_MS`, D07) |
+| MR-25 | Use an agreed/calibrated guard-enabled acceptance image, wheels raised and controlled load; stall detection is disabled in the current trial build | `Motion: motor stall` and a latched stop; cause-clear GP21 press/release returns READY without restarting | Time to detect (`MOTION_STALL_MS`, D07) |
 
 ## Phase 4: Each feature on a test track (T03, T04, T07, T09, T10, T11, T13)
 
@@ -83,11 +83,11 @@ Each feature is tested alone before the full course.
 | --- | --- | --- | --- |
 | MR-26 | Follow a loop with straights and curves, three laps, under two lighting conditions (M1) | Stays on the line every lap | Laps completed; speed used |
 | MR-27 | Printed course barcodes in both directions at operating speed; verify incomplete capture rejects rather than invents a character (M2) | Same correct character/action in both directions; one pending action per encounter; no two-second blind delay or guessed character | Reads, misses and misreads per letter (D01) |
-| MR-28 | Barcode before a cross junction for each of left, right, straight and U-turn (M3) | Action occurs once at the detected junction at variable spacing, follows the chosen outgoing route and never undoes it; U-turn includes requested about-200 ms stationary pause; no pending command crosses straight with requested minimum 25 mm, physical tolerance agreed | Junction offset from the print (D02) |
+| MR-28 | Barcode before a cross junction for each of left, right, straight and U-turn (M3) | Action occurs once at the detected junction at variable spacing, follows the chosen outgoing route and never undoes it; U-turn includes requested about-200 ms stationary pause; no pending command crosses straight through actual broad-black qualification and confirms the outgoing line; no fixed-distance advance | Junction offset from the print (D02) |
 | MR-29 | Reference humps of known heights up to 30 mm ([hump requirement](../docs/project-specs.md#course-rules)): the lower practice ramp, one slightly below and one at or near 30 mm; three passes each (M4, M5). First confirm on the robot that a 30 mm-or-lower single-wheel ramp crosses the climb-entry threshold | Half normal tracking speed during valid encounter; count/height/max/events correct; reference error and valid-completion behavior measured and agreed | Reported vs actual per hump (D06) |
 | MR-30 | Reference obstacles across 100-200 mm width, with both sides open then one restricted; vary position/background/material (M6-M9) | Stops, scans, bypasses on the side with more space, reports width and depth, rejoins the original line | Width/depth error, repeatability/uncertainty, chosen gap, clearance, bypass time and reacquisition success (D02, D05, D10) |
 | MR-31 | Boxes blocking both sides | Robot stops instead of bypassing | - |
-| MR-32 | Induce healthy-sensor line loss while following; separately freeze/fail acquisition | Moving left/right sweep within agreed angle/travel/two-attempt budget, either sensor initiates alignment, stable intended-line tracking resumes; exhausted search stops; stale acquisition does not enter blind search | Sweep sequence, travel, time and false-line acceptance (D07) |
+| MR-32 | Induce healthy-sensor line loss while following; separately freeze/fail acquisition | Brake and confirm stationarity, then the current bounded wider left/right pivot sweep with braking before reversals; either sensor initiates alignment, stable intended-line tracking resumes; exhausted search stops; stale acquisition does not enter blind search | Sweep sequence, travel, time and false-line acceptance (D07) |
 | MR-33 | Stop the broker during a run, then restart it | Robot keeps driving; `Network: broker lost` shows after reconnect | - |
 | MR-34 | Retired: former finish-marker check (robot stops at finish; finish convention was undecided) | Not run/reused for the endless target; use newly allocated MR-40 | Preserve any historical MR-34 evidence |
 
@@ -113,4 +113,10 @@ MR-40 is a newly allocated endless-operation check, not reuse of retired MR-34.
 | MR-40 | Revisit the same loop junction with/without pending actions; run repeated feature cycles, then GP21; interrupt WiFi/MQTT mid-run | No automatic finish or undo; healthy local run survives network loss; new start requires WiFi/MQTT; GP21 stops, eligible release returns READY, fresh GP20 starts | Session encounters, stop reasons, action/event order, reference video and unchanged image/constants |
 
 Watchdog fault injection remains a separate pending D15/SYS-06 procedure; do not
-mark it PASS based on tick setup. Select reset policy and verify outputs first.
+mark it PASS based on tick setup. Select reset policy, implement/verify its
+enabled state and establish safe output behavior before any reset injection.
+
+The complete remaining-work checklist is [issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117).
+This file owns physical procedures, not a second completion tracker. For final
+Motion/Mission/I/O timing, agree D13 limits and a bounded capture method; old
+`s3_input`/`s3_mission` console windows are not current implementation evidence.
