@@ -1,0 +1,85 @@
+{
+  "date": "2026-10-31",
+  "overall": "BLOCKED",
+  "consolidated_issue": "https://github.com/shauniee/Autonomous-Robotic-Car/issues/117",
+  "source_manifest": "testing/integration/logs/2026-10-31_INT-51/source-manifest.json",
+  "source_commit": "fc9fa5d1af192433854d0440071e2954e32ee7d4",
+  "hardware_availability": "Documentation/status verification only in an isolated committed source snapshot; no new build, firmware execution or physical measurement.",
+  "stages": [
+    {
+      "stage": 0,
+      "status": "PASS",
+      "requires_hardware": false,
+      "reason": "Live plan is concise issue117; redundant plan.md removed and active links updated. Detailed procedures and historical evidence are retained. Physical decisions/acceptance remain pending.",
+      "physical_evidence": []
+    },
+    {
+      "stage": 1,
+      "status": "PARTIAL",
+      "requires_hardware": true,
+      "reason": "Motion stop/reset software implemented; button/output latency, physical stop and final stall-guard configuration acceptance remain open in issue117.",
+      "physical_evidence": []
+    },
+    {
+      "stage": 2,
+      "status": "PARTIAL",
+      "requires_hardware": true,
+      "reason": "Bounded Mission and stationary recovery implemented; mounted line, barcode, junction and manoeuvre acceptance remains open.",
+      "physical_evidence": []
+    },
+    {
+      "stage": 3,
+      "status": "PARTIAL",
+      "requires_hardware": true,
+      "reason": "Bounded core-0 I/O, acquisition ages, mapping/events implemented; on-target timing/freshness/stack under load remains open.",
+      "physical_evidence": []
+    },
+    {
+      "stage": 4,
+      "status": "PARTIAL",
+      "requires_hardware": true,
+      "reason": "Three-task integration and four-profile software checks exist; raised-wheel and physical vertical-slice acceptance remains open.",
+      "physical_evidence": []
+    },
+    {
+      "stage": 5,
+      "status": "BLOCKED",
+      "requires_hardware": true,
+      "reason": "Counts, geometry, polarity, PID/line calibration, stopping distance and accepted bounds require physical measurements.",
+      "physical_evidence": []
+    },
+    {
+      "stage": 6,
+      "status": "PARTIAL",
+      "requires_hardware": true,
+      "reason": "Both print orientations, first-print reference and junction-once logic implemented; issued-print/mounted navigation trials remain open.",
+      "physical_evidence": []
+    },
+    {
+      "stage": 7,
+      "status": "PARTIAL",
+      "requires_hardware": true,
+      "reason": "Terrain quality rejection and retained results implemented; <=30 mm references, single-wheel traces and calibrated height error remain open.",
+      "physical_evidence": []
+    },
+    {
+      "stage": 8,
+      "status": "PARTIAL",
+      "requires_hardware": true,
+      "reason": "Scan/profile/bypass helpers implemented; bypass release disabled until supported coverage/envelope/rear-edge/original-line acceptance.",
+      "physical_evidence": []
+    },
+    {
+      "stage": 9,
+      "status": "BLOCKED",
+      "requires_hardware": true,
+      "reason": "Final live timing/RAM/stack, indexed videos and three unchanged-image mixed mission sessions remain open in issue117.",
+      "physical_evidence": []
+    }
+  ],
+  "software_evidence": [
+    "testing/integration/logs/2026-10-31_INT-49/host.txt",
+    "testing/integration/logs/2026-10-31_INT-49/firmware.txt",
+    "testing/integration/logs/2026-10-31_INT-49/manifest.json"
+  ]
+}

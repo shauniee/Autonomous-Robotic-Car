@@ -30,7 +30,7 @@ _Avoid_: Proof, comparison
 
 ### Planning and runtime terms
 
-[Plan](plan.md) owns the work sequence; [architecture](docs/architecture.md) owns
+[Plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns the work sequence; [architecture](docs/architecture.md) owns
 runtime contracts. A subsystem is a module/responsibility, not necessarily a task.
 The target has three application tasks plus existing kernel tasks. Mission has
 navigation authority; Motion has higher scheduling priority and sole motor-output

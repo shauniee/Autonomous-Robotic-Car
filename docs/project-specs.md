@@ -47,7 +47,7 @@ team confirmations below remain distinct sources; this review does not
 reclassify them as statements in the attached PDFs or remove later course
 updates such as the minimum-bit requirement.
 
-**Reconciled design, 2026-10-29:** [plan](../plan.md) owns implementation
+**Reconciled design, 2026-10-29:** [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns implementation
 sequence; [architecture](architecture.md) owns task/control contracts. Three
 application tasks retain core 1 Motion/Mission and core 0 I/O, with kernel WiFi/USB
 unchanged. Motion has higher scheduling priority than Mission. No separate Safety

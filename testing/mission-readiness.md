@@ -17,7 +17,7 @@ Ordered physical checks that decide whether the robot is ready for a full run. C
 - Where no accepted target exists, the pass condition is "measured and agreed": the team records the value and agrees the limit in the pending-decisions register. Never pass a check on a build or a host test alone.
 - The `T` column links each check to the planned integrated trials in [testing](README.md#planned-integrated-trials).
 
-Current procedure revision: 2026-10-31, aligned to the [consolidated issue plan](../plan.md).
+Current procedure revision: 2026-10-31, aligned to the [consolidated issue plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117).
 Existing results retain their historical procedure/source meaning; this page does
 not convert old observations into target passes. #117 tracks physical work and
 remains open. Agree pending numeric limits before corresponding PASS decisions.

@@ -2,6 +2,8 @@
 
 ## Contents
 
+- [Retire the duplicate plan — INT-51](#retire-the-duplicate-plan--int-51)
+
 - [Consolidated completion tracking — INT-50](#consolidated-completion-tracking--int-50)
 
 - [Terrain header build compatibility — INT-48](#terrain-header-build-compatibility--int-48)
@@ -1065,3 +1067,25 @@ completion check: **exit 1 / BLOCKED**, not stale exit 2 or COMPLETE
 record/source consistency, not robot operation. Existing INT-49 host/build
 evidence is reused for unchanged firmware; no new build, flash, firmware
 execution, physical calibration or timing pass was performed.
+
+## Retire the duplicate plan — INT-51
+
+Defined before verification in [case](logs/2026-10-31_INT-51/case.json).
+Result 2026-10-31, tester Codex, exact source commit
+`fc9fa5d1af192433854d0440071e2954e32ee7d4`: PASS for 16 active Markdown
+guides, 336 local links/anchors and updated issue anchors, with `plan.md`
+removed and all 44 prior pending items mapped into ten issue117 checklist
+groups ([scope map](logs/2026-10-31_INT-51/scope-map.json),
+[documentation checks](logs/2026-10-31_INT-51/documentation-checks.txt)).
+An isolated git archive excluded a concurrent unrelated README edit.
+Firmware and historical test records/evidence were preserved. Old `plan.md`
+references within recorded historical logs retain their original revision
+meaning; the retired document remains available in Git history at
+[the consolidation baseline](https://github.com/shauniee/Autonomous-Robotic-Car/blob/b398126ba7465463d38099c42ff0e3a4dcee1046/plan.md).
+
+Issue117 remains OPEN; its shorter checklist links the owning requirements
+and physical procedures. The [appended stage audit](logs/2026-10-31_INT-51-completion.json)
+and [source manifest](logs/2026-10-31_INT-51/source-manifest.json) return
+**BLOCKED / exit 1** ([output](logs/2026-10-31_INT-51/completion-check.txt)).
+Existing INT-49 software checks apply to unchanged firmware; no new firmware
+builds, hardware execution, calibration or physical acceptance are claimed.
