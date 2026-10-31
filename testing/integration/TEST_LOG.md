@@ -29,6 +29,7 @@
 - [Subsystem health table revision — INT-43](#subsystem-health-table-revision--int-43)
 - [Toggleable binary steering buildup — INT-42](#toggleable-binary-steering-buildup--int-42)
 - [Repository audit — INT-46](#repository-audit--int-46)
+- [Repository audit fixes — INT-47](#repository-audit-fixes--int-47)
 
 Template example INT-01/02 retired: S2-to-S3 sample flow (at least five in two seconds) and S3-to-S4 summary flow (at least two in 3.5 seconds). No template result was recorded. Logs refer to the uncommitted migration's source manifest plus base HEAD; they do not claim HEAD is the tested source. Formal on-target trials require a recorded committed revision.
 
@@ -944,3 +945,43 @@ source-path finding. No production changes or new firmware/physical pass.
 See [audit, scope and limits](logs/2026-10-31_INT-46/audit.md) and
 [source manifest](logs/2026-10-31_INT-46/manifest.json).
 
+## Repository audit fixes — INT-47
+
+Defined before verification in [case definition](logs/2026-10-31_INT-47/case.json).
+Result 2026-10-31, tester Codex: PASS on exact source commit
+`54e5ec44a52dde0c17c9fe43b21469d36e905f1e`.
+Terrain rejects acceleration-dominated and unsteady/differential/reverse wheel
+travel, requires the existing provisional 200 ms steady window and retains
+encounter disqualification until completion. Completed valid maxima persist.
+RX connection-loss discard preserves producer/consumer index ownership.
+Both codecs reject invalid telemetry sentinels/actions; Reporting clears invalid
+validity flags, and the laptop rejects reserved telemetry/event bits before
+updating display or speed history.
+
+Pure host suite PASS ([committed-source output](logs/2026-10-31_INT-47/host-committed.txt));
+dashboard JavaScript, CLI and loopback HTTP PASS
+([dashboard](logs/2026-10-31_INT-47/dashboard.txt),
+[CLI](logs/2026-10-31_INT-47/cli.txt), [HTTP](logs/2026-10-31_INT-47/http.txt)).
+All four README profiles compile/link/convert successfully
+([committed-source builds](logs/2026-10-31_INT-47/firmware-committed.txt)), using
+`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 CRASH_REPORT=0`, offline
+`NET=none MQTT=0` and wireless `NET=lwip MQTT=1`, each TEST=0 and TEST=1.
+An isolated source copy used placeholder credentials with container networking
+disabled; concurrent barcode changes were excluded. ARM probes show
+TerrainContext remains 32 bytes; TerrainTravelQuality is 12 bytes.
+Only firmware warnings are the existing upstream lwIP unused function.
+[Final source identity](logs/2026-10-31_INT-47/final-source-manifest.json).
+
+Initial host verification failed because Reporting's old clamp fixture
+produced validity/action values now rejected by the stricter codec
+([initial output](logs/2026-10-31_INT-47/host-initial.txt)); both the clamp and
+fixture were corrected. Initial firmware compilation failed because the new
+public evidence header included newlib math types after kernel types
+([initial build](logs/2026-10-31_INT-47/firmware-initial.txt)); moving the
+helper into the existing kernel-free algorithm source fixed that boundary.
+Successful working-source checks are also retained; the committed-source
+checks above establish the final source results.
+
+No robot commands, flashing, firmware execution, physical calibration, timing
+or floor trials. Quality thresholds remain provisional D06/D07/D10 settings;
+software suppression does not establish a measured height-error bound.
