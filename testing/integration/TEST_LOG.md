@@ -2,6 +2,39 @@
 
 ## Contents
 
+- [Encoder PID diagnostics and digital IR setup — INT-94](#encoder-pid-diagnostics-and-digital-ir-setup--int-94)
+
+- [IR calibration diagnostic preparation — INT-93](#ir-calibration-diagnostic-preparation--int-93)
+
+- [Smooth applied steering and pivot curves — INT-92](#smooth-applied-steering-and-pivot-curves--int-92)
+
+- [Curve authority and guided straight exits — INT-91](#curve-authority-and-guided-straight-exits--int-91)
+
+- [Gentler entry and tighter sustained curves — INT-90](#gentler-entry-and-tighter-sustained-curves--int-90)
+
+- [IR curve response and straight release — INT-89](#ir-curve-response-and-straight-release--int-89)
+
+- [Gentler curve authority — INT-88](#gentler-curve-authority--int-88)
+
+- [Faster tracking trial — INT-87](#faster-tracking-trial--int-87)
+
+- [Gentler steering transitions — INT-86](#gentler-steering-transitions--int-86)
+
+- [70 mm turn approach and immediate curve authority — INT-85](#70-mm-turn-approach-and-immediate-curve-authority--int-85)
+
+- [Navigation wheel selection and IR U-turn — INT-84](#navigation-wheel-selection-and-ir-u-turn--int-84)
+
+- [Continuous FOLLOW wheel targets — INT-83](#continuous-follow-wheel-targets--int-83)
+
+- [Half-to-full curve speed ramp — INT-82](#half-to-full-curve-speed-ramp--int-82)
+
+- [Stronger sustained curves and modest speed increase — INT-81](#stronger-sustained-curves-and-modest-speed-increase--int-81)
+
+- [Smooth tracking with strong curve correction — INT-80](#smooth-tracking-with-strong-curve-correction--int-80)
+
+- [Reported IMU calibration — INT-79](#reported-imu-calibration--int-79)
+
+- [Single-wheel 1.5x IR correction — INT-78](#single-wheel-15x-ir-correction--int-78)
 - [Measured rolling-scale application — INT-67](#measured-rolling-scale-application--int-67)
 - [Operator-assisted encoder calibration — INT-66](#operator-assisted-encoder-calibration--int-66)
 - [User-reported encoder revolution count — INT-65](#user-reported-encoder-revolution-count--int-65)
@@ -1738,3 +1771,585 @@ Wireless normal firmware build PASS:
 [profile and UF2 checksum](logs/2026-10-31_INT-77/build-result.json).
 Not flashed or physically tested; opposite physical steering is expected based
 on the user's observation, not established by the host simulation.
+
+## Single-wheel 1.5x IR correction — INT-78
+
+2026-10-31, Codex. User requests base/1.5x wheel speed for left-black and
+1.5x/base for right-black. Motion FOLLOW now boosts only the selected wheel by
+up to 50%; the other retains base speed. Zero steering remains base/base.
+Existing Mission sign mapping and wheel PID/duty limit remain. This shared
+mixing also reaches bypass FOLLOW guidance. Normal 70 mm/s tracking therefore
+requests 70/105 or 105/70 mm/s; PWM duty need not have the same ratio.
+
+Host case: from rest, command -127/0/+127 at 20 mm/s; verify unsaturated PID
+outputs against independently specified wheel targets 20/30, 20/20, 30/20.
+Acceptance: each duty within 0.00001 of expected, both forward, zero-speed
+braking preserved. Motion tests with stall guard off/on, Mission released and
+pending-policy tests, and digital IR tests PASS under Apple Clang C11 O2
+Wall Wextra Werror. [Targeted output](logs/2026-10-31_INT-78/targeted-retry-results.txt).
+The initial 40/60 mm/s fixture exceeded the duty cap at rest and failed its
+unsaturated-fixture assertion; reduced fixture speed without changing the
+requested ratio. [Initial fixture failure](logs/2026-10-31_INT-78/targeted-results.txt).
+
+Full host suite stopped at the existing encoder-math follow-speed assertion:
+70 * 11.649 = 815.43 counts/s exceeds its old 780..810 range; neither constant
+was changed here. [Full-suite output](logs/2026-10-31_INT-78/host-results.txt).
+[Source identity](logs/2026-10-31_INT-78/source-manifest.json) records base HEAD
+and exact final working-tree hashes, plus the initial fixture hash.
+No firmware build, flash or physical pass claimed.
+
+
+## Reported IMU calibration — INT-79
+
+2026-10-31; Codex; base `86ce2d8301754ce8df2efc6690faf539efacc544`
+plus modified working tree identified in the source manifest. Host/software PASS;
+not a firmware execution or physical calibration pass.
+
+Case: send unknown, not-calibrated and calibrated status independently of hump
+history and Terrain faults; verify telemetry and snapshot encoders/decoders,
+malformed-state/range rejection and dashboard labels. Expected: successful
+calibration displays Calibrated with zero humps; absent legacy status remains
+Calibration unknown; faults stay separately visible. Synthetic fixture only;
+no robot commands, wiring changes or powered-motion trial.
+
+C frame/report tests, Python decoder/CLI tests and dashboard JavaScript tests
+passed. HTTP regression initially could not bind a socket in the sandbox;
+it passed with localhost access. Wireless normal firmware built successfully
+(`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0`).
+Dashboard rebuilt/restarted. Browser checked calibrated with no maximum,
+not-calibrated, legacy unknown and calibrated with a current IMU fault at the
+documented desktop viewport. Firmware was not flashed; the connected older
+firmware cannot report the new status. Prior working-tree Motion changes are
+included in the built image and are not a physical pass from this check.
+
+Evidence: [host](logs/2026-10-31_INT-79/host-results.txt),
+[HTTP](logs/2026-10-31_INT-79/http-results.txt),
+[report](logs/2026-10-31_INT-79/report-results.txt),
+[firmware build](logs/2026-10-31_INT-79/firmware-build.txt),
+[dashboard build](logs/2026-10-31_INT-79/dashboard-build.txt),
+[calibrated preview](logs/2026-10-31_INT-79/calibrated.png),
+[source identity](logs/2026-10-31_INT-79/source-manifest.json).
+
+## Smooth tracking with strong curve correction — INT-80
+
+Case defined 2026-10-31 before execution. User requests reduced tracking jerk
+while retaining stronger correction on curves. Host fixtures only: verify
+steering ramps on distinct acquisitions, duplicate reads cannot accelerate it,
+full curve strength is reached, reversal is bounded, white/white settles to zero,
+wrap and stop/reset remain valid. Normal tracking 45 mm/s, boost 70%; navigation
+remains unchanged. Check Motion mixing and Mission released/pending regressions.
+No board wiring, power, flash or physical acceptance in this case.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus working-tree
+[source manifest](logs/2026-10-31_INT-80/source-manifest.json).
+PASS: final complete host suite under Apple Clang C11 O2 Wall Wextra Werror,
+including released/pending Mission, Motion with stall guard off/on, encoder
+scale, digital IR, safety, codecs, terrain and concurrency checks. Added
+explicit sustained-curve, reversal, duplicate-acquisition, white settling,
+fresh older acquisition at state entry, wrapping timestamp and stop/reset
+checks. Retained 70% boost; the existing 50% comment and Motion test fixture
+were stale and now match the active configuration. Encoder speed fixture now
+checks current 45 mm/s tracking rather than the stale prior count-speed range.
+The initial targeted Mission run failed an old monotonic navigation-end
+assertion: returning to tracking now deliberately requests 45 rather than 70;
+updated the assertion while preserving navigation-phase ramp checks.
+[Initial targeted output](logs/2026-10-31_INT-80/targeted-results.txt),
+[intermediate full suite](logs/2026-10-31_INT-80/host-results.txt),
+[final host output](logs/2026-10-31_INT-80/final-host-results.txt).
+Wireless normal firmware compile/link/UF2 conversion PASS after Docker socket
+access retry; [final build](logs/2026-10-31_INT-80/final-firmware-build.txt),
+[profile and image checksum](logs/2026-10-31_INT-80/build-result.json).
+No flash or physical trial. Straight/curve stability, loaded speed and mounted
+steering response remain provisional D07. Other pre-existing working changes
+are included in this build; no physical acceptance is inferred.
+
+## Stronger sustained curves and modest speed increase — INT-81
+
+Case defined 2026-10-31 before execution. User reports curve entry acceptable
+but later correction insufficient; requests modest overall speed increase.
+Host procedure: independently specify FOLLOW wheel targets at zero, +/-64,
++/-96 and +/-127 to verify gentle entry and progressively stronger inner-wheel
+reduction, symmetric directions and unchanged boost. Verify 48 mm/s tracking,
+75 mm/s navigation ceiling, acquisition ramp/duplicates/reset/stop, measured
+encoder units and complete host regressions. Build wireless normal firmware.
+No board wiring, power, flash or physical acceptance in this case.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus working source
+[manifest](logs/2026-10-31_INT-81/source-manifest.json). Full host suite PASS
+under Apple Clang C11 O2 Wall Wextra Werror: Motion guarded/unguarded,
+Mission released/pending, digital acquisition, safety, navigation, encoders,
+codecs, terrain and concurrency. Independently specified seven signed
+steering points verify base/base, gentle entry, intermediate tightening and
+full 0.6/1.7 wheel targets in both directions. Tracking is 48 mm/s (was 45),
+navigation ceiling 75 (was 70); broad entry requests 37 after rounding down.
+Existing ramp, stop, freshness, fault and duty-cap policies remain. Recovery
+and independent bypass speed constants retain their prior values; the shared
+FOLLOW mixer also tightens bypass line guidance at high steering magnitude.
+Initial host run failed a fixture that passed the new 37.5 mm/s half-speed
+directly into the integral-speed constructor, which correctly rejected it.
+Updated both fixture call sites to round down as Mission already does.
+[Initial output](logs/2026-10-31_INT-81/host-results.txt),
+[complete passing output](logs/2026-10-31_INT-81/host-retry-results.txt).
+Wireless normal firmware compile/link/UF2 conversion BUILD PASS:
+[build log](logs/2026-10-31_INT-81/firmware-build.txt),
+[profile/checksum](logs/2026-10-31_INT-81/build-result.json).
+Not flashed or physically tested. User's curve report has no new image
+identity or trace, so it is tuning input, not a recorded physical acceptance.
+Loaded wheel response and stopping/curve performance remain provisional D07.
+
+## Half-to-full curve speed ramp — INT-82
+
+Case defined 2026-10-31 before execution. User requests curve speed starting
+at 50% and progressively reaching 100% of fixed speed. Preserve the current
+working 75 mm/s tracking setting. Host procedure: both directions start
+at half speed and rise monotonically to full over ten new acquisitions;
+duplicate reads do not advance progress, reversal restarts, white exit
+settles without a speed jump, stale/stop/reset and hump scaling remain.
+Check packed progress bounds, existing stronger steering and navigation,
+then build wireless normal firmware. No board action or physical pass.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus tested working
+[source manifest](logs/2026-10-31_INT-82/source-manifest.json). Full host suite
+PASS under Apple Clang C11 O2 Wall Wextra Werror, including both Motion guard
+profiles, released/pending Mission, digital IR, navigation, safety, codecs,
+terrain and concurrency. Added independent 37/41/45/48/52/56/60/63/67/71/75
+mm/s command sequence in both correction directions, saturation at ceiling,
+duplicate acquisition hold, reversal restart, gradual white exit, half-speed
+hump scaling, invalid packed progress zero-speed result and immediate stop
+with history reset. Existing LOST-hold, wrapping timestamp and junction
+encoder-ramp checks pass. Two new bit-fields (4+2 bits) use existing
+acquisition identity; no API/wire change.
+Preserved concurrent user changes to tracking ceiling 75 and outer boost
+0.85. Initial host run failed the older 0.70-boost Motion fixture; updated
+its independently specified wheel targets to the current tuning.
+[Initial output](logs/2026-10-31_INT-82/host-results.txt),
+[passing full suite](logs/2026-10-31_INT-82/host-retry-results.txt).
+Wireless normal firmware compile/link/UF2 conversion BUILD PASS:
+[build log](logs/2026-10-31_INT-82/firmware-build.txt),
+[profile/image checksum](logs/2026-10-31_INT-82/build-result.json).
+No flash or physical verification. Command ramp is based on fresh acquisition
+count, not measured acceleration; full-speed wheel demands can still meet
+the unchanged duty cap. Physical ramp timing/curve acceptance remains D07.
+
+## Continuous FOLLOW wheel targets — INT-83
+
+Procedure defined before execution, 2026-10-31: run the host suite with
+independent 75/75, 45/138.75 and reversed wheel endpoint expectations. Check
+5 mm/s per 20 ms bounds at entry, exit and reversal, duplicate timestamps,
+clock wrap, late releases, corrupt history, zero speed, expired/invalid
+commands and STOP. Verify Mission no longer resets speed on curve changes;
+hump scaling, navigation, discrete actions and safety regressions must pass.
+Host simulation only; no wiring, power or physical calibration applies.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus tested working
+[source manifest](logs/2026-10-31_INT-83/source-manifest.json). Full host
+suite PASS (Apple Clang C11 O2 Wall Wextra Werror), including guarded and
+unguarded Motion, released/pending Mission, safety, navigation, digital IR,
+codecs, terrain and concurrency. Independent wheel endpoints, 5 mm/s per
+release limits, entry/exit/reversal, duplicate timestamps, timer wrap, late
+release clamp, minimum demand, maximum Q6 demand, invalid history, zero
+speed and immediate stop/expiry/invalid-command checks pass. Mission keeps
+the configured tracking ceiling through correction changes; hump scaling
+and discrete action/endpoint checks pass.
+[Complete host results](logs/2026-10-31_INT-83/host-complete-results.txt).
+Initial failures are preserved: the new fixed-count fixture triggered the
+enabled stall guard until encoder motion was simulated; the Mission fixture
+still expected the removed half-speed reset. Initial firmware compilation
+found an unavailable UINT16_MAX macro in the configuration header; its bound
+now uses a literal without adding a header dependency.
+[Initial host run](logs/2026-10-31_INT-83/host-results.txt),
+[Mission fixture failure](logs/2026-10-31_INT-83/host-retry-results.txt),
+[initial build](logs/2026-10-31_INT-83/firmware-build.txt).
+Wireless normal firmware compile/link/UF2 conversion BUILD PASS:
+[passing build](logs/2026-10-31_INT-83/firmware-retry-build.txt),
+[profile and image checksum](logs/2026-10-31_INT-83/build-result.json).
+No flash, physical measurement or calibration pass. The provisional target
+slew can delay correction on tight bends; tune it using mounted trials.
+Current 75 mm/s ceiling, 0.85 outer boost and unrelated working edits remain.
+
+## Navigation wheel selection and IR U-turn — INT-84
+
+Procedure defined before execution, 2026-10-31: host-simulate left/right
+swing turns with the inner wheel always braked, including encoder drift.
+Check driven-wheel track-width arc, invalid TURN styles and unchanged
+pivot recovery/bypass. Integrate Mission commands with Motion for motor
+signs; U-turn must ignore starting black, observe fresh exit-white/new-black/
+white, brake immediately and await stationarity before FOLLOW. Repeated
+acquisitions cannot advance the sequence. Check stale/invalid IR, missing
+sequence at encoder bound, timeout, invalid phase, obstacle and GP21 stops.
+Run the full host suite and normal wireless firmware build. Host only; no
+wiring, power or physical calibration applies to these checks.
+
+Procedure revision before rerun: user reported left/right NAVIGATE hangs and
+confirmed turning-side IR completion. Extend fresh exit/black/white and motor
+checks to all L/R/U directions, reject opposite-sensor and duplicate edges,
+remove clearance/confirmation gates, and assert STOP then FOLLOW with both
+positive wheel outputs without turn-DONE, clear-DONE or stationarity feedback.
+All three directions must stop on stale/invalid IR, invalid edge state, action
+bound/DONE, action FAILED, timeout, obstacle and GP21.
+
+Handoff timing refinement before final rerun: Mission (10 ms) holds its STOP
+command in a bounded BRAKE phase until Motion (20 ms) reports IDLE. Simulate
+an extra Mission release before Motion sees STOP; no FOLLOW may overwrite
+the pending brake. Motion service then releases FOLLOW without a physical
+stationarity gate. Preserve timeout, stale acquisition, hazard and GP21 guards.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus tested working
+[source manifest](logs/2026-10-31_INT-84/source-manifest.json). Full host suite
+PASS (Apple Clang C11 O2 Wall Wextra Werror), including both Motion guard
+profiles, released/pending Mission, navigation, recovery/bypass, safety, digital
+IR, codecs, terrain and concurrency. Left/right swing signs, track-width arc,
+braked-wheel encoder drift and invalid TURN styles pass. Integrated L/R/U
+commands verify left brake/right forward, left forward/right brake and left
+forward/right reverse respectively. Fresh turning-side white-exit/new-black/
+white completes each turn; starting black, opposite-sensor transitions and
+duplicate acquisitions cannot finish it. Timestamp wrap, invalid phases,
+stale/invalid IR, action DONE/FAILED without the sequence, timeout, obstacle
+and GP21 fail closed. Brake holds across an extra faster Mission release
+until Motion reports IDLE; then FOLLOW resumes without encoder turn-DONE,
+clear-DONE, a confirmation streak or measured stationarity. Straight encoder
+segment and speed progress regressions pass.
+[Complete host results](logs/2026-10-31_INT-84/host-complete-results.txt).
+Preserved intermediate host output includes obsolete target expectations and
+a fixture using floor-rounded encoder travel just below full nominal angle;
+fixtures now use the final sensor-bound command contract and ceil at the
+nominal speed-ramp endpoint. These were test expectation failures.
+Wireless normal firmware compile/link/UF2 conversion BUILD PASS, no reported
+compiler warnings/errors: [final build](logs/2026-10-31_INT-84/firmware-brake-build.txt),
+[profile/image checksum](logs/2026-10-31_INT-84/build-result.json).
+No flash or physical trial. The first eligible post-exit sensor crossing is
+accepted; it is not proof of exact 90/180-degree alignment. Sensor polarity,
+comparator thresholds, placement and stopping overshoot require mounted trials.
+Existing 360-degree and 12 s limits remain failure ceilings, not calibrated
+course limits; the U-turn's pre-turn stationary pause remains. No unrelated
+working changes were reverted; no commit, push or PR was performed.
+
+## 70 mm turn approach and immediate curve authority — INT-85
+
+Procedure defined before execution, 2026-10-31: host-simulate queued left/right
+with normal-speed straight FOLLOW until 70 mm signed mean encoder travel.
+Check one count below and at the threshold, timer-only and reverse travel,
+count wrap/divergent lifetime counts, black/white sensor seeding at turn entry,
+stop/obstacle/stale/invalid acquisition/action failure/timeout during approach.
+Keep U-turn pause/pivot/IR completion and all turn brake handoffs. Straight
+navigation must request normal speed throughout its 25 mm segment. Verify
+FOLLOW common-base slew min/max/invalid, wrap/duplicates/late releases,
+immediate stop and wheel ratios from the first control release. Integrate a
+U-turn handoff into a fresh return-curve correction: steering must immediately
+produce unequal wheel targets while common speed accelerates. Run the full
+host suite and normal wireless firmware build; no physical test is implied.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus tested working
+[source manifest](logs/2026-10-31_INT-85/source-manifest.json). Full host suite
+PASS (Apple Clang C11 O2 Wall Wextra Werror), including both Motion guard
+profiles, released/pending Mission, navigation, recovery/bypass, safety, digital
+IR, codecs, terrain and concurrency. L/R approach waits at one count below
+70 mm and starts the single-wheel turn at ceil(70 * ENC_COUNTS_PER_MM);
+time-only and reverse travel cannot qualify. Count wrap/divergent lifetime
+counts, black/white turn-entry history and approach failure guards pass.
+U-turn keeps its pause and clockwise pivot without approach. Existing
+IR completion/serviced-brake/FOLLOW handoff checks pass. Integrated U-turn
+return-curve fixture verifies differential on the first correction sample and
+9/27.75 mm/s targets after the second, at a 15 mm/s ramped base; no initial
+equal-wheel plateau from independent target ramps remains. These are software
+targets, not measured physical wheel speeds.
+Common-base slew, steering sign/reversal, timer wrap, duplicate/late releases,
+zero/min/max/invalid 15-bit history and immediate stop checks pass. Straight
+NAVIGATE requests 75 mm/s throughout its 25 mm segment, or 37 mm/s with
+existing hump scaling, rather than a half-speed segment ramp.
+[Passing full host suite](logs/2026-10-31_INT-85/host-retry-results.txt).
+The [initial host run](logs/2026-10-31_INT-85/host-results.txt) failed an older
+hump fixture expecting quarter speed (half segment ramp times half hump);
+updated it to half normal speed after removing the segment ramp.
+Wireless normal firmware compile/link/UF2 conversion BUILD PASS, no reported
+compiler warning/error: [build log](logs/2026-10-31_INT-85/firmware-build.txt),
+[profile/image checksum](logs/2026-10-31_INT-85/build-result.json).
+No flash or physical measurement. The user-selected 70 mm approach requires
+mounted geometry validation; encoder slip and stopping/steering response
+remain physical limits. Common-base slew preserves steering authority but
+allows faster individual-wheel changes during corrections. No commit, push
+or PR; unrelated working changes retained.
+
+## Gentler steering transitions — INT-86
+
+Procedure defined before execution, 2026-10-31: host-check independent
+32/64/96/127 Q7 entry, eight-acquisition reversal and four-acquisition white
+exit sequences, duplicate acquisition hold and wrapping timestamps. Verify
+post-U-turn curve correction remains unequal from its first sample and
+reaches full steering on its fourth sample, with 15/46.25 mm/s targets at
+a ramped 25 mm/s base. Rerun full host suite and wireless normal firmware
+build, preserving 70 mm approach, straight speed, safety and IR turn handoff.
+No physical test is implied.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus tested working
+[source manifest](logs/2026-10-31_INT-86/source-manifest.json). Full host suite
+PASS, including both Motion guard profiles, released/pending Mission, 70 mm
+approach, straight navigation speed, U-turn pause/pivot, sensor completion,
+serviced brake handoff, digital IR, safety, codecs, terrain and concurrency.
+Independent four-sample entry/exit and eight-sample reversal expectations
+pass; cached acquisitions do not advance steering. Post-U-turn curve targets
+remain unequal from first correction and reach 15/46.25 mm/s on the fourth
+sample at 25 mm/s common base. Full correction strength/mixing is unchanged.
+[Host results](logs/2026-10-31_INT-86/host-results.txt). Wireless normal firmware
+compile/link/UF2 conversion BUILD PASS, no reported warnings/errors:
+[build log](logs/2026-10-31_INT-86/firmware-build.txt),
+[profile/image checksum](logs/2026-10-31_INT-86/build-result.json).
+No flash or physical trial. Slower steering transitions may run wide on a
+tight bend; tune against mounted path/speed rather than treating the host
+sequence as physical acceptance. No commit/push/PR; unrelated edits retained.
+
+## Faster tracking trial — INT-87
+
+Procedure defined before execution, 2026-10-31: rerun existing host cases with
+90 mm/s tracking/straight/70 mm approach expectations, preserving 75 mm/s
+rotation and 37 mm/s rotation entry. Check hump scaling, slower steering
+transitions, common-base ramp/limits, IR turn completion, brake handoffs and
+safety regressions. Build normal wireless firmware. No physical speed or
+curve acceptance is implied by host checks or compilation.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus tested working
+[source manifest](logs/2026-10-31_INT-87/source-manifest.json). Full host suite
+PASS, including both Motion guard profiles, released/pending Mission, 90 mm/s
+tracking/straight/approach and half-speed hump requests, 75 mm/s rotation,
+70 mm threshold, four-sample steering entry, common-base ramp, turn sensors,
+brake handoffs, safety, codecs, terrain and concurrency.
+[Passing host results](logs/2026-10-31_INT-87/host-retry-results.txt).
+[Initial run](logs/2026-10-31_INT-87/host-results.txt) failed the encoder-unit
+fixture's obsolete 75 mm/s expectation (870..880 count/s); updated it to
+1040..1050 count/s for 90 mm/s at the existing rolling scale. No encoder
+calibration value was changed. Wireless normal firmware compile/link/UF2
+conversion BUILD PASS, no reported warnings/errors:
+[build log](logs/2026-10-31_INT-87/firmware-build.txt),
+[profile/image checksum](logs/2026-10-31_INT-87/build-result.json).
+No flash or physical trial. Faster tracking can increase curve overshoot and
+duty saturation; 90 mm/s is a provisional request, not a measured pass.
+No commit/push/PR; unrelated working edits retained.
+
+## Gentler curve authority — INT-88
+
+Procedure defined before execution, 2026-10-31: host-verify independent wheel
+mixtures at Q7 -127/-96/-64/0/64/96/127 with 0.60 outer boost and 0.25
+inner cut. Check correction from rest remains unequal during common-base
+acceleration. Post-U-turn full correction must request 18.75/40 mm/s at a
+25 mm/s base. Run full suite including faster tracking, 70 mm approach,
+steering smoothing, sensor completion, brake handoff and safety, then build
+normal wireless firmware. No physical curve pass is implied.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus tested working
+[source manifest](logs/2026-10-31_INT-88/source-manifest.json). Full host suite
+PASS, including both Motion guard profiles, released/pending Mission,
+independent gentle/full wheel mixing expectations, immediate differential
+from rest, U-turn return-curve targets, common-base ramp, smoothing, 90 mm/s
+tracking, 70 mm approach, sensor completion, brake handoffs, safety, codecs,
+terrain and concurrency. [Host results](logs/2026-10-31_INT-88/host-results.txt).
+Wireless normal firmware compile/link/UF2 conversion BUILD PASS, no reported
+warnings/errors: [build log](logs/2026-10-31_INT-88/firmware-build.txt),
+[profile/image checksum](logs/2026-10-31_INT-88/build-result.json).
+No flash or physical measurement. Gentler target differential can run wide
+on tighter bends; confirm the new balance with mounted trials. The user's
+report of excessive correction motivates this provisional tuning; no physical
+pass is inferred from software checks. No commit/push/PR; unrelated edits
+retained.
+
+## IR curve response and straight release — INT-89
+
+Procedure defined before execution, 2026-10-31: user reports running wide /
+turning too late on curves and jerky straights. Host-check gentle initial
+32-Q7 correction, sustained 32/96/127 entry, full reversal through zero,
+127/63/0 white release, isolated black/white chatter, duplicate acquisitions,
+wrapping timestamps, reset and stop. Check tracking base request scales
+linearly from 90 at zero steering to 45 mm/s at full steering, with hump
+scaling afterward. Retain Motion common-base slew and mixing; run full host
+suite. No physical calibration/pass is implied. DOUT comparator thresholds
+must still be adjusted on the mounted robot under actual course lighting.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus tested working
+[source manifest](logs/2026-10-31_INT-89/source-manifest.json). Full host suite
+PASS, including released/pending Mission, both Motion guard profiles,
+explicit steering/speed sequences, duplicate acquisition and wrap behavior,
+chatter, hump, stop, navigation, braking, codecs, terrain and concurrency.
+[Initial host results](logs/2026-10-31_INT-89/host-results.txt) passed; after
+adding independent numeric speed expectations, the
+[final host results](logs/2026-10-31_INT-89/host-final-results.txt) also pass.
+`git diff --check` passes. No firmware build, flash or physical calibration.
+The full-correction requested base speed is halved; loaded slowdown is
+subject to Motion slew/PID response. White/white still cannot distinguish
+centering from a lost line. D07/T03 remain pending. No commit/push/PR;
+pre-existing working edits retained.
+
+## Gentler entry and tighter sustained curves — INT-90
+
+Procedure defined before execution, 2026-10-31: user reports jerky curve
+entry followed by insufficient turning during a steady bend; requests slower
+inner or faster outer wheel. Set LINE_STEER_STEP_Q to 24 (entry steps 24 then
+48) and MOTION_FOLLOW_INNER_CUT to 0.50 (full inner target 0.50 * base).
+Retain outer boost and curve speed scaling. Host-check explicit steering and
+speed sequences for both directions, white release, reversal through zero,
+chatter, duplicate/wrapped samples; independent Motion target values at
+0/64/96/127 and negatives; post-U-turn 12.5/40 targets at a 25 mm/s ramped
+base. Run the full host suite. These are provisional D07 settings; physical
+curve retention, jerk and wheel speeds require a mounted trial.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus tested working
+[source manifest](logs/2026-10-31_INT-90/source-manifest.json). Full host suite
+PASS, including both Motion guard profiles, released/pending Mission,
+independent inner/outer targets, post-U-turn return-curve targets, acquisition
+steering/speed sequences, duplicate/wrap behavior, chatter, hump, stop,
+navigation, brake handoff, codecs, terrain and concurrency.
+[Host results](logs/2026-10-31_INT-90/host-results.txt). `git diff --check`
+passes. No firmware build, flash or physical trial. Entry now takes one
+additional acquisition; slower inner wheel may stall or overcorrect on the
+mounted robot. Physical D07/T03 acceptance remains pending. No commit,
+push or PR; pre-existing working edits retained.
+
+## Curve authority and guided straight exits — INT-91
+
+Procedure defined before execution, 2026-10-31: user reports continued wide
+curves and a subsequent straight junction carrying an angle off the line.
+Increase full FOLLOW inner cut from 0.50 to 0.70, retaining outer boost and
+steering entry timing. Check independent Motion targets at both signs of
+64/96/127 and zero, plus U-turn return targets 7.5/40 at a 25 mm/s ramped base.
+During the 25 mm straight navigation segment use fresh visible IR guidance;
+retain steering/acquisition history across the transition back to tracking.
+Host-check positive/negative angled exits before the distance endpoint,
+duplicate samples, continuous full correction on handoff, broad-black reset,
+hump scaling, invalid guidance, and existing stale/stop/obstacle/timeout and
+encoder-wrap guards. Run full host suite. No physical calibration/pass is
+implied; white/white cannot establish line presence or chassis heading.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus tested working
+[source manifest](logs/2026-10-31_INT-91/source-manifest.json). Full host suite
+PASS, including both Motion guard profiles, released/pending Mission,
+independent tighter wheel targets, return from U-turn, positive/negative
+angled straight exits before completion, repeated acquisitions, correction
+continuity at handoff, broad-black reset, hump and invalid-guidance stop.
+Existing stale/obstacle/timeout/local-stop, encoder wrap, navigation, codec,
+terrain and concurrency regressions also pass.
+[Host results](logs/2026-10-31_INT-91/host-results.txt). `git diff --check`
+passes. No firmware build, flash or physical calibration/trial. Slow inner
+wheel may stall or cause excessive correction. White/white cannot establish
+line presence or chassis heading; straight-exit correction needs visible
+line evidence. D07/T03 acceptance remains pending. No commit, push or PR;
+pre-existing working edits retained.
+
+## Smooth applied steering and pivot curves — INT-92
+
+Procedure defined before execution, 2026-10-31: user authorizes gradual
+inner-wheel pivot correction and reports jerky curves and straights.
+Move steering smoothing from Mission to Motion, retaining Mission acquisition
+identity and guided straight exit. Add private signed Q7 applied steering,
+800 Q7/s capped at one Motion period per release; full inner cut 1.0.
+Mission requests digital targets and compensates base speed for outer boost.
+Host-check independent mixed targets at +/-64/96/127 and zero; applied
+steering entry 8 releases, reversal 16, release 8, isolated black/white,
+duplicate times, wrap, late release, invalid -128 storage, STOP, zero speed,
+expired/invalid commands and reset. Verify pivot brakes only inner wheel,
+post-U-turn gradual differential, guided straight exits, and full host suite.
+The source representation was recorded in project-specs before code changes.
+No physical speed, smoothness or curve pass is implied.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus tested working
+[source manifest](logs/2026-10-31_INT-92/source-manifest.json). Full host suite
+PASS: both Motion guard profiles, released/pending Mission, applied steering
+entry/reversal/release, bounded/duplicate/wrapped time, pivot braking,
+straight chatter, invalid storage, immediate stop/expiry/zero-speed reset,
+guided junction exit and post-U-turn gradual pivot correction, plus existing
+codec, terrain and concurrency checks.
+[Passing results](logs/2026-10-31_INT-92/host-retry3-results.txt).
+Initial fixture failures are preserved:
+[mixer fixture](logs/2026-10-31_INT-92/host-results.txt) omitted stall timestamps
+when seeding an active controller;
+[guarded ramp fixture](logs/2026-10-31_INT-92/host-retry-results.txt) simulated
+no encoder motion beyond the stall deadline;
+[return-curve fixture](logs/2026-10-31_INT-92/host-retry2-results.txt) inferred
+speed from PID integral despite saturation. Fixtures now seed valid timing,
+include encoder movement during the ramp test, and check applied steering
+and actual brake output at handoff; the independent mixer test retains numeric
+wheel-target expectations. No guard or PID validation was weakened.
+Wireless normal firmware compile/link/UF2 BUILD PASS, no reported warnings/errors:
+[build log](logs/2026-10-31_INT-92/firmware-retry-build.txt),
+[profile/image checksum](logs/2026-10-31_INT-92/build-result.json).
+The [initial build attempt](logs/2026-10-31_INT-92/firmware-build.txt) was blocked
+by sandbox Docker socket access; the authorized retry succeeded.
+`git diff --check` passes. No flash or physical trial. Steering entry is now
+160 ms and full reversal 320 ms in software; curve retention, pivot strength,
+jerk and loaded wheel PID require physical D07/T03 acceptance. No commit,
+push or PR; pre-existing working edits retained.
+
+## IR calibration diagnostic preparation — INT-93
+
+Procedure defined before execution, 2026-10-31: after INT-92, user reports
+wide curves and poor straight tracking. Centred sensor placement initially
+reported as one or both over black, then clarified as changes / not sure;
+actual GPIO states and mounting remain unconfirmed. Read-only source review:
+0/0 is VISIBLE/zero steering; 1/0 and 0/1 are VISIBLE/directional; 1/1 is
+BROAD_BLACK/zero steering or queued navigation. INT-92's 16-Q7 release ramp
+only reaches the inner-reduction threshold after four releases, with inner
+reduction starting on the fifth. Do not infer a physical cause from this.
+Prepare wireless TEST firmware using existing sensor-only diagnostics,
+without gain/classifier changes. Build/link/UF2 conversion is build evidence
+only. Pending operator procedure: USB logic power with drive supply disconnected,
+read digital L/R over white, black and centred ordinary line under mounted
+height/lighting, then move laterally across the line and record GPIO state
+sequence. Establish polarity/placement before further controller tuning.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus current
+[source manifest](logs/2026-10-31_INT-93/source-manifest.json). Wireless TEST
+compile/link/UF2 conversion BUILD PASS:
+[build log](logs/2026-10-31_INT-93/firmware-build.txt),
+[profile/checksum](logs/2026-10-31_INT-93/build-result.json).
+No `/dev/cu.usbmodem*` serial device was present during the check; no flash,
+GPIO observation, executed firmware self-test or physical calibration was
+performed. Existing TEST output contains raw digital L/R, normalized values,
+classification and freshness. Calibration procedure added to the owning S3
+guide. No control code/gains changed, and no host-suite rerun required for
+this diagnostic-build/documentation step. `git diff --check` passes. User's
+centred state remains uncertain; D04/D07/T03 remain pending. No commit,
+push or PR; pre-existing working edits retained.
+
+## Encoder PID diagnostics and digital IR setup — INT-94
+
+Procedure defined before execution in [case](logs/2026-10-31_INT-94/case.json),
+2026-10-31: reassess digital IR versus encoder PID; keep motor gains, encoder
+scale, steering/mixing and speed settings fixed while adding per-release wheel
+observability. Verify target/measured counts/s, signed serviced duty, unavailable
+values, TEST inhibition, bounded queue/full drops and cross-core ordering. Remove
+obsolete dashboard black/white capture steps; preserve mapping/junction authority
+and test direct mapping, trace/average separation, stale/gap/invalid states.
+Compile wireless TEST and normal images sequentially; no flash or powered trial.
+
+2026-10-31, Codex. Base `86ce2d8301754ce8df2efc6690faf539efacc544` plus
+[source manifest](logs/2026-10-31_INT-94/source-manifest.json).
+Host suite PASS: [results](logs/2026-10-31_INT-94/host-results.txt), including
+50,000 concurrent trace records, golden wire bytes, bounds/nonfinite/invalid
+encoding, full/empty queue, signed/wrapped encoder speeds and stop/expiry.
+Matching decoder checks PASS:
+[final decoder result](logs/2026-10-31_INT-94/decoder-final-results.txt).
+Dashboard behavior PASS:
+[final results](logs/2026-10-31_INT-94/dashboard-final-results.txt).
+The [initial dashboard failure](logs/2026-10-31_INT-94/dashboard-results.txt)
+exposed missing initial gating after removing the wizard; an explicit startup
+`gate()` fixed it. HTTP validation PASS:
+[retry](logs/2026-10-31_INT-94/dashboard-http-retry-results.txt); the
+[initial run](logs/2026-10-31_INT-94/dashboard-http-results.txt) was blocked by
+sandbox loopback binding and the authorized retry succeeded.
+
+Wireless TEST and normal firmware compile/link/UF2 conversion BUILD PASS:
+[TEST final build](logs/2026-10-31_INT-94/firmware-test-final-build.txt),
+[TEST checksum/profile](logs/2026-10-31_INT-94/test-final-build-result.json),
+[normal final build](logs/2026-10-31_INT-94/firmware-normal-final-build.txt),
+[normal checksum/profile](logs/2026-10-31_INT-94/normal-build-result.json).
+The initial Docker attempt was socket-sandbox blocked. The first authorized
+build exposed the kernel/newlib `size_t` conflict from adding `<math.h>` to the
+kernel task; removing that include and using the trace's documented unavailable
+value fixed it. Failed logs remain preserved. One upstream lwIP unused-function
+warning appeared in the initial normal profile rebuild; final incremental builds
+reported no new warnings/errors. The final default build is motor-inhibited TEST.
+
+No browser render verification: the browser security policy rejected the local
+`file:` URL; no alternate browser route was attempted. Layout remains pending
+visual review. No firmware execution, flash, GPIO observation, loaded PID tuning,
+physical tracking or timing/stack acceptance. Trace traffic is best effort;
+timestamp gaps and unavailable speeds are explicit. New type 8 needs the matching
+laptop decoder; existing telemetry/event/request frame lengths are unchanged.
+`git diff --check` passes. No commit, push or PR; pre-existing working edits kept.

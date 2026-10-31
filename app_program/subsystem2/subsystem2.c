@@ -2,6 +2,7 @@
 #include "drv_motor.h"
 #include "drv_encoder.h"
 #include "motion_stop.h"
+#include "motion_trace.h"
 #include "../common/buttons.h"
 #include "../common/robot_data.h"
 #include "../common/robot_snapshot.h"
@@ -183,7 +184,9 @@ static void motion_task(INT stacd, void *exinf)
         MotionInput in = {.now_ms = now,
             .count = {drv_encoder_count(ENCODER_LEFT),
                       drv_encoder_count(ENCODER_RIGHT)}};
-        MotionOutput out = {.status = RD_MOTION_IDLE};
+        /* Out-of-range trace speed encodes unavailable, never measured zero. */
+        MotionOutput out = {.status = RD_MOTION_IDLE,
+            .measured_cps = {-32768.0f, -32768.0f}};
         bool previously_stopped = local_stop || initial_er < E_OK ||
             (initial.flgptn & STOP_BIT) != 0u;
         if (previously_stopped || er < E_OK)
@@ -249,6 +252,19 @@ static void motion_task(INT stacd, void *exinf)
             serviced_stops = observed_stops; /* Brake serviced for every stop seen. */
         }
         control_leave(irq);
+
+        /* Encode only after output service, outside the IRQ exclusion. */
+        mqtt_wheel_trace_t trace = {
+            .sampled_ms = in.now_ms,
+            .inhibited = APP_TEST != 0,
+            .output_ok = output_er >= E_OK};
+        for (unsigned w = 0u; w < 2u; ++w)
+        {
+            trace.target_cps[w] = out.target_cps[w];
+            trace.measured_cps[w] = out.measured_cps[w];
+            trace.duty[w] = APP_TEST ? 0.0f : out.duty[w];
+        }
+        (void)motion_trace_publish(&trace);
 
         rd_word_publish(&feedback, rd_motion_feedback_pack(out.status, out.action_id, 0));
         if (output_er >= E_OK)

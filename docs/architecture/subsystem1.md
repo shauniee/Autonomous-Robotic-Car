@@ -50,7 +50,7 @@ commands are in [README](../../README.md#wireless-telemetry).
 
 The only protocol definition is [schema v2](../architecture.md#mqtt-binary-protocol-schema-version-2):
 23-byte telemetry/snapshot, 11-byte event, 5-byte mapping, 3-byte ACK and 2-byte
-snapshot request. Exact topics, layouts, reserved bits and golden vectors live
+snapshot request; the outbound wheel trace extension is defined there too. Exact topics, layouts, reserved bits and golden vectors live
 there. Preserve schema; new Mission state labels/codes need explicit compatibility
 review even if byte lengths stay unchanged. Fault policy is owned by
 [architecture](../architecture.md#fault-bitmask), not a second S1 table.

@@ -36,26 +36,12 @@ const context = vm.createContext({
 });
 const html = fs.readFileSync(new URL('../../scripts/dashboard.html', import.meta.url), 'utf8');
 vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
-assert.equal(get('map').hidden, true);
 assert.equal(get('send').disabled, true);
-assert.match(get('setup-step').textContent, /black/);
-get('setup-next').handlers.click();
-assert.equal(get('setup-progress').textContent, 'Step 2 of 3');
-assert.match(get('setup-step').textContent, /white/);
-assert.match(get('setup-feedback').textContent, /Three chirps.*rejected/);
-assert.equal(get('map').hidden, true);
-get('setup-restart').handlers.click();
-assert.equal(get('setup-progress').textContent, 'Step 1 of 3');
-get('setup-next').handlers.click();
-get('setup-next').handlers.click();
-assert.equal(get('setup-progress').textContent, 'Step 3 of 3');
-assert.equal(get('setup-next').hidden, true);
-assert.equal(get('map').hidden, false);
-assert.equal(get('setup-detail').hidden, true);
-get('setup-next').handlers.click();
-assert.equal(get('setup-progress').textContent, 'Step 3 of 3');
-assert.match(html, /id="map" novalidate hidden/);
-console.log('calibration checklist: PASS (black → white → mapping, rejection restart, one step at a time, bounded progression)');
+assert.match(html, /<form id="map" novalidate>/);
+assert(!html.includes('IR calibration ·'));
+assert(!html.includes('press and hold GP20 through capture'));
+assert(!html.includes('setupStep'));
+console.log('setup: PASS (digital IR verification, encoder PID guidance, mapping directly available)');
 assert(buttons.every(b => b.disabled));
 vm.runInContext('lastFrame = Date.now(); mission = "FOLLOW_LINE"; robotOnline = true; gate()', context);
 assert(buttons.every(b => !b.disabled));
@@ -173,28 +159,39 @@ console.log('one-screen dashboard: PASS (seven Mission markers, custom mapping, 
 assert.deepEqual([...html.matchAll(/<tr id="row-([^"]+)"/g)].map(m => m[1]),
   ['Network', 'Motion', 'Line', 'Terrain', 'Obstacle']);
 const cell = (owner, name) => get('row-' + owner).querySelector('.' + name).textContent;
-Object.assign(sample, {line:'VISIBLE', faults:[], direction:'straight', speed_left:0, speed_right:12, hump_max_mm:0});
+Object.assign(sample, {line:'VISIBLE', faults:[], direction:'straight', speed_left:0, speed_right:12, hump_max_mm:0, imu_calibrated:true});
 vm.runInContext('showTelemetry(sample)', context);
 assert.equal(cell('Motion','reading'), 'Forward');
 assert.equal(cell('Motion','detail'), 'L 0 / R 12 mm/s');
-assert.equal(cell('Line','detail'), 'Calibrated');
+assert.equal(cell('Line','detail'), 'Digital status');
 assert.equal(cell('Terrain','detail'), 'Calibrated');
 for (const direction of ['reverse','left','right','stopped']) {
   sample.direction = direction;
   vm.runInContext('showTelemetry(sample)', context);
   assert.equal(cell('Motion','reading'), direction);
 }
-Object.assign(sample, {line:'UNKNOWN', hump_max_mm:null, direction:null, speed_left:null});
+Object.assign(sample, {line:'UNKNOWN', hump_max_mm:null, imu_calibrated:null, direction:null, speed_left:null});
 vm.runInContext('showTelemetry(sample)', context);
-assert.equal(cell('Line','detail'), 'Calibration unknown');
+assert.equal(cell('Line','detail'), 'Reading unavailable');
 assert.equal(cell('Terrain','detail'), 'Calibration unknown');
 assert.equal(cell('Motion','reading'), 'Awaiting sample');
 assert.equal(cell('Motion','detail'), 'Speed unavailable');
 sample.faults = ['Line: IR invalid', 'Terrain: IMU calibration failed', 'Mission: line lost'];
 vm.runInContext('showTelemetry(sample)', context);
-assert.equal(cell('Line','detail'), 'Fault / not calibrated');
-assert.equal(cell('Terrain','detail'), 'Fault / not calibrated');
+assert.equal(cell('Line','detail'), 'Sensor fault');
+assert.equal(cell('Terrain','detail'), 'Calibration unknown');
 assert.equal(get('mission-current').className, 'bad');
+// Calibration is reported independently of hump history and current faults.
+for (const hump_max_mm of [null, 0, 24]) {
+  for (const [imu_calibrated, expected] of [[true, 'Calibrated'], [false, 'Not calibrated'], [null, 'Calibration unknown'], [undefined, 'Calibration unknown']]) {
+    for (const faults of [[], ['Terrain: IMU'], ['Terrain: IMU calibration failed']]) {
+      Object.assign(sample, {hump_max_mm, imu_calibrated, faults});
+      vm.runInContext('showTelemetry(sample)', context);
+      assert.equal(cell('Terrain','detail'), expected);
+      assert.equal(get('row-Terrain').className, faults.length ? 'bad' : imu_calibrated === true ? 'ok' : 'warn');
+    }
+  }
+}
 console.log('subsystem health: PASS (S1–S5 order, separate Mission faults, direction/speed, calibration evidence/fault/unknown)');
 
 // Only completion events add history; telemetry repeats and scans cannot
@@ -232,3 +229,24 @@ assert.equal(obstacleList.children[0].value, 4);
 assert.equal(obstacleList.children.at(-1).value, 203);
 assert(!html.includes('<time id="obstacle'));
 console.log('obstacle history: PASS (completion-only, duplicates, equal sizes, missing width, numbering, 200-entry bound)');
+
+// Release-speed diagnostics remain distinct from averaged telemetry and previews.
+context.trace = {sampled_ms: 0xFFFFFFF0, target_left: 0, target_right: 50,
+  measured_left: 0, measured_right: null, duty_left: 0, duty_right: null,
+  inhibited: true, output_ok: false};
+vm.runInContext('showWheelTrace(trace)', context);
+assert.equal(get('trace-target-left').textContent, '0 mm/s');
+assert.equal(get('trace-speed-left').textContent, '0 mm/s');
+assert.equal(get('trace-speed-right').textContent, 'Unavailable');
+assert.equal(get('trace-duty-left').textContent, '0%');
+assert.equal(get('trace-duty-right').textContent, 'Unavailable');
+assert.match(get('trace-status').textContent, /TEST: motors inhibited.*output failed/);
+context.trace.sampled_ms = 4; // 20 ms, across uint32 wrap.
+vm.runInContext('showWheelTrace(trace)', context);
+assert(!get('trace-status').textContent.includes('sample gap'));
+context.trace.sampled_ms = 64;
+vm.runInContext('showWheelTrace(trace)', context);
+assert.match(get('trace-status').textContent, /sample gap 60 ms/);
+vm.runInContext('traceReceived = Date.now() - 3000; traceFreshness()', context);
+assert.match(get('trace-status').textContent, /stale/);
+console.log('wheel trace: PASS (valid zero, missing data, inhibit/failure, wrap, sample loss, staleness)');

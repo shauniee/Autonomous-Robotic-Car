@@ -15,10 +15,10 @@ int main(void)
     float right_mm = 5816.0f / ENC_COUNTS_PER_MM;
     assert(left_mm > 499.0f && left_mm < 501.0f);
     assert(right_mm > 499.0f && right_mm < 501.0f);
-    /* Preserve approximate pre-calibration count speed, not the old mm label. */
-    float follow_cps = MISSION_FOLLOW_SPEED_MMPS * ENC_COUNTS_PER_MM;
+    /* Current tracking trial and recovery speeds in measured encoder units. */
+    float follow_cps = MISSION_TRACK_SPEED_MMPS * ENC_COUNTS_PER_MM;
     float recovery_cps = RECOVERY_SPEED_MMPS * ENC_COUNTS_PER_MM;
-    assert(follow_cps > 780.0f && follow_cps < 810.0f);
+    assert(follow_cps > 1040.0f && follow_cps < 1050.0f);
     assert(recovery_cps > 410.0f && recovery_cps < 435.0f);
     /* Lifetime wheel separation must not affect local displacement. */
     const uint32_t before[2] = {1000u, 33767u};
@@ -76,6 +76,6 @@ int main(void)
     assert(enc_travel(origin_b, origin_b) == 0u);
 
     puts("encoder_math: PASS");
-    puts("INT-67: measured rolling scale and preserved count-speed targets PASS");
+    puts("INT-82: measured rolling scale and tracking/recovery count-speed targets PASS");
     return 0;
 }

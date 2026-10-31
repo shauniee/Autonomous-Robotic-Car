@@ -5,6 +5,7 @@
 - [Functionality](#functionality)
 - [Interfaces and contract](#interfaces-and-contract)
 - [Data and fault bits](#data-and-fault-bits)
+- [Wheel-speed tuning](#wheel-speed-tuning)
 - [Status](#status)
 - [Open items](#open-items)
 
@@ -52,6 +53,48 @@ old float duty-only API. Preserve wrapping counts and per-consumer origins.
 Measured signs, counts/revolution, geometry, gains and stopping distances remain
 D03/D07/D08. Do not repeat changing duty/speed constants here.
 
+## Wheel-speed tuning
+
+IR supplies digital line guidance; Mission chooses steering, Motion mixes wheel
+speed targets, and each wheel's encoder closes its speed PID. Encoder feedback
+cannot locate the line. Keep the steering/mixing constants fixed while tuning
+wheel-speed response; IR needs reliable black/white detection, not software
+capture calibration. Sensor setup is owned by [S3](subsystem3.md#22-local-controls).
+
+Use `mqtt_client.py monitor` on the battery-powered normal robot with USB
+disconnected, following the [power policy](../../README.md#power-and-flashing).
+`WHEEL` JSON records contain robot `sampled_ms`, signed `target_left/right` and
+`measured_left/right` in mm/s, signed `duty_left/right` percentages, `inhibited`
+and `output_ok`. The dashboard shows these separately from averaged speed.
+Duty is the serviced software command, not a measured electrical PWM or torque.
+TEST always shows inhibition and zero serviced duty; it cannot tune loaded motors.
+No new remote movement or gain-setting command exists.
+
+1. Verify forward motor direction, encoder signs and rolling distance scale
+   before gains. Preserve the recorded scale unless repeat measurements justify
+   replacing it; check each wheel rather than hiding mismatch in an average.
+2. Establish raised-wheel behavior and stop response, then assess loaded travel.
+   Select intervals with stable equal wheel targets first, followed by stable
+   unequal targets and low inner-wheel speeds. Changing targets are steering or
+   ramp behavior; compare measured response against each wheel's actual target.
+3. Establish static-friction feedforward `MOTION_KS` and speed feedforward
+   `MOTION_KF` from measurements. Tune `MOTION_KP` for response and `MOTION_KI`
+   for persistent error, one change per recorded trial; initially retain zero
+   `MOTION_KD`. Shared gains currently serve both wheels. Do not raise the duty
+   cap without the motor/driver ratings and electrical measurements.
+4. If measured speed oscillates with constant targets, investigate wheel control,
+   encoder noise, friction and power. If targets oscillate and wheels follow,
+   investigate IR transitions/steering. Once wheel response is established,
+   tune curve authority, steering slew and travel speed.
+
+The [trace protocol](../architecture.md#wheel-trace-15-bytes) is best effort:
+timestamp gaps expose missing releases and samples may drop offline or under TX
+load. First/duplicate-time and stopped-path speed measurements are unavailable,
+not measured zero. The nominal speed estimator is count displacement per Motion
+release; quantization remains visible. Network arrival timing is not control time.
+Timing/load/physical acceptance remains D07/D13; neither a graph nor a host test
+establishes a physical pass.
+
 ## Status
 
 Remote main `5e6a45b` includes command mutex, persistent stop, Motion health,
@@ -85,3 +128,24 @@ Integration correction: boot begins with one unserviced stop request, so no brak
 acknowledgement exists before Motion's first successful brake. Wheel calculations
 run with interrupts enabled; the final stop/GP21/expiry guard and motor write are
 inside the output critical section. No physical latency is inferred from this.
+
+Navigation revision (2026-10-31, INT-84): TURN's existing steering slot now
+selects pivot (0) or forward single-wheel swing (1). Recovery and bypass retain
+pivots. See the [Motion contract](../architecture.md#motion-command-contract);
+Mission ends navigation from fresh turning-side IR edges, while Motion alone
+writes/brakes outputs and retains command expiry/action bounds.
+
+FOLLOW response revision (2026-10-31, INT-85): ramp the common base speed
+before mixing steering, replacing independent mixed-wheel ramps. This
+retains correction strength from the first release after a navigation brake.
+See the [Motion contract](../architecture.md#motion-command-contract) and
+[stored representation](../project-specs.md#pending-decisions). Speed-loop
+and physical curve acceptance remain unmeasured.
+
+Applied steering/pivot revision (2026-10-31, INT-92): Motion now smooths
+steering as well as the common FOLLOW base before wheel mixing. Sustained
+full correction brakes the inner wheel while the outer remains forward.
+STOP/invalid/stale/zero-speed requests bypass both ramps. See the
+[Motion contract](../architecture.md#motion-command-contract) for timing and
+[stored representation](../project-specs.md#pending-decisions) for private Q7
+history. Physical smoothness and pivot geometry remain unmeasured.

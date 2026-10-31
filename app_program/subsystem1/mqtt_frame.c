@@ -1,5 +1,7 @@
 #include "mqtt_frame.h"
 #include "../common/robot_data.h"
+#include <math.h>
+#include <stddef.h>
 
 #define HDR(type) ((uint8_t)((MQTT_FRAME_VERSION << 4) | ((unsigned)(type) & 0xFu)))
 
@@ -14,6 +16,7 @@ static unsigned type_length(unsigned type)
     case MQTT_TYPE_ACK: return MQTT_LEN_ACK;
     case MQTT_TYPE_JUNCTION_TEST: return MQTT_LEN_JUNCTION_TEST;
     case MQTT_TYPE_SNAPSHOT_REQUEST: return MQTT_LEN_SNAPSHOT_REQUEST;
+    case MQTT_TYPE_WHEEL_TRACE: return MQTT_LEN_WHEEL_TRACE;
     default: return 0u;
     }
 }
@@ -32,11 +35,47 @@ mqtt_decode_t mqtt_frame_type(const uint8_t *f, unsigned length, mqtt_type_t *ty
 static void put16(uint8_t *p, uint16_t v) { p[0] = (uint8_t)(v & 0xFFu); p[1] = (uint8_t)(v >> 8); }
 static uint16_t get16(const uint8_t *p) { return (uint16_t)(p[0] | ((unsigned)p[1] << 8)); }
 
+static int trace_integer(float value, int limit, int invalid)
+{
+    return isfinite(value) && fabsf(value) <= (float)limit ?
+        (int)(value + (value < 0.0f ? -0.5f : 0.5f)) : invalid;
+}
+
+unsigned mqtt_encode_wheel_trace(uint8_t *out, unsigned capacity,
+    const mqtt_wheel_trace_t *trace)
+{
+    if (out == NULL || trace == NULL || capacity < MQTT_LEN_WHEEL_TRACE)
+    {
+        return 0u;
+    }
+    out[0] = HDR(MQTT_TYPE_WHEEL_TRACE);
+    for (unsigned i = 0u; i < 4u; ++i)
+    {
+        out[1u + i] = (uint8_t)(trace->sampled_ms >> (8u * i));
+    }
+    uint32_t targets = (trace->inhibited ? 1u << 30u : 0u) |
+        (trace->output_ok ? 1u << 31u : 0u);
+    for (unsigned w = 0u; w < 2u; ++w)
+    {
+        int target = trace_integer(trace->target_cps[w], 16383, -16384);
+        targets |= ((uint32_t)target & 0x7FFFu) << (15u * w);
+        put16(&out[9u + 2u * w], (uint16_t)trace_integer(
+            trace->measured_cps[w], 32767, -32768));
+        out[13u + w] = (uint8_t)(trace->output_ok ?
+            trace_integer(trace->duty[w] * 100.0f, 100, -128) : -128);
+    }
+    for (unsigned i = 0u; i < 4u; ++i)
+    {
+        out[5u + i] = (uint8_t)(targets >> (8u * i));
+    }
+    return MQTT_LEN_WHEEL_TRACE;
+}
+
 /* ---- Telemetry -----------------------------------------------------------
    0 header | 1 sequence | 2 [3:0] mission state, [5:4] motion status, [7:6] line status
    3 [5:0] motion action, [6] mapped, [7] 0 | 4..9 fault bytes | 10..11 left | 12..13 right
    14 hump count | 15 [6:0] hump max, [7] hump valid
-   16..17 [12:0] front mm, [13] front valid, [15:14] 0
+   16..17 [12:0] front mm, [13] front valid, [15:14] IMU calibration
    18 [4:0] barcode letter, [7:5] barcode action | 19..20 obstacle width mm | 21..22 obstacle depth mm */
 
 unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type, const mqtt_telemetry_t *t)
@@ -46,6 +85,7 @@ unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type
         t->mission_state > 15u || t->motion_status > 3u || t->line_status > 3u || t->motion_action > 63u ||
         t->hump_max > 127u || (t->hump_valid && t->hump_max == 127u) ||
         t->front_mm > 8191u || (t->front_valid && t->front_mm == 8191u) ||
+        t->imu_calibration > MQTT_IMU_CALIBRATED ||
         (t->barcode_letter > 25u && t->barcode_letter != MQTT_NO_LETTER) ||
         t->barcode_action > 4u)
     {
@@ -60,7 +100,8 @@ unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type
     put16(&out[12], t->right_count);
     out[14] = t->hump_count;
     out[15] = (uint8_t)(t->hump_max | (t->hump_valid ? 0x80u : 0u));
-    put16(&out[16], (uint16_t)(t->front_mm | (t->front_valid ? 0x2000u : 0u)));
+    put16(&out[16], (uint16_t)(t->front_mm |
+        (t->front_valid ? 0x2000u : 0u) | (t->imu_calibration << 14)));
     out[18] = (uint8_t)(t->barcode_letter | (t->barcode_action << 5));
     put16(&out[19], t->obstacle_width_mm);
     put16(&out[21], t->obstacle_depth_mm);
@@ -74,11 +115,12 @@ mqtt_decode_t mqtt_decode_telemetry(const uint8_t *f, unsigned length, mqtt_type
     if (r != MQTT_DECODE_OK) return r;
     if (t == 0 || type == 0) return MQTT_DECODE_NULL;
     if (ty != MQTT_TYPE_TELEMETRY && ty != MQTT_TYPE_SNAPSHOT_REPLY) return MQTT_DECODE_TYPE;
-    if ((f[3] & 0x80u) != 0u || (f[17] & 0xC0u) != 0u) return MQTT_DECODE_RESERVED;
+    if ((f[3] & 0x80u) != 0u) return MQTT_DECODE_RESERVED;
     uint8_t letter = f[18] & 0x1Fu;
     uint16_t front = get16(&f[16]);
     if ((letter > 25u && letter != MQTT_NO_LETTER) || (f[18] >> 5) > 4u ||
-        f[15] == 0xFFu || front == 0x3FFFu)
+        f[15] == 0xFFu || (front & 0x3FFFu) == 0x3FFFu ||
+        (front >> 14) > MQTT_IMU_CALIBRATED)
     {
         return MQTT_DECODE_RANGE;
     }
@@ -95,6 +137,7 @@ mqtt_decode_t mqtt_decode_telemetry(const uint8_t *f, unsigned length, mqtt_type
     t->hump_count = f[14];
     t->hump_max = f[15] & 0x7Fu;
     t->hump_valid = (f[15] & 0x80u) != 0u;
+    t->imu_calibration = (uint8_t)(front >> 14);
     t->front_mm = front & 0x1FFFu;
     t->front_valid = (front & 0x2000u) != 0u;
     t->barcode_letter = letter;

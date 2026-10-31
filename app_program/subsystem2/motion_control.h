@@ -60,6 +60,13 @@ uint8_t motion_cmd_action(const MotionCommand *cmd);
 MotionCommand motion_command_make(motion_mode_t mode, float speed_mmps, float target,
                                   int steering_q, unsigned action_id, uint32_t sampled_ms);
 
+/* TURN interprets its steering slot as a style; FOLLOW retains signed Q7. */
+typedef enum
+{
+    MOTION_TURN_PIVOT,
+    MOTION_TURN_SWING
+} motion_turn_style_t;
+
 typedef struct {
     float integral, previous_speed;
 } WheelPid;
@@ -74,6 +81,8 @@ typedef struct {
     uint32_t origin[2];
     uint32_t previous_count[2];
     uint32_t stalled_since_ms[2];
+    uint16_t follow_base_q6 : 15; /* private unsigned Q6 mm/s, see specs */
+    int8_t follow_steer_q; /* private applied Q7 steering, see specs */
     WheelPid pid[2];
 } MotionController;
 
@@ -84,6 +93,7 @@ typedef struct {
 
 typedef struct {
     float duty[2];	/* signed, within +-MOTION_MAX_DUTY; 0 = brake */
+    float target_cps[2], measured_cps[2]; /* local tuning diagnostics */
     rd_motion_status_t status;
     uint8_t action_id;
     bool stall;		/* stall fault condition this release */

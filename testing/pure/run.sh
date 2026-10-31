@@ -55,6 +55,10 @@ $CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
 "$build_dir/test_robot_data"
 "$build_dir/test_motion_control"
 "$build_dir/test_motion_control_guarded"
+$CC $CFLAGS testing/pure/test_motion_trace.c app_program/subsystem2/motion_trace.c \
+    app_program/subsystem1/mqtt_frame.c app_program/common/robot_data.c \
+    -o "$build_dir/test_motion_trace"
+"$build_dir/test_motion_trace"
 "$build_dir/test_barcode"
 "$build_dir/test_ir_tracking"
 "$build_dir/test_safety"

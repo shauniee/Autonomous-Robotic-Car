@@ -49,7 +49,8 @@ bool motion_command_set(MotionCommand *dst, motion_mode_t mode, float speed_mmps
         speed_mmps < 0.0f || speed_mmps > MOTION_SPEED_MAX_MMPS ||
         steering_q < -127 || steering_q > 127 ||
         target < -MOTION_TARGET_MAX_MM || target > MOTION_TARGET_MAX_MM ||
-        (mode == MOTION_MODE_TURN && fabsf(target) > 360.0f) ||
+        (mode == MOTION_MODE_TURN && (fabsf(target) > 360.0f ||
+            steering_q < MOTION_TURN_PIVOT || steering_q > MOTION_TURN_SWING)) ||
         (mode == MOTION_MODE_DISTANCE && speed_mmps == 0.0f) ||
         (mode == MOTION_MODE_TURN && speed_mmps == 0.0f)) return false;
     *dst = (MotionCommand){
@@ -83,7 +84,9 @@ static bool command_valid(const MotionCommand *cmd)
     if (motion_cmd_target(cmd) < -MOTION_TARGET_MAX_MM || motion_cmd_target(cmd) > MOTION_TARGET_MAX_MM)
         return false;
     return motion_cmd_mode(cmd) != MOTION_MODE_TURN ||
-           (motion_cmd_target(cmd) >= -360 && motion_cmd_target(cmd) <= 360);
+           (motion_cmd_target(cmd) >= -360 && motion_cmd_target(cmd) <= 360 &&
+            motion_cmd_steering(cmd) >= MOTION_TURN_PIVOT &&
+            motion_cmd_steering(cmd) <= MOTION_TURN_SWING);
 }
 
 bool motion_command_fresh(const MotionCommand *cmd, uint32_t now_ms)
@@ -131,6 +134,11 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
                          const MotionInput *in, MotionOutput *out)
 {
     out->stall = false;
+    for (unsigned w = 0u; w < 2u; ++w)
+    {
+        out->target_cps[w] = 0.0f;
+        out->measured_cps[w] = NAN;
+    }
     if (cmd == 0 || motion_cmd_mode(cmd) == MOTION_MODE_STOP || !motion_command_fresh(cmd, in->now_ms)) {
         /* Recovery brakes deliberately before aligning or reversing. */
         bool requested_stop = cmd != 0 &&
@@ -144,7 +152,8 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         return;
     }
 
-    if (!c->active || motion_cmd_action(cmd) != c->action_id) {
+    bool starting = !c->active || motion_cmd_action(cmd) != c->action_id;
+    if (starting) {
         *c = (MotionController){0};
         c->active = true;
         c->action_id = motion_cmd_action(cmd);
@@ -173,6 +182,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         float dt = (float)dt_ms / 1000.0f;
         for (int w = 0; w < 2; ++w) {
             speed_cps[w] = (float)enc_travel_signed(in->count[w], c->previous_count[w]) / dt;
+            out->measured_cps[w] = speed_cps[w];
         }
     }
     float dt = dt_ms > 0u ? (float)dt_ms / 1000.0f : (float)MOTION_PERIOD_MS / 1000.0f;
@@ -183,11 +193,58 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
 
     float target_cps[2];
     float vmax_cps = motion_cmd_speed(cmd) * COUNTS_PER_MM;
-    if (motion_cmd_mode(cmd) == MOTION_MODE_FOLLOW) {
-        target_cps[LEFT] = vmax_cps * (1.0f + ((float)motion_cmd_steering(cmd) / 127.0f));
-        target_cps[RIGHT] = vmax_cps * (1.0f - ((float)motion_cmd_steering(cmd) / 127.0f));
+    if (motion_cmd_mode(cmd) == MOTION_MODE_FOLLOW)
+    {
+        uint32_t ramp_ms = starting ? MOTION_PERIOD_MS :
+            (dt_ms < MOTION_PERIOD_MS ? dt_ms : MOTION_PERIOD_MS);
+        uint32_t step_q6 = MOTION_FOLLOW_SLEW_MMPS2 * 64u * ramp_ms / 1000u;
+        if (c->follow_base_q6 > MOTION_SPEED_MAX_MMPS * 64.0f ||
+            c->follow_steer_q < -127)
+        {
+            motion_control_reset(c);
+            brake(out, RD_MOTION_FAILED, motion_cmd_action(cmd));
+            return;
+        }
+        uint32_t requested = (uint32_t)motion_cmd_speed(cmd) * 64u;
+        uint32_t previous = c->follow_base_q6;
+        if (requested == 0u)
+        {
+            previous = 0u;
+        }
+        else if (requested > previous)
+        {
+            uint32_t delta = requested - previous;
+            previous += delta < step_q6 ? delta : step_q6;
+        }
+        else
+        {
+            uint32_t delta = previous - requested;
+            previous -= delta < step_q6 ? delta : step_q6;
+        }
+        c->follow_base_q6 = (uint16_t)previous;
+        int steer_step = (int)(MOTION_FOLLOW_STEER_QPS * ramp_ms / 1000u);
+        int requested_steer = requested == 0u ? 0 : motion_cmd_steering(cmd);
+        int steer_delta = requested_steer - c->follow_steer_q;
+        if (steer_delta > steer_step) steer_delta = steer_step;
+        if (steer_delta < -steer_step) steer_delta = -steer_step;
+        c->follow_steer_q = requested == 0u ? 0 :
+            (int8_t)(c->follow_steer_q + steer_delta);
+        /* Smooth the differential as well as translation before mixing. */
+        vmax_cps = ((float)previous / 64.0f) * COUNTS_PER_MM;
+        float steering = (float)c->follow_steer_q;
+        float boost = MOTION_FOLLOW_BOOST * steering / 127.0f;
+        /* Tighten sustained curves without increasing the outer-wheel demand. */
+        float inner_cut = MOTION_FOLLOW_INNER_CUT * fmaxf(
+            (fabsf(steering) - MOTION_FOLLOW_TIGHTEN_Q) /
+            (127.0f - MOTION_FOLLOW_TIGHTEN_Q), 0.0f);
+        target_cps[LEFT] = vmax_cps * (1.0f + fmaxf(boost, 0.0f)) *
+            (steering < 0.0f ? 1.0f - inner_cut : 1.0f);
+        target_cps[RIGHT] = vmax_cps * (1.0f + fmaxf(-boost, 0.0f)) *
+            (steering > 0.0f ? 1.0f - inner_cut : 1.0f);
     } else {
         float goal[2], tol_counts;
+        bool swing = motion_cmd_mode(cmd) == MOTION_MODE_TURN &&
+            motion_cmd_steering(cmd) == MOTION_TURN_SWING;
         if (motion_cmd_mode(cmd) == MOTION_MODE_DISTANCE) {
             goal[LEFT] = goal[RIGHT] = motion_cmd_target(cmd) * COUNTS_PER_MM;
             tol_counts = MOTION_DIST_TOL_MM * COUNTS_PER_MM;
@@ -197,11 +254,23 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
             goal[LEFT] = -arc;
             goal[RIGHT] = arc;
             tol_counts = TRACK_WIDTH_MM * 0.5f * MOTION_ANGLE_TOL_DEG * (PI_F / 180.0f) * COUNTS_PER_MM;
+            if (swing)
+            {
+                goal[LEFT] = arc < 0.0f ? -2.0f * arc : 0.0f;
+                goal[RIGHT] = arc > 0.0f ? 2.0f * arc : 0.0f;
+                tol_counts *= 2.0f;
+            }
         }
         bool within = true;
         for (int w = 0; w < 2; ++w) {
             float remaining = goal[w] - (float)enc_travel_signed(in->count[w], c->origin[w]);
-            if (fabsf(remaining) <= tol_counts)
+            if (swing && goal[w] == 0.0f)
+            {
+                target_cps[w] = 0.0f;
+                continue;
+            }
+            if (fabsf(remaining) <= tol_counts ||
+                (swing && remaining < 0.0f))
             {
                 target_cps[w] = 0.0f;
                 if (motion_cmd_mode(cmd) == MOTION_MODE_TURN)
@@ -250,11 +319,14 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
             c->status = RD_MOTION_FAILED;
             brake(out, RD_MOTION_FAILED, c->action_id);
             out->stall = true;
+            c->follow_base_q6 = 0u;
+            c->follow_steer_q = 0;
             return;
         }
     }
 
     for (int w = 0; w < 2; ++w) {
+        out->target_cps[w] = target_cps[w];
         out->duty[w] = wheel_duty(&c->pid[w], target_cps[w], speed_cps[w], dt);
     }
     out->status = RD_MOTION_RUNNING;

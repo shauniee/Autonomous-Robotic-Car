@@ -7,6 +7,7 @@
 #include "../common/robot_snapshot.h"
 #include "../subsystem2/subsystem2.h"
 #include "../subsystem2/drv_encoder.h"
+#include "../subsystem2/motion_trace.h"
 #include "../mission/mission.h"
 #include "../subsystem3/barcode.h"
 #include "../subsystem3/subsystem3.h"
@@ -95,6 +96,8 @@ static void gather(mqtt_telemetry_t *t, uint8_t sequence)
         .hump_max = (uint8_t)terrain_max_code(terrain),
         /* The maximum is valid once any hump completed, whatever the latest climb. */
         .hump_valid = terrain_hump_count(terrain) != 0u,
+        .imu_calibration = terrain_calibrated(terrain) ?
+            MQTT_IMU_CALIBRATED : MQTT_IMU_NOT_CALIBRATED,
         .front_mm = (uint16_t)echo_range(front),
         .front_valid = have_range && s5_range_sample_fresh(&front_sample,
             robot_time_ms(), 3u * SONAR_REPEAT_MS),
@@ -118,7 +121,7 @@ static void post_snapshot(mqtt_type_t type, uint8_t *sequence)
 /* Diagnostics are bounded even if the network continuously refills RX.
    ACKs are retained until the TX bridge accepts them. Events are popped only
    after the bridge accepts a complete frame, under the cross-core mutex. */
-void s1_step(uint32_t now)
+static void report_step(uint32_t now)
 {
     static uint32_t report_due, telemetry_due;
     static uint8_t sequence;
@@ -213,5 +216,22 @@ void s1_step(uint32_t now)
         {
             break;
         }
+    }
+}
+
+void s1_step(uint32_t now)
+{
+    /* Normal ACK/telemetry/events get first use of the bounded TX bridge. */
+    report_step(now);
+    for (unsigned budget = 0u; budget < 2u; ++budget)
+    {
+        uint8_t frame[MQTT_LEN_WHEEL_TRACE];
+        unsigned length = motion_trace_take(frame, sizeof frame);
+        if (length == 0u)
+        {
+            break;
+        }
+        /* Offline/full TX drops diagnostics; never retry old samples. */
+        (void)s1_bridge_post(frame, length);
     }
 }

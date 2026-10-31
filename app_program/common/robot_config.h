@@ -60,16 +60,13 @@
 /* Motion geometry and control. UNMEASURED PLACEHOLDERS until #32 measures
    them (D03 geometry, D07 gains/thresholds, D08 stationary threshold).
 
-   WHEEL SPEED TUNING (watch "speed L= R=" in mqtt_client.py monitor while
-   following a straight line):
-   - Both wheels run FASTER than commanded -> lower MOTION_KF.
-   - Both wheels run SLOWER than commanded -> raise MOTION_KF (or MOTION_KI).
-   - Wheel speed swings up and down on a straight -> lower MOTION_KP.
-   - Wheels reach the commanded speed too slowly -> raise MOTION_KI a little.
-   - A slow (inner) wheel stops or reports "motor stall" -> raise MOTION_KS;
-     a wheel creeps when it should be nearly still -> lower MOTION_KS.
-   - Wheels cannot reach the speed at all -> MOTION_MAX_DUTY is the cap
-     (check the motor/driver rating before raising it). */
+   WHEEL SPEED TUNING: use per-release WHEEL traces, not only the laptop's
+   500 ms count averages. Verify encoder signs/scale, then compare each mixed
+   target with measured speed and serviced duty under load. Tune KS/KF from
+   the plant, KP for response, then KI for persistent error; leave KD zero
+   initially. Saturated duty needs diagnosis before increasing gains/cap.
+   Keep IR classification and steering settings fixed during these trials.
+   Procedure: docs/architecture/subsystem2.md, Wheel-speed tuning. */
 #define ENC_COUNTS_PER_MM 11.649f /* INT-66: mean of both wheels over 500 mm */
 #define TRACK_WIDTH_MM		130.0f	/* PROVISIONAL (D03) */
 #define MOTION_SPEED_MAX_MMPS	500.0f	/* PROVISIONAL (D07): speed limit; the 9-bit command field holds 511 */
@@ -120,17 +117,22 @@
 #define MISSION_CONFIRM_SAMPLES 3u
 #define BASE_DUTY		0.25f	/* PROVISIONAL (D07) */
 #define BROAD_DUTY		0.20f	/* PROVISIONAL (D07) */
-#define MAX_STEER		1.0f	/* digital correction: inside wheel stops */
+#define MAX_STEER		1.0f	/* digital correction: full Q7 request */
+#define MOTION_FOLLOW_BOOST 0.60f /* full correction boosts one wheel by 60% */
+#define MOTION_FOLLOW_INNER_CUT 1.0f /* PROVISIONAL D07: tight-curve reduction */
+#define MOTION_FOLLOW_TIGHTEN_Q 64 /* keep curve entry at base inner speed */
+#define MOTION_FOLLOW_SLEW_MMPS2 250u /* PROVISIONAL D07: common FOLLOW base ramp */
+#define MOTION_FOLLOW_STEER_QPS 900u /* PROVISIONAL D07: applied steering slew */
+#define MISSION_TRACK_SPEED_MMPS 55.0f /* PROVISIONAL D07: faster tracking trial */
 /* Digital line tracking uses a fixed correction magnitude MAX_STEER.
    White reported as black with LOW polarity; use HIGH for black. */
 #define IR_BLACK_LEVEL 1u
 
 /* --- Mission (S3). UNMEASURED PLACEHOLDERS until #59/#61 (D01, D02, D07) ----- */
-#define MISSION_FOLLOW_SPEED_MMPS 70.0f /* user: double 35 mm/s */
+#define MISSION_FOLLOW_SPEED_MMPS 75.0f /* PROVISIONAL D07: modest speed increase */
 #define MISSION_BROAD_SPEED_MMPS (MISSION_FOLLOW_SPEED_MMPS * 0.5f)
 #define MISSION_TURN_SPEED_MMPS MISSION_FOLLOW_SPEED_MMPS
-#define MISSION_CLEAR_SPEED_MMPS MISSION_FOLLOW_SPEED_MMPS
-#define MISSION_CLEAR_MM		60.0f	/* PROVISIONAL (D02): drive clear of a junction after a turn */
+#define MISSION_TURN_ADVANCE_MM 70u /* user: straight approach before L/R */
 #define MISSION_STRAIGHT_MM 25u /* user: straight exit before tracking */
 #define MISSION_JUNCTION_MIN_COUNTS	6u	/* PROVISIONAL (D02): broad black this long is a junction */
 /* Physical envelope/coverage release is pending D02/D03/D05/D07. The
@@ -270,7 +272,7 @@
 /* --- Relations ----------------------------------------------------- */
 _Static_assert(MOTION_MAX_DUTY > 0.0f && MOTION_MAX_DUTY <= 1.0f,
 	"motion duty limit must be a fraction");
-_Static_assert(BASE_DUTY * (1.0f + MAX_STEER) <= MOTION_MAX_DUTY,
+_Static_assert(BASE_DUTY * (1.0f + MOTION_FOLLOW_BOOST * MAX_STEER) <= MOTION_MAX_DUTY,
 	"line-follow duty plus steering must fit the motion duty limit");
 _Static_assert(BROAD_DUTY <= MOTION_MAX_DUTY, "broad-black duty must stay within the motion duty limit");
 _Static_assert(MOTION_EXPIRY_MS > 2u * FOLLOW_PERIOD_MS,
@@ -301,12 +303,31 @@ _Static_assert(MOTION_SPEED_MAX_MMPS > 0.0f && ENC_COUNTS_PER_MM > 0.0f &&
 _Static_assert(MOTION_TARGET_MAX_MM * ENC_COUNTS_PER_MM < ENC_COUNT_MASK / 2u,
     "distance targets must fit encoder signed half range");
 _Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS, "stall limit must precede the action timeout");
-_Static_assert(MAX_STEER > 0.0f && MAX_STEER <= 1.0f &&
+_Static_assert(MOTION_FOLLOW_SLEW_MMPS2 > 0u &&
+    MOTION_FOLLOW_SLEW_MMPS2 <= 1000u,
+    "FOLLOW slew must be positive and fit bounded arithmetic");
+_Static_assert(MOTION_SPEED_MAX_MMPS * 64.0f < 32767u,
+    "FOLLOW base history must fit 15-bit Q6 storage");
+_Static_assert(MOTION_FOLLOW_STEER_QPS > 0u &&
+    MOTION_FOLLOW_STEER_QPS <= 127000u &&
+    MOTION_FOLLOW_STEER_QPS * MOTION_PERIOD_MS >= 1000u &&
+    MISSION_TRACK_SPEED_MMPS > 0.0f &&
+    MISSION_TRACK_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS,
+    "tracking speed and steering step must remain bounded");
+_Static_assert(MOTION_FOLLOW_INNER_CUT >= 0.0f &&
+    MOTION_FOLLOW_INNER_CUT <= 1.0f &&
+    MOTION_FOLLOW_TIGHTEN_Q >= 0 && MOTION_FOLLOW_TIGHTEN_Q < 127,
+    "tight-curve mixing must not reverse the inner wheel");
+_Static_assert(MOTION_FOLLOW_BOOST >= 0.0f && MOTION_FOLLOW_BOOST <= 1.0f &&
+    MAX_STEER > 0.0f && MAX_STEER <= 1.0f &&
     MISSION_FOLLOW_SPEED_MMPS >= 2.0f && MISSION_STRAIGHT_MM > 0u &&
-    MISSION_CLEAR_MM > 0.0f, "navigation ramp and steering must be bounded");
-_Static_assert(MISSION_FOLLOW_SPEED_MMPS * (1.0f + MAX_STEER) <= MOTION_SPEED_MAX_MMPS &&
+    MISSION_TURN_ADVANCE_MM > 0u &&
+    MISSION_TURN_ADVANCE_MM * ENC_COUNTS_PER_MM < ENC_COUNT_MASK / 2u,
+    "navigation travel and steering must remain bounded");
+_Static_assert(MISSION_TRACK_SPEED_MMPS *
+    (1.0f + MOTION_FOLLOW_BOOST * MAX_STEER) <= MOTION_SPEED_MAX_MMPS &&
 	MISSION_FOLLOW_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS &&
-	MISSION_TURN_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS && MISSION_CLEAR_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS,
+	MISSION_TURN_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS,
 	"Mission speeds must stay within the Motion speed limit");
 _Static_assert(SONAR_TIMEOUT_US / 1000u < SONAR_REPEAT_MS && SONAR_MIN_PULSE_US < SONAR_TIMEOUT_US &&
 	SONAR_NO_ECHO_LIMIT >= 1u, "sonar timing: the timeout must fit inside the repeat interval");

@@ -11,7 +11,7 @@
 ## Direction
 
 A compact bench ledger: stable addresses for Mission and every subsystem,
-with sensor detail and a guided calibration/mapping sequence visible together.
+with sensor detail, digital sensor verification and barcode mapping visible together.
 Retain the existing dark, square-cut board and semantic signal lamps;
 replace the tall departure-board composition with a single desktop overview.
 Product truth and offline constraints belong to [PRODUCT.md](PRODUCT.md).
@@ -44,15 +44,15 @@ chart/events lower band; local-control reminder.
 The workspace gives remaining width to telemetry and 350px to configuration,
 with a 16px gutter. Telemetry contains the five-row subsystem table and four
 sensor groups. The wider encoder group places separate left/right speed and
-count columns on either side of a top-down robot schematic. Configuration starts with a manual three-step checklist:
-black IR capture, white IR capture, then custom barcode mapping. Show one
-step's instructions at a time; reveal mapping inputs, acknowledgement and
-Send mapping only at step three. Follow with the existing junction-test
-controls. Keep Mission state and faults in the top strip; order subsystem rows S1–S5.
+count columns on either side of a top-down robot schematic. Per-release targets,
+PID speed and duty appear with each wheel, labelled separately from averages.
+Configuration starts with sensor verification guidance and directly available
+custom barcode mapping, followed by the existing junction-test controls.
+Keep Mission state and faults in the top strip; order subsystem rows S1–S5.
 Motion Reading is the encoder-derived direction (straight labelled Forward);
-Detail is left/right speed. S3/S4 Detail shows Calibrated when usable-line or
-valid-hump evidence confirms calibration, Fault / not calibrated for reported
-owner faults, and Calibration unknown otherwise. S5 retains dimensions.
+Detail is left/right averaged speed. S3 Detail reports Digital status, Sensor
+fault or Reading unavailable. S4 calibration reflects its explicit reported
+calibration field, independently of hump history. S5 retains dimensions.
 Telemetry cannot distinguish a U-turn from a left/right turn. Table faults wrap; never hide
 active faults behind ellipses. Event history scrolls within its own panel.
 The lower band includes numbered obstacle history, width × length without
@@ -81,10 +81,11 @@ implied. Update readings atomically without character-flip animation.
 Four native letter inputs map Left, Right, Straight and U-turn in that order.
 Direction labels and junction buttons use consistent stroked SVG arrows, with
 accessible names and hover titles retaining the direction words.
-Black/white progress is confirmed by the operator using local capture feedback,
-not inferred from telemetry. Keep the checklist in page memory; refresh starts
-at black. Restart checklist returns to black without changing the robot or
-discarding mapping drafts. Explain rejection recovery and RAM-only calibration.
+The setup panel explains digital IR verification and encoder PID responsibility.
+Mapping stays directly available without a manual calibration checklist. The
+[local-control contract](docs/architecture.md#startup-and-local-controls) owns
+button behavior. Wheel targets, PID speeds and serviced duty stay distinct from
+telemetry averages; unavailable measurements and stale traces are explicit.
 Input letters are drafts until an accepted ACK; telemetry only reports whether
 a mapping exists, not its four letters. Duplicate, incomplete, offline, stale
 and moving states disable Send with an explanation. ACK status shows accepted,

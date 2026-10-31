@@ -33,15 +33,19 @@ At a glance, show whether the robot is healthy and what each subsystem is doing:
 - Motor status
 - Active faults and errors
 
-Below that, a **developer** section lets the team adjust tuning constants that are currently static in `app_program/common/robot_config.h` (for example `MOTION_KP/KI/KD` and `LINE_KP/KI/KD`, all PROVISIONAL under D07) without reflashing. This is separate from sensor calibration: IR, motor and IMU calibration stay as implemented (local GP20 controls). Success: a team member diagnoses a fault or tunes a value without reading the text monitor or reflashing.
+Wheel diagnostics compare requested speeds, encoder-measured release speeds and
+serviced duty. Motor gains remain compile-time constants; the procedure and
+calibration responsibilities live in [S2](docs/architecture/subsystem2.md#wheel-speed-tuning).
+The dashboard observes the robot and installs barcode mappings; it does not tune
+gains or start motors remotely.
 
 Readings are shown as the decoder normalises them from the binary frame into base-10 values a person can read (for example 0-100 scales), not as raw sensor samples.
 
 ## Operating Context
 
 - Served locally by `python3 scripts/mqtt_client.py serve` at `http://127.0.0.1:8080`; decoded frames arrive by Server-Sent Events.
-- Robot publishes compact binary MQTT telemetry (schema v2, 23-byte frame, 500 ms stream) plus events and acknowledgements to a laptop broker on a private 2.4 GHz lab LAN; on demonstration day it uses the instructor's broker.
-- Physical controls are local: GP20 start/calibrate, GP21 stop/reset. Mapping (four mission-day letters) is the only laptop-to-robot command today, accepted only while stopped.
+- Robot publishes compact binary MQTT telemetry (schema v2, 23-byte frame, 500 ms stream) plus events, acknowledgements and best-effort wheel traces to a laptop broker on a private 2.4 GHz lab LAN; on demonstration day it uses the instructor's broker.
+- Physical controls are local: GP20 start, GP21 stop/reset. Mapping (four mission-day letters) is accepted while stopped; next-junction tests follow the existing Mission gate. Authority is owned by [architecture](docs/architecture.md#authority).
 - Readings are taken mid-test, often standing, with attention split between the robot and the screen.
 
 ## Capabilities and Constraints

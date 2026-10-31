@@ -66,9 +66,7 @@ static void mission_task(INT stacd, void *exinf)
         s5_step(now);
         bool line_required = mission.state == MISSION_FOLLOW_LINE ||
             mission.state == MISSION_REACQUIRE ||
-            (mission.state == MISSION_NAVIGATE &&
-             (mission.phase == JUNCTION_PHASE_CONFIRM ||
-              mission.phase == JUNCTION_PHASE_STRAIGHT)) ||
+            mission.state == MISSION_NAVIGATE ||
             (mission.state == MISSION_BYPASS &&
              mission.bypass.route == BYPASS_ROUTE_LINE);
         safety_step(line_required);
@@ -135,6 +133,8 @@ static void mission_task(INT stacd, void *exinf)
             .usable_line = snapshot.normalized_valid,
             .line = snapshot.line,
             .line_error = snapshot.error,
+            .left_black = snapshot.left_fraction != 0u,
+            .right_black = snapshot.right_fraction != 0u,
             .line_sampled_ms = snapshot.sampled_ms,
             .wheel_count = {left_now, right_now},
             .motion_status = rd_motion_feedback_status(feedback),

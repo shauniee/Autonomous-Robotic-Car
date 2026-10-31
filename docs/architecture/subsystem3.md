@@ -57,11 +57,22 @@ There is no IR calibration button sequence or calibration buzzer feedback.
 Check each module's comparator threshold and `IR_BLACK_LEVEL` against actual
 black/white surfaces. Wiring is owned by [team](../team.md#2-pins).
 
+For uncertain readings, use the existing `TEST=1` build profile (motor outputs
+inhibited), USB logic power and drive supply disconnected. Its USB console
+prints `[IR] ... digital L=... R=... ... SENSOR_ONLY`. Record the pair over
+white, over black, centred on an ordinary line, and while moving laterally
+across it at mounted height/lighting. Do not infer readings from module LEDs.
+This controller expects a centred line between the sensor footprints with
+both white; both black invokes junction handling. If the centred state is
+unstable or different, resolve comparator thresholds, polarity and placement
+before further gain tuning. No specific spacing or height is calibrated here.
+
+
 ### 2.3 Digital classification and guidance
 
 Left-only black steers right, right-only black steers left, both white drives
-forward and both black immediately starts a queued direction; unqueued crossings retain qualification. Fixed
-steering replaces line PID/filter/ramp; Motion retains wheel-speed PID.
+forward and both black immediately starts a queued direction; unqueued crossings retain qualification. Digital steering uses a bounded step toward full correction on each distinct
+acquisition; Motion retains wheel-speed PID.
 UNKNOWN means invalid/stale input. White/white cannot distinguish centred
 travel from a lost line. Existing junction action and stop policies remain.
 
@@ -194,6 +205,15 @@ Disconnect AOUT before connecting DOUT. `IR_BLACK_LEVEL` is 1 (HIGH black, LOW w
 was reported as broad black with the previous LOW-black setting;
 verify polarity with each module over black and white and adjust its comparator
 potentiometer. This wiring/polarity is a required change, not an observed pass.
+With drive power disconnected and modules powered through the normal logic
+supply, hold each mounted sensor at its operating height over white, then
+black. Adjust that module's comparator potentiometer until its reported DOUT
+is consistently 0 on white and 1 on black; repeat both sensors under course
+lighting and with small lateral movements. White/white should report 0/0,
+left-only black 1/0, right-only black 0/1, and broad black 1/1. The indicator
+LED alone does not establish GPIO polarity. Record actual observations before
+powered straight/curve trials; thresholds cannot be calibrated in software
+from these digital endpoints.
 No software black/white capture is needed; GP20 is available for local start.
 
 Left-only black steers right, right-only black steers left, both white drives
@@ -202,7 +222,9 @@ sensor arrangement. Stale/invalid acquisition still stops through existing safet
 
 Line PID/filter/ramp history is removed; wheel-speed PID remains in Motion.
 Normal tracking is 70 mm/s (double the prior 35). A single black sensor
-requests full differential correction: inside wheel 0, outside wheel 140 mm/s.
+requests full correction using the [Motion mixing contract](../architecture.md#motion-command-contract):
+left black requests left 70/right 105 mm/s; right black requests left 105/right
+70 mm/s. Both white requests 70 mm/s on both wheels.
 This is provisional physical tuning, not a measured curve-tracking pass.
 With no queued instruction, broad-black entry holds half tracking speed (35)
 until qualified black exit. Queued directions enter navigation on the first
@@ -227,3 +249,113 @@ maps left-black error -127 to steering -127 and right-black +127 to +127,
 reversing the previous correction. The shared mapping also feeds bypass line
 following. GPIO assignments, normalization and queued-junction handling remain.
 Physical confirmation of this change is pending.
+
+Tracking smoothness revision (2026-10-31, INT-80): supersedes the earlier
+fixed-output/no-ramp and 70 mm/s normal tracking descriptions. Normal tracking
+requests 45 mm/s; full correction retains a 70% single-wheel boost (45/76.5 or
+76.5/45 mm/s). Steering moves by at most 64 Q7 units per distinct acquisition,
+reaching full curve strength in two samples from zero and reversing fully in
+four. Repeated reads cannot advance the ramp. White/white ramps toward zero;
+state entry resets steering. Navigation speed ramps remain unchanged. These
+are provisional tuning values, not a physical tracking pass.
+
+Curve authority/speed revision (2026-10-31, INT-81) supersedes INT-80 numeric
+tuning: normal tracking is 48 mm/s and navigation ceiling 75 mm/s. The
+existing acquisition ramp keeps gentle entry; above |steering|=64 Motion
+progressively lowers the inner wheel to 60% of base at full correction while
+retaining the outer wheel's 70% boost. Full tracking targets are 28.8/81.6 or
+81.6/28.8 mm/s. See the central Motion contract for shared mixing; these are
+provisional tuning values, not physical acceptance.
+
+Curve acceleration revision (2026-10-31, INT-82): normal tracking retains the
+current user-selected 75 mm/s ceiling. A new correction direction starts at
+50%, then increases by 5 percentage points on each fresh acquisition to
+100% over 200 ms at the configured cadence. This scales both wheel targets
+together while retaining stronger sustained-curve steering. Repeated copies
+do not advance the ramp, opposite correction restarts it, and white exit
+continues smoothly rather than jumping back to full speed. State/broad-black
+entry clear curve history. Navigation's existing encoder ramp is independent.
+These supersede earlier fixed normal-tracking speed descriptions and remain
+provisional D07, without a physical acceleration or tracking pass.
+
+Smooth FOLLOW revision (2026-10-31, INT-83) supersedes INT-82's speed reset:
+Mission retains acquisition-stepped steering but removes curve speed/direction
+history. It requests the tracking ceiling with existing hump scaling. Motion
+now ramps the mixed wheel targets; see the [Motion contract](../architecture.md#motion-command-contract).
+No physical tracking pass is inferred.
+
+Navigation wheel/IR revision (2026-10-31, INT-84) supersedes encoder-finished
+left/right/U-turn navigation and their clear/confirmation stages. Left drives
+only right forward; right drives only left forward; U-turn drives left forward
+and right reverse after its stationary pause. Left IR ends left turns, right
+IR ends right/U-turns: fresh exit-white, new-black, then white. The final edge
+holds STOP until Motion reports IDLE, then returns to tracking on the next
+release. Straight is unchanged.
+See the [junction lifecycle](../architecture.md#barcode-and-junction-lifecycle)
+and [Motion contract](../architecture.md#motion-command-contract) for ownership
+and failure bounds; physical wheel/sensor acceptance remains pending.
+
+Navigation approach/curve response revision (2026-10-31, INT-85) supersedes
+INT-84's immediate left/right rotation and INT-83's independent wheel ramps.
+Left/right first advance by the requested encoder displacement, then reset
+the turn sensor history and perform the existing sensor-ended single-wheel
+turn. A white sensor at rotation entry is already clear of the initial black.
+Straight navigation requests normal tracking speed. Motion ramps the common
+base before steering mixing so curve differential survives return from a
+U-turn. U-turn entry/pause/direction and serviced brake handoff remain.
+The [junction lifecycle](../architecture.md#barcode-and-junction-lifecycle)
+and [Motion contract](../architecture.md#motion-command-contract) own behavior;
+mounted approach geometry and curve tracking still require physical trials.
+
+Steering smoothing revision (2026-10-31, INT-86): reduce acquisition-stepped
+steering changes while retaining full curve strength and the common-base
+ramp. See the [Motion contract](../architecture.md#motion-command-contract)
+for current timing and [pending tuning](../project-specs.md#pending-decisions).
+The user reports jerky traversal; this revision has no physical acceptance yet.
+
+Faster tracking trial (2026-10-31, INT-87): increase the shared tracking/straight
+travel setting while keeping rotation and steering smoothing settings. See
+the [Motion contract](../architecture.md#motion-command-contract) and
+[trial values](../project-specs.md#pending-decisions); physical curve and
+speed acceptance remain pending.
+
+Gentler curve authority trial (2026-10-31, INT-88): soften the shared FOLLOW
+wheel-speed differential after reported excessive correction, retaining the
+faster tracking setting and steering transition timing. Current mixing is
+owned by the [Motion contract](../architecture.md#motion-command-contract);
+physical tuning/acceptance remains pending.
+
+IR response trial (2026-10-31, INT-89): user reports running wide / late curve
+response and jerky straights. The first correction remains gentle; persistent
+black builds steering faster, white releases it faster, and tracking slows
+with steering magnitude. Current timing/speed are owned by the
+[Motion contract](../architecture.md#motion-command-contract), with tuning
+status in [pending decisions](../project-specs.md#pending-decisions).
+Software checks do not establish comparator calibration or physical acceptance.
+
+Curve entry/inner-wheel trial (2026-10-31, INT-90): reduce initial and
+subsequent steering steps after reported curve-entry jerk; reduce the inner
+wheel target further on sustained bends after reported insufficient turning.
+Current mixing/timing are owned by the
+[Motion contract](../architecture.md#motion-command-contract), with provisional
+values and trial limitations in [pending decisions](../project-specs.md#pending-decisions).
+Mounted acceptance remains pending.
+
+Curve/straight-exit revision (2026-10-31, INT-91): strengthen sustained
+inner-wheel reduction after continued wide-curve reports. Straight junction
+navigation now applies fresh visible IR guidance inside its measured segment
+and preserves steering across the tracking handoff, allowing angled exits to
+correct before the segment finishes. See the authoritative
+[junction lifecycle](../architecture.md#barcode-and-junction-lifecycle) and
+[Motion contract](../architecture.md#motion-command-contract); current values
+and physical limitations remain in
+[pending decisions](../project-specs.md#pending-decisions). Physical acceptance
+is pending; white/white still cannot prove heading or line presence.
+
+Applied steering/pivot revision (2026-10-31, INT-92): replace Mission's
+acquisition-step steering ramp with latest digital targets; Motion owns the
+single applied steering ramp and gradual inner-wheel pivot. Mission compensates
+curve base requests for outer boost and retains guided straight-junction exits.
+See the [Motion contract](../architecture.md#motion-command-contract) and
+[pending decisions](../project-specs.md#pending-decisions) for current behavior,
+values and physical limitations. This supersedes earlier Mission ramp descriptions.

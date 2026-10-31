@@ -25,7 +25,7 @@ static float mission_turn_target_get(const Mission *m)
     case 2u:
         return -90.0f;
     case 3u:
-        return 180.0f;
+        return -180.0f;
     default:
         return 0.0f;
     }
@@ -43,51 +43,33 @@ static void enter(Mission *m, MissionState next, uint32_t now_ms)
     m->state_since_ms = now_ms;
     m->line_loss_pending = 0u;
     m->line_steer_q = 0;
+    m->line_steer_sampled_ms = now_ms - IR_MAX_GAP_MS - 1u;
 }
 
 /* Steering sign follows the mounted robot's observed turn direction. */
 static int line_digital_steering(Mission *m, const MissionInputs *in)
 {
     int correction = (int)lroundf(MAX_STEER * IR_SCALE_ONE);
-    m->line_steer_q = in->line_error < 0 ? -correction :
+    int target = in->line_error < 0 ? -correction :
         (in->line_error > 0 ? correction : 0);
+    if (in->usable_line && in->guidance_valid &&
+        in->line_sampled_ms != m->line_steer_sampled_ms)
+    {
+        m->line_steer_q = (int8_t)target;
+        m->line_steer_sampled_ms = in->line_sampled_ms;
+    }
     return m->line_steer_q;
 }
 
-static float line_follow_speed(int steer_q)
+/* Encoder heading ramps the turn ceiling; IR edges determine completion. */
+static float junction_turn_speed(const Mission *m, const MissionInputs *in)
 {
-    (void)steer_q;
-    return MISSION_FOLLOW_SPEED_MMPS;
-}
-
-/* Ramp by completed travel, not elapsed time: a stalled robot never gains
-   speed. Reuse broad_origin for the active navigation phase's encoder pose.
-   Turns and their clear distance form one ramp, without a reset at CLEAR. */
-static float junction_speed(const Mission *m, const MissionInputs *in)
-{
-    float travelled = enc_mean_travel(in->wheel_count, m->broad_origin) /
-        ENC_COUNTS_PER_MM;
-    float total = MISSION_STRAIGHT_MM;
-    if (m->phase != JUNCTION_PHASE_STRAIGHT)
-    {
-        float degrees = mission_turn_target_get(m);
-        float arc = fabsf(degrees) * 0.00872664626f * TRACK_WIDTH_MM;
-        total = arc + MISSION_CLEAR_MM;
-        if (m->phase == JUNCTION_PHASE_TURN)
-        {
-            float heading = enc_heading_deg(
-                enc_travel_signed(in->wheel_count[0], m->broad_origin[0]),
-                enc_travel_signed(in->wheel_count[1], m->broad_origin[1]));
-            float share = fminf(fmaxf(heading / degrees, 0.0f), 1.0f);
-            travelled = share * arc;
-        }
-        else
-        {
-            travelled += arc;
-        }
-    }
-    float progress = fminf(fmaxf(travelled / total, 0.0f), 1.0f);
-    return floorf(MISSION_FOLLOW_SPEED_MMPS * (0.5f + 0.5f * progress));
+    float heading = enc_heading_deg(
+        enc_travel_signed(in->wheel_count[0], m->broad_origin[0]),
+        enc_travel_signed(in->wheel_count[1], m->broad_origin[1]));
+    float progress = fminf(fmaxf(heading / mission_turn_target_get(m),
+        0.0f), 1.0f);
+    return floorf(MISSION_TURN_SPEED_MMPS * (0.5f + 0.5f * progress));
 }
 
 static uint8_t next_action_id(Mission *m)
@@ -109,33 +91,25 @@ static MotionCommand action_command(motion_mode_t mode, float speed, float targe
     return motion_command_make(mode, floorf(speed), target, 0, id, now_ms);
 }
 
+static MotionCommand junction_turn_command(const Mission *m,
+    const MissionInputs *in)
+{
+    return motion_command_make(MOTION_MODE_TURN, junction_turn_speed(m, in),
+        m->turn_code == 1u ? 360.0f : -360.0f,
+        m->turn_code == 3u ? MOTION_TURN_PIVOT : MOTION_TURN_SWING,
+        m->current_action, in->line_sampled_ms);
+}
+
 static MotionCommand follow_command(const MissionInputs *in, float speed, int steering_q, uint8_t id)
 {
+    /* PROVISIONAL D07: keep the settled outer-wheel request near the ceiling. */
+    speed /= 1.0f + MOTION_FOLLOW_BOOST * (float)abs(steering_q) / IR_SCALE_ONE;
     if (in->hump_active)
     {
         speed *= 0.5f;
     }
     return motion_command_make(MOTION_MODE_FOLLOW, floorf(speed), 0.0f,
                                steering_q, id, in->line_sampled_ms);
-}
-
-/* Counts fresh visible line reads; true on the second in a row. */
-static bool line_reacquired(Mission *m, const MissionInputs *in)
-{
-    if (in->line == IR_LINE_VISIBLE && in->guidance_valid && in->usable_line)
-    {
-        if (in->line_sampled_ms != m->confirmed_sample_ms)
-        {
-            m->confirmed_sample_ms = in->line_sampled_ms;
-            if (m->visible_streak < MISSION_CONFIRM_SAMPLES)
-            {
-                ++m->visible_streak;
-            }
-        }
-        return m->visible_streak >= MISSION_CONFIRM_SAMPLES;
-    }
-    m->visible_streak = 0u;
-    return false;
 }
 
 static void to_stop(Mission *m, const MissionInputs *in, MissionOutputs *out, bool call_stop)
@@ -164,7 +138,6 @@ static void handle_ready(Mission *m, const MissionInputs *in, MissionOutputs *ou
         out->start_refused = true;
         return;
     }
-    m->visible_streak = 0u;
     m->in_broad = false;
     m->held = BARCODE_UNMAPPED;
     m->manual_held = 0u;
@@ -255,19 +228,20 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
             if (action == BARCODE_LEFT || action == BARCODE_RIGHT || action == BARCODE_U_TURN)
             {
                 m->phase = action == BARCODE_U_TURN ?
-                    JUNCTION_PHASE_PAUSE_WAIT : JUNCTION_PHASE_TURN;
+                    JUNCTION_PHASE_PAUSE_WAIT : JUNCTION_PHASE_ADVANCE;
                 m->current_action = next_action_id(m);
                 mission_turn_target_set(m, action);
+                m->turn_line_phase = 0u;
+                m->turn_sampled_ms = in->line_sampled_ms;
                 m->broad_origin[0] = in->wheel_count[0];
                 m->broad_origin[1] = in->wheel_count[1];
                 enter(m, MISSION_NAVIGATE, in->now_ms);
                 out->event_kind = MQTT_EVENT_TURN;
                 out->event_arg = (uint8_t)action;
-                if (m->phase == JUNCTION_PHASE_TURN)
+                if (m->phase == JUNCTION_PHASE_ADVANCE)
                 {
-                    out->command = action_command(MOTION_MODE_TURN,
-                        junction_speed(m, in), mission_turn_target_get(m),
-                        m->current_action, in->now_ms);
+                    out->command = follow_command(in,
+                        MISSION_TRACK_SPEED_MMPS, 0, 1u);
                 }
                 return;
             }
@@ -275,7 +249,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
             m->broad_origin[0] = in->wheel_count[0];
             m->broad_origin[1] = in->wheel_count[1];
             enter(m, MISSION_NAVIGATE, in->now_ms);
-            out->command = follow_command(in, junction_speed(m, in),
+            out->command = follow_command(in, MISSION_TRACK_SPEED_MMPS,
                 0, 1u);
             return;
         }
@@ -285,7 +259,6 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
     {
         /* Track straight across broad black without a fixed-distance action.
            Qualification and the encounter deadline remain independent. */
-        m->visible_streak = 0u;
         m->line_steer_q = 0;
         out->command = follow_command(in, MISSION_BROAD_SPEED_MMPS, 0, 1u);
         return;
@@ -312,7 +285,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
                 m->line_lost_since_ms) < MISSION_LINE_LOST_MS)
         {
             out->command = follow_command(in,
-                line_follow_speed(m->line_steer_q), m->line_steer_q, 1u);
+                MISSION_TRACK_SPEED_MMPS, m->line_steer_q, 1u);
             return;
         }
         if (!MISSION_RECOVERY_RELEASED)
@@ -343,7 +316,7 @@ static void handle_follow(Mission *m, const MissionInputs *in, MissionOutputs *o
         return;
     }
     int steer = line_digital_steering(m, in);
-    out->command = follow_command(in, line_follow_speed(steer), steer, 1u);
+    out->command = follow_command(in, MISSION_TRACK_SPEED_MMPS, steer, 1u);
 }
 
 
@@ -481,7 +454,9 @@ static void handle_scan(Mission *m, const MissionInputs *in, MissionOutputs *out
 static void handle_junction_turn(Mission *m, const MissionInputs *in,
     MissionOutputs *out)
 {
-    if (m->phase > JUNCTION_PHASE_STRAIGHT || obstacle_ahead(in) ||
+    if (m->phase > JUNCTION_PHASE_ADVANCE || !in->usable_line ||
+        robot_time_elapsed(in->now_ms, in->line_sampled_ms) > IR_MAX_GAP_MS ||
+        obstacle_ahead(in) ||
         robot_time_elapsed(in->now_ms, m->state_since_ms) >=
             MOTION_ACTION_TIMEOUT_MS)
     {
@@ -490,21 +465,56 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
     }
     if (m->phase == JUNCTION_PHASE_STRAIGHT)
     {
-        if (!in->usable_line ||
-            robot_time_elapsed(in->now_ms, in->line_sampled_ms) > IR_MAX_GAP_MS)
+        if (enc_mean_travel(in->wheel_count, m->broad_origin) >=
+            MISSION_STRAIGHT_MM * ENC_COUNTS_PER_MM)
+        {
+            int8_t steering = m->line_steer_q;
+            uint32_t sampled_ms = m->line_steer_sampled_ms;
+            enter(m, MISSION_FOLLOW_LINE, in->now_ms);
+            /* Keep exit correction continuous across the navigation handoff. */
+            m->line_steer_q = steering;
+            m->line_steer_sampled_ms = sampled_ms;
+            handle_follow(m, in, out);
+            return;
+        }
+        int steering = 0;
+        if (in->line == IR_LINE_VISIBLE)
+        {
+            if (!in->guidance_valid)
+            {
+                to_stop(m, in, out, true);
+                return;
+            }
+            steering = line_digital_steering(m, in);
+        }
+        else
+        {
+            m->line_steer_q = 0;
+            m->line_steer_sampled_ms = in->line_sampled_ms;
+        }
+        out->command = follow_command(in, MISSION_TRACK_SPEED_MMPS, steering, 1u);
+        return;
+    }
+    if (m->phase == JUNCTION_PHASE_ADVANCE)
+    {
+        if (in->motion_action == 1u && in->motion_status == RD_MOTION_FAILED)
         {
             to_stop(m, in, out, true);
             return;
         }
-        if (enc_mean_travel(in->wheel_count, m->broad_origin) >=
-            MISSION_STRAIGHT_MM * ENC_COUNTS_PER_MM)
+        if (enc_mean_travel(in->wheel_count, m->broad_origin) <
+            MISSION_TURN_ADVANCE_MM * ENC_COUNTS_PER_MM)
         {
-            enter(m, MISSION_FOLLOW_LINE, in->now_ms);
-            handle_follow(m, in, out);
+            out->command = follow_command(in, MISSION_TRACK_SPEED_MMPS,
+                0, 1u);
             return;
         }
-        out->command = follow_command(in, junction_speed(m, in), 0, 1u);
-        return;
+        m->phase = JUNCTION_PHASE_TURN;
+        m->broad_origin[0] = in->wheel_count[0];
+        m->broad_origin[1] = in->wheel_count[1];
+        bool black = m->turn_code == 1u ? in->left_black : in->right_black;
+        m->turn_line_phase = black ? 0u : 1u;
+        m->turn_sampled_ms = in->line_sampled_ms;
     }
     if (m->phase == JUNCTION_PHASE_PAUSE_WAIT)
     {
@@ -526,6 +536,7 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
             MISSION_UTURN_PAUSE_MS)
         {
             m->phase = JUNCTION_PHASE_TURN;
+            m->turn_sampled_ms = in->line_sampled_ms;
             m->broad_origin[0] = in->wheel_count[0];
             m->broad_origin[1] = in->wheel_count[1];
         }
@@ -534,51 +545,42 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
             return;
         }
     }
-    if (m->phase == JUNCTION_PHASE_CONFIRM)
+    if (m->phase == JUNCTION_PHASE_BRAKE)
     {
-        if (line_reacquired(m, in))
+        if (in->motion_status == RD_MOTION_IDLE)
         {
-            m->in_broad = false;
             enter(m, MISSION_FOLLOW_LINE, in->now_ms);
-            handle_follow(m, in, out);
-            return;
         }
-        if (!in->usable_line)
-        {
-            to_stop(m, in, out, true);
-            return;
-        }
-        out->command = follow_command(in, MISSION_FOLLOW_SPEED_MMPS, 0, 1u);
         return;
     }
-    bool mine = in->motion_action == m->current_action;
-    if (mine && in->motion_status == RD_MOTION_FAILED)
+    if (m->turn_code == 0u || m->turn_line_phase > 2u ||
+        (in->motion_action == m->current_action &&
+         (in->motion_status == RD_MOTION_FAILED ||
+          in->motion_status == RD_MOTION_DONE)))
     {
         to_stop(m, in, out, true);
         return;
     }
-    if (mine && in->motion_status == RD_MOTION_DONE)
+    bool black = m->turn_code == 1u ? in->left_black : in->right_black;
+    if (in->line_sampled_ms != m->turn_sampled_ms)
     {
-        if (m->phase == JUNCTION_PHASE_TURN)
+        m->turn_sampled_ms = in->line_sampled_ms;
+        if (m->turn_line_phase == 0u && !black)
         {
-            m->phase = JUNCTION_PHASE_CLEAR;
-            m->broad_origin[0] = in->wheel_count[0];
-            m->broad_origin[1] = in->wheel_count[1];
-            m->current_action = next_action_id(m);
+            m->turn_line_phase = 1u;
         }
-        else
+        else if (m->turn_line_phase == 1u && black)
         {
-            m->phase = JUNCTION_PHASE_CONFIRM;
-            m->visible_streak = 0u;
-            m->confirmed_sample_ms = in->line_sampled_ms;
+            m->turn_line_phase = 2u;
+        }
+        else if (m->turn_line_phase == 2u && !black)
+        {
+            /* Hold STOP until Motion services it; Mission runs faster. */
+            m->phase = JUNCTION_PHASE_BRAKE;
             return;
         }
     }
-    out->command = m->phase == JUNCTION_PHASE_TURN
-        ? action_command(MOTION_MODE_TURN, junction_speed(m, in),
-            mission_turn_target_get(m), m->current_action, in->now_ms)
-        : action_command(MOTION_MODE_DISTANCE, junction_speed(m, in),
-            MISSION_CLEAR_MM, m->current_action, in->now_ms);
+    out->command = junction_turn_command(m, in);
 }
 
 static void handle_reacquire(Mission *m, const MissionInputs *in,

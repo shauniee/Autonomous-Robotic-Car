@@ -26,6 +26,7 @@
 - [Post-Tribunal decisions](#post-tribunal-decisions)
 - [MQTT binary protocol, schema version 2](#mqtt-binary-protocol-schema-version-2)
   - [Telemetry and snapshot reply (23 bytes)](#telemetry-and-snapshot-reply-23-bytes)
+  - [Wheel trace (15 bytes)](#wheel-trace-15-bytes)
   - [Event (11 bytes)](#event-11-bytes)
   - [Mapping, acknowledgement, snapshot request](#mapping-acknowledgement-snapshot-request)
   - [Golden vectors](#golden-vectors)
@@ -136,17 +137,33 @@ instruction, ordinary line following. Do not blindly resume an interrupted actio
 Decode A-Z identically in either scan direction. Store one character/action from
 the installed MQTT mapping and continue tracking until the next confirmed cross
 junction; its distance from the barcode varies. Mark the action consumed when
-navigation starts. Execute once and confirm encoder completion plus outgoing-line
-tracking; left/right continue on the chosen branch. U-turn reaches the junction,
-brakes, pauses about 200 ms, turns 180 degrees and tracks the return branch.
-Never undo a turn. Pause reference/placement tolerance is pending D02/D08.
+navigation starts. Left/right first drive straight for the user-selected
+70 mm of signed mean encoder travel, at normal tracking speed, then turn:
+left uses left braked/right forward; right uses left forward/right braked. U-turn brakes, pauses about 200 ms from stationarity,
+then rotates clockwise with left forward/right reverse. Navigation finishes
+from the turning-side digital IR: left for left, right for right/U-turn.
+Reset the IR edge history when rotation starts. If the turning-side IR is
+already white after the approach, seek new black then white; otherwise ignore
+the initial black until white exit before seeking new black/white. Require
+distinct fresh acquisitions. Hold STOP on that final edge until
+Motion reports IDLE, then enter FOLLOW_LINE; normal tracking resumes on the
+next release. The hold ensures Motion services braking despite the faster
+Mission period; it does not wait for measured stationarity. Left/right no longer
+wait for encoder-DONE, a 60 mm clearance action or outgoing-line confirmation.
+Straight navigation retains its 25 mm encoder segment and uses fresh visible
+IR guidance during it, with the normal steering and curve-speed policy.
+Broad black requests zero steering and clears correction history. The handoff
+to FOLLOW_LINE preserves steering and its acquisition timestamp so correction
+does not collapse or advance twice on the same sample. Turn commands use
+the existing 360-degree/action-timeout bounds as failure ceilings, not successful
+completion. The first eligible crossing is accepted; mounted path geometry and
+pause reference/placement tolerance remain D02/D08. Never undo a turn.
 
-Cross broad black with straight FOLLOW commands, without a fixed-distance
-advance. With a queued instruction, consume it and enter navigation on the
+Cross unqueued broad black with straight FOLLOW commands. With a queued instruction, consume it and enter navigation on the
 first fresh both-black tracking sample, without travel qualification or waiting
 for black exit. With no queued instruction, leave a qualified encounter and
-drive straight for the requested encoder-measured segment at normal follow
-speed, then resume tracking without outgoing-line confirmation. There is no pre-turn
+follow the outgoing line during the requested encoder-measured straight
+segment, then resume tracking without outgoing-line confirmation. There is no pre-turn
 DISTANCE action or completion gate. See the [junction revision](project-specs.md#mission-day-barcode-rule).
 No-command crossings retain tracking evidence plus travel/geometry qualification. A single black barcode-sensor reading neither
 identifies a barcode nor proves a junction; barcode capture must not block junction
@@ -271,6 +288,45 @@ ID and coherent feedback. Repeating a command does not restart its encoder actio
 or extend its absolute deadline. Preserve acquisition time; copying stale evidence
 never makes it fresh. No lease/generation/acknowledgement framework is added.
 
+FOLLOW steering boosts the outer wheel linearly up to 1.6 times base speed.
+At |Q7 steering| <=64, the inner wheel retains base speed. From 64 to 127,
+its target decreases linearly to zero, giving a stopped inner-wheel pivot
+at full correction. Negative steering selects left as
+inner; positive selects right. Zero requests base/base. These are wheel-speed
+targets, not PWM duty ratios; Motion's wheel PID and duty cap still apply.
+This shared mixing also applies to bypass FOLLOW guidance.
+TURN interprets the command's steering slot as a style: 0 keeps the existing
+opposite-wheel pivot used by recovery/bypass; 1 drives only the outer wheel
+forward, with the inner wheel braked regardless of encoder drift. The moving
+wheel travels the full track-width arc for the requested angle. Other TURN
+styles fail closed. Sensor-ended navigation retains original IR acquisition
+time in its command; all NAVIGATE phases require fresh usable IR.
+
+Mission publishes the latest distinct usable digital steering target. Motion
+slews its private applied steering at a provisional 800 Q7 units/s (16 units
+per 20 ms release), then mixes wheel targets. Full entry/release takes eight
+releases (160 ms); full reversal takes sixteen (320 ms), passing through zero.
+A brief black/white alternation produces a small correction rather than full
+wheel mixing. Mission adds no second steering ramp. These timings describe
+software target changes, not measured physical response.
+Tracking compensates its base request for requested outer boost: floor(90 /
+(1 + 0.60 * |requested steering| / 127)) mm/s, then applies hump scaling.
+At full correction the requested base is 56 mm/s and settled wheel targets
+are 0/89.6 mm/s, or the reverse. Actual outer speed is not guaranteed constant
+while the base and applied steering ramp independently. Straight navigation
+uses the same guidance/speed policy on visible IR. The left/right pre-turn
+approach retains zero requested steering and the tracking ceiling.
+Motion slews the common FOLLOW base speed at a provisional 250 mm/s per
+second (5 mm/s per 20 ms release), then mixes applied steering. Both ramps
+permit one period at startup, none at duplicate timestamps and at most one
+period after a late release. They use control-release time while command
+freshness retains original sensor acquisition time; cached data cannot extend
+expiry. Zero-speed FOLLOW, STOP, invalid/stale commands, reset and faults
+brake immediately and clear both histories. Shared FOLLOW smoothing/mixing
+also applies to bypass guidance. Discrete distance/turn endpoint control and
+the turn encoder-progress speed ceiling remain unchanged. Stored units/ranges
+are owned by [project specs](project-specs.md#pending-decisions). Physical
+curve retention, acceleration and speed-loop tuning remain provisional D07.
 FOLLOW wheel targets are nonnegative. When the wheel PID reduces speed, its
 output is limited to forward power or zero, with integral anti-windup at both
 output limits; overspeed must not command reverse power. Explicit DISTANCE and
@@ -302,12 +358,14 @@ still reverse the requested direction to correct positional overshoot; turns
 retain opposite signed wheel targets. This is software policy, not physical
 PID calibration or evidence of healthy encoders.
 
-During a TURN, each wheel remains braked after first entering the existing
-angle tolerance, even if it drifts while its partner finishes. DONE still
-requires both current positions within tolerance. Unresolved drift reaches
-the existing action timeout and FAILED; a prior arrival cannot mask it.
-Arrival latches reset with every new action or controller reset. This prevents
-endpoint reactivation without changing gains or calibrated tolerances.
+During a pivot TURN, each wheel remains braked after first entering the
+existing angle tolerance, even if it drifts while its partner finishes. DONE
+still requires both current positions within tolerance. Unresolved drift
+reaches the existing action timeout and FAILED; a prior arrival cannot mask
+it. Arrival latches reset with every new action or controller reset. Swing
+TURN always brakes its inner wheel; the outer wheel brakes on arrival or
+passing its forward endpoint, without reverse position correction. Navigation
+uses these endpoints as failure bounds when its IR sequence is missing.
 
 ## Encoder contract
 
@@ -370,7 +428,8 @@ Rules for every frame:
 - Byte 0: bits 7-4 version (2), bits 3-0 type.
 - Length is exact for the type. A receiver rejects a wrong length, version or type, any set reserved bit and any out-of-range field. Nothing is partially accepted.
 - Networking never drives, starts or stops the robot. The only command that changes robot state is the mapping, and only while stopped.
-- Speed and movement direction are not sent: the laptop derives them from successive encoder counts.
+- Normal telemetry omits speed/direction: the laptop derives averages from
+  successive counts. The separate wheel trace carries release-speed diagnostics.
 
 | Type | Value | Direction | Length (bytes) |
 | --- | --- | --- | --- |
@@ -380,6 +439,27 @@ Rules for every frame:
 | Mapping | 4 | PC to robot | 5 |
 | Acknowledgement | 5 | robot to PC | 3 |
 | Snapshot request | 6 | PC to robot | 2 |
+| Wheel trace | 8 | robot to PC, best effort per Motion release | 15 |
+
+### Wheel trace (15 bytes)
+
+Type 8 is outbound diagnostics only; existing frame layouts/lengths remain.
+Byte 0 is `28` hex; bytes 1..4 are robot release time uint32 ms. Bytes 5..8
+contain left target in bits 0..14 and right target in bits 15..29 (signed
+15-bit counts/s), TEST inhibition in bit 30 and motor-output service success
+in bit 31. Bytes 9..10 and 11..12 are signed 16-bit measured left/right counts/s.
+Bytes 13 and 14 are signed left/right duty percentages. Invalid encodings and
+rounding are owned by the [data table](project-specs.md#s2-motion-encoder-width-provisional-until-d03-one-constant-enc_count_bits-in-robot_configh-branches-29-31).
+Output failure marks both duty fields invalid. TEST reports zero duty with
+inhibition set. Targets represent computed wheel demands; serviced braking may
+override them. This is software output evidence, not electrical measurement.
+
+Motion encodes into an eight-record SPSC ring after output service and outside
+its IRQ exclusion. I/O drains at most two per release, after normal reporting;
+offline/full TX and full trace ring drop diagnostic samples without waiting.
+Robot timestamp gaps reveal missing releases; timestamps wrap modulo 2^32.
+There is no diagnostic request, movement authority or live tuning input.
+Older laptop decoders reject this new type; use the matching decoder for traces.
 
 ### Telemetry and snapshot reply (23 bytes)
 
@@ -401,11 +481,16 @@ Rules for every frame:
 | 15 | 7 | maximum valid | set once any hump completed |
 | 16-17 | 12-0 | front range, mm | 0-8190; 8191 invalid |
 | 16-17 | 13 | front range valid | no echo is not clear space |
-| 16-17 | 15-14 | reserved | 0 |
+| 16-17 | 15-14 | IMU calibration | 0 unknown (older firmware), 1 not calibrated, 2 calibrated, 3 invalid |
 | 18 | 4-0 | last decoded barcode letter | 0-25 (A-Z), 31 none |
 | 18 | 7-5 | action it maps to | 0 unmapped, 1 left, 2 right, 3 straight, 4 U-turn |
 | 19-20 | 15-0 | latest obstacle width, mm | 0 none |
 | 21-22 | 15-0 | latest obstacle depth, mm | 0 none |
+
+IMU calibration reports Terrain's calibration flag independently of hump results
+and current sensor faults. This uses two formerly reserved bits without changing
+frame length. Update the decoder before firmware: older decoders reject nonzero
+calibration bits. Older firmware remains readable with calibration unknown.
 
 ### Event (11 bytes)
 

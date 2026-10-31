@@ -174,6 +174,12 @@ No active CMake target. The local checkpoint includes an optional dashboard; it 
 
 ### Calibration and local controls
 
+For motor tuning, use the [wheel-speed procedure](docs/architecture/subsystem2.md#wheel-speed-tuning).
+The monitor's `WHEEL` records and dashboard target/PID-speed/duty readings
+come from Motion releases; ordinary telemetry speed is a slower average.
+Verify digital IR once, then hold steering settings fixed while checking
+encoder speed response. The dashboard no longer asks for black/white captures.
+
 The table below describes the working software control flow; physical release is pending the plan's calibration gates. IMU calibration is RAM-only; verify digital IR with the real mounting and surface. Enable audible buzzer feedback using its mute switch.
 
 Target startup/control instructions are owned by [architecture](docs/architecture.md#startup-and-local-controls): bounded boot IMU calibration attempt; digital IR needs no software calibration; WiFi/MQTT required at start; eligible GP21 release returns READY, then fresh GP20 starts. This reset behavior is implemented in the working source.

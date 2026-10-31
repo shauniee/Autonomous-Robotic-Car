@@ -112,13 +112,6 @@
   #setup-progress { color: var(--amber); font-size: 12px; }
   .calibration h3 { margin: 12px 0 6px; font-size: 16px; }
   .calibration p { margin: 6px 0; color: var(--ink-2); font-size: 12px; }
-  .calibration .setup-note { color: var(--ink-3); font-size: 11px; }
-  #setup-next { width: 100%; margin-top: 8px; }
-  #setup-restart { min-height: 30px; margin-top: 6px; padding: 4px 0; background: transparent; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
-  .calibration.mapping-step { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 10px 16px; }
-  .calibration.mapping-step header { flex: 1 1 100%; }
-  .calibration.mapping-step #setup-restart { margin: 0; }
-  .calibration.mapping-step + form { padding: 12px 16px; gap: 8px; }
   .letters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
   .letters label { display: grid; gap: 6px; color: var(--ink-2); text-align: center; font-size: 11px; }
   .letters input { width: 100%; height: 54px; border: 1px solid var(--frame); border-radius: 2px; background: var(--cell-hi); color: var(--ink); font: 700 32px/1 var(--face); text-align: center; text-transform: uppercase; caret-color: var(--amber); }
@@ -227,7 +220,10 @@
       <section class="sensor-group encoders" aria-label="Wheel encoders"><h3>Wheel encoders</h3>
         <div class="encoder-layout">
           <div class="wheel-readings"><h4>Left wheel</h4><dl>
-            <div><dt>Speed</dt><dd id="sensor-speed-left">—</dd></div>
+            <div><dt>Average speed</dt><dd id="sensor-speed-left">—</dd></div>
+            <div><dt>Target</dt><dd id="trace-target-left">—</dd></div>
+            <div><dt>PID speed</dt><dd id="trace-speed-left">—</dd></div>
+            <div><dt>Duty</dt><dd id="trace-duty-left">—</dd></div>
             <div><dt>Count</dt><dd id="sensor-count-left">—</dd></div>
           </dl></div>
           <div id="encoder-motion" class="robot-stage" data-motion="stopped" data-preview="false" aria-hidden="true">
@@ -243,10 +239,14 @@
             </svg>
           </div>
           <div class="wheel-readings"><h4>Right wheel</h4><dl>
-            <div><dt>Speed</dt><dd id="sensor-speed-right">—</dd></div>
+            <div><dt>Average speed</dt><dd id="sensor-speed-right">—</dd></div>
+            <div><dt>Target</dt><dd id="trace-target-right">—</dd></div>
+            <div><dt>PID speed</dt><dd id="trace-speed-right">—</dd></div>
+            <div><dt>Duty</dt><dd id="trace-duty-right">—</dd></div>
             <div><dt>Count</dt><dd id="sensor-count-right">—</dd></div>
           </dl></div>
         </div>
+        <p id="trace-status">No wheel trace received.</p>
         <p id="encoder-caption"><span id="motion-source">Live</span> · <span id="sensor-direction">Awaiting sample</span></p>
         <div id="motion-previews" class="motion-previews" aria-label="Diagram previews, no robot commands">
           <span>Preview</span>
@@ -282,20 +282,14 @@
 
 
   </div>
-  <aside class="configuration" aria-label="Calibration, barcode configuration and junction testing">
+  <aside class="configuration" aria-label="Sensor verification, barcode configuration and junction testing">
   <section id="setup" class="calibration" aria-labelledby="setup-title">
-    <header><h2 id="setup-title">Calibration & mapping</h2><span id="setup-progress">Step 1 of 3</span></header>
-    <div id="setup-detail" aria-live="polite" aria-atomic="true">
-      <h3 id="setup-step">IR calibration · black</h3>
-      <p id="setup-instruction">Keep the robot stopped. After the boot IMU attempt finishes, place both IR sensors over black. Release, then press and hold GP20 through capture.</p>
-      <p id="setup-feedback">Wait for one completion chirp, then confirm below.</p>
-      <p id="setup-up-next" class="setup-note">Next: IR calibration · white</p>
-    </div>
-    <button id="setup-next" type="button">Black captured · next</button>
-    <button id="setup-restart" type="button" hidden>Restart checklist</button>
-    <p id="setup-note" class="setup-note">Manual checklist for this page. Capture phases are not sent in telemetry. Reboot clears calibration; restart this checklist after reboot.</p>
+    <header><h2 id="setup-title">Before starting</h2></header>
+    <p>IR reports black / white. Verify both sensors at mounted height with drive power disconnected; there is no software IR capture.</p>
+    <p>Encoders feed each wheel’s speed PID. Compare target, PID speed and duty before changing motor gains.</p>
+    <p>Install the barcode mapping below, then use GP20 to start locally. GP21 stops / resets.</p>
   </section>
-  <form id="map" novalidate hidden>
+  <form id="map" novalidate>
     <div class="strip-title">Custom barcode mapping<small id="installed">Awaiting robot mapping status</small></div>
     <div class="letters">
       <label title="Left"><svg class="direction-icon" aria-hidden="true"><use href="#arrow-left"></use></svg><input aria-label="Left" name="l" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
@@ -326,7 +320,7 @@
     <section>
       <h2>Wheel speed · mm/s · last 60 s</h2>
       <div class="panel">
-        <canvas id="chart" role="img" aria-label="Left and right wheel speed over the last 60 seconds"></canvas>
+        <canvas id="chart" role="img" aria-label="Left and right average wheel speed over the last 60 seconds"></canvas>
         <div class="legend"><span><i style="background:var(--ink)"></i>Left</span><span><i style="background:var(--steel)"></i>Right</span></div>
       </div>
     </section>
@@ -343,7 +337,7 @@
       <div class="panel"><ol id="events" aria-label="Events and acknowledgements"><li class="none">No events yet. Robot events and command acknowledgements appear here.</li></ol></div>
     </section>
   </div>
-<p class="bench-note">Local controls: GP20 start / calibrate · GP21 stop / reset. Mapping changes are accepted only in READY or STOPPED.</p>
+<p class="bench-note">Local controls: GP20 start · GP21 stop / reset. Mapping changes are accepted only in READY or STOPPED.</p>
 </main>
 <script>
 const $ = id => document.getElementById(id);
@@ -441,7 +435,26 @@ function showSensors(t) {
   $("sensor-frame").textContent = `Frame ${t.sequence} · ${t.mission} · Motion ${t.motion} · Action ID ${t.action_id}`;
   sensorFreshness();
 }
+let traceReceived = 0, traceSample = null, traceSummary = "";
+function showWheelTrace(t) {
+  const gap = traceSample == null ? 0 : (t.sampled_ms - traceSample) >>> 0;
+  traceSample = t.sampled_ms;
+  traceReceived = Date.now();
+  for (const wheel of ["left", "right"]) {
+    $("trace-target-" + wheel).textContent = t["target_" + wheel] == null ? "Unavailable" : t["target_" + wheel] + " mm/s";
+    $("trace-speed-" + wheel).textContent = t["measured_" + wheel] == null ? "Unavailable" : t["measured_" + wheel] + " mm/s";
+    $("trace-duty-" + wheel).textContent = t["duty_" + wheel] == null ? "Unavailable" : t["duty_" + wheel] + "%";
+  }
+  traceSummary = `Wheel trace t=${t.sampled_ms} ms · ${t.inhibited ? "TEST: motors inhibited" : "normal firmware"} · ${t.output_ok ? "output serviced" : "output failed"}` +
+    (gap > 30 ? ` · sample gap ${gap} ms` : "");
+  traceFreshness();
+}
+function traceFreshness() {
+  $("trace-status").textContent = !traceReceived ? "No wheel trace received." :
+    traceSummary + (Date.now() - traceReceived >= 2000 || robotOnline === false ? " · stale / last received" : "");
+}
 function sensorFreshness() {
+  traceFreshness();
   const live = lastFrame && Date.now() - lastFrame < 2000;
   $("sensor-freshness").textContent = live ? "Latest received readings." : lastFrame
     ? "Stream stale — showing last received readings." : "No readings received.";
@@ -465,7 +478,7 @@ function showTelemetry(t) {
   const mf = faults("Mission", byOwner("Mission"));
   $("mission-current").className = mf || t.mission === "STOPPED" ? "bad" : "";
   const lf = faults("Line", byOwner("Line"));
-  row("Line", t.line, t.barcode === "none" ? "No barcode" : "Barcode " + t.barcode, lf ? "Fault / not calibrated" : ["VISIBLE", "LOST", "BROAD_BLACK"].includes(t.line) ? "Calibrated" : "Calibration unknown",
+  row("Line", t.line, t.barcode === "none" ? "No barcode" : "Barcode " + t.barcode, lf ? "Sensor fault" : t.line === "UNKNOWN" ? "Reading unavailable" : "Digital status",
       lf || t.line === "LOST" ? "bad" : t.line === "VISIBLE" ? "ok" : "warn");
   const of = faults("Motion", byOwner("Motion"));
   row("Motion", t.motion, t.direction === "straight" ? "Forward" : t.direction ?? "Awaiting sample",
@@ -474,8 +487,11 @@ function showTelemetry(t) {
   row("Obstacle", t.front_mm == null ? "No echo" : "Echo", t.front_mm == null ? "-" : t.front_mm + " mm",
       `Last ${t.obstacle_width_mm} × ${t.obstacle_depth_mm} mm`, sf ? "bad" : t.front_mm == null ? "warn" : "ok");
   const tf = faults("Terrain", byOwner("Terrain"));
+  const calibration = t.imu_calibrated === true ? "Calibrated" :
+      t.imu_calibrated === false ? "Not calibrated" : "Calibration unknown";
   row("Terrain", t.hump_count + (t.hump_count === 1 ? " hump" : " humps"),
-      t.hump_max_mm == null ? "No valid max" : "Max " + t.hump_max_mm + " mm", tf ? "Fault / not calibrated" : t.hump_max_mm != null ? "Calibrated" : "Calibration unknown", tf ? "bad" : "ok");
+      t.hump_max_mm == null ? "No valid max" : "Max " + t.hump_max_mm + " mm", calibration,
+      tf ? "bad" : t.imu_calibrated === true ? "ok" : "warn");
   const nf = faults("Network", byOwner("Network"));
   row("Network", robotOnline === false ? "Offline" : robotOnline ? "Online" : "Unknown", "Live", "Broker link", nf ? "bad" : "ok");
   $("installed").textContent = t.mapped ? "Mapping installed on robot" : "No mapping installed";
@@ -579,37 +595,6 @@ function showDirectionAck(m) {
   return true;
 }
 
-// Local checklist confirmations are not robot calibration telemetry.
-let setupStep = 0;
-const setupSteps = [
-  ["IR calibration · black", "Keep the robot stopped. After the boot IMU attempt finishes, place both IR sensors over black. Release, then press and hold GP20 through capture.", "Wait for one completion chirp, then confirm below.", "Next: IR calibration · white", "Black captured · next"],
-  ["IR calibration · white", "Place both IR sensors over white. Release, then press and hold GP20 through capture.", "Two chirps: pair accepted. Three chirps: rejected; check the surface and restart the checklist.", "Next: custom barcode mapping", "White accepted · next"],
-  ["Custom barcode mapping", "Enter four distinct letters below, then send the mapping while the robot is READY or STOPPED.", "Wait for an accepted acknowledgement before starting locally with GP20 on a visible line.", "Black and white captures confirmed by you.", ""]
-];
-function showSetup() {
-  const step = setupSteps[setupStep];
-  $("setup-progress").textContent = `Step ${setupStep + 1} of 3`;
-  ["setup-step", "setup-instruction", "setup-feedback", "setup-up-next", "setup-next"].forEach((id, i) => $(id).textContent = step[i]);
-  $("setup-next").hidden = setupStep === 2;
-  $("setup-restart").hidden = setupStep === 0;
-  $("setup").className = setupStep === 2 ? "calibration mapping-step" : "calibration";
-  $("setup-detail").hidden = setupStep === 2;
-  $("setup-note").hidden = setupStep === 2;
-  $("map").hidden = setupStep !== 2;
-  gate();
-}
-$("setup-next").addEventListener("click", () => {
-  if (setupStep >= 2) return;
-  setupStep++;
-  showSetup();
-  if (setupStep === 2) inputs[0].focus();
-});
-$("setup-restart").addEventListener("click", () => {
-  setupStep = 0;
-  showSetup();
-  $("setup-next").focus();
-});
-
 // Barcode mapping
 const inputs = [...$("map").querySelectorAll("input")];
 function letters() { return inputs.map(i => i.value).join(""); }
@@ -628,7 +613,7 @@ function gate() {
   directionGate();
   renderEncoder();
   const live = lastFrame && Date.now() - lastFrame < 2000;
-  const reason = setupStep !== 2 ? "Confirm black and white IR captures in the checklist first." : robotOnline === false ? "Robot is offline; wait for reconnection." : directionPending ? "Waiting for junction-test acknowledgement." : pending ? "Waiting for the robot's acknowledgement."
+  const reason = robotOnline === false ? "Robot is offline; wait for reconnection." : directionPending ? "Waiting for junction-test acknowledgement." : pending ? "Waiting for the robot's acknowledgement."
     : !live ? "No live telemetry; mapping needs the robot online."
     : !["READY", "STOPPED"].includes(mission) ? `Robot is ${mission}; stop it (GP21) to change the mapping.`
     : validate();
@@ -703,11 +688,12 @@ source.onmessage = e => {
   const m = JSON.parse(e.data);
   if (m.type === "telemetry") showTelemetry(m);
   else if (m.type === "status") { robotOnline = m.online; lamp("robot", m.online ? "Robot online" : "Robot offline", m.online ? "ok" : "bad"); }
+  else if (m.type === "wheel_trace") showWheelTrace(m);
   else if (m.type === "ack") showAck(m);
   else { if (m.type === "event") showObstacle(m); addEvent(m.text); }
 };
 draw();
-showSetup();
+gate();
 </script>
 </body>
 </html>

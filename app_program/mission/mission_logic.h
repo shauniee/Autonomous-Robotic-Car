@@ -37,9 +37,9 @@ typedef enum
     JUNCTION_PHASE_PAUSE_WAIT,
     JUNCTION_PHASE_PAUSE,
     JUNCTION_PHASE_TURN,
-    JUNCTION_PHASE_CLEAR,
-    JUNCTION_PHASE_CONFIRM,
-    JUNCTION_PHASE_STRAIGHT
+    JUNCTION_PHASE_STRAIGHT,
+    JUNCTION_PHASE_BRAKE,
+    JUNCTION_PHASE_ADVANCE
 } MissionJunctionPhase;
 
 typedef struct
@@ -54,6 +54,8 @@ typedef struct
     bool inputs_ok;		/* IR snapshot copied and Motion health read */
     bool guidance_valid, usable_line;
     IrLine line;
+    bool left_black;
+    bool right_black; /* normalized right IR; requires usable fresh sample */
     int8_t line_error;		/* S3 right - left, Q7; + right black, steer left */
     uint32_t line_sampled_ms;
     uint32_t wheel_count[2];
@@ -113,11 +115,12 @@ typedef struct
     uint32_t line_lost_since_ms; /* first LOST acquisition in this interval */
     uint32_t line_lost_sampled_ms; /* latest LOST acquisition, for continuity */
     uint32_t junction_sampled_ms;
+    uint8_t turn_line_phase : 2; /* 0 exit, 1 new black, 2 white, 3 invalid */
     uint8_t turn_code : 2; /* 0 none, 1 left, 2 right, 3 U-turn */
-    int8_t line_steer_q; /* fixed digital correction; zero on white/white */
-    uint32_t confirmed_sample_ms; /* last sample counted for line confirmation */
+    int8_t line_steer_q; /* latest digital correction target, signed Q7 */
+    uint32_t line_steer_sampled_ms; /* last acquisition used for steering */
+    uint32_t turn_sampled_ms; /* last acquisition used by the turn edge sequence */
     uint32_t pause_since_ms;
-    unsigned visible_streak;
     uint8_t action_id;
     uint8_t current_action;	/* ID of the Motion action in progress */
     bypass_control_t bypass;
