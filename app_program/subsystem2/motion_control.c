@@ -94,8 +94,7 @@ bool motion_command_fresh(const MotionCommand *cmd, uint32_t now_ms)
 
 /* Feedforward (static friction + speed) plus PID on counts/s, conditional
    anti-windup. dt in seconds. */
-static float wheel_duty(WheelPid *p, float target_cps, float speed_cps, float dt,
-    bool forward_only)
+static float wheel_duty(WheelPid *p, float target_cps, float speed_cps, float dt)
 {
     if (fabsf(target_cps) < 0.001f) {
         *p = (WheelPid){.previous_speed = speed_cps};
@@ -106,11 +105,13 @@ static float wheel_duty(WheelPid *p, float target_cps, float speed_cps, float dt
     float friction = target_cps > 0.0f ? MOTION_KS : -MOTION_KS;	/* duty to start turning at all */
     float output = friction + MOTION_KF * target_cps + MOTION_KP * error + MOTION_KI * integral -
                    MOTION_KD * (speed_cps - p->previous_speed) / dt;
-    /* FOLLOW slows a forward wheel without driving it backward. Discrete
-       turn/distance actions retain signed control. Anti-windup must include
-       the zero lower limit so overspeed cannot accumulate reverse effort. */
-    float lower = forward_only ? 0.0f : -MOTION_MAX_DUTY;
-    float bounded = fminf(fmaxf(output, lower), MOTION_MAX_DUTY);
+    /* Speed overshoot brakes instead of reversing against the requested
+       wheel direction. Position control can still request the opposite
+       direction after passing its target; pivots retain signed wheel targets.
+       Include both zero clamps in anti-windup. */
+    float lower = target_cps > 0.0f ? 0.0f : -MOTION_MAX_DUTY;
+    float upper = target_cps > 0.0f ? MOTION_MAX_DUTY : 0.0f;
+    float bounded = fminf(fmaxf(output, lower), upper);
     if (output == bounded || (output - bounded) * error < 0.0f)
     {
         p->integral = integral;
@@ -197,11 +198,31 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         bool within = true;
         for (int w = 0; w < 2; ++w) {
             float remaining = goal[w] - (float)enc_travel_signed(in->count[w], c->origin[w]);
-            if (fabsf(remaining) <= tol_counts) {
+            if (fabsf(remaining) <= tol_counts)
+            {
                 target_cps[w] = 0.0f;
-            } else {
+                if (motion_cmd_mode(cmd) == MOTION_MODE_TURN)
+                {
+                    c->turn_arrived |= (uint8_t)(1u << w);
+                }
+            }
+            else
+            {
+                /* Keep an arrived turn wheel braked while its partner
+                   finishes. Re-energizing after drift produces endpoint
+                   hunting. Actual position must still qualify for DONE;
+                   persistent drift fails at the existing action timeout. */
                 within = false;
-                target_cps[w] = copysignf(fminf(vmax_cps, fabsf(remaining) * MOTION_APPROACH_GAIN), remaining);
+                if (motion_cmd_mode(cmd) == MOTION_MODE_TURN &&
+                    (c->turn_arrived & (1u << w)) != 0u)
+                {
+                    target_cps[w] = 0.0f;
+                }
+                else
+                {
+                    target_cps[w] = copysignf(fminf(vmax_cps,
+                        fabsf(remaining) * MOTION_APPROACH_GAIN), remaining);
+                }
             }
         }
         if (within) {
@@ -231,8 +252,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
     }
 
     for (int w = 0; w < 2; ++w) {
-        out->duty[w] = wheel_duty(&c->pid[w], target_cps[w], speed_cps[w], dt,
-            motion_cmd_mode(cmd) == MOTION_MODE_FOLLOW);
+        out->duty[w] = wheel_duty(&c->pid[w], target_cps[w], speed_cps[w], dt);
     }
     out->status = RD_MOTION_RUNNING;
     out->action_id = c->action_id;

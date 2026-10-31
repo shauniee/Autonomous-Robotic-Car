@@ -8,6 +8,8 @@
 - [Documentation alignment — 2026-10-29](#documentation-alignment--2026-10-29)
 - [Current helper coverage — INT-25](#current-helper-coverage--int-25)
 - [Servo travel limit — S5-U05](#servo-travel-limit--s5-u05)
+- [Slow servo scan — S5-U06](#slow-servo-scan--s5-u06)
+- [Five-degree scan readings — S5-U07](#five-degree-scan-readings--s5-u07)
 
 Owner: Jia Jing / obstacle. Inactive placeholder. Retired template definitions: S5-U01 task-context example; S5-U02 unfilled manual placeholder. No template result was recorded. No subsystem hardware test is claimed.
 
@@ -71,3 +73,41 @@ or power is involved; D05 centre/scale/settle calibration remains pending.
 | Date | ID | Source | Result | Evidence / limits |
 | --- | --- | --- | --- | --- |
 | 2026-10-30 | S5-U05 | Base `cc3edb3dd7c92ec76fb2be742171818095fdc49f` plus [working-source manifest](logs/2026-10-30_S5-U05-manifest.json) | PASS (host only) | [Host suite output](logs/2026-10-30_S5-U05-host.txt); no physical servo/echo or bypass acceptance |
+
+## Slow servo scan — S5-U06
+
+Procedure defined 2026-10-30: compile wireless TEST firmware with the slow
+servo slew and run `testing/pure/run.sh` for existing helper regressions.
+Expect compilation and host checks to pass. Inspect that acquisition remains
+in settle phase throughout movement, cancellation replaces the target, and
+delayed releases advance at most one degree. No hardware or physical timing
+acceptance; D05 remains pending.
+
+| Date | ID | Source | Tester | Result | Evidence / limits |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | S5-U06 | Base `8be851bc884ec0a31646b28242a54fcf827bb987` plus [working-source manifest](logs/2026-10-30_S5-U06-manifest.json) | Codex | PASS (build / host regressions only) | [Build](logs/2026-10-30_S5-U06-build.txt), [host output](logs/2026-10-30_S5-U06-host.txt); image checksum in manifest, not flashed; slew timing and Echo not physically tested |
+
+## Five-degree scan readings — S5-U07
+
+Procedure defined 2026-10-30: run the existing host helper regressions and
+compile wireless TEST firmware. Expect both to pass with nine scan positions
+(-20 through +20 degrees, spacing 5 degrees). Inspect that each settled median
+group publishes before the next target is selected, only the centre refreshes
+forward evidence, and movement never overlaps an armed measurement. Existing
+physical wiring/power/calibration remain untested; no firmware execution pass.
+
+Initial S5-U07 build / host attempts failed: the existing sweep assertion
+required coarse spacing strictly greater than fine spacing. Equal spacing is
+needed for the requested full five-degree sweep. Failure output retained in
+[host output](logs/2026-10-30_S5-U07-host.txt) and
+[build output](logs/2026-10-30_S5-U07-build.txt). The failed working tree is the
+S5-U08 manifest source with `S5_COARSE_STEP_DEG > S5_FINE_STEP_DEG` rather than
+`>=`; base revision is recorded with the accepted manifest below.
+
+S5-U08 rerun procedure: allow equal coarse/fine spacing in the assertion,
+then repeat the S5-U07 build / existing regression checks. Expected: PASS.
+
+| Date | ID | Source | Tester | Result | Evidence / limits |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-30 | S5-U07 | Base `8be851bc884ec0a31646b28242a54fcf827bb987` plus [failed source manifest](logs/2026-10-30_S5-U07-manifest.json) | Codex | FAIL (build / host compile) | Strict coarse/fine spacing assertion; output preserved above |
+| 2026-10-30 | S5-U08 | Base `8be851bc884ec0a31646b28242a54fcf827bb987` plus [working-source manifest](logs/2026-10-30_S5-U08-manifest.json) | Codex | PASS (build / existing host regressions only) | [Build](logs/2026-10-30_S5-U08-build.txt), [host output](logs/2026-10-30_S5-U08-host.txt); image checksum in manifest, not flashed; no physical scan/Echo acceptance |

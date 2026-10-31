@@ -23,13 +23,15 @@ typedef enum
     MQTT_TYPE_SNAPSHOT_REPLY = 3,	/* robot -> PC, same body as telemetry */
     MQTT_TYPE_MAPPING = 4,	/* PC -> robot, four letters */
     MQTT_TYPE_ACK = 5,		/* robot -> PC, {sequence, result} */
-    MQTT_TYPE_SNAPSHOT_REQUEST = 6	/* PC -> robot */
+    MQTT_TYPE_SNAPSHOT_REQUEST = 6,	/* PC -> robot */
+    MQTT_TYPE_JUNCTION_TEST = 7 /* PC -> Mission, next-junction test direction */
 } mqtt_type_t;
 
 /* Frame lengths in bytes (exact). */
 #define MQTT_LEN_TELEMETRY 23u
 #define MQTT_LEN_EVENT 11u
 #define MQTT_LEN_MAPPING 5u
+#define MQTT_LEN_JUNCTION_TEST 3u
 #define MQTT_LEN_ACK 3u
 #define MQTT_LEN_SNAPSHOT_REQUEST 2u
 #define MQTT_FRAME_MAX 23u
@@ -96,8 +98,8 @@ typedef struct
 typedef enum
 {
     MQTT_ACK_OK,
-    MQTT_ACK_BUSY,		/* mapping hand-off occupied or Mission not READY/STOPPED */
-    MQTT_ACK_INVALID,	/* letters not four distinct A..Z */
+    MQTT_ACK_BUSY,		/* occupied hand-off or request refused in current Mission state */
+    MQTT_ACK_INVALID,	/* invalid mapping letters or junction-test action */
     MQTT_ACK_MALFORMED
 } mqtt_ack_result_t;
 
@@ -120,6 +122,9 @@ mqtt_decode_t mqtt_frame_type(const uint8_t *frame, unsigned length, mqtt_type_t
 
 mqtt_decode_t mqtt_decode_telemetry(const uint8_t *frame, unsigned length, mqtt_type_t *type, mqtt_telemetry_t *t);
 mqtt_decode_t mqtt_decode_event(const uint8_t *frame, unsigned length, mqtt_event_t *e);
+mqtt_decode_t mqtt_decode_junction_test(const uint8_t *frame, unsigned length,
+    uint8_t *sequence, uint8_t *action);
+
 mqtt_decode_t mqtt_decode_mapping(const uint8_t *frame, unsigned length, mqtt_mapping_t *m);
 mqtt_decode_t mqtt_decode_ack(const uint8_t *frame, unsigned length, mqtt_ack_t *a);
 mqtt_decode_t mqtt_decode_snapshot_request(const uint8_t *frame, unsigned length, uint8_t *sequence);

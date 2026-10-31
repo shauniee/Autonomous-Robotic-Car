@@ -1,0 +1,9 @@
+In file included from testing/pure/test_encoder_math.c:4:
+In file included from testing/pure/../../app_program/subsystem2/encoder_math.h:13:
+testing/pure/../../app_program/subsystem2/../common/robot_config.h:362:2: error: static assertion failed due to requirement '5 > 5': servo sweep out of range
+  362 |         S5_COARSE_STEP_DEG > S5_FINE_STEP_DEG && S5_FINE_STEP_DEG > 0, "servo sweep out of range");
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+testing/pure/../../app_program/subsystem2/../common/robot_config.h:234:28: note: expanded from macro 'S5_COARSE_STEP_DEG'
+  234 | #define S5_COARSE_STEP_DEG      5       /* settled readings every 5 degrees, -20..20 */
+      |                                 ^
+1 error generated.

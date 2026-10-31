@@ -64,6 +64,7 @@ void s4_step(uint32_t now)
     static uint32_t started_ms, next_sample_ms, acquired_ms;
     static uint8_t have_acquisition;
     static uint32_t last_left, last_right;
+    static uint32_t travel_origin[2];
     static uint8_t previous_humps;
     if (!initialized)
     {
@@ -72,12 +73,20 @@ void s4_step(uint32_t now)
         next_sample_ms = now;
         last_left = drv_encoder_count(ENCODER_LEFT);
         last_right = drv_encoder_count(ENCODER_RIGHT);
+        travel_origin[0] = last_left;
+        travel_origin[1] = last_right;
         hardware_ready = drv_gy511_init() ? 1u : 0u;
         initialized = 1u;
         if (!hardware_ready)
         {
             rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU | RD_FAULT_CALIBRATION_FAILED);
             rd_word_publish(&startup_outcome, 2u);
+            tm_printf((UB *)"[IMU] calibration failed: I2C init failed\n");
+        }
+        else
+        {
+            tm_printf((UB *)"[IMU] calibration started: keep wheels still; "
+                "timeout_ms=%u\n", (unsigned)TERRAIN_CALIBRATION_TIMEOUT_MS);
         }
         publish(robot_time_ms(), GY511_SAMPLE_ERROR);
         return;
@@ -91,14 +100,14 @@ void s4_step(uint32_t now)
     uint32_t left = drv_encoder_count(ENCODER_LEFT);
     uint32_t right = drv_encoder_count(ENCODER_RIGHT);
     bool stationary = left == last_left && right == last_right;
-    uint32_t mean = enc_mean(left, right);
-    int32_t moved = enc_travel_signed(mean, enc_mean(last_left, last_right));
     last_left = left;
     last_right = right;
     Gy511RawAxes raw = {0};
     gy511_sample_result_t result = hardware_ready ? drv_gy511_sample(&raw) : GY511_SAMPLE_ERROR;
     now = robot_time_ms();
     bool acquired = result == GY511_SAMPLE_FRESH;
+    bool stale = !have_acquisition ||
+        robot_time_elapsed(now, acquired_ms) > SAFETY_STALE_MS;
     if (result == GY511_SAMPLE_ERROR)
     {
         rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU);
@@ -109,10 +118,15 @@ void s4_step(uint32_t now)
         have_acquisition = 1u;
         rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMU);
     }
-    if (!acquired && (!have_acquisition ||
-        robot_time_elapsed(now, acquired_ms) > SAFETY_STALE_MS))
+    const uint32_t count[2] = {left, right};
+    float moved = terrain_travel_take(travel_origin, count, acquired,
+        calibrating || result == GY511_SAMPLE_ERROR || stale);
+    if (stale)
     {
-        rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU);
+        if (!acquired)
+        {
+            rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU);
+        }
         terrain_algo_invalidate_window(&context);
     }
     if (calibrating)
@@ -128,11 +142,21 @@ void s4_step(uint32_t now)
         if (context.is_calibrated)
         {
             rd_word_publish(&startup_outcome, 1u);
+            tm_printf((UB *)"[IMU] calibration passed: samples=%u elapsed_ms=%u\n",
+                (unsigned)context.calib_count,
+                (unsigned)robot_time_elapsed(now, started_ms));
         }
         else if (robot_time_elapsed(now, started_ms) >= TERRAIN_CALIBRATION_TIMEOUT_MS)
         {
             rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_CALIBRATION_FAILED);
             rd_word_publish(&startup_outcome, 2u);
+            tm_printf((UB *)"[IMU] calibration failed: timeout samples=%u/100 "
+                "elapsed_ms=%u stationary=%u sample=%s\n",
+                (unsigned)context.calib_count,
+                (unsigned)robot_time_elapsed(now, started_ms),
+                (unsigned)stationary,
+                acquired ? "fresh" :
+                (result == GY511_SAMPLE_PENDING ? "pending" : "I2C-error"));
         }
     }
     else if (acquired && context.is_calibrated)
@@ -147,7 +171,8 @@ void s4_step(uint32_t now)
             /* Missing travel invalidates this window; keep completed results. */
             terrain_algo_invalidate_window(&context);
         }
-        terrain_algo_process(&context, &raw, encoder_valid && moved > 0 ? (uint32_t)moved : 0u);
+        terrain_algo_process(&context, &raw,
+            encoder_valid && moved > 0.0f ? moved : 0.0f);
         if (!encoder_valid)
         {
             terrain_algo_invalidate_window(&context);

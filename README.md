@@ -215,6 +215,11 @@ Do not run a local broker alongside Compose on the same port.
 - `map` sends the four mission-day letters in the order left, right, straight, U-turn and waits for the acknowledgement. The robot accepts it only while stopped, and a reboot clears it.
 - `snapshot` requests one telemetry frame.
 - `python3 scripts/mqtt_client.py --self-test` checks the decoder against the firmware golden vectors without a broker.
+- The dashboard has **Junction testing** buttons: install a barcode mapping, start
+  locally with GP20, then click **Activate left/right/straight/U-turn** while
+  FOLLOW_LINE, before the junction. Wait for the robot ACK; the direction takes
+  priority over barcode reads and runs once at the next confirmed cross junction.
+  GP21 cancels it. See [test policy](docs/project-specs.md#mission-day-barcode-rule).
 - `python3 scripts/mqtt_client.py serve --broker <broker-lan-ip>` opens the live dashboard at `http://127.0.0.1:8080`. Its barcode-mapping strip sends the same mapping frame as `map` and shows the robot's acknowledgement; Send is enabled only while live telemetry reports READY or STOPPED. Open it at `127.0.0.1`, not `localhost`: the server refuses mapping requests from any other origin.
 
 Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--port` for other configs. Networking never starts, stops or drives the robot. Frame layouts: [architecture](docs/architecture.md#mqtt-binary-protocol-schema-version-2). The 500 ms stream cannot prove brief stop or recovery timing; broker loss does not change healthy local control.

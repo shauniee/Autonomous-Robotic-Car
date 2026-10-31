@@ -129,9 +129,9 @@ static bool front_supported(const bypass_control_t *control, const bypass_input_
     {
         return false;
     }
-    int32_t moved = enc_travel_signed(enc_mean(input->count[0], input->count[1]), input->front_count);
+    float moved = enc_mean_travel(input->count, input->front_count);
     float clearance = front_usable_mm(input);
-    return moved >= 0 && clearance > (float)moved / ENC_COUNTS_PER_MM &&
+    return moved >= 0.0f && clearance > moved / ENC_COUNTS_PER_MM &&
         fabsf((float)control->heading_cdeg / 100.0f - expected_heading(control)) <=
             BYPASS_RETURN_HEADING_DEG;
 }
@@ -315,7 +315,8 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
                 control->route = BYPASS_ROUTE_LINE;
                 sense(control, input, false);
                 control->line_started_ms = input->now_ms;
-                control->chunk_origin = enc_mean(input->count[0], input->count[1]);
+                control->chunk_origin[0] = input->count[0];
+                control->chunk_origin[1] = input->count[1];
                 control->line_sampled_ms = input->line_ms;
                 control->visible_streak = 0u;
             }
@@ -407,8 +408,8 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
     {
         float lateral = fabsf(left_mm(control));
         float heading = fabsf((float)control->heading_cdeg / 100.0f);
-        float travel = (float)enc_travel(enc_mean(input->count[0], input->count[1]),
-            control->chunk_origin) / ENC_COUNTS_PER_MM;
+        float travel = enc_mean_travel(input->count, control->chunk_origin) /
+            ENC_COUNTS_PER_MM;
         if (!input->line_functional || !front_supported(control, input) ||
             robot_time_elapsed(input->now_ms, input->line_ms) > IR_MAX_GAP_MS ||
             travel >= BYPASS_REACQUIRE_MM || lateral > BYPASS_RETURN_LATERAL_MM ||

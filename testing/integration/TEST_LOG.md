@@ -22,10 +22,20 @@
 - [Forward FOLLOW slowdown — INT-30](#forward-follow-slowdown--int-30)
 - [Recovery wheel-speed range — INT-31](#recovery-wheel-speed-range--int-31)
 - [Stall configuration integration — INT-32](#stall-configuration-integration--int-32)
+- [INT-33 — Wi-Fi startup diagnostic build — 2026-10-30](#int-33--wi-fi-startup-diagnostic-build--2026-10-30)
+- [INT-34 — Diagnostic image startup observation — 2026-10-30](#int-34--diagnostic-image-startup-observation--2026-10-30)
+- [Stationary wider recovery — INT-35](#stationary-wider-recovery--int-35)
+- [One-screen dashboard — INT-41](#one-screen-dashboard--int-41)
+- [Subsystem health table revision — INT-43](#subsystem-health-table-revision--int-43)
+- [Toggleable binary steering buildup — INT-42](#toggleable-binary-steering-buildup--int-42)
 
 Template example INT-01/02 retired: S2-to-S3 sample flow (at least five in two seconds) and S3-to-S4 summary flow (at least two in 3.5 seconds). No template result was recorded. Logs refer to the uncommitted migration's source manifest plus base HEAD; they do not claim HEAD is the tested source. Formal on-target trials require a recorded committed revision.
 
 Host methods below describe retained historical checks; their runners are retired. Firmware/build/manual methods remain applicable. See [testing procedure](../README.md).
+- [Dashboard next-junction direction — INT-36](#dashboard-next-junction-direction--int-36)
+- [Junction speed-controller reversal — INT-37](#junction-speed-controller-reversal--int-37)
+- [Turn endpoint reactivation — INT-38](#turn-endpoint-reactivation--int-38)
+- [Remove fixed junction advance — INT-39](#remove-fixed-junction-advance--int-39)
 
 ## 1. Test cases
 
@@ -590,3 +600,287 @@ each wireless build), no build errors. Preserved evidence:
 [build](logs/2026-10-30_INT-32-build.txt),
 [image checksums](logs/2026-10-30_INT-32-integrated-manifest.json).
 Tester: Codex, 2026-10-30. No firmware flashed and no physical pass claimed.
+
+## INT-33 — Wi-Fi startup diagnostic build — 2026-10-30
+
+Case: build wireless motor-inhibited TEST firmware with capped radio delay and resource-claim messages to investigate an interface-up stall. Expected: successful build; no credentials in added diagnostics.
+
+Base commit `8be851bc884ec0a31646b28242a54fcf827bb987` plus the uncommitted port change identified in the [source/image manifest](logs/2026-10-30_INT-33-manifest.json). Automated builder: Codex. Profile: `SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=1`. BUILD PASS; `git diff --check` passed. [Build output](logs/2026-10-30_INT-33-build.txt). Flashing and physical Wi-Fi/MQTT verification remain pending. The previously connected image revision/checksum is unknown; its USB output stopped after interface-up began while IR readings continued, including after the operator reported a USB power cycle. This observation does not establish a driver root cause.
+
+## INT-34 — Diagnostic image startup observation — 2026-10-30
+
+[Case and image identity](logs/2026-10-30_INT-34-case.json) defined the capture. Operator reported BOOTSEL ready after USB-only instructions; Codex copied the INT-33 TEST image and captured USB output. Base commit `8be851bc884ec0a31646b28242a54fcf827bb987` plus the uncommitted diagnostic change identified by the INT-33 manifest; flashed UF2 SHA-256 `d4d9a9a0694401e83f185df83b6ecac100d5bc872cce906ce5b0aeeff38e4a31`. This is working-tree diagnostic evidence, not a committed-revision qualification. Wiring was not inspected, calibration was not performed, TEST inhibits motors.
+
+Observed: interface initialization advanced, PIO allocation returned 4, DMA allocations returned 0 and 1, then network join was attempted. [Initial capture](logs/2026-10-30_INT-34-console.txt) includes link states 1, 2 and -2 (SSID not found); [retry capture](logs/2026-10-30_INT-34-retries.txt) includes repeated states 1 and 2. Neither capture contains link-up/IP acquisition or MQTT ready. No robot connection appeared in the bounded broker checks. Wireless reception remains FAIL/unresolved. The trace changes timing and the previous image identity is unknown, so this does not establish a fix for the earlier initialization stall. Awaiting operator confirmation of configured network availability/2.4 GHz access.
+
+INT-34 continuation: operator confirmed hotspot on and laptop connected. macOS reported channel 6 (2 GHz, 20 MHz), WPA2 Personal and laptop IP `172.20.10.3`; SSID was redacted, so an exact name comparison was unavailable. Credentials were checked only for presence/edge whitespace, without printing them. [Subsequent USB retry capture](logs/2026-10-30_INT-34-network-confirmed-retry.txt) is retained separately. No robot broker connection observed in subsequent bounded checks.
+
+INT-34 authentication finding: the subsequent capture also includes link state -3 (authentication rejected). Operator-supplied SSID matched the local configured SSID exactly; no SSID or password is copied into this record. The laptop network security was reported WPA2 Personal. This makes credential verification the next step; it does not prove the password is wrong or exclude a radio/authentication compatibility problem. Operator asked to compare the local password with hotspot settings without sharing the password.
+
+
+## Stationary wider recovery — INT-35
+
+Case defined 2026-10-30 before accepted run. Host-only synthetic IR and encoder
+inputs, no wiring/power/calibration. Verify recovery emits STOP until encoder
+stationarity, commands opposite wheel directions for pivots, holds action IDs
+and relative targets during each leg, reverses at +/-100 degree endpoints
+(including encoder wrap), and stops after four legs or excessive heading.
+Verify visible-line braking, bounded alignment at a wide found heading,
+distinct stationary confirmations, timeout, hazard and failed-action stop.
+Run the full pure suite and wireless normal firmware build; record source
+hashes plus exact base commit. These checks cannot establish physical tracking.
+
+Result 2026-10-30, tester Codex: PASS full host suite and wireless normal
+build (`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0
+TEST=0`). Base commit `8be851bc884ec0a31646b28242a54fcf827bb987` plus
+working-tree sources identified by the [manifest](logs/2026-10-30_INT-35-manifest.json).
+[Accepted host output](logs/2026-10-30_INT-35-final-host.txt),
+[accepted build](logs/2026-10-30_INT-35-accepted-build.txt).
+The earlier Docker attempt was denied socket access; a later build caught a
+kernel/libc `size_t` conflict from adding math.h to the diagnostic wrapper.
+The wrapper now computes absolute excursion without that header; all attempt
+outputs are preserved separately. Final incremental build has no warnings;
+text/data/BSS 379200/396/84136 bytes. The image includes existing uncommitted
+Terrain, servo and Wi-Fi diagnostic changes. No firmware flashed and no
+physical reacquisition pass claimed. `git diff --check` passes.
+
+## Dashboard next-junction direction — INT-36
+
+Case defined 2026-10-30 before acceptance run. Host-only inputs, no wiring,
+power or physical calibration. Verify all four test directions remain pending
+until a confirmed junction, override barcode reads, consume once, reject
+replacement/non-following/junction-encounter requests and clear on local stop.
+Verify binary type-7 valid actions, invalid/reserved bits, short frames,
+single-slot acknowledgement ordering and consecutive duplicate rejection.
+Run full pure suite, dashboard HTTP checks and wireless normal firmware build.
+Record exact base commit and working-tree manifest. A host/build pass cannot
+establish physical turn accuracy or a flashed robot connection.
+
+Result 2026-10-30, tester Codex: PASS full host suite, dashboard JS/HTTP checks
+and wireless normal firmware build (`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip
+MQTT=1 CRASH_REPORT=0 TEST=0`). Base commit `8be851bc884ec0a31646b28242a54fcf827bb987` plus
+working-tree source hashes in the [manifest](logs/2026-10-30_INT-36-manifest.json).
+[Host output](logs/2026-10-30_INT-36-host.txt),
+[dashboard script](logs/2026-10-30_INT-36-dashboard.txt),
+[HTTP checks](logs/2026-10-30_INT-36-http-retry.txt),
+[firmware build](logs/2026-10-30_INT-36-build-retry.txt).
+Initial Docker and local HTTP attempts were blocked by sandbox socket access;
+the retry checks passed in Docker. All attempt logs are retained.
+Local dashboard rebuilt/restarted; [build log](logs/2026-10-30_INT-36-dashboard-build.txt).
+Image text/data/BSS: 379520/396/84140 bytes. Existing unrelated working-tree
+Terrain, obstacle, recovery and Wi-Fi changes are included in this image.
+No firmware flashed, no live robot direction submitted, no physical pass claimed.
+
+## Junction speed-controller reversal — INT-37
+
+Case defined 2026-10-30 before execution. User reports wheels repeatedly jerking
+or reversing at a junction. Host-only synthetic monotonic encoder counts, no
+physical calibration. Reproduce opposite motor duty while a discrete action
+still requests wheel travel in its original direction; verify forward/reverse
+distance and both turn directions brake rather than reverse on speed overshoot.
+Preserve legitimate opposite wheel directions in pivots and positional
+overshoot correction. Run full host suite and wireless normal build, with exact
+base commit/source manifest. No physical encoder fault or turn success inferred.
+
+Result 2026-10-30, tester Codex: reproduced in host controller with monotonic
+encoder counts. Reverse-distance target -28 mm emitted positive duty +0.016708
+after 16 counts of reverse travel over 20 ms, before reaching its target; see
+[pre-fix reproduction](logs/2026-10-30_INT-37-reproduction.txt). This establishes
+a software reversal mechanism, not the cause of the user's physical vibration.
+
+After the direction-aware speed clamp: PASS full pure suite, with both distance
+signs, both turn signs and preserved positional overshoot correction;
+[final host output](logs/2026-10-30_INT-37-host-final.txt). Wireless normal build
+PASS (`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0`);
+[build output](logs/2026-10-30_INT-37-build-retry.txt). First build request did
+not start because automatic permission review timed out; permitted retry passed.
+Base commit `8be851bc884ec0a31646b28242a54fcf827bb987` plus [source manifest](logs/2026-10-30_INT-37-manifest.json).
+No encoder polarity, geometry or PID gains changed. Existing unrelated local
+changes are present in the image. No firmware flashed or motor command sent;
+physical vibration and encoder health still require a mounted retest.
+
+## Turn endpoint reactivation — INT-38
+
+Case defined 2026-10-30 before execution. User confirms INT-37 firmware flashed
+and reports sweep/junction turn jitter, onset uncertain. Host-only encoder
+fixtures: one wheel enters turn tolerance before its partner, then drifts in
+either direction. Expect that wheel to remain braked for the action. Both
+wheels must currently be within tolerance for DONE; drift cannot be hidden
+by a prior arrival. Persistent drift must time out FAILED. New action resets
+arrival state. Test both turn signs, full host suite and wireless build.
+This does not establish the cause of physical mid-turn jitter.
+
+Result 2026-10-30, tester Codex: reproduced endpoint reactivation in the host
+controller after the INT-37 change. An arrived turn wheel drifted 12 counts
+and was driven again at duty +0.340960 in the synthetic case;
+[pre-fix output](logs/2026-10-30_INT-38-reproduction.txt).
+With per-wheel turn-arrival latches: PASS full host suite, both turn signs,
+drift either side, current-position completion check, timeout failure and
+new-action reset; [host output](logs/2026-10-30_INT-38-host.txt).
+Wireless normal build PASS (`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1
+CRASH_REPORT=0 TEST=0`); [build output](logs/2026-10-30_INT-38-build.txt).
+Base commit `8be851bc884ec0a31646b28242a54fcf827bb987` plus [manifest](logs/2026-10-30_INT-38-manifest.json).
+No gains, encoder signs or tolerances changed. No firmware flashed or robot
+command sent in this case. Physical endpoint jitter needs retesting; the cause
+of user-reported possible mid-turn jitter remains unconfirmed.
+
+## Sensor dashboard ledger — INT-39
+
+Case defined 2026-10-30 before validation. Host/browser only, no robot commands,
+firmware build or physical sensor pass. Extend the existing dashboard with
+labelled telemetry measurements and units. Verify synthetic valid-zero and
+missing results, encoder-derived speed, barcode, completed obstacle/hump
+results, stale messaging, and unchanged junction-control gating. Inspect the
+render at desktop and narrow widths using a separate loopback fixture server;
+fixtures are illustrative, not observations. Record base HEAD and source hashes
+with results. No raw IR/IMU/servo readings may be implied by decoded telemetry.
+
+## Remove fixed junction advance — INT-39
+
+Case defined 2026-10-30 before execution. Nicholas requests removing the 25 mm
+advance entirely. Host fixtures cover immediate straight FOLLOW over broad
+black, no pre-turn DISTANCE action or DONE dependency, both queued/manual
+turns and straight/unmapped encounters, thin-patch preservation, distinct
+black acquisition qualification, repeated/wrapped counts, fresh exit sensing,
+stop/invalid input/obstacle/deadline handling. Preserve post-turn clearance.
+Run full pure suite and wireless normal build; record exact base/source
+manifest. No physical junction centring or jitter resolution inferred.
+
+## Sensor dashboard ledger — INT-40
+
+The sensor-ledger case initially reserved INT-39 above while another active
+chat independently reserved INT-39 for junction behaviour. INT-39 belongs to
+that junction case; this dashboard case is now INT-40. Its procedure remains
+as defined in the sensor-ledger entry above. Existing junction evidence is
+untouched; dashboard captures and manifest have distinct INT-40 paths.
+
+Result 2026-10-30, INT-40, tester Codex: PASS dashboard script regression
+and sensor-value checks ([host output](logs/2026-10-30_INT-40-host.txt)),
+[HTTP regression](logs/2026-10-30_INT-40-http.txt), and
+[decoder self-test](logs/2026-10-30_INT-40-decoder.txt). Synthetic browser
+checks covered live, empty, invalid and stale readings at 1280/390 px;
+no horizontal overflow at either width. Captures and isolated fixture server
+are in [evidence](logs/2026-10-30_INT-40/). Rebuilt/restarted only the dashboard
+container; observed the new layout receiving the robot's existing telemetry
+at port 8080. This observation is not sensor calibration or a physical pass.
+Base HEAD `8be851bc884ec0a31646b28242a54fcf827bb987`, uncommitted source hashes
+in [manifest](logs/2026-10-30_INT-40-manifest.json). Existing unrelated changes
+remain. No robot command sent or firmware built/flashed for this case.
+Impeccable launcher/detector could not execute (permission denied); manual
+visual review used existing DESIGN.md and the craft floor instead.
+
+Result 2026-10-30, tester Codex: PASS full pure suite and wireless normal
+firmware build (`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1
+CRASH_REPORT=0 TEST=0`). [Host output](logs/2026-10-30_INT-39-host.txt),
+[build output](logs/2026-10-30_INT-39-build.txt),
+[source/image manifest](logs/2026-10-30_INT-39-manifest.json).
+Base commit `8be851bc884ec0a31646b28242a54fcf827bb987` plus manifest working-tree hashes.
+Removed the fixed-distance crossing configuration, CROSS phase and distance
+completion handler. Broad-black encounters use straight FOLLOW and retain
+qualification/exit semantics and guard deadlines. Existing turn commands,
+U-turn pause and separate 60 mm post-turn clearance remain. Image text/data/BSS
+379224/396/84140 bytes, including unrelated existing working-tree changes.
+No firmware flashed and no physical jitter/turn-centre pass claimed.
+
+## One-screen dashboard — INT-41
+
+Case defined 2026-10-31 before execution. Host/browser only. Redesign the
+existing offline dashboard for the user's 1440 × 900 desktop viewport: all
+five numbered subsystems, seven reported Mission states, sensor measurements,
+faults, custom four-letter mapping, chart and events visible together. Verify
+live/empty/stale/fault fixtures, mapping validation and acknowledgement,
+existing junction gating, and compact desktop layout. Synthetic fixtures must
+be visibly labelled; do not send robot commands. Save new evidence and exact
+base HEAD plus working-tree source hashes. No firmware or physical pass.
+
+## Toggleable binary steering buildup — INT-42
+
+Case defined 2026-10-31 before execution. Run the pure host suite with the
+existing default controller and the Mission suite with `LINE_BINARY_RAMP=1`.
+Check sign-only input, gentle start, monotonic bounded buildup, reversal
+reset with slew limiting, slowdown, duplicate acquisitions, gap restart,
+zero error, timestamp wrap, stop/reset and existing Mission safety/junction
+regressions. Preserve default PID float-reference checks. Record base HEAD
+and source hashes because the working tree contains uncommitted changes.
+No firmware execution, physical steering or junction discrimination pass is
+implied. Binary settings remain provisional D07.
+
+Result 2026-10-31, INT-41, tester Codex: PASS host dashboard tests
+([output](logs/2026-10-31_INT-41/host.txt)) and HTTP request validation
+([output](logs/2026-10-31_INT-41/http.txt)). Seven Mission state markers,
+duplicate/offline gates and mapping ACK arriving before HTTP sequence response
+are covered. No robot command sent. Browser synthetic live, empty, stale,
+invalid and all-owner fault fixtures fit at 1440 × 900 without document
+scrolling. Custom mapping A/B/C/D accepted through the synthetic UI; repeated
+A rejected. 1366 × 768 scrolls vertically (830px content); 800px narrow window
+has no horizontal overflow. See [browser measurements](logs/2026-10-31_INT-41/browser-checks.json),
+[accepted mapping](logs/2026-10-31_INT-41/mapping-1440.png),
+[fault view](logs/2026-10-31_INT-41/fault-1440.png) and
+[fixture source](logs/2026-10-31_INT-41/fixture-preview.py).
+Rebuilt/restarted only the local dashboard container
+([build log](logs/2026-10-31_INT-41/dashboard-build.txt)); port 8080 serves
+the redesign, showing actual robot offline / no readings at observation time
+([capture](logs/2026-10-31_INT-41/dashboard-8080.png)).
+Exact base revision and uncommitted source hashes are recorded in the
+[manifest](logs/2026-10-31_INT-41/manifest.json). This is host/browser evidence,
+not firmware execution or a physical pass. Existing unrelated edits preserved.
+Impeccable context launcher could not execute (permission denied); project
+context and craft floor were read directly and rendering reviewed manually.
+
+Result 2026-10-31, INT-42, tester Codex: PASS host pure suite including both
+controller modes ([host output](logs/2026-10-31_INT-42-host.txt)); PASS default
+wireless normal firmware build ([build output](logs/2026-10-31_INT-42-build.txt));
+PASS binary-mode Mission ARM compilation with the same build flags
+([ARM output](logs/2026-10-31_INT-42-binary-arm.txt)). Source: base HEAD
+`9bcab80f4ae299694eff7b2564600883fee0891d` plus uncommitted files identified
+by the [source manifest](logs/2026-10-31_INT-42-manifest.json). Default remains
+`LINE_BINARY_RAMP=0`. No firmware flashed or executed; no physical straight,
+tight-curve, recovery-alignment or junction pass.
+
+## Subsystem health table revision — INT-43
+
+Case defined 2026-10-31 before execution. Host/browser only. Verify five rows
+in S1–S5 order, Mission state/faults retained above the table, Motion direction
+in Reading and left/right speed in Detail. User clarified calibration details
+belong to S3/S4, not S5. Current wire frame has no calibration booleans: test
+positive usable-line/valid-hump evidence, reported faults and unknown cases
+without claiming absence of faults proves calibration. Preserve S5 dimensions,
+sensor values, mapping and junction behaviour. Save exact source identity and
+new evidence; no firmware flash or robot commands.
+
+Result 2026-10-31, INT-43, tester Codex: PASS dashboard host regression
+([output](logs/2026-10-31_INT-43/host.txt)). Browser fixtures confirm ordered
+S1–S5 rows, Forward and separate L/R speed, S3/S4 Calibrated and Fault / not
+calibrated labels, and Mission line-lost fault in the top strip. Saved
+[synthetic preview](logs/2026-10-31_INT-43/final-preview.png),
+[fault view](logs/2026-10-31_INT-43/fault.png) and
+[browser readings](logs/2026-10-31_INT-43/browser-checks.json).
+The final clean preview rendered at 1280 × 720 with 817px content height;
+the browser viewport override did not consistently apply, so this run does
+not claim a fresh 1440 × 900 layout pass. Rebuilt only the dashboard container
+([build output](logs/2026-10-31_INT-43/dashboard-build.txt)); port 8080 verified
+with five rows, actual robot offline. No robot commands, firmware build or
+physical calibration pass. Exact base revision and uncommitted source hashes
+are in the [manifest](logs/2026-10-31_INT-43/manifest.json).
+
+## Repository audit — INT-44
+
+Case defined 2026-10-31 before verification in
+[case definition](logs/2026-10-31_INT-44/case.json). Audit current working-tree
+source, run pure/dashboard host checks, build all four README profiles, and
+distinguish software findings from pending physical acceptance. No robot
+commands, firmware flashing or production-code changes.
+
+Result 2026-10-31, INT-44, tester Codex: PASS existing pure host suite,
+dashboard JavaScript and loopback HTTP checks; PASS all four firmware profile
+builds in an isolated temporary container with placeholder credentials and
+network disabled. Initial HTTP sandbox bind failure is preserved alongside
+the successful authorized retry. Four P2 findings: encoder-mean discontinuity,
+Terrain displacement lost on pending acquisition, CLI success for rejected
+mapping ACKs, and dashboard tests omitted from CI. Encoder/CLI defects have
+saved executable reproductions; Terrain/CI findings are source-path reviews.
+See [audit and evidence](logs/2026-10-31_INT-44/audit.md).
+Source: base HEAD `9bcab80f4ae299694eff7b2564600883fee0891d` plus uncommitted
+files identified by the [initial manifest](logs/2026-10-31_INT-44/manifest.json)
+and [full source manifest](logs/2026-10-31_INT-44/source-manifest-full.json).
+No firmware execution or physical pass is claimed. Existing edits preserved.

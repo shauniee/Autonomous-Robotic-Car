@@ -37,7 +37,7 @@ static void *mission_consumer(void *unused)
     for (unsigned i = 0u; i < EXCHANGES; ++i)
     {
         mqtt_mapping_t mapping;
-        while (!mission_mapping_take(&mapping))
+        while (!mission_mapping_take(&mapping, NULL))
         {
             sched_yield();
         }
@@ -57,12 +57,12 @@ int main(void)
     mqtt_mapping_t taken;
     mqtt_ack_t ack;
     assert(!mission_mapping_poll(&ack));
-    assert(!mission_mapping_take(&taken));
+    assert(!mission_mapping_take(&taken, NULL));
     assert(mission_mapping_submit(&request));
     assert(!mission_mapping_submit(&request));
     assert(!mission_mapping_poll(&ack)); /* receipt cannot acknowledge installation */
-    assert(mission_mapping_take(&taken));
-    assert(!mission_mapping_take(&taken));
+    assert(mission_mapping_take(&taken, NULL));
+    assert(!mission_mapping_take(&taken, NULL));
     assert(taken.sequence == 255u && taken.letters[0] == 0u && taken.letters[3] == 25u);
     mission_mapping_reply(MQTT_ACK_BUSY); /* Mission started before it took the request */
     assert(!mission_mapping_submit(&request)); /* reply still belongs to I/O */
@@ -71,13 +71,27 @@ int main(void)
     assert(!mission_mapping_poll(&ack));
     request.sequence = 0u;
     assert(mission_mapping_submit(&request));
-    assert(mission_mapping_take(&taken));
+    assert(mission_mapping_take(&taken, NULL));
     mission_mapping_reply(MQTT_ACK_OK);
     assert(mission_mapping_poll(&ack) && ack.sequence == 0u && ack.result == MQTT_ACK_OK);
     request.letters[3] = 0u;
     assert(!mission_mapping_submit(&request));
     request.letters[3] = 26u;
     assert(!mission_mapping_submit(&request));
+    uint8_t direction;
+    assert(!mission_direction_submit(10u, 0u));
+    assert(!mission_direction_submit(10u, 5u));
+    assert(mission_direction_submit(10u, 4u));
+    assert(!mission_mapping_submit(&request));
+    assert(mission_mapping_take(&taken, &direction));
+    assert(taken.sequence == 10u && direction == 4u);
+    mission_mapping_reply(MQTT_ACK_OK);
+    assert(mission_mapping_poll(&ack) && ack.sequence == 10u);
+    assert(!mission_direction_submit(10u, 4u));
+    assert(mission_direction_submit(11u, 1u));
+    assert(mission_mapping_take(&taken, &direction) && direction == 1u);
+    mission_mapping_reply(MQTT_ACK_BUSY);
+    assert(mission_mapping_poll(&ack) && ack.result == MQTT_ACK_BUSY);
     pthread_t io, mission;
     assert(pthread_create(&io, NULL, io_producer, NULL) == 0);
     assert(pthread_create(&mission, NULL, mission_consumer, NULL) == 0);

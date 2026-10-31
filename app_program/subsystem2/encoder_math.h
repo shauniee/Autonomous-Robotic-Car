@@ -51,10 +51,14 @@ static inline int32_t enc_travel_signed(uint32_t now, uint32_t origin)
     return (int32_t)(enc_travel(now, origin) << shift) >> shift;
 }
 
-/* Wrap-safe mean of the two wheel counts (a plain average breaks at the wrap). */
-static inline uint32_t enc_mean(uint32_t left, uint32_t right)
+/* Average displacements, never lifetime counts: wheels may diverge through
+   repeated turns. Each wheel's displacement must stay below its half range. */
+static inline float enc_mean_travel(const uint32_t count[2],
+    const uint32_t origin[2])
 {
-    return enc_advance(left, enc_travel_signed(right, left) / 2);
+    int64_t total = (int64_t)enc_travel_signed(count[0], origin[0]) +
+        enc_travel_signed(count[1], origin[1]);
+    return (float)total * 0.5f;
 }
 
 #endif /* ENCODER_MATH_H */

@@ -4,6 +4,20 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "../common/robot_time_math.h"
+#include "../subsystem2/encoder_math.h"
+
+/* Pending acquisition retains travel; failure discards its entire window. */
+static inline float terrain_travel_take(uint32_t origin[2],
+    const uint32_t count[2], bool acquired, bool discard)
+{
+    float travel = acquired && !discard ? enc_mean_travel(count, origin) : 0.0f;
+    if (acquired || discard)
+    {
+        origin[0] = count[0];
+        origin[1] = count[1];
+    }
+    return travel;
+}
 
 typedef struct
 {

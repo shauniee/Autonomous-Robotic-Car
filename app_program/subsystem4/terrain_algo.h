@@ -58,7 +58,8 @@ _Static_assert(sizeof(TerrainContext) <= 36u, "TerrainContext packing regressed"
 
 void terrain_algo_init(TerrainContext *ctx);
 bool terrain_algo_calibrate_sample(TerrainContext *ctx, const Gy511RawAxes *raw);
-void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, uint32_t delta_counts);
+/* Local travel includes half counts from averaging the two wheel deltas. */
+void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float delta_counts);
 void terrain_algo_invalidate_window(TerrainContext *ctx);
 void terrain_algo_calibration_restart(TerrainContext *ctx);
 

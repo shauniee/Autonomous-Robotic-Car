@@ -94,6 +94,18 @@ rear-edge/original-line bypass remain future work.
 The legacy bypass no longer treats a lost Echo as proof of a rear edge, but one
 valid range jump is still provisional and must not be claimed accepted.
 
+Servo commands now slew by one degree no faster than every `SERVO_STEP_MS`
+(proposed 50 ms), including recentring and side-watch moves. Acquisition waits
+until the target command is reached plus `SERVO_SETTLE_MS`; delayed releases
+advance only one degree. The scan deadline is 20 seconds to accommodate this
+slower movement. These are software settings, not measured servo performance;
+D05 physical calibration remains pending. Scans now visit every 5 degrees from
+-20 through +20 (nine positions). Each position holds for settling and the
+configured median sample group before moving onward. Settled groups publish
+immediately to the range snapshots: only the 0-degree group refreshes forward
+coverage; other angles update side evidence. The nine positions fill scan
+storage, so no additional fine rays are scheduled with this configuration.
+
 ## Open items
 
 D02/D03/D05/D07/D12/D16: servo calibration, repeat/settle times, sample/filter/edge

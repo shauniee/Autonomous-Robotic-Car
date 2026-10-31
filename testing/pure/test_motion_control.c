@@ -229,6 +229,108 @@ static void test_follow_slowdown_never_reverses(void)
     assert(out.duty[0] > 0.0f && out.duty[1] > 0.0f);
 }
 
+static void test_discrete_overspeed_does_not_reverse(void)
+{
+    for (unsigned mode = MOTION_MODE_DISTANCE; mode <= MOTION_MODE_TURN; ++mode)
+    {
+        for (int direction = -1; direction <= 1; direction += 2)
+        {
+            MotionController control;
+            motion_control_reset(&control);
+            MotionInput in = {.now_ms = 100u, .count = {0u, 0u}};
+            float target = direction * (mode == MOTION_MODE_DISTANCE ? 28.0f : 90.0f);
+            MotionCommand cmd = motion_command_make((motion_mode_t)mode,
+                90.0f, target, 0, 2u, in.now_ms);
+            MotionOutput out;
+            motion_control_step(&control, &cmd, &in, &out);
+            float goal = mode == MOTION_MODE_DISTANCE ? 28.0f * ENC_COUNTS_PER_MM :
+                TRACK_WIDTH_MM * 0.5f * 90.0f * 3.14159265f / 180.0f * ENC_COUNTS_PER_MM;
+            for (unsigned travel = 16u; travel + 6u < goal; travel += 16u)
+            {
+                int left_sign = mode == MOTION_MODE_TURN ? -direction : direction;
+                int right_sign = direction;
+                in.count[0] = enc_advance(0u, left_sign * (int)travel);
+                in.count[1] = enc_advance(0u, right_sign * (int)travel);
+                in.now_ms += MOTION_PERIOD_MS;
+                cmd.sampled_ms = in.now_ms;
+                motion_control_step(&control, &cmd, &in, &out);
+                if (out.duty[0] * left_sign < 0.0f || out.duty[1] * right_sign < 0.0f)
+                {
+                    printf("INT-37 reproduction: mode=%u target=%g travel=%u duty=%f/%f\n",
+                        mode, (double)target, travel, (double)out.duty[0], (double)out.duty[1]);
+                    fflush(stdout);
+                }
+                assert(out.duty[0] * left_sign >= 0.0f);
+                assert(out.duty[1] * right_sign >= 0.0f);
+            }
+        }
+    }
+    /* Position overshoot is distinct from speed overshoot: allow corrective
+       reverse wheel targets after passing the distance goal. */
+    MotionController control;
+    motion_control_reset(&control);
+    MotionInput in = {.now_ms = 100u, .count = {0u, 0u}};
+    MotionCommand cmd = motion_command_make(MOTION_MODE_DISTANCE, 90.0f,
+        28.0f, 0, 3u, in.now_ms);
+    MotionOutput out;
+    motion_control_step(&control, &cmd, &in, &out);
+    in.count[0] = in.count[1] = (uint32_t)(40.0f * ENC_COUNTS_PER_MM);
+    in.now_ms += MOTION_PERIOD_MS;
+    cmd.sampled_ms = in.now_ms;
+    motion_control_step(&control, &cmd, &in, &out);
+    assert(out.status == RD_MOTION_RUNNING);
+    assert(out.duty[0] < 0.0f && out.duty[1] < 0.0f);
+    puts("INT-37: discrete overspeed direction clamp and position correction PASS");
+}
+
+static void test_turn_endpoint_does_not_reactivate(void)
+{
+    for (int direction = -1; direction <= 1; direction += 2)
+    {
+        MotionController control;
+        motion_control_reset(&control);
+        MotionInput in = {.now_ms = 100u, .count = {0u, 0u}};
+        MotionCommand cmd = motion_command_make(MOTION_MODE_TURN, 100.0f,
+            direction * 90.0f, 0, 4u, in.now_ms);
+        MotionOutput out;
+        motion_control_step(&control, &cmd, &in, &out);
+        int arc = (int)lroundf(TRACK_WIDTH_MM * 0.5f * 90.0f *
+            3.14159265f / 180.0f * ENC_COUNTS_PER_MM);
+        in.count[0] = enc_advance(0u, -direction * arc);
+        in.now_ms += MOTION_PERIOD_MS;
+        cmd.sampled_ms = in.now_ms;
+        motion_control_step(&control, &cmd, &in, &out);
+        assert(out.status == RD_MOTION_RUNNING && out.duty[0] == 0.0f);
+        for (int drift = -12; drift <= 12; drift += 24)
+        {
+            in.count[0] = enc_advance(0u, -direction * (arc + drift));
+            in.now_ms += MOTION_PERIOD_MS;
+            cmd.sampled_ms = in.now_ms;
+            motion_control_step(&control, &cmd, &in, &out);
+            printf("INT-38 endpoint: direction=%d drift=%d left_duty=%f\n",
+                direction, drift, (double)out.duty[0]);
+            fflush(stdout);
+            assert(out.duty[0] == 0.0f);
+        }
+        /* Partner arrival must not hide drift outside tolerance. */
+        in.count[1] = enc_advance(0u, direction * arc);
+        in.now_ms += MOTION_PERIOD_MS;
+        cmd.sampled_ms = in.now_ms;
+        motion_control_step(&control, &cmd, &in, &out);
+        assert(out.status == RD_MOTION_RUNNING);
+        assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);
+        in.now_ms = 100u + MOTION_ACTION_TIMEOUT_MS;
+        cmd.sampled_ms = in.now_ms;
+        motion_control_step(&control, &cmd, &in, &out);
+        assert(out.status == RD_MOTION_FAILED);
+        /* A new action is permitted to drive the same wheel again. */
+        cmd = motion_command_make(MOTION_MODE_TURN, 100.0f,
+            direction * 90.0f, 0, 5u, in.now_ms);
+        motion_control_step(&control, &cmd, &in, &out);
+        assert(out.status == RD_MOTION_RUNNING && out.duty[0] != 0.0f);
+    }
+}
+
 int main(void)
 {
     test_freshness_and_rewrite();
@@ -237,6 +339,8 @@ int main(void)
     test_stall_and_timeout();
     test_follow_steering();
     test_follow_slowdown_never_reverses();
+    test_discrete_overspeed_does_not_reverse();
+    test_turn_endpoint_does_not_reactivate();
     puts("motion_control: PASS");
     return 0;
 }

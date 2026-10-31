@@ -1,0 +1,83 @@
+[IR] seq=1526 ADC L=198 R=198 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1551 ADC L=198 R=193 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1576 ADC L=196 R=191 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1601 ADC L=199 R=191 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1626 ADC L=196 R=191 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1651 ADC L=205 R=199 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1676 ADC L=196 R=193 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1701 ADC L=193 R=193 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1726 ADC L=198 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] seq=1751 ADC L=195 R=200 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1776 ADC L=199 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1801 ADC L=202 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1826 ADC L=198 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1851 ADC L=200 R=196 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1876 ADC L=203 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+wifi: link status -> joined AP, no IP yet (2)
+[IR] seq=1901 ADC L=198 R=193 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1926 ADC L=197 R=192 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1951 ADC L=196 R=199 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=1976 ADC L=202 R=199 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2001 ADC L=199 R=194 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2026 ADC L=199 R=204 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2051 ADC L=196 R=192 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2076 ADC L=195 R=199 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2101 ADC L=196 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2126 ADC L=195 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2151 ADC L=201 R=198 acquired=1 fresh=1 frac[IR] seq=2751 ADC L=196 R=192 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2776 ADC L=197 R=202 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2801 ADC L=198 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2826 ADC L=193 R=196 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] seq=2851 ADC L=196 R=200 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2876 ADC L=194 R=193 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2901 ADC L=199 R=194 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2926 ADC L=199 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2951 ADC L=201 R=201 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=2976 ADC L=197 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3001 ADC L=191 R=199 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3026 ADC L=199 R=199 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3051 ADC L=194 R=201 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3076 ADC L=196 R=193 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+wifi: joining configured network ...
+[IR] seq=3101 ADC L=199 R=193 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] seq=3126 ADC L=202 R=191 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3151 ADC L=195 R=198 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3176 ADC L=200 R=200 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3201 ADC L=194 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3226 ADC L=194 R=194 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3251 ADC L=192 R=195 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+wifi: link status -> joined AP, no IP yet (2)
+[IR] seq=3276 ADC L=199 R=196 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3301 ADC L=195 R=198 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3326 ADC L=200 R=200 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3351 ADC L=200 R=199 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3376 ADC L=196 R=190 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3401 ADC L=195 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3426 ADC L=194 R=199 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3451 ADC L=204 R=190 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3476 ADC L=202 R=192 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3501 ADC L=197 R=199 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3526 ADC L=199 R=199 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3551 ADC L=199 R=192 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3576 ADC L=198 R=202 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3601 ADC L=193 R=200 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3626 ADC L=199 R=198 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3651 ADC L=200 R=192 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3676 ADC L=200 R=196 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3701 ADC L=199 R=197 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3726 ADC L=199 R=204 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3751 ADC L=202 R=201 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3776 ADC L=196 R=192 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] seq=3801 ADC L=200 R=201 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3826 ADC L=195 R=198 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3851 ADC L=200 R=198 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3876 ADC L=197 R=196 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3901 ADC L=198 R=196 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3926 ADC L=197 R=199 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3951 ADC L=202 R=200 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] seq=3976 ADC L=196 R=201 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY

@@ -68,10 +68,24 @@ Line guidance and S2 wheel PID are different loops; preserve existing guidance
 until tuning is verified, and never call P-only code physically validated PID.
 Remote main guidance is P-based; the local checkpoint adds Mission line-loop tuning.
 
-At a confirmed no-command junction request at least 25 mm straight crossing travel,
-then track/acquire outgoing line. BROAD_BLACK is evidence, not automatic finish
+`LINE_BINARY_RAMP` in `robot_config.h` selects guidance at build time: 0
+(default) keeps the existing filtered PID; 1 uses only the sign of the paired
+sensor error. Rebuild and flash after changing it. Binary mode requests
+`LINE_BINARY_START` steering, builds by `LINE_BINARY_RATE` per second of
+fresh same-direction acquisitions up to `MAX_STEER`, and clears buildup on
+reversal, zero error, acquisition gap or controller reset. Output still uses
+the steering slew limit and curve slowdown; line I/D are bypassed. Start/rate
+are provisional D07 tuning values, not physical passes. Wheel-speed PID,
+analogue wiring/calibration and line classifications are retained. This is
+two-sensor direction tracking, not single-sensor left-edge following.
+It does not resolve black/black curve/junction ambiguity or the near-zero
+alignment requirement for recovery with strictly binary sensors (D02/D04/D07).
+
+At a no-command junction continue straight using sensing, then confirm the
+outgoing line; no fixed-distance advance remains. See the
+[junction revision](../project-specs.md#mission-day-barcode-rule). BROAD_BLACK is evidence, not automatic finish
 or sufficient proof of junction centre. Qualification uses mounting and encoder
-travel, pending D02/D04/D07. Target line loss enters bounded moving sweep recovery;
+travel, pending D02/D04/D07. Target line loss enters bounded stop-then-pivot sweep recovery;
 it does not universally latch on the first white sample.
 
 ## 3. Barcode
@@ -170,8 +184,8 @@ nor saved host results claims a final-image physical run.
 The working three-task integration and GP21-release controls are implemented and
 software-tested. Requested sweep geometry, mounted junction confirmation and
 end-to-end bidirectional barcode navigation still need decisions/calibration.
-White/white is no longer assumed to prove centering; a known-side bounded arc is
-retained provisionally, and unknown-side loss stops. Outgoing turn confirmation
+White/white is no longer assumed to prove centering. Standalone recovery stops
+and pivots through a wider bounded sweep; see the central recovery contract. Outgoing turn confirmation
 counts distinct acquisitions; U-turn pause is measured from encoder stationarity
 in software, with its physical reference still D02/D08. Do not describe all Motion/Mission code as absent
 or reuse historical bench statements as present status.
@@ -184,8 +198,8 @@ stale producers and stop during every phase. Allocate new case IDs before use;
 never rewrite existing S3-BF or other evidence for this target.
 
 Continuation correction: junction qualification counts distinct usable black
-acquisitions and travel before the first black exit. Completing the forced
-minimum crossing after black ends cannot turn a thin patch into a confirmed
+acquisitions and travel before the first black exit. Travel
+after black ends cannot turn a thin patch into a confirmed
 junction or consume its held barcode. Qualified straight/unmapped crossings
 also enter outgoing-line confirmation before ordinary tracking. All A-Z now
 have both-orientation/two-scale host fixtures; physical print/mounting tests

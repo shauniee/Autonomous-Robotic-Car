@@ -11,7 +11,7 @@ static uint32_t submitted, consumed; /* I/O only */
 static uint32_t taken;               /* Mission only */
 static uint8_t sequence;             /* Mission only */
 
-enum { MAPPING_SEQUENCE_SHIFT = 21u, REPLY_RESULT_SHIFT = 8u };
+enum { MAPPING_SEQUENCE_SHIFT = 21u, REPLY_RESULT_SHIFT = 8u, DIRECTION_SHIFT = 29u };
 
 bool mission_mapping_submit(const mqtt_mapping_t *mapping)
 {
@@ -28,7 +28,25 @@ bool mission_mapping_submit(const mqtt_mapping_t *mapping)
     return true;
 }
 
-bool mission_mapping_take(mqtt_mapping_t *mapping)
+bool mission_direction_submit(uint8_t seq, uint8_t action)
+{
+    static uint8_t last_sequence;
+    static struct { uint8_t valid : 1; } duplicate;
+    if (action < 1u || action > 4u || submitted != consumed ||
+        (duplicate.valid && seq == last_sequence))
+    {
+        return false;
+    }
+    rd_word_publish(&request_word, ((uint32_t)seq << MAPPING_SEQUENCE_SHIFT) |
+        ((uint32_t)action << DIRECTION_SHIFT));
+    last_sequence = seq;
+    duplicate.valid = 1u;
+    ++submitted;
+    atomic_store_explicit(&requested, submitted, memory_order_release);
+    return true;
+}
+
+bool mission_mapping_take(mqtt_mapping_t *mapping, uint8_t *action)
 {
     uint32_t ticket = atomic_load_explicit(&requested, memory_order_acquire);
     if (mapping == NULL || ticket == taken)
@@ -39,6 +57,10 @@ bool mission_mapping_take(mqtt_mapping_t *mapping)
     for (unsigned i = 0u; i < RD_MAP_COUNT; ++i)
     {
         mapping->letters[i] = (uint8_t)rd_mapping_letter(word, (rd_map_action_t)i);
+    }
+    if (action != NULL)
+    {
+        *action = (uint8_t)(word >> DIRECTION_SHIFT);
     }
     mapping->sequence = (uint8_t)(word >> MAPPING_SEQUENCE_SHIFT);
     sequence = mapping->sequence;

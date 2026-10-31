@@ -12,6 +12,7 @@ static unsigned type_length(unsigned type)
     case MQTT_TYPE_EVENT: return MQTT_LEN_EVENT;
     case MQTT_TYPE_MAPPING: return MQTT_LEN_MAPPING;
     case MQTT_TYPE_ACK: return MQTT_LEN_ACK;
+    case MQTT_TYPE_JUNCTION_TEST: return MQTT_LEN_JUNCTION_TEST;
     case MQTT_TYPE_SNAPSHOT_REQUEST: return MQTT_LEN_SNAPSHOT_REQUEST;
     default: return 0u;
     }
@@ -205,5 +206,36 @@ mqtt_decode_t mqtt_decode_snapshot_request(const uint8_t *f, unsigned length, ui
     if (sequence == 0) return MQTT_DECODE_NULL;
     if (ty != MQTT_TYPE_SNAPSHOT_REQUEST) return MQTT_DECODE_TYPE;
     *sequence = f[1];
+    return MQTT_DECODE_OK;
+}
+
+/* Junction testing: one direction for Mission, never a motor command. */
+mqtt_decode_t mqtt_decode_junction_test(const uint8_t *f, unsigned length,
+    uint8_t *sequence, uint8_t *action)
+{
+    mqtt_type_t type;
+    mqtt_decode_t result = mqtt_frame_type(f, length, &type);
+    if (result != MQTT_DECODE_OK)
+    {
+        return result;
+    }
+    if (sequence == 0 || action == 0)
+    {
+        return MQTT_DECODE_NULL;
+    }
+    if (type != MQTT_TYPE_JUNCTION_TEST)
+    {
+        return MQTT_DECODE_TYPE;
+    }
+    if ((f[2] & 0xF8u) != 0u)
+    {
+        return MQTT_DECODE_RESERVED;
+    }
+    if (f[2] < 1u || f[2] > 4u)
+    {
+        return MQTT_DECODE_RANGE;
+    }
+    *sequence = f[1];
+    *action = f[2];
     return MQTT_DECODE_OK;
 }
