@@ -173,15 +173,63 @@ static void test_rejections(void)
 static void test_rearm(void)
 {
     uint32_t w[29]; char s; barcode_orientation_t o;
-    elements("nwnnwnwnn", "wnnnnwnnw", "nwnnwnwnn", false, 10u, 30u, w);
-    start(0u);
-    assert(scan(w, 100u, &s, &o) == BARCODE_DECODED);
-    /* A second frame after too small a white gap is not accepted (duplicate rearm). */
-    assert(scan(w, BARCODE_REARM_COUNTS - 20u, &s, &o) != BARCODE_DECODED);
-    /* After a full gap the next barcode decodes again. Resynchronise first. */
-    start(0u);
-    assert(scan(w, 100u, &s, &o) == BARCODE_DECODED);
-    assert(scan(w, BARCODE_REARM_COUNTS + 20u, &s, &o) == BARCODE_DECODED);
+    for (unsigned reverse = 0u; reverse < 2u; ++reverse)
+    {
+        elements("nwnnwnwnn", "wnnnnwnnw", "nwnnwnwnn",
+            reverse != 0u, 10u, 30u, w);
+        start(0xFF00u);
+        assert(scan(w, 100u, &s, &o) == BARCODE_DECODED);
+        assert(scan(w, BARCODE_REARM_COUNTS - 20u, &s, &o) != BARCODE_DECODED);
+        start(0xFF00u);
+        assert(scan(w, 100u, &s, &o) == BARCODE_DECODED);
+        assert(scan(w, BARCODE_REARM_COUNTS + 20u, &s, &o) == BARCODE_DECODED);
+        assert(s == 'A');
+        assert(o == (reverse != 0u ? BARCODE_REVERSE : BARCODE_FORWARD));
+    }
+}
+
+static void test_flipped_capture(void)
+{
+    uint32_t w[29];
+    char s = '?';
+    barcode_orientation_t o = BARCODE_FORWARD;
+    const uint8_t letters[4] = {0u, 1u, 2u, 25u};
+    uint32_t mapping;
+    assert(rd_mapping_pack(letters, &mapping));
+    for (unsigned reverse = 0u; reverse < 2u; ++reverse)
+    {
+        elements("nwnnwnwnn", "nwwnwnnnn", "nwnnwnwnn",
+            reverse != 0u, 10u, 30u, w);
+        /* Without the enable-time reference, the first black edge loses the
+           approach quiet zone and this first complete print is missed. */
+        start(0xFFF0u);
+        barcode_frame_reset(&frame);
+        assert(scan(w, 100u, &s, &o) != BARCODE_DECODED);
+        /* start() supplies the reference now queued by drv_barcode_enable. */
+        start(0xFFF0u);
+        assert(scan(w, 100u, &s, &o) == BARCODE_DECODED);
+        assert(s == 'Z');
+        assert(o == (reverse != 0u ? BARCODE_REVERSE : BARCODE_FORWARD));
+        assert(barcode_action_for(mapping, s) == BARCODE_U_TURN);
+
+        /* Modest independent width jitter must preserve the same letter. */
+        for (unsigned i = 0u; i < BARCODE_ELEMENTS; ++i)
+        {
+            w[i] = i % 2u == 0u ? w[i] - 1u : w[i] + 1u;
+        }
+        start(0xFF00u);
+        assert(scan(w, 100u, &s, &o) == BARCODE_DECODED);
+        assert(s == 'Z');
+
+        /* Opposite orientations on the two guards must never guess a letter. */
+        elements("nwnnwnwnn", "nwwnwnnnn", "nnwnwnnwn",
+            reverse != 0u, 10u, 30u, w);
+        start(0u);
+        s = '?';
+        o = BARCODE_FORWARD;
+        assert(scan(w, 100u, &s, &o) == BARCODE_BAD_FRAME);
+        assert(s == '?' && o == BARCODE_FORWARD);
+    }
 }
 
 static void test_mapping(void)
@@ -232,6 +280,7 @@ int main(void)
     test_noisy_approach();
     test_rejections();
     test_rearm();
+    test_flipped_capture();
     test_mapping();
     test_event_packing();
     puts("barcode: PASS");

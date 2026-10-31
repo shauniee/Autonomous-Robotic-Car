@@ -2,6 +2,8 @@
 
 ## Contents
 
+- [Terrain header build compatibility — INT-48](#terrain-header-build-compatibility--int-48)
+
 - [1. Test cases](#1-test-cases)
 - [2. Results](#2-results)
 - [Documentation alignment — 2026-10-29](#documentation-alignment--2026-10-29)
@@ -928,3 +930,26 @@ commands for explicit runs. README describes this change. No software changes
 affecting the passed host/firmware checks were made after the tested source
 commit; the final workflow/source identity is in
 [final manifest](logs/2026-10-31_INT-45/final-source-manifest.json).
+
+
+## Terrain header build compatibility — INT-48
+
+Case defined before verification on 2026-10-31: eliminate the newlib
+`<math.h>` / micro T-Kernel `size_t` collision introduced by the Terrain
+travel-quality helper in the public evidence header. Run the existing pure
+host suite and compile/link/convert all four README firmware profiles:
+`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 CRASH_REPORT=0`, offline
+`NET=none MQTT=0` and wireless `NET=lwip MQTT=1`, each with TEST=0 and TEST=1.
+Use isolated source snapshots, placeholder credentials and no container network.
+No physical sensing, calibration or firmware-execution acceptance is claimed.
+
+The first snapshot moves the unchanged helper into `terrain_algo.c` and passes
+all checks. Concurrent work subsequently removes the Terrain audit edits from
+the checkout, including the helper and public math include. The final source
+snapshot therefore verifies that current state separately; it does not restore
+those removed edits. Preserve the earlier logs and manifest as intermediate
+evidence; `final-*` artifacts identify the final verification.
+
+| Date | ID | Source | Tester | Result | Evidence / limits |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-31 | INT-48 | Base `5e63fe0e90776eb834fd3d27ba438a0f8e017d8e` plus [final working-source manifest and UF2 checksums](logs/2026-10-31_INT-48/final-manifest.json) | Codex | PASS: host suite and all four firmware profiles | [Host](logs/2026-10-31_INT-48/final-host.txt), offline [TEST=0](logs/2026-10-31_INT-48/final-firmware-none-test0.txt) / [TEST=1](logs/2026-10-31_INT-48/final-firmware-none-test1.txt), wireless [TEST=0](logs/2026-10-31_INT-48/final-firmware-lwip-test0.txt) / [TEST=1](logs/2026-10-31_INT-48/final-firmware-lwip-test1.txt). Arm GCC 13.2.1; compile/link/UF2 conversion only, placeholder credentials, no board execution. |
