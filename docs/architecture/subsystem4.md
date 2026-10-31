@@ -15,7 +15,7 @@
 
 ## 1. Functionality
 
-Owner Darrius. [Plan](../../plan.md) owns implementation sequence;
+Owner Darrius. [Plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns implementation sequence;
 [architecture](../architecture.md) owns tasks/fault policy;
 [team](../team.md#2-pins) owns wiring. Target Terrain is bounded work in core-0
 `io_task`, not a separate core-1 task. Reuse GY-511 acceleration acquisition,

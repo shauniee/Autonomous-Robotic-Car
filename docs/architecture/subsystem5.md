@@ -12,7 +12,7 @@
 
 ## Functionality
 
-Owner Jia Jing. [Plan](../../plan.md) owns sequence;
+Owner Jia Jing. [Plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns sequence;
 [architecture](../architecture.md#mission-loop) owns bypass/stop authority;
 [team](../team.md#2-pins) owns wiring. Target S5 is bounded sonar/servo acquisition
 and profiling called by Mission on core 1, not an independent task. Mission
@@ -121,4 +121,4 @@ Mission reads its own acquisition records, while Reporting uses a nonwaiting
 coherent mirror under the existing profile mutex. Busy publication retains the
 original sample time and cannot revive a frozen sensor. The profile snapshot
 coherently includes model evidence and scan completion time; MQTT sizes stay
-unchanged. See [continuation audit](../../plan.md#full-plan-continuation-audit).
+unchanged. See [continuation audit](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#done-when).

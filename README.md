@@ -13,7 +13,7 @@
   - [Bring-up order and project tasks](#bring-up-order-and-project-tasks)
 - [Build and flash without Docker](#build-and-flash-without-docker)
 
-Start with the [consolidated completion plan](plan.md), which points to the single live issue #117. The core software is implemented; physical calibration, timing and full mission acceptance remain incomplete. Unresolved limits live in [pending decisions](docs/project-specs.md#pending-decisions).
+Start with the [consolidated completion plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) in issue #117. The core software is implemented; physical calibration, timing and full mission acceptance remain incomplete. Unresolved limits live in [pending decisions](docs/project-specs.md#pending-decisions).
 
 An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, hump measurement, obstacle avoidance and WiFi telemetry. Firmware uses micro T-Kernel 3.0 on the RP2040. See [project specifications](docs/project-specs.md) for required outcomes and [Getting started](#getting-started) for what runs today.
 
@@ -99,7 +99,7 @@ Docker and [native](#build-and-flash-without-docker) builds can share `build_mak
 
 | Guide | Use it for |
 | --- | --- |
-| [Implementation plan](plan.md) | Entry point to the consolidated issue plan and source baseline |
+| [Implementation plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) | Single live plan and remaining acceptance |
 | [Project specifications](docs/project-specs.md) | Requirements, change requirement (minimum-bit), data table, assessment, pending decisions |
 | [Team](docs/team.md) | Owners, pins and wiring, task and kernel-object budget, interfaces, coding rules |
 | [Architecture](docs/architecture.md) | Target three-task contracts, looping Mission, stop/freshness rules, shared data and MQTT protocol |
@@ -162,7 +162,7 @@ No active CMake target. The local checkpoint includes an optional dashboard; it 
 
 **One power source at a time.** USB alone is for flashing and inhibited desktop checks. Disconnect USB before battery/power-bank operation; never add USB for logs during a powered trial. Reboot clears calibration; recalibrate after changing power.
 
-1. Check pins and conflicts ([team](docs/team.md#2-pins)). The user confirms documented wiring; actual active software and physical acceptance depend on the exact flashed revision. See the [source inventory](plan.md#remote-implementation-inventory), not an older minimal-bench assumption.
+1. Check pins and conflicts ([team](docs/team.md#2-pins)). The user confirms documented wiring; actual active software and physical acceptance depend on the exact flashed revision. See [task ownership](docs/architecture.md#tasks) and the exact flashed source.
 2. Hold BOOTSEL while connecting USB; release when **RPI-RP2** appears; copy the matching **TEST** UF2 to the drive (WSL: `explorer.exe build_make`). The Pico reboots.
 3. Open USB serial at 115200: `screen /dev/tty.usbmodem<device> 115200` (Linux `/dev/ttyACM0`; Windows PuTTY/Serial Monitor on the COM port). Quit screen: Ctrl-A, K.
 4. Inspect startup, `[TEST] <ID> PASS|FAIL`, `[IR] ... SENSOR_ONLY` / `[LINE] ... MOTOR_INHIBITED`. Console output reports acquisition/calibration/state, not motor movement or measured duty. Record failures via [testing](testing/README.md).
@@ -226,7 +226,7 @@ Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--p
 
 ### Bring-up order and project tasks
 
-Follow the [consolidated issue plan](plan.md#implementation-stages) and the
+Follow the [consolidated issue plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#remaining-plan) and the
 [mission-readiness checklist](testing/mission-readiness.md). The three-task
 Motion/Mission/I/O refactor is implemented; remaining work is calibration,
 feature release, measured timing/load and mixed looping-mission acceptance.
@@ -271,5 +271,5 @@ are configured as provisional software proposals, and physical bypass release
 remains inhibited; encountering the trigger brakes and unsupported evidence stops
 the manoeuvre. Do not interpret the passing synthetic
 profile fixtures as an enabled full bypass. The user confirmed that physical
-trials are unavailable; [full-plan completion](plan.md#full-plan-continuation-audit)
+trials are unavailable; [full-plan completion](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#done-when)
 remains BLOCKED.

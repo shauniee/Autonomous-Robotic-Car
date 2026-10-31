@@ -10,7 +10,7 @@
 
 ## Functionality
 
-Owner Mahesha. [Plan](../../plan.md) owns implementation sequence;
+Owner Mahesha. [Plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns implementation sequence;
 [architecture](../architecture.md#motion-command-contract) owns movement/stop/
 freshness and [team](../team.md#2-pins) owns wiring. Target Motion stays core 1,
 outranks Mission and is the sole writer of GP8-GP11. Numeric target scheduling is

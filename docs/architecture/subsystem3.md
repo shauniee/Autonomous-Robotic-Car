@@ -28,7 +28,7 @@
 
 Owner Nicholas. Target S3 retains line acquisition, calibration, guidance and
 barcode capture/decoding; Mission coordination moves to `app_program/mission/`.
-No separate S3 or Safety task in target. [Plan](../../plan.md) owns work order,
+No separate S3 or Safety task in target. [Plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns work order,
 [architecture](../architecture.md#mission-loop) owns Mission/controls/recovery,
 [specs](../project-specs.md) owns course facts/data widths and
 [team](../team.md#2-pins) owns wiring.

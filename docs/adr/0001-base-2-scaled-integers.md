@@ -6,7 +6,7 @@
 - [Decision](#decision)
 - [Consequences](#consequences)
 
-Historical representation decision; [plan](../../plan.md) owns current work and [data table](../project-specs.md#5-data-representation-table-week-13) owns implemented widths. Descriptions of an earlier float S2 boundary are historical; current MotionCommand is packed/accessor-based.
+Historical representation decision; [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns current work and [data table](../project-specs.md#5-data-representation-table-week-13) owns implemented widths. Descriptions of an earlier float S2 boundary are historical; current MotionCommand is packed/accessor-based.
 
 Status: accepted for S3 (spec #100, ticket #105). Recommended, not imposed, for S1, S2, S4 and S5.
 
