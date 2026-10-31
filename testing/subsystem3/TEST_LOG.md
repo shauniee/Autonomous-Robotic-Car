@@ -254,3 +254,11 @@ capture or physical acceptance.
 | Date | ID | Source | Tester | Result | Evidence / limits |
 | --- | --- | --- | --- | --- | --- |
 | 2026-10-31 | S3-U20 | Base `5e63fe0e90776eb834fd3d27ba438a0f8e017d8e` plus [working-source manifest](logs/2026-10-31_S3-U20/manifest.json) | Codex | PASS (host tests and driver compilation); full firmware build FAIL | [Barcode assertions](logs/2026-10-31_S3-U20/barcode-targeted.txt), [full host suite](logs/2026-10-31_S3-U20/host.txt), [Cortex-M0+ driver compile](logs/2026-10-31_S3-U20/driver-compile.txt). [Full firmware attempt](logs/2026-10-31_S3-U20/firmware-build.txt) fails on an unrelated `size_t` conflict through `terrain_evidence.h` in `io_task.c` and `mission.c`. No firmware execution or physical pass. |
+
+Integration continuation 2026-10-31: [INT-49](../integration/TEST_LOG.md#barcode-branch-integration--int-49)
+checks the barcode changes with main's audit fixes at exact committed source
+`545a6a381b589f033076bd04df825469e2f0b537`. The full host suite,
+dashboard/CLI/HTTP regressions and all four README firmware build profiles
+pass. This supersedes the earlier full-build failure for this integrated
+source only; the failed attempt above remains historical evidence. No
+firmware execution or physical barcode acceptance is claimed.

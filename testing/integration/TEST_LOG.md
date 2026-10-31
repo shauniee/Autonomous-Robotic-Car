@@ -1023,3 +1023,21 @@ profiles in an isolated source copy with placeholder credentials and disabled
 container networking. Expected: barcode tests and audit regressions pass;
 all four images compile/link/convert; no prior evidence is replaced.
 No robot commands, firmware execution, calibration or physical pass.
+
+Result 2026-10-31, INT-49, tester Codex: PASS on exact integrated source
+`545a6a381b589f033076bd04df825469e2f0b537`. Full pure host suite
+([output](logs/2026-10-31_INT-49/host.txt)), dashboard JavaScript, CLI and
+loopback HTTP regressions passed
+([dashboard](logs/2026-10-31_INT-49/dashboard.txt),
+[CLI](logs/2026-10-31_INT-49/cli.txt), [HTTP](logs/2026-10-31_INT-49/http.txt)).
+All four README firmware profiles compiled, linked and converted to UF2
+([build output](logs/2026-10-31_INT-49/firmware.txt)), with
+`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 CRASH_REPORT=0`; offline
+`NET=none MQTT=0` and wireless `NET=lwip MQTT=1`, each TEST=0 and TEST=1.
+Only warnings are the existing upstream lwIP unused function. The build used
+a git archive of that exact source, placeholder credentials and no container
+network. [Manifest and image checksums](logs/2026-10-31_INT-49/manifest.json).
+Main's S1/S4/decoder sources are unchanged by this integration. The historical
+S3-U20 failed full-build attempt and both audit records are preserved; the
+combined build above passes with the Terrain header fix now on main.
+No flashing, firmware execution, GPIO timing or physical barcode pass.
