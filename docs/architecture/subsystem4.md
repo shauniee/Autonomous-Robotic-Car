@@ -31,6 +31,14 @@ failure is report-only; valid detected impact is a stopping cause. This differs
 from current remote start-blocking masks. Do not fabricate pose/height when data
 is missing, stale or dominated by acceleration.
 
+The working boot attempt allows 5 seconds to collect 100 fresh stationary
+samples at the configured 50 Hz sensor rate. This software budget includes
+scheduling margin; it is not a measured hardware timing guarantee. Encoder
+movement restarts the sample accumulation without extending the deadline.
+USB console `[IMU]` messages distinguish I2C initialization failure, completion
+and timeout (sample count and last acquisition result). A failed attempt is
+retried only by rebooting, not by the local mission reset.
+
 Hump processing is independent of top-level Mission states: climb, crest,
 descent, complete-window validation. Mission requests half normal tracking speed;
 settle at a steady reduced speed, filter pitch and account for acceleration/braking

@@ -121,17 +121,16 @@
 #endif
 #define RECOVERY_MS 30000u
 #define MISSION_LINE_LOST_MS 1000u /* user: recover only after >1 s white/white */
-#define RECOVERY_TRAVEL_MM 1200u /* PROPOSAL D07: wider arcs plus alignment */
-#define RECOVERY_SPEED_MMPS 270u /* PROPOSAL D07: tracking curve speed */
-#define RECOVERY_STEER_Q 76 /* tracking's ~0.6 steering; avoid a slow inner wheel */
-#define RECOVERY_TARGET_DEG 70
+#define RECOVERY_TRAVEL_MM 1200u /* PROPOSAL D07: wheel excursion bound */
+#define RECOVERY_SPEED_MMPS 180u /* PROPOSAL D07: each pivot wheel */
+#define RECOVERY_TARGET_DEG 100 /* PROPOSAL D07: wider stationary sweep */
 #define RECOVERY_TARGET_TOL_DEG 5
-#define RECOVERY_ALIGN_HEADING_DEG 15
+#define RECOVERY_ALIGN_STEP_DEG 10 /* bounded pivot toward visible line */
 #define RECOVERY_ALIGN_ERROR_Q 25
 #define MISSION_CONFIRM_SAMPLES 3u
 #define BASE_DUTY		0.25f	/* PROVISIONAL (D07) */
 #define BROAD_DUTY		0.20f	/* PROVISIONAL (D07) */
-#define MAX_STEER		0.60f	/* steering limit; also the line-search arc. Keeps both wheels within MOTION_MAX_DUTY */
+#define MAX_STEER		0.60f	/* tracking steering limit */
 /* Line PID on the two-sensor error (right - left black fraction, -1..+1; the
    sensors sit on the 18 mm line's edges), output in steering units (+-1 = full
    differential, then limited to MAX_STEER). The IR edge is nearly binary, so
@@ -159,10 +158,17 @@
 #define LINE_CURVE_SLOWDOWN	0.40f	/* PROVISIONAL (D07): speed cut at MAX_STEER (0.4 = 60% speed) */
 #define LINE_STEER_RATE		3.0f	/* PROVISIONAL (D07): max steering change per second (0 to MAX_STEER in 0.2 s) */
 
+/* Rebuild with 1 for binary direction + bounded buildup; 0 retains PID.
+   Both modes use the existing two-sensor mounting and classifications. */
+#ifndef LINE_BINARY_RAMP
+#define LINE_BINARY_RAMP 0
+#endif
+#define LINE_BINARY_START 0.12f /* PROVISIONAL (D07): initial steering magnitude */
+#define LINE_BINARY_RATE 0.80f /* PROVISIONAL (D07): buildup per second, to MAX_STEER */
+
 /* --- Mission (S3). UNMEASURED PLACEHOLDERS until #59/#61 (D01, D02, D07) ----- */
 #define MISSION_FOLLOW_SPEED_MMPS	450.0f	/* PROVISIONAL (D07): straight-line follow speed, mm/s */
 #define MISSION_BROAD_SPEED_MMPS	90.0f	/* PROVISIONAL (D07): crossing broad black */
-#define MISSION_BROAD_FORWARD_MM 25.0f /* requested minimum crossing travel */
 #define MISSION_TURN_SPEED_MMPS		100.0f	/* PROVISIONAL (D07) */
 #define MISSION_CLEAR_SPEED_MMPS	100.0f	/* PROVISIONAL (D07) */
 #define MISSION_CLEAR_MM		60.0f	/* PROVISIONAL (D02): drive clear of a junction after a turn */
@@ -203,7 +209,8 @@
 
 /* --- S4 terrain ---------------------------------------------------- */
 #define TERRAIN_CALIBRATION_PERIOD_MS 10u
-#define TERRAIN_CALIBRATION_TIMEOUT_MS 2000u /* existing bounded startup attempt */
+#define TERRAIN_CALIBRATION_TIMEOUT_MS 5000u /* software budget: 100 samples at
+                                              50 Hz plus scheduling margin */
 #define TERRAIN_PERIOD_MS	20u
 #define GY511_TIMEOUT_US	5000u
 #define ACCEL_MG_PER_LSB	0.002f	/* g per digit: 2 mg/digit at +/- 4 g, high resolution (LSM303DLHC) */
@@ -228,8 +235,9 @@
 #define SERVO_CENTRE_US		1500u	/* PROVISIONAL (D05): faces forward */
 #define SERVO_US_PER_DEG	10u	/* PROVISIONAL (D05): endpoints and scale */
 #define SERVO_MAX_DEG		20	/* requested +/-20 degrees; calibrate D05 */
+#define SERVO_STEP_MS		50u	/* proposed slow slew: 1 degree per step (D05) */
 #define SERVO_SETTLE_MS		300u	/* PROVISIONAL (D05) */
-#define S5_COARSE_STEP_DEG	10	/* coarse rays at -20,-10,0,10,20 */
+#define S5_COARSE_STEP_DEG	5	/* settled readings every 5 degrees, -20..20 */
 #define S5_FINE_STEP_DEG	5	/* refine edges within the servo limits */
 #define S5_SONAR_FORWARD_MM	100.0f	/* PROPOSAL: front mount relative to body centre, measure D05 */
 #define S5_SONAR_LEFT_MM	0.0f	/* PROVISIONAL (D05) */
@@ -282,7 +290,7 @@
 #define TERRAIN_QUALITY_WHEEL_DIFF_MMPS 30u
 #define TERRAIN_QUALITY_STEADY_MS 200u
 #define S5_EXPECTED_MAX_WIDTH_MM 200u /* supplied obstacle width upper bound */
-#define S5_SCAN_DEADLINE_MS	8000u	/* a scan that has not finished by then fails */
+#define S5_SCAN_DEADLINE_MS	20000u	/* includes slow slew and per-ray settling */
 #define ECHO_PIN		3	/* PROVISIONAL (D05): <= 3.3 V before connecting */
 #define TRIGGER_PIN		2
 
@@ -314,6 +322,11 @@ _Static_assert(LINE_ERROR_TAU_MS >= 0.0f && LINE_CURVE_SLOWDOWN >= 0.0f && LINE_
 	"line filter and curve slowdown must be in range");
 _Static_assert(LINE_KP >= 0.0f && LINE_KI >= 0.0f && LINE_KD >= 0.0f && LINE_I_LIMIT >= 0.0f,
 	"line PID gains must be non-negative");
+_Static_assert(LINE_BINARY_RAMP == 0 || LINE_BINARY_RAMP == 1,
+    "binary line tracking toggle must be 0 or 1");
+_Static_assert(LINE_BINARY_START > 0.0f && LINE_BINARY_START <= MAX_STEER &&
+    LINE_BINARY_RATE > 0.0f && LINE_STEER_RATE > 0.0f,
+    "binary steering start and rates must be positive and bounded");
 _Static_assert(IR_WHITE_ENTER < IR_WHITE_EXIT && IR_WHITE_EXIT < IR_BROAD_BLACK,
 	"IR classification thresholds must be ordered");
 _Static_assert(ADC_AVERAGE_COUNT >= 1u && ADC_AVERAGE_COUNT <= 16u,
@@ -340,9 +353,6 @@ _Static_assert(MOTION_KF >= 0.0f && MOTION_KS >= 0.0f && MOTION_KS < MOTION_MAX_
 _Static_assert(MOTION_SPEED_MAX_MMPS > 0.0f && WHEEL_DIAMETER_MM > 0.0f &&
 	TRACK_WIDTH_MM > 0.0f && ENC_COUNTS_PER_REV > 0.0f, "motion geometry must be positive");
 _Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS, "stall limit must precede the action timeout");
-_Static_assert(MISSION_BROAD_FORWARD_MM > 0.0f &&
-    MISSION_BROAD_FORWARD_MM + MOTION_DIST_TOL_MM <= MOTION_TARGET_MAX_MM,
-    "crossing distance plus completion tolerance must fit the Motion target");
 /* Fastest wheel while following: f(s) = (1 - k*s/S) * (1 + s) times the follow
    speed, for steering s in 0..S (S = MAX_STEER, k = LINE_CURVE_SLOWDOWN). f peaks
    at s = (S/k - 1) / 2, clamped to 0..S. */
@@ -357,7 +367,7 @@ _Static_assert(SONAR_TIMEOUT_US / 1000u < SONAR_REPEAT_MS && SONAR_MIN_PULSE_US 
 	SONAR_NO_ECHO_LIMIT >= 1u, "sonar timing: the timeout must fit inside the repeat interval");
 _Static_assert(SERVO_MAX_DEG > 0 && SERVO_MAX_DEG * (int)SERVO_US_PER_DEG < (int)SERVO_CENTRE_US &&
 	SERVO_MAX_DEG > S5_COARSE_STEP_DEG &&
-	S5_COARSE_STEP_DEG > S5_FINE_STEP_DEG && S5_FINE_STEP_DEG > 0, "servo sweep out of range");
+	S5_COARSE_STEP_DEG >= S5_FINE_STEP_DEG && S5_FINE_STEP_DEG > 0, "servo sweep out of range");
 _Static_assert(S2_PRI_MOTION < FOLLOW_PRIORITY,
     "Motion must outrank Mission");
 _Static_assert(IO_PRIORITY > 4, "I/O stays below kernel WiFi/USB services");
@@ -378,13 +388,13 @@ _Static_assert(MISSION_CONFIRM_SAMPLES > 0u && MISSION_CONFIRM_SAMPLES <= 7u,
 _Static_assert(BYPASS_TRAVEL_MM <= 4095u && BYPASS_SENSE_ATTEMPTS <= 3u &&
     BYPASS_EDGE_SAMPLES > 0u && BYPASS_EDGE_SAMPLES <= 7u,
     "bounded bypass storage must fit its fields");
-_Static_assert(RECOVERY_STEER_Q > 0 && RECOVERY_STEER_Q < 127 &&
-    RECOVERY_SPEED_MMPS > 0u &&
-    RECOVERY_SPEED_MMPS * (1.0f + RECOVERY_STEER_Q / 127.0f) <=
-        MOTION_SPEED_MAX_MMPS &&
+_Static_assert(RECOVERY_SPEED_MMPS > 0u &&
+    RECOVERY_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS &&
+    RECOVERY_TARGET_DEG > 0 && RECOVERY_TARGET_DEG <= 175 &&
+    RECOVERY_ALIGN_STEP_DEG > 0 && RECOVERY_ALIGN_STEP_DEG <= 10 &&
     RECOVERY_TRAVEL_MM * ENC_COUNTS_PER_REV /
         (3.14159265f * WHEEL_DIAMETER_MM) < ENC_COUNT_MASK / 2u,
-    "recovery must creep with both wheels inside the encoder half range");
+    "recovery pivots must fit Motion targets and encoder half range");
 _Static_assert(BYPASS_LINE_SPEED_MMPS > 0u &&
     BYPASS_LINE_SPEED_MMPS * 2u <= MOTION_SPEED_MAX_MMPS,
     "bypass line steering must keep both wheel targets within the speed limit");

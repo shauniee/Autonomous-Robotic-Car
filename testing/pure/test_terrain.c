@@ -135,6 +135,18 @@ static void test_word_boundaries(void)
 
 static void test_evidence_and_invalid_window(void)
 {
+    uint32_t origin[2] = {1000u, 33767u};
+    const uint32_t pending[2] = {1010u, 33777u};
+    const uint32_t fresh[2] = {1020u, 33788u};
+    assert(terrain_travel_take(origin, pending, false, false) == 0.0f);
+    assert(origin[0] == 1000u && origin[1] == 33767u);
+    assert(terrain_travel_take(origin, fresh, true, false) == 20.5f);
+    assert(terrain_travel_take(origin, fresh, true, false) == 0.0f);
+    assert(terrain_travel_take(origin, pending, false, true) == 0.0f);
+    assert(origin[0] == pending[0] && origin[1] == pending[1]);
+    assert(terrain_travel_take(origin, fresh, true, false) == 10.5f);
+    assert(terrain_travel_take(origin, pending, true, true) == 0.0f);
+    assert(origin[0] == pending[0] && origin[1] == pending[1]);
     assert(terrain_impact_pending(false, true, false));
     assert(terrain_impact_pending(true, false, false));
     assert(terrain_impact_pending(true, true, true));

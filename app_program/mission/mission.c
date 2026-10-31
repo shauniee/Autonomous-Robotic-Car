@@ -41,12 +41,18 @@ static void mission_task(INT stacd, void *exinf)
         now = robot_time_ms();
         s3_step(now, s4_startup_complete());
         mqtt_mapping_t mapping;
-        if (mission_mapping_take(&mapping))
+        uint8_t direction;
+        if (mission_mapping_take(&mapping, &direction))
         {
             /* The state decision and installation have one owner. An I/O
                observation of READY can never race a local start here. */
             mqtt_ack_result_t result = MQTT_ACK_BUSY;
-            if (mission.state == MISSION_READY || mission.state == MISSION_STOPPED)
+            if (direction != 0u)
+            {
+                result = mission_queue_direction(&mission, direction) ?
+                    MQTT_ACK_OK : MQTT_ACK_BUSY;
+            }
+            else if (mission.state == MISSION_READY || mission.state == MISSION_STOPPED)
             {
                 result = barcode_set_mapping(mapping.letters) ?
                     MQTT_ACK_OK : MQTT_ACK_INVALID;
@@ -61,8 +67,7 @@ static void mission_task(INT stacd, void *exinf)
         bool line_required = mission.state == MISSION_FOLLOW_LINE ||
             mission.state == MISSION_REACQUIRE ||
             (mission.state == MISSION_NAVIGATE &&
-             (mission.phase == JUNCTION_PHASE_CROSS ||
-              mission.phase == JUNCTION_PHASE_CONFIRM)) ||
+             mission.phase == JUNCTION_PHASE_CONFIRM) ||
             (mission.state == MISSION_BYPASS &&
              mission.bypass.route == BYPASS_ROUTE_LINE);
         safety_step(line_required);
@@ -124,7 +129,6 @@ static void mission_task(INT stacd, void *exinf)
             .line_error = snapshot.error,
             .line_sampled_ms = snapshot.sampled_ms,
             .wheel_count = {left_now, right_now},
-            .travel_counts = enc_mean(left_now, right_now),
             .motion_status = rd_motion_feedback_status(feedback),
             .motion_action = (uint8_t)rd_motion_feedback_action(feedback),
             .hump_active = have_terrain &&
@@ -136,7 +140,8 @@ static void mission_task(INT stacd, void *exinf)
             .front_age_ms = robot_time_elapsed(now, front_sample.sampled_ms),
             .front_sampled_ms = front_sample.sampled_ms,
             .front_sequence = front_sample.sequence,
-            .front_travel_counts = front_sample.travel_counts,
+            .front_wheel_count = {front_sample.wheel_count[0],
+                front_sample.wheel_count[1]},
             .front_mm = echo_range(front),
             .side_valid = range_copied && side_sample.sequence != 0u && echo_valid(side) &&
                 robot_time_elapsed(now, side_sample.sampled_ms) <= 3u * SONAR_REPEAT_MS,
@@ -216,16 +221,18 @@ static void mission_task(INT stacd, void *exinf)
             int32_t right = enc_travel_signed(in.wheel_count[1],
                 mission.recovery.origin[1]);
             float heading = enc_heading_deg(left, right);
-            float travel = ((float)left + (float)right) * 0.5f /
+            float left_abs = left < 0 ? -(float)left : (float)left;
+            float right_abs = right < 0 ? -(float)right : (float)right;
+            float excursion = (left_abs + right_abs) * 0.5f /
                 ENC_COUNTS_PER_MM;
             tm_printf((UB *)"[RECOVERY] failed: elapsed_ms=%u "
                 "left_counts=%d right_counts=%d heading_cdeg=%d "
-                "travel_mm=%d leg=%u usable_ir=%d ir_age_ms=%u "
+                "excursion_mm=%d leg=%u usable_ir=%d ir_age_ms=%u "
                 "front_valid=%d front_age_ms=%u front_mm=%u\n",
                 (unsigned)robot_time_elapsed(in.now_ms,
                     mission.recovery.started_ms),
                 (int)left, (int)right, (int)(heading * 100.0f),
-                (int)travel, (unsigned)mission.recovery.leg,
+                (int)excursion, (unsigned)mission.recovery.leg,
                 (int)in.usable_line,
                 (unsigned)robot_time_elapsed(in.now_ms, in.line_sampled_ms),
                 (int)in.front_valid, (unsigned)in.front_age_ms,

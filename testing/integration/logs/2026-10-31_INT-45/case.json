@@ -1,0 +1,13 @@
+{
+  "id": "INT-45",
+  "date": "2026-10-31",
+  "case": "Resolve INT-44 findings with audited working-tree changes",
+  "steps": [
+    "Run pure host suite including encoder half-range and Terrain pending tests",
+    "Run dashboard JS, HTTP and CLI ACK tests",
+    "Build four documented firmware profiles",
+    "Open PR, await CI, squash merge to main"
+  ],
+  "expected": "Per-wheel wrap-safe travel, no pending travel loss, rejected mappings fail CLI, dashboard tests run in CI",
+  "scope": "Host/build evidence only; no firmware or physical acceptance"
+}

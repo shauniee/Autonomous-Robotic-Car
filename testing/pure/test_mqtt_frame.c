@@ -150,6 +150,21 @@ static void test_fault_bytes(void)
 
 int main(void)
 {
+    uint8_t sequence, action;
+    uint8_t direction[] = {0x27u, 255u, 1u};
+    for (uint8_t a = 1u; a <= 4u; ++a)
+    {
+        direction[2] = a;
+        assert(mqtt_decode_junction_test(direction, 3u, &sequence, &action) == MQTT_DECODE_OK);
+        assert(sequence == 255u && action == a);
+    }
+    direction[2] = 0u;
+    assert(mqtt_decode_junction_test(direction, 3u, &sequence, &action) == MQTT_DECODE_RANGE);
+    direction[2] = 5u;
+    assert(mqtt_decode_junction_test(direction, 3u, &sequence, &action) == MQTT_DECODE_RANGE);
+    direction[2] = 9u;
+    assert(mqtt_decode_junction_test(direction, 3u, &sequence, &action) == MQTT_DECODE_RESERVED);
+    assert(mqtt_decode_junction_test(direction, 2u, &sequence, &action) == MQTT_DECODE_LENGTH);
     test_golden();
     test_fault_bytes();
     test_boundaries_and_rejections();

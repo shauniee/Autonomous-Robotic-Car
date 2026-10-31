@@ -66,6 +66,7 @@ typedef struct {
 
 typedef struct {
     bool active;
+    uint8_t turn_arrived : 2; /* wheels already braked inside turn tolerance */
     uint8_t action_id;
     motion_mode_t mode;
     rd_motion_status_t status;

@@ -26,7 +26,7 @@ static const s5_profile_config_t profile_config = {
     .range_uncertainty_mm = S5_PROFILE_RANGE_ERROR_MM,
     .planning_width_mm = S5_EXPECTED_MAX_WIDTH_MM,
     .adjacent_rays = S5_PROFILE_ADJACENT_RAYS,
-    .maximum_gap_deg = SERVO_MAX_DEG - S5_COARSE_STEP_DEG};
+    .maximum_gap_deg = S5_COARSE_STEP_DEG};
 static ObstacleProfile profile;			/* guarded by profile_mutex */
 static bool profile_ready;			/* guarded by profile_mutex */
 /* Mission -> Obstacle requests: one writer per counter (no atomic RMW on M0+). */
@@ -161,13 +161,16 @@ typedef struct
     uint8_t initialized : 1;
     uint8_t ready : 1;
     uint8_t scanning : 1;
-    int8_t angle;
+    int8_t angle : 6;
+    int8_t target_angle : 6;
 } s5_acquisition_t;
 
 _Static_assert(S5_SCAN_CAPACITY <= 15u,
     "scan counts must fit their four-bit fields");
 _Static_assert((2 * SERVO_MAX_DEG) / S5_COARSE_STEP_DEG + 1 <= S5_SCAN_CAPACITY,
     "coarse scan must fit fixed capture storage");
+_Static_assert(SERVO_MAX_DEG % S5_COARSE_STEP_DEG == 0,
+    "scan spacing must include centre and both endpoints");
 _Static_assert(S5_SCAN_GROUP_SAMPLES == 0u ||
     (S5_SCAN_GROUP_SAMPLES >= 3u && S5_SCAN_GROUP_SAMPLES <= S5_RANGE_GROUP_CAPACITY && (S5_SCAN_GROUP_SAMPLES & 1u) != 0u),
     "scan group is unknown or an odd bounded count");
@@ -201,10 +204,11 @@ static bool set_angle(int16_t angle, uint32_t now)
         return false;
     }
     cancel_echo();
-    acquisition.angle = angle;
+    acquisition.target_angle = angle;
     acquisition.settle_since_ms = now;
     acquisition.phase = S5_ACQUIRE_SETTLE;
-    return servo_angle(angle) >= E_OK;
+    /* Keep the current command; s5_step slews toward the new target. */
+    return servo_angle(acquisition.angle) >= E_OK;
 }
 
 static void finish_scan(s5_scan_state_t state, uint32_t now)
@@ -238,6 +242,41 @@ static void finish_scan(s5_scan_state_t state, uint32_t now)
     (void)set_angle(0, now);
 }
 
+/* Publish settled scan groups as they arrive, with their real direction. */
+static void publish_range(uint32_t range, uint32_t now)
+{
+    if (acquisition.angle != 0)
+    {
+        uint32_t word = echo_pack(range, now);
+        range_samples[1].word = word;
+        range_samples[1].sampled_ms = now;
+        ++range_samples[1].sequence;
+    }
+    else
+    {
+        uint32_t word = echo_pack(range, now);
+        range_samples[0].word = word;
+        range_samples[0].sampled_ms = now;
+        range_samples[0].wheel_count[0] = drv_encoder_count(ENCODER_LEFT);
+        range_samples[0].wheel_count[1] = drv_encoder_count(ENCODER_RIGHT);
+        ++range_samples[0].sequence;
+        if (echo_note(&acquisition.misses, range != ECHO_RANGE_INVALID))
+        {
+            rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
+        }
+        else
+        {
+            rd_fault_clear(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
+        }
+    }
+    if (tk_loc_mtx(profile_mutex, TMO_POL) >= E_OK)
+    {
+        report_samples[0] = range_samples[0];
+        report_samples[1] = range_samples[1];
+        (void)tk_unl_mtx(profile_mutex);
+    }
+}
+
 static void range_complete(uint32_t range, uint32_t now)
 {
     cancel_echo();
@@ -264,6 +303,7 @@ static void range_complete(uint32_t range, uint32_t now)
         range = s5_range_group_median(&acquisition.group, &filtered) ?
             filtered : ECHO_RANGE_INVALID;
         acquisition.group = (s5_range_group_t){0};
+        publish_range(range, now);
         unsigned index = acquisition.count;
         acquisition.rays[index] = s5_ray_make(acquisition.angles[index],
             (uint16_t)(range == ECHO_RANGE_INVALID ? 0u : range),
@@ -291,36 +331,7 @@ static void range_complete(uint32_t range, uint32_t now)
         }
         return;
     }
-    if (acquisition.angle != 0)
-    {
-        uint32_t word = echo_pack(range, now);
-        range_samples[1].word = word;
-        range_samples[1].sampled_ms = now;
-        ++range_samples[1].sequence;
-    }
-    else
-    {
-        uint32_t word = echo_pack(range, now);
-        range_samples[0].word = word;
-        range_samples[0].sampled_ms = now;
-        range_samples[0].travel_counts = enc_mean(
-            drv_encoder_count(ENCODER_LEFT), drv_encoder_count(ENCODER_RIGHT));
-        ++range_samples[0].sequence;
-        if (echo_note(&acquisition.misses, range != ECHO_RANGE_INVALID))
-        {
-            rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
-        }
-        else
-        {
-            rd_fault_clear(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
-        }
-    }
-    if (tk_loc_mtx(profile_mutex, TMO_POL) >= E_OK)
-    {
-        report_samples[0] = range_samples[0];
-        report_samples[1] = range_samples[1];
-        (void)tk_unl_mtx(profile_mutex);
-    }
+    publish_range(range, now);
 }
 
 void s5_step(uint32_t now)
@@ -393,11 +404,10 @@ void s5_step(uint32_t now)
         }
         acquisition.count = 0u;
         acquisition.planned = 0u;
-        const int16_t coarse_angles[] = {-SERVO_MAX_DEG, -S5_COARSE_STEP_DEG,
-            0, S5_COARSE_STEP_DEG, SERVO_MAX_DEG};
-        for (unsigned i = 0u; i < 5u; ++i)
+        for (int angle = -SERVO_MAX_DEG; angle <= SERVO_MAX_DEG;
+            angle += S5_COARSE_STEP_DEG)
         {
-            acquisition.angles[acquisition.planned++] = coarse_angles[i];
+            acquisition.angles[acquisition.planned++] = (int16_t)angle;
         }
         acquisition.coarse = acquisition.planned;
         acquisition.scanning = true;
@@ -412,7 +422,7 @@ void s5_step(uint32_t now)
     {
         uint32_t command = rd_word_read(&side_command);
         int16_t angle = (command & 1u) != 0u ? s5_side_watch_angle(command) : 0;
-        if (angle != acquisition.angle && !set_angle(angle, now))
+        if (angle != acquisition.target_angle && !set_angle(angle, now))
         {
             rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
             return;
@@ -420,6 +430,28 @@ void s5_step(uint32_t now)
     }
     if (acquisition.phase == S5_ACQUIRE_SETTLE)
     {
+        if (acquisition.angle != acquisition.target_angle)
+        {
+            if (robot_time_elapsed(now, acquisition.settle_since_ms) <
+                SERVO_STEP_MS)
+            {
+                return;
+            }
+            /* One step per release: a delayed release never causes a jump. */
+            acquisition.angle += acquisition.angle <
+                acquisition.target_angle ? 1 : -1;
+            acquisition.settle_since_ms = now;
+            if (servo_angle(acquisition.angle) < E_OK)
+            {
+                acquisition.ready = false;
+                if (acquisition.scanning)
+                {
+                    finish_scan(S5_SCAN_FAILED, now);
+                }
+                rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
+            }
+            return;
+        }
         if (robot_time_elapsed(now, acquisition.settle_since_ms) < SERVO_SETTLE_MS)
         {
             return;

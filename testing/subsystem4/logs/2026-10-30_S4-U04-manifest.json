@@ -1,0 +1,15 @@
+{
+  "base_commit": "8be851bc884ec0a31646b28242a54fcf827bb987",
+  "source": "uncommitted working tree; includes existing WiFi diagnostics changes",
+  "profile": "SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=1",
+  "S4-U03": "BUILD FAIL: missing generated objects after profile invalidation",
+  "S4-U04": "BUILD PASS on retry; not flashed; no firmware or physical pass claimed",
+  "host_checks": "sh testing/pure/run.sh: PASS; git diff --check: PASS",
+  "sha256": {
+    "app_program/common/robot_config.h": "6aea5ab6b42df6ad4b5683ff8838969947c3c684fa8ab9dddc9635e1ab0cbb07",
+    "app_program/subsystem4/subsystem4.c": "88ed0e64a3b6f8778ffbf26e0e5fca57088adf4d0e24f17a473bf6e178675909",
+    "docs/architecture/subsystem4.md": "0cc08945c32e37483d7ee746b67eb157474f0dd47da3b4b96c3b32a29883dd76",
+    "lib/libwifi/sysdepend/pico_rp2040/cyw43_utk_compat.c": "5bbdbae61db9210ef84d859176131999cce2123e5b2bccdcfc6162ba982f3e97",
+    "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2": "748a6f83ff9d39102de6d0d297d2202035f5f8b060b0bf635a1f953c627fbf4b"
+  }
+}

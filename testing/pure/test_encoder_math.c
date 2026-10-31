@@ -5,6 +5,17 @@
 
 int main(void)
 {
+    /* Lifetime wheel separation must not affect local displacement. */
+    const uint32_t before[2] = {1000u, 33767u};
+    const uint32_t after[2] = {1001u, 33769u};
+    assert(enc_mean_travel(after, before) == 1.5f);
+    assert(enc_mean_travel(before, after) == -1.5f);
+    const uint32_t wrapping[2] = {ENC_COUNT_MASK, 1234u};
+    const uint32_t advanced[2] = {1u, 1236u};
+    assert(enc_mean_travel(advanced, wrapping) == 2.0f);
+    const uint32_t pivot[2] = {999u, 33768u};
+    assert(enc_mean_travel(pivot, before) == 0.0f);
+    assert(enc_mean_travel(before, before) == 0.0f);
     /* Quadrature: forward Gray cycle 00,01,11,10 gives +1 each step, reverse -1. */
     const unsigned fwd[] = {0u, 1u, 3u, 2u};
     for (unsigned i = 0u; i < 4u; ++i) {
