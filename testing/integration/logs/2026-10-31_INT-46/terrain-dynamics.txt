@@ -1,0 +1,1 @@
+Flat-chassis acceleration trace: hump_count=1 maximum_code=44 valid=1

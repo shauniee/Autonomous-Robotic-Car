@@ -102,8 +102,8 @@ static void test_assemble(void)
     uint8_t frame[MQTT_FRAME_MAX];
     s1_clamp(&t);
     assert(t.sequence == 9 && t.mission_state == 15 && t.motion_status == 3 && t.motion_action == 63 && t.line_status == 3);
-    assert(t.hump_max == 127 && t.front_mm == 8191 && t.barcode_letter == MQTT_NO_LETTER && t.barcode_action == 7);
-    assert(t.faults[5] == 6 && t.left_count == 0xABCD && t.hump_count == 7 && t.hump_valid && t.obstacle_width_mm == 65535);
+    assert(t.hump_max == 127 && t.front_mm == 8191 && t.barcode_letter == MQTT_NO_LETTER && t.barcode_action == 0);
+    assert(t.faults[5] == 6 && t.left_count == 0xABCD && t.hump_count == 7 && !t.hump_valid && !t.front_valid && t.obstacle_width_mm == 65535);
     assert(mqtt_encode_telemetry(frame, sizeof frame, MQTT_TYPE_TELEMETRY, &t) == MQTT_LEN_TELEMETRY);	/* always encodable */
 }
 

@@ -65,6 +65,7 @@ void s4_step(uint32_t now)
     static uint8_t have_acquisition;
     static uint32_t last_left, last_right;
     static uint32_t travel_origin[2];
+    static TerrainTravelQuality travel_quality;
     static uint8_t previous_humps;
     if (!initialized)
     {
@@ -119,6 +120,13 @@ void s4_step(uint32_t now)
         rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMU);
     }
     const uint32_t count[2] = {left, right};
+    const int32_t delta[2] = {
+        enc_travel_signed(left, travel_origin[0]),
+        enc_travel_signed(right, travel_origin[1])};
+    if (calibrating || result == GY511_SAMPLE_ERROR || stale)
+    {
+        travel_quality = (TerrainTravelQuality){0};
+    }
     float moved = terrain_travel_take(travel_origin, count, acquired,
         calibrating || result == GY511_SAMPLE_ERROR || stale);
     if (stale)
@@ -171,8 +179,10 @@ void s4_step(uint32_t now)
             /* Missing travel invalidates this window; keep completed results. */
             terrain_algo_invalidate_window(&context);
         }
+        bool qualified = terrain_travel_qualified(&travel_quality, now,
+            delta, encoder_valid && terrain_acceleration_qualified(&raw));
         terrain_algo_process(&context, &raw,
-            encoder_valid && moved > 0.0f ? moved : 0.0f);
+            encoder_valid && moved > 0.0f ? moved : 0.0f, qualified);
         if (!encoder_valid)
         {
             terrain_algo_invalidate_window(&context);

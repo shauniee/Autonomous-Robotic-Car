@@ -28,7 +28,7 @@ static void feed(float pitch_deg, int n, uint32_t counts)
     float r = pitch_deg * 0.0174532925f;
     Gy511RawAxes a = {0, (int16_t)lroundf(sinf(r) / ACCEL_MG_PER_LSB), (int16_t)lroundf(cosf(r) / ACCEL_MG_PER_LSB)};
     for (int i = 0; i < n; ++i) {
-        terrain_algo_process(&ctx, &a, counts);
+        terrain_algo_process(&ctx, &a, counts, true);
         terrain_float_ref_process(&legacy, &a, counts);
     }
     /* The entire synthetic trace must give the same hump events/results
@@ -92,11 +92,11 @@ static void test_impact_and_restart(void)
     calibrate();
     Gy511RawAxes shock = {(int16_t)lroundf(3.0f / ACCEL_MG_PER_LSB), 0,
                           (int16_t)lroundf(1.0f / ACCEL_MG_PER_LSB)};
-    terrain_algo_process(&ctx, &shock, 0u);
+    terrain_algo_process(&ctx, &shock, 0u, true);
     terrain_float_ref_process(&legacy, &shock, 0u);
     assert(ctx.state == TERRAIN_STATE_IMPACT && legacy.state == TERRAIN_STATE_IMPACT);
     Gy511RawAxes flat = {0, 0, (int16_t)lroundf(1.0f / ACCEL_MG_PER_LSB)};
-    terrain_algo_process(&ctx, &flat, 0u);
+    terrain_algo_process(&ctx, &flat, 0u, true);
     terrain_float_ref_process(&legacy, &flat, 0u);
     assert(ctx.state == TERRAIN_STATE_FLAT && legacy.state == TERRAIN_STATE_FLAT);
 
@@ -175,8 +175,93 @@ static void test_evidence_and_invalid_window(void)
     assert(context.last_hump_code == 18u && !context.height_valid);
 }
 
+static void test_dynamic_quality(void)
+{
+    test_complete_hump();
+    uint8_t count = ctx.hump_count;
+    uint8_t maximum = ctx.max_hump_code;
+    Gy511RawAxes accelerating = {.y = 500, .z = 500};
+    Gy511RawAxes braking = {.y = -500, .z = 500};
+    Gy511RawAxes flat = {.z = 500};
+    for (unsigned i = 0u; i < 50u; ++i)
+    {
+        terrain_algo_process(&ctx, &accelerating, 2.0f, true);
+    }
+    for (unsigned i = 0u; i < 50u; ++i)
+    {
+        terrain_algo_process(&ctx, &braking, 2.0f, true);
+    }
+    for (unsigned i = 0u; i < 100u; ++i)
+    {
+        terrain_algo_process(&ctx, &flat, 2.0f, true);
+    }
+    assert(ctx.hump_count == count && ctx.max_hump_code == maximum);
+    assert(!ctx.height_valid);
+
+    calibrate();
+    feed(10.0f, 20, 4u);
+    Gy511RawAxes climb = {.y = 87, .z = 492};
+    terrain_algo_process(&ctx, &climb, 4.0f, false);
+    /* Quality returning mid-encounter cannot rescue its partial height. */
+    for (unsigned i = 0u; i < 20u; ++i)
+    {
+        terrain_algo_process(&ctx, &climb, 4.0f, true);
+    }
+    for (unsigned i = 0u; i < 4u; ++i)
+    {
+        terrain_algo_process(&ctx, &flat, 4.0f, true);
+    }
+    Gy511RawAxes descent = {.y = -87, .z = 492};
+    for (unsigned i = 0u; i < 40u; ++i)
+    {
+        terrain_algo_process(&ctx, &descent, 4.0f, true);
+    }
+    for (unsigned i = 0u; i < 30u; ++i)
+    {
+        terrain_algo_process(&ctx, &flat, 0.0f, true);
+    }
+    assert(ctx.hump_count == 0u && !ctx.height_valid);
+    flat.z = 450;
+    assert(terrain_acceleration_qualified(&flat));
+    flat.z = 550;
+    assert(terrain_acceleration_qualified(&flat));
+    flat.z = 449;
+    assert(!terrain_acceleration_qualified(&flat));
+    flat.z = 551;
+    assert(!terrain_acceleration_qualified(&flat));
+}
+
+static void test_travel_quality(void)
+{
+    TerrainTravelQuality quality = {0};
+    int32_t delta[2] = {2, 2};
+    uint32_t now = UINT32_MAX - 100u;
+    assert(!terrain_travel_qualified(&quality, now, delta, true));
+    for (unsigned i = 0u; i < 12u; ++i)
+    {
+        now += 20u;
+        bool qualified = terrain_travel_qualified(&quality, now, delta, true);
+        assert(qualified == (i >= 11u));
+    }
+    delta[1] = 0;
+    assert(!terrain_travel_qualified(&quality, now += 20u, delta, true));
+    delta[0] = delta[1] = 10;
+    assert(!terrain_travel_qualified(&quality, now += 20u, delta, true));
+    delta[0] = delta[1] = -2;
+    assert(!terrain_travel_qualified(&quality, now += 20u, delta, true));
+    assert(!terrain_travel_qualified(&quality, now += 20u, delta, false));
+    assert(!quality.primed && !quality.steady);
+    delta[0] = delta[1] = 0;
+    assert(!terrain_travel_qualified(&quality, now += 20u, delta, true));
+    assert(!terrain_travel_qualified(&quality,
+        now += SAFETY_STALE_MS + 1u, delta, true));
+    assert(!terrain_travel_qualified(&quality, now, delta, true));
+}
+
 int main(void)
 {
+    test_travel_quality();
+    test_dynamic_quality();
     test_evidence_and_invalid_window();
     test_complete_hump();
     test_incomplete_and_small_encounters_add_nothing();

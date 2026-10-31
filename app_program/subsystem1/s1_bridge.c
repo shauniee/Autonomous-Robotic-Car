@@ -24,6 +24,7 @@ static rd_word_t link_state; /* sole writer: kernel transport */
 
 static out_ring_t outgoing;
 static in_ring_t incoming;
+static _Atomic unsigned incoming_floor; /* transport: first eligible RX slot */
 
 static bool push(slot_t *slots, unsigned depth, _Atomic unsigned *head, _Atomic unsigned *tail,
                  const uint8_t *frame, unsigned length)
@@ -71,12 +72,27 @@ unsigned s1_bridge_take(uint8_t *out, unsigned capacity)
 
 void s1_bridge_put(const uint8_t *frame, unsigned length)
 {
-    (void)push(incoming.slots, S1_INCOMING_DEPTH, &incoming.head, &incoming.tail, frame, length);
+    if (s1_bridge_ready())
+    {
+        (void)push(incoming.slots, S1_INCOMING_DEPTH, &incoming.head,
+            &incoming.tail, frame, length);
+    }
 }
 
 unsigned s1_bridge_receive(uint8_t *out, unsigned capacity)
 {
-    return pop(incoming.slots, S1_INCOMING_DEPTH, &incoming.head, &incoming.tail, out, capacity);
+    unsigned floor = atomic_load_explicit(&incoming_floor,
+        memory_order_acquire);
+    unsigned tail = atomic_load_explicit(&incoming.tail, memory_order_relaxed);
+    if ((int32_t)(floor - tail) > 0)
+    {
+        /* Only the RX consumer advances tail, including connection-loss drops. */
+        atomic_store_explicit(&incoming.tail, floor, memory_order_release);
+    }
+    unsigned length = pop(incoming.slots, S1_INCOMING_DEPTH, &incoming.head,
+        &incoming.tail, out, capacity);
+    return s1_bridge_ready() && floor == atomic_load_explicit(&incoming_floor,
+        memory_order_acquire) ? length : 0u;
 }
 
 bool s1_bridge_ready(void)
@@ -92,6 +108,9 @@ void s1_bridge_link(bool wifi_up, bool broker_up)
     {
         unsigned head = atomic_load_explicit(&outgoing.head, memory_order_acquire);
         atomic_store_explicit(&outgoing.tail, head, memory_order_release);
+        unsigned received = atomic_load_explicit(&incoming.head,
+            memory_order_acquire);
+        atomic_store_explicit(&incoming_floor, received, memory_order_release);
     }
     rd_word_publish(&link_state, (wifi_up ? 1u : 0u) | (broker_up ? 2u : 0u));
     /* The transport (core 0) is the only writer of the Network byte. */

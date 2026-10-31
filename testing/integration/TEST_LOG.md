@@ -3,6 +3,7 @@
 ## Contents
 
 - [Terrain header build compatibility — INT-48](#terrain-header-build-compatibility--int-48)
+- [Barcode branch integration — INT-49](#barcode-branch-integration--int-49)
 
 - [1. Test cases](#1-test-cases)
 - [2. Results](#2-results)
@@ -30,6 +31,8 @@
 - [One-screen dashboard — INT-41](#one-screen-dashboard--int-41)
 - [Subsystem health table revision — INT-43](#subsystem-health-table-revision--int-43)
 - [Toggleable binary steering buildup — INT-42](#toggleable-binary-steering-buildup--int-42)
+- [Repository audit — INT-46](#repository-audit--int-46)
+- [Repository audit fixes — INT-47](#repository-audit-fixes--int-47)
 
 Template example INT-01/02 retired: S2-to-S3 sample flow (at least five in two seconds) and S3-to-S4 summary flow (at least two in 3.5 seconds). No template result was recorded. Logs refer to the uncommitted migration's source manifest plus base HEAD; they do not claim HEAD is the tested source. Formal on-target trials require a recorded committed revision.
 
@@ -931,6 +934,60 @@ affecting the passed host/firmware checks were made after the tested source
 commit; the final workflow/source identity is in
 [final manifest](logs/2026-10-31_INT-45/final-source-manifest.json).
 
+## Repository audit — INT-46
+
+Case defined before targeted probes in [case definition](logs/2026-10-31_INT-46/case.json).
+Result 2026-10-31, tester Codex, exact source revision
+`5e63fe0e90776eb834fd3d27ba438a0f8e017d8e`: existing pure host, dashboard
+JavaScript, CLI and loopback HTTP suites PASS. Initial HTTP sandbox binding
+restriction was resolved by an authorized retry. Three P2 findings reproduced:
+acceleration-dominated data accepted as a valid hump, queued direction RX
+surviving connection loss, and malformed laptop telemetry accepted/displayed.
+The offline bridge delivery is reproduced; downstream Mission acceptance is a
+source-path finding. No production changes or new firmware/physical pass.
+See [audit, scope and limits](logs/2026-10-31_INT-46/audit.md) and
+[source manifest](logs/2026-10-31_INT-46/manifest.json).
+
+## Repository audit fixes — INT-47
+
+Defined before verification in [case definition](logs/2026-10-31_INT-47/case.json).
+Result 2026-10-31, tester Codex: PASS on exact source commit
+`54e5ec44a52dde0c17c9fe43b21469d36e905f1e`.
+Terrain rejects acceleration-dominated and unsteady/differential/reverse wheel
+travel, requires the existing provisional 200 ms steady window and retains
+encounter disqualification until completion. Completed valid maxima persist.
+RX connection-loss discard preserves producer/consumer index ownership.
+Both codecs reject invalid telemetry sentinels/actions; Reporting clears invalid
+validity flags, and the laptop rejects reserved telemetry/event bits before
+updating display or speed history.
+
+Pure host suite PASS ([committed-source output](logs/2026-10-31_INT-47/host-committed.txt));
+dashboard JavaScript, CLI and loopback HTTP PASS
+([dashboard](logs/2026-10-31_INT-47/dashboard.txt),
+[CLI](logs/2026-10-31_INT-47/cli.txt), [HTTP](logs/2026-10-31_INT-47/http.txt)).
+All four README profiles compile/link/convert successfully
+([committed-source builds](logs/2026-10-31_INT-47/firmware-committed.txt)), using
+`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 CRASH_REPORT=0`, offline
+`NET=none MQTT=0` and wireless `NET=lwip MQTT=1`, each TEST=0 and TEST=1.
+An isolated source copy used placeholder credentials with container networking
+disabled; concurrent barcode changes were excluded. ARM probes show
+TerrainContext remains 32 bytes; TerrainTravelQuality is 12 bytes.
+Only firmware warnings are the existing upstream lwIP unused function.
+[Final source identity](logs/2026-10-31_INT-47/final-source-manifest.json).
+
+Initial host verification failed because Reporting's old clamp fixture
+produced validity/action values now rejected by the stricter codec
+([initial output](logs/2026-10-31_INT-47/host-initial.txt)); both the clamp and
+fixture were corrected. Initial firmware compilation failed because the new
+public evidence header included newlib math types after kernel types
+([initial build](logs/2026-10-31_INT-47/firmware-initial.txt)); moving the
+helper into the existing kernel-free algorithm source fixed that boundary.
+Successful working-source checks are also retained; the committed-source
+checks above establish the final source results.
+
+No robot commands, flashing, firmware execution, physical calibration, timing
+or floor trials. Quality thresholds remain provisional D06/D07/D10 settings;
+software suppression does not establish a measured height-error bound.
 
 ## Terrain header build compatibility — INT-48
 
@@ -953,3 +1010,16 @@ evidence; `final-*` artifacts identify the final verification.
 | Date | ID | Source | Tester | Result | Evidence / limits |
 | --- | --- | --- | --- | --- | --- |
 | 2026-10-31 | INT-48 | Base `5e63fe0e90776eb834fd3d27ba438a0f8e017d8e` plus [final working-source manifest and UF2 checksums](logs/2026-10-31_INT-48/final-manifest.json) | Codex | PASS: host suite and all four firmware profiles | [Host](logs/2026-10-31_INT-48/final-host.txt), offline [TEST=0](logs/2026-10-31_INT-48/final-firmware-none-test0.txt) / [TEST=1](logs/2026-10-31_INT-48/final-firmware-none-test1.txt), wireless [TEST=0](logs/2026-10-31_INT-48/final-firmware-lwip-test0.txt) / [TEST=1](logs/2026-10-31_INT-48/final-firmware-lwip-test1.txt). Arm GCC 13.2.1; compile/link/UF2 conversion only, placeholder credentials, no board execution. |
+
+## Barcode branch integration — INT-49
+
+Defined before verification on 2026-10-31: integrate the barcode enable-time
+quiet-zone reference and flipped-print regression cases with main's Terrain
+quality, stale-RX discard and strict telemetry codec fixes. Preserve the
+S3-U20 / INT-48 evidence and INT-46 / INT-47 evidence; resolve only their
+appended integration-log conflict. Run the complete pure host suite, dashboard
+JavaScript, CLI and loopback HTTP checks, plus all four README firmware
+profiles in an isolated source copy with placeholder credentials and disabled
+container networking. Expected: barcode tests and audit regressions pass;
+all four images compile/link/convert; no prior evidence is replaced.
+No robot commands, firmware execution, calibration or physical pass.

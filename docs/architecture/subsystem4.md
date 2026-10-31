@@ -91,6 +91,11 @@ a whole init/read operation by its existing timeout. Pending data never renews
 sample time. Missing travel invalidates the current height window, retaining
 completed count/maximum. Mission requests half tracking speed on fresh calibrated
 encounters. Stop/new-run results reset remains deferred under D06.
+Height acceptance now requires the provisional acceleration-norm and wheel-motion
+quality settings in [project specs](../project-specs.md#pending-decisions), with
+200 ms of steady fresh evidence before a climb. Any failed sample disqualifies
+that whole encounter; classification/impact detection still run and completed
+count/maximum remain intact. These software checks are not physical calibration.
 See [S4 results](../../testing/subsystem4/TEST_LOG.md); physical height/impact
 calibration is not inferred from a compiled algorithm or synthetic replay.
 
