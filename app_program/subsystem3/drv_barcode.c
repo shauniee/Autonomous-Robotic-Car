@@ -5,7 +5,7 @@
 #include "../subsystem2/drv_encoder.h"
 
 static barcode_edge_t ring[BARCODE_EDGE_CAPACITY];
-static _Atomic unsigned head;		/* written by the handler */
+static _Atomic unsigned head;		/* handler; task seeds with IRQ masked */
 static _Atomic unsigned tail;		/* written by the task */
 static _Atomic uint32_t overflows;	/* written by the handler */
 static _Atomic uint32_t order_lost;	/* written by the handler */
@@ -58,9 +58,18 @@ void drv_barcode_enable(bool enabled)
     (void)drv_gpio_irq_enable(BARCODE_GPIO, false);
     if (enabled)
     {
-        /* Disabled: the handler cannot run, so the task may move both indices. */
-        atomic_store_explicit(&tail, atomic_load_explicit(&head, memory_order_acquire), memory_order_release);
+        UW state;
+        DI(state);
+        unsigned write = atomic_load_explicit(&head, memory_order_relaxed);
+        atomic_store_explicit(&tail, write, memory_order_release);
         (void)drv_gpio_irq_enable(BARCODE_GPIO, true);
+        /* Seed the white approach; the first real edge alone loses that gap. */
+        ring[write % BARCODE_EDGE_CAPACITY] = (barcode_edge_t){
+            .left_count = (barcode_count_t)drv_encoder_count(ENCODER_LEFT),
+            .right_count = (barcode_count_t)drv_encoder_count(ENCODER_RIGHT),
+            .high = gpio_get_val(BARCODE_GPIO) != 0};
+        atomic_store_explicit(&head, write + 1u, memory_order_release);
+        EI(state);
     }
 }
 

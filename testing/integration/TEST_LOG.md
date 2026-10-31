@@ -2,6 +2,9 @@
 
 ## Contents
 
+- [Terrain header build compatibility — INT-48](#terrain-header-build-compatibility--int-48)
+- [Barcode branch integration — INT-49](#barcode-branch-integration--int-49)
+
 - [1. Test cases](#1-test-cases)
 - [2. Results](#2-results)
 - [Documentation alignment — 2026-10-29](#documentation-alignment--2026-10-29)
@@ -985,3 +988,56 @@ checks above establish the final source results.
 No robot commands, flashing, firmware execution, physical calibration, timing
 or floor trials. Quality thresholds remain provisional D06/D07/D10 settings;
 software suppression does not establish a measured height-error bound.
+
+## Terrain header build compatibility — INT-48
+
+Case defined before verification on 2026-10-31: eliminate the newlib
+`<math.h>` / micro T-Kernel `size_t` collision introduced by the Terrain
+travel-quality helper in the public evidence header. Run the existing pure
+host suite and compile/link/convert all four README firmware profiles:
+`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 CRASH_REPORT=0`, offline
+`NET=none MQTT=0` and wireless `NET=lwip MQTT=1`, each with TEST=0 and TEST=1.
+Use isolated source snapshots, placeholder credentials and no container network.
+No physical sensing, calibration or firmware-execution acceptance is claimed.
+
+The first snapshot moves the unchanged helper into `terrain_algo.c` and passes
+all checks. Concurrent work subsequently removes the Terrain audit edits from
+the checkout, including the helper and public math include. The final source
+snapshot therefore verifies that current state separately; it does not restore
+those removed edits. Preserve the earlier logs and manifest as intermediate
+evidence; `final-*` artifacts identify the final verification.
+
+| Date | ID | Source | Tester | Result | Evidence / limits |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-31 | INT-48 | Base `5e63fe0e90776eb834fd3d27ba438a0f8e017d8e` plus [final working-source manifest and UF2 checksums](logs/2026-10-31_INT-48/final-manifest.json) | Codex | PASS: host suite and all four firmware profiles | [Host](logs/2026-10-31_INT-48/final-host.txt), offline [TEST=0](logs/2026-10-31_INT-48/final-firmware-none-test0.txt) / [TEST=1](logs/2026-10-31_INT-48/final-firmware-none-test1.txt), wireless [TEST=0](logs/2026-10-31_INT-48/final-firmware-lwip-test0.txt) / [TEST=1](logs/2026-10-31_INT-48/final-firmware-lwip-test1.txt). Arm GCC 13.2.1; compile/link/UF2 conversion only, placeholder credentials, no board execution. |
+
+## Barcode branch integration — INT-49
+
+Defined before verification on 2026-10-31: integrate the barcode enable-time
+quiet-zone reference and flipped-print regression cases with main's Terrain
+quality, stale-RX discard and strict telemetry codec fixes. Preserve the
+S3-U20 / INT-48 evidence and INT-46 / INT-47 evidence; resolve only their
+appended integration-log conflict. Run the complete pure host suite, dashboard
+JavaScript, CLI and loopback HTTP checks, plus all four README firmware
+profiles in an isolated source copy with placeholder credentials and disabled
+container networking. Expected: barcode tests and audit regressions pass;
+all four images compile/link/convert; no prior evidence is replaced.
+No robot commands, firmware execution, calibration or physical pass.
+
+Result 2026-10-31, INT-49, tester Codex: PASS on exact integrated source
+`545a6a381b589f033076bd04df825469e2f0b537`. Full pure host suite
+([output](logs/2026-10-31_INT-49/host.txt)), dashboard JavaScript, CLI and
+loopback HTTP regressions passed
+([dashboard](logs/2026-10-31_INT-49/dashboard.txt),
+[CLI](logs/2026-10-31_INT-49/cli.txt), [HTTP](logs/2026-10-31_INT-49/http.txt)).
+All four README firmware profiles compiled, linked and converted to UF2
+([build output](logs/2026-10-31_INT-49/firmware.txt)), with
+`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 CRASH_REPORT=0`; offline
+`NET=none MQTT=0` and wireless `NET=lwip MQTT=1`, each TEST=0 and TEST=1.
+Only warnings are the existing upstream lwIP unused function. The build used
+a git archive of that exact source, placeholder credentials and no container
+network. [Manifest and image checksums](logs/2026-10-31_INT-49/manifest.json).
+Main's S1/S4/decoder sources are unchanged by this integration. The historical
+S3-U20 failed full-build attempt and both audit records are preserved; the
+combined build above passes with the Terrain header fix now on main.
+No flashing, firmware execution, GPIO timing or physical barcode pass.

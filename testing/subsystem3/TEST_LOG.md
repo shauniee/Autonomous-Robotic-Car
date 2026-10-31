@@ -12,6 +12,7 @@
 - [8. Both-black forward (S3-BF01) — 2026-10-28](#8-both-black-forward-s3-bf01--2026-10-28)
 - [9. Minimum crossing distance (S3-BF02) — 2026-10-28](#9-minimum-crossing-distance-s3-bf02--2026-10-28)
 - [Documentation alignment — 2026-10-29](#documentation-alignment--2026-10-29)
+- [Flipped barcode capture — 2026-10-31](#flipped-barcode-capture--2026-10-31)
 
 Owner Nicholas / 2501552. Retired template S3-U01 covered example statistics bounds/minimum/maximum; no template result was recorded and the ID is not reused.
 
@@ -234,3 +235,30 @@ New cases S3-U18 / S3-U19 (2026-10-30), defined before running: validate minimum
 | Date | ID | Source | Tester | Result | Evidence / limits |
 | --- | --- | --- | --- | --- | --- |
 | 2026-10-30 | S3-U18 / S3-U19 | Base `8be851b` plus [source manifest](logs/2026-10-30_S3-U18-U19-manifest.json) | Codex | PASS (host only) | [Build](logs/2026-10-30_S3-U18-U19-build.txt), [test output](logs/2026-10-30_S3-U18-U19-host.txt). MSVC x64 C11, optimized, warnings as errors; 3516 replay samples plus calibration/cancellation/wrap checks and existing invalid-acquisition hysteresis. Docker engine unavailable; no GNU/Arm firmware build or physical pass. |
+
+## Flipped barcode capture — 2026-10-31
+
+S3-U20, defined before running: replay all A-Z as `*X*` in both print
+orientations at narrow/wide widths 10/30 and 20/60 encoder counts. Extend
+capture checks to demonstrate the missing enable-time reference loses the
+first print, and a white reference plus 100 counts of approach decodes it.
+Both orientations must retain the same action mapping, tolerate alternating
+plus/minus one-count width variation, reject mixed-orientation guards without
+changing output destinations, reject a short rearm gap and accept a full one.
+Retain existing malformed-width, missed-edge and reversed-wheel rejection tests.
+Host fixtures use provisional software limits; no hardware, power, wiring or
+measured calibration is involved. Compile the changed driver in an offline
+TEST firmware profile; neither compilation nor host decoding establishes GPIO
+capture or physical acceptance.
+
+| Date | ID | Source | Tester | Result | Evidence / limits |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-31 | S3-U20 | Base `5e63fe0e90776eb834fd3d27ba438a0f8e017d8e` plus [working-source manifest](logs/2026-10-31_S3-U20/manifest.json) | Codex | PASS (host tests and driver compilation); full firmware build FAIL | [Barcode assertions](logs/2026-10-31_S3-U20/barcode-targeted.txt), [full host suite](logs/2026-10-31_S3-U20/host.txt), [Cortex-M0+ driver compile](logs/2026-10-31_S3-U20/driver-compile.txt). [Full firmware attempt](logs/2026-10-31_S3-U20/firmware-build.txt) fails on an unrelated `size_t` conflict through `terrain_evidence.h` in `io_task.c` and `mission.c`. No firmware execution or physical pass. |
+
+Integration continuation 2026-10-31: [INT-49](../integration/TEST_LOG.md#barcode-branch-integration--int-49)
+checks the barcode changes with main's audit fixes at exact committed source
+`545a6a381b589f033076bd04df825469e2f0b537`. The full host suite,
+dashboard/CLI/HTTP regressions and all four README firmware build profiles
+pass. This supersedes the earlier full-build failure for this integrated
+source only; the failed attempt above remains historical evidence. No
+firmware execution or physical barcode acceptance is claimed.

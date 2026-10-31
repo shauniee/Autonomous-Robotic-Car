@@ -16,14 +16,15 @@
 typedef struct
 {
     barcode_count_t left_count, right_count;	/* wrapped at ENC_COUNT_BITS */
-    bool high;	/* GP16 level after the edge */
+    bool high;	/* GP16 level after the edge, or at enable-time reference */
 } barcode_edge_t;
 
 /* Core-1 task only: configure GP16 and claim it on the GPIO dispatcher. The
    edge IRQ stays disabled until drv_barcode_enable(true). */
 bool drv_barcode_init(void);
-/* Core-1 task only. Enabling clears the ring and the overflow/order counters
-   baseline so each scan session starts empty. */
+/* Core-1 task only. Enabling clears old edges and queues the current level
+   and coherent wheel counts as the quiet-zone reference for this session.
+   Overflow/order counters remain cumulative. */
 void drv_barcode_enable(bool enabled);
 /* Task side: pop one edge. False when empty. */
 bool drv_barcode_take(barcode_edge_t *edge);
