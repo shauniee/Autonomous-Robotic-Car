@@ -884,3 +884,28 @@ Source: base HEAD `9bcab80f4ae299694eff7b2564600883fee0891d` plus uncommitted
 files identified by the [initial manifest](logs/2026-10-31_INT-44/manifest.json)
 and [full source manifest](logs/2026-10-31_INT-44/source-manifest-full.json).
 No firmware execution or physical pass is claimed. Existing edits preserved.
+
+## Repository audit fixes — INT-45
+
+Case defined before execution in [case definition](logs/2026-10-31_INT-45/case.json).
+Resolve the four INT-44 findings; include the existing audited working tree as
+explicitly authorized by the user. No physical test or firmware flash.
+
+Result 2026-10-31, INT-45, tester Codex: PASS on exact source commit
+`2005c687629a6dd8cfdc986ea45cc332f18e0855`. Pure host suite covers divergent wheel lifetime counts,
+per-wheel wrap/reverse/pivot travel, junction qualification at the half-range
+boundary, pending Terrain travel and failure/discard behavior
+([host output](logs/2026-10-31_INT-45/host-final.txt)). PASS dashboard JavaScript
+([output](logs/2026-10-31_INT-45/dashboard.txt)), loopback HTTP validation
+([output](logs/2026-10-31_INT-45/http.txt)) and CLI OK/rejected/unknown ACK,
+sequence matching and snapshot regression ([output](logs/2026-10-31_INT-45/cli.txt)).
+CI now explicitly runs all three laptop/dashboard tests. All four README
+firmware profiles compile/link/convert successfully in an isolated container
+with placeholder credentials and network disabled
+([build output](logs/2026-10-31_INT-45/firmware-builds.txt)). Common flags:
+`SMP=1 CONSOLE=usb_cdc WIFI=cyw43 CRASH_REPORT=0`; offline
+`NET=none MQTT=0`, wireless `NET=lwip MQTT=1`, each TEST=1 and TEST=0.
+Only logged build warnings are the existing upstream lwIP unused function.
+[Manifest](logs/2026-10-31_INT-45/manifest.json) source hashes were verified
+against the committed files. No firmware execution, physical calibration,
+stop timing or floor acceptance is claimed.
