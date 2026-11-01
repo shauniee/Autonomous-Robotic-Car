@@ -33,7 +33,8 @@ typedef enum {
 /* Persistent command: 10 payload bytes (12 sizeof bytes with 32-bit alignment).
    speed_action: bits 0..8 speed 0..300 mm/s, 9..14 action ID 0..63,
    bit 15 reserved. mode_steering: bits 0..1 mode 0..3, bits 2..9
-   steering as signed Q7 (-127..127), bits 10..15 reserved. A target is a
+   steering as signed Q7 (-127..127), bits 10..15 reserved. TURN style 2
+   uses signed whole-mm path length; other styles use degrees. A target is a
    signed whole millimetre or degree, bounded by MOTION_TARGET_MAX_MM and
    +/-360 degrees respectively; sampled_ms must remain 32 bits for wrap-safe
    age checks. The sole writer constructs a complete value through accessors.
@@ -60,11 +61,15 @@ uint8_t motion_cmd_action(const MotionCommand *cmd);
 MotionCommand motion_command_make(motion_mode_t mode, float speed_mmps, float target,
                                   int steering_q, unsigned action_id, uint32_t sampled_ms);
 
-/* TURN interprets its steering slot as a style; FOLLOW retains signed Q7. */
+/* TURN uses style 0/1/3 for degree targets, style 2 for signed path mm.
+   DISTANCE style 3 requests a ramped approach; FOLLOW retains signed Q7.
+   Command size/mode packing and MQTT frames are unchanged. */
 typedef enum
 {
     MOTION_TURN_PIVOT,
-    MOTION_TURN_SWING
+    MOTION_TURN_SWING,
+    MOTION_TURN_SMOOTH, /* target: signed whole mm path length, not degrees */
+    MOTION_TURN_RAMPED /* encoder pivot with acceleration/deceleration */
 } motion_turn_style_t;
 
 typedef struct {
@@ -75,6 +80,8 @@ typedef struct {
     bool active;
     uint8_t turn_arrived : 2; /* wheels already braked inside turn tolerance */
     uint8_t action_id;
+    int16_t action_target : 12; /* immutable discrete target +/-2000 */
+    uint8_t turn_style : 2; /* immutable TURN/DISTANCE style 0..3 */
     motion_mode_t mode;
     rd_motion_status_t status;
     uint32_t start_ms, previous_ms;
@@ -83,6 +90,7 @@ typedef struct {
     uint32_t stalled_since_ms[2];
     uint16_t follow_base_q6 : 15; /* private unsigned Q6 mm/s, see specs */
     int8_t follow_steer_q; /* private applied Q7 steering, see specs */
+    uint32_t path_q8 : 20; /* 0..4095.996 mm; bounded reference lead */
     WheelPid pid[2];
 } MotionController;
 

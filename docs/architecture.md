@@ -2,6 +2,8 @@
 
 ## Contents
 
+- [DOUT navigation contract](#dout-navigation-contract)
+
 - [Plan status and scope](#plan-status-and-scope)
 - [Tasks](#tasks)
 - [Core allocation implications](#core-allocation-implications)
@@ -567,3 +569,52 @@ queued the instruction, not that the physical turn succeeded. BUSY includes
 non-FOLLOW_LINE, existing manual instruction, junction encounter or occupied
 hand-off. Consecutive duplicate direction sequences are rejected without replay.
 See [owning test policy](project-specs.md#mission-day-barcode-rule).
+
+## DOUT navigation contract
+
+Implemented software revision, 2026-11-01; supersedes earlier conflicting junction
+and applied-steering policies. Measurement and numeric settings are owned by
+[specs](project-specs.md#dout-navigation-commissioning).
+
+Mission requests moderate one-black steering and increases it only for persistent
+same-side fresh acquisitions. White/white fades it toward zero over several samples,
+so a curve keeps turning after the line recentres; broad black requests none, so a
+crossbar cannot keep a turn going. Reversal restarts moderate.
+Motion owns the sole applied steering/base slew and wheel PID. DOUT white/white
+remains ambiguous; ordinary straight travel does not time out as line loss.
+
+Both-black opens a candidate for every command source. Qualification needs a second
+fresh sample and forward encoder persistence; recent strong steering increases the
+confirmation distance. A queued command never bypasses this. For turns, qualified
+but unknown, curved or infeasible geometry stops; no command is consumed before
+commitment. Straight and unqueued crossings do not require turn geometry.
+A post-exit lock requires non-broad travel before another candidate can commit.
+Distance/yaw checks cannot prove that an arbitrary black patch is a cross junction.
+
+Straight navigation steers back to the encoder heading saved when tracking last
+ran centred with no steering (if within the reference distance; otherwise the
+heading at commit), because a crossbar can turn the robot and white/white cannot
+show that skew. It resumes IR guidance on a fresh non-broad sample once that
+heading is restored, or on a one-black sample after clearing twice the crossbar
+width. Straight continuation does not require an edge excursion. Exit
+distance/deadline failure stops while broad black persists. Turn exits still
+require a one-black observation followed by both-white.
+
+Left/right Motion uses cubic heading theta=sign*pi/2*(3u^2-2u^3), u=s/L.
+With entry axle (-d,0), choose L=(d+sign*y_c)/0.605143689. Wheel positions are
+s +/- b*theta/2; curvature is zero at both ends. Constructor checks forward-only
+feasibility L>=3*pi*b/8 and release. One Q8 progress reference drives both wheels;
+position corrections, reference lead, excursion and timeout are bounded. At path
+completion Motion reports DONE while continuing the tangent at controlled speed
+until Mission hands off or the exit bound fails. Matching-action IR evidence near
+the expected angle is required before handoff. Existing non-smooth actions retain
+braked DONE behavior. Discrete mode/target/style are immutable for an action ID.
+STOP, stale data and faults override all profiles.
+
+U-turn first approaches its measured pivot position with a ramped distance action,
+then holds stationary for 100 ms. A ramped encoder -180-degree pivot decelerates
+near its target; right-sensor black then both-white in the return-heading window
+qualifies the line. After DONE, confirm stationary and hold 100 ms before FOLLOW.
+Stationarity loss restarts pause qualification. Missing line evidence stops.
+No autonomous alignment search was added: ambiguous exits stop within the existing
+navigation deadline. Barcode/obstacle/network authority remains unchanged.

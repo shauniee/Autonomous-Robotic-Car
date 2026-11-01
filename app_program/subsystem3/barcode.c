@@ -1,25 +1,49 @@
 #include "barcode.h"
-#include <stdatomic.h>
-#include "drv_barcode.h"
 #include "../common/robot_data.h"
+#include "../subsystem2/encoder_math.h"
+#include "drv_barcode.h"
+#include <stdatomic.h>
 
-static rd_word_t mapping_word;			/* writer: Mission via barcode_set_mapping */
-static _Atomic bool run_wanted;			/* writer: Mission (barcode_start/stop) */
-static barcode_frame_t frame;			/* S3 task only */
+static rd_word_t mapping_word;  /* writer: Mission via barcode_set_mapping */
+static _Atomic bool run_wanted; /* writer: Mission (barcode_start/stop) */
+static barcode_frame_t frame;   /* S3 task only */
 static barcode_event_t events[BARCODE_EVENT_CAPACITY];
-static _Atomic unsigned event_head, event_tail;	/* head: S3 task, tail: Mission */
-static uint32_t seen_overflows, seen_order_lost;	/* S3 task only */
-static _Atomic bool initialised;		/* writer: S3 task, once */
-static bool running;				/* S3 task only */
+static _Atomic unsigned event_head,
+    event_tail; /* head: S3 task, tail: Mission */
+static uint32_t seen_overflows, seen_order_lost; /* S3 task only */
+static _Atomic bool initialised;                 /* writer: S3 task, once */
+static bool running;                             /* S3 task only */
+
+#if BARCODE_DIAGNOSTICS
+static barcode_diagnostic_t diagnostics[32];
+static unsigned diagnostic_head, diagnostic_tail, diagnostic_dropped;
+#endif
+bool barcode_diagnostic_pop(barcode_diagnostic_t *record, unsigned *dropped)
+{
+#if BARCODE_DIAGNOSTICS
+    *dropped = diagnostic_dropped;
+    if (diagnostic_tail == diagnostic_head)
+    {
+        return false;
+    }
+    *record = diagnostics[diagnostic_tail++ % 32u];
+    return true;
+#else
+    (void)record;
+    (void)dropped;
+    return false;
+#endif
+}
 
 bool barcode_init(void)
 {
-    const barcode_config_t config = {
+    const barcode_config_t config =
+    {
         .narrow_min = BARCODE_NARROW_MIN,
-        .narrow_max = BARCODE_NARROW_MAX,
-        .wide_ratio_min_milli = BARCODE_WIDE_RATIO_MIN_MILLI,
-        .wide_ratio_max_milli = BARCODE_WIDE_RATIO_MAX_MILLI,
-        .width_tolerance_milli = BARCODE_TOLERANCE_MILLI};
+            .narrow_max = BARCODE_NARROW_MAX,
+            .wide_ratio_min_milli = BARCODE_WIDE_RATIO_MIN_MILLI,
+            .wide_ratio_max_milli = BARCODE_WIDE_RATIO_MAX_MILLI,
+            .width_tolerance_milli = BARCODE_TOLERANCE_MILLI};
     if (!barcode_config_valid(&config) || !drv_barcode_init())
     {
         return false;
@@ -32,7 +56,8 @@ bool barcode_init(void)
 bool barcode_set_mapping(const uint8_t letters[4])
 {
     uint32_t word;
-    if (atomic_load_explicit(&run_wanted, memory_order_acquire) || !rd_mapping_pack(letters, &word))
+    if (atomic_load_explicit(&run_wanted, memory_order_acquire) ||
+        !rd_mapping_pack(letters, &word))
     {
         return false;
     }
@@ -80,7 +105,8 @@ static void push_event(const barcode_event_t *event)
 
 void barcode_service(bool cancel)
 {
-    bool wanted = !cancel && atomic_load_explicit(&run_wanted, memory_order_acquire);
+    bool wanted =
+        !cancel && atomic_load_explicit(&run_wanted, memory_order_acquire);
     if (wanted != running)
     {
         /* Only this task touches the scanner state and the Line fault byte. */
@@ -88,7 +114,8 @@ void barcode_service(bool cancel)
         barcode_frame_reset(&frame);
         seen_overflows = drv_barcode_overflow_count();
         seen_order_lost = drv_barcode_order_lost_count();
-        rd_fault_clear(RD_OWNER_LINE, RD_FAULT_BARCODE_CAPTURE_OVERFLOW | RD_FAULT_BARCODE_EVENT_OVERFLOW);
+        rd_fault_clear(RD_OWNER_LINE, RD_FAULT_BARCODE_CAPTURE_OVERFLOW |
+            RD_FAULT_BARCODE_EVENT_OVERFLOW);
         drv_barcode_enable(wanted);
         running = wanted;
     }
@@ -107,17 +134,44 @@ void barcode_service(bool cancel)
         barcode_frame_reset(&frame);
     }
     barcode_edge_t edge;
-    for (unsigned budget = 0u; budget < BARCODE_SERVICE_BUDGET && drv_barcode_take(&edge); ++budget)
+    for (unsigned budget = 0u;
+        budget < BARCODE_SERVICE_BUDGET && drv_barcode_take(&edge); ++budget)
     {
-        char symbol;
-        barcode_orientation_t orientation;
+        char symbol = 0;
+        barcode_orientation_t orientation = BARCODE_FORWARD;
+#if BARCODE_DIAGNOSTICS
+        int32_t dl = enc_travel_signed(edge.left_count, frame.prev_left);
+        int32_t dr = enc_travel_signed(edge.right_count, frame.prev_right);
+        uint32_t width =
+            frame.have_edge && dl >= 0 && dr >= 0 ? (uint32_t)(dl + dr) / 2u : 0u;
+#endif
         bool black = edge.high == (BARCODE_BLACK_HIGH != 0);
-        barcode_result_t result = barcode_frame_edge(&frame, black, edge.left_count, edge.right_count,
+        barcode_result_t result =
+            barcode_frame_edge(&frame, black, edge.left_count, edge.right_count,
             &symbol, &orientation);
+#if BARCODE_DIAGNOSTICS
+        if (diagnostic_head - diagnostic_tail < 32u)
+        {
+            diagnostics[diagnostic_head++ % 32u] = (barcode_diagnostic_t){
+                .left = edge.left_count,
+                    .right = edge.right_count,
+                    .width = (uint16_t)(width > 65535u ? 65535u : width),
+                    .result = result,
+                    .orientation = orientation,
+                    .letter = symbol ? (unsigned)(symbol - 'A') : 31u,
+                    .action =
+                    symbol ? barcode_action_for(rd_word_read(&mapping_word), symbol)
+                : BARCODE_UNMAPPED};
+        }
+        else if (diagnostic_dropped != ~0u)
+        ++diagnostic_dropped;
+#endif
         if (result == BARCODE_DECODED)
         {
-            barcode_event_t event = {.left_count = edge.left_count, .right_count = edge.right_count};
-            barcode_event_set(&event, symbol, barcode_action_for(rd_word_read(&mapping_word), symbol),
+            barcode_event_t event = {.left_count = edge.left_count,
+                    .right_count = edge.right_count};
+            barcode_event_set(&event, symbol,
+                barcode_action_for(rd_word_read(&mapping_word), symbol),
                 orientation);
             push_event(&event);
         }

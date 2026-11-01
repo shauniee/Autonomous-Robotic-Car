@@ -2,6 +2,8 @@
 
 ## Contents
 
+- [DOUT navigation acceptance revision](#dout-navigation-acceptance-revision)
+
 - [Phase 0: Electrical, before power (T01)](#phase-0-electrical-before-power-t01)
 - [Phase 1: Boot, safety and MQTT (TEST firmware, wheels raised) (T02, T12)](#phase-1-boot-safety-and-mqtt-test-firmware-wheels-raised-t02-t12)
 - [Phase 2: Each sensor alone (T03, T04, T06, T08)](#phase-2-each-sensor-alone-t03-t04-t06-t08)
@@ -120,3 +122,31 @@ The complete remaining-work checklist is [issue #117](https://github.com/shaunie
 This file owns physical procedures, not a second completion tracker. For final
 Motion/Mission/I/O timing, agree D13 limits and a bounded capture method; old
 `s3_input`/`s3_mission` console windows are not current implementation evidence.
+
+## DOUT navigation acceptance revision
+
+This supersedes earlier MR-12 analogue calibration and MR-28 fixed/instant turn
+procedures; do not overwrite historical results. Define new test IDs before running.
+Measurements and release prerequisites are listed in
+[specs](../docs/project-specs.md#dout-navigation-commissioning).
+
+1. Record DOUT levels/dead zone while sliding across the actual line at mounted
+   height; record each wheel rolling scale/sign, equal-target drift and speed response.
+2. Record straight sway and curve/S-bend overshoot with progressive steering;
+   keep settings fixed while tuning the wheel loops first.
+3. Record actual digital barcode edge widths, correct/rejected/wrong letters and
+   both print orientations during tracking. Confirm a complete read precedes junction.
+4. Record false broad-black curve candidates and straight/slanted/curve-to-junction
+   entries for every direction. Unknown/curved turn geometry must stop without
+   pivot fallback. With geometry unreleased, queued straight and unqueued crossings
+   must keep moving and resume tracking on fresh non-broad input, including a
+   centred white/white exit without an edge excursion.
+5. With measured geometry released, measure chassis-centre and heading errors after
+   mirrored turns, body clearance, speed transitions, exit evidence and rearming.
+6. Measure U-turn approach position, stationary pauses, pivot profile and return-line
+   validation; test intermediate branches, stop, obstacles and stale data in each phase.
+7. Include junction-to-curve and one-wheel hump trials. Choose numeric acceptance
+   limits from actual clearance and barcode capture margins before release.
+
+No physical trial can be completed without the robot; current software evidence
+is [INT-95](integration/TEST_LOG.md#dout-smooth-navigation--int-95).

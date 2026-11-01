@@ -2,6 +2,8 @@
 
 ## Contents
 
+- [DOUT navigation commissioning](#dout-navigation-commissioning)
+
 - [Source provenance and requested design](#source-provenance-and-requested-design)
 - [1. Mission and required outcomes](#1-mission-and-required-outcomes)
   - [Encounter behaviour](#encounter-behaviour)
@@ -1023,3 +1025,62 @@ motor response from changing steering demands. D07/D13 remain pending for loaded
 response, target saturation, timing/stack impact and physical tracking; no newly
 calibrated gains or motion pass is claimed. The former dashboard black/white
 capture checklist is removed to match digital acquisition.
+
+## DOUT navigation commissioning
+
+User-approved design, 2026-11-01. This supersedes the earlier immediate queued
+both-black trigger, 25 mm straight exit, 70 mm advance and IR-only +/-360-degree
+navigation policies. It does not establish physical acceptance or new course rules.
+Control behavior is owned by [architecture](architecture.md#dout-navigation-contract).
+
+**Measurement status (Nicholas updates, 2026-11-01; not a physical motion pass):**
+
+| Decision | Required measurement / evidence | Current state |
+| --- | --- | --- |
+| D03 | Effective driven-wheel separation; rolling scale/sign per wheel | Wheel-centre separation user-measured 120 mm; effective turning width and individual rolling verification pending; existing mean scale retained |
+| D02/D03 | Chassis centre forward and left of drive axle midpoint | Unknown; zero config is a placeholder, not a measurement |
+| D04 | Both tracking sensors forward/left of axle, optical centre spacing, height, polarity and dead zone | User-confirmed 135 mm from axle line to IR pair centre (`NAV_SENSOR_FORWARD_MM`); modules 30 mm apart, outside both line edges. INT-98 slide: effective spot spacing 33 mm, effective line width 23 mm (right sensor), centred white/white band 10 mm, console polarity black=1. Left-sensor span, hysteresis, lateral offset and height pending |
+| D01/D04 | Barcode sensor forward/left of axle, mounted polarity, narrow/wide print widths, quiet/rearm zones | User reports 65 mm ahead of and 40 mm left of the left IR sensor, so about 200 mm forward and 55 mm left of the axle midpoint if the IR pair is centred; print widths, polarity and quiet/rearm zones unknown; decoder limits provisional |
+| D02 | Crossbar width, switching-position uncertainty, body swept clearance, tightest curve traces | Line and crossbar both 18 mm (two intersecting lines); a crossing reads both-black for about 23 mm of travel (INT-98 spot width); clearance and tightest-curve traces pending |
+| D07/D08 | Loaded speed response, braking distance, stationarity, arc error limits and pause behavior | Physical trials pending |
+
+`NAV_GEOMETRY_RELEASED=0` inhibits newly qualified left/right/U-turn navigation;
+straight and unqueued crossings continue with tracking. Enabling asserts that all
+measurements, clearance and thresholds have been validated. Sensor forward offset
+and crossbar width also must be positive. Stop on infeasible geometry; no fallback
+pivot. U-turn currently requires a laterally centred chassis (`y_c=0`); a nonzero
+lateral offset cannot be corrected by an in-place 180-degree pivot alone.
+
+Provisional commissioning settings, not measured limits: correction starts at
+32/127 and grows by 12 per distinct continuous one-black sample; white/white fades
+it by 12 per sample instead of zeroing it; broad black requests none. Motion releases
+at 1800 Q/s and builds at the retained 900 Q/s; the inner wheel slows linearly
+with steering (`MOTION_FOLLOW_TIGHTEN_Q 0`). Candidate travel is 9 mm, extended
+to 12 mm after strong steering (INT-98). A straight crossing restores the heading
+saved within the last 100 mm of centred, unsteered tracking (INT-104). Curved turn entry then stops rather than assuming pose.
+Entry-relative yaw bound 5 degrees; turn evidence windows 75..105 degrees and
+165..195 degrees for U-turn; rearm 10 mm; exit travel bound 150 mm; path lead 5 mm,
+wheel-position error bound 20 mm and correction cap 20 mm/s at gain 4/s.
+All require measurement under D02/D07. Pause is 100 ms after stationarity before
+and after U-turn; nominal approach acceleration uses requested speed / 0.5 s.
+Actual approach distance and completion remain encoder governed.
+
+Storage extension (one writer per object; local floating point geometry only):
+
+| Field | Range / scale | Invalid / overflow | Logical bits / storage |
+| --- | --- | --- | --- |
+| Motion discrete target latch | -2000..2000 mm or degrees, whole units | Command mutation fails action | 12 / signed bit-field |
+| Motion style latch | 0 pivot, 1 legacy swing, 2 smooth, 3 ramped | Constructor validates | 2 / bit-field |
+| Motion path reference | 0..4095.996 mm, Q8 | Fails before 4095 mm / travel bound | 20 / uint32 bit-field |
+| Mission output navigation rejection | 0 none, 1 measurements, 2 geometry, 3 entry | Console reports on stop transition; no wire change | 2 / bit-field |
+| Mission navigation phase | 0..6, 7 invalid | Invalid stops | 3 / existing field |
+| Mission turn length | -2000..2000 whole mm | Invalid stops before construction | 12 / signed bit-field |
+| Mission locked/curved/exit flags | independent 0/1 | Reset/start manages encounter | 1 each / bit-fields |
+| Mission entry origins | encoder counts modulo configured width | Half-range modular arithmetic | 2 x ENC_COUNT_BITS / uint32 |
+| Barcode diagnostic | 2 wrapping counts, width 0..65535 counts; result 0..6; orientation 0/1; letter 0..25 or 31; action 0..4 | Width saturates; queue drops counted; no guessed letter | 16+16+16+3+1+5+3 / 8 bytes on target |
+
+MotionCommand remains 12 bytes with the existing mutex and two-bit mode. TURN
+style 2 reuses signed target as path length in mm (+left/-right), bounded by the
+existing 2000 mm limit; other TURN styles retain degrees. DISTANCE style 3 enables
+a ramped approach. No MQTT payload changes. Diagnostic ring is optional, 32 entries;
+head/tail and saturating dropped counters are uint32 for wrap-safe lifetime indices.

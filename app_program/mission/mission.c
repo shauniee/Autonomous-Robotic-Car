@@ -178,6 +178,11 @@ static void mission_task(INT stacd, void *exinf)
         {
             tm_printf((UB *)"[MISSION] stop request failed\n");
         }
+        if (out.nav_rejected != 0u)
+        {
+            tm_printf((UB *)"[MISSION] navigation inhibited reason=%u "
+                "(1=measurements 2=geometry 3=entry)\n", (unsigned)out.nav_rejected);
+        }
         if (out.event_kind != 0u)
         {
             s1_event((mqtt_event_kind_t)out.event_kind, out.event_arg, out.event_arg2);

@@ -1,0 +1,2 @@
+Assertion failed: (m.state == MISSION_NAVIGATE && !out.stop_now), function navigation, file test_smooth_navigation.c, line 130.
+testing/pure/run.sh: line 15: 82640 Abort trap: 6           "$build_dir/test_smooth_$geometry"

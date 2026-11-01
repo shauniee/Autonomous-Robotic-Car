@@ -132,6 +132,18 @@ void s3_step(uint32_t now)
         (void)s2_stop();
         return;
     }
+#if BARCODE_DIAGNOSTICS
+    static uint32_t diagnostic_due;
+    if ((int32_t)(now-diagnostic_due)>=0) {
+        barcode_diagnostic_t record;
+        unsigned dropped;
+        if (barcode_diagnostic_pop(&record,&dropped))
+            tm_printf((UB *)"[BC] L=%u R=%u width=%u result=%u orientation=%u letter=%u action=%u dropped=%u\n",
+                record.left,record.right,record.width,record.result,record.orientation,
+                record.letter,record.action,dropped);
+        diagnostic_due=now+IO_PERIOD_MS;
+    }
+#endif
     S3IrSnapshot snapshot = ir_snapshot_build(&tracker, sequence, now);
     /* Invalid digital acquisition blocks startup. */
     if (!ir_raw_word_valid(snapshot.raw) || !snapshot.normalized_valid)

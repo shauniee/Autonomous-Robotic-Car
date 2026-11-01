@@ -2,6 +2,8 @@
 
 ## Contents
 
+- [Smooth navigation revision](#smooth-navigation-revision)
+
 - [Functionality](#functionality)
 - [Interfaces and contract](#interfaces-and-contract)
 - [Data and fault bits](#data-and-fault-bits)
@@ -149,3 +151,12 @@ STOP/invalid/stale/zero-speed requests bypass both ramps. See the
 [Motion contract](../architecture.md#motion-command-contract) for timing and
 [stored representation](../project-specs.md#pending-decisions) for private Q7
 history. Physical smoothness and pivot geometry remain unmeasured.
+
+## Smooth navigation revision
+
+Motion now supports internal TURN style 2 (signed whole-mm cubic path) and
+style 3 (ramped encoder pivot); DISTANCE style 3 requests the ramped approach.
+Style 0/1 remains available for recovery/bypass and legacy actions. Command ABI and
+wire protocols remain unchanged. The authoritative behavior is in
+[architecture](../architecture.md#dout-navigation-contract); calibration/storage
+are owned by [specs](../project-specs.md#dout-navigation-commissioning).

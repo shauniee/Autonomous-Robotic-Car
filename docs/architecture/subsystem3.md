@@ -2,6 +2,8 @@
 
 ## Contents
 
+- [DOUT commissioning revision](#dout-commissioning-revision)
+
 - [1. Functionality](#1-functionality)
 - [2. Line tracking](#2-line-tracking)
   - [2.1 Digital acquisition](#21-digital-acquisition)
@@ -359,3 +361,22 @@ curve base requests for outer boost and retains guided straight-junction exits.
 See the [Motion contract](../architecture.md#motion-command-contract) and
 [pending decisions](../project-specs.md#pending-decisions) for current behavior,
 values and physical limitations. This supersedes earlier Mission ramp descriptions.
+
+## DOUT commissioning revision
+
+The current digital tracking/junction contract is owned by
+[architecture](../architecture.md#dout-navigation-contract), with measurements in
+[specs](../project-specs.md#dout-navigation-commissioning). Earlier first-black and
+full-strength steering descriptions above are historical.
+
+Keep the digital barcode decoder and mean encoder widths for the initial physical
+trial. Offset/yaw compensation is deliberately deferred until captured evidence
+shows distortion. Build with make argument `BARCODE_DIAGNOSTICS=1` (default 0; part of the build
+profile to force recompilation). This stores a 32-entry task-owned
+ring with encoder edge positions, computed run widths, parser result, orientation,
+letter and action. S3 prints at most one record per I/O period outside the ISR;
+full diagnostic storage drops records and counts drops without blocking capture.
+Result 0 is no decode, 1 decoded, 2 bad config, 3 bad width, 4 bad frame,
+5 bad symbol, 6 reversed travel. Letter 31 means unavailable. Capture-order/ring
+faults remain in the existing Line fault bits. Logging can perturb timing, so
+compare diagnostic and normal timing on hardware. No two-second scanner blackout.

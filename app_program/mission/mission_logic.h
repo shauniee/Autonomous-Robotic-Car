@@ -39,7 +39,8 @@ typedef enum
     JUNCTION_PHASE_TURN,
     JUNCTION_PHASE_STRAIGHT,
     JUNCTION_PHASE_BRAKE,
-    JUNCTION_PHASE_ADVANCE
+    JUNCTION_PHASE_ADVANCE,
+    JUNCTION_PHASE_EXIT
 } MissionJunctionPhase;
 
 typedef struct
@@ -84,6 +85,7 @@ typedef struct
 {
     MotionCommand command;	/* written every release; STOP unless following or acting */
     bool stop_now;		/* call s2_stop() (once, on entry to STOP) */
+    uint8_t nav_rejected : 2; /* 0 none, 1 measurements, 2 geometry, 3 entry */
     bool start_refused;		/* a start press was refused: unmapped or faulted */
     bool line_lost;		/* stopped because the line could not be recovered */
     bool start_scanner;
@@ -107,6 +109,12 @@ typedef struct
     uint32_t state_since_ms;
     uint32_t broad_origin[2]; /* broad entry or active navigation phase origin */
     uint32_t broad_since_ms; /* start of this broad-black encounter, wraps */
+    uint8_t junction_locked : 1;
+    uint8_t entry_curved : 1;
+    uint8_t exit_seen : 1;
+    int16_t turn_length_mm : 12; /* signed whole mm, +/-2000 */
+    uint32_t entry_origin[2];
+    uint32_t straight_origin[2]; /* counts when last tracking centred with no steering */
     uint8_t manual_held : 1; /* test direction protects held from barcode replacement */
     uint8_t in_broad : 1;
     uint8_t junction_open : 1;

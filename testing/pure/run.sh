@@ -12,6 +12,13 @@ CC=${CC:-cc}
 CFLAGS="-std=c11 -O2 -Wall -Wextra -Werror -pthread"
 
 $CC $CFLAGS testing/pure/test_robot_time.c -o "$build_dir/test_robot_time"
+for geometry in 0 1; do
+    $CC $CFLAGS -DNAV_GEOMETRY_RELEASED=$geometry -DNAV_SENSOR_FORWARD_MM=$((geometry * 150)) -DNAV_CROSSBAR_MM=$((geometry * 18)) \
+        testing/pure/test_smooth_navigation.c app_program/mission/mission_logic.c \
+        app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
+        app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_smooth_$geometry"
+    "$build_dir/test_smooth_$geometry"
+done
 $CC $CFLAGS testing/pure/test_encoder_math.c -o "$build_dir/test_encoder_math"
 $CC $CFLAGS testing/pure/test_motion_control.c app_program/subsystem2/motion_control.c \
     app_program/common/robot_data.c -lm -o "$build_dir/test_motion_control"

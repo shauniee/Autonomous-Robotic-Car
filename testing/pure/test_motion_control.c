@@ -220,9 +220,9 @@ static void test_follow_steering(void)
 {
     const int steering[] = {-127, -96, -64, 0, 64, 96, 127};
     const float targets[][2] = {
-        {0.0f, 32.0f}, {9.841270f, 29.070866f}, {20.0f, 26.047244f},
+        {0.0f, 32.0f}, {4.881890f, 29.070866f}, {9.921260f, 26.047244f},
         {20.0f, 20.0f},
-        {26.047244f, 20.0f}, {29.070866f, 9.841270f}, {32.0f, 0.0f}
+        {26.047244f, 9.921260f}, {29.070866f, 4.881890f}, {32.0f, 0.0f}
     };
     Sim s;
     MotionCommand cmd;
@@ -400,7 +400,7 @@ static void test_follow_steering_slew(void)
             motion_control_step(&c, &cmd, &in, &out);
             assert(out.status == RD_MOTION_RUNNING);
             int delta = c.follow_steer_q - previous;
-            assert(delta >= -16 && delta <= 16);
+            assert(delta >= -(int)(LINE_RELEASE_QPS*MOTION_PERIOD_MS/1000u) && delta <= (int)(LINE_RELEASE_QPS*MOTION_PERIOD_MS/1000u));
             assert(c.follow_steer_q >= -127 && c.follow_steer_q <= 127);
             int held = c.follow_steer_q;
             motion_control_step(&c, &cmd, &in, &out);
@@ -420,7 +420,7 @@ static void test_follow_steering_slew(void)
     MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
         20.0f, 0.0f, -127, 1u, in.now_ms);
     motion_control_step(&c, &cmd, &in, &out);
-    assert(c.follow_steer_q == -16);
+    assert(c.follow_steer_q == -(int)(MOTION_FOLLOW_STEER_QPS*MOTION_PERIOD_MS/1000u));
     in.now_ms += MOTION_PERIOD_MS;
     cmd = motion_command_make(MOTION_MODE_FOLLOW, 20.0f, 0.0f, 0, 1u, in.now_ms);
     motion_control_step(&c, &cmd, &in, &out);
@@ -429,7 +429,7 @@ static void test_follow_steering_slew(void)
     in.now_ms += 100u;
     cmd = motion_command_make(MOTION_MODE_FOLLOW, 20.0f, 0.0f, 127, 1u, in.now_ms);
     motion_control_step(&c, &cmd, &in, &out);
-    assert(c.follow_steer_q == 16);
+    assert(c.follow_steer_q == (int)(MOTION_FOLLOW_STEER_QPS*MOTION_PERIOD_MS/1000u));
     for (unsigned cause = 0; cause < 6u; ++cause)
     {
         in.now_ms += MOTION_PERIOD_MS;
@@ -622,10 +622,10 @@ static void test_swing_turn(void)
     assert(!motion_command_set(&cmd, MOTION_MODE_TURN, 50.0f,
         90.0f, -1, 2u, 100u));
     assert(!motion_command_set(&cmd, MOTION_MODE_TURN, 50.0f,
-        90.0f, 2, 2u, 100u));
+        90.0f, 4, 2u, 100u));
     cmd = motion_command_make(MOTION_MODE_TURN, 50.0f, 90.0f,
         MOTION_TURN_PIVOT, 2u, 100u);
-    cmd.mode_steering |= 2u << 2u;
+    cmd.mode_steering |= 4u << 2u;
     assert(!motion_command_fresh(&cmd, 100u));
     puts("INT-84: forward single-wheel swing, geometry, braked-wheel drift and invalid style PASS");
 }

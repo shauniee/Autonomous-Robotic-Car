@@ -68,11 +68,11 @@
    Keep IR classification and steering settings fixed during these trials.
    Procedure: docs/architecture/subsystem2.md, Wheel-speed tuning. */
 #define ENC_COUNTS_PER_MM 11.649f /* INT-66: mean of both wheels over 500 mm */
-#define TRACK_WIDTH_MM		130.0f	/* PROVISIONAL (D03) */
+#define TRACK_WIDTH_MM		120.0f	/* User-measured wheel centres; specs D03; effective turning calibration pending */
 #define MOTION_SPEED_MAX_MMPS	500.0f	/* PROVISIONAL (D07): speed limit; the 9-bit command field holds 511 */
-#define MOTION_KS		0.10f	/* PROVISIONAL (D07): static-friction duty added whenever a wheel must turn; raise if a slow wheel stalls */
-#define MOTION_KF		0.0007f	/* PROVISIONAL (D07): feedforward duty per target count/s; measured plant ~1240 count/s per duty (.0011 overshot) */
-#define MOTION_KP		0.0003f	/* PROVISIONAL (D07): duty per count/s */
+#define MOTION_KS		0.05f	/* PROVISIONAL (D07): INT-100 raised fit ~0 plus ~5 points measured floor load at 200 mm/s */
+#define MOTION_KF		0.0001f	/* PROVISIONAL (D07): INT-100 raised-wheel fit 60-200 mm/s, left 1.05e-4, right 0.95e-4 */
+#define MOTION_KP		0.0001f	/* PROVISIONAL (D07): duty per count/s; INT-101 0.0003 oscillated below 60 mm/s */
 #define MOTION_KI		0.0010f	/* PROVISIONAL (D07) */
 #define MOTION_KD		0.0000f	/* PROVISIONAL (D07) */
 #define MOTION_DIST_TOL_MM	3.0f	/* PROVISIONAL (D07) */
@@ -120,7 +120,7 @@
 #define MAX_STEER		1.0f	/* digital correction: full Q7 request */
 #define MOTION_FOLLOW_BOOST 0.60f /* full correction boosts one wheel by 60% */
 #define MOTION_FOLLOW_INNER_CUT 1.0f /* PROVISIONAL D07: tight-curve reduction */
-#define MOTION_FOLLOW_TIGHTEN_Q 64 /* keep curve entry at base inner speed */
+#define MOTION_FOLLOW_TIGHTEN_Q 0 /* PROVISIONAL D07: inner wheel slows linearly, no pivot kink */
 #define MOTION_FOLLOW_SLEW_MMPS2 250u /* PROVISIONAL D07: common FOLLOW base ramp */
 #define MOTION_FOLLOW_STEER_QPS 900u /* PROVISIONAL D07: applied steering slew */
 #define MISSION_TRACK_SPEED_MMPS 55.0f /* PROVISIONAL D07: faster tracking trial */
@@ -152,6 +152,47 @@
 #define BYPASS_LINE_SPEED_MMPS 5u /* D07: scaled final line alignment */
 #define MISSION_UTURN_PAUSE_MS 200u /* requested duration; stationary reference provisional D02/D08 */
 #define MISSION_START_WAIT_MS		200u	/* wait for Motion to leave its stop latch */
+
+/* DOUT commissioning defaults, NOT calibrated limits (D02/D03/D04/D07).
+   Zero measurement fields deliberately inhibit navigation. */
+#define LINE_INITIAL_Q 32
+#define LINE_BUILD_Q 12
+#define LINE_RELEASE_QPS 1800u
+#ifndef NAV_GEOMETRY_RELEASED
+#define NAV_GEOMETRY_RELEASED 0
+#endif
+#ifndef NAV_SENSOR_FORWARD_MM
+#define NAV_SENSOR_FORWARD_MM 135 /* User-measured axle centre to IR pair centre; specs D02 */
+#endif
+#ifndef NAV_CROSSBAR_MM
+#define NAV_CROSSBAR_MM 18 /* User-reported stripe thickness; specs D02 */
+#endif
+#ifndef NAV_CHASSIS_FORWARD_MM
+#define NAV_CHASSIS_FORWARD_MM 0
+#endif
+#ifndef NAV_CHASSIS_LEFT_MM
+#define NAV_CHASSIS_LEFT_MM 0
+#endif
+/* Release asserts measured body clearance, encoder geometry and thresholds. */
+#define NAV_ENTRY_MAX_DEG 5.0f
+#define NAV_ENTRY_MAX_STEER_Q 32
+#define NAV_CONFIRM_MM 9u /* PROVISIONAL D02: half the 18 mm crossing; curve skew is shorter */
+#define NAV_CURVE_CONFIRM_MM 12u /* PROVISIONAL D02: skewed entry, below the ~23 mm measured crossing */
+#define NAV_REARM_MM 10u
+#define NAV_HEADING_REF_MM 100u /* PROVISIONAL D02: oldest straight heading used to cross */
+#define NAV_EXIT_MAX_MM 150u
+#define NAV_EXIT_ANGLE_MIN_DEG 75.0f
+#define NAV_EXIT_ANGLE_MAX_DEG 105.0f
+#define NAV_UTURN_WINDOW_DEG 15.0f
+#define NAV_PAUSE_MS 100u
+#define NAV_DECEL_MS 500u
+#define PATH_LEAD_MM 5.0f
+#define PATH_ERROR_MM 20.0f
+#define PATH_CORRECTION_MMPS 20.0f
+#define PATH_POSITION_GAIN 4.0f
+#ifndef BARCODE_DIAGNOSTICS
+#define BARCODE_DIAGNOSTICS 0
+#endif
 
 /* --- S3 barcode ---------------------------------------------------- */
 #define BARCODE_GPIO		16u

@@ -96,6 +96,10 @@ endif
 # Motion never brakes on a stall and Mission searches for a lost line instead
 # of stopping. Never use it on the
 # course. The image gets a _noguards suffix.
+BARCODE_DIAGNOSTICS ?= 0
+ifneq ($(filter $(BARCODE_DIAGNOSTICS),0 1),$(BARCODE_DIAGNOSTICS))
+$(error BARCODE_DIAGNOSTICS must be 0 or 1)
+endif
 NOGUARDS ?= 0
 ifneq ($(filter $(NOGUARDS),0 1),$(NOGUARDS))
 $(error Unknown NOGUARDS '$(NOGUARDS)'; use 0 or 1)
@@ -201,7 +205,7 @@ CFLAGS  += -DCNF_SMP=1
 ASFLAGS += -DCNF_SMP=1
 endif
 CFLAGS  += -DAPP_TEST=$(TEST)
-CFLAGS  += -DAPP_NO_GUARDS=$(NOGUARDS)
+CFLAGS  += -DAPP_NO_GUARDS=$(NOGUARDS) -DBARCODE_DIAGNOSTICS=$(BARCODE_DIAGNOSTICS)
 CFLAGS  += -DTM_CONSOLE_UART=$(CRASH_REPORT)
 ifeq ($(CRASH_REPORT),0)
 CFLAGS  += -DBOARD_UART0_FREE=1
@@ -236,7 +240,7 @@ endif
 
 # The compiler version is part of the profile, so objects from a native
 # toolchain and the Docker toolchain are never linked together.
-PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-noguards$(NOGUARDS)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
+PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-noguards$(NOGUARDS)-bcdiag$(BARCODE_DIAGNOSTICS)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
 PROFILE_FILE := .build_profile
 
 ifneq ($(strip $(shell cat $(PROFILE_FILE) 2>/dev/null)),$(PROFILE_ID))
