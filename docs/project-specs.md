@@ -1039,8 +1039,8 @@ Control behavior is owned by [architecture](architecture.md#dout-navigation-cont
 | --- | --- | --- |
 | D03 | Effective driven-wheel separation; rolling scale/sign per wheel | Wheel-centre separation user-measured 120 mm; effective turning width and individual rolling verification pending; existing mean scale retained |
 | D02/D03 | Chassis centre forward and left of drive axle midpoint | Unknown; zero config is a placeholder, not a measurement |
-| D04 | Both tracking sensors forward/left of axle, optical centre spacing, height, polarity and dead zone | User-confirmed 135 mm from axle line to IR pair centre (`NAV_SENSOR_FORWARD_MM`); modules 30 mm apart, outside both line edges. INT-98 slide: effective spot spacing 33 mm, effective line width 23 mm (right sensor), centred white/white band 10 mm, console polarity black=1. Left-sensor span, hysteresis, lateral offset and height pending |
-| D01/D04 | Barcode sensor forward/left of axle, mounted polarity, narrow/wide print widths, quiet/rearm zones | User reports 65 mm ahead of and 40 mm left of the left IR sensor, so about 200 mm forward and 55 mm left of the axle midpoint if the IR pair is centred; print widths, polarity and quiet/rearm zones unknown; decoder limits provisional |
+| D04 | Both tracking sensors forward/left of axle, optical centre spacing, height, polarity and dead zone | User-measured 120 mm from axle line to IR pair centre after moving the pair back 18 mm (`NAV_SENSOR_FORWARD_MM`; was 135, INT-117); modules 30 mm apart, outside both line edges. INT-98 slide: effective spot spacing 33 mm, effective line width 23 mm (right sensor), centred white/white band 10 mm, console polarity black=1. Left-sensor span, hysteresis, lateral offset and height pending |
+| D01/D04 | Barcode sensor forward/left of axle, mounted polarity, narrow/wide print widths, quiet/rearm zones | User reports 65 mm ahead of and 40 mm left of the left IR sensor, moved back 18 mm with the IR pair (INT-118), so about 185 mm forward and 55 mm left of the axle midpoint if the IR pair is centred; print widths, polarity and quiet/rearm zones unknown; decoder limits provisional |
 | D02 | Crossbar width, switching-position uncertainty, body swept clearance, tightest curve traces | Line and crossbar both 18 mm (two intersecting lines); a crossing reads both-black for about 23 mm of travel (INT-98 spot width); clearance and tightest-curve traces pending |
 | D07/D08 | Loaded speed response, braking distance, stationarity, arc error limits and pause behavior | Physical trials pending |
 
@@ -1051,13 +1051,18 @@ and crossbar width also must be positive. Stop on infeasible geometry; no fallba
 pivot. U-turn currently requires a laterally centred chassis (`y_c=0`); a nonzero
 lateral offset cannot be corrected by an in-place 180-degree pivot alone.
 
-Provisional commissioning settings, not measured limits: correction starts at
-32/127 and grows by 12 per distinct continuous one-black sample; white/white fades
-it by 12 per sample instead of zeroing it; broad black requests none. Motion releases
-at 1800 Q/s and builds at the retained 900 Q/s; the inner wheel slows linearly
-with steering (`MOTION_FOLLOW_TIGHTEN_Q 0`). Candidate travel is 9 mm, extended
-to 12 mm after strong steering (INT-98). A straight crossing restores the heading
-saved within the last 100 mm of centred, unsteered tracking (INT-104). Curved turn entry then stops rather than assuming pose.
+Provisional commissioning settings, not measured limits (INT-123 defaults):
+tracking at 100 mm/s with IR read every 10 ms. One-black adds a 32/127
+proportional kick to an integral that grows by 3 per distinct continuous one-black
+sample, drains by 1 per opposing sample, drains by 6 once opposition lasts more
+than 20 samples (curve exit), then holds at zero with a 64/127 kick until
+white/white; it is held through white/white and capped at 95. Broad black requests
+none unless the held integral marks a curve (above 32). Motion releases at
+1800 Q/s and builds at 900 Q/s; the inner wheel slows linearly with steering
+(`MOTION_FOLLOW_TIGHTEN_Q 0`). Wheel feedforward KF 0.0001, KS 0.05, KP 0.0001
+(INT-100 to INT-102). Candidate travel is 9 mm, extended to 12 mm after strong
+steering (INT-98). A straight crossing restores the heading saved within the last
+100 mm of centred, low-steering tracking (INT-104). Curved turn entry then stops rather than assuming pose.
 Entry-relative yaw bound 5 degrees; turn evidence windows 75..105 degrees and
 165..195 degrees for U-turn; rearm 10 mm; exit travel bound 150 mm; path lead 5 mm,
 wheel-position error bound 20 mm and correction cap 20 mm/s at gain 4/s.

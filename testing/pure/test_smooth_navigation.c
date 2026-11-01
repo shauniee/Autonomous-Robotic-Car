@@ -88,11 +88,11 @@ static void tracking(void)
     follow(&m, &in);
     in.line_error = -127;
     MissionOutputs out = tick(&m, &in);
-    assert(motion_cmd_steering(&out.command) == -LINE_INITIAL_Q);
-    mission_step(&m, &in, &out);
-    assert(m.line_steer_q == -LINE_INITIAL_Q);
-    tick(&m, &in);
+    assert(motion_cmd_steering(&out.command) == -(LINE_INITIAL_Q + LINE_BUILD_Q));
+    mission_step(&m, &in, &out); /* a repeated sample cannot grow I */
     assert(m.line_steer_q == -(LINE_INITIAL_Q + LINE_BUILD_Q));
+    tick(&m, &in);
+    assert(m.line_steer_q == -(LINE_INITIAL_Q + 2 * LINE_BUILD_Q));
     /* Both black requests no steering: a crossbar must not keep a turn going. */
     in.line = IR_LINE_BROAD_BLACK;
     in.guidance_valid = false;
@@ -102,13 +102,74 @@ static void tracking(void)
     in.guidance_valid = true;
     in.line_error = 127;
     tick(&m, &in);
-    assert(m.line_steer_q == LINE_INITIAL_Q);
+    assert(m.line_steer_q == LINE_INITIAL_Q - 2 * LINE_BUILD_Q + LINE_UNWIND_Q); /* I carries over */
+    in.line_error = 0;
+    for (int i = 0; i < 20; i++)
+        tick(&m, &in);
+    assert(m.line_steer_q == -2 * LINE_BUILD_Q + LINE_UNWIND_Q); /* P drops, I holds */
+    /* An opposing touch drains the held integral by LINE_UNWIND_Q per sample. */
+    {
+        in.line_error = -127;
+        for (int i = 0; i < 10; i++)
+            tick(&m, &in);
+        int before = m.line_i_q;
+        in.line_error = 127;
+        tick(&m, &in);
+        assert(m.line_i_q == before + LINE_UNWIND_Q);
+        in.line_error = 0;
+        tick(&m, &in);
+    }
+#if LINE_UNWIND_SAMPLES < 50
+    /* A brief opposite touch drains slowly; once it outlasts LINE_UNWIND_SAMPLES
+       (a curve ending) the integral drains at LINE_EXIT_Q. */
+    {
+        in = input();
+        follow(&m, &in);
+        in.line_error = 127;
+        for (int i = 0; i < 40; i++)
+            tick(&m, &in);
+        in.line_error = -127;
+        int before = m.line_i_q;
+        for (unsigned i = 0; i < LINE_UNWIND_SAMPLES; i++)
+            tick(&m, &in);
+        assert(m.line_i_q == before - (int)LINE_UNWIND_SAMPLES * LINE_UNWIND_Q);
+        before = m.line_i_q;
+        tick(&m, &in);
+        assert(m.line_i_q == before - LINE_EXIT_Q);
+        /* The exit drain stops at zero and holds for LINE_HOLD_SAMPLES of the same
+           spell; a spell still black after that (an S-bend) builds normally. */
+        while (m.line_i_q != 0)
+            tick(&m, &in);
+        for (unsigned i = 0; i < LINE_HOLD_SAMPLES; i++)
+            tick(&m, &in);
+        assert(m.line_i_q == 0 && m.line_steer_q == -LINE_HOLD_KICK_Q);
+        tick(&m, &in);
+        assert(m.line_i_q == -LINE_BUILD_Q);
+        in = input();
+        follow(&m, &in);
+        in.line_error = 127;
+        for (int i = 0; i < 40; i++)
+            tick(&m, &in);
+        in.line_error = -127;
+        while (m.line_i_q != 0)
+            tick(&m, &in);
+        in.line_error = 0;
+        tick(&m, &in);
+        in.line_error = -127;
+        tick(&m, &in);
+        assert(m.line_i_q == -LINE_BUILD_Q); /* white/white released the hold */
+        in.line_error = 0;
+        tick(&m, &in);
+    }
+#endif
+    /* A long one-black spell saturates only at the limit, never beyond. */
+    in.line_error = 127;
+    for (int i = 0; i < 200; i++)
+        tick(&m, &in);
+    assert(m.line_steer_q == 127 && m.line_i_q == 127 - LINE_INITIAL_Q);
     in.line_error = 0;
     tick(&m, &in);
-    assert(m.line_steer_q == LINE_INITIAL_Q - LINE_BUILD_Q); /* fades, not drops */
-    for (int i = 0; i < LINE_INITIAL_Q / LINE_BUILD_Q; i++)
-        tick(&m, &in);
-    assert(m.line_steer_q == 0);
+    assert(m.line_steer_q == 127 - LINE_INITIAL_Q);
     for (int i = 0; i < 100; i++)
         tick(&m, &in);
     assert(m.state == MISSION_FOLLOW_LINE);
@@ -197,6 +258,27 @@ static void navigation(void)
     in.line_error = 0;
     tick(&m, &in);
     assert(m.state == MISSION_FOLLOW_LINE && m.junction_locked);
+    /* Both black on a curve (large held integral) keeps the turn and never
+       becomes an unqueued crossing. */
+    in = input();
+    follow(&m, &in);
+    in.line_error = 127;
+    for (int i = 0; i < 20; i++)
+        tick(&m, &in);
+    int curve_q = m.line_steer_q;
+    in.line = IR_LINE_BROAD_BLACK;
+    in.left_black = in.right_black = true;
+    in.guidance_valid = false;
+    MissionOutputs out = tick(&m, &in);
+    move(&in, NAV_CURVE_CONFIRM_MM + 5, NAV_CURVE_CONFIRM_MM + 5);
+    out = tick(&m, &in);
+    assert(m.state == MISSION_FOLLOW_LINE && motion_cmd_steering(&out.command) == curve_q);
+    in.line = IR_LINE_VISIBLE;
+    in.left_black = in.right_black = false;
+    in.guidance_valid = true;
+    in.line_error = 0;
+    tick(&m, &in);
+    assert(m.state == MISSION_FOLLOW_LINE && m.line_steer_q == m.line_i_q && m.line_i_q > 0);
     /* A crossing that skewed the robot steers back to the pre-crossing heading
        before white/white hands over to tracking. */
     in = input();
@@ -206,7 +288,7 @@ static void navigation(void)
     in.left_black = in.right_black = true;
     tick(&m, &in);
     move(&in, NAV_CONFIRM_MM + 1, NAV_CONFIRM_MM + 1);
-    MissionOutputs out = tick(&m, &in);
+    out = tick(&m, &in);
     assert(m.state == MISSION_NAVIGATE && motion_cmd_steering(&out.command) < 0);
     in.line = IR_LINE_VISIBLE;
     in.left_black = in.right_black = false;
@@ -263,7 +345,7 @@ static void navigation_failures(void)
     MissionInputs in = input();
     follow(&m, &in);
     in.line_error = -127;
-    for (unsigned i = 0; i < 5; ++i) tick(&m, &in);
+    for (unsigned i = 0; i < 12; ++i) tick(&m, &in); /* integral above the curve bound */
     assert(mission_queue_direction(&m, BARCODE_LEFT));
     in.left_black = in.right_black = true;
     in.line = IR_LINE_BROAD_BLACK;

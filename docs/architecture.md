@@ -576,10 +576,18 @@ Implemented software revision, 2026-11-01; supersedes earlier conflicting juncti
 and applied-steering policies. Measurement and numeric settings are owned by
 [specs](project-specs.md#dout-navigation-commissioning).
 
-Mission requests moderate one-black steering and increases it only for persistent
-same-side fresh acquisitions. White/white fades it toward zero over several samples,
-so a curve keeps turning after the line recentres; broad black requests none, so a
-crossbar cannot keep a turn going. Reversal restarts moderate.
+Mission steers as PI on the digital error: a fixed proportional kick only while one
+sensor reads black, plus an integral that grows slowly per distinct one-black
+acquisition, is held through white/white so a curve keeps its turn, drains at its
+own (possibly slower) step when the error opposes it, switching to an exit step once
+the opposition outlasts a set number of samples (a curve ending, not an overshoot);
+an exit drain stops at zero and holds there until white/white or a set number of
+still-opposite samples (then an S-bend's next curve builds normally), using its own
+P kick while held, and is capped so the sum
+never exceeds full steering. Broad black requests none, so a crossbar
+cannot keep a turn going, unless the held integral exceeds the curve bound at
+broad entry: that is curve skew, so the turn is kept and, with no queued turn,
+the encounter never becomes a crossing.
 Motion owns the sole applied steering/base slew and wheel PID. DOUT white/white
 remains ambiguous; ordinary straight travel does not time out as line loss.
 

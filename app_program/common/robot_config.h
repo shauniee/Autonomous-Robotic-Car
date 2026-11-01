@@ -85,7 +85,7 @@
 
 /* --- S3 line ------------------------------------------------------- */
 #define IR_ADC_MAX		4095u
-#define IR_SAMPLE_MS		20u
+#define IR_SAMPLE_MS		10u	/* INT-115: 10 ms reads were the first change that helped at 100 mm/s */
 #define IR_MAX_GAP_MS		60u
 #define IR_LEFT_PIN		26u
 #define IR_RIGHT_PIN		27u
@@ -123,7 +123,9 @@
 #define MOTION_FOLLOW_TIGHTEN_Q 0 /* PROVISIONAL D07: inner wheel slows linearly, no pivot kink */
 #define MOTION_FOLLOW_SLEW_MMPS2 250u /* PROVISIONAL D07: common FOLLOW base ramp */
 #define MOTION_FOLLOW_STEER_QPS 900u /* PROVISIONAL D07: applied steering slew */
-#define MISSION_TRACK_SPEED_MMPS 55.0f /* PROVISIONAL D07: faster tracking trial */
+#ifndef MISSION_TRACK_SPEED_MMPS
+#define MISSION_TRACK_SPEED_MMPS 100.0f /* PROVISIONAL D07: user-fixed speed (INT-113); 55 passed in INT-105/108 */
+#endif
 /* Digital line tracking uses a fixed correction magnitude MAX_STEER.
    White reported as black with LOW polarity; use HIGH for black. */
 #define IR_BLACK_LEVEL 1u
@@ -156,13 +158,28 @@
 /* DOUT commissioning defaults, NOT calibrated limits (D02/D03/D04/D07).
    Zero measurement fields deliberately inhibit navigation. */
 #define LINE_INITIAL_Q 32
-#define LINE_BUILD_Q 12
+#define LINE_BUILD_Q 3 /* PROVISIONAL D07: integral step per one-black sample (INT-107/118) */
+#ifndef LINE_UNWIND_Q
+#define LINE_UNWIND_Q 1 /* PROVISIONAL D07: integral step against its sign (INT-116) */
+#endif
+#ifndef LINE_UNWIND_SAMPLES
+#define LINE_UNWIND_SAMPLES 20u /* PROVISIONAL D07: opposing samples treated as overshoot (INT-118) */
+#endif
+#ifndef LINE_EXIT_Q
+#define LINE_EXIT_Q 6 /* PROVISIONAL D07: step once opposition outlasts that: curve exit */
+#endif
+#ifndef LINE_HOLD_KICK_Q
+#define LINE_HOLD_KICK_Q 64 /* PROVISIONAL D07: P kick during that hold (INT-122) */
+#endif
+#ifndef LINE_HOLD_SAMPLES
+#define LINE_HOLD_SAMPLES 255u /* black samples held at zero after an exit drain; 255 = until white (INT-120/122) */
+#endif
 #define LINE_RELEASE_QPS 1800u
 #ifndef NAV_GEOMETRY_RELEASED
 #define NAV_GEOMETRY_RELEASED 0
 #endif
 #ifndef NAV_SENSOR_FORWARD_MM
-#define NAV_SENSOR_FORWARD_MM 135 /* User-measured axle centre to IR pair centre; specs D02 */
+#define NAV_SENSOR_FORWARD_MM 120 /* User-measured axle centre to IR pair centre after an 18 mm move (INT-117); specs D02 */
 #endif
 #ifndef NAV_CROSSBAR_MM
 #define NAV_CROSSBAR_MM 18 /* User-reported stripe thickness; specs D02 */

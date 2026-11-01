@@ -24,7 +24,7 @@ static MissionOutputs step(Mission *m, MissionInputs *in, uint32_t now)
 
 static int ref_initial_steer(int error_q)
 {
-    int correction = LINE_INITIAL_Q;
+    int correction = LINE_INITIAL_Q + LINE_BUILD_Q; /* P kick plus first I step */
     return error_q < 0 ? -correction : (error_q > 0 ? correction : 0);
 }
 

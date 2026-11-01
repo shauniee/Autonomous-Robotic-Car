@@ -18,7 +18,7 @@ int main(void)
     /* Current tracking trial and recovery speeds in measured encoder units. */
     float follow_cps = MISSION_TRACK_SPEED_MMPS * ENC_COUNTS_PER_MM;
     float recovery_cps = RECOVERY_SPEED_MMPS * ENC_COUNTS_PER_MM;
-    assert(follow_cps > 640.0f && follow_cps < 641.0f);
+    assert(follow_cps > 1164.0f && follow_cps < 1166.0f); /* 100 mm/s, INT-123 */
     assert(recovery_cps > 410.0f && recovery_cps < 435.0f);
     /* Lifetime wheel separation must not affect local displacement. */
     const uint32_t before[2] = {1000u, 33767u};

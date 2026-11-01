@@ -73,8 +73,9 @@ before further gain tuning. No specific spacing or height is calibrated here.
 ### 2.3 Digital classification and guidance
 
 Left-only black steers right, right-only black steers left, both white drives
-forward and both black immediately starts a queued direction; unqueued crossings retain qualification. Digital steering uses a bounded step toward full correction on each distinct
-acquisition; Motion retains wheel-speed PID.
+forward and both black immediately starts a queued direction; unqueued crossings retain qualification. Digital steering is PI on each distinct acquisition (rules in the
+[DOUT navigation contract](../architecture.md#dout-navigation-contract), values in
+[specs](../project-specs.md#dout-navigation-commissioning)); Motion retains wheel-speed PID.
 UNKNOWN means invalid/stale input. White/white cannot distinguish centred
 travel from a lost line. Existing junction action and stop policies remain.
 

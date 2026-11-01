@@ -2,6 +2,42 @@
 
 ## Contents
 
+- [100 mm/s defaults from trial o — INT-123](#100-mms-defaults-from-trial-o--int-123)
+
+- [Hold limit and hump halving — INT-122](#hold-limit-and-hump-halving--int-122)
+
+- [Instant exit reset hurts curves — INT-121](#instant-exit-reset-hurts-curves--int-121)
+
+- [S-bend after the exit hold — INT-120](#s-bend-after-the-exit-hold--int-120)
+
+- [Curve exit swings the other way — INT-119](#curve-exit-swings-the-other-way--int-119)
+
+- [Curves hold, curve-exit drain — INT-118](#curves-hold-curve-exit-drain--int-118)
+
+- [Slow unwind on three curves — INT-117](#slow-unwind-on-three-curves--int-117)
+
+- [Sensors moved back, slower integral unwind — INT-116](#sensors-moved-back-slower-integral-unwind--int-116)
+
+- [Bigger kick and 10 ms IR at 100 mm/s — INT-115](#bigger-kick-and-10-ms-ir-at-100-mms--int-115)
+
+- [100 mm/s baseline and slew — INT-114](#100-mms-baseline-and-slew--int-114)
+
+- [60 and 65 mm/s, 100 mm/s tuning plan — INT-113](#60-and-65-mms-100-mms-tuning-plan--int-113)
+
+- [Integral step 6 at 80 mm/s — INT-112](#integral-step-6-at-80-mms--int-112)
+
+- [Same speed on curves, faster integral trial — INT-111](#same-speed-on-curves-faster-integral-trial--int-111)
+
+- [Curve speed latch — INT-110](#curve-speed-latch--int-110)
+
+- [Curve speed cap — INT-109](#curve-speed-cap--int-109)
+
+- [PI floor runs and curve skew — INT-108](#pi-floor-runs-and-curve-skew--int-108)
+
+- [Distance-scaled trial and PI steering — INT-107](#distance-scaled-trial-and-pi-steering--int-107)
+
+- [Tracking at 80 mm/s — INT-106](#tracking-at-80-mms--int-106)
+
 - [Floor run with crossing heading restore — INT-105](#floor-run-with-crossing-heading-restore--int-105)
 
 - [Crossing heading restore — INT-104](#crossing-heading-restore--int-104)
@@ -2637,3 +2673,337 @@ speeds 96% of the time.
 user with the trace above, on an uncommitted working tree. Not covered: 80/100 mm/s,
 queued turns (geometry release still off), barcode reading, obstacle bypass,
 repeatability across runs or battery levels.
+
+## Tracking at 80 mm/s — INT-106
+
+2026-11-01, Claude with Nicholas. Commit `89bfc65` built with only
+`MISSION_TRACK_SPEED_MMPS` 80 (UF2 `8ff5b8ba…`, not in Git), battery, same course.
+[Monitor capture](logs/2026-11-01_INT-106/monitor-floor-80.txt) (its first five runs
+are at the 55 mm/s target, from the INT-105 image).
+
+**User observation:** straights sway left and right; the curve is taken stiffly,
+like the straights. **FAIL** at 80 mm/s.
+
+Trace, 80 mm/s runs: steering changes side 1.5-2.6 times a second (55 mm/s: 0.3-0.7).
+Each swing ramps to full steering (outer 80 mm/s, inner 0) and holds it for about
+16 samples (320 ms) per side, a regular left-right cycle of about 650 ms. Wheels
+still follow targets (mean error 6-9 mm/s), so the swaying comes from the steering
+loop. Build, fade and steering slew are per sample or per second, so at 80 mm/s each
+covers about 45% more distance than at 55 mm/s. A trial image scaling those three
+by 80/55 (`LINE_BUILD_Q` 17, `LINE_RELEASE_QPS` 2620, `MOTION_FOLLOW_STEER_QPS`
+1310; UF2 `00f59735…`) is built; source unchanged.
+
+## Distance-scaled trial and PI steering — INT-107
+
+2026-11-01, Claude with Nicholas. Base `89bfc65`.
+
+**Trial (INT-106 scaled image `00f59735…`), 80 mm/s on the floor:** the user saw the
+same swaying. [Monitor capture](logs/2026-11-01_INT-107/monitor-floor-80-scaled.txt)
+(about 12 s, after a broker restart): 2.4 steering side changes per second, full
+steering 49% of the time. **FAIL**; scaling build, fade and slew by 80/55 does not
+remove it. In INT-105 (55 mm/s, pass) the curve spells also sat at full steering,
+so the old build-up (+12 per one-black sample across a 23 mm black zone) always
+ran to the limit.
+
+**Change:** steering is now PI. One-black gives a 32/127 kick (`LINE_INITIAL_Q`)
+plus an integral that grows by `LINE_BUILD_Q` = 3 per distinct one-black sample,
+is held through white/white and is capped so the sum is at most 127. The kick drops
+as soon as both read white. The crossing heading reference now updates on
+white/white with steering below 16. [Host suite](logs/2026-11-01_INT-107/host.txt)
+PASS (tracking, mission and crossing cases updated for the PI values). Normal
+wireless images at 55 mm/s (`c0e8831f…`) and 80 mm/s (`5d943e65…`) built; not run.
+No physical pass.
+
+## PI floor runs and curve skew — INT-108
+
+2026-11-01, Claude with Nicholas. INT-107 working tree (base `89bfc65`), images
+`c0e8831f…` (55 mm/s) and `5d943e65…` (80 mm/s), battery, same course.
+[Monitor capture](logs/2026-11-01_INT-108/monitor-floor-55-80-pi.txt) (also holds the
+INT-107 scaled-trial runs; the PI runs are the last three).
+
+**User observation:** 55 mm/s worked well (PASS on this section); 80 mm/s lost the
+line on the curve (FAIL). The 80 mm/s straight run asked for full steering 3% of the
+time (scaled trial: 49%). On the curve, steering rose by the integral step to full
+and held there; both sensors then read black, the encounter qualified as an unqueued
+crossing (`TURN UNMAPPED` at robot t=35.12 s), entering navigation reset the
+integral, and tracking resumed at about 45/127 with the line already inside both
+sensors.
+
+**Change:** the curve flag at broad entry now uses the held integral (above
+`NAV_ENTRY_MAX_STEER_Q`) instead of total steering, so a crossbar touch (P only)
+does not count. With that flag, broad black keeps the current steering and, with no
+queued turn, never commits a crossing. Queued turns on a curved entry still stop as
+before. [Host suite](logs/2026-11-01_INT-108/host.txt) PASS with a new curve-skew
+case; the geometry-on curved-entry test now builds the integral for 12 samples.
+Images built at 55 mm/s (`1dbb19d3…`) and 80 mm/s (`85b3a8b0…`); not run. No physical
+pass at 80 mm/s.
+
+## Curve speed cap — INT-109
+
+2026-11-01, Claude with Nicholas. INT-108 working tree (base `89bfc65`), images
+`85b3a8b0…` (80 mm/s) then `1dbb19d3…` (55 mm/s), battery, same course.
+[Monitor capture](logs/2026-11-01_INT-109/monitor-floor-80-55-pi2.txt).
+
+**User observation:** 80 mm/s still loses the curve (FAIL); 55 mm/s runs completed
+(86 s and 32 s runs in the trace). At 80 mm/s the curve now stays in tracking (one
+early `TURN UNMAPPED` at robot t=17.42 s, then no crossing commit on the curve), but
+steering cycles: the inner sensor builds steering to about 120/127, the robot
+overshoots until the outer sensor reads black, and this repeats about every 0.6 s
+until a long full-steering spell after which the line is inside both sensors.
+
+**Change:** while the held integral exceeds `NAV_ENTRY_MAX_STEER_Q` (a sustained
+curve), tracking speed is capped at `MISSION_CURVE_SPEED_MMPS` = 55 (provisional
+D07; curves pass at 55 in INT-105 and INT-108). `MISSION_TRACK_SPEED_MMPS` can now be
+overridden at build time; the host suite runs the navigation tests a third time at
+100 mm/s, where the new curve-speed assertion fails without the cap (checked).
+[Host suite](logs/2026-11-01_INT-109/host.txt) PASS. Images at 80 mm/s (`42761bd2…`)
+and 100 mm/s (`916e4068…`) built; not run. No physical pass above 55 mm/s.
+
+## Curve speed latch — INT-110
+
+2026-11-01, Claude with Nicholas. INT-109 image `42761bd2…` (80 mm/s, curve cap 55),
+battery, same course. [Monitor capture](logs/2026-11-01_INT-110/monitor-floor-80-capped.txt).
+
+**User observation:** on curves it undershoots and goes wide. **FAIL.** The cap did
+engage (outer wheel about 54-55 mm/s in curves), but outer-sensor touches pulled the
+integral below 32 mid-curve and speed returned to 80 mm/s on the curve (for example
+integral about 20 with the outer target rising 71 -> 80). One run ended holding
+45/127 at 55 mm/s with both sensors white, circling wide of the line.
+
+**Change:** curve speed is now a latch: on when the integral exceeds 16
+(`LINE_INITIAL_Q / 2`), off only when it has drained to at most 3 (`LINE_BUILD_Q`).
+Cleared on state entry. [Host suite](logs/2026-11-01_INT-110/host.txt) PASS; the
+100 mm/s navigation build checks that speed stays capped after the integral falls
+below 16 and returns to tracking speed once it reaches zero. Image at 80 mm/s
+(`a81f99bd…`) built; not run. No physical pass above 55 mm/s.
+
+## Same speed on curves, faster integral trial — INT-111
+
+2026-11-01, Claude with Nicholas. INT-110 image `a81f99bd…` (80 mm/s, curve latch),
+battery, same course. [Monitor capture](logs/2026-11-01_INT-111/monitor-floor-80-latch.txt).
+
+**User observation:** still goes wide on curves (**FAIL**). The user wants the same
+speed on curves and straights, so the INT-109/110 curve cap and latch are removed
+(source, test and architecture text); the build-time speed override and the
+100 mm/s navigation test build stay. Path radius from wheel speeds in the 55 mm/s
+INT-109 runs reaches 60-90 mm over one-second windows, so the curve needs
+near-full steering; at 3 per sample the integral needs about 0.5 s (about 40 mm at
+80 mm/s) to get there.
+
+[Host suite](logs/2026-11-01_INT-111/host.txt) PASS after the removal. Trial image
+at 80 mm/s with only `LINE_BUILD_Q` 6 (UF2 `c552e3fc…`; source keeps 3) built; not
+run. No physical pass above 55 mm/s.
+
+## Integral step 6 at 80 mm/s — INT-112
+
+2026-11-01, Claude with Nicholas. INT-111 trial image `c552e3fc…` (80 mm/s,
+`LINE_BUILD_Q` 6), battery, same course.
+[Monitor capture](logs/2026-11-01_INT-112/monitor-floor-80-i6.txt) (last 6000 lines).
+
+**User observation:** straights correct stiffly; the curve cannot be held. **FAIL.**
+On the curve the integral swings from full one way to full the other (about +127 to
+-127 and back within about 1.5 s), so a faster integral winds up and oscillates
+rather than settling near the steady curve steering. Source keeps step 3. With
+two digital sensors, 55 mm/s is the highest constant speed that has passed this
+course (INT-105, INT-108); 80 mm/s has failed with five steering variants
+(INT-106 to INT-112). No code change.
+
+## 60 and 65 mm/s, 100 mm/s tuning plan — INT-113
+
+2026-11-01, Claude with Nicholas. INT-111 working tree (step 3, no curve cap), images
+`7b2645a6…` (60 mm/s) and `16095c26…` (65 mm/s), battery, same course. Monitor
+capture not separated for these runs.
+
+**User observation:** at 60 mm/s the last curve of a three-curve (90 degree) route
+turns too slowly but the robot reaches the junction; at 65 mm/s the curve is slow
+and the sensors pass beyond the line. **FAIL** for the full route at both.
+
+**Decision (user):** speed fixed at 100 mm/s; tune other variables one at a time,
+delay first. Images built from the same tree at 100 mm/s: baseline
+(`0dec93e7…`) and steering slew 6350/s for both `MOTION_FOLLOW_STEER_QPS` and
+`LINE_RELEASE_QPS`, i.e. any step within one 20 ms Motion period (`063ed252…`).
+Source unchanged (55 mm/s). Not yet run.
+
+## 100 mm/s baseline and slew — INT-114
+
+2026-11-01, Claude with Nicholas. INT-113 images `0dec93e7…` (baseline) and
+`063ed252…` (steering slew 6350/s), 100 mm/s, battery, same course, two runs of
+the baseline. Monitor capture not separated.
+
+**User observation:** baseline, both runs: curve not strong enough (**FAIL**);
+fast slew: same (**FAIL**, no change). Trace at 100 mm/s: on the curve steering
+reaches full (127) and holds for about 13-20 samples, then drops as the line
+leaves the inner sensor and the outer sensor reads black, ending with a small held
+integral (about 24-39) and the line lost.
+
+Next images from the same tree, 100 mm/s, original slew: P kick
+`LINE_INITIAL_Q` 48 (`55902329…`), and IR read every 10 ms (`IR_SAMPLE_MS` 10)
+with `LINE_BUILD_Q` 2 to keep the integral rate per second close to before
+(`84411920…`). Not yet run.
+
+## Bigger kick and 10 ms IR at 100 mm/s — INT-115
+
+2026-11-01, Claude with Nicholas. INT-114 images, 100 mm/s, battery, same course.
+Monitor capture not separated.
+
+**User observation:** P kick 48 (`55902329…`): same curve failure (**FAIL**).
+IR every 10 ms with integral step 2 (`84411920…`): misses the curve but keeps turning
+and recovers by the end of it (**FAIL**, best so far; user attributes the recovery
+to the integral).
+
+Next images build on the 10 ms IR image: Motion period 10 ms (`MOTION_PERIOD_MS`;
+`8699de4e…`) and wheel `MOTION_KP` 0.00015 (`0f118655…`). Not yet run. Host suite
+with the trial values fails two tests that hard-code current values (12 samples x
+step 2 stays below the curve bound; the first FOLLOW ramp step assumes a 20 ms
+period), not firmware faults; the source keeps the current values and passes.
+
+## Sensors moved back, slower integral unwind — INT-116
+
+2026-11-01, Claude with Nicholas. IR pair moved 18 mm back (user), about 117 mm
+ahead of the axle (exact distance to be measured; `NAV_SENSOR_FORWARD_MM` still
+135). Images `84411920…` (d: 10 ms IR, step 2), `8699de4e…` (e: plus 10 ms Motion),
+`0f118655…` (f: plus `MOTION_KP` 0.00015), 100 mm/s, battery, same course.
+[Monitor capture](logs/2026-11-01_INT-116/monitor-100-def-117mm.txt) (last 25000 lines).
+
+**User observation:** d: straight steady, curve goes wide, crossing good. e and f:
+same as d. **FAIL** (curve) for all three; straights and crossing pass at 100 mm/s.
+Trace: inner-sensor touches build the integral (about 6 -> 94), then an outer-sensor
+touch stays black for about 300 ms and drains it to about 34, after which the robot
+goes wide holding about 32.
+
+**Change:** `LINE_UNWIND_Q` (default `LINE_BUILD_Q`, so current behaviour is
+unchanged) sets the integral step when the error opposes the held integral.
+[Host suite](logs/2026-11-01_INT-116/host.txt) PASS, including a new drain-rate check
+and the 100 mm/s build run with `LINE_UNWIND_Q` 1. Trial image: d plus
+`LINE_UNWIND_Q` 1 (`bbbe0ce4…`); not run.
+
+## Slow unwind on three curves — INT-117
+
+2026-11-01, Claude with Nicholas. INT-116 image `bbbe0ce4…` (100 mm/s, 10 ms IR,
+integral step 2, unwind 1), battery, three consecutive 90 degree curves.
+[Monitor capture](logs/2026-11-01_INT-117/monitor-100-g.txt) (last 12000 lines).
+
+**User observation:** first curve good, second wider, third off the line. **FAIL.**
+User-measured IR pair distance after the move: 120 mm, now `NAV_SENSOR_FORWARD_MM`
+and the D04 specs row (was 135). Trace: on the curves the held integral climbs in
+steps (about 38, 50, 60, 74), outer-sensor touches pull it back (about 74 -> 40),
+and on the third curve the line passes through the inner sensor while about 38 is
+held.
+
+Trial images built from the same tree on top of the INT-116 trial: P kick 20
+(`04a3ee45…`), and integral step 3 with unwind 1 (`d18e0481…`). Not yet run.
+[Host suite](logs/2026-11-01_INT-117/host.txt) with the source defaults.
+
+## Curves hold, curve-exit drain — INT-118
+
+2026-11-01, Claude with Nicholas. INT-117 trial images `04a3ee45…` (h: kick 20,
+step 2, unwind 1) and `d18e0481…` (i: kick 32, step 3, unwind 1), 100 mm/s, 10 ms IR,
+IR pair at 120 mm, battery, three consecutive 90 degree curves.
+[Monitor capture](logs/2026-11-01_INT-118/monitor-100-h-i.txt) (last 12000 lines).
+
+**User observation:** both h and i hold all three curves; leaving the last curve
+onto the straight the robot swings wide and overshoots. **Curves PASS at 100 mm/s
+for these two trials; curve exit FAIL.** The barcode sensor moved back 18 mm with the
+IR pair (specs updated: about 185 mm forward, 55 mm left).
+
+**Change:** opposing samples are counted; after `LINE_UNWIND_SAMPLES` in a row the
+integral drains at `LINE_EXIT_Q`. Source defaults (255 samples, exit step equal to
+unwind) keep current behaviour. [Host suite](logs/2026-11-01_INT-118/host.txt) PASS,
+including a new check in the 100 mm/s build (5 samples, exit step 6). Trial images
+with 20 samples (200 ms at 10 ms IR) and exit step 6: on i (`cb4f9424…`) and on h
+(`b75bacf5…`). Not yet run.
+
+## Curve exit swings the other way — INT-119
+
+2026-11-01, Claude with Nicholas. INT-118 trial images `cb4f9424…` (j, on i) and
+`b75bacf5…` (k, on h), 100 mm/s, battery, three 90 degree curves.
+[Monitor capture](logs/2026-11-01_INT-119/monitor-100-j-k.txt) (last 12000 lines).
+
+**User observation:** j better; after all curves, on the straight the robot turns
+the opposite way (after a right curve it goes left) and loses the line. **FAIL.**
+Cause in the rule: the fast exit drain runs past zero while the outer sensor is
+still black, so the same spell builds an opposite integral that the slow unwind
+then releases slowly.
+
+**Change:** an exit drain that reaches or crosses zero stops at zero and holds
+there until white/white. Source defaults never enter exit mode, so current
+behaviour is unchanged. [Host suite](logs/2026-11-01_INT-119/host.txt) PASS with an
+extended 100 mm/s check (held at zero through 100 further opposite samples, released
+by white/white). Trial image: j plus the hold (`1ed81850…`). Not yet run. Known
+limit: in an S-bend the first opposite spell runs on the P kick alone until the
+line recentres.
+
+## S-bend after the exit hold — INT-120
+
+2026-11-01, Claude with Nicholas. INT-119 image `1ed81850…` (l: j plus exit hold),
+100 mm/s, battery. [Monitor capture](logs/2026-11-01_INT-120/monitor-100-l.txt)
+(last 12000 lines).
+
+**User observation:** stable most of the time; a left curve followed immediately by
+a right curve is not turned strongly enough on the second curve and leaves the
+line. **FAIL** for the S-bend (the limit noted in INT-119: the hold kept the
+integral at zero for the whole black spell, so the second curve ran on the kick
+alone).
+
+**Change:** the hold also ends after `LINE_HOLD_SAMPLES` still-opposite samples
+(default 255, so current behaviour is unchanged). [Host suite](logs/2026-11-01_INT-120/host.txt)
+PASS; the 100 mm/s build (hold 10) checks the integral stays at zero for 10 samples
+and then builds, and that white/white still releases it early. Trial image: l with
+`LINE_EXIT_Q` 127 (exit resets the integral at once) and `LINE_HOLD_SAMPLES` 10
+(100 ms at 10 ms IR) (`7feb06e1…`). Not yet run.
+
+## Instant exit reset hurts curves — INT-121
+
+2026-11-01, Claude with Nicholas. INT-120 image `7feb06e1…` (m: exit step 127, hold
+10), 100 mm/s, battery. [Monitor capture](logs/2026-11-01_INT-121/monitor-100-m.txt)
+(last 8000 lines).
+
+**User observation:** straights OK; curves veer off. **FAIL** (worse than l). Duty
+for steady 100 mm/s stays 15.5-16.6% across today's runs, so the battery has not
+shifted. Suspected cause: an outer touch longer than 200 ms now resets the curve's
+integral at once and, 100 ms later, builds the opposite way mid-curve. Trial image
+separating the two changes: l's gradual exit drain (6) with the 10-sample hold
+(`c5d9fe1e…`). Not yet run. No code change.
+
+## Hold limit and hump halving — INT-122
+
+2026-11-01, Claude with Nicholas. INT-121 image `c5d9fe1e…` (n: exit drain 6, hold
+10), 100 mm/s build, battery. Captures: [first run](logs/2026-11-01_INT-122/monitor-100-n-hump.txt),
+[after IMU check](logs/2026-11-01_INT-122/monitor-100-n.txt).
+
+**First run, user:** worked well until one left curve veered right; speed seemed
+stuck at 50 mm/s. Trace: equal wheel targets were 50 mm/s almost throughout, which
+is Mission halving speed while terrain reports climbing/cresting/descending
+(`hump_active`); 50 mm/s stretches had already appeared in INT-120/121. The user
+checked the IMU; the next run was back at 100 mm/s.
+
+**Second run, user:** on the three-curve route it veers off on the straight
+afterwards. **FAIL.** Trace: after the exit drain and the 10-sample hold, an
+inner-side touch rebuilt about 92, then opposite touches built about -43, which was
+held on the straight.
+
+**Change:** `LINE_HOLD_KICK_Q` (default `LINE_INITIAL_Q`, unchanged) is the P kick
+used while the exit hold is active. [Host suite](logs/2026-11-01_INT-122/host.txt)
+PASS (100 mm/s build: hold kick 64). Trial image: hold until white/white (as l),
+exit drain 6, hold kick 64 (`be6539c9…`). Not yet run. Hump-detector cause not
+investigated in code.
+
+## 100 mm/s defaults from trial o — INT-123
+
+2026-11-01, Claude with Nicholas. INT-122 trial image o (`be6539c9…`: 100 mm/s,
+10 ms IR, kick 32, step 3, unwind 1, exit drain 6 after 20 samples, hold until
+white with kick 64), battery, same course.
+[Monitor capture](logs/2026-11-01_INT-123/monitor-100-o.txt).
+
+**User observation:** only the junction reached from the three-curve route has an
+issue; straights and curves otherwise hold. **PASS** for straights and curves at
+100 mm/s on this course; **FAIL** at that junction. S-bend not separately
+reported for this image.
+
+**Change:** trial o's values are now the source defaults (`robot_config.h`); the
+normal wireless image built from source is byte-identical to trial o
+([build log](logs/2026-11-01_INT-123/firmware-normal.txt), no warnings or errors).
+`test_encoder_math` now checks 100 mm/s in counts; the extra navigation test build
+only shortens the overshoot window and exit hold. Specs and the S3 steering
+paragraph updated. [Host suite](logs/2026-11-01_INT-123/host.txt) PASS. Open items
+are in the [line-tracking handoff](../../docs/line-tracking-handoff.md).

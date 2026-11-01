@@ -50,6 +50,9 @@ static void enter(Mission *m, MissionState next, uint32_t now_ms)
     m->state_since_ms = now_ms;
     m->line_loss_pending = 0u;
     m->line_steer_q = 0;
+    m->line_i_q = 0;
+    m->line_oppose_n = 0u;
+    m->line_i_hold = 0u;
     m->line_steer_sampled_ms = now_ms - IR_MAX_GAP_MS - 1u;
 }
 
@@ -60,21 +63,55 @@ static int line_digital_steering(Mission *m, const MissionInputs *in)
         in->line_sampled_ms != m->line_steer_sampled_ms)
     {
         int sign = in->line_error < 0 ? -1 : in->line_error > 0 ? 1 : 0;
-        bool same =
-            sign && ((m->line_steer_q < 0) == (sign < 0)) && m->line_steer_q;
         bool continuous =
             robot_time_elapsed(in->line_sampled_ms, m->line_steer_sampled_ms) <=
             IR_MAX_GAP_MS;
-        int strength = same && continuous ? abs(m->line_steer_q) + LINE_BUILD_Q
-        : LINE_INITIAL_Q;
-        if (!sign)
+        /* PI on the digital error: the P kick lasts only while a sensor is black;
+           I grows slowly so it cannot saturate on every swing, and holds a
+           curve's turn through white/white. */
+        int held = continuous ? m->line_i_q : 0;
+        /* An outer-sensor touch on a curve is overshoot for P to fix; drain the
+           curve's integral more slowly than it builds. */
+        bool opposing = held != 0 && sign != 0 && (held > 0) != (sign > 0);
+        /* A sustained opposite reading is a curve ending, not an overshoot. */
+        m->line_oppose_n = opposing && m->line_oppose_n < 255u ?
+            (uint8_t)(m->line_oppose_n + 1u) : (opposing ? 255u : 0u);
+        bool exiting = opposing && m->line_oppose_n > LINE_UNWIND_SAMPLES;
+        int step = !opposing ? LINE_BUILD_Q :
+            (exiting ? LINE_EXIT_Q : LINE_UNWIND_Q);
+        int i = held + sign * step;
+        /* A curve-exit drain stops at zero and holds there until white/white or
+           LINE_HOLD_SAMPLES: a straight recentres within that, while an S-bend's
+           next curve keeps the sensor black and then builds normally. */
+        if (sign == 0)
         {
-            /* White/white fades the last correction so a curve keeps turning. */
-            int held = abs(m->line_steer_q) - LINE_BUILD_Q;
-            strength = continuous && held > 0 ? held : 0;
-            sign = m->line_steer_q < 0 ? -1 : 1;
+            m->line_i_hold = 0u;
         }
-        m->line_steer_q = (int8_t)(sign * (strength > 127 ? 127 : strength));
+        if (exiting && (i == 0 || (i > 0) != (held > 0)))
+        {
+            i = 0;
+            m->line_i_hold = 1u;
+            m->line_hold_n = 0u;
+        }
+        else if (m->line_i_hold)
+        {
+            if (m->line_hold_n < LINE_HOLD_SAMPLES)
+            {
+                m->line_hold_n++;
+                i = 0;
+            }
+            else
+            {
+                m->line_i_hold = 0u;
+            }
+        }
+        int i_max = 127 - LINE_INITIAL_Q;
+        i = i > i_max ? i_max : (i < -i_max ? -i_max : i);
+        m->line_i_q = (int8_t)i;
+        /* While held after a curve exit, P alone must carry an S-bend's next curve. */
+        int kick = m->line_i_hold ? LINE_HOLD_KICK_Q : LINE_INITIAL_Q;
+        int steer = i + sign * kick;
+        m->line_steer_q = (int8_t)(steer > 127 ? 127 : (steer < -127 ? -127 : steer));
         m->line_steer_sampled_ms = in->line_sampled_ms;
     }
     return m->line_steer_q;
@@ -239,7 +276,8 @@ static void handle_follow(Mission *m, const MissionInputs *in,
     if (broad && !m->in_broad && !m->junction_locked)
     {
         m->in_broad = true;
-        m->entry_curved = abs(m->line_steer_q) > NAV_ENTRY_MAX_STEER_Q;
+        /* A large held integral means a curve; a crossbar touch only adds P. */
+        m->entry_curved = abs(m->line_i_q) > NAV_ENTRY_MAX_STEER_Q;
         m->broad_origin[0] = m->entry_origin[0] = in->wheel_count[0];
         m->broad_origin[1] = m->entry_origin[1] = in->wheel_count[1];
         m->junction_open = 1u;
@@ -252,7 +290,11 @@ static void handle_follow(Mission *m, const MissionInputs *in,
     {
         m->in_broad = false;
     }
-    if (m->in_broad && m->junction_qualified && !m->junction_locked)
+    bool held_turn = m->held == BARCODE_LEFT || m->held == BARCODE_RIGHT ||
+        m->held == BARCODE_U_TURN;
+    /* Curve skew reads both black too: without a queued turn, keep following. */
+    if (m->in_broad && m->junction_qualified && !m->junction_locked &&
+        (held_turn || !m->entry_curved))
     {
         barcode_action_t action = m->held;
         bool turning = action == BARCODE_LEFT || action == BARCODE_RIGHT ||
@@ -328,7 +370,9 @@ static void handle_follow(Mission *m, const MissionInputs *in,
     }
     if (broad)
     {
-        out->command = follow_command(in, MISSION_TRACK_SPEED_MMPS, 0, 1u);
+        /* Crossbar: no steering. Curve skew: keep the held turn. */
+        out->command = follow_command(in, MISSION_TRACK_SPEED_MMPS,
+            m->in_broad && m->entry_curved ? m->line_steer_q : 0, 1u);
         return;
     }
 
@@ -386,7 +430,7 @@ static void handle_follow(Mission *m, const MissionInputs *in,
         return;
     }
     int steer = line_digital_steering(m, in);
-    if (steer == 0)
+    if (in->line_error == 0 && abs(steer) < LINE_INITIAL_Q / 2)
     {
         m->straight_origin[0] = in->wheel_count[0];
         m->straight_origin[1] = in->wheel_count[1];

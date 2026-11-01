@@ -19,6 +19,13 @@ for geometry in 0 1; do
         app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_smooth_$geometry"
     "$build_dir/test_smooth_$geometry"
 done
+# Short overshoot window and a limited exit hold, so the exit-drain and S-bend
+# release paths (off or unreachable with the defaults) are exercised.
+$CC $CFLAGS -DNAV_GEOMETRY_RELEASED=0 -DNAV_SENSOR_FORWARD_MM=0 -DNAV_CROSSBAR_MM=0 -DLINE_UNWIND_SAMPLES=5u -DLINE_HOLD_SAMPLES=10u \
+    testing/pure/test_smooth_navigation.c app_program/mission/mission_logic.c \
+    app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
+    app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_smooth_fast"
+"$build_dir/test_smooth_fast"
 $CC $CFLAGS testing/pure/test_encoder_math.c -o "$build_dir/test_encoder_math"
 $CC $CFLAGS testing/pure/test_motion_control.c app_program/subsystem2/motion_control.c \
     app_program/common/robot_data.c -lm -o "$build_dir/test_motion_control"

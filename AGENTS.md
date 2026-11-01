@@ -28,5 +28,6 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 | One subsystem in depth: S1 comms, S2 motion, S3 line/barcode/Mission, S4 terrain, S5 obstacle | `docs/architecture/subsystem1.md` .. `subsystem5.md`; code in `app_program/subsystemN/` |
 | Test IDs, how to record results, host tests | [testing](testing/README.md) |
 | Is the robot ready for a full run? | [mission-readiness checklist](testing/mission-readiness.md) |
+| Line-tracking state, open issues and how to run a trial | [line-tracking handoff](docs/line-tracking-handoff.md) |
 | Deferred Week 13 work and video recording | [week13-plan](docs/week13-plan.md) |
 | Week 8 Tribunal decisions | [tribunal1](docs/additional-docs/tribunal1.md) |

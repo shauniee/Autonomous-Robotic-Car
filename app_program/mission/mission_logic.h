@@ -114,7 +114,7 @@ typedef struct
     uint8_t exit_seen : 1;
     int16_t turn_length_mm : 12; /* signed whole mm, +/-2000 */
     uint32_t entry_origin[2];
-    uint32_t straight_origin[2]; /* counts when last tracking centred with no steering */
+    uint32_t straight_origin[2]; /* counts when last tracking centred with little steering */
     uint8_t manual_held : 1; /* test direction protects held from barcode replacement */
     uint8_t in_broad : 1;
     uint8_t junction_open : 1;
@@ -126,6 +126,10 @@ typedef struct
     uint8_t turn_line_phase : 2; /* 0 exit, 1 new black, 2 white, 3 invalid */
     uint8_t turn_code : 2; /* 0 none, 1 left, 2 right, 3 U-turn */
     int8_t line_steer_q; /* latest digital correction target, signed Q7 */
+    int8_t line_i_q; /* held integral part of line_steer_q */
+    uint8_t line_oppose_n; /* consecutive samples opposing the integral */
+    uint8_t line_i_hold : 1; /* integral held at zero after a curve-exit drain */
+    uint8_t line_hold_n; /* samples spent in that hold */
     uint32_t line_steer_sampled_ms; /* last acquisition used for steering */
     uint32_t turn_sampled_ms; /* last acquisition used by the turn edge sequence */
     uint32_t pause_since_ms;
