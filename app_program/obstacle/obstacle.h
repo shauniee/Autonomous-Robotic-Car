@@ -69,7 +69,7 @@ static inline bool obstacle_range_sample_fresh(const obstacle_range_sample_t *sa
  *	car stationary; angles are relative to forward, positive to the left.
  *
  *	Scan state (writer: Obstacle) is one 3-bit encoded value. The profile is
- *	larger than 32 bits and is copied under a mutex (robot_snapshot.h).
+ *	larger than 32 bits and is copied under a mutex.
  *	Field widths are PROVISIONAL until #28/#54 sign off the S5 rows.
  */
 

@@ -6,8 +6,7 @@
 #include <stdint.h>
 #include "../common/robot_config.h"
 
-/* Digital raw readings are GPIO levels 0 or 1. Legacy 12-bit packing and
-   snapshot fields remain for telemetry/API compatibility. */
+/* Digital raw readings are GPIO levels 0 or 1. */
 
 /* Base-2 scaled integers (ADR 0001): a 0..1 fraction is stored as 0..127 and
    a signed -1..+1 value as -127..+127 (int8_t). Divide by IR_SCALE_ONE only
@@ -20,21 +19,20 @@ typedef struct
     uint16_t right;
 } IrRaw;
 
-/* A raw pair and its valid flag in one word: left bits 0-11, right bits
-   12-23, valid bit 24. Written with one aligned 32-bit store, so no reader
+/* A raw pair and its valid flag in one word: left bit 0, right bit 1,
+   valid bit 2. Written with one aligned 32-bit store, so no reader
    sees a left from one sample beside a right from another. Readings above
-   IR_ADC_MAX (only possible with valid clear) saturate to IR_ADC_MAX. */
+   1 (only possible with valid clear) saturate to 1. */
 typedef uint32_t IrRawWord;
 
-#define IR_RAW_BITS 12u
+#define IR_RAW_BITS 1u
 #define IR_RAW_MASK ((1u << IR_RAW_BITS) - 1u)
 #define IR_RAW_VALID_BIT (2u * IR_RAW_BITS)
-_Static_assert(IR_ADC_MAX == IR_RAW_MASK, "raw IR field width must match the ADC");
 
 static inline IrRawWord ir_raw_word(IrRaw raw, bool valid)
 {
-    uint32_t left = raw.left > IR_ADC_MAX ? IR_ADC_MAX : raw.left;
-    uint32_t right = raw.right > IR_ADC_MAX ? IR_ADC_MAX : raw.right;
+    uint32_t left = raw.left > IR_RAW_MASK ? IR_RAW_MASK : raw.left;
+    uint32_t right = raw.right > IR_RAW_MASK ? IR_RAW_MASK : raw.right;
     return left | right << IR_RAW_BITS | (valid ? 1u : 0u) << IR_RAW_VALID_BIT;
 }
 

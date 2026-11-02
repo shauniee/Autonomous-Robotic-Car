@@ -25,6 +25,7 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 | Full feature implementation sequence and source baseline | [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) |
 | Build, flash, calibrate, MQTT laptop tool, bring-up order | [README](README.md) |
 | Requirements, minimum-bit change requirement, data table, pending decisions | [project-specs](docs/project-specs.md) |
+| Bits used by each subsystem | [README](README.md#bits-per-subsystem) |
 | Tasks, authority, shared data, fault policy, MQTT frame layouts | [architecture](docs/architecture.md) |
 | Members, pins, wiring, task budget, interfaces, coding rules | [team](docs/team.md) |
 | One subsystem: S1 comms, S2 motion, S3 line/barcode, S4 terrain, S5 obstacle | `app_program/<name>/README.md` (`comms`, `motion`, `line_barcode`, `terrain`, `obstacle`) |

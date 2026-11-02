@@ -326,10 +326,8 @@ static void handle_follow(Mission *m, const MissionInputs *in,
         float travel =
             enc_mean_travel(in->wheel_count, m->entry_origin) / ENC_COUNTS_PER_MM;
         /* Advance until the axle is over the crossing centre, then pivot. */
-        float d = NAV_SENSOR_FORWARD_MM + NAV_CROSSBAR_MM * 0.5f - travel +
-            (action == BARCODE_U_TURN ? NAV_CHASSIS_FORWARD_MM : 0);
-        if (turning && (lroundf(d) <= 0 || d > MOTION_TARGET_MAX_MM ||
-            (action == BARCODE_U_TURN && NAV_CHASSIS_LEFT_MM != 0)))
+        float d = NAV_SENSOR_FORWARD_MM + NAV_CROSSBAR_MM * 0.5f - travel;
+        if (turning && (lroundf(d) <= 0 || d > MOTION_TARGET_MAX_MM))
         {
             out->nav_rejected = 2u;
             to_stop(m, in, out, true);

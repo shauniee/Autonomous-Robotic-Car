@@ -4,7 +4,6 @@
 #include "../common/drv_gpio_irq.h"
 #include "../common/robot_time.h"
 #include "../common/robot_config.h"
-#include "../common/robot_snapshot.h"
 #include "../motion/motion.h"
 
 /* Echo capture state. The handler is the only writer once the task arms the

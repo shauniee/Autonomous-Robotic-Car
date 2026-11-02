@@ -64,7 +64,7 @@ static void test_start_and_reset_never_move(void)
     /* A start press that Motion never honours times out instead of following. */
     in.motion_stopped = true; in.start_pressed = true; t += 10u;
     step(&m, &in, t);
-    in.start_pressed = false; t += MISSION_START_WAIT_MS;
+    in.start_pressed = false; t += 200u;
     out = step(&m, &in, t);
     assert(m.state == MISSION_READY && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
 }

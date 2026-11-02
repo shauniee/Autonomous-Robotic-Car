@@ -28,6 +28,7 @@ int main(void)
             assert(!s.guidance_valid && !s.sample_fresh && s.line == IR_LINE_UNKNOWN);
         }
     }
+    assert(ir_raw_word((IrRaw){1, 0}, true) == 5u && ir_raw_word((IrRaw){0, 2}, false) == 2u);
     ir_tracking_sample(&tracker, (IrRaw){2, 0}, true, 200u);
     assert(!ir_tracking_output(&tracker, 200u).valid);
     ir_tracking_sample(&tracker, (IrRaw){0, 1}, false, 220u);

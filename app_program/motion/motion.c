@@ -12,7 +12,6 @@
 #include "../common/buttons.h"
 #include "../common/drv_gpio_irq.h"
 #include "../common/robot_data.h"
-#include "../common/robot_snapshot.h"
 #include "../common/robot_time.h"
 #endif
 
@@ -57,6 +56,15 @@ ER motion_stop(void)
     return er;
 }
 
+/* Copies the shared command under the mutex; dst is untouched if the lock fails. */
+static ER command_copy(MotionCommand *dst, const MotionCommand *src)
+{
+    ER er = tk_loc_mtx(command_mutex, RD_SNAPSHOT_LOCK_MS);
+    if (er < E_OK) return er;
+    *dst = *src;
+    return tk_unl_mtx(command_mutex);
+}
+
 ER motion_command(const MotionCommand *command)
 {
     if (command == NULL)
@@ -65,7 +73,7 @@ ER motion_command(const MotionCommand *command)
         return E_PAR;
     }
     if (command_mutex <= 0) return E_OBJ;
-    ER er = rd_snapshot_copy(command_mutex, &latest, command, sizeof latest);
+    ER er = command_copy(&latest, command);
     if (er < E_OK) motion_stop();
     return er;
 }
@@ -101,7 +109,7 @@ ER motion_reset_stop(void)
                 (flag.flgptn & STOP_BIT) != 0u,
                 stop_requests, serviced_stops,
                 drv_buttons_read().gp21_down ||
-                (!APP_NO_GUARDS && rd_fault_stop_pending())))
+                rd_fault_stop_pending()))
         {
             er = E_OBJ;
         }
@@ -175,7 +183,7 @@ static void motion_task(INT stacd, void *exinf)
         T_RFLG initial = {0};
         ER initial_er = tk_ref_flg(stop_flag, &initial);
         bool local_stop = drv_buttons_read().gp21_down ||
-            (!APP_NO_GUARDS && rd_fault_stop_pending());
+            rd_fault_stop_pending();
         if (local_stop && initial_er >= E_OK &&
             (initial.flgptn & STOP_BIT) == 0u)
         {
@@ -186,8 +194,7 @@ static void motion_task(INT stacd, void *exinf)
         if (!local_stop && initial_er >= E_OK &&
             (initial.flgptn & STOP_BIT) == 0u)
         {
-            er = rd_snapshot_copy(command_mutex, &command, &latest,
-                sizeof command);
+            er = command_copy(&command, &latest);
         }
 
         uint32_t now = robot_time_ms();
@@ -225,7 +232,7 @@ static void motion_task(INT stacd, void *exinf)
         bool expired = motion_cmd_mode(&command) != MOTION_MODE_STOP &&
             !motion_command_fresh(&command, robot_time_ms());
         bool unsafe = drv_buttons_read().gp21_down ||
-            (!APP_NO_GUARDS && rd_fault_stop_pending()) ||
+            rd_fault_stop_pending() ||
             initial_er < E_OK || er < E_OK || expired ||
             out.status == RD_MOTION_FAILED;
         if ((unsafe && !stopped) || flag_er < E_OK)

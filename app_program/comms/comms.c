@@ -3,7 +3,6 @@
 #include "../mission/mission_mapping.h"
 #include "../common/robot_data.h"
 #include "../common/robot_time.h"
-#include "../common/robot_snapshot.h"
 #include "../motion/motion.h"
 #include "../mission/line_trace.h"
 #include "../mission/mission.h"

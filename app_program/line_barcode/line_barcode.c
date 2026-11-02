@@ -4,7 +4,6 @@
 #include "../motion/motion.h"
 #include <stdatomic.h>
 #include "../common/buttons.h"
-#include "../common/buzzer.h"
 #include "../common/robot_time.h"
 
 // consumers may call before startup, including from the other core
@@ -14,7 +13,7 @@ static LineIrSnapshot latest;
 
 ER line_barcode_init(void)
 {
-    if (!drv_buttons_init() || !buzzer_init())
+    if (!drv_buttons_init())
     {
         return E_SYS;
     }
@@ -125,13 +124,6 @@ void line_barcode_step(uint32_t now)
     /* Service after due digital input work, with a fixed edge budget. GP21 is
        delivered each release; barcode never owns motor/line policy. */
     barcode_service(inputs.gp21_down);
-    if (!buzzer_service(now))
-    {
-        tm_printf((UB *)"[IR] buzzer service failed; task stopped\n");
-        barcode_service(true);
-        (void)motion_stop();
-        return;
-    }
 #if BARCODE_DIAGNOSTICS
     static uint32_t diagnostic_due;
     if ((int32_t)(now-diagnostic_due)>=0) {

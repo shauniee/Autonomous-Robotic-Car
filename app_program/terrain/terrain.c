@@ -2,7 +2,6 @@
 #include "terrain.h"
 #include "../common/robot_data.h"
 #include "../common/robot_time.h"
-#include "../common/robot_snapshot.h"
 #include "../comms/comms.h"
 #include "../motion/motion.h"
 #include "../../device/i2c/sysdepend/rp2040/i2c_sysdep.h"

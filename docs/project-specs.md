@@ -310,7 +310,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | --- | --- | --- | --- | --- | --- |
 | Mapping letters (L, R, S, U) | mapping word, Mission on valid mapping | A-Z, 26 values, all four distinct | boot state UNMAPPED; rejected before install | 5 each, 20 total | 4 x 5-bit |
 | Mapping state | mapping word bit 20 | UNMAPPED / MAPPED | - | 1 | flag |
-| Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; fractions 0..1 as 0..127; error and steering -1..+1 as -127..+127 | validity flags; averaged ADC saturates at 4095; fractions clamp to 0..127 | 12 each; 7 each; 8 each | struct; scaled integers ([ADR 0001](architecture.md#minimum-bit-data-representation)) |
+| Line sensor readings (2 digital) | `IrRawWord`, S3 | GPIO levels 0/1; fractions 0 or 127; error -127, 0 or +127 | invalid reading clears the valid flag; levels above 1 saturate to 1 | 1 + 1 + 1 valid in one 32-bit word; fractions 7 each; error 8 | word, single store |
 | Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 16 (wrapped encoder counts at the edge); level 1 | overflow sets fault bit; new edge dropped | 16+16+1 | struct |
 | Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1 (one 16-bit word) + 16+16 | packed word + 2 counts, accessors in `barcode.h` |
 | Mission state | Mission writer | READY, FOLLOW_LINE, NAVIGATE, SCAN, BYPASS, REACQUIRE, STOPPED; implemented codes 0..6, 7 invalid | invalid input inhibits movement | 3 logical (existing 4-bit wire slot retained) | Implemented 3-bit private state and atomic published byte; schema-v2 wire slot remains 4 bits; decoder uses seven-state labels |
@@ -319,7 +319,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 
 ### S3 bit-usage data contract (proposed; spec #100; final evidence #107)
 
-Historical source-pinned storage evidence below is retained unchanged; it is not a size prediction for the restructure. Storage bits come from `testing/line_barcode/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/comms/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](architecture.md#minimum-bit-data-representation) (retained representation decision); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
+Historical source-pinned storage evidence below is retained unchanged; it is not a size prediction for the restructure. The IR rows below predate the digital sensors: raw left and right are now one bit each (see the line sensor row above). Storage bits come from `testing/line_barcode/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/comms/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](architecture.md#minimum-bit-data-representation) (retained representation decision); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
 
 | Field | Current C type | Bounds / units | Chosen width (bits) | Final storage bits | Instances | Ticket |
 | --- | --- | --- | ---: | ---: | ---: | --- |
@@ -490,18 +490,13 @@ not a physical tuning or accuracy claim; one Mission writer):
 
 | Field | Range / scale / rounding | Invalid / overflow | Logical / stored bits |
 | --- | --- | --- | --- |
-| Filtered previous line error, or requested steering target when `LINE_BINARY_RAMP=1` | -1..+1 (binary target bounded by `MAX_STEER`), signed integer /32767; nearest, ties away from zero | -32768 unused; primed bit gates history; finite local calculation clamps before storage; binary target restarts on reversal/zero/gap/reset | 16 / 16 |
-| Integral steering contribution | +/-`LINE_I_LIMIT` (currently 0.40); signed integer /32767; nearest, ties away from zero | -32768 unused; reset zero; computation clamps to configured limit before storage; limit constrained to <=1 | 15 at current limit / 16; resolution chosen for host float-reference comparison, physical acceptance D07 pending |
-| Held steering | -127..127, signed Q7; existing output rounding retained | -128 unused; output clamps to `MAX_STEER` | 8 / 8 |
-| PID primed | no/yes, Mission private | reset false | 1 / 1 in a private byte |
+| Steering target | -127..127, signed Q7 (`line_steer_q`) | -128 unused; fixed correction values, checked by `_Static_assert` | 8 / 8 |
+| Last and previous touch | -1 left, 0 none, +1 right (`line_side`, `line_prev`) | only these codes are written | 2 each / 8 each |
+| In a bend | no/yes (`line_bend`) | reset false | 1 / 1 in a private byte |
 | Junction turn | 0 none, 1 left (+90 degrees), 2 right (-90), 3 U-turn (+180) | none yields zero target (Motion rejects a zero turn); only coordinator sets codes | 2 / 2 in private byte |
 
-Float remains only in local PID/filter/geometry computation, where existing
-gains and rate limits use fractional seconds. Persistent PID history uses the
-scales above; quantization is at storage boundaries, with no wire change.
-The /32767 scale provides exact +/-1 endpoints and half-step storage error
-<=1/65534. Host comparison against the prior float controller is software
-evidence only; cumulative error and physical steering still require D07/T15.
+Steering keeps no filter or integral history: it stores the Q7 target above and
+wheel counts where touches began. Float remains only in local geometry computation.
 Current working-tree target ABI, static RAM and inter-task copy sizes are
 recorded in [SYS-12](../testing/system/TEST_LOG.md#current-resource-audit-sys-12).
 The accepted-commit minimum-bit/resource audit remains Stage 9 work.
