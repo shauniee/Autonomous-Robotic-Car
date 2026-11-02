@@ -1,0 +1,12 @@
+{
+  "id": "INT-64",
+  "date": "2026-10-31",
+  "reported": "At a curve, recovery repeatedly appears to sweep about 10 degrees until its 30 s deadline.",
+  "procedure": [
+    "Verify configured geometry, endpoint threshold and early-detection branches.",
+    "Feed +/-20 encoder counts per wheel (estimated 10 degrees) to recovery with fresh LOST and verify no reversal. Feed +/-130 counts (estimated 65 degrees) and verify reversal.",
+    "Confirm current local UF2 hash matches INT-63 without claiming flashed identity."
+  ],
+  "expected": "Distinguish estimated angle and actual physical angle. Do not change geometry or multiply sweep targets without measured counts/revolution.",
+  "limitations": "No physical angle/count trace or final recovery failure console line was supplied."
+}

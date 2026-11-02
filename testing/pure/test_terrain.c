@@ -1,11 +1,9 @@
-#include "../../app_program/subsystem4/terrain_evidence.h"
+#include "../../app_program/terrain/terrain.h"
 /* Host test for the hump estimator and terrain word (issue #46). */
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
-#include "../../app_program/subsystem4/terrain_algo.h"
 #include "terrain_float_reference.h"
-#include "../../app_program/subsystem4/terrain_pack.h"
 
 static TerrainContext ctx;
 static FloatTerrainContext legacy;
@@ -22,9 +20,10 @@ static void calibrate(void)
     assert(ctx.is_calibrated && legacy.is_calibrated);
 }
 
-/* Feed `n` samples at a pitch (degrees), each with `counts` of forward travel. */
-static void feed(float pitch_deg, int n, uint32_t counts)
+/* Feed a physical travel step so encoder calibration does not shrink fixtures. */
+static void feed(float pitch_deg, int n, float step_mm)
 {
+    uint32_t counts = (uint32_t)lroundf(step_mm * ENC_COUNTS_PER_MM);
     float r = pitch_deg * 0.0174532925f;
     Gy511RawAxes a = {0, (int16_t)lroundf(sinf(r) / ACCEL_MG_PER_LSB), (int16_t)lroundf(cosf(r) / ACCEL_MG_PER_LSB)};
     for (int i = 0; i < n; ++i) {
@@ -43,11 +42,11 @@ static void feed(float pitch_deg, int n, uint32_t counts)
 static void test_complete_hump(void)
 {
     calibrate();
-    feed(0.0f, 30, 0u);
-    feed(10.0f, 40, 4u);			/* climb: about 4 counts = 2.3 mm per step */
-    feed(0.0f, 4, 4u);				/* crest: pitch passes through zero briefly */
-    feed(-10.0f, 40, 4u);			/* descent */
-    feed(0.0f, 30, 0u);				/* flat again */
+    feed(0.0f, 30, 0.0f);
+    feed(10.0f, 40, 2.3f);			/* climb: 2.3 mm per step */
+    feed(0.0f, 4, 2.3f);				/* crest: pitch passes through zero briefly */
+    feed(-10.0f, 40, 2.3f);			/* descent */
+    feed(0.0f, 30, 0.0f);				/* flat again */
     assert(ctx.state == TERRAIN_STATE_FLAT && ctx.height_valid && ctx.hump_count == 1u);
     uint32_t mm;
     assert(terrain_code_to_mm(ctx.last_hump_code, &mm) && mm >= 8u && mm <= 40u);
@@ -55,34 +54,34 @@ static void test_complete_hump(void)
 
     /* A second, smaller hump raises the count but not the maximum. */
     uint8_t first = ctx.last_hump_code;
-    feed(10.0f, 25, 4u); feed(0.0f, 4, 4u); feed(-10.0f, 40, 4u); feed(0.0f, 30, 0u);
+    feed(10.0f, 25, 2.3f); feed(0.0f, 4, 2.3f); feed(-10.0f, 40, 2.3f); feed(0.0f, 30, 0.0f);
     assert(ctx.hump_count == 2u && ctx.max_hump_code == first && ctx.last_hump_code < first);
 }
 
 static void test_incomplete_and_small_encounters_add_nothing(void)
 {
     calibrate();
-    feed(10.0f, 40, 4u);				/* climb ... */
-    feed(0.0f, 60, 0u);				/* ... then flatten with no descent */
+    feed(10.0f, 40, 2.3f);				/* climb ... */
+    feed(0.0f, 60, 0.0f);				/* ... then flatten with no descent */
     assert(ctx.hump_count == 0u && !ctx.height_valid && ctx.state == TERRAIN_STATE_FLAT);
 
     calibrate();					/* a bump below the minimum height */
-    feed(5.0f, 6, 1u); feed(0.0f, 30, 1u); feed(-5.0f, 20, 1u); feed(0.0f, 30, 0u);
+    feed(5.0f, 6, 0.57f); feed(0.0f, 30, 0.57f); feed(-5.0f, 20, 0.57f); feed(0.0f, 30, 0.0f);
     assert(ctx.hump_count == 0u && ctx.last_hump_code == 0u);
 
     calibrate();					/* stationary climb: no travel, no height */
-    feed(10.0f, 30, 0u); feed(0.0f, 30, 0u); feed(-10.0f, 30, 0u); feed(0.0f, 30, 0u);
+    feed(10.0f, 30, 0.0f); feed(0.0f, 30, 0.0f); feed(-10.0f, 30, 0.0f); feed(0.0f, 30, 0.0f);
     assert(ctx.hump_count == 0u);
 }
 
 static void test_saturation_and_count(void)
 {
     calibrate();
-    feed(10.0f, 60, 400u);				/* enormous rise saturates, never reaches the invalid code */
-    feed(0.0f, 4, 4u); feed(-10.0f, 60, 4u); feed(0.0f, 30, 0u);
+    feed(10.0f, 60, 227.0f);				/* enormous rise saturates, never reaches the invalid code */
+    feed(0.0f, 4, 2.3f); feed(-10.0f, 60, 2.3f); feed(0.0f, 30, 0.0f);
     assert(ctx.hump_count == 1u && ctx.last_hump_code == rd_invalid_code(HUMP_RESULT_BITS) - 1u);
     for (unsigned i = 0; i < 11u; ++i) {
-        feed(10.0f, 40, 4u); feed(0.0f, 4, 4u); feed(-10.0f, 40, 4u); feed(0.0f, 30, 0u);
+        feed(10.0f, 40, 2.3f); feed(0.0f, 4, 2.3f); feed(-10.0f, 40, 2.3f); feed(0.0f, 30, 0.0f);
     }
     assert(ctx.hump_count == 12u);
 }
@@ -151,7 +150,7 @@ static void test_evidence_and_invalid_window(void)
     assert(terrain_impact_pending(true, false, false));
     assert(terrain_impact_pending(true, true, true));
     assert(!terrain_impact_pending(true, false, true));
-    S4Snapshot sample = {.sampled_ms = 100u, .serviced_ms = 100u,
+    TerrainSnapshot sample = {.sampled_ms = 100u, .serviced_ms = 100u,
         .sequence = 1u, .acquisition_valid = 1u};
     assert(terrain_evidence_fresh(&sample, 160u, 60u));
     sample.serviced_ms = 160u;
@@ -199,7 +198,7 @@ static void test_dynamic_quality(void)
     assert(!ctx.height_valid);
 
     calibrate();
-    feed(10.0f, 20, 4u);
+    feed(10.0f, 20, 2.3f);
     Gy511RawAxes climb = {.y = 87, .z = 492};
     terrain_algo_process(&ctx, &climb, 4.0f, false);
     /* Quality returning mid-encounter cannot rescue its partial height. */
@@ -234,7 +233,8 @@ static void test_dynamic_quality(void)
 static void test_travel_quality(void)
 {
     TerrainTravelQuality quality = {0};
-    int32_t delta[2] = {2, 2};
+    int32_t nominal = (int32_t)lroundf(60.0f * ENC_COUNTS_PER_MM * 0.02f);
+    int32_t delta[2] = {nominal, nominal};
     uint32_t now = UINT32_MAX - 100u;
     assert(!terrain_travel_qualified(&quality, now, delta, true));
     for (unsigned i = 0u; i < 12u; ++i)
@@ -245,9 +245,9 @@ static void test_travel_quality(void)
     }
     delta[1] = 0;
     assert(!terrain_travel_qualified(&quality, now += 20u, delta, true));
-    delta[0] = delta[1] = 10;
+    delta[0] = delta[1] = (int32_t)lroundf(280.0f * ENC_COUNTS_PER_MM * 0.02f);
     assert(!terrain_travel_qualified(&quality, now += 20u, delta, true));
-    delta[0] = delta[1] = -2;
+    delta[0] = delta[1] = -nominal;
     assert(!terrain_travel_qualified(&quality, now += 20u, delta, true));
     assert(!terrain_travel_qualified(&quality, now += 20u, delta, false));
     assert(!quality.primed && !quality.steady);

@@ -1,0 +1,66 @@
+{
+    "base_commit":  "4365e10b516c2479339cd48a7a3f2e7d8e01c26e",
+    "profile":  "Host GCC C11 -O2 -Wall -Wextra -Werror; probe default flags; Mission regression BYPASS/RECOVERY_RELEASED=1",
+    "sources":  [
+                    {
+                        "sha256":  "DC65B6FCC961E557E1649E3BC37CF5AE5AF7A47366CA7DD34219BA45B93EB1E0",
+                        "path":  "app_program/common/robot_config.h"
+                    },
+                    {
+                        "sha256":  "61E34A8CAF108E208310F5E24215793FB7F687412F3E594FEC3F1D69CE1D3385",
+                        "path":  "app_program/subsystem3/drv_ir_tracking.c"
+                    },
+                    {
+                        "sha256":  "14B7C834461DACC4D7C926A7CD2A171B719C44434298CE3B47D9AC68EF292AC7",
+                        "path":  "app_program/subsystem3/ir_tracking.c"
+                    },
+                    {
+                        "sha256":  "8111C7D8F7ADEF4016AAFD622799AA460EEA5613E5F0E1EA98173B2D6DEAA274",
+                        "path":  "app_program/subsystem3/ir_tracking.h"
+                    },
+                    {
+                        "sha256":  "B65888639561EB87A1C2E6204E10A69DE7C91C9EAF92F0707A74B31644AEBA6B",
+                        "path":  "app_program/subsystem3/subsystem3.c"
+                    },
+                    {
+                        "sha256":  "8350E88EEF4367845DDB3AE8E5ABC00D05EA76D624285AFABA90DCCA537A3246",
+                        "path":  "app_program/mission/mission_logic.c"
+                    },
+                    {
+                        "sha256":  "30C645C96BD5A06D16DFC660C6D3C315DCD8E1A4797F50358A1E1CD35FC2AFE0",
+                        "path":  "app_program/mission/mission_logic.h"
+                    },
+                    {
+                        "sha256":  "0EB5C4B5813844A8DCA7B1983AF40B157849B484B8D207F72DB1006614E3B36F",
+                        "path":  "app_program/mission/mission.c"
+                    },
+                    {
+                        "sha256":  "39B2C32F07F05549AA1B3062F426E4FAF20AE8A0800D14353F9190F17C2F8EC3",
+                        "path":  "app_program/mission/recovery_control.c"
+                    },
+                    {
+                        "sha256":  "E7877260FFD7AFDBE5048F0486151A463B313F96679F9D0996ACF91C6D1E5B39",
+                        "path":  "app_program/mission/bypass_control.c"
+                    },
+                    {
+                        "sha256":  "991CB00250FB12B86966758CDD882F07FB6A0117FE3C31463138329123F63D1C",
+                        "path":  "app_program/subsystem2/motion_control.c"
+                    },
+                    {
+                        "sha256":  "F1349F1E1B64F69FBDBE620CA70CB73DCDBD1C987EE4E598858918749CCEEDA1",
+                        "path":  "app_program/common/robot_data.c"
+                    },
+                    {
+                        "sha256":  "866B967E5D730965EE03BA4BE10FCB8ADDDF433BE19907F11EC0A302113A95EF",
+                        "path":  "testing/pure/test_ir_tracking.c"
+                    },
+                    {
+                        "sha256":  "B5F8D2735924D7FF6B87DAC24073D92C46E153FCE5CD777077AF65E5006E4BAA",
+                        "path":  "testing/pure/test_mission.c"
+                    },
+                    {
+                        "sha256":  "17691C4283399DC4E6957089A90BE140C819C36C4CAA58E29A6619B3DAFD46DE",
+                        "path":  "testing/integration/logs/2026-10-31_INT-75/probe.c"
+                    }
+                ]
+}

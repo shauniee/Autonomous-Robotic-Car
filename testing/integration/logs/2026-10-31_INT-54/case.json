@@ -1,0 +1,10 @@
+{
+  "id": "INT-54",
+  "date": "2026-10-31",
+  "base_commit": "8981d04620d5537e4f5b68980528b452b752abb1",
+  "kind": "host regression",
+  "procedure": "Run pure suite with explicit STOP, missing and expired command checks during TURN/DISTANCE; feed recovery line-detection STOP through Motion and return status to Mission.",
+  "acceptance": "Explicit STOP brakes to IDLE and permits another action; missing/expired active actions still fail; recovery completes alignment to FOLLOW_LINE.",
+  "profile": "Host C11; default and guarded Motion, PID and binary Mission.",
+  "hardware": "None; no wiring, power or calibration; no firmware or physical pass."
+}

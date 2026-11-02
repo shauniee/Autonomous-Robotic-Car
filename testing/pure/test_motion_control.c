@@ -1,12 +1,13 @@
-/* Host test for app_program/subsystem2/motion_control.[ch] (issue #31):
+/* Host test for app_program/motion/motion_control.[ch] (issue #31):
    command freshness, action/status state machine, stall and invalid input. */
 #include <assert.h>
+#include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
-#include "../../app_program/subsystem2/motion_control.h"
+#include "../../app_program/motion/motion.h"
 
 #define PLANT_CPS_PER_DUTY 2000.0f
-#define MM_PER_COUNT (3.14159265f * WHEEL_DIAMETER_MM / ENC_COUNTS_PER_REV)
+#define MM_PER_COUNT (1.0f / ENC_COUNTS_PER_MM)
 
 typedef struct {
     MotionController ctl;
@@ -98,6 +99,39 @@ static void test_invalid_and_stop(void)
     assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);		/* speed field ignored */
 }
 
+static void test_action_brake_handoff(void)
+{
+    for (unsigned mode = MOTION_MODE_DISTANCE; mode <= MOTION_MODE_TURN; ++mode)
+    {
+        for (unsigned cause = 0u; cause < 3u; ++cause)
+        {
+            Sim s;
+            sim_init(&s);
+            MotionCommand cmd = motion_command_make(mode, 100.0f,
+                90.0f, 0, 1u, s.now);
+            MotionOutput out = sim_step(&s, &cmd, false, 0);
+            assert(out.status == RD_MOTION_RUNNING);
+            MotionCommand stop = motion_command_make(MOTION_MODE_STOP,
+                0.0f, 0.0f, 0, 0u, s.now);
+            s.now += MOTION_EXPIRY_MS + 1u;
+            /* Explicit STOP, missing command, expired action respectively. */
+            out = sim_step(&s, cause == 0u ? &stop :
+                (cause == 1u ? 0 : &cmd), true, 0);
+            assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);
+            assert(out.status == (cause == 0u ?
+                RD_MOTION_IDLE : RD_MOTION_FAILED));
+            if (cause == 0u)
+            {
+                cmd = motion_command_make(mode, 100.0f,
+                    mode == MOTION_MODE_TURN ? -90.0f : 90.0f,
+                    0, 2u, s.now);
+                out = sim_step(&s, &cmd, false, 0);
+                assert(out.status == RD_MOTION_RUNNING);
+            }
+        }
+    }
+}
+
 static void run_to_done(Sim *s, MotionCommand *cmd, int max_steps, MotionOutput *out)
 {
     for (int i = 0; i < max_steps; ++i) {
@@ -184,15 +218,236 @@ static void test_stall_and_timeout(void)
 
 static void test_follow_steering(void)
 {
-    Sim s; sim_init(&s);
-    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW, 100.0f, 0.0f, (int)(1.0f) * 127, 4u, 0u);
+    const int steering[] = {-127, -96, -64, 0, 64, 96, 127};
+    const float targets[][2] = {
+        /* Centre-preserving mix: 20 * (1 -/+ q/127), the centre stays at 20. */
+        {0.0f, 40.0f}, {4.881890f, 35.118110f}, {9.921260f, 30.078740f},
+        {20.0f, 20.0f},
+        {30.078740f, 9.921260f}, {35.118110f, 4.881890f}, {40.0f, 0.0f}
+    };
+    Sim s;
+    MotionCommand cmd;
     MotionOutput out = {0};
-    for (int i = 0; i < 100; ++i) out = sim_step(&s, &cmd, false, 0);
-    assert(out.status == RD_MOTION_RUNNING && out.duty[0] > 0.0f && out.duty[1] <= 0.02f);
+    for (unsigned i = 0; i < sizeof(steering) / sizeof(steering[0]); ++i)
+    {
+        sim_init(&s);
+        cmd = motion_command_make(MOTION_MODE_FOLLOW, 20.0f, 0.0f,
+            steering[i], 4u, 0u);
+        out = sim_step(&s, &cmd, false, 0);
+        assert(out.status == RD_MOTION_RUNNING);
+        /* Verify the mixer independently of the steering ramp. */
+        sim_init(&s);
+        s.ctl.active = true;
+        s.ctl.action_id = 4u;
+        s.ctl.mode = MOTION_MODE_FOLLOW;
+        s.ctl.status = RD_MOTION_RUNNING;
+        s.ctl.previous_ms = s.now - MOTION_PERIOD_MS;
+        s.ctl.previous_count[0] = s.count[0];
+        s.ctl.previous_count[1] = s.count[1];
+        s.ctl.stalled_since_ms[0] = s.now;
+        s.ctl.stalled_since_ms[1] = s.now;
+        s.ctl.follow_steer_q = (int8_t)steering[i];
+        out = sim_step(&s, &cmd, false, 0);
+        for (unsigned w = 0; w < 2u; ++w)
+        {
+            float initial_base = fminf(20.0f,
+                MOTION_FOLLOW_SLEW_MMPS2 * MOTION_PERIOD_MS / 1000.0f);
+            float initial_mmps = targets[i][w] * initial_base / 20.0f;
+            float cps = initial_mmps * ENC_COUNTS_PER_MM;
+            float expected = cps == 0.0f ? 0.0f : MOTION_KS + cps * (MOTION_KF + MOTION_KP +
+                MOTION_KI * ((float)MOTION_PERIOD_MS / 1000.0f));
+            assert(expected < MOTION_MAX_DUTY);
+            assert(fabsf(out.duty[w] - expected) < 0.00001f);
+        }
+        for (unsigned release = 0; release < 8u; ++release)
+        {
+            out = sim_step(&s, &cmd, false, 0);
+            assert(out.status == RD_MOTION_RUNNING);
+        }
+        assert(s.ctl.follow_base_q6 == 1280u);
+    }
+    puts("INT-85: FOLLOW base ramp preserves gentle/tight wheel ratios from rest PASS");
     /* Zero commanded speed brakes but the status is not a stationarity proof. */
     cmd = motion_command_make(MOTION_MODE_FOLLOW, 0.0f, 0.0f, 0, 4u, cmd.sampled_ms);
     out = sim_step(&s, &cmd, false, 0);
     assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f && out.status == RD_MOTION_RUNNING);
+}
+
+static void test_follow_target_slew(void)
+{
+    MotionController c;
+    motion_control_reset(&c);
+    MotionInput in = {.now_ms = UINT32_MAX - 99u};
+    MotionOutput out;
+    const int steering[] = {0, -127, 127, 0};
+    for (unsigned phase = 0; phase < 4u; ++phase)
+    {
+        for (unsigned i = 0; i < 40u; ++i)
+        {
+            unsigned before = c.follow_base_q6;
+            MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+                75.0f, 0.0f, steering[phase], 1u, in.now_ms);
+            motion_control_step(&c, &cmd, &in, &out);
+            assert(c.follow_base_q6 >= before);
+            assert(c.follow_base_q6 <= before + 320u);
+            assert(c.follow_base_q6 <= 4800u);
+            assert(out.duty[0] >= 0.0f && out.duty[1] >= 0.0f);
+            unsigned held = c.follow_base_q6;
+            motion_control_step(&c, &cmd, &in, &out);
+            assert(c.follow_base_q6 == held);
+            in.now_ms += MOTION_PERIOD_MS;
+            in.count[0] = enc_advance(in.count[0], 12);
+            in.count[1] = enc_advance(in.count[1], 12);
+        }
+        assert(c.follow_base_q6 == 4800u);
+    }
+    /* Lower base demands ramp down, with no reset on steering reversal. */
+    for (unsigned i = 0; i < 12u; ++i)
+    {
+        unsigned before = c.follow_base_q6;
+        MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+            20.0f, 0.0f, -127, 1u, in.now_ms);
+        motion_control_step(&c, &cmd, &in, &out);
+        assert(c.follow_base_q6 <= before && c.follow_base_q6 >= 1280u);
+        assert(before - c.follow_base_q6 <= 320u);
+        in.now_ms += MOTION_PERIOD_MS;
+        in.count[0] = enc_advance(in.count[0], 12);
+        in.count[1] = enc_advance(in.count[1], 12);
+    }
+    assert(c.follow_base_q6 == 1280u);
+    /* Zero demand, stale/invalid commands and STOP bypass the slew limit. */
+    for (unsigned cause = 0; cause < 5u; ++cause)
+    {
+        MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+            75.0f, 0.0f, 127, 1u, in.now_ms);
+        motion_control_step(&c, &cmd, &in, &out);
+        if (cause == 0u)
+        {
+            cmd = motion_command_make(MOTION_MODE_FOLLOW, 0.0f, 0.0f,
+                0, 1u, in.now_ms);
+        }
+        else if (cause == 1u)
+        {
+            in.now_ms += MOTION_EXPIRY_MS + 1u;
+        }
+        else if (cause == 2u)
+        {
+            cmd.mode_steering |= 0x8000u;
+        }
+        else if (cause == 3u)
+        {
+            cmd = motion_command_make(MOTION_MODE_STOP, 0.0f, 0.0f,
+                0, 1u, in.now_ms);
+        }
+        else
+        {
+            c.follow_base_q6 = 32767u;
+        }
+        motion_control_step(&c, &cmd, &in, &out);
+        assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);
+        assert(c.follow_base_q6 == 0u);
+        in.now_ms += MOTION_PERIOD_MS;
+    }
+    /* A late release cannot catch up with a large speed jump. */
+    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW, 75.0f,
+        0.0f, 127, 1u, in.now_ms);
+    motion_control_step(&c, &cmd, &in, &out);
+    unsigned before = c.follow_base_q6;
+    in.now_ms += 100u;
+    cmd.sampled_ms = in.now_ms;
+    motion_control_step(&c, &cmd, &in, &out);
+    assert(c.follow_base_q6 == before + 320u);
+    motion_control_reset(&c);
+    cmd = motion_command_make(MOTION_MODE_FOLLOW, 1.0f, 0.0f,
+        0, 1u, in.now_ms);
+    motion_control_step(&c, &cmd, &in, &out);
+    assert(c.follow_base_q6 == 64u);
+    for (unsigned i = 0; i < 105u; ++i)
+    {
+        in.now_ms += MOTION_PERIOD_MS;
+        in.count[0] = enc_advance(in.count[0], 12);
+        in.count[1] = enc_advance(in.count[1], 12);
+        cmd = motion_command_make(MOTION_MODE_FOLLOW, 500.0f,
+            0.0f, 127, 1u, in.now_ms);
+        motion_control_step(&c, &cmd, &in, &out);
+        assert(out.status == RD_MOTION_RUNNING);
+        assert(c.follow_base_q6 <= 32000u);
+    }
+    assert(c.follow_base_q6 == 32000u);
+    c.follow_base_q6 = 32001u;
+    motion_control_step(&c, &cmd, &in, &out);
+    assert(out.status == RD_MOTION_FAILED);
+    assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);
+    assert(c.follow_base_q6 == 0u);
+    puts("INT-85: common base slew, reversal, wrap, duplicates, bounds and immediate brakes PASS");
+}
+
+static void test_follow_steering_slew(void)
+{
+    MotionController c;
+    motion_control_reset(&c);
+    MotionInput in = {.now_ms = UINT32_MAX - 39u};
+    MotionOutput out;
+    /* Entry, full reversal through zero, and return to straight. */
+    const int targets[] = {127, -127, 0};
+    const unsigned releases[] = {8u, 16u, 8u};
+    for (unsigned phase = 0; phase < 3u; ++phase)
+    {
+        for (unsigned i = 0; i < releases[phase]; ++i)
+        {
+            int previous = c.follow_steer_q;
+            MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+                20.0f, 0.0f, targets[phase], 1u, in.now_ms);
+            motion_control_step(&c, &cmd, &in, &out);
+            assert(out.status == RD_MOTION_RUNNING);
+            int delta = c.follow_steer_q - previous;
+            assert(delta >= -(int)(LINE_RELEASE_QPS*MOTION_PERIOD_MS/1000u) && delta <= (int)(LINE_RELEASE_QPS*MOTION_PERIOD_MS/1000u));
+            assert(c.follow_steer_q >= -127 && c.follow_steer_q <= 127);
+            int held = c.follow_steer_q;
+            motion_control_step(&c, &cmd, &in, &out);
+            assert(c.follow_steer_q == held); /* duplicate time */
+            if (i + 1u == releases[phase] && phase != 2u)
+            {
+                assert(out.duty[phase == 0u ? 1 : 0] == 0.0f);
+                assert(out.duty[phase == 0u ? 0 : 1] > 0.0f);
+            }
+            in.now_ms += MOTION_PERIOD_MS;
+            in.count[0] = enc_advance(in.count[0], 1);
+            in.count[1] = enc_advance(in.count[1], 1);
+        }
+        assert(c.follow_steer_q == targets[phase]);
+    }
+    /* A single black acquisition followed by white is a small correction. */
+    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+        20.0f, 0.0f, -127, 1u, in.now_ms);
+    motion_control_step(&c, &cmd, &in, &out);
+    assert(c.follow_steer_q == -(int)(MOTION_FOLLOW_STEER_QPS*MOTION_PERIOD_MS/1000u));
+    in.now_ms += MOTION_PERIOD_MS;
+    cmd = motion_command_make(MOTION_MODE_FOLLOW, 20.0f, 0.0f, 0, 1u, in.now_ms);
+    motion_control_step(&c, &cmd, &in, &out);
+    assert(c.follow_steer_q == 0);
+    /* Late release progress is capped; expired samples still stop immediately. */
+    in.now_ms += 100u;
+    cmd = motion_command_make(MOTION_MODE_FOLLOW, 20.0f, 0.0f, 127, 1u, in.now_ms);
+    motion_control_step(&c, &cmd, &in, &out);
+    assert(c.follow_steer_q == (int)(MOTION_FOLLOW_STEER_QPS*MOTION_PERIOD_MS/1000u));
+    for (unsigned cause = 0; cause < 6u; ++cause)
+    {
+        in.now_ms += MOTION_PERIOD_MS;
+        cmd = motion_command_make(MOTION_MODE_FOLLOW, 20.0f, 0.0f, 127, 1u, in.now_ms);
+        motion_control_step(&c, &cmd, &in, &out);
+        assert(c.follow_steer_q > 0);
+        if (cause == 0u) cmd = motion_command_make(MOTION_MODE_STOP, 0, 0, 0, 0, in.now_ms);
+        else if (cause == 1u) cmd = motion_command_make(MOTION_MODE_FOLLOW, 0, 0, 127, 1, in.now_ms);
+        else if (cause == 2u) in.now_ms += MOTION_EXPIRY_MS + 1u;
+        else if (cause == 3u) cmd.mode_steering |= 0x8000u;
+        else if (cause == 4u) c.follow_steer_q = INT8_MIN;
+        else motion_control_reset(&c);
+        motion_control_step(&c, cause == 5u ? NULL : &cmd, &in, &out);
+        assert(c.follow_steer_q == 0 && c.follow_base_q6 == 0u);
+        assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);
+    }
+    puts("INT-92: applied steering slew, pivot, chatter, reversal, wrap and immediate brakes PASS");
 }
 
 static void test_follow_slowdown_never_reverses(void)
@@ -204,13 +459,13 @@ static void test_follow_slowdown_never_reverses(void)
     MotionInput in = {.now_ms = 1000u, .count = {100u, 100u}};
     MotionOutput out;
     MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
-        MISSION_FOLLOW_SPEED_MMPS, 0.0f, 0, 1u, in.now_ms);
+        75.0f, 0.0f, 0, 1u, in.now_ms);
     motion_control_step(&control, &cmd, &in, &out);
     in.now_ms += MOTION_PERIOD_MS;
     in.count[0] += 16u;
     in.count[1] += 16u;
-    /* Preserve the actual diagnosed input even if search tuning changes. */
-    cmd = motion_command_make(MOTION_MODE_FOLLOW, 90.0f,
+    /* Preserve the old low-speed count target after correcting its mm label. */
+    cmd = motion_command_make(MOTION_MODE_FOLLOW, 37.0f,
         0.0f, -96, 1u, in.now_ms);
     motion_control_step(&control, &cmd, &in, &out);
     printf("tracking -> recovery slowdown: left duty=%f right duty=%f\n",
@@ -240,7 +495,7 @@ static void test_discrete_overspeed_does_not_reverse(void)
             MotionInput in = {.now_ms = 100u, .count = {0u, 0u}};
             float target = direction * (mode == MOTION_MODE_DISTANCE ? 28.0f : 90.0f);
             MotionCommand cmd = motion_command_make((motion_mode_t)mode,
-                90.0f, target, 0, 2u, in.now_ms);
+                37.0f, target, 0, 2u, in.now_ms);
             MotionOutput out;
             motion_control_step(&control, &cmd, &in, &out);
             float goal = mode == MOTION_MODE_DISTANCE ? 28.0f * ENC_COUNTS_PER_MM :
@@ -301,7 +556,9 @@ static void test_turn_endpoint_does_not_reactivate(void)
         cmd.sampled_ms = in.now_ms;
         motion_control_step(&control, &cmd, &in, &out);
         assert(out.status == RD_MOTION_RUNNING && out.duty[0] == 0.0f);
-        for (int drift = -12; drift <= 12; drift += 24)
+        int excursion = (int)ceilf(TRACK_WIDTH_MM * 0.5f *
+            MOTION_ANGLE_TOL_DEG * 3.14159265f / 180.0f * ENC_COUNTS_PER_MM) + 12;
+        for (int drift = -excursion; drift <= excursion; drift += 2 * excursion)
         {
             in.count[0] = enc_advance(0u, -direction * (arc + drift));
             in.now_ms += MOTION_PERIOD_MS;
@@ -331,13 +588,87 @@ static void test_turn_endpoint_does_not_reactivate(void)
     }
 }
 
+static void test_swing_turn(void)
+{
+    for (int direction = -1; direction <= 1; direction += 2)
+    {
+        Sim s;
+        sim_init(&s);
+        MotionCommand cmd = motion_command_make(MOTION_MODE_TURN, 100.0f,
+            direction * 90.0f, MOTION_TURN_SWING, 2u, s.now);
+        unsigned driven = direction > 0 ? 1u : 0u;
+        unsigned braked = 1u - driven;
+        uint32_t origin = s.count[driven];
+        MotionOutput out;
+        for (unsigned i = 0; i < 1000u; ++i)
+        {
+            out = sim_step(&s, &cmd, false, 0);
+            assert(out.duty[braked] == 0.0f);
+            assert(out.duty[driven] >= 0.0f);
+            /* Drift of the braked wheel must never energize it. */
+            s.count[braked] = enc_advance(s.count[braked], 1);
+            if (out.status != RD_MOTION_RUNNING)
+            {
+                break;
+            }
+        }
+        assert(out.status == RD_MOTION_DONE);
+        float travelled = enc_travel_signed(s.count[driven], origin) / ENC_COUNTS_PER_MM;
+        float expected = TRACK_WIDTH_MM * 3.14159265f * 0.5f;
+        float tolerance = TRACK_WIDTH_MM * MOTION_ANGLE_TOL_DEG *
+            3.14159265f / 180.0f + MM_PER_COUNT;
+        assert(fabsf(travelled - expected) <= tolerance);
+    }
+    MotionCommand cmd;
+    assert(!motion_command_set(&cmd, MOTION_MODE_TURN, 50.0f,
+        90.0f, -1, 2u, 100u));
+    assert(!motion_command_set(&cmd, MOTION_MODE_TURN, 50.0f,
+        90.0f, 4, 2u, 100u));
+    cmd = motion_command_make(MOTION_MODE_TURN, 50.0f, 90.0f,
+        MOTION_TURN_PIVOT, 2u, 100u);
+    cmd.mode_steering |= 4u << 2u;
+    assert(!motion_command_fresh(&cmd, 100u));
+    puts("INT-84: forward single-wheel swing, geometry, braked-wheel drift and invalid style PASS");
+}
+
+static void test_wheel_trace_inputs(void)
+{
+    MotionController c;
+    motion_control_reset(&c);
+    MotionInput in = {.now_ms = 100u, .count = {65530u, 2u}};
+    MotionOutput out;
+    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+        50.0f, 0.0f, 0, 1u, in.now_ms);
+    motion_control_step(&c, &cmd, &in, &out);
+    assert(isnan(out.measured_cps[0]) && isnan(out.measured_cps[1]));
+    assert(fabsf(out.target_cps[0] - 5.0f * ENC_COUNTS_PER_MM) < 0.01f);
+    in.now_ms += 20u;
+    in.count[0] = enc_advance(in.count[0], 20);
+    in.count[1] = enc_advance(in.count[1], -10);
+    cmd.sampled_ms = in.now_ms;
+    motion_control_step(&c, &cmd, &in, &out);
+    assert(fabsf(out.measured_cps[0] - 1000.0f) < 0.01f);
+    assert(fabsf(out.measured_cps[1] + 500.0f) < 0.01f);
+    assert(fabsf(out.target_cps[1] - 10.0f * ENC_COUNTS_PER_MM) < 0.01f);
+    in.now_ms += MOTION_EXPIRY_MS + 1u;
+    motion_control_step(&c, &cmd, &in, &out);
+    assert(out.target_cps[0] == 0.0f && out.target_cps[1] == 0.0f);
+    assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);
+    assert(isnan(out.measured_cps[0]));
+}
+
 int main(void)
 {
+    test_wheel_trace_inputs();
     test_freshness_and_rewrite();
     test_invalid_and_stop();
+    test_action_brake_handoff();
     test_distance_turn_actions();
+    test_swing_turn();
     test_stall_and_timeout();
     test_follow_steering();
+    test_follow_target_slew();
+    test_follow_steering_slew();
     test_follow_slowdown_never_reverses();
     test_discrete_overspeed_does_not_reverse();
     test_turn_endpoint_does_not_reactivate();

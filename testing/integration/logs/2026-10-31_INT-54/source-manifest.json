@@ -1,0 +1,14 @@
+{
+  "base_commit": "8981d04620d5537e4f5b68980528b452b752abb1",
+  "sha256": {
+    "app_program/subsystem2/motion_control.c": "800f82014eefb17eb79fefbbe600a82e6e611e59ff59814b42c40f8b31a26944",
+    "app_program/subsystem2/subsystem2.c": "2765b6d25d79288ab034c16516f6bc1d55ab3a1ed2f15859a803f19b6d6bae3a",
+    "app_program/mission/mission_logic.c": "a95de13ab464e453363b6a0ce5d12feb3bff37b61ba717204d85ea2d00417db8",
+    "app_program/mission/recovery_control.c": "a0b685cf088fc7a377f506b7792c117eeaf2ad98faf7581867c195bc689d7544",
+    "app_program/common/robot_config.h": "edadc8f0917e0fc82e7c8b1210c4bb164d0465e139a861682943f34cfdfb3cad",
+    "testing/pure/test_motion_control.c": "9680aeb428c006806b44c7386069cd5b62e21fdab35ca2c3de29a1149954e27c",
+    "testing/pure/test_mission.c": "1544b92186fecfacc000800a499163d98fd489351a68551141b40a3297a1a0ed",
+    "testing/pure/run.sh": "76bd4c757df1cfee050706a730bb2f84139af5e698e7f8cc3d796a9a7a9cd602"
+  },
+  "result": "PASS host suite; no firmware build, flash or physical execution"
+}

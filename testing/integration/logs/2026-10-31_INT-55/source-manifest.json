@@ -1,0 +1,25 @@
+{
+  "base_commit": "8981d04620d5537e4f5b68980528b452b752abb1",
+  "sha256": {
+    "app_program/mission/recovery_control.c": "0acbc0df061f52169776bd5c20e2c946ee971bbb86ec20e30d873b7205efa89e",
+    "app_program/mission/recovery_control.h": "81a39285bff5d988b59e2b6ff6c8c437f98f81b611177c9a5fcb9cf48ea8ff8f",
+    "app_program/mission/mission_logic.c": "02d8978aa68f553e98164a6075936ef35b04ed3ce7324e1b8a5cc4b72eee6132",
+    "app_program/mission/mission.c": "b724e7353c3fe2ff1291db973686bceea867a77ca5fc43185d555c572358bfde",
+    "app_program/subsystem2/motion_control.c": "800f82014eefb17eb79fefbbe600a82e6e611e59ff59814b42c40f8b31a26944",
+    "app_program/subsystem2/subsystem2.c": "2765b6d25d79288ab034c16516f6bc1d55ab3a1ed2f15859a803f19b6d6bae3a",
+    "app_program/common/robot_config.h": "f557dad46284f98080e2a14008cb9aaea53b465f2904ed51dbd444fbef76aae1",
+    "testing/pure/test_mission.c": "4751260ea691d6d1dcf2abe42596f8437f5c3c6c8bf9e98dea1f44e4adb38b3a",
+    "testing/pure/test_motion_control.c": "9680aeb428c006806b44c7386069cd5b62e21fdab35ca2c3de29a1149954e27c",
+    "testing/pure/run.sh": "76bd4c757df1cfee050706a730bb2f84139af5e698e7f8cc3d796a9a7a9cd602"
+  },
+  "firmware": {
+    "command": "docker compose run --rm --no-deps firmware make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0",
+    "exit_code": 0,
+    "uf2": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2",
+    "sha256": "e0c819c25695ffb16b52199d09b3a14b59bb3dacd06845b31c181c12f1b83506",
+    "text": 384216,
+    "data": 396,
+    "bss": 84180
+  },
+  "verification": "Host suite PASS; wireless normal build PASS; no flash or physical execution"
+}

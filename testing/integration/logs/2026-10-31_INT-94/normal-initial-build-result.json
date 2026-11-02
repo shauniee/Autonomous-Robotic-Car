@@ -1,0 +1,8 @@
+{
+  "base_head": "86ce2d8301754ce8df2efc6690faf539efacc544",
+  "profile": "SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0",
+  "uf2": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2",
+  "sha256": "e7aae1dacc321b130aeb6857d40b567c262ff5e0290b99975c56008743d8b7c2",
+  "flashed": false,
+  "physical_tested": false
+}

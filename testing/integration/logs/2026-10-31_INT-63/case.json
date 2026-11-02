@@ -1,0 +1,12 @@
+{
+  "id": "INT-63",
+  "date": "2026-10-31",
+  "request": "Require 500 ms continuous fresh white/white before standalone recovery takes over tracking.",
+  "procedure": [
+    "Check first LOST retains last tracking speed/steering and pending navigation; 499 ms remains FOLLOW, exactly 500 ms brakes and cancels work.",
+    "Verify VISIBLE/BROAD_BLACK reset loss qualification, cached/invalid/stale samples cannot satisfy it, acquisition gaps restart it, and timestamp zero/wrap are valid.",
+    "Retain +/-70 degree repeat sweep, either-sensor handoff, stop/hazard/deadline and junction/bypass checks; run full host suite and normal wireless build."
+  ],
+  "expected": "Only acquisition timestamps count; no blocking wait or wall-clock timestamp renewal. Existing safety failures stop immediately.",
+  "limits": "500 ms is a user-requested trial interval; host evidence does not establish safe physical blind travel or stopping distance."
+}

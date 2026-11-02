@@ -1,0 +1,54 @@
+smooth_navigation: PASS (host only)
+smooth_navigation: PASS (host only)
+robot_time: PASS
+encoder_math: PASS
+INT-82: measured rolling scale and tracking/recovery count-speed targets PASS
+stress: 5000000 reads checked, 0 torn
+robot_data: PASS
+INT-84: forward single-wheel swing, geometry, braked-wheel drift and invalid style PASS
+INT-85: FOLLOW base ramp preserves gentle/tight wheel ratios from rest PASS
+INT-85: common base slew, reversal, wrap, duplicates, bounds and immediate brakes PASS
+INT-92: applied steering slew, pivot, chatter, reversal, wrap and immediate brakes PASS
+tracking -> recovery slowdown: left duty=0.000000 right duty=0.000000
+INT-37: discrete overspeed direction clamp and position correction PASS
+INT-38 endpoint: direction=-1 drift=-39 left_duty=0.000000
+INT-38 endpoint: direction=-1 drift=39 left_duty=0.000000
+INT-38 endpoint: direction=1 drift=-39 left_duty=0.000000
+INT-38 endpoint: direction=1 drift=39 left_duty=0.000000
+motion_control: PASS
+INT-84: forward single-wheel swing, geometry, braked-wheel drift and invalid style PASS
+INT-85: FOLLOW base ramp preserves gentle/tight wheel ratios from rest PASS
+INT-85: common base slew, reversal, wrap, duplicates, bounds and immediate brakes PASS
+INT-92: applied steering slew, pivot, chatter, reversal, wrap and immediate brakes PASS
+tracking -> recovery slowdown: left duty=0.000000 right duty=0.000000
+INT-37: discrete overspeed direction clamp and position correction PASS
+INT-38 endpoint: direction=-1 drift=-39 left_duty=0.000000
+INT-38 endpoint: direction=-1 drift=39 left_duty=0.000000
+INT-38 endpoint: direction=1 drift=-39 left_duty=0.000000
+INT-38 endpoint: direction=1 drift=39 left_duty=0.000000
+motion_control: PASS
+motion_trace: PASS (golden, bounds, invalid, full/empty, 50000 concurrent records)
+barcode: PASS
+digital IR: PASS (four states, stale, invalid, failed acquisition)
+safety / S2-U06 reset brake ordering: PASS
+INT-63: 499/500 ms loss, reset, queue retention, freshness and wrap PASS
+INT-62: eight alternating sweep legs and bounded deadline PASS
+INT-67: differential heading survives long common wheel travel PASS
+INT-24 no echo: PASS (tracking report-only; bypass offset stops)
+mission retained safety/recovery/bypass: PASS
+mission_pending: PASS (150 mm trigger; unreleased bypass stays stopped)
+mission_mapping: 100000 concurrent exchanges passed
+mission_mapping: PASS (receipt/install/reply ordering, busy and invalid)
+echo_range: PASS
+obstacle_profile: PASS
+range_filter: PASS (outliers, unknown groups, boundaries, bounded lifecycle)
+profile_edges: PASS (synthetic widths, conservative planning, unknowns and outlier rejection)
+IMU calibration: PASS (unknown/not calibrated/calibrated, both frame types, independent range/hump validity)
+S1-U13: PASS (six fault bytes, all 48 walking bits)
+mqtt_frame: PASS (telemetry 23 bytes)
+terrain: PASS
+s1_event storage: 10-byte entry, 168-byte ring (host layout)
+s1_report: PASS
+stress: 5000000 word reads checked (0 torn), 300000 frames checked (0 corrupt or out of order)
+s1_stress: PASS
+mqtt_client self-test: PASS

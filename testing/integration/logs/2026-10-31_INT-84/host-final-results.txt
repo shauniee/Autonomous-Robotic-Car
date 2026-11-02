@@ -1,0 +1,36 @@
+robot_time: PASS
+encoder_math: PASS
+INT-82: measured rolling scale and tracking/recovery count-speed targets PASS
+stress: 5000000 reads checked, 0 torn
+robot_data: PASS
+INT-84: forward single-wheel swing, geometry, braked-wheel drift and invalid style PASS
+INT-83: FOLLOW startup ramp and gentle/tight mixing endpoints PASS
+INT-83: wheel slew, endpoints, reversal, time wrap, duplicates and immediate brakes PASS
+tracking -> recovery slowdown: left duty=0.000000 right duty=0.000000
+INT-37: discrete overspeed direction clamp and position correction PASS
+INT-38 endpoint: direction=-1 drift=-39 left_duty=0.000000
+INT-38 endpoint: direction=-1 drift=39 left_duty=0.000000
+INT-38 endpoint: direction=1 drift=-39 left_duty=0.000000
+INT-38 endpoint: direction=1 drift=39 left_duty=0.000000
+motion_control: PASS
+INT-84: forward single-wheel swing, geometry, braked-wheel drift and invalid style PASS
+INT-83: FOLLOW startup ramp and gentle/tight mixing endpoints PASS
+INT-83: wheel slew, endpoints, reversal, time wrap, duplicates and immediate brakes PASS
+tracking -> recovery slowdown: left duty=0.000000 right duty=0.000000
+INT-37: discrete overspeed direction clamp and position correction PASS
+INT-38 endpoint: direction=-1 drift=-39 left_duty=0.000000
+INT-38 endpoint: direction=-1 drift=39 left_duty=0.000000
+INT-38 endpoint: direction=1 drift=-39 left_duty=0.000000
+INT-38 endpoint: direction=1 drift=39 left_duty=0.000000
+motion_control: PASS
+barcode: PASS
+digital IR: PASS (four states, stale, invalid, failed acquisition)
+safety / S2-U06 reset brake ordering: PASS
+Assertion failed: (motion_cmd_target(&out.command) == (action == BARCODE_LEFT ? 90.0f : -90.0f)), function test_manual_junction, file test_mission.c, line 1167.
+INT-84: L/R/U wheel signs, turning-side fresh exit/black/white, FOLLOW handoff and guards PASS
+junction ramps: PASS (straight/left/right, swing progress, wrap, stop)
+queued directions: first both-black sample, zero travel, consumed once PASS
+INT-83: curve entry/reversal/white exit keep ceiling; hump and stop PASS
+INT-24 no echo: PASS (tracking report-only; bypass offset stops)
+INT-39: no fixed junction advance; encounter guards PASS
+testing/pure/run.sh: line 61: 66199 Abort trap: 6           "$build_dir/test_mission"

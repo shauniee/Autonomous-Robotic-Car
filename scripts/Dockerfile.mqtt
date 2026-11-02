@@ -1,7 +1,0 @@
-FROM python:3.12-slim
-WORKDIR /app
-COPY requirements-mqtt.txt .
-RUN pip install --no-cache-dir -r requirements-mqtt.txt
-COPY mqtt_client.py dashboard.html ./
-ENV PYTHONUNBUFFERED=1
-CMD ["python", "/app/mqtt_client.py", "serve", "--broker", "mosquitto", "--http-host", "0.0.0.0"]

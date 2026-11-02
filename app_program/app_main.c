@@ -1,5 +1,5 @@
 #include "app.h"
-#include "subsystem2/subsystem2.h"
+#include "motion/motion.h"
 #include "mission/mission.h"
 #include "common/io_task.h"
 
@@ -41,7 +41,7 @@ EXPORT ID app_start_task(FP entry, PRI pri, UW prc, const char *name)
 }
 
 static void startup_error(void) {
-    s2_inhibit_startup();
+    motion_inhibit_startup();
     tm_printf((UB*)"Startup failed: motor outputs remain inhibited.\n");
     for (;;) tk_slp_tsk(TMO_FEVR);
 }
@@ -75,15 +75,15 @@ EXPORT INT usermain(void)
 	app_timebase_init(); // time in ms
 
 	// every subsystem creates its kernel objects
-	REQUIRE(subsystem2_init());
-	REQUIRE(subsystem1_init());
-	REQUIRE(subsystem3_init());
-	REQUIRE(subsystem4_init());
-	REQUIRE(subsystem5_init());
+	REQUIRE(motion_init());
+	REQUIRE(comms_init());
+	REQUIRE(line_barcode_init());
+	REQUIRE(terrain_init());
+	REQUIRE(obstacle_init());
 
 	/* Exactly three application tasks. Producers initialize peripheral capture
 	   on their owning core; all kernel objects already exist. */
-	REQUIRE(subsystem2_start());
+	REQUIRE(motion_start());
 	REQUIRE(io_start());
 #if !APP_TEST
 	REQUIRE(mission_start());
@@ -92,10 +92,10 @@ EXPORT INT usermain(void)
 #if APP_TEST
 	tm_printf((UB*)"Motion and I/O started; Mission starts after startup tests.\n");
 	tm_printf((UB*)"[TEST] === test run start ===\n");
-	subsystem1_test();
-	subsystem2_test();
-	subsystem4_test();
-	subsystem5_test();
+	comms_test();
+	motion_test();
+	terrain_test();
+	obstacle_test();
 	tm_printf((UB*)"[TEST] === test run end ===\n");
 	REQUIRE(mission_start());
 #endif

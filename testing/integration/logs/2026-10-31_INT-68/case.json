@@ -1,0 +1,18 @@
+{
+  "id": "INT-68",
+  "date": "2026-10-31",
+  "kind": "Host-only dashboard UI",
+  "steps": [
+    "Run testing/pure/test_dashboard.mjs against current source",
+    "Render synthetic empty/live/stale/fault fixtures at 1440x900 and compact/narrow widths",
+    "Exercise black, white, mapping, restart, arrow controls and local motion previews"
+  ],
+  "expected": [
+    "One calibration step at a time; mapping appears only after manual black and white confirmations",
+    "Accessible arrow direction controls retain existing request behavior",
+    "Left/right encoder readings flank schematic; live direction and isolated previews remain distinct",
+    "Stale/offline motion pauses; reduced motion uses static poses; desktop dashboard fits"
+  ],
+  "hardware": "No robot connected for these checks; no physical calibration or motion acceptance",
+  "profile": "Single-file offline dashboard; Node VM DOM harness and local synthetic preview"
+}

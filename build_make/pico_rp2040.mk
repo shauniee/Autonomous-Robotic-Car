@@ -96,6 +96,19 @@ endif
 # Motion never brakes on a stall and Mission searches for a lost line instead
 # of stopping. Never use it on the
 # course. The image gets a _noguards suffix.
+BARCODE_DIAGNOSTICS ?= 0
+ifneq ($(filter $(BARCODE_DIAGNOSTICS),0 1),$(BARCODE_DIAGNOSTICS))
+$(error BARCODE_DIAGNOSTICS must be 0 or 1)
+endif
+# FULL_COURSE=1 releases junction turns and obstacle bypass for a course run
+# (flash.sh default). The image gets a _course suffix.
+FULL_COURSE ?= 0
+ifneq ($(filter $(FULL_COURSE),0 1),$(FULL_COURSE))
+$(error FULL_COURSE must be 0 or 1)
+endif
+ifeq ($(FULL_COURSE),1)
+COURSE_SUFFIX := _course
+endif
 NOGUARDS ?= 0
 ifneq ($(filter $(NOGUARDS),0 1),$(NOGUARDS))
 $(error Unknown NOGUARDS '$(NOGUARDS)'; use 0 or 1)
@@ -129,14 +142,14 @@ endif
 # a live hazard: an SMP=1 build was once flashed in place of an SMP=0 one and
 # only the banner in the log revealed it.
 #
-EXE_FILE := mtk3pico_smp$(SMP)_$(CONSOLE)$(WIFI_SUFFIX)$(NET_SUFFIX)$(MQTT_SUFFIX)$(CRASH_SUFFIX)$(TEST_SUFFIX)$(NOGUARDS_SUFFIX)
+EXE_FILE := mtk3pico_smp$(SMP)_$(CONSOLE)$(WIFI_SUFFIX)$(NET_SUFFIX)$(MQTT_SUFFIX)$(CRASH_SUFFIX)$(TEST_SUFFIX)$(COURSE_SUFFIX)$(NOGUARDS_SUFFIX)
 
 GCC := arm-none-eabi-gcc
 AS := arm-none-eabi-gcc
 LINK := arm-none-eabi-gcc
 SIZE := arm-none-eabi-size
-# Named per host OS/CPU so a native build and a Docker build sharing this
-# folder never run each other's binary.
+# Named per host OS/CPU so builds on different machines never run each other's
+# binary.
 E2U := tools/elf2uf2-$(shell uname -s)-$(shell uname -m)
 
 # Fail early, with a readable message, when the cross compiler is not on PATH.
@@ -201,7 +214,8 @@ CFLAGS  += -DCNF_SMP=1
 ASFLAGS += -DCNF_SMP=1
 endif
 CFLAGS  += -DAPP_TEST=$(TEST)
-CFLAGS  += -DAPP_NO_GUARDS=$(NOGUARDS)
+CFLAGS  += -DAPP_NO_GUARDS=$(NOGUARDS) -DBARCODE_DIAGNOSTICS=$(BARCODE_DIAGNOSTICS)
+CFLAGS  += -DNAV_GEOMETRY_RELEASED=$(FULL_COURSE) -DMISSION_BYPASS_RELEASED=$(FULL_COURSE)
 CFLAGS  += -DTM_CONSOLE_UART=$(CRASH_REPORT)
 ifeq ($(CRASH_REPORT),0)
 CFLAGS  += -DBOARD_UART0_FREE=1
@@ -234,9 +248,9 @@ endif
 # before any recipe executes.
 ################################################################################
 
-# The compiler version is part of the profile, so objects from a native
-# toolchain and the Docker toolchain are never linked together.
-PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-noguards$(NOGUARDS)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
+# The compiler version is part of the profile, so objects from different
+# toolchains are never linked together.
+PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-noguards$(NOGUARDS)-bcdiag$(BARCODE_DIAGNOSTICS)-course$(FULL_COURSE)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
 PROFILE_FILE := .build_profile
 
 ifneq ($(strip $(shell cat $(PROFILE_FILE) 2>/dev/null)),$(PROFILE_ID))
