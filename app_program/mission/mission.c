@@ -184,6 +184,16 @@ static void mission_task(INT stacd, void *exinf)
             tm_printf((UB *)"[MISSION] navigation inhibited reason=%u "
                 "(1=measurements 2=geometry 3=entry)\n", (unsigned)out.nav_rejected);
         }
+        /* Every decoded barcode needs a route event, including a barcode
+           consumed during a navigation transition or a manual test command.
+           Mission normally publishes its own event in FOLLOW; avoid duplicates.
+           Logging never grants motor/navigation authority. */
+        if (have_barcode && out.event_kind != MQTT_EVENT_BARCODE &&
+            barcode_event_letter(&barcode) != BARCODE_NO_LETTER)
+        {
+            comms_event(MQTT_EVENT_BARCODE, barcode_event_letter(&barcode),
+                (uint16_t)barcode_event_action(&barcode));
+        }
         if (out.event_kind != 0u)
         {
             comms_event((mqtt_event_kind_t)out.event_kind, out.event_arg, out.event_arg2);
