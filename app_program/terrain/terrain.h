@@ -23,9 +23,7 @@ typedef struct
 
 typedef enum {
     TERRAIN_STATE_FLAT = 0,
-    TERRAIN_STATE_CLIMBING,
-    TERRAIN_STATE_CRESTING,
-    TERRAIN_STATE_DESCENDING,
+    TERRAIN_STATE_ON_HUMP,
     TERRAIN_STATE_IMPACT
 } TerrainState;
 
@@ -48,13 +46,16 @@ _Static_assert(sizeof(TerrainCalibSum) == 9u, "TerrainCalibSum must use 69 bits 
 /* This is private persistent state of the one Terrain task, not a cross-core
    snapshot. Public telemetry uses terrain_pack(), an atomic 32-bit word.
    0..100 calibration samples: 7 bits; 0..10 flat-run: 4 bits;
-   state 0..4: 3 bits; height/calibrated/window-quality flags: 1 bit each.
+   state 0..2: 3 bits; height/calibrated flags: 1 bit each.
    Last/max codes are 7 bits each. */
 typedef struct {
     TerrainFilterQ16 filtered_accel_q16;
+    int32_t roll_base_q8;              /* roll average while stopped, 1/256 centidegree */
     TerrainCalibSum calib_sum;
-    uint16_t rise_q;                   /* 0.1 mm, saturates at 65535 */
+    uint16_t rise_q;                   /* peak height this encounter, 0.1 mm, saturates at 65535 */
+    uint16_t travel_counts;            /* encoder travel while tilted, saturates at 65535 */
     int16_t pitch_cdeg;                /* -9000..9000 centidegrees */
+    int16_t roll_cdeg;                 /* -9000..9000 centidegrees */
     uint16_t last_hump_code : 7;
     uint16_t max_hump_code : 7;
     uint8_t hump_count;
@@ -63,19 +64,17 @@ typedef struct {
     uint8_t state : 3;
     uint8_t height_valid : 1;
     uint8_t is_calibrated : 1;
-    uint8_t window_qualified : 1;
 } TerrainContext;
 
-_Static_assert(sizeof(TerrainContext) <= 36u, "TerrainContext packing regressed");
+_Static_assert(sizeof(TerrainContext) <= 40u, "TerrainContext packing regressed");
 
 void terrain_algo_init(TerrainContext *ctx);
 bool terrain_algo_calibrate_sample(TerrainContext *ctx, const Gy511RawAxes *raw);
 /* Local travel includes half counts from averaging the two wheel deltas. */
-void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw,
-    float delta_counts, bool travel_qualified);
+void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float delta_counts, bool stationary);
 void terrain_algo_invalidate_window(TerrainContext *ctx);
 void terrain_algo_calibration_restart(TerrainContext *ctx);
-bool terrain_acceleration_qualified(const Gy511RawAxes *raw);
+float terrain_acceleration_mg(const Gy511RawAxes *raw);
 
 /*
  *	Terrain word (writer: Terrain, one aligned word, single store). Layout is
@@ -117,17 +116,6 @@ static inline bool terrain_code_to_mm(uint32_t code, uint32_t *mm)
     *mm = code * HUMP_MM_PER_COUNT;
     return true;
 }
-
-typedef struct
-{
-    uint32_t sampled_ms, steady_since_ms;
-    int16_t speed_mmps;
-    uint8_t primed : 1;
-    uint8_t steady : 1;
-} TerrainTravelQuality;
-
-bool terrain_travel_qualified(TerrainTravelQuality *quality,
-    uint32_t now, const int32_t delta[2], bool acquisition_qualified);
 
 /* Pending acquisition retains travel; failure discards its entire window. */
 static inline float terrain_travel_take(uint32_t origin[2],
@@ -178,6 +166,8 @@ uint32_t terrain_read_word(void);
    a short cross-core mutex. Repeated reads never change sampled_ms. */
 
 void terrain_step(uint32_t now_ms);
+/* I/O task only: one pending hump-detector trace frame. 0 when none. */
+unsigned terrain_trace_take(uint8_t *out, unsigned capacity);
 bool terrain_copy(TerrainSnapshot *out);
 bool terrain_startup_complete(void);
 

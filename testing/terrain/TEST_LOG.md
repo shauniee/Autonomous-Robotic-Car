@@ -60,3 +60,14 @@ S4-U04 result: **BUILD PASS** on retry, base commit
 [Build output](logs/2026-10-30_S4-U04-build.txt). S4-U03 used the same firmware
 source state. Existing WiFi diagnostics changes were retained. The resulting
 wireless TEST UF2 inhibits motors; it has not been flashed or run on hardware.
+
+S4-U05 procedure (2026-11-02): calibrate with 100 flat synthetic samples,
+feed a 20-degree climb, then a -60-degree descent whose filtered pitch skips
+the crest band between samples, then flat ground. Expect DESCENDING on the
+second descent sample and one valid completed hump. Run existing terrain
+regressions as well. This is host-only evidence, not measured ramp geometry.
+
+S4-U05 result: **HOST PASS**, tester Codex, base HEAD
+`4b1cc197c2fb25031ef5c5dae67b8afd8240299b` plus working-tree SHA256 identities in
+[evidence](logs/2026-11-02_S4-U05-host.txt). The new regression failed before
+the fix and passes afterward. No firmware or physical pass claimed.

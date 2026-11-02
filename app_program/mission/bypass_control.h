@@ -10,20 +10,18 @@ typedef enum
 {
     BYPASS_ROUTE_OUT, BYPASS_ROUTE_OFFSET, BYPASS_ROUTE_PARALLEL,
     BYPASS_ROUTE_PASS, BYPASS_ROUTE_REAR, BYPASS_ROUTE_IN,
-    BYPASS_ROUTE_RETURN, BYPASS_ROUTE_FORWARD, BYPASS_ROUTE_LINE,
-    BYPASS_ROUTE_DONE, BYPASS_ROUTE_FAILED
+    BYPASS_ROUTE_RETURN, BYPASS_ROUTE_DONE, BYPASS_ROUTE_FAILED
 } bypass_route_t;
 typedef enum
 {
     BYPASS_WORK_TURN, BYPASS_WORK_SIDE, BYPASS_WORK_FRONT,
-    BYPASS_WORK_DRIVE, BYPASS_WORK_LINE
+    BYPASS_WORK_DRIVE
 } bypass_work_t;
 typedef struct
 {
     uint32_t origin[2], previous[2];
-    uint32_t started_ms, phase_ms, action_ms, line_started_ms;
-    uint32_t sensor_sequence, line_sampled_ms, edge_counts;
-    uint32_t chunk_origin[2];
+    uint32_t started_ms, phase_ms, action_ms;
+    uint32_t sensor_sequence, edge_counts;
     int32_t forward_q8 : 21;
     int32_t left_q8 : 21;
     int32_t rear_clear_q8 : 21;
@@ -38,8 +36,6 @@ typedef struct
     uint8_t baseline_valid : 1;
     uint8_t edge_streak : 3;
     uint8_t attempts : 2;
-    uint8_t visible_streak : 3;
-    uint8_t line_seen : 1; /* a sensor has been black since the line phase began */
 } bypass_control_t;
 typedef struct
 {
@@ -49,8 +45,7 @@ typedef struct
     uint32_t side_ms, side_sequence, side_mm;
     bool front_valid, side_valid;
     uint32_t line_ms;
-    bool line_functional, line_visible, line_black; /* black: a sensor sees the line now */
-    int8_t line_error_q, line_steering_q;
+    bool line_functional, line_black; /* black: a sensor sees the line now */
     rd_motion_status_t motion_status;
     uint8_t motion_action;
 } bypass_input_t;

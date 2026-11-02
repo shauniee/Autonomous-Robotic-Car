@@ -7,7 +7,7 @@
  *	     it with one store (rd_word_publish); readers take one load
  *	     (rd_word_read) and decode with accessors. Aligned 32-bit loads and
  *	     stores are single-copy atomic on RP2040 across both cores.
- *	  2. Mutex copy: snapshots above 32 bits, see robot_snapshot.h.
+ *	  2. Mutex copy: snapshots above 32 bits, waits at most RD_SNAPSHOT_LOCK_MS.
  *	  3. Fault bytes: one byte per owner; an owner sets and clears only the
  *	     bits of its own byte; Mission and Safety read them through masks.
  *	Never publish a reference into another subsystem's storage, and never

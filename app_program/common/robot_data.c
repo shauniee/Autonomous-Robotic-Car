@@ -94,5 +94,6 @@ bool rd_fault_start_blocked(void)
 
 bool rd_fault_stop_pending(void)
 {
+    if (APP_NO_GUARDS) return false;	/* bench build: GP21 is the only stop */
     return any_fault(run_stopping);
 }

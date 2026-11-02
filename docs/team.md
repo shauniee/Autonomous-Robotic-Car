@@ -55,7 +55,7 @@ Nicholas reviews this documentation plan; subsystem responsibilities remain.
 | GP18 | Unclaimed | Onboard RGB LEDs; no firmware owner |
 | GP20 | Nicholas | Onboard active-low calibration/start; target fresh start only after eligible reset |
 | GP21 | Nicholas | Onboard active-low stop/cancel; target eligible release-to-ready handshake |
-| GP22 | Nicholas | Onboard PWM buzzer; mute switch controls audibility |
+| GP22 | Nicholas | Onboard buzzer; not used by the firmware |
 | GP26 | Nicholas | Left line IR DOUT, Grove 5 / digital input; disconnect Grove 6 shared GP26 contact |
 | GP27 | Nicholas | Right line IR DOUT, Grove 6 / digital input |
 | GP28 | Mahesha | Left encoder A, Grove 7, red; ADC2-capable but used digitally; open battery jumper |

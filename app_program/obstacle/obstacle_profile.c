@@ -118,6 +118,12 @@ static float plane_left(float forward, float angle)
     return OBSTACLE_SONAR_LEFT_MM + forward * tanf(angle * OBSTACLE_PROFILE_DEG_TO_RAD);
 }
 
+static float ray_left(const ObstacleRay *ray)
+{
+    return OBSTACLE_SONAR_LEFT_MM +
+        (float)ray->range_mm * sinf((float)ray->angle_deg * OBSTACLE_PROFILE_DEG_TO_RAD);
+}
+
 static bool config_valid(const obstacle_profile_config_t *config)
 {
     return config != NULL && config->depth_exit_mm >= config->depth_enter_mm &&
@@ -238,7 +244,9 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
     float planning = fmaxf((float)config->planning_width_mm, width + 2.0f * uncertainty);
     float centre_left = (left_edge + right_edge) * 0.5f;
     unsigned free_left = 0u, free_right = 0u;
-    unsigned far_left = high, far_right = low;
+    /* A free ray proves empty space out to its echo, not just to the obstacle's
+       front plane, which a limited sweep could never show as a wide gap. */
+    float reach_left = 65535.0f, reach_right = 65535.0f;
     for (unsigned i = high + 1u; i < count && known[i] && !foreground[i]; ++i)
     {
         if (rays[order[i]].angle_deg - rays[order[i - 1u]].angle_deg > config->maximum_gap_deg)
@@ -246,7 +254,7 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
             break;
         }
         ++free_left;
-        far_left = i;
+        reach_left = fminf(reach_left, ray_left(&rays[order[i]]));
     }
     for (unsigned i = low; i > 0u && known[i - 1u] && !foreground[i - 1u]; --i)
     {
@@ -255,15 +263,15 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
             break;
         }
         ++free_right;
-        far_right = i - 1u;
+        reach_right = fminf(reach_right, -ray_left(&rays[order[i - 1u]]));
     }
     *out = (ObstacleProfile){.closest_angle_deg = 0,
         .closest_mm = distance_code(hypotf(front + OBSTACLE_SONAR_FORWARD_MM, OBSTACLE_SONAR_LEFT_MM)),
         .width_mm = distance_code(width),
         .left_clearance_mm = uncertainty_known && free_left >= config->adjacent_rays ?
-            distance_code(plane_left(front, rays[order[far_left]].angle_deg) - centre_left - planning * 0.5f) : 0u,
+            distance_code(reach_left - centre_left - planning * 0.5f) : 0u,
         .right_clearance_mm = uncertainty_known && free_right >= config->adjacent_rays ?
-            distance_code(centre_left - planning * 0.5f - plane_left(front, rays[order[far_right]].angle_deg)) : 0u,
+            distance_code(reach_right + centre_left - planning * 0.5f) : 0u,
         .obstacle_forward_mm = coordinate_code(front + OBSTACLE_SONAR_FORWARD_MM),
         .obstacle_left_mm = coordinate_code(centre_left), .valid = true};
     *evidence = (obstacle_profile_evidence_t){

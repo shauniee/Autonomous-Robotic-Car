@@ -3,7 +3,6 @@
 #include "../mission/mission_mapping.h"
 #include "../common/robot_data.h"
 #include "../common/robot_time.h"
-#include "../common/robot_snapshot.h"
 #include "../motion/motion.h"
 #include "../mission/line_trace.h"
 #include "../mission/mission.h"
@@ -220,6 +219,25 @@ void comms_step(uint32_t now)
 {
     /* Normal ACK/telemetry/events get first use of the bounded TX bridge. */
     report_step(now);
+    /* Before the wheel and line traces, which keep the bridge full (INT-146). */
+    {
+        uint8_t frame[MQTT_LEN_TERRAIN_TRACE];
+        unsigned length = terrain_trace_take(frame, sizeof frame);
+        if (length != 0u)
+        {
+            (void)comms_bridge_post(frame, length);
+        }
+    }
+    for (unsigned budget = 0u; budget < 2u; ++budget)
+    {
+        uint8_t frame[MQTT_LEN_BARCODE_TRACE];
+        unsigned length = barcode_trace_take(frame, sizeof frame);
+        if (length == 0u)
+        {
+            break;
+        }
+        (void)comms_bridge_post(frame, length);
+    }
     for (unsigned budget = 0u; budget < 2u; ++budget)
     {
         uint8_t frame[MQTT_LEN_WHEEL_TRACE];

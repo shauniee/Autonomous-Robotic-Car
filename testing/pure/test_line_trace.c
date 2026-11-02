@@ -29,13 +29,30 @@ int main(void)
     mqtt_type_t type;
     assert(mqtt_frame_type(frame, 17u, &type) == MQTT_DECODE_OK && type == MQTT_TYPE_LINE_TRACE);
     assert(mqtt_frame_type(frame, 16u, &type) == MQTT_DECODE_LENGTH);
-    mqtt_line_trace_t bad[] = {sample(0u), sample(0u), sample(0u), sample(0u), sample(0u)};
-    bad[0].flags = 0x80u;
-    bad[1].mission_state = 16u;
-    bad[2].phase = 8u;
-    bad[3].command_mode = 4u;
-    bad[4].command_speed = 512u;
-    for (unsigned i = 0u; i < 5u; ++i)
+    mqtt_line_trace_t level = sample(0u);
+    level.flags = MQTT_LINE_BARCODE_LEVEL;
+    assert(mqtt_encode_line_trace(frame, 17u, &level) == 17u && frame[5] == 0x80u);
+    const uint16_t runs[MQTT_BARCODE_TRACE_RUNS] = {0x8022u, 12u};
+    assert(mqtt_encode_barcode_trace(frame, 17u, 7u, runs) == 0u);
+    uint8_t bars[MQTT_LEN_BARCODE_TRACE];
+    assert(mqtt_encode_barcode_trace(bars, sizeof bars, 7u, runs) == 18u);
+    assert(bars[0] == 0x2Au && bars[1] == 7u && bars[2] == 0x22u && bars[3] == 0x80u && bars[4] == 12u);
+    mqtt_type_t bars_type;
+    assert(mqtt_frame_type(bars, 18u, &bars_type) == MQTT_DECODE_OK && bars_type == MQTT_TYPE_BARCODE_TRACE);
+    uint8_t hump[MQTT_LEN_TERRAIN_TRACE];
+    assert(mqtt_encode_terrain_trace(hump, sizeof hump, 5u, 14, 0xF9u, 3u, 100u, -6) == 8u);
+    assert(hump[0] == 0x2Bu && hump[1] == 5u && hump[3] == 14u && hump[4] == 0xF9u && hump[6] == 100u && hump[7] == 0xFAu);
+    mqtt_line_trace_t edges = sample(0u);
+    edges.barcode_edges = 31u;
+    assert(mqtt_encode_line_trace(frame, 17u, &edges) == 17u && (frame[15] >> 3) == 31u);
+    edges.barcode_edges = 32u;
+    assert(mqtt_encode_line_trace(frame, 17u, &edges) == 0u);
+    mqtt_line_trace_t bad[] = {sample(0u), sample(0u), sample(0u), sample(0u)};
+    bad[0].mission_state = 16u;
+    bad[1].phase = 8u;
+    bad[2].command_mode = 4u;
+    bad[3].command_speed = 512u;
+    for (unsigned i = 0u; i < 4u; ++i)
     {
         assert(mqtt_encode_line_trace(frame, 17u, &bad[i]) == 0u);
     }

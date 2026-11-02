@@ -4,7 +4,6 @@
 #include "../common/drv_gpio_irq.h"
 #include "../common/robot_time.h"
 #include "../common/robot_config.h"
-#include "../common/robot_snapshot.h"
 #include "../motion/motion.h"
 
 /* Echo capture state. The handler is the only writer once the task arms the
@@ -161,8 +160,8 @@ typedef struct
     uint8_t initialized : 1;
     uint8_t ready : 1;
     uint8_t scanning : 1;
-    int8_t angle : 6;
-    int8_t target_angle : 6;
+    int8_t angle : 7;
+    int8_t target_angle : 7;
 } obstacle_acquisition_t;
 
 _Static_assert(OBSTACLE_SCAN_CAPACITY <= 15u,
@@ -235,6 +234,12 @@ static void finish_scan(obstacle_scan_state_t state, uint32_t now)
             ok = false;
         }
         state = ok ? OBSTACLE_SCAN_DONE : OBSTACLE_SCAN_FAILED;
+#if APP_TEST
+        tm_printf((UB *)"[SCAN] %s width=%u closest=%u left=%u right=%u need=%u\n",
+            ok ? "profile" : "no profile", ok ? built.width_mm : 0u, ok ? built.closest_mm : 0u,
+            ok ? built.left_clearance_mm : 0u, ok ? built.right_clearance_mm : 0u,
+            MISSION_BYPASS_MIN_CLEAR_MM);
+#endif
     }
     acquisition.scanning = false;
     cancel_echo();
@@ -304,6 +309,11 @@ static void range_complete(uint32_t range, uint32_t now)
             filtered : ECHO_RANGE_INVALID;
         acquisition.group = (obstacle_range_group_t){0};
         publish_range(range, now);
+#if APP_TEST
+        tm_printf((UB *)"[SCAN] ray %d deg %s %u mm\n", (int)acquisition.angle,
+            range == ECHO_RANGE_INVALID ? "no echo" : "echo",
+            (unsigned)(range == ECHO_RANGE_INVALID ? 0u : range));
+#endif
         unsigned index = acquisition.count;
         acquisition.rays[index] = obstacle_ray_make(acquisition.angles[index],
             (uint16_t)(range == ECHO_RANGE_INVALID ? 0u : range),
