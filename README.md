@@ -133,7 +133,19 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `NET=none`/`lwip`, `MQTT=0`/`1` | Offline / TCP-IP; MQTT needs lwIP + WiFi |
 | `FULL_COURSE=1` | Releases junction turns and obstacle bypass; `_course` image (`flash.sh` default) |
 | `TEST=1` | Firmware self-tests; forces S2 braking even if the controller enables motion |
+| `WATCHDOG=1` | **Opt-in bench validation only:** arms a 2-second RP2040 reset watchdog after Motion and Mission report fresh progress; `_wd` image. Default `0` until hardware validation (D15) |
 | `CRASH_REPORT=1` | Crash/console copy on UART0; project uses `0` (GP0/GP1 conflict, [pins](docs/team.md#2-pins)) |
+
+Watchdog policy (D15): `ROBOT_WATCHDOG_ENABLED=0` is the default; the
+1 MHz timer tick alone does **not** enable reset protection. For a controlled
+**wheels-raised** trial, build explicitly with `WATCHDOG=1 TEST=1` and
+`FULL_COURSE=0 NOGUARDS=0`, then flash that distinct `_wd` image using
+USB as the sole power source. Only the I/O task feeds it after both Motion
+and Mission have reported new successful iterations, with a 250 ms
+producer-freshness check. A hung producer or I/O task stops feeding; a
+2-second hardware reset is intended. Validate actual reset timing, PWM/driver
+pin behaviour during reset, boot braking, and lack of autonomous restart
+before considering a driving build. This has **not** been physically accepted.
 
 No active CMake target. The local checkpoint includes an optional dashboard; it is not the verified remote-main baseline. Offline profiles remain build/test tools; the target normal mission requires WiFi and MQTT before start.
 
