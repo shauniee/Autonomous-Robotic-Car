@@ -60,7 +60,7 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). S3 
 
 1. Change one value in `app_program/common/robot_config.h`.
 2. Build and flash: `./flash.sh`.
-3. Copy `build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_course.uf2` to a named file, restore the source, and record the hash the script prints.
+3. Copy `build_make/full_course.uf2` to a named file, restore the source, and record the hash the script prints.
 4. Run on battery with `mqtt_client.py monitor` saving to a file; analyse `WHEEL` and `LINE` records.
 5. Run `testing/pure/run.sh` before changing any default; append a new INT entry.
 
