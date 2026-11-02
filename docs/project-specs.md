@@ -27,7 +27,7 @@
 - [8. Not specified by any source](#8-not-specified-by-any-source)
 - [Pending decisions](#pending-decisions)
 
-Single owner of requirements, the change requirement (CR), the Week 13 data table and pending decisions. Sources: the written brief and the instructor briefings ("briefing" below). Discrepancies between sources were resolved with the team on 2026-10-25 and are recorded here. Week 8 realigned plan: [tribunal1](additional-docs/tribunal1.md). Design: [architecture](architecture.md). Members, hardware, workflow and coding rules: [team](team.md). Subsystem guides: [S1](architecture/comms.md), [S2](architecture/motion.md), [S3](architecture/line_barcode.md), [S4](architecture/terrain.md), [S5](architecture/obstacle.md).
+Single owner of requirements, the change requirement (CR), the Week 13 data table and pending decisions. Sources: the written brief and the instructor briefings ("briefing" below). Discrepancies between sources were resolved with the team on 2026-10-25 and are recorded here. Week 8 realigned plan: [tribunal1](architecture.md#post-tribunal-decisions). Design: [architecture](architecture.md). Members, hardware, workflow and coding rules: [team](team.md). Subsystem guides: [S1](../app_program/comms/README.md), [S2](../app_program/motion/README.md), [S3](../app_program/line_barcode/README.md), [S4](../app_program/terrain/README.md), [S5](../app_program/obstacle/README.md).
 
 Status labels: **requirement** (source-stated), **proposed** (drafted, not signed off), **implemented** (in code), **observed** (measured). Requirement sections record source statements; data rows record source-specific representation, and explicitly labelled target rows remain proposed. User choices are not new instructor rules.
 
@@ -310,7 +310,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | --- | --- | --- | --- | --- | --- |
 | Mapping letters (L, R, S, U) | mapping word, Mission on valid mapping | A-Z, 26 values, all four distinct | boot state UNMAPPED; rejected before install | 5 each, 20 total | 4 x 5-bit |
 | Mapping state | mapping word bit 20 | UNMAPPED / MAPPED | - | 1 | flag |
-| Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; fractions 0..1 as 0..127; error and steering -1..+1 as -127..+127 | validity flags; averaged ADC saturates at 4095; fractions clamp to 0..127 | 12 each; 7 each; 8 each | struct; scaled integers ([ADR 0001](adr/0001-base-2-scaled-integers.md)) |
+| Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; fractions 0..1 as 0..127; error and steering -1..+1 as -127..+127 | validity flags; averaged ADC saturates at 4095; fractions clamp to 0..127 | 12 each; 7 each; 8 each | struct; scaled integers ([ADR 0001](architecture.md#minimum-bit-data-representation)) |
 | Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 16 (wrapped encoder counts at the edge); level 1 | overflow sets fault bit; new edge dropped | 16+16+1 | struct |
 | Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1 (one 16-bit word) + 16+16 | packed word + 2 counts, accessors in `barcode.h` |
 | Mission state | Mission writer | READY, FOLLOW_LINE, NAVIGATE, SCAN, BYPASS, REACQUIRE, STOPPED; implemented codes 0..6, 7 invalid | invalid input inhibits movement | 3 logical (existing 4-bit wire slot retained) | Implemented 3-bit private state and atomic published byte; schema-v2 wire slot remains 4 bits; decoder uses seven-state labels |
@@ -319,7 +319,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 
 ### S3 bit-usage data contract (proposed; spec #100; final evidence #107)
 
-Historical source-pinned storage evidence below is retained unchanged; it is not a size prediction for the restructure. Storage bits come from `testing/line_barcode/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/comms/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](adr/0001-base-2-scaled-integers.md) (retained representation decision); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
+Historical source-pinned storage evidence below is retained unchanged; it is not a size prediction for the restructure. Storage bits come from `testing/line_barcode/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/comms/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](architecture.md#minimum-bit-data-representation) (retained representation decision); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
 
 | Field | Current C type | Bounds / units | Chosen width (bits) | Final storage bits | Instances | Ticket |
 | --- | --- | --- | ---: | ---: | ---: | --- |
@@ -1037,7 +1037,7 @@ excursion and pivot geometry remain provisional D07/T03.
 Encoder PID diagnostic revision (2026-10-31, INT-94): expose best-effort
 per-release wheel targets, measured speeds and serviced duties without changing
 PID gains, encoder scale, steering or travel settings. Use the
-[S2 tuning procedure](architecture/motion.md#wheel-speed-tuning) to separate
+[S2 tuning procedure](../app_program/motion/README.md#wheel-speed-tuning) to separate
 motor response from changing steering demands. D07/D13 remain pending for loaded
 response, target saturation, timing/stack impact and physical tracking; no newly
 calibrated gains or motion pass is claimed. The former dashboard black/white

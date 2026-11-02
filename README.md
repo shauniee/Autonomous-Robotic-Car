@@ -83,10 +83,9 @@ the Homebrew packages the installer added (`--dry-run` lists them first).
 | [Project specifications](docs/project-specs.md) | Requirements, change requirement (minimum-bit), data table, assessment, pending decisions |
 | [Team](docs/team.md) | Owners, pins and wiring, task and kernel-object budget, interfaces, coding rules |
 | [Architecture](docs/architecture.md) | Target three-task contracts, looping Mission, stop/freshness rules, shared data and MQTT protocol |
-| [Subsystem guides](docs/architecture/) | `comms.md`, `motion.md`, `line_barcode.md` (line, barcode, mission), `terrain.md`, `obstacle.md` |
-| [Tribunal 1 summary](docs/additional-docs/tribunal1.md) | Week 8 defence, decisions and gaps |
+| Subsystem READMEs | [comms](app_program/comms/README.md), [motion](app_program/motion/README.md), [line_barcode](app_program/line_barcode/README.md), [terrain](app_program/terrain/README.md), [obstacle](app_program/obstacle/README.md) |
 | [Mission readiness checklist](testing/mission-readiness.md) | Ordered physical checks before a full run |
-| [Week 13 plan](docs/week13-plan.md) | Deferred minimum-bit evidence and video recording |
+| [Videos](video/README.md) | Recording and sharing instructions, video index |
 
 Each fact has one owning guide; other guides link to it. Assignment requirements, proposed design, implemented behavior and recorded results are distinct.
 
@@ -94,14 +93,14 @@ Each fact has one owning guide; other guides link to it. Assignment requirements
 
 | Path | Contents |
 | --- | --- |
-| `app_program/` | `app_main.c` startup, shared definitions and five subsystem folders; application drivers stay with their subsystem |
+| `app_program/` | `app_main.c` startup, shared definitions, Mission and five subsystem folders, each with a README |
 | `build_make/` | Make profiles and generated firmware |
 | `flash.sh`, `install_dependancies.sh`, `delete_dependancies.sh` | Build and flash; install and remove the local tools |
 | `config/` | Kernel/device configuration and ignored local credentials |
 | `kernel/`, `lib/`, `device/`, `include/`, `tools/` | Imported runtime, services, drivers, headers and conversion tools |
-| `docs/` | Project guides, five subsystem guides, the Week 13 plan and one additional document |
+| `docs/` | Project specifications, team and architecture |
 | [testing/](testing/README.md) | Stable test IDs, result tables and saved evidence |
-| `videos/` | Demonstration recordings (not committed); recording instructions in [week13-plan](docs/week13-plan.md#4-video-recording) |
+| [video/](video/README.md) | Recording instructions and index; video files are never committed |
 
 ## Getting started
 
@@ -152,7 +151,7 @@ No active CMake target. The local checkpoint includes an optional dashboard; it 
 
 ### Calibration and local controls
 
-For motor tuning, use the [wheel-speed procedure](docs/architecture/motion.md#wheel-speed-tuning).
+For motor tuning, use the [wheel-speed procedure](app_program/motion/README.md#wheel-speed-tuning).
 The monitor's `WHEEL` records and dashboard target/PID-speed/duty readings
 come from Motion releases; ordinary telemetry speed is a slower average.
 Verify digital IR once, then hold steering settings fixed while checking
@@ -170,7 +169,7 @@ Target startup/control instructions are owned by [architecture](docs/architectur
 | Reset | Clear cause; freshly press GP21, then release after braking is serviced | STOPPED to READY; IMU calibration kept; no movement. A separate fresh GP20 press starts |
 | Restart | Release GP20, press again on a visible line | Fresh start; held buttons never restart |
 
-Digital classification: [line_barcode](docs/architecture/line_barcode.md). No IR
+Digital classification: [line_barcode](app_program/line_barcode/README.md). No IR
 black/white capture or calibration presses are needed. Both white means forward;
 both black means junction and cannot start a run. Check DOUT wiring, black
 polarity and comparator thresholds before physical use. Controls are local;

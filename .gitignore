@@ -15,7 +15,7 @@ build_make/.build_profile
 # to config/wifi_secrets.h and fill in your own network's SSID/password.
 config/wifi_secrets.h
 
-# Videos are shared as unlisted YouTube links (docs/week13-plan.md), never committed
+# Videos are shared as unlisted YouTube links (video/README.md), never committed
 *.mp4
 *.mov
 *.webm

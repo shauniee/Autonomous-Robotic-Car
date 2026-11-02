@@ -11,7 +11,7 @@ Keep subsystem cases/results in `<name>/TEST_LOG.md`, cross-subsystem cases in `
 | Level | Stable IDs | Ownership / contract |
 | --- | --- | --- |
 | Subsystem | `S1-U01`, `S2-U01`, … | Subsystem owner |
-| Integration | `INT-01`, … | Both interface owners; [system contracts](../docs/architecture.md#shared-data-rules) and [IR handoff](../docs/architecture/line_barcode.md) |
+| Integration | `INT-01`, … | Both interface owners; [system contracts](../docs/architecture.md#shared-data-rules) and [line and barcode](../app_program/line_barcode/README.md) |
 | System | `SYS-01`, …; planned `T01`–`T16` | Team; [requirements](../docs/project-specs.md) |
 
 IDs never change or get reused, including retired template cases. Retired definitions remain in the relevant log; placeholder template rows are not observations.
@@ -72,7 +72,7 @@ All remain pending until actual measurements/results are recorded. This retains 
 | T15 | Concurrent load: releases/WCET, missed deadlines, stop latency, queue occupancy and stack/memory usage |
 | T16 | Repeated looping-course rehearsal with junction actions, stationary U-turn pause, humps, bypass, telemetry and local-stop ending |
 
-Acceptance targets/unknown values are owned by [project-specs](../docs/project-specs.md#pending-decisions), not inferred from a case name. Demonstration links belong in the [video index](../docs/week13-plan.md#video-index) and the corresponding result row.
+Acceptance targets/unknown values are owned by [project-specs](../docs/project-specs.md#pending-decisions), not inferred from a case name. Demonstration links belong in the [video index](../video/README.md#video-index) and the corresponding result row.
 
 The live completion checklist is [issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117).
 `python3 testing/check_plan_completion.py` checks the latest appended

@@ -66,7 +66,7 @@
    the plant, KP for response, then KI for persistent error; leave KD zero
    initially. Saturated duty needs diagnosis before increasing gains/cap.
    Keep IR classification and steering settings fixed during these trials.
-   Procedure: docs/architecture/motion.md, Wheel-speed tuning. */
+   Procedure: app_program/motion/README.md, Wheel-speed tuning. */
 #define ENC_COUNTS_PER_MM 11.649f /* INT-66: mean of both wheels over 500 mm */
 #define TRACK_WIDTH_MM		120.0f	/* User-measured wheel centres; specs D03; effective turning calibration pending */
 #define MOTION_SPEED_MAX_MMPS	500.0f	/* PROVISIONAL (D07): speed limit; the 9-bit command field holds 511 */

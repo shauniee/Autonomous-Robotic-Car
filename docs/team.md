@@ -19,13 +19,13 @@ A **subsystem** is one student's folder (may hold several tasks and peripherals)
 
 | # | Subsystem | Student ID | GitHub | Code | Tests | Guide |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | **Shaun, Communications:** WiFi/MQTT, telemetry, reporting | 2500629 | shauniee | [app_program/comms/](../app_program/comms/) | [testing/comms/](../testing/comms/) | [comms](architecture/comms.md) |
-| 2 | **Mahesha, Motion:** motors, encoders, wheel PID, motion APIs | 2503973 | itsjustmdawg | [app_program/motion/](../app_program/motion/) | [testing/motion/](../testing/motion/) | [motion](architecture/motion.md) |
-| 3 | **Nicholas, Line, Barcode, Mission integration:** IR, barcode, coordination, integration | 2501552 | nicholas-bay | [app_program/line_barcode/](../app_program/line_barcode/) | [testing/line_barcode/](../testing/line_barcode/) | [line_barcode](architecture/line_barcode.md) |
-| 4 | **Darrius, Terrain:** IMU processing, motion classification, hump measurement | 2500360 | Galaxius03 | [app_program/terrain/](../app_program/terrain/) | [testing/terrain/](../testing/terrain/) | [terrain](architecture/terrain.md) |
-| 5 | **Jia Jing, Obstacle:** sonar, servo scanning, obstacle profiling | 2502825 | JJLOLLOL | [app_program/obstacle/](../app_program/obstacle/) | [testing/obstacle/](../testing/obstacle/) | [obstacle](architecture/obstacle.md) |
+| 1 | **Shaun, Communications:** WiFi/MQTT, telemetry, reporting | 2500629 | shauniee | [app_program/comms/](../app_program/comms/) | [testing/comms/](../testing/comms/) | [comms](../app_program/comms/README.md) |
+| 2 | **Mahesha, Motion:** motors, encoders, wheel PID, motion APIs | 2503973 | itsjustmdawg | [app_program/motion/](../app_program/motion/) | [testing/motion/](../testing/motion/) | [motion](../app_program/motion/README.md) |
+| 3 | **Nicholas, Line, Barcode, Mission integration:** IR, barcode, coordination, integration | 2501552 | nicholas-bay | [app_program/line_barcode/](../app_program/line_barcode/) | [testing/line_barcode/](../testing/line_barcode/) | [line_barcode](../app_program/line_barcode/README.md) |
+| 4 | **Darrius, Terrain:** IMU processing, motion classification, hump measurement | 2500360 | Galaxius03 | [app_program/terrain/](../app_program/terrain/) | [testing/terrain/](../testing/terrain/) | [terrain](../app_program/terrain/README.md) |
+| 5 | **Jia Jing, Obstacle:** sonar, servo scanning, obstacle profiling | 2502825 | JJLOLLOL | [app_program/obstacle/](../app_program/obstacle/) | [testing/obstacle/](../testing/obstacle/) | [obstacle](../app_program/obstacle/README.md) |
 
-Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [week13-plan](week13-plan.md#4-video-recording). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
+Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [video](../video/README.md). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
 
 **Implementation status.** The current source baseline and consolidated issue
 plan are linked from [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#status). The code

@@ -26,6 +26,7 @@
   - [S5 Obstacle and bypass (obstacle, with Mission)](#s5-obstacle-and-bypass-obstacle-with-mission)
 - [Time](#time)
 - [Post-Tribunal decisions](#post-tribunal-decisions)
+- [Minimum-bit data representation](#minimum-bit-data-representation)
 - [MQTT binary protocol, schema version 2](#mqtt-binary-protocol-schema-version-2)
   - [Telemetry and snapshot reply (23 bytes)](#telemetry-and-snapshot-reply-23-bytes)
   - [Wheel trace (15 bytes)](#wheel-trace-15-bytes)
@@ -382,27 +383,27 @@ follow-up if evidence shows the existing capture is inadequate.
 
 ### S1 Communications (comms)
 
-[Guide](architecture/comms.md): bounded core-0 reporting functions; opaque
+[README](../app_program/comms/README.md): bounded core-0 reporting functions; opaque
 TX/RX bridge to kernel MQTT; mapping ACK only after Mission installation.
 
 ### S2 Motion (motion)
 
-[Guide](architecture/motion.md): sole motor writer; wheel control, encoder
+[README](../app_program/motion/README.md): sole motor writer; wheel control, encoder
 actions and independent stop/expiry checks.
 
 ### S3 Line, barcode and Mission (line_barcode)
 
-[Guide](architecture/line_barcode.md): S3 retains line/barcode sensing/decoding;
+[README](../app_program/line_barcode/README.md): S3 retains line/barcode sensing/decoding;
 Mission coordination moves out. No independent S3 control thread in the target.
 
 ### S4 Terrain (terrain)
 
-[Guide](architecture/terrain.md): core-0 bounded IMU/terrain functions; measured
+[README](../app_program/terrain/README.md): core-0 bounded IMU/terrain functions; measured
 encoder travel, filtered pitch, valid completed hump results and impact evidence.
 
 ### S5 Obstacle and bypass (obstacle, with Mission)
 
-[Guide](architecture/obstacle.md): bounded sonar/servo acquisition and uncertain
+[README](../app_program/obstacle/README.md): bounded sonar/servo acquisition and uncertain
 width/clearance estimates; Mission owns supported bypass/original-line recovery.
 
 ## Time
@@ -414,10 +415,35 @@ short latency; measure directly on the final image.
 
 ## Post-Tribunal decisions
 
-Historical Tribunal mechanisms are preserved in the [Tribunal record](additional-docs/tribunal1.md).
+Week 8 Tribunal 1 defended the Week 6 design: Motion as only motor writer, expiring
+commands, networking without movement authority, and separate line, barcode, range
+and hump evidence. It adopted the minimum-bit requirement below and raised
+concurrency, overflow and precision risks now covered by the shared-data rules.
 The active simplification retains timestamped commands, bounded action IDs,
 four-letter runtime mapping, per-consumer encoder origins and word snapshots.
-New target decisions are owned above, not an alternative historical architecture.
+
+## Minimum-bit data representation
+
+**Change requirement.** Adopted at Tribunal 1. Each application field uses only the
+bits its valid range needs. [Project-specs section 4](project-specs.md#4-change-in-requirement-minimum-bit-data-representation)
+owns the requirement and the [data table](project-specs.md#5-data-representation-table-week-13)
+owns every width.
+
+- **Bits:** `ceil(log2(valid values + invalid codes))`, justified by documented bounds, units, signedness, scale, rounding and invalid codes.
+- **Storage:** in-RAM packed state uses bit-fields behind accessors; the wire uses explicit masks and shifts (binary schema v2, replacing JSON). Combine fields only when they share one writer, never merely because widths fit.
+- **Faults:** one bit per condition in a shared [bitmask](#fault-bitmask), so simultaneous faults stay independent.
+- **Scaled values:** a 0..1 fraction is `uint8_t` 0..127 (`IR_SCALE_ONE`) and a -1..+1 value `int8_t` -127..+127. Float tunables fold to integers at compile time; base-10 display happens only on the laptop.
+- **Exempt:** loop counters and short-lived temporaries.
+
+**Evidence, final implementation only:** the data table, RAM usage, message sizes and
+no lost functionality or unacceptable timing (T15). Comparison with the old build is
+not required (course update, 2026-10-27), so the historical baseline in project-specs
+is a record only. Evidence means a result tied to an exact commit and test ID.
+
+**Still to audit:** fields added since the last size probe, including the line trace,
+onset and bend state, Mission state encoding, Terrain freshness and scan parameters.
+Each owner also reviews their test log against current code (JSON-era S1-U04..U08,
+six-byte faults, any case assuming no echo stops), appending rather than editing.
 
 ## MQTT binary protocol, schema version 2
 
@@ -467,9 +493,8 @@ Older laptop decoders reject this new type; use the matching decoder for traces.
 
 ### Line trace (17 bytes)
 
-Type 9 is outbound diagnostics only, proposed in the
-[line-tracking handoff](line-tracking-handoff.md) open issue 2 instead of changing
-the wheel trace; S1 owner agreement pending. Byte 0 is `29` hex; bytes 1..4 are the
+Type 9 is outbound diagnostics only, kept separate so the wheel trace is unchanged;
+S1 owner agreement pending. Byte 0 is `29` hex; bytes 1..4 are the
 IR acquisition time uint32 ms. Byte 5 flags: bit 0 left black, 1 right black,
 2 in broad black, 3 junction candidate open, 4 junction qualified, 5 curved entry,
 6 junction locked, 7 zero. Byte 6: bits 0..3 Mission state, 4..6 junction phase,
