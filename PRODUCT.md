@@ -35,7 +35,7 @@ At a glance, show whether the robot is healthy and what each subsystem is doing:
 
 Wheel diagnostics compare requested speeds, encoder-measured release speeds and
 serviced duty. Motor gains remain compile-time constants; the procedure and
-calibration responsibilities live in [S2](docs/architecture/subsystem2.md#wheel-speed-tuning).
+calibration responsibilities live in [S2](docs/architecture/motion.md#wheel-speed-tuning).
 The dashboard observes the robot and installs barcode mappings; it does not tune
 gains or start motors remotely.
 

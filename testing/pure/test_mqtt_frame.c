@@ -1,10 +1,10 @@
-/* Host test for app_program/subsystem1/mqtt_frame.[ch] (issue #39). The byte
+/* Host test for app_program/comms/mqtt_frame.[ch] (issue #39). The byte
    vectors below are the schema v2 golden vectors in docs/architecture.md;
    scripts/mqtt_client.py --self-test decodes the same bytes. */
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../app_program/subsystem1/mqtt_frame.h"
+#include "../../app_program/comms/mqtt_frame.h"
 
 static const uint8_t golden_telemetry[MQTT_LEN_TELEMETRY] = {
     0x21, 0x2A, 0x72, 0x45, 0x01, 0x02, 0x04, 0x08, 0x01, 0x03, 0x34, 0x12, 0x78, 0x56,

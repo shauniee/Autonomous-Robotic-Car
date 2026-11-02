@@ -1,10 +1,10 @@
-/* Host test for app_program/subsystem2/motion_control.[ch] (issue #31):
+/* Host test for app_program/motion/motion_control.[ch] (issue #31):
    command freshness, action/status state machine, stall and invalid input. */
 #include <assert.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
-#include "../../app_program/subsystem2/motion_control.h"
+#include "../../app_program/motion/motion_control.h"
 
 #define PLANT_CPS_PER_DUTY 2000.0f
 #define MM_PER_COUNT (1.0f / ENC_COUNTS_PER_MM)

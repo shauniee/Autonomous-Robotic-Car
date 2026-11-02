@@ -33,7 +33,7 @@ int main(void)
     mission_step(&mission, &in, &out);
     assert(out.scan_request);
     in.scan_id = out.scan_id;
-    in.scan_state = S5_SCAN_DONE;
+    in.scan_state = OBSTACLE_SCAN_DONE;
     in.profile_valid = true;
     in.left_clearance_mm = 1000u;
     in.right_clearance_mm = 900u;

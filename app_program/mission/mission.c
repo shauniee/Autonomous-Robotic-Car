@@ -1,15 +1,14 @@
 #include "mission.h"
 #include "mission_mapping.h"
 #include "line_trace.h"
-#include "../subsystem4/subsystem4.h"
+#include "../terrain/terrain.h"
 #include <stdatomic.h>
-#include "../subsystem3/subsystem3.h"
+#include "../line_barcode/line_barcode.h"
 #include "safety.h"
-#include "../subsystem2/subsystem2.h"
-#include "../subsystem5/subsystem5.h"
-#include "../subsystem1/subsystem1.h"
-#include "../subsystem1/s1_bridge.h"
-#include "../subsystem2/drv_encoder.h"
+#include "../motion/motion.h"
+#include "../obstacle/obstacle.h"
+#include "../comms/comms.h"
+#include "../comms/comms_bridge.h"
 #include "../common/buttons.h"
 #include "../common/robot_time.h"
 
@@ -41,7 +40,7 @@ static void mission_task(INT stacd, void *exinf)
     for (;;)
     {
         now = robot_time_ms();
-        s3_step(now);
+        line_barcode_step(now);
         mqtt_mapping_t mapping;
         uint8_t direction;
         if (mission_mapping_take(&mapping, &direction))
@@ -65,7 +64,7 @@ static void mission_task(INT stacd, void *exinf)
             }
             mission_mapping_reply(result);
         }
-        s5_step(now);
+        obstacle_step(now);
         bool line_required = mission.state == MISSION_FOLLOW_LINE ||
             mission.state == MISSION_REACQUIRE ||
             mission.state == MISSION_NAVIGATE ||
@@ -87,14 +86,14 @@ static void mission_task(INT stacd, void *exinf)
                 state_names[mission.state], (int)buttons.gp21_down);
         }
 
-        S3IrSnapshot snapshot = {0};
+        LineIrSnapshot snapshot = {0};
         MotionHealth health = {0};
-        bool copied = s3_ir_copy(&snapshot);
-        bool healthy = s2_health(&health) >= E_OK;
+        bool copied = line_ir_copy(&snapshot);
+        bool healthy = motion_health(&health) >= E_OK;
         now = robot_time_ms();
         ir_snapshot_refresh(&snapshot, now);
 
-        uint32_t feedback = s2_feedback();
+        uint32_t feedback = motion_feedback();
         uint32_t left_now = drv_encoder_count(ENCODER_LEFT), right_now = drv_encoder_count(ENCODER_RIGHT);
         if (left_now != last_left || right_now != last_right)
         {
@@ -102,17 +101,17 @@ static void mission_task(INT stacd, void *exinf)
             last_right = right_now;
             still_since = now;
         }
-        s5_range_sample_t front_sample = {0}, side_sample = {0};
-        bool range_copied = s5_range_samples(&front_sample, &side_sample) >= E_OK;
+        obstacle_range_sample_t front_sample = {0}, side_sample = {0};
+        bool range_copied = obstacle_range_samples(&front_sample, &side_sample) >= E_OK;
         uint32_t front = front_sample.word, side = side_sample.word;
-        s5_profile_snapshot_t scan_profile = {0};
-        bool have_profile = s5_profile_snapshot(&scan_profile) >= E_OK &&
-            robot_time_elapsed(now, scan_profile.sampled_ms) <= S5_SCAN_DEADLINE_MS &&
+        obstacle_profile_snapshot_t scan_profile = {0};
+        bool have_profile = obstacle_profile_snapshot(&scan_profile) >= E_OK &&
+            robot_time_elapsed(now, scan_profile.sampled_ms) <= OBSTACLE_SCAN_DEADLINE_MS &&
             scan_profile.evidence.left_edge_valid && scan_profile.evidence.right_edge_valid;
         ObstacleProfile profile = scan_profile.profile;
-        uint32_t scan = s5_scan_word();
-        S4Snapshot terrain = {0};
-        bool have_terrain = s4_copy(&terrain) &&
+        uint32_t scan = obstacle_scan_word();
+        TerrainSnapshot terrain = {0};
+        bool have_terrain = terrain_copy(&terrain) &&
             terrain_evidence_fresh(&terrain, now, SAFETY_STALE_MS) &&
             terrain_calibrated(terrain.terrain);
         uint32_t terrain_state = terrain_state_code(terrain.terrain);
@@ -122,8 +121,8 @@ static void mission_task(INT stacd, void *exinf)
             .now_ms = now,
             .start_pressed = event == BUTTON_EVENT_PRESSED,
             .mapped = barcode_mapped(),
-            .start_blocked = rd_fault_start_blocked() || !s1_bridge_ready() ||
-                !s4_startup_complete() || !copied || !snapshot.sample_fresh ||
+            .start_blocked = rd_fault_start_blocked() || !comms_bridge_ready() ||
+                !terrain_startup_complete() || !copied || !snapshot.sample_fresh ||
                 !healthy || health.sequence == 0u ||
                 robot_time_elapsed(now, health.serviced_ms) > SAFETY_STALE_MS,
             .stop_down = buttons.gp21_down,
@@ -158,8 +157,8 @@ static void mission_task(INT stacd, void *exinf)
             .side_mm = echo_range(side),
             .side_sampled_ms = side_sample.sampled_ms,
             .side_sequence = side_sample.sequence,
-            .scan_state = s5_scan_state_unpack(scan & rd_mask(S5_SCAN_STATE_BITS)),
-            .scan_id = s5_scan_id(scan),
+            .scan_state = obstacle_scan_state_unpack(scan & rd_mask(OBSTACLE_SCAN_STATE_BITS)),
+            .scan_id = obstacle_scan_id(scan),
             .profile_valid = have_profile && profile.valid,
             .profile_closest_mm = profile.closest_mm,
             .profile_planning_mm = scan_profile.evidence.planning_width_mm,
@@ -184,7 +183,7 @@ static void mission_task(INT stacd, void *exinf)
             traced_ms = in.line_sampled_ms;
         }
 
-        if (out.stop_now && s2_stop() < E_OK)
+        if (out.stop_now && motion_stop() < E_OK)
         {
             tm_printf((UB *)"[MISSION] stop request failed\n");
         }
@@ -195,7 +194,7 @@ static void mission_task(INT stacd, void *exinf)
         }
         if (out.event_kind != 0u)
         {
-            s1_event((mqtt_event_kind_t)out.event_kind, out.event_arg, out.event_arg2);
+            comms_event((mqtt_event_kind_t)out.event_kind, out.event_arg, out.event_arg2);
         }
         if (out.start_refused)
         {
@@ -207,7 +206,7 @@ static void mission_task(INT stacd, void *exinf)
                 (int)in.motion_stopped, (int)in.safety_latched,
                 (int)in.guidance_valid, (unsigned)in.line,
                 (int)(copied && snapshot.sample_fresh),
-                (int)s1_bridge_ready(), (int)s4_startup_complete(),
+                (int)comms_bridge_ready(), (int)terrain_startup_complete(),
                 (int)(healthy && health.sequence != 0u &&
                     robot_time_elapsed(now, health.serviced_ms) <=
                         SAFETY_STALE_MS), APP_TEST);
@@ -234,21 +233,21 @@ static void mission_task(INT stacd, void *exinf)
         }
         if (out.scan_request)
         {
-            s5_scan_request(out.scan_id);
+            obstacle_scan_request(out.scan_id);
         }
         if (out.scan_cancel)
         {
-            s5_scan_cancel();
+            obstacle_scan_cancel();
         }
         if (out.side_watch_on != side_watching || out.side_watch_on)
         {
             side_watching = out.side_watch_on;
-            s5_side_watch(out.side_watch_on, out.side_watch_deg);
+            obstacle_side_watch(out.side_watch_on, out.side_watch_deg);
         }
-        if (s2_command(&out.command) < E_OK)
+        if (motion_command(&out.command) < E_OK)
         {
             tm_printf((UB *)"[MISSION] command write failed; stopping\n");
-            (void)s2_stop();
+            (void)motion_stop();
         }
         if (was_recovering && out.line_lost)
         {

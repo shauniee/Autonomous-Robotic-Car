@@ -19,11 +19,11 @@ A **subsystem** is one student's folder (may hold several tasks and peripherals)
 
 | # | Subsystem | Student ID | GitHub | Code | Tests | Guide |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | **Shaun, Communications:** WiFi/MQTT, telemetry, reporting | 2500629 | shauniee | [app_program/subsystem1/](../app_program/subsystem1/) | [testing/subsystem1/](../testing/subsystem1/) | [subsystem1](architecture/subsystem1.md) |
-| 2 | **Mahesha, Motion:** motors, encoders, wheel PID, motion APIs | 2503973 | itsjustmdawg | [app_program/subsystem2/](../app_program/subsystem2/) | [testing/subsystem2/](../testing/subsystem2/) | [subsystem2](architecture/subsystem2.md) |
-| 3 | **Nicholas, Line, Barcode, Mission integration:** IR, barcode, coordination, integration | 2501552 | nicholas-bay | [app_program/subsystem3/](../app_program/subsystem3/) | [testing/subsystem3/](../testing/subsystem3/) | [subsystem3](architecture/subsystem3.md) |
-| 4 | **Darrius, Terrain:** IMU processing, motion classification, hump measurement | 2500360 | Galaxius03 | [app_program/subsystem4/](../app_program/subsystem4/) | [testing/subsystem4/](../testing/subsystem4/) | [subsystem4](architecture/subsystem4.md) |
-| 5 | **Jia Jing, Obstacle:** sonar, servo scanning, obstacle profiling | 2502825 | JJLOLLOL | [app_program/subsystem5/](../app_program/subsystem5/) | [testing/subsystem5/](../testing/subsystem5/) | [subsystem5](architecture/subsystem5.md) |
+| 1 | **Shaun, Communications:** WiFi/MQTT, telemetry, reporting | 2500629 | shauniee | [app_program/comms/](../app_program/comms/) | [testing/comms/](../testing/comms/) | [comms](architecture/comms.md) |
+| 2 | **Mahesha, Motion:** motors, encoders, wheel PID, motion APIs | 2503973 | itsjustmdawg | [app_program/motion/](../app_program/motion/) | [testing/motion/](../testing/motion/) | [motion](architecture/motion.md) |
+| 3 | **Nicholas, Line, Barcode, Mission integration:** IR, barcode, coordination, integration | 2501552 | nicholas-bay | [app_program/line_barcode/](../app_program/line_barcode/) | [testing/line_barcode/](../testing/line_barcode/) | [line_barcode](architecture/line_barcode.md) |
+| 4 | **Darrius, Terrain:** IMU processing, motion classification, hump measurement | 2500360 | Galaxius03 | [app_program/terrain/](../app_program/terrain/) | [testing/terrain/](../testing/terrain/) | [terrain](architecture/terrain.md) |
+| 5 | **Jia Jing, Obstacle:** sonar, servo scanning, obstacle profiling | 2502825 | JJLOLLOL | [app_program/obstacle/](../app_program/obstacle/) | [testing/obstacle/](../testing/obstacle/) | [obstacle](architecture/obstacle.md) |
 
 Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [week13-plan](week13-plan.md#4-video-recording). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
 
@@ -131,7 +131,7 @@ by [architecture](architecture.md#shared-data-rules).
 | Local GP21 to Motion | Independent input check, persistent stop; no command-mutex/telemetry dependency |
 | S3 evidence to Mission | Bounded in-task sensing/decoder steps; retain original acquisition times |
 | Mission to S5 | Scan/side-watch intent and bounded acquisition steps, never a second motor writer |
-| Terrain to Mission/Motion | Core-0 coherent evidence with age/validity; no cross-core runtime `s2_stop()` call |
+| Terrain to Mission/Motion | Core-0 coherent evidence with age/validity; no cross-core runtime `motion_stop()` call |
 | I/O to Mission mapping | Bounded hand-off; Mission installs whole mapping while stopped and returns result before ACK |
 | Mission/Terrain to Reporting | Cross-core event synchronization required; same-core DI/EI is insufficient |
 | Reporting to kernel MQTT | Opaque bounded TX/RX bridge; only WiFi context invokes networking APIs |

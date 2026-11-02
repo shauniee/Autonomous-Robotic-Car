@@ -37,7 +37,7 @@ Re-run relevant boundary tests and final target-compiler size probes after chang
 
 ## 3. Test records to revisit
 
-Most firmware self-tests and test logs predate the binary protocol and the fault policy. Before Week 13, each owner reviews their `testing/subsystemN/TEST_LOG.md` cases against the current code: the JSON-era S1-U04..U08 cases, fault-byte expectations (now six bytes) and any case that assumed no echo stops the robot. Retire or supersede cases by appending rows; never edit recorded results.
+Most firmware self-tests and test logs predate the binary protocol and the fault policy. Before Week 13, each owner reviews their `testing/<name>/TEST_LOG.md` cases against the current code: the JSON-era S1-U04..U08 cases, fault-byte expectations (now six bytes) and any case that assumed no echo stops the robot. Retire or supersede cases by appending rows; never edit recorded results.
 
 ## 4. Video recording
 

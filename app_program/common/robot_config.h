@@ -21,17 +21,17 @@
 
 /* --- Tasks: provisional existing defaults, physical acceptance D13 ---- */
 #define TASK_STACK_SIZE		2048	/* bytes; tm_printf needs ~1 KB */
-#define S2_PRI_MOTION		13
+#define MOTION_PRI		13
 #define FOLLOW_PRIORITY		14
 #define IO_PRIORITY 16 /* provisional existing Terrain priority; D13 */
 #define IO_PERIOD_MS 10u /* existing calibration cadence; D13 */
 
 /* --- S1 communications --------------------------------------------- */
-#define S1_TELEMETRY_PERIOD_MS	500u
-#define S1_REPORT_PERIOD_MS	50u	/* Reporting release: requests and events are served at this rate */
-#define S1_EVENT_CAPACITY	16u	/* event-log ring; oldest overwritten, drops counted */
-#define S1_REQUESTS_PER_RELEASE 2u /* bounded by incoming bridge depth */
-#define S1_EVENTS_PER_RELEASE	2u
+#define COMMS_TELEMETRY_PERIOD_MS	500u
+#define COMMS_REPORT_PERIOD_MS	50u	/* Reporting release: requests and events are served at this rate */
+#define COMMS_EVENT_CAPACITY	16u	/* event-log ring; oldest overwritten, drops counted */
+#define COMMS_REQUESTS_PER_RELEASE 2u /* bounded by incoming bridge depth */
+#define COMMS_EVENTS_PER_RELEASE	2u
 
 /* --- S2 motion ------------------------------------------------------ */
 #define MOTION_MAX_DUTY		.80f	/* PROVISIONAL (D07): retained duty cap; verify motor/driver rating */
@@ -66,7 +66,7 @@
    the plant, KP for response, then KI for persistent error; leave KD zero
    initially. Saturated duty needs diagnosis before increasing gains/cap.
    Keep IR classification and steering settings fixed during these trials.
-   Procedure: docs/architecture/subsystem2.md, Wheel-speed tuning. */
+   Procedure: docs/architecture/motion.md, Wheel-speed tuning. */
 #define ENC_COUNTS_PER_MM 11.649f /* INT-66: mean of both wheels over 500 mm */
 #define TRACK_WIDTH_MM		120.0f	/* User-measured wheel centres; specs D03; effective turning calibration pending */
 #define MOTION_SPEED_MAX_MMPS	500.0f	/* PROVISIONAL (D07): speed limit; the 9-bit command field holds 511 */
@@ -263,31 +263,31 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define SERVO_MAX_DEG		20	/* requested +/-20 degrees; calibrate D05 */
 #define SERVO_STEP_MS		50u	/* proposed slow slew: 1 degree per step (D05) */
 #define SERVO_SETTLE_MS		300u	/* PROVISIONAL (D05) */
-#define S5_COARSE_STEP_DEG	5	/* settled readings every 5 degrees, -20..20 */
-#define S5_FINE_STEP_DEG	5	/* refine edges within the servo limits */
-#define S5_SONAR_FORWARD_MM	100.0f	/* PROPOSAL: front mount relative to body centre, measure D05 */
-#define S5_SONAR_LEFT_MM	0.0f	/* PROVISIONAL (D05) */
-#define S5_BODY_LENGTH_MM	200.0f	/* PROVISIONAL (D02): car envelope */
-#define S5_CLEARANCE_MM		30.0f	/* PROVISIONAL (D02) */
+#define OBSTACLE_COARSE_STEP_DEG	5	/* settled readings every 5 degrees, -20..20 */
+#define OBSTACLE_FINE_STEP_DEG	5	/* refine edges within the servo limits */
+#define OBSTACLE_SONAR_FORWARD_MM	100.0f	/* PROPOSAL: front mount relative to body centre, measure D05 */
+#define OBSTACLE_SONAR_LEFT_MM	0.0f	/* PROVISIONAL (D05) */
+#define OBSTACLE_BODY_LENGTH_MM	200.0f	/* PROVISIONAL (D02): car envelope */
+#define OBSTACLE_CLEARANCE_MM		30.0f	/* PROVISIONAL (D02) */
 /* Proposed D05 settings for software verification, not calibrated limits.
    Physical release remains inhibited; zero/invalid overrides fail closed. */
-#ifndef S5_SCAN_GROUP_SAMPLES
-#define S5_SCAN_GROUP_SAMPLES 3u
+#ifndef OBSTACLE_SCAN_GROUP_SAMPLES
+#define OBSTACLE_SCAN_GROUP_SAMPLES 3u
 #endif
-#ifndef S5_SCAN_MIN_VALID
-#define S5_SCAN_MIN_VALID 2u
+#ifndef OBSTACLE_SCAN_MIN_VALID
+#define OBSTACLE_SCAN_MIN_VALID 2u
 #endif
-#ifndef S5_PROFILE_DEPTH_ENTER_MM
-#define S5_PROFILE_DEPTH_ENTER_MM 30u
+#ifndef OBSTACLE_PROFILE_DEPTH_ENTER_MM
+#define OBSTACLE_PROFILE_DEPTH_ENTER_MM 30u
 #endif
-#ifndef S5_PROFILE_DEPTH_EXIT_MM
-#define S5_PROFILE_DEPTH_EXIT_MM 60u
+#ifndef OBSTACLE_PROFILE_DEPTH_EXIT_MM
+#define OBSTACLE_PROFILE_DEPTH_EXIT_MM 60u
 #endif
-#ifndef S5_PROFILE_ADJACENT_RAYS
-#define S5_PROFILE_ADJACENT_RAYS 2u
+#ifndef OBSTACLE_PROFILE_ADJACENT_RAYS
+#define OBSTACLE_PROFILE_ADJACENT_RAYS 2u
 #endif
-#ifndef S5_PROFILE_RANGE_ERROR_MM
-#define S5_PROFILE_RANGE_ERROR_MM 10u /* proposed model input, not sensor accuracy */
+#ifndef OBSTACLE_PROFILE_RANGE_ERROR_MM
+#define OBSTACLE_PROFILE_RANGE_ERROR_MM 10u /* proposed model input, not sensor accuracy */
 #endif
 #define BYPASS_SPEED_MMPS 9u /* D07: scaled to measured counts/mm */
 #define BYPASS_CHUNK_MM 50u
@@ -315,8 +315,8 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define TERRAIN_QUALITY_SPEED_CHANGE_MMPS 30u
 #define TERRAIN_QUALITY_WHEEL_DIFF_MMPS 30u
 #define TERRAIN_QUALITY_STEADY_MS 200u
-#define S5_EXPECTED_MAX_WIDTH_MM 200u /* supplied obstacle width upper bound */
-#define S5_SCAN_DEADLINE_MS	20000u	/* includes slow slew and per-ray settling */
+#define OBSTACLE_EXPECTED_MAX_WIDTH_MM 200u /* supplied obstacle width upper bound */
+#define OBSTACLE_SCAN_DEADLINE_MS	20000u	/* includes slow slew and per-ray settling */
 #define ECHO_PIN		3	/* PROVISIONAL (D05): <= 3.3 V before connecting */
 #define TRIGGER_PIN		2
 
@@ -389,9 +389,9 @@ _Static_assert(MISSION_TRACK_SPEED_MMPS * (1.0f + MAX_STEER) <= MOTION_SPEED_MAX
 _Static_assert(SONAR_TIMEOUT_US / 1000u < SONAR_REPEAT_MS && SONAR_MIN_PULSE_US < SONAR_TIMEOUT_US &&
 	SONAR_NO_ECHO_LIMIT >= 1u, "sonar timing: the timeout must fit inside the repeat interval");
 _Static_assert(SERVO_MAX_DEG > 0 && SERVO_MAX_DEG * (int)SERVO_US_PER_DEG < (int)SERVO_CENTRE_US &&
-	SERVO_MAX_DEG > S5_COARSE_STEP_DEG &&
-	S5_COARSE_STEP_DEG >= S5_FINE_STEP_DEG && S5_FINE_STEP_DEG > 0, "servo sweep out of range");
-_Static_assert(S2_PRI_MOTION < FOLLOW_PRIORITY,
+	SERVO_MAX_DEG > OBSTACLE_COARSE_STEP_DEG &&
+	OBSTACLE_COARSE_STEP_DEG >= OBSTACLE_FINE_STEP_DEG && OBSTACLE_FINE_STEP_DEG > 0, "servo sweep out of range");
+_Static_assert(MOTION_PRI < FOLLOW_PRIORITY,
     "Motion must outrank Mission");
 _Static_assert(IO_PRIORITY > 4, "I/O stays below kernel WiFi/USB services");
 _Static_assert(SAFETY_STALE_MS >= IR_SAMPLE_MS &&
@@ -401,7 +401,7 @@ _Static_assert(GY511_TIMEOUT_US < IO_PERIOD_MS * 1000u,
     "one I2C operation must not consume a whole I/O release");
 _Static_assert(PITCH_DESC_THRESH_DEG < 0.0f && PITCH_CLIMB_THRESH_DEG > 0.0f,
 	"pitch thresholds must straddle zero");
-_Static_assert(S1_TELEMETRY_PERIOD_MS % S1_REPORT_PERIOD_MS == 0u && S1_EVENT_CAPACITY >= 4u,
+_Static_assert(COMMS_TELEMETRY_PERIOD_MS % COMMS_REPORT_PERIOD_MS == 0u && COMMS_EVENT_CAPACITY >= 4u,
 	"telemetry period must be a whole number of Reporting releases");
 
 _Static_assert(APP_PHYSICAL_RELEASE == 0 || APP_PHYSICAL_RELEASE == 1,

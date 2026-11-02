@@ -107,7 +107,7 @@ Docker and [native](#build-and-flash-without-docker) builds can share `build_mak
 | [Project specifications](docs/project-specs.md) | Requirements, change requirement (minimum-bit), data table, assessment, pending decisions |
 | [Team](docs/team.md) | Owners, pins and wiring, task and kernel-object budget, interfaces, coding rules |
 | [Architecture](docs/architecture.md) | Target three-task contracts, looping Mission, stop/freshness rules, shared data and MQTT protocol |
-| [Subsystem guides](docs/architecture/) | `subsystem1.md` comms, `subsystem2.md` motion, `subsystem3.md` line/barcode/mission, `subsystem4.md` terrain, `subsystem5.md` obstacle |
+| [Subsystem guides](docs/architecture/) | `comms.md`, `motion.md`, `line_barcode.md` (line, barcode, mission), `terrain.md`, `obstacle.md` |
 | [Tribunal 1 summary](docs/additional-docs/tribunal1.md) | Week 8 defence, decisions and gaps |
 | [Mission readiness checklist](testing/mission-readiness.md) | Ordered physical checks before a full run |
 | [Week 13 plan](docs/week13-plan.md) | Deferred minimum-bit evidence and video recording |
@@ -174,7 +174,7 @@ No active CMake target. The local checkpoint includes an optional dashboard; it 
 
 ### Calibration and local controls
 
-For motor tuning, use the [wheel-speed procedure](docs/architecture/subsystem2.md#wheel-speed-tuning).
+For motor tuning, use the [wheel-speed procedure](docs/architecture/motion.md#wheel-speed-tuning).
 The monitor's `WHEEL` records and dashboard target/PID-speed/duty readings
 come from Motion releases; ordinary telemetry speed is a slower average.
 Verify digital IR once, then hold steering settings fixed while checking
@@ -192,7 +192,7 @@ Target startup/control instructions are owned by [architecture](docs/architectur
 | Reset | Clear cause; freshly press GP21, then release after braking is serviced | STOPPED to READY; IMU calibration kept; no movement. A separate fresh GP20 press starts |
 | Restart | Release GP20, press again on a visible line | Fresh start; held buttons never restart |
 
-Digital classification: [subsystem3](docs/architecture/subsystem3.md). No IR
+Digital classification: [line_barcode](docs/architecture/line_barcode.md). No IR
 black/white capture or calibration presses are needed. Both white means forward;
 both black means junction and cannot start a run. Check DOUT wiring, black
 polarity and comparator thresholds before physical use. Controls are local;

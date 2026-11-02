@@ -3,7 +3,7 @@
  *	Definitions shared by the whole team.  Changed only by team agreement.
  *
  *	Anything that belongs to ONE subsystem goes in that subsystem's own
- *	header instead (app_program/subsystemN/subsystemN.h).
+ *	header instead (app_program/<name>/<name>.h).
  */
 
 #ifndef APP_H
@@ -35,23 +35,23 @@ IMPORT ID app_start_task(FP entry, PRI pri, UW prc, const char *name);
  *  Every subsystem provides these.  usermain() calls ALL the _init()
  *  functions before starting Motion, Mission and I/O, so every
  *  kernel object exists before any task can use it.
- *    subsystemN_init()   create this subsystem's kernel objects
+ *    <name>_init()   create this subsystem's kernel objects
  *    Task entry points are declared by Motion, Mission and common/io_task.h
- *    subsystemN_test()   on-target tests, only in test builds (make TEST=1)
+ *    <name>_test()   on-target tests, only in test builds (make TEST=1)
  * --------------------------------------------------------------------- */
-IMPORT ER subsystem1_init(void);
-IMPORT ER subsystem2_init(void);
-IMPORT ER subsystem3_init(void);
-IMPORT ER subsystem4_init(void);
-IMPORT ER subsystem5_init(void);
+IMPORT ER comms_init(void);
+IMPORT ER motion_init(void);
+IMPORT ER line_barcode_init(void);
+IMPORT ER terrain_init(void);
+IMPORT ER obstacle_init(void);
 
-IMPORT ER subsystem2_start(void);
+IMPORT ER motion_start(void);
 
 #if APP_TEST
-IMPORT void subsystem1_test(void);
-IMPORT void subsystem2_test(void);
-IMPORT void subsystem4_test(void);
-IMPORT void subsystem5_test(void);
+IMPORT void comms_test(void);
+IMPORT void motion_test(void);
+IMPORT void terrain_test(void);
+IMPORT void obstacle_test(void);
 #endif
 
 /* Print a readable message if a kernel call failed (negative error code) */

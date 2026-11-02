@@ -25,7 +25,7 @@ jobs:
         run: |
           docker run --rm -v "$PWD":/work --user "$(id -u):$(id -g)" robot-build sh -c '
             arm-none-eabi-gcc -mcpu=cortex-m0plus -mthumb -ffreestanding -std=gnu11 -mfloat-abi=soft -fcommon -Iinclude -Iconfig \
-              -c testing/subsystem2/sizeof_probe.c -o /tmp/s2-probe.o &&
+              -c testing/motion/sizeof_probe.c -o /tmp/s2-probe.o &&
             arm-none-eabi-nm -S -t d /tmp/s2-probe.o | grep probe_'
       - name: Build profiles
         run: |

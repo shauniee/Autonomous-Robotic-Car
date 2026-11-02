@@ -1,7 +1,7 @@
 #include "io_task.h"
 #include "robot_time.h"
-#include "../subsystem1/subsystem1.h"
-#include "../subsystem4/subsystem4.h"
+#include "../comms/comms.h"
+#include "../terrain/terrain.h"
 
 static void io_task(INT stacd, void *exinf)
 {
@@ -11,8 +11,8 @@ static void io_task(INT stacd, void *exinf)
     for (;;)
     {
         uint32_t now = robot_time_ms();
-        s4_step(now);
-        s1_step(robot_time_ms());
+        terrain_step(now);
+        comms_step(robot_time_ms());
         (void)tk_dly_tsk(robot_time_next_delay(&release, IO_PERIOD_MS,
             robot_time_ms()));
     }

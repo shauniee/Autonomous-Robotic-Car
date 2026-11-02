@@ -4,7 +4,7 @@
 #include <sched.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../app_program/subsystem2/motion_trace.h"
+#include "../../app_program/motion/motion.h"
 
 static mqtt_wheel_trace_t sample(uint32_t time)
 {
