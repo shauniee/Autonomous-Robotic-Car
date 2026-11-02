@@ -11,8 +11,8 @@ drive=/Volumes/RPI-RP2
 wait_seconds=60
 
 case "${1:-course}" in
-    course) profile="TEST=0 FULL_COURSE=1"; image=mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_course.uf2 ;;
-    test) profile="TEST=1 FULL_COURSE=0"; image=mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2 ;;
+    course) profile="TEST=0 FULL_COURSE=1"; name=full_course ;;
+    test) profile="TEST=1 FULL_COURSE=0"; name=test ;;
     *) echo "Usage: ./flash.sh [course|test]" >&2; exit 2 ;;
 esac
 
@@ -29,7 +29,8 @@ PICO_SDK_PATH="$tools/pico-sdk"
 export PATH PICO_SDK_PATH
 
 # shellcheck disable=SC2086 # profile is several make variables
-make -C "$repo/build_make" -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 $profile
+make -C "$repo/build_make" -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 $profile EXE_FILE="$name"
+image=$name.uf2
 uf2=$repo/build_make/$image
 [ -f "$uf2" ] || { echo "Build finished but $uf2 is missing." >&2; exit 1; }
 shasum -a 256 "$uf2"

@@ -121,11 +121,8 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 
 | Profile | Output in `build_make/` |
 | --- | --- |
-| Offline TEST | `mtk3pico_smp1_usb_cdc_wifi_test.uf2` |
-| Offline normal | `mtk3pico_smp1_usb_cdc_wifi.uf2` |
-| Wireless TEST | `mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_test.uf2` |
-| Wireless normal | `mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2` |
-| Full course (`flash.sh`) | `mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_course.uf2` |
+| `./flash.sh` | `full_course.uf2` |
+| `./flash.sh test` | `test.uf2` |
 
 | Option | Meaning |
 | --- | --- |
