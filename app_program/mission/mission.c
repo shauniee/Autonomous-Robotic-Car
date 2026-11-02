@@ -35,7 +35,9 @@ static void mission_task(INT stacd, void *exinf)
     uint32_t last_left = drv_encoder_count(ENCODER_LEFT), last_right = drv_encoder_count(ENCODER_RIGHT);
     uint32_t still_since = now;
     bool side_watching = false;
+#if ROBOT_TRACE_ENABLED
     uint32_t traced_ms = 0u;
+#endif
 
     for (;;)
     {
@@ -168,12 +170,14 @@ static void mission_task(INT stacd, void *exinf)
         bool was_moving = mission.state != MISSION_READY && mission.state != MISSION_STOPPED;
         mission_step(&mission, &in, &out);
         /* One record per fresh acquisition while moving, including the stop. */
+#if ROBOT_TRACE_ENABLED
         if (was_moving && in.line_sampled_ms != traced_ms)
         {
             mqtt_line_trace_t trace = mission_line_trace(&mission, &in, &out);
             (void)line_trace_publish(&trace);	/* full ring drops diagnostics only */
             traced_ms = in.line_sampled_ms;
         }
+#endif /* ROBOT_TRACE_ENABLED */
 
         if (out.stop_now && motion_stop() < E_OK)
         {
