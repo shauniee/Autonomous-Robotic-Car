@@ -215,9 +215,12 @@ void terrain_step(uint32_t now)
             terrain_algo_invalidate_window(&context);
         }
         terrain_algo_process(&context, &raw, encoder_valid && moved > 0.0f ? moved : 0.0f, stationary);
-#if ROBOT_TRACE_ENABLED
-        terrain_trace_note(now, &raw, encoder_valid);
-#endif /* ROBOT_TRACE_ENABLED */
+        /* Compile-time constant; retain a syntactic reference to the
+           private producer for warning-free TRACE=0 builds. */
+        if (ROBOT_TRACE_ENABLED)
+        {
+            terrain_trace_note(now, &raw, encoder_valid);
+        }
         if (!encoder_valid)
         {
             terrain_algo_invalidate_window(&context);
