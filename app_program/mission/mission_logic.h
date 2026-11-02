@@ -60,7 +60,6 @@ typedef struct
     uint32_t wheel_count[2];
     rd_motion_status_t motion_status;
     uint8_t motion_action;
-    bool hump_active; /* fresh calibrated Terrain encounter */
     bool stationary;		/* encoders unchanged for MISSION_STATIONARY_MS */
     bool front_valid;
     uint32_t front_age_ms;
@@ -75,6 +74,8 @@ typedef struct
     uint16_t profile_closest_mm, profile_planning_mm;
     int16_t profile_forward_mm, profile_left_mm;
     uint8_t barcode_letter;	/* 0..25, 31 none */
+    bool barcode_level;		/* raw GP16 level, diagnostics only */
+    uint8_t barcode_edges;	/* running GP16 edge count, low 5 bits, diagnostics only */
     bool have_barcode;		/* a decoded barcode this release */
     barcode_action_t barcode_action;
 } MissionInputs;
@@ -122,6 +123,7 @@ typedef struct
     int8_t line_steer_q; /* latest digital correction target, signed Q7 */
     int8_t line_side; /* side last touched: -1 left, +1 right, 0 none */
     int8_t line_prev; /* previous acquisition's touch: -1, 0, +1 */
+    int8_t cross_side; /* side the line was last seen on, across a straight crossing */
     uint8_t line_bend : 1; /* same-side touches close together: in a bend */
     uint32_t touch_origin[2]; /* counts where the current touch began */
     uint32_t dark_origin[2]; /* counts at the latest touching acquisition */
@@ -138,7 +140,6 @@ typedef struct
     uint8_t scan_phase : 1;
     uint8_t scan_retries : 1;
     uint8_t scan_id : 4;
-    uint8_t reacquire_bypass : 1;
 
 } Mission;
 

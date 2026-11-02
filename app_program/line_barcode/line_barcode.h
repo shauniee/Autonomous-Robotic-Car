@@ -125,21 +125,21 @@ bool drv_ir_tracking_read(IrRaw *raw);
 /*
  *	Kernel-free barcode types, Code 39 decoder and frame assembler: turns edges
  *	(level plus the two wheel encoder counts at the edge) into element widths
- *	measured in encoder travel, waits for a quiet zone, and decodes 29 elements.
+ *	measured in encoder travel, and tries the last 25 elements as a symbol.
  */
 
-#define BARCODE_ELEMENTS 29u	/* *X*: three 9-element characters and two gaps */
+#define BARCODE_ELEMENTS 25u	/* end of the first guard, gap, letter, gap, last guard */
 #define BARCODE_ALPHABET 26u
 
 /* Encoder counts as S3 stores them: the shared ENC_COUNT_BITS width, wrapped.
    Travel between two counts uses modular subtraction (motion.h). */
 typedef uint16_t barcode_count_t;
 _Static_assert(ENC_COUNT_BITS <= 16u, "barcode_count_t narrower than ENC_COUNT_BITS");
-/* The longest barcode (29 elements at the longest width) spans less than half
+/* The longest window (25 elements at the longest width) spans less than half
    the count range, so modular subtraction inside a frame cannot alias. A wider
    or narrower ENC_COUNT_BITS (D03) re-checks this bound. */
 _Static_assert((uint32_t)BARCODE_ELEMENTS * BARCODE_MAX_ELEMENT_COUNTS < ENC_COUNT_MASK / 2u,
-    "longest barcode must span less than half the encoder count range");
+    "longest window must span less than half the encoder count range");
 
 typedef enum
 {
@@ -166,17 +166,6 @@ typedef enum
     BARCODE_FORWARD,
     BARCODE_REVERSE
 } barcode_orientation_t;
-
-/* Widths and limits are in encoder counts (mean of both wheels). Permille
-   values express ratios/tolerances (3000 = 3:1, 300 = 30 percent). */
-typedef struct
-{
-    uint32_t narrow_min;
-    uint32_t narrow_max;
-    uint32_t wide_ratio_min_milli;
-    uint32_t wide_ratio_max_milli;
-    uint32_t width_tolerance_milli;
-} barcode_config_t;
 
 /* A decoded barcode with the encoder position where it ended. `packed` holds
    letter (bits 0-4: 0-25, BARCODE_NO_LETTER), action (bits 5-7) and
@@ -218,32 +207,30 @@ static inline barcode_orientation_t barcode_event_orientation(const barcode_even
     return (e->packed >> BARCODE_EVENT_ORIENTATION_SHIFT & 1u) ? BARCODE_REVERSE : BARCODE_FORWARD;
 }
 
-bool barcode_config_valid(const barcode_config_t *config);
-/* Pure, bounded decoder. Failure leaves destinations unchanged. */
-barcode_result_t barcode_decode(const uint32_t widths[BARCODE_ELEMENTS],
-    const barcode_config_t *config, char *symbol,
-    barcode_orientation_t *orientation);
+/* Pure, bounded decoder of the last 25 elements of *X*, in travel order. BARCODE_NO_RESULT if these widths are not a
+   symbol. Failure leaves destinations unchanged. */
+barcode_result_t barcode_decode(const uint16_t widths[BARCODE_ELEMENTS],
+    char *symbol, barcode_orientation_t *orientation);
 
-typedef enum { BARCODE_FRAME_WAIT_QUIET, BARCODE_FRAME_CAPTURE } barcode_frame_state_t;
-
+/* Widths are encoder counts of sensor travel (the most recent runs, oldest
+   first); every black run tries the last 25 as a symbol, so no quiet
+   zone is needed and any false start clears itself. */
 typedef struct
 {
-    barcode_config_t config;
-    barcode_frame_state_t state;
-    uint32_t widths[BARCODE_ELEMENTS];
-    uint32_t count;
-    uint32_t min_quiet;	/* quiet zone now required: quiet, or rearm after a decode */
+    uint16_t widths[BARCODE_ELEMENTS];
+    uint16_t carry;	/* chatter travel owed to the run after it */
+    uint16_t last_width;	/* element this edge completed, 0 none; diagnostics */
+    uint8_t count;
     barcode_count_t prev_left, prev_right;
     bool have_edge;
     bool prev_black;
 } barcode_frame_t;
 
-void barcode_frame_init(barcode_frame_t *f, const barcode_config_t *config);
 void barcode_frame_reset(barcode_frame_t *f);
 
 /* Feed one edge. `black` is the level after the edge. Returns BARCODE_DECODED
-   (symbol/orientation set) when a frame completes, BARCODE_NO_RESULT while
-   accumulating or waiting, otherwise the rejection reason (frame dropped). */
+   (symbol/orientation set) when a symbol completes, BARCODE_NO_RESULT while
+   accumulating, otherwise why the runs so far were dropped or not a letter. */
 barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
     barcode_count_t left_count, barcode_count_t right_count, char *symbol,
     barcode_orientation_t *orientation);
@@ -268,15 +255,16 @@ typedef struct
    edge IRQ stays disabled until drv_barcode_enable(true). */
 bool drv_barcode_init(void);
 /* Core-1 task only. Enabling clears old edges and queues the current level
-   and coherent wheel counts as the quiet-zone reference for this session.
-   Overflow/order counters remain cumulative. */
+   and coherent wheel counts as the starting reference for this session.
+   The overflow counter remains cumulative. */
 void drv_barcode_enable(bool enabled);
 /* Task side: pop one edge. False when empty. */
 bool drv_barcode_take(barcode_edge_t *edge);
-/* ISR-written counters (single writer: the handler). Compare with a stored
-   value; a change means the ring overflowed / both edges arrived together. */
+/* ISR-written counter (single writer: the handler). Compare with a stored
+   value; a change means the ring overflowed. */
 uint32_t drv_barcode_overflow_count(void);
-uint32_t drv_barcode_order_lost_count(void);
+/* Every edge the handler has seen, for diagnostics. Wraps. */
+uint32_t drv_barcode_edge_count(void);
 
 /*
  *	Barcode scanner owned by the S3 task (core 1): edge ring -> frame
@@ -309,6 +297,9 @@ void barcode_service(bool cancel);
 
 /* Exactly one consumer removes events. False when empty. */
 bool barcode_pop(barcode_event_t *event);
+
+/* Task side: one raw run-width trace frame for the laptop. 0 when empty. */
+unsigned barcode_trace_take(uint8_t *out, unsigned capacity);
 
 /* S3-task-only optional diagnostic ring. Never called from ISR/Mission. */
 typedef struct {

@@ -2,6 +2,30 @@
 
 ## Contents
 
+- [Printed barcode black reads weakly — INT-141](#printed-barcode-black-reads-weakly--int-141)
+- [Hump not reported — INT-154](#hump-not-reported--int-154)
+- [Queued turn stopped on onset skew — INT-153](#queued-turn-stopped-on-onset-skew--int-153)
+- [Barcode misses after the first read — INT-152](#barcode-misses-after-the-first-read--int-152)
+- [First barcode read — INT-151](#first-barcode-read--int-151)
+- [Narrow bars are seen — INT-150](#narrow-bars-are-seen--int-150)
+- [Barcode threshold moved toward white — INT-149](#barcode-threshold-moved-toward-white--int-149)
+- [Filtered barcode widths — INT-148](#filtered-barcode-widths--int-148)
+- [Barcode capture polarity bug — INT-147](#barcode-capture-polarity-bug--int-147)
+- [Raw barcode widths — INT-146](#raw-barcode-widths--int-146)
+- [New barcode module, chatter — INT-145](#new-barcode-module-chatter--int-145)
+- [Barcode module LED responds slowly — INT-144](#barcode-module-led-responds-slowly--int-144)
+- [Barcode module output stays solid — INT-143](#barcode-module-output-stays-solid--int-143)
+- [Barcode edge count in the trace — INT-142](#barcode-edge-count-in-the-trace--int-142)
+- [Barcode after recalibration — INT-141](#barcode-after-recalibration--int-141)
+- [Barcode module misses narrow gaps — INT-140](#barcode-module-misses-narrow-gaps--int-140)
+- [Blind exit from a straight crossing — INT-139](#blind-exit-from-a-straight-crossing--int-139)
+- [Encoder stops and barcode visibility — INT-138](#encoder-stops-and-barcode-visibility--int-138)
+- [Barcode decoder rework — INT-137](#barcode-decoder-rework--int-137)
+- [Pivot ends blind past the branch — INT-136](#pivot-ends-blind-past-the-branch--int-136)
+- [False line loss on straights — INT-135](#false-line-loss-on-straights--int-135)
+- [Half speed on humps removed — INT-134](#half-speed-on-humps-removed--int-134)
+- [Speed stuck at half on the trial image — INT-133](#speed-stuck-at-half-on-the-trial-image--int-133)
+- [Lower steering after overshoot — INT-132](#lower-steering-after-overshoot--int-132)
 - [One header per subsystem — INT-131](#one-header-per-subsystem--int-131)
 - [Subsystem rename and file merge — INT-130](#subsystem-rename-and-file-merge--int-130)
 - [100 mm/s course speed guardrail — INT-129](#100-mms-course-speed-guardrail--int-129)
@@ -3260,3 +3284,540 @@ unchanged. **Full-course binary identical to `49effa4`** (`objcopy -O binary` sh
 
 **Found, not caused here:** `testing/integration/sizeof_probe.c` fails its
 `sizeof(obstacle_range_sample_t) == 16` assert, before and after this change.
+
+## Lower steering after overshoot — INT-132
+
+2026-11-02, Nicholas flashed; Claude analysed. First physical run of the distance-based
+steering law. Commit `79c13f1`, full-course image `a8c48478…` (hash shown by `flash.sh`).
+
+**User observation:** the correction is too strong; on a curve or junction the robot
+veered off the track. **FAIL.** No line trace was captured: only the dashboard was
+running, and it does not save LINE frames, so the mechanism below is not yet confirmed
+on the car.
+
+**Likely cause:** INT-123 passed straights and curves with a first correction of 32.
+The new law applies 115 at the first touch and 127 in a bend, about four times the
+turn rate. It also unwinds slowly: from 115 to the white/white drift of 8 the steering
+falls at `MOTION_FOLLOW_STEER_QPS`, about 119 ms, because the fast release only applies
+to zero or opposite steering.
+
+**Model, not a measurement:** [steering_model.py](logs/2026-11-02_INT-132/steering_model.py)
+([output](logs/2026-11-02_INT-132/steering_model.txt)) is a kinematic sketch with assumed
+wheel lag and curve radii. At 60 ms lag the largest line error was 12-14 mm at 115/127/57
+and about 6 mm at 60/90/30. Lower values sometimes reported a false LOST, so
+`LINE_LOST_MM` must be watched.
+
+**Change for the next trial:** `LINE_EDGE_Q` 60, `LINE_BEND_EDGE_Q` 90, `LINE_BEND_LEAN_Q`
+30. Host and build only until flashed.
+
+## Speed stuck at half on the trial image — INT-133
+
+2026-11-02, Nicholas ran; Claude analysed. INT-132 trial values 60/90/30 on
+`fix/line-steering-strength`. [Monitor capture](logs/2026-11-02_INT-133/monitor-50-stuck.txt).
+
+**User observation:** the robot runs at half speed.
+
+**Trace:** Mission commanded 50 mm/s in 3299 of 3420 line samples and 100 mm/s in only
+108, with `humps=0` in the last telemetry, over about 97 s of following. Mission only requests 50 mm/s
+while Terrain reports climbing, cresting or descending (`hump_active`), so Terrain was
+holding a hump encounter open with no hump completed. **FAIL** against the 100 mm/s
+guardrail, and the 60/90/30 steering is not yet tested at 100 mm/s.
+
+**Likely cause, not confirmed:** pitch is measured against the pose at boot. Encounters
+only end when pitch returns inside 2 degrees, so a steady offset of 2 degrees or more
+holds one open. Neither pitch nor Terrain state is in the capture. INT-122 saw the same
+symptom.
+
+**Next:** power on with the car flat on the course and untouched through calibration,
+then repeat.
+
+## Half speed on humps removed — INT-134
+
+2026-11-02, Nicholas with Claude. **User observation** on the INT-133 image: at the stuck
+50 mm/s, line tracking works perfectly. That is a result at 50 mm/s only; 60/90/30 has
+not been seen at 100 mm/s.
+
+**Change, user decision:** the half-speed hump request is removed, so the course speed
+is 100 mm/s on humps too and the stuck detector cannot slow a run. Terrain still detects
+and reports humps. Not covered: hump height accuracy and traction at 100 mm/s. Host and
+build only until flashed.
+
+## False line loss on straights — INT-135
+
+2026-11-02, Nicholas ran; Claude analysed. INT-134 image, 100 mm/s, plus earlier runs in
+the same capture. [Monitor capture](logs/2026-11-02_INT-135/monitor-100.txt).
+
+**User observation:** tracking is perfect, but at times on a straight the robot appears to
+detect a junction and stops. **PASS** for tracking at 100 mm/s; **FAIL** for these stops.
+
+**Trace:** the stops are not junctions. All 15 stopped-and-searched entries are
+FOLLOW_LINE to REACQUIRE, 13 of them after about 200 mm with both sensors white; 14
+found the line within about 0.3-0.6 s. All 16 crossing entries continued
+without stopping (onset skew at most 12 mm in the last eight). Stretches ending in a
+normal touch thin out toward 175 mm, then the limit cut them off.
+
+**Cause:** `LINE_LOST_MM` 200 was too short. Measured heading change over those stretches
+was about 14 degrees, a drift radius near 850 mm. Between the two touch positions (about
+10 mm, from INT-98 spacing) such an arc can stay white for about 260-280 mm, so the
+drift cannot guarantee a touch within 200 mm. The earlier "within ~50 mm" comment was wrong.
+
+**Change:** `LINE_LOST_MM` 350. A real loss now travels further before the search. Host
+and build only until flashed.
+
+## Pivot ends blind past the branch — INT-136
+
+2026-11-02, Nicholas ran; Claude analysed. INT-135 image, 100 mm/s.
+[Monitor capture](logs/2026-11-02_INT-136/monitor-turns.txt).
+
+**User observation:** straights and curves are good (**PASS** with `LINE_LOST_MM` 350).
+At junctions the robot does not turn to the next branch. **FAIL.**
+
+**Trace:** three dashboard turns ran: left, U-turn, and a third turning left. Detection and
+the advance worked each time (about 127 mm from first black). Both left turns rested at about
+106.6 degrees by encoder. The first rested with the right sensor black, so FOLLOW steered
+onto the branch. The third rested just past it with both sensors white; FOLLOW then sent
+zero steering because no side had been touched since entering, and line loss is not armed
+until a touch. It drove straight for about 377 mm to the next crossing.
+
+**Barcodes:** the capture has no barcode event and telemetry always shows no letter, so
+every other junction was a straight crossing. `barcode capture overflow` appeared in 32
+telemetry lines. Not investigated yet; needs a `BARCODE_DIAGNOSTICS=1` capture.
+
+**Change:** when a pivot hands over to FOLLOW, Mission sets the last side to the trailing
+sensor's side, in bend mode, and arms line loss from there. Pivot speed stays 100 mm/s.
+Host and build only until flashed.
+
+## Barcode decoder rework — INT-137
+
+2026-11-02, Nicholas with Claude. **User observation** on the INT-136 image: all dashboard
+turns work perfectly (**PASS** for those turns, directions as the user reported); barcodes
+are not read at all. **FAIL.** No edge widths were captured, so the cause is inferred.
+
+**Likely causes:** `BARCODE_BLACK_HIGH` was an unmeasured 0, while the line modules read
+high on black (`IR_BLACK_LEVEL` 1) and the reference repo also verifies 1. Widths used the
+mean of both wheels although the sensor sits about 55 mm left of the axle centre, so
+steering distorted them. Limits were strict and global, and chatter dropped frames.
+
+**Change:** polarity 1; widths from the sensor's weighted travel; sliding 29-run decode
+with the three widest per character, as in the reference repo; no quiet zone; chatter
+merged. Polarity is still to be confirmed by MR-13. Host and build only until flashed.
+
+## Encoder stops and barcode visibility — INT-138
+
+2026-11-02, Nicholas ran; Claude analysed. INT-137 image.
+
+**User observation:** barcodes are still not read (**FAIL**), and a few times the robot just
+stops with an encoder fault on the dashboard.
+
+**Trace:** the saved capture has three encoder-fault episodes, two entered while driving;
+the wheel trace just before one shows healthy speeds (107 and 90 mm/s). One invalid edge
+latched the fault, and it only cleared after 64 further good counts. The capture ends at
+14:37, so it may not include the latest stops. Cause of the invalid edges is not known.
+
+**Change:** a leaky score (`ENC_FAULT_INVALID_SCORE`) replaces the single-edge trigger.
+Barcode decoding no longer depends on polarity. A read of a letter outside the mapping is now
+reported instead of dropped. Line trace byte 5 bit 7 carries the raw GP16 level, to show
+polarity and whether the sensor sees the print. Host and build only until flashed.
+
+
+## INT-139 — Subsystem sensor dashboards
+
+2026-11-02 · Codex · PASS (host/UI only). Base commit `79c13f184c51dfec9f0ff03f0c8647371f6cc8e9` plus working-tree hashes in [source manifest](logs/2026-11-02_INT-139/source-manifest.txt).
+
+Procedure: run dashboard VM tests, MQTT codec self-test and loopback HTTP tests; inspect the static dashboard at desktop and 390px mobile widths. Expected: retain mission/health, switch all five subsystem views, preserve telemetry/ACK gating, remove motor animation, collect unique valid hump events. Observed: all host checks pass; S2 motor data/junction controls, S3 mapping and S4 history render; mobile scroll width equals viewport width (390px). Static preview has no telemetry connection. No firmware, wiring, power or physical acceptance claimed.
+
+Evidence: [dashboard](logs/2026-11-02_INT-139/dashboard.txt), [codec](logs/2026-11-02_INT-139/codec.txt), [HTTP](logs/2026-11-02_INT-139/http.txt).
+
+## Blind exit from a straight crossing — INT-139
+
+2026-11-02, Nicholas ran; Claude analysed. INT-138 image `27953ce2…`, 100 mm/s, mapping sent.
+[Monitor capture](logs/2026-11-02_INT-139/monitor-loop.txt).
+
+**User observation:** one whole loop with one barcode, then the robot lost track at a
+junction on the second. **PASS** for one loop with no encoder stop; **FAIL** for the junction.
+
+**Trace, junction:** the same crossing passed at 242.8 s and failed at 308.0 s, both with
+onset skew 14 mm and the left sensor last touched. The first time the left sensor touched
+again 22 mm later. The second time FOLLOW sent zero steering for 194 mm, because entering
+FOLLOW cleared the last side. A right touch at 202 mm steered it away, it reached REACQUIRE
+after 350 mm more at about -42 degrees, and the sweep found nothing.
+
+**Trace, barcode:** no barcode event. GP16 does respond: it reads about 16-23 mm high at
+crossings (18 mm stripes), and mostly low elsewhere, which supports high meaning black. But
+three stretches read as near-solid blocks (for example 97 mm, a 2 mm gap, then 34 mm),
+not bar by bar, although a 20 ms sample at 100 mm/s is about 2 mm. So the sensor is not
+resolving the print's white spaces. Likely spot size, height or threshold; not
+confirmed, and no software change can restore spaces the module does not report.
+
+**Change:** a straight crossing keeps the last side seen, with line loss armed from the exit.
+Host and build only until flashed.
+
+
+## INT-140 — Compact simultaneous subsystem overview
+
+2026-11-02 · Codex · PASS (host/UI only). Base commit `79c13f184c51dfec9f0ff03f0c8647371f6cc8e9` plus [working-tree hashes](logs/2026-11-02_INT-140/source-manifest.txt).
+
+Procedure: run dashboard host checks and inspect desktop/mobile rendering. Expected: five visible subsystems without selectors, equal-width mission/health overview, responsive stacking, unchanged telemetry and command gating. Observed: all [dashboard checks](logs/2026-11-02_INT-140/dashboard.txt) pass; desktop overview widths 608/608px and five visible subsystem panels; mobile viewport/scroll width 390/390px. Static preview only; no firmware or physical run.
+
+## Barcode module misses narrow gaps — INT-140
+
+2026-11-02, Nicholas ran; Claude analysed. Latest flashed image, 100 mm/s.
+[Monitor capture](logs/2026-11-02_INT-140/monitor-barcode-pass.txt).
+
+**User observation:** pushed by hand, the barcode module's LED follows the bars but is not
+accurate on short bars. Running, the robot passes the barcode with no read. **FAIL.**
+
+**Trace:** no barcode event. GP16 read high for one unbroken 280 mm at 17.8-20.6 s on a
+straight, sampled about every 2 mm, and about 18-36 mm at crossings. Nothing else in this
+capture looks like bars. Not confirmed that this stretch is the print: the user did not
+say when it passed. All 2203 line samples were commanded at 100 mm/s, with no line-loss
+search in this part of the run.
+
+**Reading:** the module is not reporting the white gaps while moving. Next is hardware: height,
+threshold and lane position. No software change was made.
+
+## Printed barcode black reads weakly — INT-141
+
+2026-11-02, Nicholas, hand check with the barcode module LED; no capture and no firmware change.
+
+**User observation:** many gaps are missed. The module senses deep black such as the tracking
+line easily, but not the black of the A4 printed barcode.
+
+**Reading:** the main problem may be low contrast on the print, not only spot size. This
+corrects the emphasis of INT-139 and INT-140, whose near-solid high stretches may not be
+the print at all. Not measured yet: next is the module's AOUT voltage over paper white,
+printed black and line black.
+
+## Barcode after recalibration — INT-141
+
+2026-11-02, Nicholas ran; Claude analysed. Image `2c51c247…` assumed flashed, 100 mm/s, barcode
+module recalibrated by the user, height unchanged, digital output only.
+[Monitor capture](logs/2026-11-02_INT-141/monitor-recalibrated.txt).
+
+**User observation:** the barcode was not sensed. **FAIL.** Tracking and crossings ran with
+no line-loss search in the capture, all at 100 mm/s.
+
+**Trace:** no barcode event. GP16 was high in 1179 of 3986 line samples, in solid blocks of
+about 120-230 mm repeated around the course. In INT-140 most high stretches were about 18-36 mm.
+So the threshold now reads black over far more of the course, and it shows no bar pattern.
+
+**User proposal, not built:** reverse slowly at the junction after a partial read. It only
+helps if the gaps resolve at low speed, so a slow hand-push check comes first.
+
+## Barcode edge count in the trace — INT-142
+
+2026-11-02, Nicholas with Claude. **User observation:** the barcode does not seem to get
+readings as fast as IR tracking. In the code, the decoder takes GP16 edges from an interrupt,
+while `barcode_level` in the trace is only sampled with each line record, so the trace
+cannot show pulses shorter than about 20 ms.
+
+**Change:** line trace bytes 14..15 bits 11..15 carry a running count of GP16 edges. Edges with
+a steady level show pulses the level sample misses; no edges mean the module output
+itself did not change. Host and build only until flashed.
+
+## Barcode module output stays solid — INT-143
+
+2026-11-02, Nicholas ran; Claude analysed. INT-142 image, hash `45f1acad…` assumed flashed, 100 mm/s.
+[Monitor capture](logs/2026-11-02_INT-143/monitor-edges.txt).
+
+**User observation:** the barcode module's LED does not seem to change across the barcode.
+**FAIL.**
+
+**Trace:** no barcode event. Only 84 GP16 edges were counted in 3569 line records. Several
+blocks of about 130-380 mm read high with no edge inside them, which agrees with the LED: the
+module output is not changing, so this is not missed sampling or a decoder rejection. The
+edges cluster at the block ends (up to 19 within about 50 mm). No level change shows there
+in 20 ms samples, so they are short pulses, possibly chatter at the threshold. Not confirmed
+which blocks are prints.
+
+**Open:** threshold, this module's optics or its position. The next checks are stationary and
+need no firmware.
+
+## Barcode module LED responds slowly — INT-144
+
+2026-11-02, Nicholas. **User observation:** pushed by hand, the barcode module's LED takes a
+while to update, while the line modules respond at once. No timing was measured. The firmware only
+reads GP16 as an input with no pulls, which points at the module, its wiring or supply, or a
+threshold at the edge of its range. Not yet separated: the swap and disconnect checks are open.
+
+## New barcode module, chatter — INT-145
+
+2026-11-02, Nicholas ran; Claude analysed. Barcode module replaced by the user, image hash
+`45f1acad…` assumed flashed, 100 mm/s. [Monitor capture](logs/2026-11-02_INT-145/monitor-new-module.txt).
+
+**User observation:** the hardware works as intended now, but barcode A was not scanned. **FAIL**
+for the read; the replacement fixes the slow module of INT-144.
+
+**Trace:** no barcode event, but edges rose from 84 to at least 1003 (the 5-bit count can
+under-read a burst). One stretch has 303 edges in about 175 mm, or about 0.6 mm (7 counts) per
+edge, against about 30 for a clean pass, so chatter passes the 4-count filter. Level samples now
+show bars, for example H5.7, L14.8, H6.3, with narrow white runs as low as 0-2 mm, which may
+mean the threshold favours black. Assumed to be the print, not confirmed.
+
+**Change:** `BARCODE_MIN_ELEMENT_COUNTS` 12, about 1 mm. Host tests rescaled to widths above the
+filter. Host and build only until flashed.
+
+## Raw barcode widths — INT-146
+
+2026-11-02, Nicholas ran; Claude analysed. INT-145 image `719a01ba…` assumed flashed, 100 mm/s,
+sensitivity unchanged.
+
+**User observation:** the barcode still does not read. **FAIL.** The module works as intended
+by the user's bench check.
+
+**Trace:** no barcode event. One pass reads, in 2 mm samples: H6 L2 H15 L2 H6 L2 H11 L17 H5 L0 H20
+L0 H4 L15 H55 L0 H19 L3 H35 L15 H4, with 376 edges in 3 s. These samples cannot tell a real narrow
+gap from chatter, so raising the filter further would be a guess.
+
+**Change:** new diagnostic frame type 10 sends unfiltered run widths in counts, printed by
+`monitor` as `BARS`. Host and build only until flashed.
+
+**Run on image `f42da1ae…`:** this image was rebuilt with obstacle changes from another session in
+the same working tree. No `BARS` line arrived although GP16 edges were counted (1073 in the
+last boot). The trace was posted last each release, after the wheel and line traces, so it was
+probably starved of bridge slots; not proven. It now posts first.
+
+## Barcode capture polarity bug — INT-147
+
+2026-11-02, Nicholas ran; Claude analysed. Image `24b25fb5…` assumed flashed, 100 mm/s.
+[Monitor capture](logs/2026-11-02_INT-147/monitor-bars.txt), [offline replay](logs/2026-11-02_INT-147/replay.py).
+
+**User observation:** run finished, no barcode read. **FAIL.**
+
+**Trace:** 151 `BARS` frames, 2 lost. Of 444 raw runs, 247 were under 5 counts (0.4 mm), and 308
+of 443 neighbouring pairs had the same polarity, which a real signal cannot do. Each one
+clears the decoder's window (`BARCODE_BAD_FRAME`), so a read could not finish. Merging those pairs
+and replaying offline gave no decode at any filter from 1 to 30 counts, but merging
+loses the true widths, so that does not rule out decoding once capture is right.
+
+**Cause:** the handler took the level from the interrupt flags. Under chatter several edges
+land in one dispatch, an odd number loses track of the level, and it stays wrong until next time.
+
+**Change:** the handler reads the pin and records a run only when the level really changed.
+Host and build only until flashed. The handler itself has no host test.
+
+## Filtered barcode widths — INT-148
+
+2026-11-02, Nicholas ran; Claude analysed. Image `84f8e2c0…`, confirmed by the user's flash output.
+[Monitor capture](logs/2026-11-02_INT-148/monitor-raw-runs.txt).
+
+**User observation:** ran again, no barcode read. **FAIL.**
+
+**Correction to INT-147:** the same-polarity pairs were at least largely a display fault. Runs
+under 1 count have zero width, and the laptop hid zero-width runs, so an opposite run between two
+equal labels vanished. They appear again with the pin-based handler (401 of 488). So INT-147 did
+not show that the flags were wrong. The pin-based handler stays, as it is still simpler and safe.
+
+**Trace:** 877 `BARS` frames were lost against 603 received, so these raw widths cannot be replayed.
+Chatter is far heavier than the earlier edge count showed.
+
+**Change:** the trace now sends elements after the decoder's chatter merge, which should fit the
+bridge. Host and build only until flashed.
+
+## Barcode threshold moved toward white — INT-149
+
+2026-11-02, Nicholas ran; Claude analysed part of a run still in progress. Image `84f8e2c0…`, not the
+newer build. Barcode module potentiometer recalibrated by the user. [Monitor capture](logs/2026-11-02_INT-149/monitor-threshold-white.txt).
+
+**Trace:** no barcode event so far. GP16 is now low in 1690 of 1729 samples. One stretch at
+26.6-29.1 s spans about 150 mm, in line with the 141 mm print, and reads H12 L8 H8 L48 H10 L34 H6
+L22 H4 L2 H2 in 2 mm samples. White stretches of 22-48 mm are too long for one element of a
+3 mm print, so narrow bars are probably being missed now. Assumed to be the print, not confirmed.
+
+**Later in the same run:** the user reports the print is letter A, mapped to a left turn; still no
+barcode event. The pass at 239.1 s reads H13 L6 H15 L40 H11 L59 H8 L19 H11 L0 H13: six black blocks.
+`*A*` has exactly six wide bars. In print units they are separated by 3, 21, 27, 9 and 3 mm in
+one direction, and the observed whites of 6, 40, 59, 19 and 0 mm fit that at about 1.7 times the
+scale, implying a narrow element of about 5 mm. So this pass looks like A with only wide bars
+seen. This is inference from one pass in 2 mm samples. A narrow bar shorter than one sample could
+also be present and unsampled, so the filtered widths from the newer image are still needed.
+
+## Narrow bars are seen — INT-150
+
+2026-11-02, Nicholas with Claude. **User observation:** the narrow black bar measures about 5 mm,
+and the barcode module's LED registers it.
+
+**Correction to INT-149:** the conclusion that narrow bars are missed is not supported. The four
+candidate passes have at least 112-278 GP16 edges, and line records have gaps up to 300 ms there,
+so the level samples can skip a 5 mm bar (50 ms at 100 mm/s). The 5 mm measure does support the
+scale inferred in INT-149. Which edges are chatter is still unknown.
+
+**Change:** `BARCODE_MIN_ELEMENT_COUNTS` 23, about 2 mm. Host tests rescaled. Host and build only
+until flashed.
+
+## First barcode read — INT-151
+
+2026-11-02, Nicholas ran; Claude analysed. Latest build, hash `c9cdb44a…` not shown in the part of
+the flash output read, 100 mm/s, A mapped to left, new module, sensitivity set by the user.
+[Monitor capture](logs/2026-11-02_INT-151/monitor-first-read.txt).
+
+**Trace:** `EVENT BARCODE: letter A -> LEFT` at t=15920 ms, then `EVENT TURN: turn LEFT` at t=17860 ms.
+**PASS, one read of one print in one direction.** Repeat rate, the other direction and other
+letters are not shown. `Line: barcode capture overflow` appears in 31 of 80 telemetry lines: the edge
+ring overflows under chatter and resets the frame, a risk to repeat reads.
+
+**Widths read, counts, repeats removed:** H34 L109 H185 L98 H188 L104 H28 L262 H28 L110 H189 L106 H35
+L305 H34 L87 H39 L99 H194 L105 H37 L105 H195 L103 H190 L105 H37 L297 H24. Narrow bars are 24-39 counts
+against a 23-count filter, so that margin is thin. Repeats in `BARS` are one element re-reported as
+chatter merges into it. The left pivot rested at about 102 degrees and FOLLOW steered onto the branch,
+with no line-loss search afterwards in this capture.
+
+## Barcode misses after the first read — INT-152
+
+2026-11-02, Nicholas ran; Claude analysed. Same image as INT-151, A mapped by the user to different
+actions across the run. Capture continues in `int-146-run.txt` after the INT-151 copy.
+
+**User observation:** one success in three tries; after one detection it seems not to detect again.
+
+**Trace:** the capture has four clean-looking `BARS` passes of A: two read and two did not, so
+detection is not stuck after a read. One miss: H42 L104 H187 L120 H229 L87 H31 L259 H23 L110 H182 L107
+H34 L262 H32 L112 H35 L108 H198 L110 H67 L116 H171 L98 H191 L106 L254 H29, where a narrow bar before L254
+is missing, probably below the 23-count filter. The other: ... H42 L157 H181 L81 H186 L106 H31 L259 H30,
+where a 157 narrow space is too close to 181 under the three-widest rule.
+
+**Change:** bars and spaces are classified apart (two wide bars, one wide space per
+character), and `BARCODE_MIN_ELEMENT_COUNTS` is 16. The second pass is now a host test. Host and build
+only until flashed.
+
+## Queued turn stopped on onset skew — INT-153
+
+2026-11-02, Nicholas ran; Claude analysed. Image `0e93c6a4…` or a later local build, not confirmed, 100 mm/s.
+Capture continues in `int-146-run.txt` from about line 132198.
+
+**User observation:** two barcode detections succeeded (**PASS** for those). Then a dashboard left
+was queued, and the robot stopped at a junction. **FAIL.**
+
+**Trace:** the left sensor touched and the right went black about 16 mm later, with steering
+-60 at entry. Skew 16 is over `NAV_ONSET_SKEW_MM` 15, so `entry_curved` was set. A queued turn on a curved
+entry is rejected and stops, which matches the state going to STOPPED with no fault. The console
+reason (`nav_rejected` 3) was not captured, so this is inferred. Across this capture crossings that
+reached NAVIGATE had skew 12 or less, but qualified episodes also occur at 15-25.
+
+**Change:** a queued turn no longer rejects a qualified entry for skew; the 5 degree heading check
+stays, and steering is zero through the crossbar so the heading holds. Without a queued turn, curve
+handling is unchanged. A qualified bend with a queued turn now pivots instead of stopping, and stops
+at the pivot bound if there is no branch. Host and build only until flashed.
+
+## Hump not reported — INT-154
+
+2026-11-02, Nicholas ran; Claude analysed. Image `5af6e7b1…` assumed flashed, including IMU commit
+`d97e3d9`. Capture continues in `int-146-run.txt` from about line 153379.
+
+**User observation:** the run went well, then a hump placed at the end gave no terrain detection.
+**PASS** for the course run and **FAIL** for the hump, both as observed by the user.
+
+**Trace:** telemetry stays `humps=0`, with no hump event and no terrain fault. Neither pitch, Terrain
+state nor the quality checks are in the capture, so the cause is unknown. Code candidates: every
+sample of an encounter must pass 900-1100 mg acceleration, 30 mm/s wheel difference and steady
+speed, or the hump is not counted; or pitch may not cross 3.5 degrees for a one-wheel hump.
+
+**Change:** new diagnostic frame type 11, printed by `monitor` as `HUMP`. No detection change yet.
+Host and build only until flashed.
+
+## Barcode lost after a hump, hump not counted — INT-155
+
+2026-11-02, Nicholas ran; Claude analysed. Image `1d9caf52…` (uncommitted tree on `d97e3d9`). Capture
+`int-154-run.txt`, not committed; excerpts in [logs](logs/2026-11-02_INT-155/).
+
+**User observation:** the robot went over a hump at the start, then barcode A, and did not navigate.
+**FAIL** as observed.
+
+**Barcode trace:** `barcode=` stays empty on the first passes and each crossing is `turn UNMAPPED`, so the
+print was not decoded and no turn was queued. In two passes the first guard arrives 2 elements short: one
+narrow white space reads as black (`H435` and `H354` where about 330 is expected from narrow bar, narrow
+space and wide bar). Letter and last guard are clean. A third pass has the same fault in the last guard
+(`H305`), and the new rule does not recover it. A later run did read A and made the U-turn. The hump as the
+cause of the lost space is inferred from timing; `HUMP` shows the first crossing during the start of that
+print. The third pass has a 4.5 degree pitch spike near its last guard, and its cause is unknown.
+
+**Barcode change:** the decoder window is 25 elements: last 5 of the first guard, gap, letter, gap, last
+guard. Replaying the capture reads both passes as A. A window of only letter and last guard gave a wrong
+letter in 101 of 1404 simulated lost runs; with the 25 element window it was 0, and also 0 at the measured
+widths. Decoding now runs only after a black run, as the passes confirm black high (D04 evidence, one
+module, one print). C and P can complete early with an unknown orientation; the letter stays right and
+nothing reads orientation. A capture overflow still reports the fault but no longer clears the runs,
+because the handler keeps level order. Whether overflow cost any read here is unknown.
+
+**Hump trace:** `humps=0`. The first crossing lasts about 1.5 s with pitch up to 4.5 and down to -1.75
+degrees. The detector needs pitch under -3.5 degrees to count, and it did not get there. `rise` stays 0 mm
+against the 5 mm minimum, and `window_ok` is 0. Pitch over 3.5 degrees also appears away from that crossing,
+so that threshold does not separate a hump alone. The course has one-wheel humps, and roll is not traced.
+
+**Hump change:** none to detection. Frame type 11 gains roll, 8 bytes. Host and build only until flashed.
+Built image: `97d5eda9…`, not flashed. No commit yet; the tree is uncommitted on `d97e3d9`.
+
+## Hump detector replaced with roll — INT-156
+
+2026-11-02, Nicholas ran; Claude analysed. Image `97d5eda9…` (uncommitted tree on `d97e3d9`). Capture
+`int-155-run.txt`, not committed; excerpt in [logs](logs/2026-11-02_INT-156/).
+
+**User observation:** barcode fully functional (**PASS** as observed; all letters and an inverted print
+not tested). No hump detected, and the question of whether the IMU works. **FAIL** for the hump.
+
+**Trace:** the IMU works. At rest it reads about 0 degrees pitch, 0 degrees roll and 1040 mg, and it follows
+hand tilts to over 30 degrees; every sample is calibrated. During the run one encounter stands out,
+t=19780 to 20980 ms, about 100 mm: roll to -7 degrees. The old detector could not count it: pitch stayed
+positive, about 3 to 5 degrees, with no descent, and `window_ok` was 0 throughout. That this encounter is
+the hump is inferred from the trace, not confirmed by the user. Other roll in that run stayed at 3 degrees or
+less, but flat samples are only traced once a second, so short peaks could be missed.
+
+**Change:** the detector now uses roll of either sign: over 3.5 degrees until under 2 degrees for 10 samples,
+at least 40 mm of travel, height 5 to 40 mm. Height is track width times the sine of peak roll, which gives
+14.6 mm for the 7 degree peak; the true height of that hump was not measured, so the scale is unverified
+(D06). Calibration factor set to 1.0 until then. Pitch climb and descent, acceleration and travel quality
+checks and the float reference are removed. Host test replays this crossing (counts) and a 3 degree stretch
+(does not). Host and build only until flashed. Built image: `c7ac19bf…`, not flashed.
+
+## Humps counted on the wrong encounters — INT-157
+
+2026-11-02, Nicholas ran; Claude analysed. Image `c7ac19bf…` (uncommitted tree on `d97e3d9`). Capture
+`int-156-run.txt`, not committed; excerpts in [logs](logs/2026-11-02_INT-157/). Hump about 10 mm, measured
+by the user.
+
+**User observation:** the car went over the hump twice in the run. Telemetry reports `humps=4`, heights 11,
+8 and 11 mm in the three events received. **FAIL:** count wrong.
+
+**Trace:** the car drove with pitch about 6.5 and roll about -1 degree on flat ground. Pitch moved from 0.75 to
+6.75 while READY after boot, and the previous run sat near 1, so the boot pose differed from the driving pose.
+The -1 degree offset let ordinary tilt reach the entry level: the counted encounters last 26 mm or less over
+the exit level, two of them with heavy steering. The two longest encounters, 76 and 156 mm with the highest
+roll and pitch, were not counted. Matching those two to the user's crossings is inferred. `encoder_ok=0` shows
+in 8 of 976 traced samples, and the rise resets after them, so these losses restart an encounter. The flag
+also falls when the health lock poll is lost, without any encoder fault; that those samples were lock losses
+is inferred from the code.
+
+**Change:** roll is measured from its average while the wheels are stopped, about 0.3 s; only travel over the
+exit level counts, with 50 mm needed; past 400 mm of tilt the tilt becomes the new average; a lost lock poll
+no longer invalidates the encounter. A slow average while moving was tried first and rejected: on a host replay
+and an offline simulation it followed the hump's ramp and shrank or lost the reading. Offline replay of this
+capture with a fixed -1 degree baseline, which the stopped average should give: two humps, 12.0 and 10.5 mm
+against about 10 mm. Other encounters reach 26 mm at most. The replay used trace samples with gaps, so it is
+not the firmware result. Host and build only until flashed.
+Built image: `aa8da8a8…`, not flashed.
+
+## Hump baseline moved by pivots — INT-158
+
+2026-11-02, Nicholas ran; Claude analysed. Image `aa8da8a8…` (uncommitted tree on `d97e3d9`). Capture
+`int-157-run.txt`, not committed; excerpt in [logs](logs/2026-11-02_INT-158/). Hump about 10 mm, measured by
+the user.
+
+**User observation:** one hump at the start, then the car went off course and line tracking was not smooth.
+The user set the tracking aside for now. **FAIL** for tracking, as observed; not analysed.
+
+**Trace:** `humps=5` against 1 crossed. **FAIL.** The first count is the encounter at t=37660 to 38940 ms, roll
+to -7.25 degrees, reported 15 mm against about 10. The other four follow the pivot turns, with raw roll of only
+-3.75 to 1.75 degrees but a rise of 7 to 11 mm, which implies a baseline near +2 degrees. The baseline updated
+whenever mean travel was zero or less, and a pivot has that; this is read from the code and the implied value,
+as the baseline is not traced. Some of those counts may be off the course line.
+
+**Change:** the baseline updates only when both wheels did not move since the last sample.
+`HUMP_CALIB_FACTOR` is 0.8, from about 12.5 mm uncorrected across this reading and the two INT-157 replays, all
+one 10 mm hump; a taller hump is needed to check the scale. Host and build only until flashed. Built image:
+`d2eeccb4…`, not flashed.
+
+## Raw captures moved — INT-159
+
+2026-11-02, Claude; no run. The raw monitor captures named by earlier entries as `int-*-run.txt` or
+`int-*-monitor.txt` moved from the repository root to
+[raw captures](logs/2026-11-02_raw-captures/), gzip compressed, each checked to decompress to its original
+size. `int-158-run.txt` was deleted: it held no run. These entries were left as written.

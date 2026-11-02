@@ -10,6 +10,8 @@
 - [Servo travel limit — S5-U05](#servo-travel-limit--s5-u05)
 - [Slow servo scan — S5-U06](#slow-servo-scan--s5-u06)
 - [Five-degree scan readings — S5-U07](#five-degree-scan-readings--s5-u07)
+- [Wider scan and line-ended return — S5-U09](#wider-scan-and-line-ended-return--s5-u09)
+- [Servo and sonar bench — S5-U10](#servo-and-sonar-bench--s5-u10)
 
 Owner: Jia Jing / obstacle. Inactive placeholder. Retired template definitions: S5-U01 task-context example; S5-U02 unfilled manual placeholder. No template result was recorded. No subsystem hardware test is claimed.
 
@@ -111,3 +113,39 @@ then repeat the S5-U07 build / existing regression checks. Expected: PASS.
 | --- | --- | --- | --- | --- | --- |
 | 2026-10-30 | S5-U07 | Base `8be851bc884ec0a31646b28242a54fcf827bb987` plus [failed source manifest](logs/2026-10-30_S5-U07-manifest.json) | Codex | FAIL (build / host compile) | Strict coarse/fine spacing assertion; output preserved above |
 | 2026-10-30 | S5-U08 | Base `8be851bc884ec0a31646b28242a54fcf827bb987` plus [working-source manifest](logs/2026-10-30_S5-U08-manifest.json) | Codex | PASS (build / existing host regressions only) | [Build](logs/2026-10-30_S5-U08-build.txt), [host output](logs/2026-10-30_S5-U08-host.txt); image checksum in manifest, not flashed; no physical scan/Echo acceptance |
+
+## Wider scan and line-ended return — S5-U09
+
+2026-11-02, Claude ran; host and build only, nothing flashed or driven. Source: base `79c13f1`
+plus the uncommitted working tree, which also holds the barcode work of INT-132 onward.
+
+**Finding before the change:** the real estimator, fed ideal rays from a flat box with a wall
+2 m beyond, gave at most 136 mm clearance against the 300 mm needed, and from the 150 mm stop
+either 0 mm (100 mm box) or no profile (150 and 200 mm boxes). So bypass could not start. Host
+tests missed this because they inject clearance. A 90 degree turn at 7 mm/s also took about
+13.5 s against the 12 s action limit, and a 600 mm pass about 99 s against the 90 s bypass limit.
+
+**Change:** servo limit +/-50 degrees, as stated by the user (not bench checked in this log);
+clearance from each free ray's reach; side watch at 50 degrees; bypass speeds 36 and 50 mm/s,
+provisional; the first black sensor on the return ends it, then Mission advances and pivots as at
+a junction. The `FORWARD` and `LINE` routes are gone.
+
+**Defined before the run:** the host suite must pass with a full sweep across 100-200 mm boxes
+from 110-150 mm, and a bypass simulated with a ray cast against the box instead of fixed ranges.
+Both images must build.
+
+**Result:** [host suite](logs/2026-11-02_S5-U09-host.txt) PASS, [builds](logs/2026-11-02_S5-U09-build.txt)
+PASS. Not a physical pass: the rays are ideal, without the real beam's spread. Servo centre, sonar
+mount, speeds, settle time and open-floor echoes remain D05/D07. MR-30 and MR-31 are not run.
+
+## Servo and sonar bench — S5-U10
+
+Procedure defined 2026-11-02, motors inhibited (`./flash.sh test`), before any bypass run. Covers
+MR-17 and MR-18. The test image prints `[SCAN]` lines for each ray and the resulting profile.
+
+**Expected:** the horn clears the car at both limits and the servo does not stall; 0 degrees faces
+forward; positive angles look left; ranges agree with a tape; a box gives a profile.
+**Record:** centre offset, actual travel at each limit, range error at each distance, what open
+directions return, and the rays for each box.
+
+**Result:** PENDING, not run.

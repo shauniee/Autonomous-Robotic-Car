@@ -34,6 +34,23 @@ static inline int enc_quad_step(unsigned before, unsigned after)
     return (before < 4u && after < 4u) ? table[before * 4u + after] : ENC_QUAD_INVALID;
 }
 
+/* Leaky score of invalid edges, updated once per Motion release with the new
+   edges since the last one. True when they are sustained enough to be a fault. */
+static inline bool enc_invalid_score_update(uint32_t *score, uint32_t new_edges)
+{
+    *score += new_edges;
+    if (new_edges == 0u && *score > 0u)
+    {
+        --*score;
+    }
+    if (*score >= ENC_FAULT_INVALID_SCORE)
+    {
+        *score = ENC_FAULT_INVALID_SCORE;
+        return true;
+    }
+    return false;
+}
+
 /* count + delta, wrapped to ENC_COUNT_BITS. */
 static inline uint32_t enc_advance(uint32_t count, int delta)
 {

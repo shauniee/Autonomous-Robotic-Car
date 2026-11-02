@@ -226,7 +226,7 @@ Target sizes from `sizeof` with `arm-none-eabi-gcc` for the RP2040. **Used** is 
 | [Comms](app_program/comms/README.md) | 1227 | 1352 |
 | [Motion](app_program/motion/README.md) | 1137 | 1256 |
 | [Line and barcode](app_program/line_barcode/README.md) | 2470 | 3560 |
-| [Terrain](app_program/terrain/README.md) | 471 | 552 |
+| [Terrain](app_program/terrain/README.md) | 451 | 520 |
 | [Obstacle](app_program/obstacle/README.md) | 508 | 680 |
 | Mission | 1000 | 1136 |
 
@@ -278,15 +278,14 @@ Not counted: `MotionController`, 480 stored.
 | Barcode event | counts 2x16, letter 5, action 3, orientation 1 | 8 | 41 | 48 |
 | Line fault byte | IR invalid, capture overflow, event overflow | 1 | 3 | 8 |
 
-Not counted: `IrTracker`, 160 stored; `LineIrSnapshot`, 192 stored; `barcode_frame_t`, 1248 stored.
+Not counted: `IrTracker`, 160 stored; `LineIrSnapshot`, 192 stored; `barcode_frame_t`, 496 stored.
 
 **Terrain**
 
 | Data | Fields (bits) | Instances | Used | Stored |
 | --- | --- | ---: | ---: | ---: |
 | Terrain word | last 7, max 7, count 8, state 3, height valid 1, calibrated 1 | 1 | 27 | 32 |
-| `TerrainContext` | filter 3x32, calibration 3x23, rise 16, pitch 15, codes 2x7, count 8, flat run 4, calibration count 7, state 3, flags 3 | 1 | 235 | 256 |
-| Travel quality | times 2x32, speed 16, flags 2 | 1 | 82 | 96 |
+| `TerrainContext` | filter 3x32, calibration 3x23, rise 16, travel 16, roll average 32, pitch 15, roll 15, codes 2x7, count 8, flat run 4, calibration count 7, state 3, flags 2 | 1 | 297 | 320 |
 | `TerrainSnapshot` | word 27, times 2x32, sequence 32, valid 1 | 1 | 124 | 160 |
 | Terrain fault byte | IMU, calibration, impact | 1 | 3 | 8 |
 

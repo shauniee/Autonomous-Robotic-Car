@@ -44,3 +44,6 @@ secrets.h
 .impeccable/
 DESIGN.md
 PRODUCT.md
+
+# Monitor captures while running; finished ones go to testing/integration/logs, compressed.
+/int-*.txt

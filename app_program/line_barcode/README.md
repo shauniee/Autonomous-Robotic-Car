@@ -35,15 +35,15 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). S3 
 ## Barcode
 
 - All A-Z decode as the same letter in either direction. Four distinct action letters arrive over MQTT; a missing mapping blocks start.
-- Widths come from encoder displacement, not time. Enabling capture queues the current level so the white approach can serve as the quiet zone. Backward wheel travel rejects the frame, and each encounter yields at most one action.
+- Widths come from encoder displacement, not time. Widths use the sensor's own travel, weighted for its position left of the axle. After every black run the last 25 are tried as the last 5 elements of the first guard, a gap, the letter, a gap and the last guard, so no quiet zone is needed and a hump that corrupts the start of the first guard does not lose the read (INT-155). In each character the two widest bars and the widest space are wide. Runs under `BARCODE_MIN_ELEMENT_COUNTS` are chatter and merge into their neighbours. Backward wheel travel clears the runs, and each print yields one event.
 - The ISR captures level and wheel counts through the shared core-1 GPIO dispatcher and returns; decoding is budgeted per release. Capacities: 64 edges, 8 events. Overflow is explicit and never replays an older action.
 - `make ... BARCODE_DIAGNOSTICS=1` stores a 32-entry ring of edge positions, widths, result, orientation, letter and action, printed at most one per I/O period. Results: 0 none, 1 decoded, 2 bad config, 3 bad width, 4 bad frame, 5 bad symbol, 6 reversed travel. Logging can perturb timing.
-- Polarity, narrow/wide bounds, quiet zone, sensor position and spacing are provisional (D01, D03, D04). Offset compensation is deferred until captures show distortion.
+- Polarity, element limits and sensor position are provisional (D01, D03, D04), with no physical read yet (INT-137).
 
 ## Where it stands
 
 - **Last physical result (INT-123, the older PI law):** straights, three 90 degree curves and the plain crossing held at 100 mm/s; the junction after the three curves failed.
-- **Source now, host and build only (INT-124 to INT-129):** distance-based steering, junction versus curve by black-onset distance, line loss 200 mm past the last touch, black evidence required for recovery and bypass return, pivot turns that end on the line, and a fixed 100 mm/s course speed. None of this has run on the car.
+- **Source now, host and build only (INT-124 to INT-129):** distance-based steering, junction versus curve by black-onset distance, line loss past the last touch (`LINE_LOST_MM`), black evidence required for recovery and bypass return, pivot turns that end on the line, and a fixed 100 mm/s course speed. None of this has run on the car.
 - **Hardware:** two DOUT modules 30 mm apart, outside both line edges, pair centre 120 mm ahead of the axle; barcode sensor about 185 mm forward, 55 mm left. Effective spot spacing 33 mm and line width 23 mm were measured before the last move (INT-98).
 - `./flash.sh` releases turns and bypass. No physical pass exists for barcode turns, obstacle bypass or repeat runs across battery levels.
 
@@ -52,8 +52,8 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). S3 
 1. **Physical run of the new law.** Check the three-curve junction and weaving at the stronger edge correction. Set `NAV_ONSET_SKEW_MM` from `onset_skew_mm` in line traces.
 2. **First line-trace capture.** Needs S1 owner agreement on the [line trace](../../docs/architecture.md#line-trace-17-bytes).
 3. **Turn commissioning.** Measure the advance landing point, pivot coast at 100 mm/s and hand-over to FOLLOW.
-4. **Loss and recovery.** Confirm the drift touches well inside 200 mm, and that the sweep finds the line from there.
-5. **Hump detector stuck on (INT-122).** Speed halved for a whole run; cleared by an IMU check and restart; cause not investigated in S4.
+4. **Loss and recovery.** Confirm no false loss at 350 mm (INT-135), and that the sweep finds the line from a real loss.
+5. **Hump detector stuck on (INT-122, INT-133).** It no longer changes speed, but a stuck encounter can still miss hump results; cause not investigated in S4.
 6. **Values to measure:** tightest curve radius, effective track width, spot spacing at the 120 mm position, left-sensor span and hysteresis.
 
 ## How to run a trial

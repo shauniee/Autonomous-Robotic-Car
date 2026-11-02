@@ -272,6 +272,20 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
     {
         fail(control);
     }
+    if (control->route == BYPASS_ROUTE_RETURN)
+    {
+        if (!input->line_functional ||
+            robot_time_elapsed(input->now_ms, input->line_ms) > IR_MAX_GAP_MS)
+        {
+            fail(control);
+        }
+        else if (input->line_black)
+        {
+            /* The line itself ends the return, so wheel drift over the bypass
+               does not matter. Mission crosses it like a junction turn. */
+            control->route = BYPASS_ROUTE_DONE;
+        }
+    }
     if (control->route == BYPASS_ROUTE_DONE || control->route == BYPASS_ROUTE_FAILED)
     {
         output->route = (bypass_route_t)control->route;
@@ -314,14 +328,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
             }
             else
             {
-                control->route = BYPASS_ROUTE_LINE;
-                sense(control, input, false);
-                control->line_started_ms = input->now_ms;
-                control->chunk_origin[0] = input->count[0];
-                control->chunk_origin[1] = input->count[1];
-                control->line_sampled_ms = input->line_ms;
-                control->visible_streak = 0u;
-                control->line_seen = 0u;
+                fail(control);
             }
         }
     }
@@ -356,23 +363,15 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
             else
             {
                 float remaining = leg_remaining(control);
-                if (control->route == BYPASS_ROUTE_LINE)
-                {
-                    control->work = BYPASS_WORK_LINE;
-                }
-                else if (remaining <= MOTION_DIST_TOL_MM)
+                if (remaining <= MOTION_DIST_TOL_MM)
                 {
                     if (control->route == BYPASS_ROUTE_OFFSET)
                     {
                         turn(control, input, BYPASS_ROUTE_PARALLEL, 0, action_id);
                     }
-                    else if (control->route == BYPASS_ROUTE_RETURN)
-                    {
-                        turn(control, input, BYPASS_ROUTE_FORWARD, 0, action_id);
-                    }
                     else
                     {
-                        fail(control);
+                        fail(control); /* RETURN: the sensors passed the line unseen */
                     }
                 }
                 else
@@ -407,42 +406,6 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
             sense(control, input, control->route == BYPASS_ROUTE_PASS || control->route == BYPASS_ROUTE_REAR);
         }
     }
-    else if (control->work == BYPASS_WORK_LINE)
-    {
-        float lateral = fabsf(left_mm(control));
-        float heading = fabsf((float)control->heading_cdeg / 100.0f);
-        float travel = enc_mean_travel(input->count, control->chunk_origin) /
-            ENC_COUNTS_PER_MM;
-        if (!input->line_functional || !front_supported(control, input) ||
-            robot_time_elapsed(input->now_ms, input->line_ms) > IR_MAX_GAP_MS ||
-            travel >= BYPASS_REACQUIRE_MM || lateral > BYPASS_RETURN_LATERAL_MM ||
-            heading > BYPASS_RETURN_HEADING_DEG)
-        {
-            fail(control);
-        }
-        else if (input->line_ms != control->line_sampled_ms)
-        {
-            control->line_sampled_ms = input->line_ms;
-            /* Aligned white/white counts only after the line was crossed. */
-            control->line_seen = control->line_seen || input->line_black;
-            if (control->line_seen && input->line_visible &&
-                abs(input->line_error_q) <= RECOVERY_ALIGN_ERROR_Q)
-            {
-                if (control->visible_streak < MISSION_CONFIRM_SAMPLES)
-                {
-                    ++control->visible_streak;
-                }
-                if (control->visible_streak >= MISSION_CONFIRM_SAMPLES)
-                {
-                    control->route = BYPASS_ROUTE_DONE;
-                }
-            }
-            else
-            {
-                control->visible_streak = 0u;
-            }
-        }
-    }
     else
     {
         fail(control);
@@ -474,11 +437,5 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
     {
         output->command = motion_command_make(MOTION_MODE_DISTANCE, BYPASS_SPEED_MMPS,
             control->action_target, 0, control->action_id, input->now_ms);
-    }
-    else if (control->work == BYPASS_WORK_LINE)
-    {
-        output->command = motion_command_make(MOTION_MODE_FOLLOW, BYPASS_LINE_SPEED_MMPS,
-            0.0f, input->line_visible ? input->line_steering_q : 0,
-            1u, input->line_ms);
     }
 }

@@ -30,6 +30,7 @@
 - [MQTT binary protocol, schema version 2](#mqtt-binary-protocol-schema-version-2)
   - [Telemetry and snapshot reply (23 bytes)](#telemetry-and-snapshot-reply-23-bytes)
   - [Wheel trace (15 bytes)](#wheel-trace-15-bytes)
+  - [Terrain trace (8 bytes)](#terrain-trace-8-bytes)
   - [Line trace (17 bytes)](#line-trace-17-bytes)
   - [Event (11 bytes)](#event-11-bytes)
   - [Mapping, acknowledgement, snapshot request](#mapping-acknowledgement-snapshot-request)
@@ -99,7 +100,7 @@ stateDiagram-v2
     FOLLOW_LINE --> SCAN: blocking obstacle and stationary
     SCAN --> BYPASS: supported clearance
     SCAN --> STOPPED: blocked or timeout or failed evidence
-    BYPASS --> REACQUIRE: rear of vehicle clear
+    BYPASS --> NAVIGATE: IR touches the line on the return leg
     FOLLOW_LINE --> REACQUIRE: healthy sensors lose line
     REACQUIRE --> FOLLOW_LINE: intended line confirmed
     REACQUIRE --> STOPPED: budget exhausted or required evidence failed
@@ -197,15 +198,14 @@ See the
 [recovery handoff revision](project-specs.md#pending-decisions). Heading/travel evidence
 is required after bypass to avoid accepting an unrelated crossing.
 
-Humps remain concurrent with tracking; request half normal tracking speed during
-a valid encounter, settle at reduced speed for height estimation and restore after
-confirmed completion. Only valid completed humps update count/maximum; report
+Humps remain concurrent with tracking and do not change the course speed. Only valid completed humps update count/maximum; report
 measurements/events. Completed results persist across accepted starts/stops until
 reboot, as recorded in [project specs](project-specs.md#pending-decisions).
 
 For a blocking obstacle, brake and confirm stationarity before profiling. Bypass
 selects supported measured clearance, departs the line, follows the side, confirms
-rear-edge and full-car clearance, returns toward the original line and aligns.
+rear-edge and full-car clearance and returns toward the original line. The first
+black sensor on that leg ends it; Mission then advances and pivots as at a junction.
 One servo sensor cannot look forward and sideways simultaneously: schedule fresh
 coverage and bounded travel. Reverse needs a supported bounded path; no blind
 rear-clearance assumption. A new hazard, unsupported route or exhausted action
@@ -269,7 +269,7 @@ This table owns target policy. `robot_data.c` now leaves IMU/calibration failure
 | --- | --- | --- | --- |
 | GP21 / Motion local input | Block | Latch brake | Eligible GP21 release after serviced brake; GP20 starts separately |
 | Motion bit 0 stall / wheel controller (detection disabled in current trial; see [trial settings](project-specs.md#pending-decisions)) | Block while active | Latch stop | Cause cleared plus local reset; threshold uncalibrated D07 |
-| Motion bit 1 encoder / invalid edges or failed capture | Block | Latch stop | Validated encoder recovery; existing 64-count rule is provisional D03 |
+| Motion bit 1 encoder / sustained invalid edges (`ENC_FAULT_INVALID_SCORE`, INT-138) or failed capture | Block | Latch stop | Validated encoder recovery; existing 64-count rule is provisional D03 |
 | Line bit 0 acquisition invalid / S3 | Block | Stop if required acquisition invalid/stale | Valid digital readings and local reset |
 | Healthy line lost / Mission | No start on unusable line | Bounded REACQUIRE, then stop if exhausted | Line confirmed or operator reposition/reset |
 | Line bits 1/2 barcode capture/event overflow | Report | Report; never guess/replay an action | Existing encounter/run clearing behavior audited during integration |
@@ -470,6 +470,8 @@ Rules for every frame:
 | Snapshot request | 6 | PC to robot | 2 |
 | Wheel trace | 8 | robot to PC, best effort per Motion release | 15 |
 | Line trace | 9 | robot to PC, best effort per fresh IR acquisition while moving | 17 |
+| Barcode trace | 10 | robot to PC, best effort, raw GP16 run widths |
+| Terrain trace | 11 | robot to PC, best effort, hump detector state |
 
 ### Wheel trace (15 bytes)
 
@@ -491,18 +493,30 @@ Robot timestamp gaps reveal missing releases; timestamps wrap modulo 2^32.
 There is no diagnostic request, movement authority or live tuning input.
 Older laptop decoders reject this new type; use the matching decoder for traces.
 
+### Barcode trace (18 bytes)
+
+Type 10 is outbound diagnostics only, added for INT-146 and filtered since INT-148; S1 owner agreement pending. Byte 0 is `2A`
+hex, byte 1 a wrapping sequence, bytes 2..17 eight little-endian runs: bit 15 black level, bits
+14..0 width in encoder counts after chatter is merged, zero for an unused slot. A full ring drops frames.
+
+### Terrain trace (8 bytes)
+
+Type 11 is outbound diagnostics only, added for INT-154; S1 owner agreement pending. Byte 0 is `2B` hex, bytes
+1..2 time ms low 16, byte 3 signed pitch in quarter degrees, byte 4 bits 0..2 state, 6 encoder valid, 7 calibrated,
+byte 5 peak rise mm, byte 6 acceleration in 10 mg units, byte 7 signed roll in quarter degrees.
+
 ### Line trace (17 bytes)
 
 Type 9 is outbound diagnostics only, kept separate so the wheel trace is unchanged;
 S1 owner agreement pending. Byte 0 is `29` hex; bytes 1..4 are the
 IR acquisition time uint32 ms. Byte 5 flags: bit 0 left black, 1 right black,
 2 in broad black, 3 junction candidate open, 4 junction qualified, 5 curved entry,
-6 junction locked, 7 zero. Byte 6: bits 0..3 Mission state, 4..6 junction phase,
+6 junction locked, 7 raw barcode GP16 level. Byte 6: bits 0..3 Mission state, 4..6 junction phase,
 7 zero. Bytes 7..8 and 9..10 are the low 16 bits of the left/right encoder counts.
 Byte 11 is the steering law output, signed Q7. Byte 12 is the law state: the side
 last touched (-1 left, +1 right, 0 none), doubled while in a bend. Byte 13 is the FOLLOW steering sent to Motion (0 for
 other modes). Bytes 14..15: bits 0..8 commanded speed mm/s, 9..10 motion mode,
-11..15 zero. Byte 16 is, while both sensors are black, the distance in mm between
+11..15 running barcode edge count (wraps). Byte 16 is, while both sensors are black, the distance in mm between
 the two sensors' black onsets (254 caps it), else 255.
 
 Mission builds one record per fresh acquisition after `mission_step` while it was
@@ -641,7 +655,7 @@ a crossing. Onsets together mean a crossing whatever the steering held.
 Motion owns the sole applied steering/base slew and wheel PID. DOUT white/white
 is ambiguous alone: it is loss only after a set travel past the last black
 acquisition, counted from the first touch in FOLLOW, which the drift bounds on a
-centred straight. Recovery and bypass return treat white/white as the line only
+centred straight. Recovery treats white/white as the line only
 after a sensor has been black in that phase
 ([loss revision](project-specs.md#pending-decisions)).
 

@@ -46,9 +46,9 @@ Widths: [data table](../../docs/project-specs.md#5-data-representation-table-wee
 
 ## Scan and bypass
 
-- **Scan:** stop and confirm stationary, then visit every 5 degrees from -20 to +20. Servo commands slew one degree per `SERVO_STEP_MS`; each position settles, takes a median sample group, and publishes it. Only 0 degrees refreshes forward coverage. The deadline is 20 s.
-- **Estimate:** identify obstacle regions across consecutive angles with hysteresis, then estimate span, closest point and clearance. Report the estimate, never the maximum expected width as a measurement. Unknown edge or clearance is not a supported gap.
-- **Bypass:** Mission sequences departure, side-following, rear-edge confirmation, rear clearance, inward approach and line alignment. One lost echo never proves a rear edge. Both sides blocked, failed profile, poor coverage, new hazard or timeout brake and stop. White/white alone does not count as finding the line.
+- **Scan:** stop and confirm stationary, then visit every 10 degrees from -50 to +50, plus one 5 degree ray at each edge. Servo commands slew one degree per `SERVO_STEP_MS`; each position settles, takes a median sample group, and publishes it. Only 0 degrees refreshes forward coverage. The deadline is 20 s.
+- **Estimate:** identify obstacle regions across consecutive angles with hysteresis, then estimate span and closest point. Clearance is the sideways reach of the free rays (`range * sin(angle)`, smallest wins) minus the obstacle's planned edge. Report the estimate, never the maximum expected width as a measurement. Unknown edge or clearance is not a supported gap.
+- **Bypass:** Mission sequences departure, passing with the servo 50 degrees toward the obstacle, rear-edge confirmation, rear clearance and return. The first black sensor on the return ends it, then Mission advances and pivots as at a junction. Depth comes from the encoder position at the first rear-edge reading, so it can read long by up to a 50 mm step. One lost echo never proves a rear edge. Both sides blocked, failed profile, poor coverage, new hazard, no line on the return or timeout brake and stop.
 - **Release:** `MISSION_BYPASS_RELEASED` is 0 in source, and the `./flash.sh` full-course image sets it to 1. Bypass geometry and physical performance are still unaccepted, so supervise those runs.
 
 ## Physical checklist

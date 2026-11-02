@@ -3,85 +3,165 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
-#include "terrain_float_reference.h"
 
 static TerrainContext ctx;
-static FloatTerrainContext legacy;
 
 static void calibrate(void)
 {
     terrain_algo_init(&ctx);
-    terrain_float_ref_init(&legacy);
     Gy511RawAxes flat = {0, 0, (int16_t)lroundf(1.0f / ACCEL_MG_PER_LSB)};
     for (int i = 0; i < 100; ++i) {
         terrain_algo_calibrate_sample(&ctx, &flat);
-        terrain_float_ref_calibrate_sample(&legacy, &flat);
     }
-    assert(ctx.is_calibrated && legacy.is_calibrated);
+    assert(ctx.is_calibrated);
+}
+
+static Gy511RawAxes tilted(float roll_deg, float pitch_deg)
+{
+    float r = roll_deg * 0.0174532925f, q = pitch_deg * 0.0174532925f;
+    return (Gy511RawAxes){(int16_t)lroundf(sinf(r) / ACCEL_MG_PER_LSB),
+        (int16_t)lroundf(sinf(q) / ACCEL_MG_PER_LSB),
+        (int16_t)lroundf(cosf(r) * cosf(q) / ACCEL_MG_PER_LSB)};
 }
 
 /* Feed a physical travel step so encoder calibration does not shrink fixtures. */
-static void feed(float pitch_deg, int n, float step_mm)
+static void feed(float roll_deg, int n, float step_mm)
 {
-    uint32_t counts = (uint32_t)lroundf(step_mm * ENC_COUNTS_PER_MM);
-    float r = pitch_deg * 0.0174532925f;
-    Gy511RawAxes a = {0, (int16_t)lroundf(sinf(r) / ACCEL_MG_PER_LSB), (int16_t)lroundf(cosf(r) / ACCEL_MG_PER_LSB)};
+    Gy511RawAxes a = tilted(roll_deg, 0.0f);
     for (int i = 0; i < n; ++i) {
-        terrain_algo_process(&ctx, &a, counts, true);
-        terrain_float_ref_process(&legacy, &a, counts);
+        terrain_algo_process(&ctx, &a, step_mm * ENC_COUNTS_PER_MM, step_mm <= 0.0f);
     }
-    /* The entire synthetic trace must give the same hump events/results
-       as the original float implementation, not merely plausible values. */
-    assert(ctx.state == legacy.state);
-    assert(ctx.hump_count == legacy.hump_count);
-    assert(ctx.last_hump_code == legacy.last_hump_code);
-    assert(ctx.max_hump_code == legacy.max_hump_code);
-    assert((bool)ctx.height_valid == legacy.height_valid);
 }
 
 static void test_complete_hump(void)
 {
     calibrate();
-    feed(0.0f, 30, 0.0f);
-    feed(10.0f, 40, 2.3f);			/* climb: 2.3 mm per step */
-    feed(0.0f, 4, 2.3f);				/* crest: pitch passes through zero briefly */
-    feed(-10.0f, 40, 2.3f);			/* descent */
-    feed(0.0f, 30, 0.0f);				/* flat again */
+    feed(0.0f, 30, 2.0f);
+    feed(-7.0f, 50, 2.0f);
+    assert(ctx.state == TERRAIN_STATE_ON_HUMP && ctx.hump_count == 0u);
+    feed(0.0f, 30, 2.0f);
     assert(ctx.state == TERRAIN_STATE_FLAT && ctx.height_valid && ctx.hump_count == 1u);
     uint32_t mm;
-    assert(terrain_code_to_mm(ctx.last_hump_code, &mm) && mm >= 8u && mm <= 40u);
+    assert(terrain_code_to_mm(ctx.last_hump_code, &mm) && mm >= 11u && mm <= 12u); /* 120 mm track, 7 degrees, calibration */
     assert(ctx.max_hump_code == ctx.last_hump_code);
 
-    /* A second, smaller hump raises the count but not the maximum. */
+    /* A second, smaller hump, tilting the other way, raises the count but not the maximum. */
     uint8_t first = ctx.last_hump_code;
-    feed(10.0f, 25, 2.3f); feed(0.0f, 4, 2.3f); feed(-10.0f, 40, 2.3f); feed(0.0f, 30, 0.0f);
+    feed(5.0f, 50, 2.0f); feed(0.0f, 30, 2.0f);
     assert(ctx.hump_count == 2u && ctx.max_hump_code == first && ctx.last_hump_code < first);
 }
 
-static void test_incomplete_and_small_encounters_add_nothing(void)
+/* Replays traced roll, in quarter degrees at about 2.4 mm a row. The trace is the
+   filter's output and truncates toward zero, so take the middle of each value and
+   feed the input that makes the filter here reproduce it. */
+static void replay(const int8_t *roll, unsigned count)
 {
-    calibrate();
-    feed(10.0f, 40, 2.3f);				/* climb ... */
-    feed(0.0f, 60, 0.0f);				/* ... then flatten with no descent */
-    assert(ctx.hump_count == 0u && !ctx.height_valid && ctx.state == TERRAIN_STATE_FLAT);
-
-    calibrate();					/* a bump below the minimum height */
-    feed(5.0f, 6, 0.57f); feed(0.0f, 30, 0.57f); feed(-5.0f, 20, 0.57f); feed(0.0f, 30, 0.0f);
-    assert(ctx.hump_count == 0u && ctx.last_hump_code == 0u);
-
-    calibrate();					/* stationary climb: no travel, no height */
-    feed(10.0f, 30, 0.0f); feed(0.0f, 30, 0.0f); feed(-10.0f, 30, 0.0f); feed(0.0f, 30, 0.0f);
-    assert(ctx.hump_count == 0u);
+    float previous = 0.0f;
+    for (unsigned i = 0u; i < count; ++i) {
+        int q = roll[i];
+        float deg = (q < 0 ? q - 0.5f : q > 0 ? q + 0.5f : 0.0f) / 4.0f;
+        feed((deg - 0.8f * previous) / 0.2f, 1, 2.4f);
+        previous = deg;
+    }
 }
 
-static void test_saturation_and_count(void)
+/* INT-155 run. */
+static void test_real_crossing(void)
+{
+    static const int8_t hump[] = {-2, 4, 3, 2, 3, 4, 3, 4, 0, -2, -4, -6, -6, -8, -8, -5, -4, -6, -7, -8,
+        -12, -17, -15, -13, -11, -8, -9, -8, -8, -11, -8, -8, -11, -15, -16, -17, -16, -17, -17, -21,
+        -24, -26, -22, -23, -27, -24, -25, -23, -18, -20, -22, -24, -25, -28, -28, -21, -16, -11, -6, -7,
+        -4, -2, -5, -8, -9, -6, -4, -7, -8, -10, -11, -11, -9, -8, -5, -2, -7, -6, -5, -3, -1, -3, -3,
+        -4, -4, -2, -2, -3, -3};
+    static const int8_t not_hump[] = {-3, -2, 0, -1, -1, 1, 7, 12, 10, 5, 0, -2, -3, -5, -10, -6, 0, 3, 7, 4, 6, 6};
+    calibrate();
+    replay(not_hump, sizeof not_hump);
+    feed(0.0f, 20, 2.0f);
+    assert(ctx.hump_count == 0u);
+    replay(hump, sizeof hump);
+    feed(0.0f, 20, 2.0f);
+    assert(ctx.hump_count == 1u && ctx.height_valid);
+}
+
+static void test_a_dip_does_not_split_a_hump(void)
 {
     calibrate();
-    feed(10.0f, 60, 227.0f);				/* enormous rise saturates, never reaches the invalid code */
-    feed(0.0f, 4, 2.3f); feed(-10.0f, 60, 2.3f); feed(0.0f, 30, 0.0f);
-    assert(ctx.hump_count == 1u && ctx.last_hump_code == rd_invalid_code(HUMP_RESULT_BITS) - 1u);
-    for (unsigned i = 0; i < 11u; ++i) {
-        feed(10.0f, 40, 2.3f); feed(0.0f, 4, 2.3f); feed(-10.0f, 40, 2.3f); feed(0.0f, 30, 0.0f);
+    feed(-7.0f, 30, 2.0f); feed(0.0f, 8, 2.0f); feed(-7.0f, 30, 2.0f); feed(0.0f, 30, 2.0f);
+    assert(ctx.hump_count == 1u);
+}
+
+static void test_what_is_not_a_hump(void)
+{
+    calibrate();					/* short tilt: not enough travel */
+    feed(-7.0f, 4, 2.0f); feed(0.0f, 30, 0.0f);
+    assert(ctx.state == TERRAIN_STATE_FLAT && ctx.hump_count == 0u && !ctx.height_valid);
+
+    calibrate();					/* tilted standing still */
+    feed(-7.0f, 60, 0.0f); feed(0.0f, 30, 0.0f);
+    assert(ctx.hump_count == 0u);
+
+    calibrate();					/* below the entry level, as on a curve */
+    feed(3.0f, 200, 2.0f); feed(0.0f, 30, 2.0f);
+    assert(ctx.state == TERRAIN_STATE_FLAT && ctx.hump_count == 0u);
+
+    calibrate();					/* lifted by hand while the wheels run */
+    feed(30.0f, 60, 2.0f); feed(0.0f, 30, 2.0f);
+    assert(ctx.hump_count == 0u && !ctx.height_valid && ctx.last_hump_code == 0u);
+
+    calibrate();					/* pitch from speed changes or a two-wheel ramp */
+    Gy511RawAxes nose_up = tilted(0.0f, 12.0f), nose_down = tilted(0.0f, -12.0f);
+    for (int i = 0; i < 60; ++i) {
+        terrain_algo_process(&ctx, &nose_up, 23.0f, false);
+    }
+    for (int i = 0; i < 60; ++i) {
+        terrain_algo_process(&ctx, &nose_down, 23.0f, false);
+    }
+    assert(ctx.state == TERRAIN_STATE_FLAT && ctx.hump_count == 0u);
+}
+
+/* INT-157: one boot pose read 6.5 degrees pitch and -1 degree roll on flat ground,
+   and curves then reached the entry level. Offsets must not count, or stick. */
+static void test_baseline(void)
+{
+    calibrate();
+    feed(-2.0f, 300, 0.0f);				/* settles on the offset standing still */
+    feed(-4.5f, 25, 2.0f); feed(-2.0f, 30, 2.0f);	/* a curve: 2.5 degrees from it */
+    assert(ctx.state == TERRAIN_STATE_FLAT && ctx.hump_count == 0u);
+    feed(-7.5f, 50, 2.0f); feed(-2.0f, 30, 2.0f);	/* a hump, measured from the offset */
+    assert(ctx.hump_count == 1u);
+    uint32_t mm;
+    assert(terrain_code_to_mm(ctx.last_hump_code, &mm) && mm >= 9u && mm <= 10u);
+
+    calibrate();					/* tilted at rest and driving off is not a hump */
+    feed(-7.0f, 100, 0.0f); feed(-7.0f, 50, 2.0f); feed(-7.0f, 30, 2.0f);
+    assert(ctx.state == TERRAIN_STATE_FLAT && ctx.hump_count == 0u);
+
+    calibrate();					/* INT-158: a pivot has no mean travel, and is not stopped */
+    Gy511RawAxes pivot = tilted(2.5f, 0.0f);
+    for (int i = 0; i < 100; ++i) {
+        terrain_algo_process(&ctx, &pivot, 0.0f, false);
+    }
+    feed(0.0f, 30, 2.0f);
+    assert(ctx.roll_base_q8 == 0 && ctx.state == TERRAIN_STATE_FLAT && ctx.hump_count == 0u);
+
+    calibrate();					/* a long tilt becomes the new ground */
+    feed(0.0f, 30, 2.0f);
+    feed(-7.0f, 300, 2.0f);
+    assert(ctx.state == TERRAIN_STATE_FLAT && ctx.hump_count == 0u);
+    feed(-13.0f, 50, 2.0f); feed(-7.0f, 30, 2.0f);	/* and humps still count on it */
+    assert(ctx.hump_count == 1u);
+
+    calibrate();					/* a short curve-sized tilt past entry */
+    feed(0.0f, 30, 2.0f);
+    feed(-5.0f, 12, 2.0f); feed(0.0f, 30, 2.0f);
+    assert(ctx.state == TERRAIN_STATE_FLAT && ctx.hump_count == 0u);
+}
+
+static void test_count(void)
+{
+    calibrate();
+    for (unsigned i = 0; i < 12u; ++i) {
+        feed(-7.0f, 50, 2.0f); feed(0.0f, 30, 2.0f);
     }
     assert(ctx.hump_count == 12u);
 }
@@ -91,28 +171,22 @@ static void test_impact_and_restart(void)
     calibrate();
     Gy511RawAxes shock = {(int16_t)lroundf(3.0f / ACCEL_MG_PER_LSB), 0,
                           (int16_t)lroundf(1.0f / ACCEL_MG_PER_LSB)};
-    terrain_algo_process(&ctx, &shock, 0u, true);
-    terrain_float_ref_process(&legacy, &shock, 0u);
-    assert(ctx.state == TERRAIN_STATE_IMPACT && legacy.state == TERRAIN_STATE_IMPACT);
+    terrain_algo_process(&ctx, &shock, 0.0f, true);
+    assert(ctx.state == TERRAIN_STATE_IMPACT);
     Gy511RawAxes flat = {0, 0, (int16_t)lroundf(1.0f / ACCEL_MG_PER_LSB)};
-    terrain_algo_process(&ctx, &flat, 0u, true);
-    terrain_float_ref_process(&legacy, &flat, 0u);
-    assert(ctx.state == TERRAIN_STATE_FLAT && legacy.state == TERRAIN_STATE_FLAT);
+    terrain_algo_process(&ctx, &flat, 0.0f, true);
+    assert(ctx.state != TERRAIN_STATE_IMPACT);
 
     terrain_algo_init(&ctx);
-    terrain_float_ref_init(&legacy);
     for (unsigned i = 0u; i < 37u; ++i) {
         terrain_algo_calibrate_sample(&ctx, &flat);
-        terrain_float_ref_calibrate_sample(&legacy, &flat);
     }
     terrain_algo_calibration_restart(&ctx);
-    terrain_float_ref_calibration_restart(&legacy);
-    assert(ctx.calib_count == 0u && legacy.calib_count == 0u);
+    assert(ctx.calib_count == 0u);
     for (unsigned i = 0u; i < 100u; ++i) {
         terrain_algo_calibrate_sample(&ctx, &flat);
-        terrain_float_ref_calibrate_sample(&legacy, &flat);
     }
-    assert(ctx.is_calibrated && legacy.is_calibrated);
+    assert(ctx.is_calibrated);
 }
 
 static void test_word_boundaries(void)
@@ -166,7 +240,7 @@ static void test_evidence_and_invalid_window(void)
     context.hump_count = 2u;
     context.max_hump_code = 20u;
     context.last_hump_code = 18u;
-    context.state = TERRAIN_STATE_CLIMBING;
+    context.state = TERRAIN_STATE_ON_HUMP;
     context.rise_q = 150u;
     terrain_algo_invalidate_window(&context);
     assert(context.state == TERRAIN_STATE_FLAT && context.rise_q == 0u);
@@ -174,128 +248,15 @@ static void test_evidence_and_invalid_window(void)
     assert(context.last_hump_code == 18u && !context.height_valid);
 }
 
-static void test_dynamic_quality(void)
-{
-    test_complete_hump();
-    uint8_t count = ctx.hump_count;
-    uint8_t maximum = ctx.max_hump_code;
-    Gy511RawAxes accelerating = {.y = 500, .z = 500};
-    Gy511RawAxes braking = {.y = -500, .z = 500};
-    Gy511RawAxes flat = {.z = 500};
-    for (unsigned i = 0u; i < 50u; ++i)
-    {
-        terrain_algo_process(&ctx, &accelerating, 2.0f, true);
-    }
-    for (unsigned i = 0u; i < 50u; ++i)
-    {
-        terrain_algo_process(&ctx, &braking, 2.0f, true);
-    }
-    for (unsigned i = 0u; i < 100u; ++i)
-    {
-        terrain_algo_process(&ctx, &flat, 2.0f, true);
-    }
-    assert(ctx.hump_count == count && ctx.max_hump_code == maximum);
-    assert(!ctx.height_valid);
-
-    calibrate();
-    feed(10.0f, 20, 2.3f);
-    Gy511RawAxes climb = {.y = 87, .z = 492};
-    terrain_algo_process(&ctx, &climb, 4.0f, false);
-    /* Quality returning mid-encounter cannot rescue its partial height. */
-    for (unsigned i = 0u; i < 20u; ++i)
-    {
-        terrain_algo_process(&ctx, &climb, 4.0f, true);
-    }
-    for (unsigned i = 0u; i < 4u; ++i)
-    {
-        terrain_algo_process(&ctx, &flat, 4.0f, true);
-    }
-    Gy511RawAxes descent = {.y = -87, .z = 492};
-    for (unsigned i = 0u; i < 40u; ++i)
-    {
-        terrain_algo_process(&ctx, &descent, 4.0f, true);
-    }
-    for (unsigned i = 0u; i < 30u; ++i)
-    {
-        terrain_algo_process(&ctx, &flat, 0.0f, true);
-    }
-    assert(ctx.hump_count == 0u && !ctx.height_valid);
-    flat.z = 450;
-    assert(terrain_acceleration_qualified(&flat));
-    flat.z = 550;
-    assert(terrain_acceleration_qualified(&flat));
-    flat.z = 449;
-    assert(!terrain_acceleration_qualified(&flat));
-    flat.z = 551;
-    assert(!terrain_acceleration_qualified(&flat));
-}
-
-static void test_travel_quality(void)
-{
-    TerrainTravelQuality quality = {0};
-    int32_t nominal = (int32_t)lroundf(60.0f * ENC_COUNTS_PER_MM * 0.02f);
-    int32_t delta[2] = {nominal, nominal};
-    uint32_t now = UINT32_MAX - 100u;
-    assert(!terrain_travel_qualified(&quality, now, delta, true));
-    for (unsigned i = 0u; i < 12u; ++i)
-    {
-        now += 20u;
-        bool qualified = terrain_travel_qualified(&quality, now, delta, true);
-        assert(qualified == (i >= 11u));
-    }
-    delta[1] = 0;
-    assert(!terrain_travel_qualified(&quality, now += 20u, delta, true));
-    delta[0] = delta[1] = (int32_t)lroundf(280.0f * ENC_COUNTS_PER_MM * 0.02f);
-    assert(!terrain_travel_qualified(&quality, now += 20u, delta, true));
-    delta[0] = delta[1] = -nominal;
-    assert(!terrain_travel_qualified(&quality, now += 20u, delta, true));
-    assert(!terrain_travel_qualified(&quality, now += 20u, delta, false));
-    assert(!quality.primed && !quality.steady);
-    delta[0] = delta[1] = 0;
-    assert(!terrain_travel_qualified(&quality, now += 20u, delta, true));
-    assert(!terrain_travel_qualified(&quality,
-        now += SAFETY_STALE_MS + 1u, delta, true));
-    assert(!terrain_travel_qualified(&quality, now, delta, true));
-}
-
-static void test_skipped_crest_sample(void)
-{
-    calibrate();
-    Gy511RawAxes climb = {.y = 171, .z = 470}; /* 20 degrees */
-    Gy511RawAxes descent = {.y = -433, .z = 250}; /* -60 degrees */
-    Gy511RawAxes flat = {.z = 500};
-    float counts = 2.3f * ENC_COUNTS_PER_MM;
-    for (unsigned i = 0u; i < 40u; ++i)
-    {
-        terrain_algo_process(&ctx, &climb, counts, true);
-    }
-    assert(ctx.state == TERRAIN_STATE_CLIMBING);
-    terrain_algo_process(&ctx, &descent, counts, true);
-    assert(ctx.state == TERRAIN_STATE_CLIMBING);
-    terrain_algo_process(&ctx, &descent, counts, true);
-    assert(ctx.pitch_cdeg < (int16_t)(PITCH_DESC_THRESH_DEG * 100.0f));
-    assert(ctx.state == TERRAIN_STATE_DESCENDING);
-    for (unsigned i = 0u; i < 40u; ++i)
-    {
-        terrain_algo_process(&ctx, &descent, counts, true);
-    }
-    for (unsigned i = 0u; i < 40u; ++i)
-    {
-        terrain_algo_process(&ctx, &flat, counts, true);
-    }
-    assert(ctx.state == TERRAIN_STATE_FLAT);
-    assert(ctx.hump_count == 1u && ctx.height_valid);
-}
-
 int main(void)
 {
-    test_skipped_crest_sample();
-    test_travel_quality();
-    test_dynamic_quality();
     test_evidence_and_invalid_window();
     test_complete_hump();
-    test_incomplete_and_small_encounters_add_nothing();
-    test_saturation_and_count();
+    test_real_crossing();
+    test_a_dip_does_not_split_a_hump();
+    test_what_is_not_a_hump();
+    test_baseline();
+    test_count();
     test_impact_and_restart();
     test_word_boundaries();
     puts("terrain: PASS");

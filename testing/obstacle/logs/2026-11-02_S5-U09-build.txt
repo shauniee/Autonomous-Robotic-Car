@@ -1,0 +1,5 @@
+tools/elf2uf2-Darwin-arm64 full_course.elf full_course.uf2
+/Users/nicholasbay/.robot-car-tools/pico-sdk/lib/lwip/src/apps/mqtt/mqtt.c:153:1: warning: 'mqtt_msg_type_to_str' defined but not used [-Wunused-function]
+tools/elf2uf2-Darwin-arm64 test.elf test.uf2
+f42da1aea14e368178304c1cfe41e33a39376cb1a9e4f6b804dad9f43fd06a54  build_make/full_course.uf2
+3317fed8992846407c38805a9698184be4163b47b67349369c53797574992951  build_make/test.uf2

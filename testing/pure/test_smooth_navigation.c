@@ -324,9 +324,41 @@ static void pivot_turns(void)
             out = tick(&m, &in);
         assert(m.state == MISSION_FOLLOW_LINE && m.junction_locked);
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
+        /* INT-136: both sensors white after the pivot: lean back toward the line. */
+        assert(motion_cmd_steering(&out.command) ==
+            (action == BARCODE_LEFT ? LINE_BEND_LEAN_Q : -LINE_BEND_LEAN_Q));
     }
 }
 #endif
+/* INT-139: a straight crossing that exits white/white keeps the last side, so
+   the robot drifts back toward the line with line loss armed. */
+static void crossing_keeps_last_side(void)
+{
+    Mission m;
+    MissionInputs in = input();
+    follow(&m, &in);
+    in.line = IR_LINE_VISIBLE;
+    in.left_black = true;
+    in.line_error = -IR_SCALE_ONE;
+    tick(&m, &in);
+    assert(m.line_side == -1);
+    move(&in, 5.0f, 5.0f); /* within the onset skew, so this is a crossing */
+    in.line = IR_LINE_BROAD_BLACK;
+    in.right_black = true;
+    in.line_error = 0;
+    tick(&m, &in);
+    move(&in, NAV_CONFIRM_MM + 1, NAV_CONFIRM_MM + 1);
+    tick(&m, &in);
+    assert(m.state == MISSION_NAVIGATE);
+    in.line = IR_LINE_VISIBLE;
+    in.left_black = in.right_black = false;
+    MissionOutputs out = tick(&m, &in);
+    assert(m.state == MISSION_FOLLOW_LINE && m.line_side == -1);
+    assert(motion_cmd_steering(&out.command) == -LINE_DRIFT_Q);
+    move(&in, LINE_LOST_MM + 1.0f, LINE_LOST_MM + 1.0f);
+    tick(&m, &in);
+    assert(m.state == MISSION_REACQUIRE);
+}
 static void navigation_failures(void)
 {
     for (unsigned phase = 0; phase <= JUNCTION_PHASE_ADVANCE; ++phase)
@@ -366,7 +398,8 @@ static void navigation_failures(void)
     assert(m.entry_curved);
     move(&in, NAV_CONFIRM_MM + 1, NAV_CONFIRM_MM + 1);
     MissionOutputs out = tick(&m, &in);
-    assert(m.state == MISSION_STOPPED && out.nav_rejected == 3u);
+    /* INT-153: a queued turn commits on a skewed but qualified entry. */
+    assert(m.state == MISSION_NAVIGATE && m.phase == JUNCTION_PHASE_ADVANCE && out.nav_rejected == 0u);
     /* Pivoting to the bound without finding the branch stops. */
     in = input(); follow(&m, &in);
     to_pivot(&m, &in, BARCODE_LEFT);
@@ -390,6 +423,7 @@ int main(void)
     tracking();
     navigation();
     navigation_failures();
+    crossing_keeps_last_side();
 #if NAV_GEOMETRY_RELEASED
     pivot_turns();
 #endif
