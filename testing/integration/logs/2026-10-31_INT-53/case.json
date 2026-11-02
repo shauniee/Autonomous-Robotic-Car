@@ -1,0 +1,10 @@
+{
+  "case": "INT-53",
+  "scope": "Host-only obstacle history UI and decoder; no firmware or robot",
+  "steps": [
+    "Run dashboard JavaScript regression and decoder self-test",
+    "Preview synthetic completed obstacle events at desktop and narrow widths",
+    "Rebuild local dashboard and verify history is served"
+  ],
+  "expected": "Numbered width \u00d7 length entries without times; one per completion; repeated sizes kept; duplicate events ignored; unavailable width explicit; 200 entry bound; desktop fits 1440\u00d7900"
+}

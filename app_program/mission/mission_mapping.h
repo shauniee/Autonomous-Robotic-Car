@@ -2,7 +2,7 @@
 #ifndef MISSION_MAPPING_H
 #define MISSION_MAPPING_H
 
-#include "../subsystem1/mqtt_frame.h"
+#include "../comms/comms.h"
 
 /* I/O is sole submit/poll caller. A full hand-off refuses another request. */
 bool mission_mapping_submit(const mqtt_mapping_t *mapping);

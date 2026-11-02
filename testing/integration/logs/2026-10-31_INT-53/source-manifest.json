@@ -1,0 +1,8 @@
+{
+  "base_commit": "8981d04620d5537e4f5b68980528b452b752abb1",
+  "sources": {
+    "scripts/dashboard.html": "91044c130d83e2359c23b78ef5896b61e22ea3a44e94a5502fa61567fe1101b5",
+    "scripts/mqtt_client.py": "c8e917d88e991789e2949c1aea058ecd6df81f911097e19625e4b8d0d8fc5a93",
+    "testing/pure/test_dashboard.mjs": "9c1679a5b0e305ee35c7fdf89d9e16d295356c071b606acdb480a517863dc0d0"
+  }
+}

@@ -2,6 +2,8 @@
 
 ## Contents
 
+- [DOUT navigation acceptance revision](#dout-navigation-acceptance-revision)
+
 - [Phase 0: Electrical, before power (T01)](#phase-0-electrical-before-power-t01)
 - [Phase 1: Boot, safety and MQTT (TEST firmware, wheels raised) (T02, T12)](#phase-1-boot-safety-and-mqtt-test-firmware-wheels-raised-t02-t12)
 - [Phase 2: Each sensor alone (T03, T04, T06, T08)](#phase-2-each-sensor-alone-t03-t04-t06-t08)
@@ -55,7 +57,7 @@ Each value measured here replaces a placeholder that later behaviour depends on.
 | --- | --- | --- | --- |
 | MR-12 | Line IR raw ADC over black and white at the mounted height and course lighting; then GP20 black/white calibration | After bounded boot IMU calibration outcome, contrast at least the validated `IR_MIN_CONTRAST`; one chirp then two chirps; `Line: IR invalid` clears | Raw black/white per sensor (D04) |
 | MR-13 | Barcode IR (GP16) level over black and over white | Level differs consistently | Which level means black: `BARCODE_BLACK_HIGH` (D04) |
-| MR-14 | Turn each wheel one revolution forward by hand, three times | Counts increase on both wheels, repeatably; no encoder fault | Counts per revolution: `ENC_COUNTS_PER_REV`; signs: `*_ENCODER_SIGN` (D03) |
+| MR-14 | Turn each wheel one revolution forward by hand, three times | Counts increase on both wheels, repeatably; no encoder fault | Record counts/revolution in project specs; effective rolling scale: `ENC_COUNTS_PER_MM`; signs: `*_ENCODER_SIGN` (D03) |
 | MR-15 | Force an encoder fault (wiggle a connector), then spin the wheel by hand | `Motion: encoder` appears, then clears after spinning | - |
 | MR-16 | Boot with the robot still; tilt the front up; tap the chassis sharply | No calibration fault; pitch rises when the nose is up; `Terrain: impact` and a latched stop on the tap | Pitch sign; tap level that triggers (D06) |
 | MR-17 | Sonar against a flat board at 100, 250, 500 and 1000 mm; then aim at open space | Reported range measured and agreed against a tape measure; open space shows `no echo` and the robot is **not** stopped | Error at each distance (D05) |
@@ -68,7 +70,7 @@ Turns, distances and barcode widths all come from encoder travel, so these value
 | ID | Check | Pass when | Record |
 | --- | --- | --- | --- |
 | MR-19 | Short forward command on each motor | Both wheels drive forward | `LEFT_FORWARD_A`, `RIGHT_FORWARD_A` (D03) |
-| MR-20 | Measure wheel diameter and track width with calipers | - | `WHEEL_DIAMETER_MM`, `TRACK_WIDTH_MM` (D03) |
+| MR-20 | Measure wheel diameter and track width with calipers | - | Record diameter as hardware evidence; `TRACK_WIDTH_MM` (D03); odometry uses direct rolling calibration |
 | MR-21 | Drive 1 m straight five times at follow speed | Distance and lateral error measured and agreed (Tribunal proposal: lateral error at most 10 mm) | Errors; PID gains `MOTION_KP/KI/KD` (D07) |
 | MR-22 | 90 degrees left, 90 degrees right, 180 degrees; five each | Final heading error measured and agreed (Tribunal proposal: at most 5 degrees) | Errors per turn (D07) |
 | MR-23 | Repeat MR-22 with one wheel on a hump | Error measured and compared with MR-22 (M3 requires accuracy to hold) | Errors with one wheel raised |
@@ -120,3 +122,31 @@ The complete remaining-work checklist is [issue #117](https://github.com/shaunie
 This file owns physical procedures, not a second completion tracker. For final
 Motion/Mission/I/O timing, agree D13 limits and a bounded capture method; old
 `s3_input`/`s3_mission` console windows are not current implementation evidence.
+
+## DOUT navigation acceptance revision
+
+This supersedes earlier MR-12 analogue calibration and MR-28 fixed/instant turn
+procedures; do not overwrite historical results. Define new test IDs before running.
+Measurements and release prerequisites are listed in
+[specs](../docs/project-specs.md#dout-navigation-commissioning).
+
+1. Record DOUT levels/dead zone while sliding across the actual line at mounted
+   height; record each wheel rolling scale/sign, equal-target drift and speed response.
+2. Record straight sway and curve/S-bend overshoot with progressive steering;
+   keep settings fixed while tuning the wheel loops first.
+3. Record actual digital barcode edge widths, correct/rejected/wrong letters and
+   both print orientations during tracking. Confirm a complete read precedes junction.
+4. Record false broad-black curve candidates and straight/slanted/curve-to-junction
+   entries for every direction. Unknown/curved turn geometry must stop without
+   pivot fallback. With geometry unreleased, queued straight and unqueued crossings
+   must keep moving and resume tracking on fresh non-broad input, including a
+   centred white/white exit without an edge excursion.
+5. With measured geometry released, measure chassis-centre and heading errors after
+   mirrored turns, body clearance, speed transitions, exit evidence and rearming.
+6. Measure U-turn approach position, stationary pauses, pivot profile and return-line
+   validation; test intermediate branches, stop, obstacles and stale data in each phase.
+7. Include junction-to-curve and one-wheel hump trials. Choose numeric acceptance
+   limits from actual clearance and barcode capture margins before release.
+
+No physical trial can be completed without the robot; current software evidence
+is [INT-95](integration/TEST_LOG.md#dout-smooth-navigation--int-95).

@@ -1,0 +1,12 @@
+data: {"type": "status", "online": true}
+
+data: {"sequence": 21, "mission": "READY", "motion": "IDLE", "line": "UNKNOWN", "action_id": 0, "mapped": false, "faults": ["Obstacle: no echo"], "left": 65527, "right": 1, "hump_count": 0, "hump_max_mm": null, "front_mm": null, "barcode": "-", "barcode_action": "UNMAPPED", "obstacle_width_mm": 0, "obstacle_depth_mm": 0, "type": "telemetry", "speed_left": 0, "speed_right": 0, "direction": "stopped"}
+
+data: {"sequence": 22, "mission": "READY", "motion": "IDLE", "line": "UNKNOWN", "action_id": 0, "mapped": false, "faults": ["Obstacle: no echo"], "left": 65527, "right": 1, "hump_count": 0, "hump_max_mm": null, "front_mm": null, "barcode": "-", "barcode_action": "UNMAPPED", "obstacle_width_mm": 0, "obstacle_depth_mm": 0, "type": "telemetry", "speed_left": 0, "speed_right": 0, "direction": "stopped"}
+
+data: {"sequence": 23, "mission": "READY", "motion": "IDLE", "line": "UNKNOWN", "action_id": 0, "mapped": false, "faults": ["Obstacle: no echo"], "left": 65527, "right": 1, "hump_count": 0, "hump_max_mm": null, "front_mm": null, "barcode": "-", "barcode_action": "UNMAPPED", "obstacle_width_mm": 0, "obstacle_depth_mm": 0, "type": "telemetry", "speed_left": 0, "speed_right": 0, "direction": "stopped"}
+
+data: {"sequence": 24, "mission": "READY", "motion": "IDLE", "line": "UNKNOWN", "action_id": 0, "mapped": false, "faults": ["Obstacle: no echo"], "left": 65527, "right": 1, "hump_count": 0, "hump_max_mm": null, "front_mm": null, "barcode": "-", "barcode_action": "UNMAPPED", "obstacle_width_mm": 0, "obstacle_depth_mm": 0, "type": "telemetry", "speed_left": 0, "speed_right": 0, "direction": "stopped"}
+
+data: {"sequence": 25, "mission": "READY", "motion": "IDLE", "line": "UNKNOWN", "action_id": 0, "mapped": false, "faults": ["Obstacle: no echo"], "left": 65527, "right": 1, "hump_count": 0, "hump_max_mm": null, "front_mm": null, "barcode": "-", "barcode_action": "UNMAPPED", "obstacle_width_mm": 0, "obstacle_depth_mm": 0, "type": "telemetry", "speed_left": 0, "speed_right": 0, "direction": "stopped"}
+

@@ -1,0 +1,38 @@
+{
+  "samples": 6,
+  "states": [
+    "READY"
+  ],
+  "motion": [
+    "IDLE"
+  ],
+  "count_pairs": [
+    [
+      65501,
+      0
+    ]
+  ],
+  "last": {
+    "sequence": 166,
+    "mission": "READY",
+    "motion": "IDLE",
+    "line": "UNKNOWN",
+    "action_id": 0,
+    "mapped": false,
+    "faults": [],
+    "left": 65501,
+    "right": 0,
+    "hump_count": 0,
+    "hump_max_mm": null,
+    "front_mm": null,
+    "barcode": "-",
+    "barcode_action": "UNMAPPED",
+    "obstacle_width_mm": 0,
+    "obstacle_depth_mm": 0,
+    "type": "telemetry",
+    "speed_left": 0,
+    "speed_right": 0,
+    "direction": "stopped"
+  },
+  "reason": "Operator reported setup movement; previous baseline superseded for this measurement."
+}

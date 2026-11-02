@@ -1,0 +1,18 @@
+{
+  "id": "INT-62",
+  "date": "2026-10-31",
+  "request": "Simplify standalone tracking loss: immediate fresh white/white brake, clear pending navigation and barcode work, repeat +/-70 degree sweeps until usable visible line or existing safety deadline.",
+  "expected": [
+    "No one-second delay or stationary-visible confirmation streak.",
+    "Either left or right usable visible evidence ends search; invalid/stale IR or broad-black alone do not.",
+    "Brake before sweep reversal; fresh Motion action IDs; repeat beyond four legs but fail at 30 s/heading/travel/hazard/stop/actuator bounds.",
+    "Stop barcode acquisition and cancel scan/side-watch; clear held/manual direction and restart scanner on successful tracking return.",
+    "Preserve deliberate junction-turn, 25 mm straight segment, and bypass policies."
+  ],
+  "procedure": [
+    "Update owning contracts before changing packed private state.",
+    "Run host regressions for immediate loss/cancellation, left/right detection, repeated sweeps and all safety failures.",
+    "Build normal wireless TEST=0 firmware and record exact source/image hashes."
+  ],
+  "physical_limits": "No flash, measured angle/IR threshold calibration, or physical tracking acceptance."
+}

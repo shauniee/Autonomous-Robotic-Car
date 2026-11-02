@@ -1,0 +1,55 @@
+ Image autonomous-robotic-car-dashboard Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 635B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile.mqtt
+#2 transferring dockerfile: 437B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim
+#3 ...
+
+#4 [auth] library/python:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim
+#3 DONE 1.7s
+
+#5 [internal] load build context
+#5 transferring context: 71.87kB done
+#5 DONE 0.0s
+
+#6 [1/5] FROM docker.io/library/python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
+#6 resolve docker.io/library/python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159 0.0s done
+#6 DONE 0.0s
+
+#7 [2/5] WORKDIR /app
+#7 CACHED
+
+#8 [3/5] COPY requirements-mqtt.txt .
+#8 CACHED
+
+#9 [4/5] RUN pip install --no-cache-dir -r requirements-mqtt.txt
+#9 CACHED
+
+#10 [5/5] COPY mqtt_client.py dashboard.html ./
+#10 DONE 0.0s
+
+#11 exporting to image
+#11 exporting layers 0.0s done
+#11 exporting manifest sha256:e4aa389f2b3a81a41ad7df7e90f33d658bc7dcb7c08507411651d74bc256c9cf done
+#11 exporting config sha256:ddb4f4bc8c287a50ced46c637c0085445609869ab606e1f0109f57764daa3227 done
+#11 exporting attestation manifest sha256:0450f043cacd5ad9747c9cbc55177ded5d619937d900937d70db69d73980da63 done
+#11 exporting manifest list sha256:291e5d5d8ba52216919ddb5e62901c6002190f0c0abbc556473e9c59b97447cb done
+#11 naming to docker.io/library/autonomous-robotic-car-dashboard:latest done
+#11 unpacking to docker.io/library/autonomous-robotic-car-dashboard:latest 0.0s done
+#11 DONE 0.1s
+
+#12 resolving provenance for metadata file
+#12 DONE 0.0s
+ Image autonomous-robotic-car-dashboard Built 
+ Container autonomous-robotic-car-dashboard-1 Recreate 
+ Container autonomous-robotic-car-dashboard-1 Recreated 
+ Container autonomous-robotic-car-dashboard-1 Starting 
+ Container autonomous-robotic-car-dashboard-1 Started 

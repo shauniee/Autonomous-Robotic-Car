@@ -1,5 +1,6 @@
 /* Production-default policy: missing feature release cannot authorize bypass. */
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include "../../app_program/mission/mission_logic.h"
 
@@ -8,7 +9,7 @@ int main(void)
     Mission mission;
     mission_init(&mission, 100u);
     MissionInputs in = {.now_ms = 100u, .start_pressed = true,
-        .mapped = true, .inputs_ok = true, .calibration_valid = true,
+        .mapped = true, .inputs_ok = true,
         .guidance_valid = true, .usable_line = true, .line = IR_LINE_VISIBLE,
         .line_sampled_ms = 100u};
     MissionOutputs out;
@@ -32,7 +33,7 @@ int main(void)
     mission_step(&mission, &in, &out);
     assert(out.scan_request);
     in.scan_id = out.scan_id;
-    in.scan_state = S5_SCAN_DONE;
+    in.scan_state = OBSTACLE_SCAN_DONE;
     in.profile_valid = true;
     in.left_clearance_mm = 1000u;
     in.right_clearance_mm = 900u;
@@ -47,22 +48,22 @@ int main(void)
     mission_step(&mission, &in, &out);
     assert(mission.state == MISSION_FOLLOW_LINE);
     in.start_pressed = false;
-    in.line = IR_LINE_LOST;
-    in.guidance_valid = false;
+    in.line_error = -IR_SCALE_ONE; /* a touch, then white/white to the loss distance */
+    in.left_black = true;
     in.now_ms += 10u;
     in.line_sampled_ms = in.now_ms;
     mission_step(&mission, &in, &out);
-    assert(mission.state == MISSION_FOLLOW_LINE && !out.stop_now);
-    for (unsigned elapsed = 0u; elapsed < MISSION_LINE_LOST_MS; elapsed += 10u)
+    in.line_error = 0;
+    in.left_black = false;
+    for (unsigned mm = 0u; mm < LINE_LOST_MM; mm += 10u)
     {
+        assert(mission.state == MISSION_FOLLOW_LINE && !out.stop_now);
+        in.wheel_count[0] = in.wheel_count[1] =
+            enc_advance(in.wheel_count[0], (int)ceilf(10.0f * ENC_COUNTS_PER_MM));
         in.now_ms += 10u;
         in.line_sampled_ms = in.now_ms;
         mission_step(&mission, &in, &out);
-        assert(mission.state == MISSION_FOLLOW_LINE && !out.stop_now);
     }
-    ++in.now_ms;
-    in.line_sampled_ms = in.now_ms;
-    mission_step(&mission, &in, &out);
     assert(mission.state == MISSION_STOPPED && out.line_lost && out.stop_now);
     puts("mission_pending: PASS (150 mm trigger; unreleased bypass stays stopped)");
     return 0;

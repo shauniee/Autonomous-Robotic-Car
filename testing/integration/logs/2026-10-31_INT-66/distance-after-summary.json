@@ -1,0 +1,55 @@
+{
+  "samples": 6,
+  "states": [
+    "READY"
+  ],
+  "motion": [
+    "IDLE"
+  ],
+  "count_pairs": [
+    [
+      8043,
+      5825
+    ]
+  ],
+  "before": [
+    2210,
+    9
+  ],
+  "after": [
+    8043,
+    5825
+  ],
+  "signed_delta": [
+    5833,
+    5816
+  ],
+  "operator_reported_distance_mm": 500,
+  "counts_per_mm": [
+    11.666,
+    11.632
+  ],
+  "mean_counts_per_mm": 11.649,
+  "last": {
+    "sequence": 155,
+    "mission": "READY",
+    "motion": "IDLE",
+    "line": "UNKNOWN",
+    "action_id": 0,
+    "mapped": false,
+    "faults": [],
+    "left": 8043,
+    "right": 5825,
+    "hump_count": 0,
+    "hump_max_mm": null,
+    "front_mm": 495,
+    "barcode": "-",
+    "barcode_action": "UNMAPPED",
+    "obstacle_width_mm": 0,
+    "obstacle_depth_mm": 0,
+    "type": "telemetry",
+    "speed_left": 0,
+    "speed_right": 0,
+    "direction": "stopped"
+  }
+}

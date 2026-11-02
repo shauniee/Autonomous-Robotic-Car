@@ -8,25 +8,23 @@ typedef enum
 {
     RECOVERY_WAIT,
     RECOVERY_SEARCH,
-    RECOVERY_ALIGN,
     RECOVERY_DONE,
     RECOVERY_FAILED
 } recovery_phase_t;
 typedef struct
 {
-    uint32_t origin[2], started_ms, sampled_ms;
+    uint32_t origin[2], started_ms;
     uint8_t phase : 3;
-    uint8_t leg : 3;
-    uint8_t stable : 3;
+    uint8_t right : 1;
     uint8_t turning : 1;
+    uint8_t seen : 1; /* a sensor has been black since begin */
     int16_t turn_degrees : 10; /* held relative target, -360..360 degrees */
 } recovery_control_t;
 typedef struct
 {
     uint32_t now_ms, count[2], sampled_ms;
-    bool functional, visible, hazard, cancel;
+    bool functional, visible, black, hazard, cancel; /* black: a sensor sees the line now */
     bool stationary, motion_done, motion_failed;
-    int8_t error_q;
 } recovery_input_t;
 typedef struct
 {

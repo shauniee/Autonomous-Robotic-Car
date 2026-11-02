@@ -1,0 +1,6 @@
+Compiler: C:/msys64/ucrt64/bin/gcc.exe
+Flags: -std=c11 -O2 -Wall -Wextra -Werror
+Sources: testing/pure/test_ir_tracking.c app_program/subsystem3/ir_tracking.c
+Result: digital IR: PASS (four states, stale, invalid, failed acquisition)
+Explicit polarity regression: LOW/LOW visible with zero error; HIGH/HIGH broad black.
+Host only; no firmware build/flash or physical pass.

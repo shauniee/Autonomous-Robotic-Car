@@ -19,13 +19,13 @@ A **subsystem** is one student's folder (may hold several tasks and peripherals)
 
 | # | Subsystem | Student ID | GitHub | Code | Tests | Guide |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | **Shaun, Communications:** WiFi/MQTT, telemetry, reporting | 2500629 | shauniee | [app_program/subsystem1/](../app_program/subsystem1/) | [testing/subsystem1/](../testing/subsystem1/) | [subsystem1](architecture/subsystem1.md) |
-| 2 | **Mahesha, Motion:** motors, encoders, wheel PID, motion APIs | 2503973 | itsjustmdawg | [app_program/subsystem2/](../app_program/subsystem2/) | [testing/subsystem2/](../testing/subsystem2/) | [subsystem2](architecture/subsystem2.md) |
-| 3 | **Nicholas, Line, Barcode, Mission integration:** IR, barcode, coordination, integration | 2501552 | nicholas-bay | [app_program/subsystem3/](../app_program/subsystem3/) | [testing/subsystem3/](../testing/subsystem3/) | [subsystem3](architecture/subsystem3.md) |
-| 4 | **Darrius, Terrain:** IMU processing, motion classification, hump measurement | 2500360 | Galaxius03 | [app_program/subsystem4/](../app_program/subsystem4/) | [testing/subsystem4/](../testing/subsystem4/) | [subsystem4](architecture/subsystem4.md) |
-| 5 | **Jia Jing, Obstacle:** sonar, servo scanning, obstacle profiling | 2502825 | JJLOLLOL | [app_program/subsystem5/](../app_program/subsystem5/) | [testing/subsystem5/](../testing/subsystem5/) | [subsystem5](architecture/subsystem5.md) |
+| 1 | **Shaun, Communications:** WiFi/MQTT, telemetry, reporting | 2500629 | shauniee | [app_program/comms/](../app_program/comms/) | [testing/comms/](../testing/comms/) | [comms](../app_program/comms/README.md) |
+| 2 | **Mahesha, Motion:** motors, encoders, wheel PID, motion APIs | 2503973 | itsjustmdawg | [app_program/motion/](../app_program/motion/) | [testing/motion/](../testing/motion/) | [motion](../app_program/motion/README.md) |
+| 3 | **Nicholas, Line, Barcode, Mission integration:** IR, barcode, coordination, integration | 2501552 | nicholas-bay | [app_program/line_barcode/](../app_program/line_barcode/) | [testing/line_barcode/](../testing/line_barcode/) | [line_barcode](../app_program/line_barcode/README.md) |
+| 4 | **Darrius, Terrain:** IMU processing, motion classification, hump measurement | 2500360 | Galaxius03 | [app_program/terrain/](../app_program/terrain/) | [testing/terrain/](../testing/terrain/) | [terrain](../app_program/terrain/README.md) |
+| 5 | **Jia Jing, Obstacle:** sonar, servo scanning, obstacle profiling | 2502825 | JJLOLLOL | [app_program/obstacle/](../app_program/obstacle/) | [testing/obstacle/](../testing/obstacle/) | [obstacle](../app_program/obstacle/README.md) |
 
-Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [week13-plan](week13-plan.md#4-video-recording). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
+Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [video](../video/README.md). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
 
 **Implementation status.** The current source baseline and consolidated issue
 plan are linked from [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#status). The code
@@ -56,8 +56,8 @@ Nicholas reviews this documentation plan; subsystem responsibilities remain.
 | GP20 | Nicholas | Onboard active-low calibration/start; target fresh start only after eligible reset |
 | GP21 | Nicholas | Onboard active-low stop/cancel; target eligible release-to-ready handshake |
 | GP22 | Nicholas | Onboard PWM buzzer; mute switch controls audibility |
-| GP26 | Nicholas | Left line IR AOUT, Grove 5 / ADC0; disconnect Grove 6 shared GP26 contact |
-| GP27 | Nicholas | Right line IR AOUT, Grove 6 / ADC1 |
+| GP26 | Nicholas | Left line IR DOUT, Grove 5 / digital input; disconnect Grove 6 shared GP26 contact |
+| GP27 | Nicholas | Right line IR DOUT, Grove 6 / digital input |
 | GP28 | Mahesha | Left encoder A, Grove 7, red; ADC2-capable but used digitally; open battery jumper |
 
 User confirmation 2026-10-29: physical wiring matches this allocation and sonar electrical behavior is confirmed; motor/encoder polarity is not confirmed. This does not append a measured test result.
@@ -65,13 +65,13 @@ User confirmation 2026-10-29: physical wiring matches this allocation and sonar 
 ### Supply and wires
 
 - Power bank: red to green terminal VIN+, black to VIN-. Verify polarity.
-- Encoders: white to 3V3, blue to GND. Line/barcode IR: VCC to 3V3, GND to GND; both line DOUT wires stay disconnected.
+- Encoders: white to 3V3, blue to GND. Line/barcode IR: VCC to 3V3, GND to GND; connect line DOUT to GP26/GP27; both line AOUT wires stay disconnected.
 - GY-511: Vin to 3V3, GND to GND; separate `3.3`, INT1, INT2, DRDY disconnected. Reported HC-SR04P: VCC to 3V3, GND to GND, Trig to GP2, Echo to GP3; verify variant and Echo HIGH (at most 3.3 V) before connection.
 - SG90: red to +, brown to -; verify carrier silkscreen and supply rail.
 
 ### Wiring conflicts
 
-- Grove 5 and Grove 6 share GP26; joining analogue outputs is unsafe, keep the Grove 6 GP26 contact disconnected.
+- Grove 5 and Grove 6 share GP26; joining independent sensor outputs is unsafe, keep the Grove 6 GP26 contact disconnected.
 - GP28 battery sensing stays disconnected via its jumper while GP28 is the left encoder.
 - UART0 console/crash reporting claim GP0/GP1: use `CONSOLE=usb_cdc CRASH_REPORT=0` with encoders attached.
 - Grove 2 and the Maker port share GP2/GP3; do not attach independent devices to both.
@@ -131,7 +131,7 @@ by [architecture](architecture.md#shared-data-rules).
 | Local GP21 to Motion | Independent input check, persistent stop; no command-mutex/telemetry dependency |
 | S3 evidence to Mission | Bounded in-task sensing/decoder steps; retain original acquisition times |
 | Mission to S5 | Scan/side-watch intent and bounded acquisition steps, never a second motor writer |
-| Terrain to Mission/Motion | Core-0 coherent evidence with age/validity; no cross-core runtime `s2_stop()` call |
+| Terrain to Mission/Motion | Core-0 coherent evidence with age/validity; no cross-core runtime `motion_stop()` call |
 | I/O to Mission mapping | Bounded hand-off; Mission installs whole mapping while stopped and returns result before ACK |
 | Mission/Terrain to Reporting | Cross-core event synchronization required; same-core DI/EI is insufficient |
 | Reporting to kernel MQTT | Opaque bounded TX/RX bridge; only WiFi context invokes networking APIs |

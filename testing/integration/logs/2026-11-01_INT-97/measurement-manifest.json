@@ -1,0 +1,8 @@
+{
+  "base_commit": "b0c3d1b1b91959cf11a26e5e5be979187c80a38a",
+  "working_tree_uncommitted": true,
+  "measurement_update_sha256": {
+    "app_program/common/robot_config.h": "b0a226330d1fe55715c3dd58a3d9a04603789f12cb42dac273e8f73db9e0f814",
+    "docs/project-specs.md": "92686202a3cab2ae8f3077dcc82a4108e31b7a14ddca0b663136b6ff1ba9028d"
+  }
+}

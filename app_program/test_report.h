@@ -7,12 +7,12 @@
  *
  *	    [TEST] S1-U01 PASS  ADC reads in range
  *	    [TEST] S1-U02 FAIL  queue rejects overflow   (task_x.c:57)
- *	    [TEST] subsystem1 SUMMARY 1 passed, 1 failed
+ *	    [TEST] comms SUMMARY 1 passed, 1 failed
  *
  *	Usage, inside a test function:
  *	    TEST_INIT();
  *	    TEST_CHECK("S1-U01", value >= 0 && value <= 4095, "ADC reads in range");
- *	    TEST_SUMMARY("subsystem1");
+ *	    TEST_SUMMARY("comms");
  *
  *	Test IDs must match the ones in testing/<subsystem>/TEST_LOG.md.
  */

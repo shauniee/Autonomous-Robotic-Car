@@ -11,11 +11,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "../subsystem3/ir_tracking.h"
-#include "../subsystem5/obstacle_profile.h"
-#include "../subsystem3/barcode_decode.h"
-#include "../subsystem2/motion_control.h"
-#include "../subsystem1/mqtt_frame.h"
+#include "../line_barcode/line_barcode.h"
+#include "../obstacle/obstacle.h"
+#include "../motion/motion.h"
+#include "../comms/comms.h"
 #include "../common/robot_config.h"
 #include "recovery_control.h"
 #include "bypass_control.h"
@@ -37,8 +36,9 @@ typedef enum
     JUNCTION_PHASE_PAUSE_WAIT,
     JUNCTION_PHASE_PAUSE,
     JUNCTION_PHASE_TURN,
-    JUNCTION_PHASE_CLEAR,
-    JUNCTION_PHASE_CONFIRM
+    JUNCTION_PHASE_STRAIGHT,
+    JUNCTION_PHASE_BRAKE,
+    JUNCTION_PHASE_ADVANCE
 } MissionJunctionPhase;
 
 typedef struct
@@ -51,9 +51,11 @@ typedef struct
     bool safety_latched;	/* Safety has latched a stop */
     bool motion_stopped;	/* Motion is in its stop latch */
     bool inputs_ok;		/* IR snapshot copied and Motion health read */
-    bool calibration_valid, guidance_valid, usable_line;
+    bool guidance_valid, usable_line;
     IrLine line;
-    int8_t line_error;		/* S3 right - left error, Q7; + means steer right */
+    bool left_black;
+    bool right_black; /* normalized right IR; requires usable fresh sample */
+    int8_t line_error;		/* S3 right - left, Q7; + right black, steer left */
     uint32_t line_sampled_ms;
     uint32_t wheel_count[2];
     rd_motion_status_t motion_status;
@@ -66,7 +68,7 @@ typedef struct
     uint32_t front_mm;		/* front range; meaningful only if front_valid */
     bool side_valid;
     uint32_t side_mm, side_sampled_ms, side_sequence;
-    s5_scan_state_t scan_state;
+    obstacle_scan_state_t scan_state;
     uint8_t scan_id;
     bool profile_valid;
     uint32_t left_clearance_mm, right_clearance_mm;
@@ -80,7 +82,8 @@ typedef struct
 typedef struct
 {
     MotionCommand command;	/* written every release; STOP unless following or acting */
-    bool stop_now;		/* call s2_stop() (once, on entry to STOP) */
+    bool stop_now;		/* call motion_stop() (once, on entry to STOP) */
+    uint8_t nav_rejected : 2; /* 0 none, 1 measurements, 2 geometry, 3 entry */
     bool start_refused;		/* a start press was refused: unmapped or faulted */
     bool line_lost;		/* stopped because the line could not be recovered */
     bool start_scanner;
@@ -102,25 +105,32 @@ typedef struct
     barcode_action_t held;	/* barcode command held for the next cross junction */
     recovery_control_t recovery;
     uint32_t state_since_ms;
-    uint32_t broad_origin[2]; /* wheel counts at broad-black entry */
+    uint32_t broad_origin[2]; /* broad entry or active navigation phase origin */
     uint32_t broad_since_ms; /* start of this broad-black encounter, wraps */
+    uint8_t junction_locked : 1;
+    uint8_t entry_curved : 1;
+    uint8_t exit_seen : 1;
+    int16_t turn_length_mm : 12; /* signed whole mm, +/-2000 */
+    uint32_t entry_origin[2];
+    uint32_t straight_origin[2]; /* counts when last tracking centred with little steering */
     uint8_t manual_held : 1; /* test direction protects held from barcode replacement */
     uint8_t in_broad : 1;
     uint8_t junction_open : 1;
     uint8_t junction_qualified : 1;
-    uint8_t line_loss_pending : 1;
-    uint32_t line_lost_since_ms; /* first white/white acquisition in this run */
-    uint32_t line_lost_sampled_ms; /* latest qualifying IR acquisition */
     uint32_t junction_sampled_ms;
     uint8_t turn_code : 2; /* 0 none, 1 left, 2 right, 3 U-turn */
-    int16_t line_integral_q; /* steering units /32767, +/-LINE_I_LIMIT */
-    int16_t line_prev_error_q; /* filtered error or binary target /32767, -1..+1 */
-    uint32_t line_pid_ms;	/* IR acquisition time of the last PID update */
-    uint8_t line_pid_primed : 1;	/* a previous sample exists for the derivative */
-    int8_t line_steer_q;		/* PID output held until the next IR sample */
-    uint32_t confirmed_sample_ms; /* last sample counted for line confirmation */
+    int8_t line_steer_q; /* latest digital correction target, signed Q7 */
+    int8_t line_side; /* side last touched: -1 left, +1 right, 0 none */
+    int8_t line_prev; /* previous acquisition's touch: -1, 0, +1 */
+    uint8_t line_bend : 1; /* same-side touches close together: in a bend */
+    uint32_t touch_origin[2]; /* counts where the current touch began */
+    uint32_t dark_origin[2]; /* counts at the latest touching acquisition */
+    uint32_t onset[2][2]; /* counts where the left/right sensor last went black */
+    uint8_t onset_black : 2; /* black bits (left 1, right 2) at the last fresh acquisition */
+    uint32_t onset_sampled_ms; /* last acquisition used for onsets */
+    uint32_t line_steer_sampled_ms; /* last acquisition used for steering */
+    uint32_t turn_sampled_ms; /* last acquisition used by the turn edge sequence */
     uint32_t pause_since_ms;
-    unsigned visible_streak;
     uint8_t action_id;
     uint8_t current_action;	/* ID of the Motion action in progress */
     bypass_control_t bypass;
@@ -136,5 +146,8 @@ bool mission_queue_direction(Mission *mission, uint8_t action);
 
 void mission_init(Mission *m, uint32_t now_ms);
 void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out);
+/* Diagnostic record of the line decision mission_step just made. */
+mqtt_line_trace_t mission_line_trace(const Mission *m, const MissionInputs *in,
+    const MissionOutputs *out);
 
 #endif /* MISSION_LOGIC_H */

@@ -1,0 +1,19 @@
+{
+  "base_commit": "8981d04620d5537e4f5b68980528b452b752abb1",
+  "sha256": {
+    "app_program/mission/mission_logic.c": "02d8978aa68f553e98164a6075936ef35b04ed3ce7324e1b8a5cc4b72eee6132",
+    "app_program/mission/mission.c": "b724e7353c3fe2ff1291db973686bceea867a77ca5fc43185d555c572358bfde",
+    "app_program/mission/recovery_control.c": "0acbc0df061f52169776bd5c20e2c946ee971bbb86ec20e30d873b7205efa89e",
+    "app_program/mission/recovery_control.h": "81a39285bff5d988b59e2b6ff6c8c437f98f81b611177c9a5fcb9cf48ea8ff8f",
+    "app_program/mission/bypass_control.c": "1c3973751a407ff9656985fde901e1112d618b43ffbecafb87e9d6fc654faf04",
+    "app_program/subsystem2/motion_control.c": "800f82014eefb17eb79fefbbe600a82e6e611e59ff59814b42c40f8b31a26944",
+    "app_program/subsystem2/drv_encoder.c": "ac44d6cde2201a4627867ac21e222d6812579e7e15ee292a1592fadda80e56b0",
+    "app_program/subsystem2/subsystem2.c": "2765b6d25d79288ab034c16516f6bc1d55ab3a1ed2f15859a803f19b6d6bae3a",
+    "app_program/subsystem2/encoder_math.h": "e94743f62d3ceff0438e112f17dbf54a69e2cf26d37af7015cd99f91195c9b7d",
+    "app_program/common/robot_config.h": "f557dad46284f98080e2a14008cb9aaea53b465f2904ed51dbd444fbef76aae1",
+    "testing/integration/logs/2026-10-31_INT-56/repro.c": "513fefdd96d55cb01a95fdc6c7452d52e49b008267c491bdd4e2c84cdb0c36e4"
+  },
+  "command": "cc -std=c11 -O2 -Wall -Wextra -Werror -I. testing/integration/logs/2026-10-31_INT-56/repro.c app_program/mission/mission_logic.c app_program/mission/recovery_control.c app_program/mission/bypass_control.c app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o /private/tmp/robot-int56-repro && /private/tmp/robot-int56-repro",
+  "exit_code": 0,
+  "result": "Reproduced straight blind confirmation and clearance reactivation on scripted inputs; no physical diagnosis"
+}

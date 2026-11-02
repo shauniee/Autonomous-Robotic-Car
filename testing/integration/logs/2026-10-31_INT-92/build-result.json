@@ -1,0 +1,15 @@
+{
+  "base_head": "86ce2d8301754ce8df2efc6690faf539efacc544",
+  "profile": "SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0",
+  "uf2": "build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2",
+  "sha256": "14420b5f020fe0b5a55ddb6c60c09e1aa54d339dd98fb63ff947b5b48d84cd23",
+  "follow_steer_qps": 800,
+  "follow_inner_cut": 1.0,
+  "tracking_speed_mmps": 90,
+  "settled_full_curve_targets_mmps": [
+    0,
+    89.6
+  ],
+  "flashed": false,
+  "physical_tested": false
+}

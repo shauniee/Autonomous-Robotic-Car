@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "../subsystem2/motion_control.h"
-#include "../subsystem5/obstacle_profile.h"
+#include "../motion/motion.h"
+#include "../obstacle/obstacle.h"
 
 typedef enum
 {
@@ -39,6 +39,7 @@ typedef struct
     uint8_t edge_streak : 3;
     uint8_t attempts : 2;
     uint8_t visible_streak : 3;
+    uint8_t line_seen : 1; /* a sensor has been black since the line phase began */
 } bypass_control_t;
 typedef struct
 {
@@ -48,7 +49,7 @@ typedef struct
     uint32_t side_ms, side_sequence, side_mm;
     bool front_valid, side_valid;
     uint32_t line_ms;
-    bool line_functional, line_visible;
+    bool line_functional, line_visible, line_black; /* black: a sensor sees the line now */
     int8_t line_error_q, line_steering_q;
     rd_motion_status_t motion_status;
     uint8_t motion_action;

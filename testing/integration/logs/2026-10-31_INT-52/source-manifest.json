@@ -1,0 +1,13 @@
+{
+  "base_commit": "fc9fa5d1af192433854d0440071e2954e32ee7d4",
+  "sha256": {
+    "app_program/mission/mission_logic.c": "a95de13ab464e453363b6a0ce5d12feb3bff37b61ba717204d85ea2d00417db8",
+    "app_program/mission/recovery_control.c": "a0b685cf088fc7a377f506b7792c117eeaf2ad98faf7581867c195bc689d7544",
+    "app_program/mission/bypass_control.c": "1c3973751a407ff9656985fde901e1112d618b43ffbecafb87e9d6fc654faf04",
+    "app_program/subsystem2/motion_control.c": "f4ae2fb0ca896a78382d59bd12a815f3241db52c0b3e4310b6494e1b827ca58e",
+    "app_program/subsystem2/subsystem2.c": "2765b6d25d79288ab034c16516f6bc1d55ab3a1ed2f15859a803f19b6d6bae3a",
+    "app_program/common/robot_data.c": "524eb33352bea9d6a447ec17323af6b51003767e1db5376b2e438df3991be1de",
+    "app_program/common/robot_config.h": "edadc8f0917e0fc82e7c8b1210c4bb164d0465e139a861682943f34cfdfb3cad",
+    "testing/integration/logs/2026-10-31_INT-52/repro.c": "8e47c68a6416df2b3bfe7f2e57d7dbeefce3a36a6090e4ef2bf42ee629662c14"
+  }
+}

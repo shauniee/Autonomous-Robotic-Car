@@ -1,0 +1,12 @@
+{
+  "base_commit": "8981d04620d5537e4f5b68980528b452b752abb1",
+  "sha256": {
+    "app_program/mission/mission_logic.c": "02d8978aa68f553e98164a6075936ef35b04ed3ce7324e1b8a5cc4b72eee6132",
+    "app_program/subsystem2/motion_control.c": "800f82014eefb17eb79fefbbe600a82e6e611e59ff59814b42c40f8b31a26944",
+    "app_program/subsystem2/motion_control.h": "79bcc29c7089a24b4a4e4fb65e2df4a44d921a26530d461a63d165075cfd1e3f",
+    "app_program/common/robot_config.h": "4d21daaec59e90908c08f89440e80cc4ba8c97510bdad0b301e49655da20807e",
+    "testing/pure/test_motion_control.c": "9680aeb428c006806b44c7386069cd5b62e21fdab35ca2c3de29a1149954e27c",
+    "testing/integration/logs/2026-10-31_INT-60/transition.c": "ddc5dd299c8b37efd418ffd5ba220255d0f2400976964cbc1e1ebf39287c091b",
+    "testing/integration/logs/2026-10-31_INT-60/case.json": "4d04006aaeba37693d20a900386845750f0379f9695824e5b18fedc38750c4d8"
+  }
+}

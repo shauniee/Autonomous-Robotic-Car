@@ -1,0 +1,11 @@
+{
+  "id": "INT-58",
+  "date": "2026-10-31",
+  "procedure": [
+    "Add a regression that reaches a sweep endpoint, brakes, coasts ten degrees past the target, then waits for stationarity and reverses. Run against original recovery source and preserve failure.",
+    "Separate the endpoint tolerance from the hard overshoot guard; widen the proposed sweep and raise proposed pivot speed.",
+    "Verify all four sweep legs, STOP/IDLE handoff, fresh action IDs, stationary reversal, visibility confirmation and bounded failure in the pure suite. Build normal wireless firmware if Docker is available."
+  ],
+  "expected": "Three reversals continue the four-leg sweep within the overshoot budget; motion remains stopped until stationary; excessive overshoot/time/hazard/invalid sensing still fail.",
+  "profile": "Host synthetic encoders/IR; no physical acceptance; proposed tuning only"
+}

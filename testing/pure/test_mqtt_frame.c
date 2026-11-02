@@ -1,10 +1,10 @@
-/* Host test for app_program/subsystem1/mqtt_frame.[ch] (issue #39). The byte
+/* Host test for app_program/comms/mqtt_frame.[ch] (issue #39). The byte
    vectors below are the schema v2 golden vectors in docs/architecture.md;
    scripts/mqtt_client.py --self-test decodes the same bytes. */
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../app_program/subsystem1/mqtt_frame.h"
+#include "../../app_program/comms/comms.h"
 
 static const uint8_t golden_telemetry[MQTT_LEN_TELEMETRY] = {
     0x21, 0x2A, 0x72, 0x45, 0x01, 0x02, 0x04, 0x08, 0x01, 0x03, 0x34, 0x12, 0x78, 0x56,
@@ -102,8 +102,8 @@ static void test_boundaries_and_rejections(void)
     buf[0] = 0x25; assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_LENGTH);	/* ack type, telemetry length */
     memcpy(buf, golden_telemetry, MQTT_LEN_TELEMETRY); buf[3] |= 0x80;
     assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_RESERVED);
-    memcpy(buf, golden_telemetry, MQTT_LEN_TELEMETRY); buf[17] |= 0x40;
-    assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_RESERVED);
+    memcpy(buf, golden_telemetry, MQTT_LEN_TELEMETRY); buf[17] |= 0xC0;
+    assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_RANGE);
     memcpy(buf, golden_telemetry, MQTT_LEN_TELEMETRY); buf[18] = 0x1A;		/* letter 26 */
     assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_RANGE);
 
@@ -159,6 +159,38 @@ static void test_fault_bytes(void)
     puts("S1-U13: PASS (six fault bytes, all 48 walking bits)");
 }
 
+/* Calibration must survive telemetry/snapshot transport without a hump result. */
+static void test_imu_calibration(void)
+{
+    for (unsigned status = MQTT_IMU_UNKNOWN; status <= MQTT_IMU_CALIBRATED; ++status)
+    {
+        mqtt_telemetry_t t = sample(), back;
+        mqtt_type_t type;
+        uint8_t frame[MQTT_LEN_TELEMETRY];
+        t.imu_calibration = (uint8_t)status;
+        t.hump_count = 0u;
+        t.hump_valid = false;
+        t.front_mm = 0u;
+        for (unsigned reply = 0u; reply <= 1u; ++reply)
+        {
+            mqtt_type_t expected = reply ? MQTT_TYPE_SNAPSHOT_REPLY : MQTT_TYPE_TELEMETRY;
+            assert(mqtt_encode_telemetry(frame, sizeof frame, expected, &t) == sizeof frame);
+            assert((frame[17] >> 6) == status);
+            assert(mqtt_decode_telemetry(frame, sizeof frame, &type, &back) == MQTT_DECODE_OK);
+            assert(type == expected && back.imu_calibration == status);
+            assert(back.front_valid && back.front_mm == 0u && !back.hump_valid);
+            frame[16] = 0xFFu;
+            frame[17] |= 0x3Fu; /* Invalid front range, regardless of calibration. */
+            assert(mqtt_decode_telemetry(frame, sizeof frame, &type, &back) == MQTT_DECODE_RANGE);
+        }
+    }
+    mqtt_telemetry_t invalid = sample();
+    uint8_t frame[MQTT_LEN_TELEMETRY];
+    invalid.imu_calibration = 3u;
+    assert(mqtt_encode_telemetry(frame, sizeof frame, MQTT_TYPE_TELEMETRY, &invalid) == 0u);
+    puts("IMU calibration: PASS (unknown/not calibrated/calibrated, both frame types, independent range/hump validity)");
+}
+
 int main(void)
 {
     uint8_t sequence, action;
@@ -177,6 +209,7 @@ int main(void)
     assert(mqtt_decode_junction_test(direction, 3u, &sequence, &action) == MQTT_DECODE_RESERVED);
     assert(mqtt_decode_junction_test(direction, 2u, &sequence, &action) == MQTT_DECODE_LENGTH);
     test_golden();
+    test_imu_calibration();
     test_fault_bytes();
     test_boundaries_and_rejections();
     printf("mqtt_frame: PASS (telemetry %u bytes)\n", MQTT_LEN_TELEMETRY);

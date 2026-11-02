@@ -1,0 +1,23 @@
+{
+  "id": "INT-57",
+  "date": "2026-10-31",
+  "kind": "host audit of current working tree; no hardware",
+  "scope": "IR classification, loss qualification, standalone sweep/brake/confirmation, return to tracking, Mission/Motion feedback, adjacent outgoing-line confirmation",
+  "procedure": [
+    "Run existing pure suite.",
+    "Feed a synthetic 80-degree pivot with off-center visible IR through Mission and actual Motion; confirm stationary samples, inspect first FOLLOW and subsequent loss.",
+    "Build a positive PID integral, supply fresh white/white for less than the recovery threshold, then opposite visible error; inspect retained history and steering.",
+    "Hash exact source inputs and append audit observations."
+  ],
+  "expected": [
+    "Existing tests pass or failures are preserved.",
+    "Record whether visibility alone resumes full-speed tracking at wide heading; command assertions establish software behavior only.",
+    "Record whether a gap clears PID history and whether first correction follows current error.",
+    "No physical acceptance, firmware edits, build or flash."
+  ],
+  "profiles": [
+    "default PID",
+    "binary direction ramp"
+  ],
+  "wiring_power_calibration": "None; synthetic IR, encoder counts and stationarity. Kernel task scheduling and physical sensor geometry are not simulated."
+}

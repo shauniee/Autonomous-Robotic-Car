@@ -1,6 +1,6 @@
 """Laptop side of the robot's binary MQTT protocol (schema v2). Python 3.10+.
 
-  monitor          print telemetry, events and acknowledgements as readable text
+  monitor          print telemetry, events, acknowledgements and timestamped WHEEL/LINE JSON
   map L R S U      send the four mission-day letters (left, right, straight, U-turn)
   snapshot         request one telemetry snapshot
   serve            live web dashboard at http://127.0.0.1:8080 (scripts/dashboard.html);
@@ -9,7 +9,10 @@
 
 Frame layouts: docs/architecture.md (MQTT binary protocol). Speed and
 direction are derived here from encoder counts between telemetry frames, so
-the robot does not spend bits on them.
+normal telemetry stays compact. Separate WHEEL traces report Motion-release targets,
+measured speeds and serviced duty for PID diagnosis; LINE traces report each IR
+acquisition Mission acted on (sensor bits, junction flags, steering, command);
+network gaps are possible.
 """
 import argparse
 import json
@@ -25,7 +28,8 @@ from pathlib import Path
 
 VERSION = 2
 TELEMETRY, EVENT, SNAPSHOT_REPLY, MAPPING, ACK, SNAPSHOT_REQUEST, JUNCTION_TEST = 1, 2, 3, 4, 5, 6, 7
-LENGTHS = {TELEMETRY: 23, EVENT: 11, SNAPSHOT_REPLY: 23, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3}
+WHEEL_TRACE, LINE_TRACE = 8, 9
+LENGTHS = {TELEMETRY: 23, EVENT: 11, SNAPSHOT_REPLY: 23, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3, WHEEL_TRACE: 15, LINE_TRACE: 17}
 
 MISSION = ["READY", "FOLLOW_LINE", "NAVIGATE", "SCAN", "BYPASS", "REACQUIRE", "STOPPED"]
 MOTION = ["IDLE", "RUNNING", "DONE", "FAILED"]
@@ -56,7 +60,7 @@ def config_value(name, default):
     return float(match.group(1)) if match else default
 
 
-COUNTS_PER_MM = config_value("ENC_COUNTS_PER_REV", 360.0) / (3.14159265 * config_value("WHEEL_DIAMETER_MM", 65.0))
+COUNTS_PER_MM = config_value("ENC_COUNTS_PER_MM", 11.649)
 HUMP_MM_PER_CODE = config_value("HUMP_MM_PER_COUNT", 1.0)
 
 
@@ -82,8 +86,11 @@ def decode_telemetry(f):
         raise ValueError("not a telemetry frame")
     left, right = struct.unpack_from("<HH", f, 10)
     (front,) = struct.unpack_from("<H", f, 16)
-    if f[3] & 0x80 or front & 0xC000:
+    if f[3] & 0x80:
         raise ValueError("telemetry reserved bits set")
+    calibration = front >> 14
+    if calibration == 3:
+        raise ValueError("invalid IMU calibration status")
     code = f[18] & 0x1F
     if (code > 25 and code != 31) or f[18] >> 5 > 4:
         raise ValueError("invalid barcode letter/action")
@@ -97,10 +104,52 @@ def decode_telemetry(f):
         "line": LINE[f[2] >> 6], "action_id": f[3] & 0x3F, "mapped": bool(f[3] & 0x40),
         "faults": list(f[4:10]), "left": left, "right": right, "hump_count": f[14],
         "hump_max_mm": (f[15] & 0x7F) * HUMP_MM_PER_CODE if f[15] & 0x80 else None,
+        "imu_calibrated": None if calibration == 0 else calibration == 2,
         "front_mm": front & 0x1FFF if front & 0x2000 else None,
         "barcode": letter(f[18] & 0x1F), "barcode_action": name(ACTION, f[18] >> 5),
         "obstacle_width_mm": width, "obstacle_depth_mm": depth,
     }
+
+
+def decode_wheel_trace(f):
+    if frame_type(f) != WHEEL_TRACE:
+        raise ValueError("not a wheel trace")
+    sampled_ms, targets, vl, vr, dl, dr = struct.unpack_from("<IIhhbb", f, 1)
+    if any(d != -128 and not -100 <= d <= 100 for d in (dl, dr)):
+        raise ValueError("invalid trace duty")
+    output_ok = bool(targets & (1 << 31))
+    if not output_ok and (dl, dr) != (-128, -128):
+        raise ValueError("failed output marked with valid duty")
+    def speed(value, bits):
+        value = value - (1 << bits) if value & (1 << (bits - 1)) else value
+        return None if value == -(1 << (bits - 1)) else round(value / COUNTS_PER_MM, 2)
+    return dict(type="wheel_trace", sampled_ms=sampled_ms,
+                target_left=speed(targets & 0x7FFF, 15),
+                target_right=speed((targets >> 15) & 0x7FFF, 15),
+                measured_left=speed(vl & 0xFFFF, 16), measured_right=speed(vr & 0xFFFF, 16),
+                duty_left=None if dl == -128 else dl, duty_right=None if dr == -128 else dr,
+                inhibited=bool(targets & (1 << 30)), output_ok=output_ok)
+
+
+LINE_FLAGS = ("left_black", "right_black", "in_broad", "junction_open",
+              "junction_qualified", "entry_curved", "junction_locked")
+COMMAND_MODE = ["STOP", "FOLLOW", "DISTANCE", "TURN"]
+
+
+def decode_line_trace(f):
+    if frame_type(f) != LINE_TRACE:
+        raise ValueError("not a line trace")
+    sampled_ms, flags, state, left, right, steer, law, command_steer, command, skew = \
+        struct.unpack_from("<IBBHHbbbHB", f, 1)
+    if flags & 0x80 or state & 0x80 or command >> 11 or (state & 0xF) >= len(MISSION):
+        raise ValueError("invalid line trace")
+    trace = dict(type="line_trace", sampled_ms=sampled_ms,
+                 mission=MISSION[state & 0xF], phase=state >> 4, left=left, right=right,
+                 steer_q=steer, law_q=law, command=COMMAND_MODE[command >> 9],
+                 command_steer_q=command_steer, command_speed=command & 0x1FF,
+                 onset_skew_mm=None if skew == 255 else skew)
+    trace.update({key: bool(flags >> bit & 1) for bit, key in enumerate(LINE_FLAGS)})
+    return trace
 
 
 def decode_event(f):
@@ -170,6 +219,10 @@ class Motion:
 
 def describe(frame, motion):
     kind = frame_type(frame)
+    if kind == WHEEL_TRACE:
+        return "WHEEL " + json.dumps(decode_wheel_trace(frame), separators=(",", ":"))
+    if kind == LINE_TRACE:
+        return "LINE " + json.dumps(decode_line_trace(frame), separators=(",", ":"))
     if kind in (TELEMETRY, SNAPSHOT_REPLY):
         t = decode_telemetry(frame)
         label = "SNAPSHOT" if kind == SNAPSHOT_REPLY else "TELEMETRY"
@@ -190,6 +243,8 @@ def describe(frame, motion):
 def dashboard_message(frame, motion):
     """One decoded frame as a JSON-ready dict for the web dashboard."""
     kind = frame_type(frame)
+    if kind == WHEEL_TRACE:
+        return decode_wheel_trace(frame)
     if kind in (TELEMETRY, SNAPSHOT_REPLY):
         t = decode_telemetry(frame)
         measured = motion.measure(t["left"], t["right"])
@@ -198,6 +253,9 @@ def dashboard_message(frame, motion):
                  direction=measured[2] if measured else None)
         return t
     message = {"type": "event" if kind == EVENT else "ack" if kind == ACK else "other", "text": describe(frame, motion)}
+    if kind == EVENT and frame[1] == 3:
+        message.update(obstacle_depth_mm=struct.unpack_from("<H", frame, 9)[0],
+                       event_id=frame.hex())
     if kind == ACK:
         message.update(sequence=frame[1], result=name(ACK_RESULT, frame[2]), ok=frame[2] == 0)
     return message
@@ -284,7 +342,7 @@ class Dashboard:
                 self.end_headers()
                 self.wfile.write(reply)
 
-        # Docker publishes this unauthenticated server only on host loopback.
+        # Unauthenticated: keep it on host loopback (the --http-host default).
         self.server = ThreadingHTTPServer((host, port), Handler)
         origin = f"http://127.0.0.1:{self.server.server_port}"
         self.server.daemon_threads = True
@@ -321,6 +379,45 @@ def direction_frame(sequence, action):
 
 
 def self_test():
+    # INT-66 measured rolling distance must agree with the firmware scale.
+    assert abs((5833 + 5816) * 0.5 / COUNTS_PER_MM - 500.0) < 0.01
+    golden_trace = bytes.fromhex("28 78 56 34 12 e8 03 0c be e3 03 1d fc 50 b0")
+    trace = decode_wheel_trace(golden_trace)
+    assert trace["sampled_ms"] == 0x12345678 and trace["output_ok"]
+    assert trace["target_left"] == round(1000 / COUNTS_PER_MM, 2)
+    assert trace["target_right"] == -trace["target_left"]
+    assert trace["measured_right"] == round(-995 / COUNTS_PER_MM, 2)
+    assert (trace["duty_left"], trace["duty_right"]) == (80, -80)
+    assert dashboard_message(golden_trace, Motion()) == trace
+    assert describe(golden_trace, Motion()).startswith("WHEEL ")
+    invalid_trace = bytes.fromhex("28 00 00 00 00 00 40 00 60 00 80 00 80 80 80")
+    trace = decode_wheel_trace(invalid_trace)
+    assert trace["inhibited"] and not trace["output_ok"]
+    assert all(trace[k] is None for k in ("target_left", "target_right", "measured_left", "measured_right", "duty_left", "duty_right"))
+    for frame in (golden_trace[:-1], golden_trace[:13] + bytes([101, 0]),
+                  invalid_trace[:13] + bytes([0, 0])):
+        try:
+            decode_wheel_trace(frame)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("accepted malformed wheel trace")
+    golden_line = bytes.fromhex("29 78 56 34 12 13 22 34 12 78 56 e0 fe e0 64 02 0c")
+    line = decode_line_trace(golden_line)
+    assert line["sampled_ms"] == 0x12345678 and line["mission"] == "NAVIGATE" and line["phase"] == 2
+    assert line["left_black"] and line["right_black"] and line["junction_qualified"] and not line["in_broad"]
+    assert (line["left"], line["right"], line["steer_q"], line["law_q"]) == (0x1234, 0x5678, -32, -2)
+    assert line["onset_skew_mm"] == 12
+    assert (line["command"], line["command_steer_q"], line["command_speed"]) == ("FOLLOW", -32, 100)
+    assert describe(golden_line, Motion()).startswith("LINE ")
+    for frame in (golden_line[:-1], golden_line[:5] + bytes([0x80]) + golden_line[6:],
+                  golden_line[:6] + bytes([0x07]) + golden_line[7:], golden_line[:15] + bytes([0x08]) + golden_line[16:]):
+        try:
+            decode_line_trace(frame)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("accepted malformed line trace")
     t = decode_telemetry(GOLDEN_TELEMETRY)
     assert frame_type(GOLDEN_TELEMETRY) == TELEMETRY and t["sequence"] == 0x2A and t["mission"] == "NAVIGATE"
     assert t["motion"] == "FAILED" and t["line"] == "VISIBLE" and t["action_id"] == 5 and t["mapped"]
@@ -332,12 +429,17 @@ def self_test():
     assert direction_frame(7, 4) == bytes([0x27, 7, 4])
     assert mapping_letters("abcd") == "ABCD" and mapping_letters(["W", "F", "a", "Z"]) == "WFAZ"
     assert not any(mapping_letters(bad) for bad in ("ABCA", "ABC", "ABCDE", "AB1D", "ABÇD", ""))
+    obstacle = bytes([0x22, 3, 0]) + struct.pack("<HHHH", 10, 20, 30, 40)
+    event = dashboard_message(obstacle, Motion())
+    assert event["type"] == "event" and event["obstacle_depth_mm"] == 40
+    assert event["event_id"] == obstacle.hex() and "OBSTACLE" in event["text"]
+    assert "obstacle_depth_mm" not in dashboard_message(GOLDEN_EVENT, Motion())
     ack = dashboard_message(bytes([0x25, 0x07, 0x01]), Motion())
     assert ack["type"] == "ack" and ack["sequence"] == 7 and not ack["ok"] and ack["result"].startswith("BUSY")
     assert [len(bits) for _, bits in FAULTS] == header_fault_widths(), "FAULTS disagrees with robot_data.h"
     bad_telemetry = []
     for index, value in ((3, GOLDEN_TELEMETRY[3] | 0x80),
-                         (17, GOLDEN_TELEMETRY[17] | 0x40),
+                         (17, GOLDEN_TELEMETRY[17] | 0xC0),
                          (18, 26), (18, 5 << 5), (15, 0xFF)):
         frame = bytearray(GOLDEN_TELEMETRY)
         frame[index] = value
@@ -361,6 +463,23 @@ def self_test():
     assert decode_telemetry(frame)["front_mm"] == 0
     frame[16:18] = (0x1FFF).to_bytes(2, "little")
     assert decode_telemetry(frame)["front_mm"] is None
+    assert decode_telemetry(GOLDEN_TELEMETRY)["imu_calibrated"] is None
+    for kind in (TELEMETRY, SNAPSHOT_REPLY):
+        for status, expected in ((0, None), (1, False), (2, True)):
+            frame = bytearray(GOLDEN_TELEMETRY)
+            frame[0] = VERSION << 4 | kind
+            frame[14:16] = bytes([0, 0x7F])  # No completed hump.
+            frame[16:18] = (status << 14 | 0x2000).to_bytes(2, "little")
+            decoded = decode_telemetry(frame)
+            assert decoded["imu_calibrated"] is expected
+            assert decoded["hump_max_mm"] is None and decoded["front_mm"] == 0
+            frame[16:18] = (status << 14 | 0x3FFF).to_bytes(2, "little")
+            try:
+                decode_telemetry(frame)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("calibration hid invalid front range")
     print("mqtt_client self-test: PASS")
     return 0
 
@@ -373,7 +492,7 @@ def main():
     parser.add_argument("--port", type=int, default=1883)
     parser.add_argument("--root", default="robot/s3", help="topic root (firmware: <root>/telemetry, /request, /status)")
     parser.add_argument("--http-port", type=int, default=8080, help="serve: dashboard port")
-    parser.add_argument("--http-host", default="127.0.0.1", help="serve: bind address (Docker uses 0.0.0.0)")
+    parser.add_argument("--http-host", default="127.0.0.1", help="serve: bind address")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
@@ -412,7 +531,9 @@ def main():
             return
         if dashboard:
             try:
-                dashboard.push(dashboard_message(bytes(message.payload), motion))
+                frame = bytes(message.payload)
+                if frame_type(frame) != LINE_TRACE:	# monitor captures only; no dashboard view
+                    dashboard.push(dashboard_message(frame, motion))
             except ValueError as error:
                 dashboard.push({"type": "other", "text": f"undecodable frame ({error})"})
             return

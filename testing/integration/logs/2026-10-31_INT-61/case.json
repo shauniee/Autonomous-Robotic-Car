@@ -1,0 +1,12 @@
+{
+  "id": "INT-61",
+  "date": "2026-10-31",
+  "request": "No queued turn: drive straight at normal line-follow speed for 25 mm, then resume tracking without visible-sample confirmation.",
+  "procedure": [
+    "Exercise unmapped and queued-straight junction exits: full-speed zero-steer FOLLOW immediately, held until encoder travel reaches 25 mm.",
+    "Verify multiple visible acquisitions do not end travel early; LOST does not prevent completion; check count wrap, asymmetric/reverse travel, stop, hazard, invalid/stale IR and timeout.",
+    "Keep queued left/right/U-turn and their existing clearance/confirmation tests. Run full pure suite and normal wireless build."
+  ],
+  "expected": "No incidental STOP at entry/exit; no position-action deceleration; original sample freshness and stop/obstacle/timeout guards remain. Existing hump slowdown applies as in ordinary following.",
+  "limits": "Host encoder threshold and build are software evidence, not measured 25 mm accuracy or physical jitter resolution."
+}
