@@ -32,6 +32,16 @@ typedef int ER;
 #define IO_PERIOD_MS 10u /* existing calibration cadence; D13 */
 
 /* --- S1 communications --------------------------------------------- */
+/* Diagnostic trace frames 9/10/11 are not required for ordinary telemetry.
+ * TRACE=0 removes their high-rate production and draining for A/B line
+ * tracking trials; TRACE=1 preserves the existing diagnostic behavior.
+ * Both profiles retain telemetry, events, mapping ACKs and safety.
+ */
+#ifndef ROBOT_TRACE_ENABLED
+#define ROBOT_TRACE_ENABLED 1
+#endif
+_Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
+    "ROBOT_TRACE_ENABLED must be boolean");
 #define COMMS_TELEMETRY_PERIOD_MS	500u
 #define COMMS_REPORT_PERIOD_MS	50u	/* Reporting release: requests and events are served at this rate */
 #define COMMS_EVENT_CAPACITY	16u	/* event-log ring; oldest overwritten, drops counted */
