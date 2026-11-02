@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "../../app_program/mission/safety_logic.h"
-#include "../../app_program/subsystem2/motion_stop.h"
+#include "../../app_program/motion/motion_control.h"
 
 static SafetyInputs healthy(void)
 {

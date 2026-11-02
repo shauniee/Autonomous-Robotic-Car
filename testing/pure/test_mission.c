@@ -445,10 +445,10 @@ static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t,
     out = bstep(m, in, t);
     assert(out.scan_request && m->scan_phase == 1u);
     in->scan_id = out.scan_id;
-    in->scan_state = S5_SCAN_DONE;
+    in->scan_state = OBSTACLE_SCAN_DONE;
     in->profile_valid = true;
     in->profile_closest_mm = 300u;
-    in->profile_planning_mm = S5_EXPECTED_MAX_WIDTH_MM;
+    in->profile_planning_mm = OBSTACLE_EXPECTED_MAX_WIDTH_MM;
     in->profile_forward_mm = 150;
     in->left_clearance_mm = left_mm;
     in->right_clearance_mm = right_mm;
@@ -581,7 +581,7 @@ static void test_bypass_failures(void)
     in.scan_id = (uint8_t)(m.scan_id + 1u);
     out = bstep(&m, &in, &t);
     assert(m.state == MISSION_SCAN && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
-    in.scan_state = S5_SCAN_FAILED;
+    in.scan_state = OBSTACLE_SCAN_FAILED;
     for (unsigned i = 0u; i <= MISSION_SCAN_RETRIES; ++i)
     {
         in.scan_id = m.scan_id;

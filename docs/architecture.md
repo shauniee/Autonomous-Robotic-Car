@@ -19,11 +19,11 @@
 - [Motion command contract](#motion-command-contract)
 - [Encoder contract](#encoder-contract)
 - [Subsystem summaries](#subsystem-summaries)
-  - [S1 Communications (subsystem1)](#s1-communications-subsystem1)
-  - [S2 Motion (subsystem2)](#s2-motion-subsystem2)
-  - [S3 Line, barcode and Mission (subsystem3)](#s3-line-barcode-and-mission-subsystem3)
-  - [S4 Terrain (subsystem4)](#s4-terrain-subsystem4)
-  - [S5 Obstacle and bypass (subsystem5, with Mission)](#s5-obstacle-and-bypass-subsystem5-with-mission)
+  - [S1 Communications (comms)](#s1-communications-comms)
+  - [S2 Motion (motion)](#s2-motion-motion)
+  - [S3 Line, barcode and Mission (line_barcode)](#s3-line-barcode-and-mission-line_barcode)
+  - [S4 Terrain (terrain)](#s4-terrain-terrain)
+  - [S5 Obstacle and bypass (obstacle, with Mission)](#s5-obstacle-and-bypass-obstacle-with-mission)
 - [Time](#time)
 - [Post-Tribunal decisions](#post-tribunal-decisions)
 - [MQTT binary protocol, schema version 2](#mqtt-binary-protocol-schema-version-2)
@@ -214,7 +214,7 @@ budget brakes/stops. Exact rescan/reverse policy awaits D02/D05/D07.
 
 Target: `app_program/mission/` holds coordinator and small policy helpers;
 `app_program/common/` holds startup/shared contracts and I/O orchestration as
-appropriate. Keep `subsystem1/` through `subsystem5/` for their reusable modules.
+appropriate. Keep `comms/` through `obstacle/` for their reusable modules.
 No separate Safety task. Move files/build/includes only with tested implementation
 stages in [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#remaining-plan). `mqtt_utk.c` stays in the kernel
 library and only WiFi service context calls MQTT/lwIP.
@@ -262,7 +262,7 @@ Six existing owner bytes and positions remain wire-compatible. Owner denotes a
 module, not necessarily a separate task. Target writers: Motion byte by Motion;
 Line/Obstacle/Mission bytes by Mission; Terrain by I/O; Network by WiFi service.
 This table owns target policy. `robot_data.c` now leaves IMU/calibration failure report-only. Mission checks
-`s1_bridge_ready()` for local start; network loss does not stop an accepted run.
+`comms_bridge_ready()` for local start; network loss does not stop an accepted run.
 
 | Condition / detector | Start response | During run | Clear/reset |
 | --- | --- | --- | --- |
@@ -380,29 +380,29 @@ follow-up if evidence shows the existing capture is inadequate.
 
 ## Subsystem summaries
 
-### S1 Communications (subsystem1)
+### S1 Communications (comms)
 
-[Guide](architecture/subsystem1.md): bounded core-0 reporting functions; opaque
+[Guide](architecture/comms.md): bounded core-0 reporting functions; opaque
 TX/RX bridge to kernel MQTT; mapping ACK only after Mission installation.
 
-### S2 Motion (subsystem2)
+### S2 Motion (motion)
 
-[Guide](architecture/subsystem2.md): sole motor writer; wheel control, encoder
+[Guide](architecture/motion.md): sole motor writer; wheel control, encoder
 actions and independent stop/expiry checks.
 
-### S3 Line, barcode and Mission (subsystem3)
+### S3 Line, barcode and Mission (line_barcode)
 
-[Guide](architecture/subsystem3.md): S3 retains line/barcode sensing/decoding;
+[Guide](architecture/line_barcode.md): S3 retains line/barcode sensing/decoding;
 Mission coordination moves out. No independent S3 control thread in the target.
 
-### S4 Terrain (subsystem4)
+### S4 Terrain (terrain)
 
-[Guide](architecture/subsystem4.md): core-0 bounded IMU/terrain functions; measured
+[Guide](architecture/terrain.md): core-0 bounded IMU/terrain functions; measured
 encoder travel, filtered pitch, valid completed hump results and impact evidence.
 
-### S5 Obstacle and bypass (subsystem5, with Mission)
+### S5 Obstacle and bypass (obstacle, with Mission)
 
-[Guide](architecture/subsystem5.md): bounded sonar/servo acquisition and uncertain
+[Guide](architecture/obstacle.md): bounded sonar/servo acquisition and uncertain
 width/clearance estimates; Mission owns supported bypass/original-line recovery.
 
 ## Time
@@ -421,7 +421,7 @@ New target decisions are owned above, not an alternative historical architecture
 
 ## MQTT binary protocol, schema version 2
 
-Implemented by `app_program/subsystem1/mqtt_frame.[ch]`, tested by `testing/pure/test_mqtt_frame.c`; the laptop decoder `scripts/mqtt_client.py` checks the same golden vectors (`--self-test`). Field widths follow the data table in [project-specs](project-specs.md); rows pending there carry provisional widths here and change only through the data-contract review (#28). Version 2 added line status, the mapped flag, the Mission fault byte and obstacle width/depth; a version 1 frame is rejected.
+Implemented by `app_program/comms/mqtt_frame.[ch]`, tested by `testing/pure/test_mqtt_frame.c`; the laptop decoder `scripts/mqtt_client.py` checks the same golden vectors (`--self-test`). Field widths follow the data table in [project-specs](project-specs.md); rows pending there carry provisional widths here and change only through the data-contract review (#28). Version 2 added line status, the mapped flag, the Mission fault byte and obstacle width/depth; a version 1 frame is rejected.
 
 Topics (root `robot/s3`, set in `config/wifi_secrets.h`): `<root>/telemetry` carries every robot-to-PC frame, `<root>/request` carries mapping and snapshot requests, `<root>/status` is the retained online/offline text.
 
@@ -534,14 +534,14 @@ calibration bits. Older firmware remains readable with calibration unknown.
 remain unchanged. Byte 1 already reserves four bits for kind. `arg2` cannot be
 reduced to three bits: barcode actions are small, but obstacle depth needs its
 full 16-bit range (0-65535 mm). The Reporting ring uses 16 entries of
-`s1_packed_event_t` (10 bytes each): kind uses three bits and arg seven bits
+`comms_packed_event_t` (10 bytes each): kind uses three bits and arg seven bits
 in a shared 16-bit field; time, encoder positions and arg2 stay 16-bit.
 Invalid kinds and arguments above 127 are rejected rather than truncated.
 Ring head (0-15) and count (0-16) share a 16-bit packed word, with
 32-bit saturating `dropped`. Accessors isolate the bit operations; the
 existing same-core interrupt-masked push/pop boundaries remain in the current implementation. During I/O consolidation, audit producer/consumer placement: local interrupt masking does not protect a cross-core ring.
 Expected target ring storage is 168 bytes, including padding; confirm with
-`testing/subsystem3/sizeof_probe.sh testing/subsystem1/sizeof_probe.c`.
+`testing/line_barcode/sizeof_probe.sh testing/comms/sizeof_probe.c`.
 This is a RAM layout change only: `mqtt_encode_event`, the laptop decoder
 and schema-v2 golden vectors remain compatible.
 
@@ -567,7 +567,7 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 
 | Message | Baseline on `main` (JSON) | Binary |
 | --- | --- | --- |
-| Telemetry | up to 768 bytes (`S1_TELEMETRY_PAYLOAD_MAX`) | 23 bytes |
+| Telemetry | up to 768 bytes (`COMMS_TELEMETRY_PAYLOAD_MAX`) | 23 bytes |
 | Mapping | up to 512 bytes on `uat` | 5 bytes |
 
 Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Final message-size and RAM evidence: [SYS-11](../testing/system/TEST_LOG.md#3-final-memory-and-message-size-sys-11).

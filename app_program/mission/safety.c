@@ -1,6 +1,6 @@
 #include "safety.h"
-#include "../subsystem3/subsystem3.h"
-#include "../subsystem2/subsystem2.h"
+#include "../line_barcode/line_barcode.h"
+#include "../motion/motion.h"
 #include "../common/buttons.h"
 #include "../common/robot_time.h"
 
@@ -26,10 +26,10 @@ void safety_step(bool line_required)
         initialized = true;
     }
     ButtonEvent event = button_update(&reset_button, buttons.gp21_down, now);
-    S3IrSnapshot snapshot = {0};
+    LineIrSnapshot snapshot = {0};
     MotionHealth health = {0};
-    bool line_copied = s3_ir_copy(&snapshot);
-    bool health_read = s2_health(&health) >= E_OK;
+    bool line_copied = line_ir_copy(&snapshot);
+    bool health_read = motion_health(&health) >= E_OK;
     SafetyInputs in = {
         .stop_button = buttons.gp21_down,
         .line_required = line_required,
@@ -50,7 +50,7 @@ void safety_step(bool line_required)
         uint8_t terrain_faults = rd_fault_get(RD_OWNER_TERRAIN);
         if (held == 0u)
         {
-            (void)s2_stop();
+            (void)motion_stop();
         }
         rd_word_publish(&latched, held | causes);
         if ((causes & ~held) != 0u)
@@ -70,7 +70,7 @@ void safety_step(bool line_required)
     if (safety_reset_step(&reset_state, event, causes,
             health_read && motion_health_brake_acknowledged(&health)))
     {
-        if (s2_reset_stop() >= E_OK)
+        if (motion_reset_stop() >= E_OK)
         {
             rd_word_publish(&latched, 0u);
             reset_state = SAFETY_RESET_PRESS;

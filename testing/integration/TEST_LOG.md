@@ -2,6 +2,7 @@
 
 ## Contents
 
+- [Subsystem rename and file merge — INT-130](#subsystem-rename-and-file-merge--int-130)
 - [100 mm/s course speed guardrail — INT-129](#100-mms-course-speed-guardrail--int-129)
 - [Pivot junction turns — INT-128](#pivot-junction-turns--int-128)
 - [Line loss and reacquisition evidence — INT-127](#line-loss-and-reacquisition-evidence--int-127)
@@ -3187,3 +3188,49 @@ warnings; UF2 sha256 `920c1881547bdf7d…`. Not covered: the run-time stop branc
 itself (no path reaches it, so no test triggers it), and whether the motors hold
 200 mm/s on the outer wheel and track 100 mm/s pivots without overshooting the line,
 which only a physical run shows.
+
+## Subsystem rename and file merge — INT-130
+
+2026-11-02, Claude with Nicholas. Host and build only: base `1161a5c`, branch
+`chore/rename-subsystems`, the commit that adds this entry (`app_program` tree
+`dd3fccf4811572612849f8d959f844fea66c8f19`). No flash, no physical run.
+
+**Change (user decision, owners agreed):** structural refactor with no intended
+behaviour change. The five numbered folders become `comms`, `motion`,
+`line_barcode`, `terrain` and `obstacle`, in `app_program/`, `testing/` and
+`docs/architecture/`; each subsystem now has one file per job plus a task file.
+Public `s1_`..`s5_` prefixes become subsystem names. MQTT wire values, `RD_OWNER_*`
+values and test IDs are unchanged. The on-target self-test summary label changes
+from the numbered name to the new name, for example `[TEST] comms SUMMARY`.
+`comms_bridge.h` stays separate from `report.h` so the transport still sees no
+frame layout. `testing/pure/run.sh` passes `-DHOST_TEST`, which hides the kernel
+and driver parts of `line.c`, `barcode.c`, `motion.c` and `motion.h`. Past logs
+keep their old paths inside their text.
+
+**Defined before the run:** host suite passes; normal and TEST wireless images
+build; no warning from project code; every RAM object keeps its base size; only
+historical text still names the numbered folders.
+
+**Result:** [host suite](logs/2026-11-02_INT-130/host.txt) PASS.
+[Normal wireless build](logs/2026-11-02_INT-130/firmware-normal.txt) and
+[TEST wireless build](logs/2026-11-02_INT-130/firmware-test.txt) PASS from a clean
+tree; both offline profiles also build. Each wireless log has one warning, from
+the SDK's `lwip/src/apps/mqtt/mqtt.c` (`mqtt_msg_type_to_str`); the base commit
+gives the same warning on a clean build, and project code gives none. Normal UF2
+sha256 `45695d21cc91979000145f37cd9cbe0c9a65ff0e864f300dcd17c031a928f636`, built
+with the placeholder `config/wifi_secrets.example.h`, so it will not join a real
+network and a build with real credentials hashes differently.
+
+Compared with a clean base build from the same placeholder secrets: text 386216 to
+386084, data 396 unchanged, bss 84388 to 84384. Mapping old symbol names to new, no
+object or function symbol changes size except in the merged barcode and motion
+code, where functions now share a file and the compiler inlines more: `motion_task`
+1344 to 1436 bytes, `barcode_service` 412 to 540, `barcode_decode` 824 to 684. A
+scan of the merged files found no macro from one former file used in another. The
+sizeof probes report the same sizes as the base.
+
+**Not covered:** the machine code differs from the base, so this does not prove
+identical timing, and no firmware or physical run was done. The integration sizeof
+probe fails its `obstacle_range_sample_t == 16` assertion, as it did on the base
+under the old name. `testing/check_plan_completion.py` reports stale evidence, as
+it did on the base.

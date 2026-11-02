@@ -120,7 +120,7 @@ static int expected_heading(const bypass_control_t *control)
 static float front_usable_mm(const bypass_input_t *input)
 {
     return input->front_mm - fmaxf(0.0f,
-        BYPASS_BODY_LENGTH_MM * 0.5f - S5_SONAR_FORWARD_MM) -
+        BYPASS_BODY_LENGTH_MM * 0.5f - OBSTACLE_SONAR_FORWARD_MM) -
         BYPASS_CLEARANCE_MM - BYPASS_FRONT_RESERVE_MM;
 }
 
@@ -143,7 +143,7 @@ bool bypass_control_begin(bypass_control_t *control, const bypass_input_t *input
 {
     if (control == NULL || input == NULL || profile == NULL || action_id == NULL ||
         !input->stationary || !input->functional || !profile->valid ||
-        planning_width_mm < S5_EXPECTED_MAX_WIDTH_MM ||
+        planning_width_mm < OBSTACLE_EXPECTED_MAX_WIDTH_MM ||
         profile->closest_mm <= hypotf(BYPASS_BODY_LENGTH_MM * 0.5f,
             BYPASS_BODY_WIDTH_MM * 0.5f) + BYPASS_CLEARANCE_MM)
     {
@@ -230,7 +230,7 @@ static void side_observation(bypass_control_t *control, const bypass_input_t *in
         if (control->edge_streak >= BYPASS_EDGE_SAMPLES && control->route != BYPASS_ROUTE_REAR)
         {
             float rear = (float)control->edge_forward_q8 / BYPASS_Q8 +
-                S5_SONAR_FORWARD_MM + control->baseline_mm *
+                OBSTACLE_SONAR_FORWARD_MM + control->baseline_mm *
                 cosf(SERVO_MAX_DEG * 0.0174532925f);
             float clear = rear + hypotf(BYPASS_BODY_LENGTH_MM * 0.5f,
                 BYPASS_BODY_WIDTH_MM * 0.5f) + BYPASS_CLEARANCE_MM;
@@ -282,7 +282,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
     {
         bool swept_hazard = input->front_valid &&
             robot_time_elapsed(input->now_ms, input->front_ms) <= BYPASS_FRONT_MAX_AGE_MS &&
-            input->front_mm + S5_SONAR_FORWARD_MM <=
+            input->front_mm + OBSTACLE_SONAR_FORWARD_MM <=
                 hypotf(BYPASS_BODY_LENGTH_MM * 0.5f, BYPASS_BODY_WIDTH_MM * 0.5f) + BYPASS_CLEARANCE_MM;
         if (swept_hazard || robot_time_elapsed(input->now_ms, control->action_ms) >= MOTION_ACTION_TIMEOUT_MS ||
             (input->motion_action == control->action_id && input->motion_status == RD_MOTION_FAILED))

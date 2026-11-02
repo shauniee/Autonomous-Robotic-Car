@@ -23,7 +23,7 @@ typedef struct
 /* The snapshot-to-input mapping mission.c uses for the line fields. */
 static void read_line(Rig *r)
 {
-    S3IrSnapshot s = ir_snapshot_build(&r->ir, r->sequence, r->now);
+    LineIrSnapshot s = ir_snapshot_build(&r->ir, r->sequence, r->now);
     r->in.now_ms = r->now;
     r->in.guidance_valid = s.guidance_valid;
     r->in.usable_line = s.normalized_valid;

@@ -25,7 +25,7 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 | Requirements, minimum-bit change requirement, data table, pending decisions | [project-specs](docs/project-specs.md) |
 | Tasks, authority, shared data, fault policy, MQTT frame layouts | [architecture](docs/architecture.md) |
 | Members, pins, wiring, task budget, interfaces, coding rules | [team](docs/team.md) |
-| One subsystem in depth: S1 comms, S2 motion, S3 line/barcode/Mission, S4 terrain, S5 obstacle | `docs/architecture/subsystem1.md` .. `subsystem5.md`; code in `app_program/subsystemN/` |
+| One subsystem in depth: S1 comms, S2 motion, S3 line/barcode/Mission, S4 terrain, S5 obstacle | `docs/architecture/<name>.md` (`comms`, `motion`, `line_barcode`, `terrain`, `obstacle`); code in `app_program/<name>/` |
 | Test IDs, how to record results, host tests | [testing](testing/README.md) |
 | Is the robot ready for a full run? | [mission-readiness checklist](testing/mission-readiness.md) |
 | Line-tracking state, open issues and how to run a trial | [line-tracking handoff](docs/line-tracking-handoff.md) |

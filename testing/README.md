@@ -6,12 +6,12 @@
 - [Preserved software evidence](#preserved-software-evidence)
 - [Planned integrated trials](#planned-integrated-trials)
 
-Keep subsystem cases/results in `subsystemN/TEST_LOG.md`, cross-subsystem cases in `integration/TEST_LOG.md`, and physical/full-product cases in `system/TEST_LOG.md`. Saved evidence goes in the corresponding `logs/` directory.
+Keep subsystem cases/results in `<name>/TEST_LOG.md`, cross-subsystem cases in `integration/TEST_LOG.md`, and physical/full-product cases in `system/TEST_LOG.md`. Saved evidence goes in the corresponding `logs/` directory.
 
 | Level | Stable IDs | Ownership / contract |
 | --- | --- | --- |
 | Subsystem | `S1-U01`, `S2-U01`, … | Subsystem owner |
-| Integration | `INT-01`, … | Both interface owners; [system contracts](../docs/architecture.md#shared-data-rules) and [IR handoff](../docs/architecture/subsystem3.md) |
+| Integration | `INT-01`, … | Both interface owners; [system contracts](../docs/architecture.md#shared-data-rules) and [IR handoff](../docs/architecture/line_barcode.md) |
 | System | `SYS-01`, …; planned `T01`–`T16` | Team; [requirements](../docs/project-specs.md) |
 
 IDs never change or get reused, including retired template cases. Retired definitions remain in the relevant log; placeholder template rows are not observations.
@@ -19,13 +19,13 @@ IDs never change or get reused, including retired template cases. Retired defini
 ## Run and record
 
 1. Define the case, steps, expected result and acceptance measurements before the run. Record wiring, power, calibration and build profile.
-2. For an appropriate firmware self-test, use `TEST_CHECK` with the case ID in the owning `subsystemN_test.c`; see `app_program/test_report.h`. Manual cases need hardware/operator steps and measurement evidence.
+2. For an appropriate firmware self-test, use `TEST_CHECK` with the case ID in the owning `<name>_test.c`; see `app_program/test_report.h`. Manual cases need hardware/operator steps and measurement evidence.
 3. Use [build/flash profiles](../README.md#getting-started). TEST firmware prints `[TEST] <ID> PASS|FAIL` at startup and always inhibits motor outputs. A compiled image is not an executed pass.
 4. Save actual console output/photos/scope records as `YYYY-MM-DD_<case>.txt` or appropriate image format. Start console capture before resetting the USB-only TEST board. Example from repository root, using the actual device name:
 
    ```sh
-   cat /dev/cu.usbmodem<device> | tee testing/subsystem3/logs/YYYY-MM-DD_self-tests.txt
-   # Linux: cat /dev/ttyACM0 | tee testing/subsystem3/logs/YYYY-MM-DD_self-tests.txt
+   cat /dev/cu.usbmodem<device> | tee testing/line_barcode/logs/YYYY-MM-DD_self-tests.txt
+   # Linux: cat /dev/ttyACM0 | tee testing/line_barcode/logs/YYYY-MM-DD_self-tests.txt
    ```
 
    Windows PuTTY supports Session → Logging → All session output. Observe the [power policy](../README.md#getting-started) during physical trials.
@@ -34,7 +34,7 @@ IDs never change or get reused, including retired template cases. Retired defini
 
 ## Preserved software evidence
 
-Host-only tests for kernel-free modules run with `testing/pure/run.sh` (no fake kernel). The older 2026-10-08 fake-kernel/hardware/network and laptop-loopback results remain historical software evidence; their recorded methods are not current run instructions. They do not establish GPIO performance, physical motion or an actual Pico connection.
+Host-only tests for kernel-free modules run with `testing/pure/run.sh` (no fake kernel). `run.sh` passes `-DHOST_TEST`, which hides the kernel and driver parts of merged files such as `line.c`, `barcode.c` and `motion.c`. The older 2026-10-08 fake-kernel/hardware/network and laptop-loopback results remain historical software evidence; their recorded methods are not current run instructions. They do not establish GPIO performance, physical motion or an actual Pico connection.
 
 Firmware self-tests remain: S1-U09 (binary codec; replaces retired S1-U04), S2-U03 (Motion policy), S3-U02 (normalization/progress) and S3-U06 (P guidance). S3-U03 remains the retired line-PID case; later P/capture/recovery cases retain their IDs. Network snapshots never count as sensor/watchdog progress.
 

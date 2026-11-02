@@ -11,11 +11,11 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "../subsystem3/ir_tracking.h"
-#include "../subsystem5/obstacle_profile.h"
-#include "../subsystem3/barcode_decode.h"
-#include "../subsystem2/motion_control.h"
-#include "../subsystem1/mqtt_frame.h"
+#include "../line_barcode/line.h"
+#include "../obstacle/obstacle_profile.h"
+#include "../line_barcode/barcode.h"
+#include "../motion/motion_control.h"
+#include "../comms/mqtt_frame.h"
 #include "../common/robot_config.h"
 #include "recovery_control.h"
 #include "bypass_control.h"
@@ -69,7 +69,7 @@ typedef struct
     uint32_t front_mm;		/* front range; meaningful only if front_valid */
     bool side_valid;
     uint32_t side_mm, side_sampled_ms, side_sequence;
-    s5_scan_state_t scan_state;
+    obstacle_scan_state_t scan_state;
     uint8_t scan_id;
     bool profile_valid;
     uint32_t left_clearance_mm, right_clearance_mm;
@@ -83,7 +83,7 @@ typedef struct
 typedef struct
 {
     MotionCommand command;	/* written every release; STOP unless following or acting */
-    bool stop_now;		/* call s2_stop() (once, on entry to STOP) */
+    bool stop_now;		/* call motion_stop() (once, on entry to STOP) */
     uint8_t nav_rejected : 2; /* 0 none, 1 measurements, 2 geometry, 3 entry */
     bool start_refused;		/* a start press was refused: unmapped or faulted */
     bool line_lost;		/* stopped because the line could not be recovered */

@@ -27,7 +27,7 @@
 - [8. Not specified by any source](#8-not-specified-by-any-source)
 - [Pending decisions](#pending-decisions)
 
-Single owner of requirements, the change requirement (CR), the Week 13 data table and pending decisions. Sources: the written brief and the instructor briefings ("briefing" below). Discrepancies between sources were resolved with the team on 2026-10-25 and are recorded here. Week 8 realigned plan: [tribunal1](additional-docs/tribunal1.md). Design: [architecture](architecture.md). Members, hardware, workflow and coding rules: [team](team.md). Subsystem guides: [S1](architecture/subsystem1.md), [S2](architecture/subsystem2.md), [S3](architecture/subsystem3.md), [S4](architecture/subsystem4.md), [S5](architecture/subsystem5.md).
+Single owner of requirements, the change requirement (CR), the Week 13 data table and pending decisions. Sources: the written brief and the instructor briefings ("briefing" below). Discrepancies between sources were resolved with the team on 2026-10-25 and are recorded here. Week 8 realigned plan: [tribunal1](additional-docs/tribunal1.md). Design: [architecture](architecture.md). Members, hardware, workflow and coding rules: [team](team.md). Subsystem guides: [S1](architecture/comms.md), [S2](architecture/motion.md), [S3](architecture/line_barcode.md), [S4](architecture/terrain.md), [S5](architecture/obstacle.md).
 
 Status labels: **requirement** (source-stated), **proposed** (drafted, not signed off), **implemented** (in code), **observed** (measured). Requirement sections record source statements; data rows record source-specific representation, and explicitly labelled target rows remain proposed. User choices are not new instructor rules.
 
@@ -288,10 +288,10 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Last barcode letter / action | byte 18 | 0-25 or 31 none / 0-7 | 31 = no letter | 5 / 3 | mask/shift |
 | Obstacle width / depth | bytes 19-22 | 0-65535 mm | 0 = none yet; saturates | 2 x 16 | little-endian |
 | Event record: kind / arg / time / position / arg2 | 11-byte schema-v2 MQTT frame, S1 | kind 1-4; arg is 0-25 letter, 0-127 height code, or 0-7 action; time low 16 bits ms; two encoder counts; arg2 0-65535 obstacle depth or action | kind 0 and 5-15 rejected; time/counts wrap; obstacle depth saturates | 4 / 8 / 16 / 2x16 / 16 on wire; kind uses four low bits of byte 1 | explicit little-endian masks/shifts; **unchanged** (#112) |
-| S1 RAM event entry: kind/arg/time/encoder counts/arg2 | `s1_packed_event_t` in event ring, S1 | kind 1-4, arg 0-127, remaining fields 0-65535 | invalid kind/arg rejected without changing ring; time/counts wrap | 3 / 7 / 16 / 2x16 / 16 = 74 logical bits; 80 stored (10 bytes incl. 6 spare bits) | 16-bit kind/arg field + 4x16-bit fields, accessor pack/unpack (#112) |
-| S1 event ring indices | `s1_event_log_t.indices`, S1 | head 0-15; count 0-16 | valid operations maintain ranges | 4 / 5 = 9 logical bits; 16 stored (7 spare bits) | masks/shifts in internal accessors (#112) |
-| S1 event ring drop count | `s1_event_log_t.dropped`, S1 | 0-4294967295 drops | saturates at max | 32 | `uint32_t`, count saturates (#112) |
-| S1 event ring storage | `s1_event_log_t`, 16 entries | 16x10-byte entries + packed indices + 32-bit drop counter | target compiler layout asserted; current target probe recorded in SYS-12 | 1344 stored bits (168 bytes, including 16 padding bits) | `sizeof` asserted; probe `testing/subsystem1/sizeof_probe.c` (#112) |
+| S1 RAM event entry: kind/arg/time/encoder counts/arg2 | `comms_packed_event_t` in event ring, S1 | kind 1-4, arg 0-127, remaining fields 0-65535 | invalid kind/arg rejected without changing ring; time/counts wrap | 3 / 7 / 16 / 2x16 / 16 = 74 logical bits; 80 stored (10 bytes incl. 6 spare bits) | 16-bit kind/arg field + 4x16-bit fields, accessor pack/unpack (#112) |
+| S1 event ring indices | `comms_event_log_t.indices`, S1 | head 0-15; count 0-16 | valid operations maintain ranges | 4 / 5 = 9 logical bits; 16 stored (7 spare bits) | masks/shifts in internal accessors (#112) |
+| S1 event ring drop count | `comms_event_log_t.dropped`, S1 | 0-4294967295 drops | saturates at max | 32 | `uint32_t`, count saturates (#112) |
+| S1 event ring storage | `comms_event_log_t`, 16 entries | 16x10-byte entries + packed indices + 32-bit drop counter | target compiler layout asserted; current target probe recorded in SYS-12 | 1344 stored bits (168 bytes, including 16 padding bits) | `sizeof` asserted; probe `testing/comms/sizeof_probe.c` (#112) |
 | Mapping acknowledgement {sequence, result} | 3-byte frame | sequence 0-255; result 0-3 | result above 3 rejected; sequence wraps | 8 / 8 (2 used) | bytes |
 
 ### S2 Motion (encoder width provisional until D03; one constant `ENC_COUNT_BITS` in `robot_config.h`; branches #29, #31)
@@ -312,14 +312,14 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Mapping state | mapping word bit 20 | UNMAPPED / MAPPED | - | 1 | flag |
 | Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; fractions 0..1 as 0..127; error and steering -1..+1 as -127..+127 | validity flags; averaged ADC saturates at 4095; fractions clamp to 0..127 | 12 each; 7 each; 8 each | struct; scaled integers ([ADR 0001](adr/0001-base-2-scaled-integers.md)) |
 | Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 16 (wrapped encoder counts at the edge); level 1 | overflow sets fault bit; new edge dropped | 16+16+1 | struct |
-| Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1 (one 16-bit word) + 16+16 | packed word + 2 counts, accessors in `barcode_decode.h` |
+| Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1 (one 16-bit word) + 16+16 | packed word + 2 counts, accessors in `barcode.h` |
 | Mission state | Mission writer | READY, FOLLOW_LINE, NAVIGATE, SCAN, BYPASS, REACQUIRE, STOPPED; implemented codes 0..6, 7 invalid | invalid input inhibits movement | 3 logical (existing 4-bit wire slot retained) | Implemented 3-bit private state and atomic published byte; schema-v2 wire slot remains 4 bits; decoder uses seven-state labels |
 | Broad-black encounter start | `Mission.broad_since_ms`, Mission writer | uint32 milliseconds, modulo 2^32 | meaningful only while `in_broad`; unsigned elapsed subtraction handles wrap | 32 | private timestamp; no wire format |
 | Existing Safety latched cause | current Safety task | 4 cause bits (GP21, fault, stale line, stale motion) | 0 = not latched | 4 | Existing implementation only; retire task after equivalent Motion checks; target causes/width reviewed before conversion |
 
 ### S3 bit-usage data contract (proposed; spec #100; final evidence #107)
 
-Historical source-pinned storage evidence below is retained unchanged; it is not a size prediction for the restructure. Storage bits come from `testing/subsystem3/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/subsystem1/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](adr/0001-base-2-scaled-integers.md) (retained representation decision); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
+Historical source-pinned storage evidence below is retained unchanged; it is not a size prediction for the restructure. Storage bits come from `testing/line_barcode/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/comms/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](adr/0001-base-2-scaled-integers.md) (retained representation decision); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
 
 | Field | Current C type | Bounds / units | Chosen width (bits) | Final storage bits | Instances | Ticket |
 | --- | --- | --- | ---: | ---: | ---: | --- |
@@ -347,11 +347,11 @@ Historical source-pinned storage evidence below is retained unchanged; it is not
 | Mission state (published copy) | `_Atomic uint8_t` (was `uint32_t`) | 8 states | 3 | 8 (smallest atomic store) | 1 | #105 |
 | IR snapshot: raw left / right | bits 0-23 of `IrRawWord` (`uint32_t`) | 12-bit ADC, 0-4095 | 2 x 12 | 2 x 12 | 1 | #106 |
 | IR snapshot: acquisition valid | bit 24 of `IrRawWord` (bits 25-31 spare) | Boolean | 1 | 1 (+7 spare) | 1 | #106 |
-| IR snapshot struct | `S3IrSnapshot` | - | - | 320 | 1 | - |
+| IR snapshot struct | `LineIrSnapshot` | - | - | 320 | 1 | - |
 
-Single-store check (#106, 2026-10-27): `arm-none-eabi-objdump -d` of `ir_tracking.o` (arm-none-eabi-gcc 15.3.1, offline normal profile) shows both writes of `IrTracker.raw` in `ir_tracking_sample` as one `str` to the aligned word; the snapshot copies the word whole. Removing the two `bool` flags freed bytes that alignment padding absorbs, so `IrTracker` (60 bytes) and `S3IrSnapshot` (40 bytes) keep their size.
+Single-store check (#106, 2026-10-27): `arm-none-eabi-objdump -d` of `ir_tracking.o` (arm-none-eabi-gcc 15.3.1, offline normal profile) shows both writes of `IrTracker.raw` in `ir_tracking_sample` as one `str` to the aligned word; the snapshot copies the word whole. Removing the two `bool` flags freed bytes that alignment padding absorbs, so `IrTracker` (60 bytes) and `LineIrSnapshot` (40 bytes) keep their size.
 
-The final build (section-4 command) and the probe-to-object cross-check are recorded by #107 as S3-M01 in the [S3 test log](../testing/subsystem3/TEST_LOG.md#7-minimum-bit-final-memory-s3-m01--2026-10-27). On-target S3 loop timing (S3-M02) and the physical line-follow run need the robot and are tracked with the [mission-readiness checklist](../testing/mission-readiness.md).
+The final build (section-4 command) and the probe-to-object cross-check are recorded by #107 as S3-M01 in the [S3 test log](../testing/line_barcode/TEST_LOG.md#7-minimum-bit-final-memory-s3-m01--2026-10-27). On-target S3 loop timing (S3-M02) and the physical line-follow run need the robot and are tracked with the [mission-readiness checklist](../testing/mission-readiness.md).
 
 ### S4 Terrain (scale provisional, 1 mm per count `HUMP_MM_PER_COUNT`, until D06; branches #45, #46)
 
@@ -370,7 +370,7 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Terrain encounter quality | `TerrainContext.window_qualified`, S4 task | one flag, cleared by any unqualified sample until the next climb | zero suppresses encounter count/height updates | 1 | C bit-field |
 | Terrain travel quality history | `TerrainTravelQuality`, S4 task | previous fresh acquisition and steady-start times, modulo 2^32 ms; prior mean signed speed -32767..32767 mm/s, nearest; primed/steady flags | invalid acquisition, gap, reverse, overflow, speed change or wheel mismatch restarts steady qualification; no wire changes | 2 x 32 + 16 + 2 logical bits | integer timestamps/speed and packed flags; 12 bytes including alignment |
 | Terrain private hump last/max codes | `TerrainContext.last_hump_code`, `max_hump_code` | 0-126; 127 invalid | saturates and retains max | 7 / 7 | C bit-fields (#110) |
-| Complete persistent TerrainContext | `TerrainContext`, S4 task | as above; 20 ms processing | D06 physical calibration pending; replay old float path for parity | 32 bytes on the current target compiler (SYS-12) | `testing/subsystem4/sizeof_probe.c` (#110) |
+| Complete persistent TerrainContext | `TerrainContext`, S4 task | as above; 20 ms processing | D06 physical calibration pending; replay old float path for parity | 32 bytes on the current target compiler (SYS-12) | `testing/terrain/sizeof_probe.c` (#110) |
 
 ### S5 Obstacle (proposed; branches #48, #49)
 
@@ -483,7 +483,7 @@ Software restructure storage contract (2026-10-29, #131–#133; no new wire fiel
 | IMU startup outcome, I/O | 0 pending, 1 calibrated, 2 failed | Missing IMU publishes failed; never interpreted as calibrated | 2 / one 32-bit word |
 | S5 step phase/flags, Mission | Phase 0..2 + initialized/ready/scanning; scan counts 0..9, scan ID 0..15, commanded and target angles -20..20 integer degrees | Fixed nine-ray capacity; deadline/cancel/movement abort; no echo invalid; angle targets outside range rejected, no rounding | 2+3 bits; counts 4 each, ID 4, two signed 6-bit angle fields |
 | Link readiness, kernel WiFi | bit 0 WiFi, bit 1 broker; boot 0 | Both required for local start; run loss report-only | 2 / one 32-bit word |
-| Event drops, event-mutex holder / one writer per core | `s1_event_log_t.dropped` counts ring overflow; `lock_misses[2]` counts failed bounded event-insertion locks (Mission core 1, Terrain core 0), one atomic uint32 per core; bridge-full returns false for retry | Each count saturates at UINT32_MAX; insertion waits at most the existing 2 ms snapshot-lock timeout; counters are debugger diagnostics, not new MQTT fields or delivery acknowledgements | 32 each; 64 stored for the two lock-miss words |
+| Event drops, event-mutex holder / one writer per core | `comms_event_log_t.dropped` counts ring overflow; `lock_misses[2]` counts failed bounded event-insertion locks (Mission core 1, Terrain core 0), one atomic uint32 per core; bridge-full returns false for retry | Each count saturates at UINT32_MAX; insertion waits at most the existing 2 ms snapshot-lock timeout; counters are debugger diagnostics, not new MQTT fields or delivery acknowledgements | 32 each; 64 stored for the two lock-miss words |
 
 Mission private history conversion contract (2026-10-30; software precision,
 not a physical tuning or accuracy claim; one Mission writer):
@@ -546,7 +546,7 @@ black acquisitions may qualify the existing encoder-distance threshold; travel
 after black has ended cannot qualify an earlier thin patch.
 No mounted geometric tolerance is claimed by these software flags.
 
-Continuation storage: `s5_range_sample_t` contains the existing packed word plus
+Continuation storage: `obstacle_range_sample_t` contains the existing packed word plus
 full 32-bit acquisition time, sequence and two wheel counts at
 range completion (20 bytes). Counts and consumer-owned origins use unsigned
 32-bit storage, masked to `ENC_COUNT_BITS` (currently 16; supported up to 32).
@@ -561,7 +561,7 @@ evidence discard the window and reset those origins. No timestamp is renewed
 by pending acquisition. Mission owns its current
 front/side pair; a separate pair is copied under the existing profile mutex for
 optional core-0 reporting, preserving original times when publication is busy.
-`s5_profile_snapshot_t` combines the 14-byte profile, six-byte edge/model evidence
+`obstacle_profile_snapshot_t` combines the 14-byte profile, six-byte edge/model evidence
 and a 32-bit scan-completion timestamp (24 bytes). No new RTOS objects or wire
 fields are introduced. The 16-bit Echo display timestamp is never a control
 freshness clock. The compile-time bypass-release flag is zero while measured
@@ -791,7 +791,7 @@ All storage is private to Mission; no shared or wire layout changes.
 Digital IR calibration removal (2026-10-31): `IrCalibration`, capture enums,
 capture counters/results and all IR calibration gates/APIs are removed.
 `IrTracker` stores only line, reading, raw word and acquisition presence/time;
-`S3IrSnapshot` stores acquisition identity/age, raw word, digital endpoints/error,
+`LineIrSnapshot` stores acquisition identity/age, raw word, digital endpoints/error,
 line and freshness/validity flags. Existing field widths/scales are retained;
 the older aggregate struct-size rows describe their recorded revision, not a
 current target size measurement. IMU calibration remains separate.
@@ -1037,7 +1037,7 @@ excursion and pivot geometry remain provisional D07/T03.
 Encoder PID diagnostic revision (2026-10-31, INT-94): expose best-effort
 per-release wheel targets, measured speeds and serviced duties without changing
 PID gains, encoder scale, steering or travel settings. Use the
-[S2 tuning procedure](architecture/subsystem2.md#wheel-speed-tuning) to separate
+[S2 tuning procedure](architecture/motion.md#wheel-speed-tuning) to separate
 motor response from changing steering demands. D07/D13 remain pending for loaded
 response, target saturation, timing/stack impact and physical tracking; no newly
 calibrated gains or motion pass is claimed. The former dashboard black/white

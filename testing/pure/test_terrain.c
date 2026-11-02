@@ -1,11 +1,9 @@
-#include "../../app_program/subsystem4/terrain_evidence.h"
+#include "../../app_program/terrain/terrain_algo.h"
 /* Host test for the hump estimator and terrain word (issue #46). */
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
-#include "../../app_program/subsystem4/terrain_algo.h"
 #include "terrain_float_reference.h"
-#include "../../app_program/subsystem4/terrain_pack.h"
 
 static TerrainContext ctx;
 static FloatTerrainContext legacy;
@@ -152,7 +150,7 @@ static void test_evidence_and_invalid_window(void)
     assert(terrain_impact_pending(true, false, false));
     assert(terrain_impact_pending(true, true, true));
     assert(!terrain_impact_pending(true, false, true));
-    S4Snapshot sample = {.sampled_ms = 100u, .serviced_ms = 100u,
+    TerrainSnapshot sample = {.sampled_ms = 100u, .serviced_ms = 100u,
         .sequence = 1u, .acquisition_valid = 1u};
     assert(terrain_evidence_fresh(&sample, 160u, 60u));
     sample.serviced_ms = 160u;

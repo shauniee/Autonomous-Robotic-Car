@@ -9,7 +9,7 @@
 #include "lwip/sys.h"
 #include "cyw43.h"
 #include "wifi_secrets.h"
-#include "../../../../app_program/subsystem1/s1_bridge.h"
+#include "../../../../app_program/comms/comms_bridge.h"
 #include <tm/tmonitor.h>
 #include <string.h>
 
@@ -40,7 +40,7 @@ static ip_addr_t broker_addr;
 static char client_id[64];
 static bool link_ready, connecting, online, retry_pending, bad_configuration, in_command_topic;
 static uint32_t retry_ms = MQTT_RETRY_MIN_MS;
-static uint8_t rx[S1_FRAME_MAX];
+static uint8_t rx[COMMS_FRAME_MAX];
 static unsigned rx_length;
 static bool rx_overflow;
 
@@ -57,7 +57,7 @@ static void cancel_timers(void)
 static void set_online(bool value)
 {
     online = value;
-    s1_bridge_link(link_ready, online);
+    comms_bridge_link(link_ready, online);
 }
 
 static void schedule_retry(void)
@@ -89,10 +89,10 @@ static void publish_status(const char *payload)
 
 static void drain_outgoing(void)
 {
-    uint8_t frame[S1_FRAME_MAX];
+    uint8_t frame[COMMS_FRAME_MAX];
     for (unsigned i = 0u; i < MQTT_FRAMES_PER_POLL && online; ++i)
     {
-        unsigned n = s1_bridge_take(frame, sizeof frame);
+        unsigned n = comms_bridge_take(frame, sizeof frame);
         if (n == 0u)
         {
             return;
@@ -146,7 +146,7 @@ static void incoming_data(void *arg, const u8_t *data, u16_t length, u8_t flags)
     }
     if ((flags & MQTT_DATA_FLAG_LAST) != 0u && !rx_overflow && rx_length > 0u)
     {
-        s1_bridge_put(rx, rx_length);	/* the bridge consumer validates the content */
+        comms_bridge_put(rx, rx_length);	/* the bridge consumer validates the content */
     }
 }
 
@@ -265,7 +265,7 @@ void mqtt_utk_poll(bool link_up)
             drop_connection();
             retry_ms = MQTT_RETRY_MIN_MS;
         }
-        s1_bridge_link(link_ready, online);
+        comms_bridge_link(link_ready, online);
     }
     if (!link_ready)
     {

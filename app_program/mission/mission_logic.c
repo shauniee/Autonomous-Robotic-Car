@@ -1,6 +1,6 @@
 #include "mission_logic.h"
 #include "../common/robot_time_math.h"
-#include "../subsystem2/encoder_math.h"
+#include "../motion/encoder_math.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -524,9 +524,9 @@ static void handle_scan(Mission *m, const MissionInputs *in,
     {
         return; /* A previous scan result cannot satisfy a new request. */
     }
-    if (in->scan_state == S5_SCAN_CANCELLED || in->scan_state == S5_SCAN_FAILED)
+    if (in->scan_state == OBSTACLE_SCAN_CANCELLED || in->scan_state == OBSTACLE_SCAN_FAILED)
     {
-        if (in->scan_state == S5_SCAN_FAILED && in->stationary &&
+        if (in->scan_state == OBSTACLE_SCAN_FAILED && in->stationary &&
             m->scan_retries < MISSION_SCAN_RETRIES)
         {
             ++m->scan_retries;
@@ -537,7 +537,7 @@ static void handle_scan(Mission *m, const MissionInputs *in,
             to_stop(m, in, out, true);
         }
     }
-    else if (in->scan_state == S5_SCAN_DONE && in->profile_valid)
+    else if (in->scan_state == OBSTACLE_SCAN_DONE && in->profile_valid)
     {
         ObstacleProfile profile =
         {
@@ -747,7 +747,7 @@ void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out)
         (in->stop_down || in->safety_latched || !in->inputs_ok ||
         (moving && in->motion_stopped)))
     {
-        /* Safety already called s2_stop() for its own causes. */
+        /* Safety already called motion_stop() for its own causes. */
         to_stop(m, in, out, in->stop_down || !in->inputs_ok);
         return;
     }

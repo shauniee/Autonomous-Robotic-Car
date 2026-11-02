@@ -24,11 +24,11 @@ Defend the Week 6 architecture, justify changes, and show readiness for partial 
 
 | Buddy | Subsystem | Guide |
 | --- | --- | --- |
-| Shaun | S1 WiFi, MQTT, telemetry | [subsystem1](../architecture/subsystem1.md) |
-| Mahesha | S2 motors, encoders, PID | [subsystem2](../architecture/subsystem2.md) |
-| Nicholas | S3 IR line following, barcode; Mission/Safety | [subsystem3](../architecture/subsystem3.md) |
-| Darrius | S4 IMU, terrain, hump height | [subsystem4](../architecture/subsystem4.md) |
-| Jia Jing | S5 ultrasonic, servo, obstacle profiling | [subsystem5](../architecture/subsystem5.md) |
+| Shaun | S1 WiFi, MQTT, telemetry | [comms](../architecture/comms.md) |
+| Mahesha | S2 motors, encoders, PID | [motion](../architecture/motion.md) |
+| Nicholas | S3 IR line following, barcode; Mission/Safety | [line_barcode](../architecture/line_barcode.md) |
+| Darrius | S4 IMU, terrain, hump height | [terrain](../architecture/terrain.md) |
+| Jia Jing | S5 ultrasonic, servo, obstacle profiling | [obstacle](../architecture/obstacle.md) |
 
 ## What the team defended (Week 6 design, unchanged)
 
