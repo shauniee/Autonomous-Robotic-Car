@@ -46,7 +46,7 @@ calibrated values are owned by [project-specs](project-specs.md); wiring by
 [team](team.md).
 
 Keep micro T-Kernel, C/Pico SDK, five subsystem modules and binary MQTT schema v2.
-No core-number migration, generic event bus, new scheduler or watchdog framework.
+No core-number migration, generic event bus, new scheduler or separate watchdog task.
 
 ## Tasks
 
@@ -58,6 +58,19 @@ RTOS tasks. Smaller numeric priority means higher scheduling priority.
 | Motion | 1 (`TP_PRC2`) | Motor outputs, wheel-speed loop, encoder actions, independent GP21/stop/expiry checks | Higher priority than Mission |
 | Mission | 1 (`TP_PRC2`) | Bounded line/barcode/sonar/servo steps, calibration controls, navigation, safety policy and mapping acceptance | Below Motion; bounded work then sleep |
 | `io_task` | 0 (`TP_PRC1`) | Bounded Terrain acquisition/calibration and Reporting steps | Below existing critical kernel services; numeric choice pending |
+
+Optional D15 reset watchdog (disabled unless `WATCHDOG=1` is explicitly
+built): Motion reports progress after successful motor-output service;
+Mission reports progress after a successful command hand-off; core-0 I/O
+checks both producer heartbeats after servicing Terrain and Reporting.
+Only I/O arms/feeds the RP2040 hardware reset watchdog, and only when
+both have progressed freshly since the previous feed. A producer or I/O
+hang therefore intentionally stops feeding. The timeout is 2000 ms and
+heartbeat maximum age is 250 ms, both **unverified on the physical robot**.
+Hardware reset is not an electronic brake: actual motor-driver safe levels
+through reset, reset cause reporting, reboot start inhibition and network-load
+timing must pass the D15/SYS-06 bench acceptance before enabling it for driving.
+Software tests validate only heartbeat freshness arithmetic.
 
 WiFi/lwIP/MQTT service and USB stay on core 0 in their existing execution contexts.
 Existing numeric periods/priorities/ages are retained as explicitly provisional
