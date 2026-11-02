@@ -1,5 +1,6 @@
 /* Production-default policy: missing feature release cannot authorize bypass. */
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include "../../app_program/mission/mission_logic.h"
 
@@ -47,15 +48,18 @@ int main(void)
     mission_step(&mission, &in, &out);
     assert(mission.state == MISSION_FOLLOW_LINE);
     in.start_pressed = false;
-    in.line = IR_LINE_LOST;
-    in.guidance_valid = false;
+    in.line_error = -IR_SCALE_ONE; /* a touch, then white/white to the loss distance */
+    in.left_black = true;
     in.now_ms += 10u;
     in.line_sampled_ms = in.now_ms;
     mission_step(&mission, &in, &out);
-    uint32_t first = in.line_sampled_ms;
-    while ((uint32_t)(in.line_sampled_ms - first) < MISSION_LINE_LOST_MS)
+    in.line_error = 0;
+    in.left_black = false;
+    for (unsigned mm = 0u; mm < LINE_LOST_MM; mm += 10u)
     {
         assert(mission.state == MISSION_FOLLOW_LINE && !out.stop_now);
+        in.wheel_count[0] = in.wheel_count[1] =
+            enc_advance(in.wheel_count[0], (int)ceilf(10.0f * ENC_COUNTS_PER_MM));
         in.now_ms += 10u;
         in.line_sampled_ms = in.now_ms;
         mission_step(&mission, &in, &out);

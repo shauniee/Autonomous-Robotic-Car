@@ -16,8 +16,12 @@ where things stand and what to do next.
 
 ## Where it stands
 
-- Source defaults run 100 mm/s (user-fixed speed) and build a normal image
-  byte-identical to trial o (INT-123).
+- Source now uses a distance-based P law with onset-skew junction detection
+  (INT-126, host and build only; no physical run). Trial o (INT-123) was the last
+  physically tested law: the PI one described below, still in git history.
+- Line loss is white/white 200 mm past the last touch; recovery and bypass return
+  need a black sample before white/white counts as the line (INT-127, host and
+  build only).
 - At 100 mm/s straights, the three 90 degree curves and the plain crossing hold
   (INT-118, INT-123). 55 mm/s passed the course with earlier tuning (INT-105, INT-108).
 - Fails: the junction reached at the end of the three-curve route (INT-123).
@@ -25,7 +29,9 @@ where things stand and what to do next.
   centre 120 mm ahead of the axle after an 18 mm move back; barcode sensor moved
   with it (about 185 mm forward, 55 mm left). Effective spot spacing 33 mm and line
   width 23 mm were measured before the move (INT-98).
-- No physical pass exists for barcode turns (`NAV_GEOMETRY_RELEASED` is still 0),
+- Barcode turns are now advance, pause and a pivot that ends on the new branch
+  (INT-128, host and build only); the smooth arc is gone. No physical pass exists
+  for barcode turns (`NAV_GEOMETRY_RELEASED` is still 0),
   obstacle bypass or repeat runs across battery levels.
 
 ## What changed this session
@@ -43,15 +49,16 @@ where things stand and what to do next.
 
 ## Open issues, in priority order
 
-1. **Junction after the three curves (INT-123).** Not yet traced. Likely the
-   curve-skew rule: if the held integral is still above 32 when both sensors read
-   black, the junction is treated as curve skew and driven through with the turn
-   held. Check the integral at that broad-black entry first.
-2. **No IR state in the traces.** WHEEL records carry wheel targets only, so every
-   steering rule above was inferred. Adding IR bits and the integral to the
-   15-byte wheel trace (frame owned by
-   [architecture](architecture.md#wheel-trace-15-bytes)) would end the guessing.
-   Needs owner agreement.
+1. **Junction after the three curves (INT-123).** The host replay (INT-124)
+   reproduced the PI cause: an integral held through white/white marked the
+   crossbar as curve skew. INT-126 replaces that rule with black-onset distance and
+   the replay now passes; needs a physical run with line traces, and
+   `NAV_ONSET_SKEW_MM` set from their `onset_skew_mm`.
+2. **No IR state in the traces.** A separate type 9
+   [line trace](architecture.md#line-trace-17-bytes) now carries IR bits, junction
+   flags, the law state, onset skew and the command per acquisition (INT-125, host and build
+   only); the wheel trace is unchanged. Needs S1 owner agreement and a first
+   physical capture. Host replay (INT-124) already reproduces issue 1's mechanism.
 3. **Hump detector stuck on (INT-122).** Mission halved speed to 50 mm/s for a
    whole run while terrain reported a hump; fixed by an IMU check and restart,
    cause not investigated in S4 code.

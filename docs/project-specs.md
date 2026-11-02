@@ -78,7 +78,12 @@ or a test PASS. Motor/encoder polarity still requires verification. Start needs
 functional IR/Motion, mapping, WiFi and MQTT. IMU calibration is attempted at boot
 with no IR software calibration; IMU failure is flagged but permits operation. During a run
 IR/Motion failure stops; ordinary IMU/sonar/network loss is report-only. Requested
-hump speed is half normal tracking speed. The original moving 70-degree
+hump speed is half normal tracking speed. **Course speed guardrail (user,
+2026-11-02):** line following, crossings, junction advances and junction pivots
+are commanded at exactly 100 mm/s, 50 mm/s while a hump is active; steering never
+lowers it. A compile-time assert fixes `MISSION_TRACK_SPEED_MMPS` at 100, and
+Mission stops rather than send any other speed while following or navigating.
+Recovery sweeps and obstacle bypass keep their own slower speeds. The original moving 70-degree
 recovery request was superseded by the stationary wider sweep revision in
 [pending decisions](#pending-decisions). Local stop retains calibration, mapping and last barcode display, but
 cancels pending movement. GP21 release may reset after cause clearance/brake;
@@ -589,7 +594,7 @@ Uncalibrated software proposals for review (not course limits/module ratings):
 
 | Setting | Proposal / purpose | Physical acceptance |
 | --- | --- | --- |
-| Recovery | After 500 ms of continuous fresh white/white, brake then repeat +70/-70 degrees; 36 mm/s per wheel after rolling-scale correction; 30 s / 1200 mm mean absolute wheel excursion bound; 5 degree endpoint tolerance, separate 20 degree overshoot allowance | User requested qualified simplified sweep; D03/D07/D08/D13 pending |
+| Recovery | After white/white 200 mm past the last touch (revision 2026-11-02 below), brake then repeat +70/-70 degrees; 36 mm/s per wheel after rolling-scale correction; 30 s / 1200 mm mean absolute wheel excursion bound; 5 degree endpoint tolerance, separate 20 degree overshoot allowance | User requested qualified simplified sweep; D03/D07/D08/D13 pending |
 | Recovery handoff | Brake on usable VISIBLE from either sensor; resume tracking without centering or confirmation streak | D04/D07/D10 physical acceptance pending |
 | Bypass line alignment | 5 mm/s after rolling-scale correction, independently configured from standalone recovery | D04/D07/D10 pending |
 | Scan | Three samples, at least two valid; depth enter/exit bands 30/60 mm; two adjacent rays; model range uncertainty 10 mm | D05/D10 pending; uncertainty is a proposed model input, not sensor accuracy |
@@ -761,6 +766,18 @@ Private loss-qualification storage is restored: unsigned 32-bit first/latest
 LOST acquisition timestamps in milliseconds modulo 2^32, wrap-safe subtraction,
 and one pending bit beside existing Mission flags. Timestamp zero is valid;
 the bit denotes activity. State changes clear it. No shared/wire fields change.
+
+Line-loss revision, 2026-11-02 (INT-127; host and build only): supersedes the
+500 ms qualification above. DOUT white/white is also the centred reading, so time
+alone stopped good straights, and the tracker never produced `IR_LINE_LOST`.
+Loss is now white/white for `LINE_LOST_MM` (200 mm, trial value) of encoder travel
+past the last one-black or broad-black acquisition, counted only after the first
+touch since entering FOLLOW (before it the line is between the sensors and cannot
+leave unseen). The steering drift toward the last side makes a centred robot touch
+again within about 50 mm at the trial drift. The timestamps and pending bit are
+removed. Recovery and the bypass line return accept white/white alignment only
+after a sensor has been black during that phase; a one-black sample still ends
+recovery as before.
 
 Historical recovery storage revision before implementation: phase has five values plus
 invalid (3 logical bits; unused codes fail), leg 0..4 (3 bits), confirmation
@@ -1051,23 +1068,25 @@ and crossbar width also must be positive. Stop on infeasible geometry; no fallba
 pivot. U-turn currently requires a laterally centred chassis (`y_c=0`); a nonzero
 lateral offset cannot be corrected by an in-place 180-degree pivot alone.
 
-Provisional commissioning settings, not measured limits (INT-123 defaults):
-tracking at 100 mm/s with IR read every 10 ms. One-black adds a 32/127
-proportional kick to an integral that grows by 3 per distinct continuous one-black
-sample, drains by 1 per opposing sample, drains by 6 once opposition lasts more
-than 20 samples (curve exit), then holds at zero with a 64/127 kick until
-white/white; it is held through white/white and capped at 95. Broad black requests
-none unless the held integral marks a curve (above 32). Motion releases at
-1800 Q/s and builds at 900 Q/s; the inner wheel slows linearly with steering
-(`MOTION_FOLLOW_TIGHTEN_Q 0`). Wheel feedforward KF 0.0001, KS 0.05, KP 0.0001
-(INT-100 to INT-102). Candidate travel is 9 mm, extended to 12 mm after strong
-steering (INT-98). A straight crossing restores the heading saved within the last
+Provisional commissioning settings, not measured limits: tracking at 100 mm/s
+with IR read every 10 ms. Steering (proposed trial values, no physical run yet;
+the INT-123 PI defaults are in git history): one sensor black 115/127 (about 90%
+inner-wheel cut), in a bend 127/127, bend lean on white/white 57/127 for 100 mm
+past the last touch, otherwise a 8/127 drift toward the last side; a same-side
+touch within 50 mm of the last, or one touch longer than 50 mm, is a bend. These
+copy the reference repo's wheel ratios under this S2 mix. Broad black requests
+none; at broad entry, black onsets more than 15 mm apart mark curve skew (trial
+value, to be set from type 9 line traces). Motion releases at
+1800 Q/s and builds at 900 Q/s; steering is mixed centre-preserving, left
+v(1+q/127) and right v(1-q/127), so the robot centre keeps the commanded speed
+(the outer wheel reaches 200 mm/s at full steering; INT-129). Wheel feedforward KF 0.0001, KS 0.05, KP 0.0001
+(INT-100 to INT-102). Candidate travel is 9 mm (INT-98). A straight crossing restores the heading saved within the last
 100 mm of centred, low-steering tracking (INT-104). Curved turn entry then stops rather than assuming pose.
-Entry-relative yaw bound 5 degrees; turn evidence windows 75..105 degrees and
-165..195 degrees for U-turn; rearm 10 mm; exit travel bound 150 mm; path lead 5 mm,
-wheel-position error bound 20 mm and correction cap 20 mm/s at gain 4/s.
-All require measurement under D02/D07. Pause is 100 ms after stationarity before
-and after U-turn; nominal approach acceleration uses requested speed / 0.5 s.
+Entry-relative yaw bound 5 degrees; junction pivots (trial values copied from the
+reference repo, no physical run) are bounded at 120 degrees for left/right and 210
+for U-turn, look for the new branch from 60 and 150 degrees, at the 100 mm/s
+course speed; rearm 10 mm; straight exit travel bound 150 mm. All require measurement
+under D02/D07. Pause is 100 ms after stationarity before and after every turn; nominal approach acceleration uses requested speed / 0.5 s.
 Actual approach distance and completion remain encoder governed.
 
 Storage extension (one writer per object; local floating point geometry only):
@@ -1075,17 +1094,16 @@ Storage extension (one writer per object; local floating point geometry only):
 | Field | Range / scale | Invalid / overflow | Logical bits / storage |
 | --- | --- | --- | --- |
 | Motion discrete target latch | -2000..2000 mm or degrees, whole units | Command mutation fails action | 12 / signed bit-field |
-| Motion style latch | 0 pivot, 1 legacy swing, 2 smooth, 3 ramped | Constructor validates | 2 / bit-field |
-| Motion path reference | 0..4095.996 mm, Q8 | Fails before 4095 mm / travel bound | 20 / uint32 bit-field |
+| Motion style latch | 0 pivot, 1 legacy swing, 2 invalid (removed smooth path), 3 ramped | Constructor validates | 2 / bit-field |
 | Mission output navigation rejection | 0 none, 1 measurements, 2 geometry, 3 entry | Console reports on stop transition; no wire change | 2 / bit-field |
 | Mission navigation phase | 0..6, 7 invalid | Invalid stops | 3 / existing field |
-| Mission turn length | -2000..2000 whole mm | Invalid stops before construction | 12 / signed bit-field |
+| Mission turn advance | 1..2000 whole mm | Invalid stops before construction | 12 / signed bit-field |
 | Mission locked/curved/exit flags | independent 0/1 | Reset/start manages encounter | 1 each / bit-fields |
 | Mission entry origins | encoder counts modulo configured width | Half-range modular arithmetic | 2 x ENC_COUNT_BITS / uint32 |
 | Barcode diagnostic | 2 wrapping counts, width 0..65535 counts; result 0..6; orientation 0/1; letter 0..25 or 31; action 0..4 | Width saturates; queue drops counted; no guessed letter | 16+16+16+3+1+5+3 / 8 bytes on target |
 
 MotionCommand remains 12 bytes with the existing mutex and two-bit mode. TURN
-style 2 reuses signed target as path length in mm (+left/-right), bounded by the
-existing 2000 mm limit; other TURN styles retain degrees. DISTANCE style 3 enables
+style 2 is rejected (the smooth path was removed 2026-11-02); other TURN styles
+take degrees. DISTANCE style 3 enables
 a ramped approach. No MQTT payload changes. Diagnostic ring is optional, 32 entries;
 head/tail and saturating dropped counters are uint32 for wrap-safe lifetime indices.

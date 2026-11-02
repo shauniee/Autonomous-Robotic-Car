@@ -17,6 +17,7 @@ static unsigned type_length(unsigned type)
     case MQTT_TYPE_JUNCTION_TEST: return MQTT_LEN_JUNCTION_TEST;
     case MQTT_TYPE_SNAPSHOT_REQUEST: return MQTT_LEN_SNAPSHOT_REQUEST;
     case MQTT_TYPE_WHEEL_TRACE: return MQTT_LEN_WHEEL_TRACE;
+    case MQTT_TYPE_LINE_TRACE: return MQTT_LEN_LINE_TRACE;
     default: return 0u;
     }
 }
@@ -69,6 +70,39 @@ unsigned mqtt_encode_wheel_trace(uint8_t *out, unsigned capacity,
         out[5u + i] = (uint8_t)(targets >> (8u * i));
     }
     return MQTT_LEN_WHEEL_TRACE;
+}
+
+/* ---- Line trace -----------------------------------------------------------
+   0 header | 1..4 IR acquisition ms | 5 flags (MQTT_LINE_*, bit 7 0)
+   6 [3:0] mission state, [6:4] junction phase, [7] 0 | 7..8 left count | 9..10 right count
+   11 law steering Q7 | 12 law state Q7 | 13 command steering Q7
+   14..15 [8:0] command speed mm/s, [10:9] command mode, [15:11] 0
+   16 onset skew mm when both black (254 max), 255 otherwise */
+
+unsigned mqtt_encode_line_trace(uint8_t *out, unsigned capacity,
+    const mqtt_line_trace_t *trace)
+{
+    if (out == NULL || trace == NULL || capacity < MQTT_LEN_LINE_TRACE ||
+        (trace->flags & 0x80u) || trace->mission_state > 15u || trace->phase > 7u ||
+        trace->command_mode > 3u || trace->command_speed > 511u)
+    {
+        return 0u;
+    }
+    out[0] = HDR(MQTT_TYPE_LINE_TRACE);
+    for (unsigned i = 0u; i < 4u; ++i)
+    {
+        out[1u + i] = (uint8_t)(trace->sampled_ms >> (8u * i));
+    }
+    out[5] = trace->flags;
+    out[6] = (uint8_t)(trace->mission_state | trace->phase << 4);
+    put16(&out[7], trace->wheel_count[0]);
+    put16(&out[9], trace->wheel_count[1]);
+    out[11] = (uint8_t)trace->steer_q;
+    out[12] = (uint8_t)trace->law_q;
+    out[13] = (uint8_t)trace->command_steer_q;
+    put16(&out[14], (uint16_t)(trace->command_speed | trace->command_mode << 9));
+    out[16] = trace->onset_skew_mm;
+    return MQTT_LEN_LINE_TRACE;
 }
 
 /* ---- Telemetry -----------------------------------------------------------

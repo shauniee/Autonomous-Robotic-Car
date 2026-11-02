@@ -8,6 +8,7 @@
 #include "../subsystem2/subsystem2.h"
 #include "../subsystem2/drv_encoder.h"
 #include "../subsystem2/motion_trace.h"
+#include "../mission/line_trace.h"
 #include "../mission/mission.h"
 #include "../subsystem3/barcode.h"
 #include "../subsystem3/subsystem3.h"
@@ -232,6 +233,16 @@ void s1_step(uint32_t now)
             break;
         }
         /* Offline/full TX drops diagnostics; never retry old samples. */
+        (void)s1_bridge_post(frame, length);
+    }
+    for (unsigned budget = 0u; budget < 2u; ++budget)
+    {
+        uint8_t frame[MQTT_LEN_LINE_TRACE];
+        unsigned length = line_trace_take(frame, sizeof frame);
+        if (length == 0u)
+        {
+            break;
+        }
         (void)s1_bridge_post(frame, length);
     }
 }

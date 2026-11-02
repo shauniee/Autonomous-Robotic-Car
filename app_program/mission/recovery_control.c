@@ -60,7 +60,10 @@ void recovery_control_step(recovery_control_t *control, const recovery_input_t *
         output->phase = RECOVERY_DONE;
         return;
     }
-    if (input->visible)
+    /* White/white alone is blank floor; it aligns only after a sensor crossed
+       the line during the search. */
+    control->seen = control->seen || input->black;
+    if (input->visible && control->seen)
     {
         control->turning = 0u;
         control->phase = RECOVERY_DONE;

@@ -220,9 +220,10 @@ static void test_follow_steering(void)
 {
     const int steering[] = {-127, -96, -64, 0, 64, 96, 127};
     const float targets[][2] = {
-        {0.0f, 32.0f}, {4.881890f, 29.070866f}, {9.921260f, 26.047244f},
+        /* Centre-preserving mix: 20 * (1 -/+ q/127), the centre stays at 20. */
+        {0.0f, 40.0f}, {4.881890f, 35.118110f}, {9.921260f, 30.078740f},
         {20.0f, 20.0f},
-        {26.047244f, 9.921260f}, {29.070866f, 4.881890f}, {32.0f, 0.0f}
+        {30.078740f, 9.921260f}, {35.118110f, 4.881890f}, {40.0f, 0.0f}
     };
     Sim s;
     MotionCommand cmd;
@@ -458,13 +459,13 @@ static void test_follow_slowdown_never_reverses(void)
     MotionInput in = {.now_ms = 1000u, .count = {100u, 100u}};
     MotionOutput out;
     MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
-        MISSION_FOLLOW_SPEED_MMPS, 0.0f, 0, 1u, in.now_ms);
+        75.0f, 0.0f, 0, 1u, in.now_ms);
     motion_control_step(&control, &cmd, &in, &out);
     in.now_ms += MOTION_PERIOD_MS;
     in.count[0] += 16u;
     in.count[1] += 16u;
     /* Preserve the old low-speed count target after correcting its mm label. */
-    cmd = motion_command_make(MOTION_MODE_FOLLOW, floorf(MISSION_BROAD_SPEED_MMPS),
+    cmd = motion_command_make(MOTION_MODE_FOLLOW, 37.0f,
         0.0f, -96, 1u, in.now_ms);
     motion_control_step(&control, &cmd, &in, &out);
     printf("tracking -> recovery slowdown: left duty=%f right duty=%f\n",
@@ -494,7 +495,7 @@ static void test_discrete_overspeed_does_not_reverse(void)
             MotionInput in = {.now_ms = 100u, .count = {0u, 0u}};
             float target = direction * (mode == MOTION_MODE_DISTANCE ? 28.0f : 90.0f);
             MotionCommand cmd = motion_command_make((motion_mode_t)mode,
-                floorf(MISSION_BROAD_SPEED_MMPS), target, 0, 2u, in.now_ms);
+                37.0f, target, 0, 2u, in.now_ms);
             MotionOutput out;
             motion_control_step(&control, &cmd, &in, &out);
             float goal = mode == MOTION_MODE_DISTANCE ? 28.0f * ENC_COUNTS_PER_MM :

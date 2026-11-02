@@ -107,7 +107,6 @@
 #define MOTION_STALL_GUARD_ENABLED 0 /* user-requested trial configuration */
 #endif
 #define RECOVERY_MS 30000u
-#define MISSION_LINE_LOST_MS 500u /* user: continuous fresh white/white */
 #define RECOVERY_TRAVEL_MM 1200u /* PROPOSAL D07: wheel excursion bound */
 #define RECOVERY_SPEED_MMPS 36u /* D07: preserves pre-calibration count speed */
 #define RECOVERY_TARGET_DEG 70 /* user: sweep each side of the stopped pose */
@@ -118,22 +117,16 @@
 #define BASE_DUTY		0.25f	/* PROVISIONAL (D07) */
 #define BROAD_DUTY		0.20f	/* PROVISIONAL (D07) */
 #define MAX_STEER		1.0f	/* digital correction: full Q7 request */
-#define MOTION_FOLLOW_BOOST 0.60f /* full correction boosts one wheel by 60% */
-#define MOTION_FOLLOW_INNER_CUT 1.0f /* PROVISIONAL D07: tight-curve reduction */
-#define MOTION_FOLLOW_TIGHTEN_Q 0 /* PROVISIONAL D07: inner wheel slows linearly, no pivot kink */
 #define MOTION_FOLLOW_SLEW_MMPS2 250u /* PROVISIONAL D07: common FOLLOW base ramp */
 #define MOTION_FOLLOW_STEER_QPS 900u /* PROVISIONAL D07: applied steering slew */
-#ifndef MISSION_TRACK_SPEED_MMPS
-#define MISSION_TRACK_SPEED_MMPS 100.0f /* PROVISIONAL D07: user-fixed speed (INT-113); 55 passed in INT-105/108 */
-#endif
+#define MISSION_TRACK_SPEED_MMPS 100.0f /* user hard guardrail: fixed course speed, not overridable */
 /* Digital line tracking uses a fixed correction magnitude MAX_STEER.
    White reported as black with LOW polarity; use HIGH for black. */
 #define IR_BLACK_LEVEL 1u
 
 /* --- Mission (S3). UNMEASURED PLACEHOLDERS until #59/#61 (D01, D02, D07) ----- */
-#define MISSION_FOLLOW_SPEED_MMPS 75.0f /* PROVISIONAL D07: modest speed increase */
-#define MISSION_BROAD_SPEED_MMPS (MISSION_FOLLOW_SPEED_MMPS * 0.5f)
-#define MISSION_TURN_SPEED_MMPS MISSION_FOLLOW_SPEED_MMPS
+/* Specs: requested hump speed is half normal tracking speed. */
+#define MISSION_HUMP_SPEED_MMPS (MISSION_TRACK_SPEED_MMPS * 0.5f)
 #define MISSION_TURN_ADVANCE_MM 70u /* user: straight approach before L/R */
 #define MISSION_STRAIGHT_MM 25u /* user: straight exit before tracking */
 #define MISSION_JUNCTION_MIN_COUNTS	6u	/* PROVISIONAL (D02): broad black this long is a junction */
@@ -157,24 +150,35 @@
 
 /* DOUT commissioning defaults, NOT calibrated limits (D02/D03/D04/D07).
    Zero measurement fields deliberately inhibit navigation. */
-#define LINE_INITIAL_Q 32
-#define LINE_BUILD_Q 3 /* PROVISIONAL D07: integral step per one-black sample (INT-107/118) */
-#ifndef LINE_UNWIND_Q
-#define LINE_UNWIND_Q 1 /* PROVISIONAL D07: integral step against its sign (INT-116) */
+/* Distance-based digital steering (reference-style): a strong fixed correction
+   while one sensor is black, bend memory from repeated same-side touches, and a
+   gentle drift toward the last side on white/white. Starting values copy the
+   reference repo's wheel ratios under this S2 mix; trial values, not calibrated. */
+#ifndef LINE_EDGE_Q
+#define LINE_EDGE_Q 115 /* PROVISIONAL D07 trial: one sensor black, ~90% inner-wheel cut */
 #endif
-#ifndef LINE_UNWIND_SAMPLES
-#define LINE_UNWIND_SAMPLES 20u /* PROVISIONAL D07: opposing samples treated as overshoot (INT-118) */
+#ifndef LINE_BEND_EDGE_Q
+#define LINE_BEND_EDGE_Q 127 /* PROVISIONAL D07 trial: touch in a bend, inner wheel stopped */
 #endif
-#ifndef LINE_EXIT_Q
-#define LINE_EXIT_Q 6 /* PROVISIONAL D07: step once opposition outlasts that: curve exit */
+#ifndef LINE_BEND_LEAN_Q
+#define LINE_BEND_LEAN_Q 57 /* PROVISIONAL D07 trial: white/white in a bend, ~45% inner cut */
 #endif
-#ifndef LINE_HOLD_KICK_Q
-#define LINE_HOLD_KICK_Q 64 /* PROVISIONAL D07: P kick during that hold (INT-122) */
+#ifndef LINE_DRIFT_Q
+#define LINE_DRIFT_Q 8 /* PROVISIONAL D07 trial: white/white drift toward the last side */
 #endif
-#ifndef LINE_HOLD_SAMPLES
-#define LINE_HOLD_SAMPLES 255u /* black samples held at zero after an exit drain; 255 = until white (INT-120/122) */
+#ifndef LINE_BEND_TOUCH_MM
+#define LINE_BEND_TOUCH_MM 50u /* PROVISIONAL D07 trial: same-side re-touch or touch this long is a bend */
+#endif
+#ifndef LINE_LOST_MM
+#define LINE_LOST_MM 200u /* PROVISIONAL D07 trial: white/white this far past the last touch is loss; drift touches within ~50 mm */
+#endif
+#ifndef LINE_BEND_LEAN_MM
+#define LINE_BEND_LEAN_MM 100u /* PROVISIONAL D07 trial: bend lean lasts this far past the last touch */
 #endif
 #define LINE_RELEASE_QPS 1800u
+_Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND_LEAN_Q < LINE_EDGE_Q &&
+    LINE_EDGE_Q <= LINE_BEND_EDGE_Q && LINE_BEND_EDGE_Q <= 127 && LINE_BEND_TOUCH_MM > 0u &&
+    LINE_BEND_LEAN_MM >= LINE_BEND_TOUCH_MM && LINE_LOST_MM > LINE_BEND_LEAN_MM, "line steering ordering");
 #ifndef NAV_GEOMETRY_RELEASED
 #define NAV_GEOMETRY_RELEASED 0
 #endif
@@ -192,21 +196,22 @@
 #endif
 /* Release asserts measured body clearance, encoder geometry and thresholds. */
 #define NAV_ENTRY_MAX_DEG 5.0f
-#define NAV_ENTRY_MAX_STEER_Q 32
-#define NAV_CONFIRM_MM 9u /* PROVISIONAL D02: half the 18 mm crossing; curve skew is shorter */
-#define NAV_CURVE_CONFIRM_MM 12u /* PROVISIONAL D02: skewed entry, below the ~23 mm measured crossing */
+#define NAV_CONFIRM_MM 9u /* PROVISIONAL D02: half the 18 mm crossing */
+#ifndef NAV_ONSET_SKEW_MM
+#define NAV_ONSET_SKEW_MM 15u /* PROVISIONAL D02 trial: both sensors went black within this = crossing; set from line traces */
+#endif
 #define NAV_REARM_MM 10u
 #define NAV_HEADING_REF_MM 100u /* PROVISIONAL D02: oldest straight heading used to cross */
 #define NAV_EXIT_MAX_MM 150u
-#define NAV_EXIT_ANGLE_MIN_DEG 75.0f
-#define NAV_EXIT_ANGLE_MAX_DEG 105.0f
-#define NAV_UTURN_WINDOW_DEG 15.0f
+/* Junction pivots end on the line: the leading sensor black then not black,
+   looked for only past the sense angle so the branch being left never counts.
+   Reference-repo values, PROVISIONAL D02/D07 trial. */
+#define NAV_TURN_MAX_DEG 120.0f
+#define NAV_TURN_SENSE_DEG 60.0f
+#define NAV_UTURN_MAX_DEG 210.0f
+#define NAV_UTURN_SENSE_DEG 150.0f
 #define NAV_PAUSE_MS 100u
 #define NAV_DECEL_MS 500u
-#define PATH_LEAD_MM 5.0f
-#define PATH_ERROR_MM 20.0f
-#define PATH_CORRECTION_MMPS 20.0f
-#define PATH_POSITION_GAIN 4.0f
 #ifndef BARCODE_DIAGNOSTICS
 #define BARCODE_DIAGNOSTICS 0
 #endif
@@ -330,7 +335,7 @@
 /* --- Relations ----------------------------------------------------- */
 _Static_assert(MOTION_MAX_DUTY > 0.0f && MOTION_MAX_DUTY <= 1.0f,
 	"motion duty limit must be a fraction");
-_Static_assert(BASE_DUTY * (1.0f + MOTION_FOLLOW_BOOST * MAX_STEER) <= MOTION_MAX_DUTY,
+_Static_assert(BASE_DUTY * (1.0f + MAX_STEER) <= MOTION_MAX_DUTY,
 	"line-follow duty plus steering must fit the motion duty limit");
 _Static_assert(BROAD_DUTY <= MOTION_MAX_DUTY, "broad-black duty must stay within the motion duty limit");
 _Static_assert(MOTION_EXPIRY_MS > 2u * FOLLOW_PERIOD_MS,
@@ -372,20 +377,14 @@ _Static_assert(MOTION_FOLLOW_STEER_QPS > 0u &&
     MISSION_TRACK_SPEED_MMPS > 0.0f &&
     MISSION_TRACK_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS,
     "tracking speed and steering step must remain bounded");
-_Static_assert(MOTION_FOLLOW_INNER_CUT >= 0.0f &&
-    MOTION_FOLLOW_INNER_CUT <= 1.0f &&
-    MOTION_FOLLOW_TIGHTEN_Q >= 0 && MOTION_FOLLOW_TIGHTEN_Q < 127,
-    "tight-curve mixing must not reverse the inner wheel");
-_Static_assert(MOTION_FOLLOW_BOOST >= 0.0f && MOTION_FOLLOW_BOOST <= 1.0f &&
-    MAX_STEER > 0.0f && MAX_STEER <= 1.0f &&
-    MISSION_FOLLOW_SPEED_MMPS >= 2.0f && MISSION_STRAIGHT_MM > 0u &&
+/* User hard guardrail, 2026-11-02: line following, crossings and junction turns
+   run at 100 mm/s (half on a hump, per specs); recovery and bypass stay slow. */
+_Static_assert(MISSION_TRACK_SPEED_MMPS == 100.0f, "course speed is fixed at 100 mm/s");
+_Static_assert(MAX_STEER > 0.0f && MAX_STEER <= 1.0f && MISSION_STRAIGHT_MM > 0u &&
     MISSION_TURN_ADVANCE_MM > 0u &&
     MISSION_TURN_ADVANCE_MM * ENC_COUNTS_PER_MM < ENC_COUNT_MASK / 2u,
     "navigation travel and steering must remain bounded");
-_Static_assert(MISSION_TRACK_SPEED_MMPS *
-    (1.0f + MOTION_FOLLOW_BOOST * MAX_STEER) <= MOTION_SPEED_MAX_MMPS &&
-	MISSION_FOLLOW_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS &&
-	MISSION_TURN_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS,
+_Static_assert(MISSION_TRACK_SPEED_MMPS * (1.0f + MAX_STEER) <= MOTION_SPEED_MAX_MMPS,
 	"Mission speeds must stay within the Motion speed limit");
 _Static_assert(SONAR_TIMEOUT_US / 1000u < SONAR_REPEAT_MS && SONAR_MIN_PULSE_US < SONAR_TIMEOUT_US &&
 	SONAR_NO_ECHO_LIMIT >= 1u, "sonar timing: the timeout must fit inside the repeat interval");

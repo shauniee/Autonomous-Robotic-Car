@@ -1,6 +1,5 @@
 #include "motion_control.h"
 #include "../common/robot_time_math.h"
-#include "smooth_path.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -59,16 +58,10 @@ bool motion_command_set(MotionCommand *dst, motion_mode_t mode,
         steering_q > 127 || target < -MOTION_TARGET_MAX_MM ||
         target > MOTION_TARGET_MAX_MM ||
         (mode == MOTION_MODE_TURN &&
-        ((steering_q != MOTION_TURN_SMOOTH && fabsf(target) > 360.0f) ||
-        steering_q < MOTION_TURN_PIVOT || steering_q > MOTION_TURN_RAMPED)) ||
+        (fabsf(target) > 360.0f || steering_q < MOTION_TURN_PIVOT ||
+        steering_q == 2 || steering_q > MOTION_TURN_RAMPED)) ||
         (mode == MOTION_MODE_DISTANCE && speed_mmps == 0.0f) ||
         (mode == MOTION_MODE_TURN && speed_mmps == 0.0f))
-    {
-        return false;
-    }
-    if (mode == MOTION_MODE_TURN && steering_q == MOTION_TURN_SMOOTH &&
-        (!NAV_GEOMETRY_RELEASED ||
-        !smooth_path_valid(fabsf(target), TRACK_WIDTH_MM)))
     {
         return false;
     }
@@ -116,15 +109,9 @@ static bool command_valid(const MotionCommand *cmd)
         return true;
     }
     int style = motion_cmd_steering(cmd);
-    if (style < MOTION_TURN_PIVOT || style > MOTION_TURN_RAMPED)
+    if (style < MOTION_TURN_PIVOT || style == 2 || style > MOTION_TURN_RAMPED)
     {
         return false;
-    }
-    if (style == MOTION_TURN_SMOOTH)
-    {
-        return NAV_GEOMETRY_RELEASED &&
-            smooth_path_valid((float)abs(motion_cmd_target(cmd)),
-            TRACK_WIDTH_MM);
     }
     return abs(motion_cmd_target(cmd)) <= 360;
 }
@@ -205,10 +192,8 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         WheelPid previous_pid[2] = {c->pid[0], c->pid[1]};
         bool continuous = c->active &&
             ((c->mode == MOTION_MODE_FOLLOW &&
-              ((motion_cmd_mode(cmd) == MOTION_MODE_TURN &&
-                motion_cmd_steering(cmd) == MOTION_TURN_SMOOTH) ||
-               (motion_cmd_mode(cmd) == MOTION_MODE_DISTANCE &&
-                motion_cmd_steering(cmd) == MOTION_TURN_RAMPED))) ||
+              motion_cmd_mode(cmd) == MOTION_MODE_DISTANCE &&
+              motion_cmd_steering(cmd) == MOTION_TURN_RAMPED) ||
              (c->mode == MOTION_MODE_TURN &&
               motion_cmd_mode(cmd) == MOTION_MODE_FOLLOW));
         *c = (MotionController){0};
@@ -243,10 +228,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
     }
 
     /* A finished action holds its result until a new action ID replaces it. */
-    if (c->status == RD_MOTION_FAILED ||
-        (c->status == RD_MOTION_DONE &&
-        !(motion_cmd_mode(cmd) == MOTION_MODE_TURN &&
-        motion_cmd_steering(cmd) == MOTION_TURN_SMOOTH)))
+    if (c->status == RD_MOTION_FAILED || c->status == RD_MOTION_DONE)
     {
         for (int w = 0; w < 2; ++w)
         {
@@ -330,64 +312,11 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
             requested == 0u ? 0 : (int8_t)(c->follow_steer_q + steer_delta);
         /* Smooth the differential as well as translation before mixing. */
         vmax_cps = ((float)previous / 64.0f) * COUNTS_PER_MM;
-        float steering = (float)c->follow_steer_q;
-        float boost = MOTION_FOLLOW_BOOST * steering / 127.0f;
-        /* Tighten sustained curves without increasing the outer-wheel demand. */
-        float inner_cut = MOTION_FOLLOW_INNER_CUT *
-        fmaxf((fabsf(steering) - MOTION_FOLLOW_TIGHTEN_Q) /
-            (127.0f - MOTION_FOLLOW_TIGHTEN_Q),
-            0.0f);
-        target_cps[LEFT] = vmax_cps * (1.0f + fmaxf(boost, 0.0f)) *
-        (steering < 0.0f ? 1.0f - inner_cut : 1.0f);
-        target_cps[RIGHT] = vmax_cps * (1.0f + fmaxf(-boost, 0.0f)) *
-        (steering > 0.0f ? 1.0f - inner_cut : 1.0f);
-    }
-    else if (motion_cmd_mode(cmd) == MOTION_MODE_TURN &&
-        motion_cmd_steering(cmd) == MOTION_TURN_SMOOTH)
-    {
-        float length = (float)abs(motion_cmd_target(cmd));
-        float actual[2] =
-        {
-            enc_travel_signed(in->count[0], c->origin[0]) / COUNTS_PER_MM,
-                enc_travel_signed(in->count[1], c->origin[1]) / COUNTS_PER_MM};
-        float mean = (actual[0] + actual[1]) * 0.5f;
-        float speed = c->follow_base_q6 / 64.0f;
-        float release_dt = starting ? .020f : fminf(dt_ms * .001f, .020f);
-        float step = MOTION_FOLLOW_SLEW_MMPS2 * release_dt;
-        speed += fminf(fmaxf(motion_cmd_speed(cmd) - speed, -step), step);
-        c->follow_base_q6 = (uint16_t)lroundf(speed * 64.0f);
-        float progress = c->path_q8 / 256.0f;
-        progress = fmaxf(progress, fminf(progress + speed * release_dt,
-            mean + PATH_LEAD_MM));
-        float position[2], ratio[2];
-        smooth_path_reference(length, TRACK_WIDTH_MM,
-            motion_cmd_target(cmd) > 0 ? 1 : -1, progress,
-            position, ratio);
-        bool failed =
-            progress > length + NAV_EXIT_MAX_MM || progress >= 4095.0f ||
-            robot_time_elapsed(in->now_ms, c->start_ms) >= MOTION_ACTION_TIMEOUT_MS;
-        for (unsigned w = 0; w < 2; ++w)
-        {
-            float error = position[w] - actual[w];
-            failed |= fabsf(error) > PATH_ERROR_MM;
-            float correction =
-                fminf(fmaxf(error * PATH_POSITION_GAIN, -PATH_CORRECTION_MMPS),
-                PATH_CORRECTION_MMPS);
-            target_cps[w] = fminf(fmaxf(speed * ratio[w] + correction, 0.0f),
-                MOTION_SPEED_MAX_MMPS) *
-            COUNTS_PER_MM;
-        }
-        if (failed)
-        {
-            c->status = RD_MOTION_FAILED;
-            brake(out, c->status, c->action_id);
-            return;
-        }
-        c->path_q8 = (uint32_t)lroundf(progress * 256.0f);
-        if (mean >= length)
-        {
-            c->status = RD_MOTION_DONE;
-        }
+        /* Centre-preserving mix: the outer wheel gains what the inner loses, so
+           the robot centre keeps the commanded speed while steering. */
+        float steering = (float)c->follow_steer_q / 127.0f;
+        target_cps[LEFT] = vmax_cps * (1.0f + steering);
+        target_cps[RIGHT] = vmax_cps * (1.0f - steering);
     }
     else
     {

@@ -321,6 +321,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
                 control->chunk_origin[1] = input->count[1];
                 control->line_sampled_ms = input->line_ms;
                 control->visible_streak = 0u;
+                control->line_seen = 0u;
             }
         }
     }
@@ -422,7 +423,10 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
         else if (input->line_ms != control->line_sampled_ms)
         {
             control->line_sampled_ms = input->line_ms;
-            if (input->line_visible && abs(input->line_error_q) <= RECOVERY_ALIGN_ERROR_Q)
+            /* Aligned white/white counts only after the line was crossed. */
+            control->line_seen = control->line_seen || input->line_black;
+            if (control->line_seen && input->line_visible &&
+                abs(input->line_error_q) <= RECOVERY_ALIGN_ERROR_Q)
             {
                 if (control->visible_streak < MISSION_CONFIRM_SAMPLES)
                 {

@@ -154,8 +154,10 @@ history. Physical smoothness and pivot geometry remain unmeasured.
 
 ## Smooth navigation revision
 
-Motion now supports internal TURN style 2 (signed whole-mm cubic path) and
-style 3 (ramped encoder pivot); DISTANCE style 3 requests the ramped approach.
+Motion supports TURN style 3 (ramped encoder pivot); DISTANCE style 3 requests
+the ramped approach. TURN style 2, the signed whole-mm cubic path, was removed
+2026-11-02 when junction turns became pivots that end on the line; style 2 is now
+rejected.
 Style 0/1 remains available for recovery/bypass and legacy actions. Command ABI and
 wire protocols remain unchanged. The authoritative behavior is in
 [architecture](../architecture.md#dout-navigation-contract); calibration/storage

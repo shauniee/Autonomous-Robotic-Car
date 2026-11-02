@@ -29,6 +29,7 @@
 - [MQTT binary protocol, schema version 2](#mqtt-binary-protocol-schema-version-2)
   - [Telemetry and snapshot reply (23 bytes)](#telemetry-and-snapshot-reply-23-bytes)
   - [Wheel trace (15 bytes)](#wheel-trace-15-bytes)
+  - [Line trace (17 bytes)](#line-trace-17-bytes)
   - [Event (11 bytes)](#event-11-bytes)
   - [Mapping, acknowledgement, snapshot request](#mapping-acknowledgement-snapshot-request)
   - [Golden vectors](#golden-vectors)
@@ -442,6 +443,7 @@ Rules for every frame:
 | Acknowledgement | 5 | robot to PC | 3 |
 | Snapshot request | 6 | PC to robot | 2 |
 | Wheel trace | 8 | robot to PC, best effort per Motion release | 15 |
+| Line trace | 9 | robot to PC, best effort per fresh IR acquisition while moving | 17 |
 
 ### Wheel trace (15 bytes)
 
@@ -462,6 +464,28 @@ offline/full TX and full trace ring drop diagnostic samples without waiting.
 Robot timestamp gaps reveal missing releases; timestamps wrap modulo 2^32.
 There is no diagnostic request, movement authority or live tuning input.
 Older laptop decoders reject this new type; use the matching decoder for traces.
+
+### Line trace (17 bytes)
+
+Type 9 is outbound diagnostics only, proposed in the
+[line-tracking handoff](line-tracking-handoff.md) open issue 2 instead of changing
+the wheel trace; S1 owner agreement pending. Byte 0 is `29` hex; bytes 1..4 are the
+IR acquisition time uint32 ms. Byte 5 flags: bit 0 left black, 1 right black,
+2 in broad black, 3 junction candidate open, 4 junction qualified, 5 curved entry,
+6 junction locked, 7 zero. Byte 6: bits 0..3 Mission state, 4..6 junction phase,
+7 zero. Bytes 7..8 and 9..10 are the low 16 bits of the left/right encoder counts.
+Byte 11 is the steering law output, signed Q7. Byte 12 is the law state: the side
+last touched (-1 left, +1 right, 0 none), doubled while in a bend. Byte 13 is the FOLLOW steering sent to Motion (0 for
+other modes). Bytes 14..15: bits 0..8 commanded speed mm/s, 9..10 motion mode,
+11..15 zero. Byte 16 is, while both sensors are black, the distance in mm between
+the two sensors' black onsets (254 caps it), else 255.
+
+Mission builds one record per fresh acquisition after `mission_step` while it was
+moving (so the stopping decision is included) and puts it in an eight-record SPSC
+ring; I/O drains at most two per release after the wheel trace, and offline/full
+TX or a full ring drops records without waiting. Sample-time gaps reveal drops.
+There is no request, movement authority or live tuning input. `mqtt_client.py
+monitor` prints `LINE` JSON; the dashboard does not display it.
 
 ### Telemetry and snapshot reply (23 bytes)
 
@@ -576,24 +600,28 @@ Implemented software revision, 2026-11-01; supersedes earlier conflicting juncti
 and applied-steering policies. Measurement and numeric settings are owned by
 [specs](project-specs.md#dout-navigation-commissioning).
 
-Mission steers as PI on the digital error: a fixed proportional kick only while one
-sensor reads black, plus an integral that grows slowly per distinct one-black
-acquisition, is held through white/white so a curve keeps its turn, drains at its
-own (possibly slower) step when the error opposes it, switching to an exit step once
-the opposition outlasts a set number of samples (a curve ending, not an overshoot);
-an exit drain stops at zero and holds there until white/white or a set number of
-still-opposite samples (then an S-bend's next curve builds normally), using its own
-P kick while held, and is capped so the sum
-never exceeds full steering. Broad black requests none, so a crossbar
-cannot keep a turn going, unless the held integral exceeds the curve bound at
-broad entry: that is curve skew, so the turn is kept and, with no queued turn,
-the encounter never becomes a crossing.
+Mission steers by distance, with no integral (proposed 2026-11-02, host-tested
+only; replaces the INT-123 PI law). Per distinct acquisition: one sensor black
+steers a fixed edge correction toward it. That side touching again within a bend
+window of encoder travel after its last touch, or one touch lasting longer than
+that window, marks a bend and steers the stronger bend correction; the other side
+touching clears the bend at once, so an S-bend's next curve starts straight away.
+White/white leans into a bend for a set travel past the last touch, otherwise
+drifts gently toward the last side so a centred robot soon touches again. Broad
+black requests none, so a crossbar cannot keep a turn going. Mission records
+where each sensor last went black; at broad entry, onsets further apart than the
+skew bound mean curve skew (the inner sensor was black long before the outer), so
+the curve's steering is kept and, with no queued turn, the encounter never becomes
+a crossing. Onsets together mean a crossing whatever the steering held.
 Motion owns the sole applied steering/base slew and wheel PID. DOUT white/white
-remains ambiguous; ordinary straight travel does not time out as line loss.
+is ambiguous alone: it is loss only after a set travel past the last black
+acquisition, counted from the first touch in FOLLOW, which the drift bounds on a
+centred straight. Recovery and bypass return treat white/white as the line only
+after a sensor has been black in that phase
+([loss revision](project-specs.md#pending-decisions)).
 
 Both-black opens a candidate for every command source. Qualification needs a second
-fresh sample and forward encoder persistence; recent strong steering increases the
-confirmation distance. A queued command never bypasses this. For turns, qualified
+fresh sample and forward encoder persistence. A queued command never bypasses this. For turns, qualified
 but unknown, curved or infeasible geometry stops; no command is consumed before
 commitment. Straight and unqueued crossings do not require turn geometry.
 A post-exit lock requires non-broad travel before another candidate can commit.
@@ -605,24 +633,19 @@ heading at commit), because a crossbar can turn the robot and white/white cannot
 show that skew. It resumes IR guidance on a fresh non-broad sample once that
 heading is restored, or on a one-black sample after clearing twice the crossbar
 width. Straight continuation does not require an edge excursion. Exit
-distance/deadline failure stops while broad black persists. Turn exits still
-require a one-black observation followed by both-white.
+distance/deadline failure stops while broad black persists.
 
-Left/right Motion uses cubic heading theta=sign*pi/2*(3u^2-2u^3), u=s/L.
-With entry axle (-d,0), choose L=(d+sign*y_c)/0.605143689. Wheel positions are
-s +/- b*theta/2; curvature is zero at both ends. Constructor checks forward-only
-feasibility L>=3*pi*b/8 and release. One Q8 progress reference drives both wheels;
-position corrections, reference lead, excursion and timeout are bounded. At path
-completion Motion reports DONE while continuing the tangent at controlled speed
-until Mission hands off or the exit bound fails. Matching-action IR evidence near
-the expected angle is required before handoff. Existing non-smooth actions retain
-braked DONE behavior. Discrete mode/target/style are immutable for an action ID.
+Left, right and U-turn share one path (proposed 2026-11-02, host-tested only;
+replaces the smooth cubic path, removed from Motion). A ramped distance action
+advances the axle to the crossing centre (sensor forward offset plus half the
+crossbar, less the travel since broad entry; U-turn adds the chassis forward
+offset), then Mission holds stationary for the pause. A ramped encoder pivot toward
+a bound angle (left +, right and U-turn -) is the turn; it ends on the line, not on
+the angle: past a sense angle, the leading sensor (left for a left turn, right
+otherwise) black then not black stops it, which leaves the new branch between the
+sensors. Mission then commands STOP, confirms stationary, holds the pause and
+follows. Reaching the bound without that evidence stops. Stationarity loss restarts
+pause qualification. Discrete mode/target/style are immutable for an action ID.
 STOP, stale data and faults override all profiles.
-
-U-turn first approaches its measured pivot position with a ramped distance action,
-then holds stationary for 100 ms. A ramped encoder -180-degree pivot decelerates
-near its target; right-sensor black then both-white in the return-heading window
-qualifies the line. After DONE, confirm stationary and hold 100 ms before FOLLOW.
-Stationarity loss restarts pause qualification. Missing line evidence stops.
 No autonomous alignment search was added: ambiguous exits stop within the existing
 navigation deadline. Barcode/obstacle/network authority remains unchanged.

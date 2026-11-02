@@ -24,14 +24,8 @@ static MissionOutputs step(Mission *m, MissionInputs *in, uint32_t now)
 
 static int ref_initial_steer(int error_q)
 {
-    int correction = LINE_INITIAL_Q + LINE_BUILD_Q; /* P kick plus first I step */
+    int correction = LINE_EDGE_Q; /* first touch, no bend */
     return error_q < 0 ? -correction : (error_q > 0 ? correction : 0);
-}
-
-static unsigned ref_speed(int steer_q)
-{
-    return (unsigned)floorf(MISSION_TRACK_SPEED_MMPS *
-        1.0f / (1.0f + 0.60f * abs(steer_q) / 127.0f));
 }
 
 static uint32_t to_follow(Mission *m, MissionInputs *in)
@@ -124,9 +118,8 @@ static void test_follow_and_stops(void)
     in.line_error = IR_SCALE_ONE; t += 10u;			/* right black: steer left */
     MissionOutputs out = step(&m, &in, t);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW && motion_cmd_steering(&out.command) == ref_initial_steer(IR_SCALE_ONE));
-    assert(out.command.sampled_ms == t && motion_cmd_speed(&out.command) == ref_speed(ref_initial_steer(IR_SCALE_ONE)));
-    assert(ref_speed(0) == (unsigned)MISSION_TRACK_SPEED_MMPS &&
-        ref_speed(ref_initial_steer(IR_SCALE_ONE)) < ref_speed(0));
+    /* 100 mm/s guardrail: steering never lowers the commanded course speed. */
+    assert(out.command.sampled_ms == t && motion_cmd_speed(&out.command) == 100u);
 
     /* Unusable inputs or a Safety latch stop; Safety's own stop is not repeated. */
     in.inputs_ok = false; t += 10u;
@@ -139,18 +132,35 @@ static void test_follow_and_stops(void)
     assert(m2.state == MISSION_STOPPED && !out.stop_now && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
 }
 
+static void advance_mm(MissionInputs *in, float mm)
+{
+    int counts = (int)ceilf(mm * ENC_COUNTS_PER_MM); /* never short of mm */
+    in->wheel_count[0] = enc_advance(in->wheel_count[0], counts);
+    in->wheel_count[1] = enc_advance(in->wheel_count[1], counts);
+}
+
+/* Raw-consistent line states: error and black bits agree. */
+static void see(MissionInputs *in, int side)
+{
+    in->line = IR_LINE_VISIBLE;
+    in->guidance_valid = true;
+    in->line_error = (int8_t)(side * IR_SCALE_ONE);
+    in->left_black = side < 0;
+    in->right_black = side > 0;
+}
+
 static MissionOutputs enter_line_recovery(Mission *m, MissionInputs *in,
     uint32_t *t)
 {
-    in->line = IR_LINE_LOST;
-    in->guidance_valid = false;
+    see(in, -1);
     MissionOutputs out = step(m, in, *t += IR_SAMPLE_MS);
+    assert(m->state == MISSION_FOLLOW_LINE && m->line_side < 0);
+    see(in, 0);
+    advance_mm(in, LINE_LOST_MM - 1);
+    out = step(m, in, *t += IR_SAMPLE_MS);
     assert(m->state == MISSION_FOLLOW_LINE);
-    for (unsigned elapsed = IR_SAMPLE_MS; elapsed <= MISSION_LINE_LOST_MS;
-        elapsed += IR_SAMPLE_MS)
-    {
-        out = step(m, in, *t += IR_SAMPLE_MS);
-    }
+    advance_mm(in, 1);
+    out = step(m, in, *t += IR_SAMPLE_MS);
     assert(m->state == MISSION_REACQUIRE);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
     return out;
@@ -158,92 +168,94 @@ static MissionOutputs enter_line_recovery(Mission *m, MissionInputs *in,
 
 static void test_line_loss_qualification(void)
 {
+    /* White/white past LINE_LOST_MM after a touch is loss; the queue is kept
+       until then and cleared on entering recovery. */
     Mission m;
     MissionInputs in = base(100u);
     uint32_t t = to_follow(&m, &in);
-    in.line_error = 80;
-    MissionOutputs out = step(&m, &in, t += IR_SAMPLE_MS);
-    int steering = motion_cmd_steering(&out.command);
-    unsigned speed = motion_cmd_speed(&out.command);
+    see(&in, 1);
+    step(&m, &in, t += IR_SAMPLE_MS);
     assert(mission_queue_direction(&m, BARCODE_LEFT));
-    in.line = IR_LINE_LOST;
-    in.guidance_valid = false;
-    out = step(&m, &in, t += IR_SAMPLE_MS);
-    uint32_t first = t;
-    for (unsigned elapsed = 0u; elapsed < MISSION_LINE_LOST_MS;
-        elapsed += IR_SAMPLE_MS)
+    see(&in, 0);
+    MissionOutputs out;
+    for (unsigned mm = 0u; mm < LINE_LOST_MM; mm += 10u)
     {
-        out = step(&m, &in, t = first + elapsed);
-        assert(m.state == MISSION_FOLLOW_LINE && m.line_loss_pending);
-        assert(motion_cmd_steering(&out.command) == steering);
-        assert(motion_cmd_speed(&out.command) == speed);
+        out = step(&m, &in, t += IR_SAMPLE_MS);
+        assert(m.state == MISSION_FOLLOW_LINE);
+        assert(motion_cmd_steering(&out.command) == LINE_DRIFT_Q);
         assert(out.command.sampled_ms == in.line_sampled_ms);
         assert(!out.stop_scanner && !out.scan_cancel);
         assert(m.held == BARCODE_LEFT && m.manual_held);
+        advance_mm(&in, 10.0f);
     }
-    out = step(&m, &in, t = first + MISSION_LINE_LOST_MS - 1u);
-    assert(m.state == MISSION_FOLLOW_LINE);
-    out = step(&m, &in, t = first + MISSION_LINE_LOST_MS);
-    assert(m.state == MISSION_REACQUIRE && !m.line_loss_pending);
+    out = step(&m, &in, t += IR_SAMPLE_MS);
+    assert(m.state == MISSION_REACQUIRE);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
     assert(out.stop_scanner && out.scan_cancel && !out.side_watch_on);
     assert(m.held == BARCODE_UNMAPPED && !m.manual_held);
 
-    /* Visibility/broad-black resets qualification, even near the deadline. */
+    /* Before the first touch the line is between the sensors: a long centred
+       straight is never loss, however far or long. */
+    in = base(100u);
+    t = to_follow(&m, &in);
+    for (unsigned i = 0u; i < 100u; ++i)
+    {
+        advance_mm(&in, 10.0f);
+        out = step(&m, &in, t += IR_SAMPLE_MS);
+        assert(m.state == MISSION_FOLLOW_LINE && motion_cmd_steering(&out.command) == 0);
+    }
+
+    /* A touch or a crossbar restarts the distance, even near the limit. */
     for (unsigned scenario = 0u; scenario < 2u; ++scenario)
     {
         in = base(100u);
         t = to_follow(&m, &in);
-        in.line = IR_LINE_LOST;
-        in.guidance_valid = false;
-        for (unsigned i = 0u; i < 20u; ++i)
-        {
-            out = step(&m, &in, t += IR_SAMPLE_MS);
-        }
-        in.line = scenario == 0u ? IR_LINE_VISIBLE : IR_LINE_BROAD_BLACK;
-        in.guidance_valid = scenario == 0u;
+        see(&in, -1);
         step(&m, &in, t += IR_SAMPLE_MS);
-        assert(!m.line_loss_pending);
-        in.line = IR_LINE_LOST;
-        in.guidance_valid = false;
+        see(&in, 0);
+        advance_mm(&in, LINE_LOST_MM - 10);
+        step(&m, &in, t += IR_SAMPLE_MS);
+        if (scenario == 0u)
+        {
+            see(&in, -1);
+        }
+        else
+        {
+            in.line = IR_LINE_BROAD_BLACK;
+            in.guidance_valid = false;
+            in.left_black = in.right_black = true;
+        }
+        step(&m, &in, t += IR_SAMPLE_MS);
+        see(&in, 0);
+        advance_mm(&in, LINE_LOST_MM - 10);
         step(&m, &in, t += IR_SAMPLE_MS);
         assert(m.state == MISSION_FOLLOW_LINE);
-        assert(m.line_lost_since_ms == t);
     }
 
-    /* Both zero acquisition time and wrap through zero qualify correctly. */
-    const uint32_t starts[] = {0u, UINT32_MAX - 200u};
-    for (unsigned i = 0u; i < 2u; ++i)
-    {
-        in = base(100u);
-        to_follow(&m, &in);
-        t = starts[i] - IR_SAMPLE_MS;
-        enter_line_recovery(&m, &in, &t);
-        assert(m.state == MISSION_REACQUIRE);
-    }
-
-    /* A missing interval does not count; a cached sample becomes stale. */
+    /* Encoder wrap qualifies correctly. */
     in = base(100u);
     t = to_follow(&m, &in);
-    in.line = IR_LINE_LOST;
-    in.guidance_valid = false;
+    in.wheel_count[0] = in.wheel_count[1] = ENC_COUNT_MASK - 100u;
+    enter_line_recovery(&m, &in, &t);
+
+    /* A cached sample becomes stale and stops. */
+    in = base(100u);
+    t = to_follow(&m, &in);
+    see(&in, -1);
     step(&m, &in, t += IR_SAMPLE_MS);
-    out = step(&m, &in, t += MISSION_LINE_LOST_MS);
-    assert(m.state == MISSION_FOLLOW_LINE && m.line_lost_since_ms == t);
+    see(&in, 0);
+    out = step(&m, &in, t += IR_SAMPLE_MS);
     in.now_ms += IR_MAX_GAP_MS;
     mission_step(&m, &in, &out);
     assert(m.state == MISSION_FOLLOW_LINE);
     ++in.now_ms;
     mission_step(&m, &in, &out);
     assert(m.state == MISSION_STOPPED && out.stop_now);
-    assert(!m.line_loss_pending);
 
     for (unsigned scenario = 0u; scenario < 3u; ++scenario)
     {
         in = base(100u);
         t = to_follow(&m, &in);
-        in.line = IR_LINE_LOST;
-        in.guidance_valid = false;
         step(&m, &in, t += IR_SAMPLE_MS);
         if (scenario == 0u)
         {
@@ -260,7 +272,7 @@ static void test_line_loss_qualification(void)
         out = step(&m, &in, t += IR_SAMPLE_MS);
         assert(m.state == MISSION_STOPPED && out.stop_now);
     }
-    puts("INT-63: 499/500 ms loss, reset, queue retention, freshness and wrap PASS");
+    puts("line loss: distance after a touch, queue retention, restart, wrap and freshness PASS");
 }
 
 static void test_line_loss_recovery_is_bounded(void)
@@ -287,8 +299,7 @@ static void test_line_loss_recovery_is_bounded(void)
         in.line = IR_LINE_BROAD_BLACK;
         out = step(&m, &in, t += IR_SAMPLE_MS);
         assert(m.state == MISSION_REACQUIRE);
-        in.line = IR_LINE_VISIBLE;
-        in.guidance_valid = true;
+        see(&in, error < 0 ? -1 : 1);
         in.line_error = error;
         in.stationary = false;
         out = step(&m, &in, t += IR_SAMPLE_MS);
@@ -504,6 +515,10 @@ static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm)
         in.side_mm = m.bypass.forward_q8 / 256 > 250 ? 700u : 400u;
         in.side_sampled_ms = t + 10u;
         in.side_sequence++;
+        /* Returning, the left sensor crosses the line once before aligning. */
+        bool crossing = m.bypass.route == BYPASS_ROUTE_LINE && !m.bypass.line_seen;
+        in.left_black = crossing;
+        in.line_error = crossing ? -IR_SCALE_ONE : 0;
         out = bstep(&m, &in, &t);
         if (out.event_kind == MQTT_EVENT_OBSTACLE)
         {
@@ -690,9 +705,10 @@ static void test_run_network_loss_and_hump_speed(void)
     MissionOutputs out = step(&m, &in, t += 20u);
     assert(m.state == MISSION_FOLLOW_LINE && !out.stop_now);
     unsigned normal = motion_cmd_speed(&out.command);
+    assert(normal == 100u);
     in.hump_active = true;
     out = step(&m, &in, t += 20u);
-    assert(motion_cmd_speed(&out.command) == normal / 2u);
+    assert(motion_cmd_speed(&out.command) == 50u && m.state == MISSION_FOLLOW_LINE);
     in.hump_active = false;
     out = step(&m, &in, t += 20u);
     assert(motion_cmd_speed(&out.command) == normal);

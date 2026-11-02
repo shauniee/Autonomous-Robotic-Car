@@ -2,6 +2,12 @@
 
 ## Contents
 
+- [100 mm/s course speed guardrail — INT-129](#100-mms-course-speed-guardrail--int-129)
+- [Pivot junction turns — INT-128](#pivot-junction-turns--int-128)
+- [Line loss and reacquisition evidence — INT-127](#line-loss-and-reacquisition-evidence--int-127)
+- [Distance-based steering law — INT-126](#distance-based-steering-law--int-126)
+- [Line-trace diagnostics build — INT-125](#line-trace-diagnostics-build--int-125)
+- [Raw-input line replay tests — INT-124](#raw-input-line-replay-tests--int-124)
 - [100 mm/s defaults from trial o — INT-123](#100-mms-defaults-from-trial-o--int-123)
 
 - [Hold limit and hump halving — INT-122](#hold-limit-and-hump-halving--int-122)
@@ -3007,3 +3013,177 @@ normal wireless image built from source is byte-identical to trial o
 only shortens the overshoot window and exit hold. Specs and the S3 steering
 paragraph updated. [Host suite](logs/2026-11-01_INT-123/host.txt) PASS. Open items
 are in the [line-tracking handoff](../../docs/line-tracking-handoff.md).
+
+## Raw-input line replay tests — INT-124
+
+2026-11-01, Claude with Nicholas. Host only: base `159e89b` plus uncommitted
+`testing/pure/test_line_replay.c` (sha256 `105d6019d442…`) and `run.sh`
+(`88e7a814456c…`). No firmware, no physical run.
+
+**Defined before the run:** feed scripted raw DOUT bits through `ir_tracking`, the
+snapshot and the `mission.c` input mapping into `mission_step`, never a hand-built
+`IR_LINE_*` state. Cases: centred straight with 5 s of white/white keeps following
+with zero steering; curve skew (inner black, outer joins) keeps the turn; a curve,
+20 samples of white/white, then a crossbar under both sensors becomes a crossing
+(`MISSION_NAVIGATE`); an S-bend follows the new side while it is still black;
+white/white blank floor during the recovery sweep is not reacquisition; a replayed
+cached sample builds no integral and does not qualify a junction. Defects are strict
+known failures: the suite stays green while they reproduce and fails once fixed.
+
+**Result:** [host suite](logs/2026-11-01_INT-124/host.txt) PASS with 2 known failures.
+Straight, curve skew, S-bend and cached-sample cases PASS; the S-bend steering took
+28 samples (about 28 mm at 100 mm/s) of the new side black to change sign.
+**KNOWN FAIL:** the crossbar after a curve is driven as curve skew because the
+integral held through white/white is still above `NAV_ENTRY_MAX_STEER_Q` at broad
+entry (the INT-123 junction failure mechanism, reproduced on host only).
+**KNOWN FAIL:** `recovery_control` declares the line found on white/white blank floor
+(reachable only once recovery is reachable). The bypass return check at
+`bypass_control.c` has the same flaw and is not yet covered.
+
+## Line-trace diagnostics build — INT-125
+
+2026-11-02, Claude with Nicholas. Host and build only: base `159e89b` plus the
+uncommitted INT-124 replay test and the type 9 line trace (`mqtt_frame`, new
+`mission/line_trace.[ch]`, Mission publish, S1 drain, `mqtt_client.py` decoder,
+[architecture frame](../../docs/architecture.md#line-trace-17-bytes)). No flash and
+no physical run yet.
+
+**Defined before the run:** encoder golden bytes match the laptop decoder's golden
+vector; out-of-range fields, short buffers and a full ring are rejected; the replay
+junction case shows broad entry with `entry_curved` set and the held integral in
+the record; the normal wireless image builds without warnings or errors.
+
+**Result:** [host suite](logs/2026-11-02_INT-125/host.txt) PASS (line_trace PASS,
+line replay PASS with the 2 INT-124 known failures, mqtt_client self-test PASS).
+[Normal wireless build](logs/2026-11-02_INT-125/firmware-normal.txt) PASS, no
+warnings or errors; UF2 sha256 `b29ed613007e8649…`. **Pending (physical):** run
+this image on battery on the three-curve route with `mqtt_client.py monitor`
+capturing WHEEL and LINE, and check `law_q` and the curved-entry flag at the
+broad entry of the failing junction.
+
+## Distance-based steering law — INT-126
+
+2026-11-02, Claude with Nicholas. Host and build only: base `159e89b` plus the
+uncommitted INT-124/125 work and this change. No flash, no physical run.
+
+**Change:** the PI law (kick, integral, unwind/exit drain, hold) is replaced in
+`mission_logic.c` by a distance-based P law: one sensor black steers 115/127; a
+same-side re-touch within 50 mm, or a touch longer than 50 mm, is a bend and steers
+127/127; the other side clears the bend; white/white leans 57/127 for 100 mm in a
+bend, else drifts 8/127 toward the last side. Curve skew at broad entry is now black
+onsets more than 15 mm apart instead of an integral above 32; `NAV_CURVE_CONFIRM_MM`
+is gone (9 mm for all candidates). All values are trial values copied from the
+reference repo's wheel ratios ([specs](../../docs/project-specs.md#dout-navigation-commissioning)).
+The line trace grows to 17 bytes: byte 12 is now the law state (last side, doubled
+in a bend) and byte 16 the onset skew (INT-125's 16-byte layout was never flashed).
+The S2 steering slew (`MOTION_FOLLOW_STEER_QPS` 900) is unchanged, to be its own trial.
+
+**Defined before the run:** the INT-124 junction-after-curve replay becomes a plain
+pass; curve skew still keeps the turn with onset skew above the bound; the S-bend
+replay follows the new side on its first black sample; cached samples neither make a
+bend nor qualify a junction; the centred white/white straight keeps driving; the
+rewritten navigation test covers edge, drift, bend by re-touch and by long touch,
+bend lean expiry and S-bend clearing.
+
+**Result:** [host suite](logs/2026-11-02_INT-126/host.txt) PASS, 1 known failure left
+(recovery accepts blank floor, Phase 3). S-bend replay: new side followed after 1
+sample (PI: 28). [Normal wireless build](logs/2026-11-02_INT-126/firmware-normal.txt)
+PASS, no warnings; UF2 sha256 `5d084603855faed4…`. **Pending (physical):** straights,
+three curves, S-bend, plain crossing and the three-curve junction at 100 mm/s on
+battery with WHEEL and LINE capture; set `NAV_ONSET_SKEW_MM` from the crossing and
+curve-skew `onset_skew_mm` values. Not covered: oscillation with the stronger edge
+correction, which only a physical run shows.
+
+## Line loss and reacquisition evidence — INT-127
+
+2026-11-02, Claude with Nicholas. Host and build only: base `159e89b` plus the
+uncommitted INT-124 to INT-126 work and this change. No flash, no physical run.
+
+**Change:** line loss is no longer the unreachable `IR_LINE_LOST` branch timed at
+500 ms. In FOLLOW, white/white for `LINE_LOST_MM` (200 mm, trial value) of encoder
+travel past the last one-black or broad-black acquisition is loss and enters the
+existing recovery (or stops with `line_lost` while recovery is unreleased). It
+counts only after the first touch since entering FOLLOW. `MISSION_LINE_LOST_MS`,
+the loss timestamps and the pending bit are removed. Recovery (`recovery_control`)
+and the bypass line return (`bypass_control`) accept white/white only after a
+sensor was black in that phase; new `black`/`line_black` inputs come from the
+raw black bits. [Specs revision](../../docs/project-specs.md#pending-decisions).
+
+**Defined before the run:** recovery and bypass blank-floor replays become plain
+passes; a line crossed during either phase then aligns; raw bits touching then
+drifting white/white keep following with the drift up to the limit and enter
+recovery at it; a centred straight with no touch never times out; a touch or a
+crossbar restarts the distance; encoder wrap qualifies; stale samples and
+stop/invalid inputs still stop. The INT-63 time-based loss test is rewritten for
+distance (its ID stays historical), and the full bypass simulation now crosses the
+line once before aligning, as a real return does.
+
+**Result:** [host suite](logs/2026-11-02_INT-127/host.txt) PASS with no known
+failures left. [Normal wireless build](logs/2026-11-02_INT-127/firmware-normal.txt)
+PASS, no warnings; UF2 sha256 `746dd479d45befd3…`. **Pending (physical):** a
+deliberate run off the line to confirm loss distance and recovery hand-back, and a
+long straight to confirm the drift touches well within 200 mm. Not covered: the
+recovery sweep finding the line from 200 mm off (the pivot sweep was designed for
+loss at the line), which only a physical run shows.
+
+## Pivot junction turns — INT-128
+
+2026-11-02, Claude with Nicholas. Host and build only: base `159e89b` plus the
+uncommitted INT-124 to INT-127 work and this change. No flash, no physical run;
+`NAV_GEOMETRY_RELEASED` stays 0, so the default image still stops on any
+left/right/U-turn (navigation rejected 1).
+
+**Change:** left and right take the U-turn path: a ramped advance of the sensor
+forward offset plus half the crossbar less the travel since broad entry (U-turn
+adds the chassis forward offset), a stationary pause, then a ramped pivot toward a
+bound (120 degrees left/right, 210 U-turn). Past a sense angle (60 / 150) the
+leading sensor black then not black ends it; Mission commands STOP, confirms
+stationary, pauses 100 ms and follows. Reaching the bound without that stops. The
+smooth cubic path is removed: Motion TURN style 2 is now invalid,
+`smooth_path.h`, the path reference field and its `PATH_*` limits, the 75..105 /
+165..195 evidence windows, the turn-exit phase and `turn_line_phase` are gone. All
+new angles are trial values from the reference repo
+([specs](../../docs/project-specs.md#dout-navigation-commissioning)); turns use
+the existing 75 mm/s `MISSION_TURN_SPEED_MMPS` instead of the 100 mm/s track speed.
+
+**Defined before the run:** with the gate released (host build), every turn commits
+to a ramped advance with a positive target, then pause, then a pivot to the signed
+bound; a leading-sensor crossing before the sense angle never ends it; black then
+not black past it brakes without a stop latch and hands over to FOLLOW with the
+junction locked; reaching the bound without the branch stops; style 2 builds a STOP
+command. Gate closed: unchanged rejection.
+
+**Result:** [host suite](logs/2026-11-02_INT-128/host.txt) PASS.
+[Normal wireless build](logs/2026-11-02_INT-128/firmware-normal.txt) PASS, no
+warnings; UF2 sha256 `aed7d5cf4b9e8296…`. **Pending (physical):** with
+`NAV_GEOMETRY_RELEASED=1` in a trial build, measure the advance landing point,
+pivot coast after the stop at the line, and left/right/U-turn hand-over on the
+course; the line trace records each phase.
+
+## 100 mm/s course speed guardrail — INT-129
+
+2026-11-02, Claude with Nicholas. Host and build only: base `159e89b` plus the
+uncommitted INT-124 to INT-128 work and this change. No flash, no physical run.
+
+**Change (user requirement):** line following, crossings, junction advances and
+pivots are commanded at exactly 100 mm/s, halved while a hump is active as the
+specs require; recovery and bypass keep their slow speeds. Mission no longer divides
+speed by the steering, and the S2 FOLLOW mix is now centre-preserving (left
+v(1+q/127), right v(1-q/127)), so the robot centre stays at the commanded speed and
+the outer wheel reaches 200 mm/s at full steering; under this mix the INT-126
+steering values give the reference repo's wheel ratios directly. Turns drop the
+75 mm/s turn speed. `MISSION_TRACK_SPEED_MMPS` is no longer overridable and a
+`_Static_assert` fixes it at 100; at run time Mission stops instead of sending any
+other speed in FOLLOW_LINE or NAVIGATE. `MOTION_FOLLOW_BOOST`, `_INNER_CUT`,
+`_TIGHTEN_Q` and the unused 75/37.5 mm/s Mission speeds are removed.
+
+**Defined before the run:** every replayed FOLLOW command is 100 mm/s whatever the
+steering; a hump gives 50 mm/s and keeps following; turn advances and pivots are
+100 mm/s; the mixer test expects 20 x (1 -/+ q/127) per wheel.
+
+**Result:** [host suite](logs/2026-11-02_INT-129/host.txt) PASS.
+[Normal wireless build](logs/2026-11-02_INT-129/firmware-normal.txt) PASS, no
+warnings; UF2 sha256 `920c1881547bdf7d…`. Not covered: the run-time stop branch
+itself (no path reaches it, so no test triggers it), and whether the motors hold
+200 mm/s on the outer wheel and track 100 mm/s pivots without overshooting the line,
+which only a physical run shows.

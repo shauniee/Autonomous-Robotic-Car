@@ -1,7 +1,6 @@
 #include "mission_logic.h"
 #include "../common/robot_time_math.h"
 #include "../subsystem2/encoder_math.h"
-#include "../subsystem2/smooth_path.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -48,73 +47,90 @@ static void enter(Mission *m, MissionState next, uint32_t now_ms)
 {
     m->state = next;
     m->state_since_ms = now_ms;
-    m->line_loss_pending = 0u;
     m->line_steer_q = 0;
-    m->line_i_q = 0;
-    m->line_oppose_n = 0u;
-    m->line_i_hold = 0u;
+    m->line_side = 0;
+    m->line_prev = 0;
+    m->line_bend = 0u;
     m->line_steer_sampled_ms = now_ms - IR_MAX_GAP_MS - 1u;
 }
 
-/* Steering sign follows the mounted robot's observed turn direction. */
+static float travel_mm(const MissionInputs *in, const uint32_t origin[2])
+{
+    return enc_mean_travel(in->wheel_count, origin) / ENC_COUNTS_PER_MM;
+}
+
+static void mark(uint32_t origin[2], const MissionInputs *in)
+{
+    origin[0] = in->wheel_count[0];
+    origin[1] = in->wheel_count[1];
+}
+
+/* Steering sign follows the mounted robot's observed turn direction.
+   Distance-based P: no integral, so nothing carries into the next curve or
+   crossing. A touch steers hard at once; a bend is the same side touching again
+   soon or staying black long, and the other side touching ends it (S-bends);
+   white/white drifts toward the last side so a centred robot soon touches again. */
 static int line_digital_steering(Mission *m, const MissionInputs *in)
 {
     if (in->usable_line && in->guidance_valid &&
         in->line_sampled_ms != m->line_steer_sampled_ms)
     {
         int sign = in->line_error < 0 ? -1 : in->line_error > 0 ? 1 : 0;
-        bool continuous =
-            robot_time_elapsed(in->line_sampled_ms, m->line_steer_sampled_ms) <=
-            IR_MAX_GAP_MS;
-        /* PI on the digital error: the P kick lasts only while a sensor is black;
-           I grows slowly so it cannot saturate on every swing, and holds a
-           curve's turn through white/white. */
-        int held = continuous ? m->line_i_q : 0;
-        /* An outer-sensor touch on a curve is overshoot for P to fix; drain the
-           curve's integral more slowly than it builds. */
-        bool opposing = held != 0 && sign != 0 && (held > 0) != (sign > 0);
-        /* A sustained opposite reading is a curve ending, not an overshoot. */
-        m->line_oppose_n = opposing && m->line_oppose_n < 255u ?
-            (uint8_t)(m->line_oppose_n + 1u) : (opposing ? 255u : 0u);
-        bool exiting = opposing && m->line_oppose_n > LINE_UNWIND_SAMPLES;
-        int step = !opposing ? LINE_BUILD_Q :
-            (exiting ? LINE_EXIT_Q : LINE_UNWIND_Q);
-        int i = held + sign * step;
-        /* A curve-exit drain stops at zero and holds there until white/white or
-           LINE_HOLD_SAMPLES: a straight recentres within that, while an S-bend's
-           next curve keeps the sensor black and then builds normally. */
-        if (sign == 0)
+        int steer;
+        if (sign != 0)
         {
-            m->line_i_hold = 0u;
-        }
-        if (exiting && (i == 0 || (i > 0) != (held > 0)))
-        {
-            i = 0;
-            m->line_i_hold = 1u;
-            m->line_hold_n = 0u;
-        }
-        else if (m->line_i_hold)
-        {
-            if (m->line_hold_n < LINE_HOLD_SAMPLES)
+            if (sign != m->line_prev)
             {
-                m->line_hold_n++;
-                i = 0;
+                float window = m->line_bend ? LINE_BEND_LEAN_MM : LINE_BEND_TOUCH_MM;
+                m->line_bend = sign == m->line_side &&
+                    travel_mm(in, m->dark_origin) <= window;
+                mark(m->touch_origin, in);
             }
-            else
+            else if (travel_mm(in, m->touch_origin) > LINE_BEND_TOUCH_MM)
             {
-                m->line_i_hold = 0u;
+                m->line_bend = 1u; /* black longer than a straight touch */
             }
+            m->line_side = (int8_t)sign;
+            mark(m->dark_origin, in);
+            steer = sign * (m->line_bend ? LINE_BEND_EDGE_Q : LINE_EDGE_Q);
         }
-        int i_max = 127 - LINE_INITIAL_Q;
-        i = i > i_max ? i_max : (i < -i_max ? -i_max : i);
-        m->line_i_q = (int8_t)i;
-        /* While held after a curve exit, P alone must carry an S-bend's next curve. */
-        int kick = m->line_i_hold ? LINE_HOLD_KICK_Q : LINE_INITIAL_Q;
-        int steer = i + sign * kick;
-        m->line_steer_q = (int8_t)(steer > 127 ? 127 : (steer < -127 ? -127 : steer));
+        else
+        {
+            bool lean = m->line_bend &&
+                travel_mm(in, m->dark_origin) <= LINE_BEND_LEAN_MM;
+            steer = m->line_side * (lean ? LINE_BEND_LEAN_Q : LINE_DRIFT_Q);
+        }
+        m->line_prev = (int8_t)sign;
+        m->line_steer_q = (int8_t)steer;
         m->line_steer_sampled_ms = in->line_sampled_ms;
     }
     return m->line_steer_q;
+}
+
+/* Where each sensor last went black, from fresh acquisitions in any state. */
+static void note_onsets(Mission *m, const MissionInputs *in)
+{
+    if (!in->usable_line || in->line_sampled_ms == m->onset_sampled_ms)
+    {
+        return;
+    }
+    m->onset_sampled_ms = in->line_sampled_ms;
+    unsigned black = (in->left_black ? 1u : 0u) | (in->right_black ? 2u : 0u);
+    for (unsigned side = 0u; side < 2u; ++side)
+    {
+        if ((black & ~m->onset_black) >> side & 1u)
+        {
+            mark(m->onset[side], in);
+        }
+    }
+    m->onset_black = (uint8_t)black;
+}
+
+/* Distance between the two sensors' black onsets, mm. A crossing darkens both
+   together; curve skew darkens the inner sensor long before the outer. */
+static float onset_skew_mm(const Mission *m)
+{
+    return fabsf(enc_mean_travel(m->onset[0], m->onset[1])) / ENC_COUNTS_PER_MM;
 }
 
 static uint8_t next_action_id(Mission *m)
@@ -139,26 +155,27 @@ static MotionCommand action_command(motion_mode_t mode, float speed,
     return motion_command_make(mode, floorf(speed), target, 0, id, now_ms);
 }
 
+/* Course speed: fixed by the user's 100 mm/s guardrail, halved on a hump. */
+static float course_speed(const MissionInputs *in)
+{
+    return in->hump_active ? MISSION_HUMP_SPEED_MMPS : MISSION_TRACK_SPEED_MMPS;
+}
+
 static MotionCommand junction_turn_command(const Mission *m,
     const MissionInputs *in)
 {
-    return motion_command_make(MOTION_MODE_TURN, floorf(MISSION_TRACK_SPEED_MMPS * (in->hump_active ? 0.5f : 1.0f)),
-        m->turn_code == 3u ? -180.0f : m->turn_length_mm,
-        m->turn_code == 3u ? MOTION_TURN_RAMPED
-        : MOTION_TURN_SMOOTH,
+    /* A bound, not the goal: the pivot ends when the new branch is found. */
+    float bound = m->turn_code == 3u ? NAV_UTURN_MAX_DEG : NAV_TURN_MAX_DEG;
+    return motion_command_make(MOTION_MODE_TURN,
+        floorf(course_speed(in)),
+        mission_turn_target_get(m) < 0.0f ? -bound : bound, MOTION_TURN_RAMPED,
         m->current_action, in->line_sampled_ms);
 }
 
-static MotionCommand follow_command(const MissionInputs *in, float speed,
-    int steering_q, uint8_t id)
+static MotionCommand follow_command(const MissionInputs *in, int steering_q,
+    uint8_t id)
 {
-    /* PROVISIONAL D07: keep the settled outer-wheel request near the ceiling. */
-    speed /= 1.0f + MOTION_FOLLOW_BOOST * (float)abs(steering_q) / IR_SCALE_ONE;
-    if (in->hump_active)
-    {
-        speed *= 0.5f;
-    }
-    return motion_command_make(MOTION_MODE_FOLLOW, floorf(speed), 0.0f,
+    return motion_command_make(MOTION_MODE_FOLLOW, floorf(course_speed(in)), 0.0f,
         steering_q, id, in->line_sampled_ms);
 }
 
@@ -224,8 +241,7 @@ static void observe_junction(Mission *m, const MissionInputs *in)
         return;
     }
     if (enc_mean_travel(in->wheel_count, m->broad_origin) >=
-        (m->entry_curved ? NAV_CURVE_CONFIRM_MM : NAV_CONFIRM_MM) *
-        ENC_COUNTS_PER_MM)
+        NAV_CONFIRM_MM * ENC_COUNTS_PER_MM)
     {
         m->junction_qualified = 1u;
     }
@@ -234,10 +250,6 @@ static void observe_junction(Mission *m, const MissionInputs *in)
 static void handle_follow(Mission *m, const MissionInputs *in,
     MissionOutputs *out)
 {
-    if (in->line != IR_LINE_LOST)
-    {
-        m->line_loss_pending = 0u;
-    }
     if (m->in_broad && (!in->usable_line || obstacle_ahead(in) ||
         robot_time_elapsed(in->now_ms, m->broad_since_ms) >=
         MOTION_ACTION_TIMEOUT_MS))
@@ -276,8 +288,7 @@ static void handle_follow(Mission *m, const MissionInputs *in,
     if (broad && !m->in_broad && !m->junction_locked)
     {
         m->in_broad = true;
-        /* A large held integral means a curve; a crossbar touch only adds P. */
-        m->entry_curved = abs(m->line_i_q) > NAV_ENTRY_MAX_STEER_Q;
+        m->entry_curved = onset_skew_mm(m) > NAV_ONSET_SKEW_MM;
         m->broad_origin[0] = m->entry_origin[0] = in->wheel_count[0];
         m->broad_origin[1] = m->entry_origin[1] = in->wheel_count[1];
         m->junction_open = 1u;
@@ -302,7 +313,7 @@ static void handle_follow(Mission *m, const MissionInputs *in,
         float heading = enc_heading_deg(
             enc_travel_signed(in->wheel_count[0], m->entry_origin[0]),
             enc_travel_signed(in->wheel_count[1], m->entry_origin[1]));
-        /* Curved/skewed entry cannot be assumed aligned by the arc formula. */
+        /* The advance assumes the robot arrived along the line. */
         if (turning && (!NAV_GEOMETRY_RELEASED || NAV_SENSOR_FORWARD_MM <= 0 ||
             NAV_CROSSBAR_MM <= 0 || m->entry_curved ||
             fabsf(heading) > NAV_ENTRY_MAX_DEG))
@@ -314,21 +325,11 @@ static void handle_follow(Mission *m, const MissionInputs *in,
         }
         float travel =
             enc_mean_travel(in->wheel_count, m->entry_origin) / ENC_COUNTS_PER_MM;
-        float d = NAV_SENSOR_FORWARD_MM + NAV_CROSSBAR_MM * 0.5f - travel;
-        int sign = action == BARCODE_LEFT ? 1 : -1;
-        float length = turning
-            ? roundf(smooth_path_length(d, NAV_CHASSIS_LEFT_MM, sign)) : 0.0f;
-        if ((action == BARCODE_LEFT || action == BARCODE_RIGHT) &&
-            (!smooth_path_valid(length, TRACK_WIDTH_MM) ||
-            length > MOTION_TARGET_MAX_MM))
-        {
-            out->nav_rejected = 2u;
-            to_stop(m, in, out, true);
-            return;
-        }
-        if (action == BARCODE_U_TURN &&
-            (NAV_CHASSIS_LEFT_MM != 0 || d + NAV_CHASSIS_FORWARD_MM <= 0 ||
-            d + NAV_CHASSIS_FORWARD_MM > MOTION_TARGET_MAX_MM))
+        /* Advance until the axle is over the crossing centre, then pivot. */
+        float d = NAV_SENSOR_FORWARD_MM + NAV_CROSSBAR_MM * 0.5f - travel +
+            (action == BARCODE_U_TURN ? NAV_CHASSIS_FORWARD_MM : 0);
+        if (turning && (lroundf(d) <= 0 || d > MOTION_TARGET_MAX_MM ||
+            (action == BARCODE_U_TURN && NAV_CHASSIS_LEFT_MM != 0)))
         {
             out->nav_rejected = 2u;
             to_stop(m, in, out, true);
@@ -340,15 +341,8 @@ static void handle_follow(Mission *m, const MissionInputs *in,
         m->junction_locked = 1u;
         m->exit_seen = 0u;
         mission_turn_target_set(m, action);
-        m->turn_length_mm = (int16_t)(sign * length);
-        m->phase = action == BARCODE_U_TURN ? JUNCTION_PHASE_ADVANCE
-        : (action == BARCODE_LEFT || action == BARCODE_RIGHT)
-        ? JUNCTION_PHASE_TURN
-        : JUNCTION_PHASE_STRAIGHT;
-        if (action == BARCODE_U_TURN)
-        {
-            m->turn_length_mm = (int16_t)lroundf(d + NAV_CHASSIS_FORWARD_MM);
-        }
+        m->turn_length_mm = turning ? (int16_t)lroundf(d) : 0;
+        m->phase = turning ? JUNCTION_PHASE_ADVANCE : JUNCTION_PHASE_STRAIGHT;
         m->current_action = next_action_id(m);
         float since_straight = enc_mean_travel(in->wheel_count, m->straight_origin) /
             ENC_COUNTS_PER_MM;
@@ -360,7 +354,6 @@ static void handle_follow(Mission *m, const MissionInputs *in,
         }
         m->broad_origin[0] = in->wheel_count[0];
         m->broad_origin[1] = in->wheel_count[1];
-        m->turn_line_phase = 0u;
         m->turn_sampled_ms = in->line_sampled_ms;
         enter(m, MISSION_NAVIGATE, in->now_ms);
         out->event_kind = MQTT_EVENT_TURN;
@@ -371,35 +364,24 @@ static void handle_follow(Mission *m, const MissionInputs *in,
     if (broad)
     {
         /* Crossbar: no steering. Curve skew: keep the held turn. */
-        out->command = follow_command(in, MISSION_TRACK_SPEED_MMPS,
+        mark(m->dark_origin, in); /* the line is under both sensors */
+        out->command = follow_command(in,
             m->in_broad && m->entry_curved ? m->line_steer_q : 0, 1u);
         return;
     }
 
-    if (in->line == IR_LINE_LOST)
+    if (!in->usable_line || !in->guidance_valid)
     {
-        /* White/white is usable evidence; failed or old acquisition is not. */
-        if (!in->usable_line ||
-            robot_time_elapsed(in->now_ms, in->line_sampled_ms) > IR_MAX_GAP_MS)
-        {
-            to_stop(m, in, out, true);
-            return;
-        }
-        if (!m->line_loss_pending ||
-            robot_time_elapsed(in->line_sampled_ms, m->line_lost_sampled_ms) >
-            IR_MAX_GAP_MS)
-        {
-            m->line_loss_pending = 1u;
-            m->line_lost_since_ms = in->line_sampled_ms;
-        }
-        m->line_lost_sampled_ms = in->line_sampled_ms;
-        if (robot_time_elapsed(in->line_sampled_ms, m->line_lost_since_ms) <
-            MISSION_LINE_LOST_MS)
-        {
-            out->command =
-                follow_command(in, MISSION_TRACK_SPEED_MMPS, m->line_steer_q, 1u);
-            return;
-        }
+        to_stop(m, in, out, true);
+        return;
+    }
+    int steer = line_digital_steering(m, in);
+    /* Lost: white/white this far past the last touch. The drift makes a centred
+       robot touch again well within it; before the first touch since entering
+       FOLLOW the line is between the sensors and cannot leave unseen. */
+    if (in->line_error == 0 && m->line_side != 0 &&
+        travel_mm(in, m->dark_origin) >= LINE_LOST_MM)
+    {
         if (!MISSION_RECOVERY_RELEASED)
         {
             /* Physical release is independent of the proposed search policy. */
@@ -423,19 +405,12 @@ static void handle_follow(Mission *m, const MissionInputs *in,
         out->side_watch_on = false;
         return;
     }
-
-    if (!in->usable_line || !in->guidance_valid)
-    {
-        to_stop(m, in, out, true);
-        return;
-    }
-    int steer = line_digital_steering(m, in);
-    if (in->line_error == 0 && abs(steer) < LINE_INITIAL_Q / 2)
+    if (in->line_error == 0 && abs(steer) <= LINE_DRIFT_Q)
     {
         m->straight_origin[0] = in->wheel_count[0];
         m->straight_origin[1] = in->wheel_count[1];
     }
-    out->command = follow_command(in, MISSION_TRACK_SPEED_MMPS, steer, 1u);
+    out->command = follow_command(in, steer, 1u);
 }
 
 /* ---- Bounded profile/coverage handover ---------------------------------- */
@@ -465,6 +440,7 @@ static bypass_input_t bypass_input(Mission *m, const MissionInputs *in)
             .line_ms = in->line_sampled_ms,
             .line_functional = in->usable_line,
             .line_visible = in->line == IR_LINE_VISIBLE && in->guidance_valid,
+            .line_black = in->left_black || in->right_black,
             .line_error_q = in->line_error,
             .line_steering_q = (int8_t)line_digital_steering(m, in),
             .motion_status = in->motion_status,
@@ -594,7 +570,7 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
         obstacle_ahead(in) ||
         robot_time_elapsed(in->now_ms, m->state_since_ms) >=
         MOTION_ACTION_TIMEOUT_MS ||
-        m->phase > JUNCTION_PHASE_EXIT ||
+        m->phase > JUNCTION_PHASE_ADVANCE ||
         (in->motion_action == m->current_action &&
         in->motion_status == RD_MOTION_FAILED))
     {
@@ -613,16 +589,12 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
     {
         m->turn_sampled_ms = in->line_sampled_ms;
     }
-    if (m->phase == JUNCTION_PHASE_STRAIGHT || m->phase == JUNCTION_PHASE_EXIT)
+    if (m->phase == JUNCTION_PHASE_STRAIGHT)
     {
         if (travel > NAV_EXIT_MAX_MM)
         {
             to_stop(m, in, out, true);
             return;
-        }
-        if (fresh && !broad && single)
-        {
-            m->exit_seen = 1u;
         }
         /* Pre-crossing heading: the crossbar can turn the robot, and white/white
            alone cannot reveal that skew. */
@@ -630,9 +602,8 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
             enc_travel_signed(in->wheel_count[0], m->straight_origin[0]),
             enc_travel_signed(in->wheel_count[1], m->straight_origin[1]));
         bool clear = travel >= 2.0f * NAV_CROSSBAR_MM; /* past a skewed crossbar edge */
-        if (fresh && !broad && (m->phase == JUNCTION_PHASE_STRAIGHT ?
-            ((clear && single) || fabsf(straight_heading) <= NAV_ENTRY_MAX_DEG) :
-            (m->exit_seen && !single)))
+        if (fresh && !broad &&
+            ((clear && single) || fabsf(straight_heading) <= NAV_ENTRY_MAX_DEG))
         {
             enter(m, MISSION_FOLLOW_LINE, in->now_ms);
             m->broad_origin[0] = in->wheel_count[0];
@@ -640,19 +611,15 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
             handle_follow(m, in, out);
             return;
         }
-        int steer = broad ? 0 : line_digital_steering(m, in);
-        if (m->phase == JUNCTION_PHASE_STRAIGHT)
-        {
-            /* Restore the pre-crossing heading while IR is ambiguous. */
-            steer = (int)fminf(fmaxf(straight_heading * 8.0f, -32.0f), 32.0f);
-        }
-        out->command = follow_command(in, MISSION_TRACK_SPEED_MMPS, steer, 1u);
+        /* Restore the pre-crossing heading while IR is ambiguous. */
+        int steer = (int)fminf(fmaxf(straight_heading * 8.0f, -32.0f), 32.0f);
+        out->command = follow_command(in, steer, 1u);
         return;
     }
     if (m->phase == JUNCTION_PHASE_ADVANCE)
     {
         out->command = motion_command_make(MOTION_MODE_DISTANCE,
-            floorf(MISSION_TRACK_SPEED_MMPS),
+            floorf(course_speed(in)),
             m->turn_length_mm, MOTION_TURN_RAMPED,
             m->current_action, in->line_sampled_ms);
         if (in->motion_action == m->current_action &&
@@ -693,7 +660,6 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
         m->current_action = next_action_id(m);
         m->broad_origin[0] = in->wheel_count[0];
         m->broad_origin[1] = in->wheel_count[1];
-        m->turn_line_phase = 0u;
         out->command = junction_turn_command(m, in);
         return;
     }
@@ -702,49 +668,28 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
         to_stop(m, in, out, true);
         return;
     }
-    float target = mission_turn_target_get(m);
-    float angle = heading * (target < 0 ? -1.0f : 1.0f);
-    float minimum = m->turn_code == 3u ? 180.0f - NAV_UTURN_WINDOW_DEG
-    : NAV_EXIT_ANGLE_MIN_DEG;
-    float maximum = m->turn_code == 3u ? 180.0f + NAV_UTURN_WINDOW_DEG
-    : NAV_EXIT_ANGLE_MAX_DEG;
-    if (angle > maximum)
+    float angle = heading * (mission_turn_target_get(m) < 0.0f ? -1.0f : 1.0f);
+    float sense_from = m->turn_code == 3u ? NAV_UTURN_SENSE_DEG : NAV_TURN_SENSE_DEG;
+    if (fresh && angle >= sense_from && !broad)
     {
-        to_stop(m, in, out, true);
-        return;
-    }
-    if (fresh && angle >= minimum && !broad)
-    {
-        bool selected_black = m->turn_code == 1u ? in->left_black : in->right_black;
-        if (selected_black)
+        /* Stop once the leading sensor has crossed the new branch and left it, so
+           the line lies between the sensors; stopping at first black left
+           U-turns short in the reference repo. */
+        bool leading_black = m->turn_code == 1u ? in->left_black : in->right_black;
+        if (leading_black)
         {
             m->exit_seen = 1u;
         }
-        if (m->exit_seen && !single)
+        else if (m->exit_seen)
         {
-            m->turn_line_phase = 2u;
-        }
-    }
-    bool done = in->motion_action == m->current_action &&
-        in->motion_status == RD_MOTION_DONE;
-    if (done)
-    {
-        if (m->turn_line_phase != 2u)
-        {
-            to_stop(m, in, out, true);
-            return;
-        }
-        if (m->turn_code == 3u)
-        {
-            m->phase = JUNCTION_PHASE_BRAKE;
+            m->phase = JUNCTION_PHASE_BRAKE; /* STOP until stationary, then follow */
             m->exit_seen = 0u;
             return;
         }
-        m->phase = JUNCTION_PHASE_EXIT;
-        m->broad_origin[0] = in->wheel_count[0];
-        m->broad_origin[1] = in->wheel_count[1];
-        m->exit_seen = 1u;
-        out->command = follow_command(in, MISSION_TRACK_SPEED_MMPS, 0, 1u);
+    }
+    if (in->motion_action == m->current_action && in->motion_status == RD_MOTION_DONE)
+    {
+        to_stop(m, in, out, true); /* turned to the bound without finding the branch */
         return;
     }
     out->command = junction_turn_command(m, in);
@@ -760,6 +705,7 @@ static void handle_reacquire(Mission *m, const MissionInputs *in,
             .sampled_ms = in->line_sampled_ms,
             .functional = in->usable_line,
             .visible = in->line == IR_LINE_VISIBLE && in->guidance_valid,
+            .black = in->left_black || in->right_black,
             .hazard = obstacle_ahead(in),
             .cancel = in->stop_down,
             .stationary = in->stationary,
@@ -795,6 +741,7 @@ void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out)
 {
     *out = (MissionOutputs){.command = stop_command(in->now_ms)};
 
+    note_onsets(m, in);
     bool moving = m->state != MISSION_READY && m->state != MISSION_STOPPED;
     if (m->state != MISSION_STOPPED &&
         (in->stop_down || in->safety_latched || !in->inputs_ok ||
@@ -845,6 +792,39 @@ void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out)
         to_stop(m, in, out, true);
         break;
     }
+    /* User hard guardrail: every moving command on the course runs at the course
+       speed; anything else is a defect, so stop rather than drive it. */
+    if ((m->state == MISSION_FOLLOW_LINE || m->state == MISSION_NAVIGATE) &&
+        motion_cmd_mode(&out->command) != MOTION_MODE_STOP &&
+        motion_cmd_speed(&out->command) != (uint16_t)course_speed(in))
+    {
+        to_stop(m, in, out, true);
+    }
+}
+
+mqtt_line_trace_t mission_line_trace(const Mission *m, const MissionInputs *in,
+    const MissionOutputs *out)
+{
+    bool follow = motion_cmd_mode(&out->command) == MOTION_MODE_FOLLOW;
+    return (mqtt_line_trace_t){
+        .sampled_ms = in->line_sampled_ms,
+        .flags = (uint8_t)((in->left_black ? MQTT_LINE_LEFT_BLACK : 0u) |
+            (in->right_black ? MQTT_LINE_RIGHT_BLACK : 0u) |
+            (m->in_broad ? MQTT_LINE_IN_BROAD : 0u) |
+            (m->junction_open ? MQTT_LINE_JUNCTION_OPEN : 0u) |
+            (m->junction_qualified ? MQTT_LINE_JUNCTION_QUALIFIED : 0u) |
+            (m->entry_curved ? MQTT_LINE_ENTRY_CURVED : 0u) |
+            (m->junction_locked ? MQTT_LINE_JUNCTION_LOCKED : 0u)),
+        .mission_state = m->state,
+        .phase = m->phase,
+        .wheel_count = {(uint16_t)in->wheel_count[0], (uint16_t)in->wheel_count[1]},
+        .steer_q = m->line_steer_q,
+        .law_q = (int8_t)(m->line_side * (m->line_bend ? 2 : 1)),
+        .onset_skew_mm = in->left_black && in->right_black ?
+            (uint8_t)fminf(onset_skew_mm(m), 254.0f) : 255u,
+        .command_steer_q = follow ? motion_cmd_steering(&out->command) : 0,
+        .command_mode = (uint8_t)motion_cmd_mode(&out->command),
+        .command_speed = motion_cmd_speed(&out->command)};
 }
 
 bool mission_queue_direction(Mission *m, uint8_t action)

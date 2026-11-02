@@ -1,6 +1,6 @@
 """Laptop side of the robot's binary MQTT protocol (schema v2). Python 3.10+.
 
-  monitor          print telemetry, events, acknowledgements and timestamped WHEEL JSON
+  monitor          print telemetry, events, acknowledgements and timestamped WHEEL/LINE JSON
   map L R S U      send the four mission-day letters (left, right, straight, U-turn)
   snapshot         request one telemetry snapshot
   serve            live web dashboard at http://127.0.0.1:8080 (scripts/dashboard.html);
@@ -10,7 +10,9 @@
 Frame layouts: docs/architecture.md (MQTT binary protocol). Speed and
 direction are derived here from encoder counts between telemetry frames, so
 normal telemetry stays compact. Separate WHEEL traces report Motion-release targets,
-measured speeds and serviced duty for PID diagnosis; network gaps are possible.
+measured speeds and serviced duty for PID diagnosis; LINE traces report each IR
+acquisition Mission acted on (sensor bits, junction flags, steering, command);
+network gaps are possible.
 """
 import argparse
 import json
@@ -26,8 +28,8 @@ from pathlib import Path
 
 VERSION = 2
 TELEMETRY, EVENT, SNAPSHOT_REPLY, MAPPING, ACK, SNAPSHOT_REQUEST, JUNCTION_TEST = 1, 2, 3, 4, 5, 6, 7
-WHEEL_TRACE = 8
-LENGTHS = {TELEMETRY: 23, EVENT: 11, SNAPSHOT_REPLY: 23, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3, WHEEL_TRACE: 15}
+WHEEL_TRACE, LINE_TRACE = 8, 9
+LENGTHS = {TELEMETRY: 23, EVENT: 11, SNAPSHOT_REPLY: 23, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3, WHEEL_TRACE: 15, LINE_TRACE: 17}
 
 MISSION = ["READY", "FOLLOW_LINE", "NAVIGATE", "SCAN", "BYPASS", "REACQUIRE", "STOPPED"]
 MOTION = ["IDLE", "RUNNING", "DONE", "FAILED"]
@@ -129,6 +131,27 @@ def decode_wheel_trace(f):
                 inhibited=bool(targets & (1 << 30)), output_ok=output_ok)
 
 
+LINE_FLAGS = ("left_black", "right_black", "in_broad", "junction_open",
+              "junction_qualified", "entry_curved", "junction_locked")
+COMMAND_MODE = ["STOP", "FOLLOW", "DISTANCE", "TURN"]
+
+
+def decode_line_trace(f):
+    if frame_type(f) != LINE_TRACE:
+        raise ValueError("not a line trace")
+    sampled_ms, flags, state, left, right, steer, law, command_steer, command, skew = \
+        struct.unpack_from("<IBBHHbbbHB", f, 1)
+    if flags & 0x80 or state & 0x80 or command >> 11 or (state & 0xF) >= len(MISSION):
+        raise ValueError("invalid line trace")
+    trace = dict(type="line_trace", sampled_ms=sampled_ms,
+                 mission=MISSION[state & 0xF], phase=state >> 4, left=left, right=right,
+                 steer_q=steer, law_q=law, command=COMMAND_MODE[command >> 9],
+                 command_steer_q=command_steer, command_speed=command & 0x1FF,
+                 onset_skew_mm=None if skew == 255 else skew)
+    trace.update({key: bool(flags >> bit & 1) for bit, key in enumerate(LINE_FLAGS)})
+    return trace
+
+
 def decode_event(f):
     if frame_type(f) != EVENT:
         raise ValueError("not an event frame")
@@ -198,6 +221,8 @@ def describe(frame, motion):
     kind = frame_type(frame)
     if kind == WHEEL_TRACE:
         return "WHEEL " + json.dumps(decode_wheel_trace(frame), separators=(",", ":"))
+    if kind == LINE_TRACE:
+        return "LINE " + json.dumps(decode_line_trace(frame), separators=(",", ":"))
     if kind in (TELEMETRY, SNAPSHOT_REPLY):
         t = decode_telemetry(frame)
         label = "SNAPSHOT" if kind == SNAPSHOT_REPLY else "TELEMETRY"
@@ -377,6 +402,22 @@ def self_test():
             pass
         else:
             raise AssertionError("accepted malformed wheel trace")
+    golden_line = bytes.fromhex("29 78 56 34 12 13 22 34 12 78 56 e0 fe e0 64 02 0c")
+    line = decode_line_trace(golden_line)
+    assert line["sampled_ms"] == 0x12345678 and line["mission"] == "NAVIGATE" and line["phase"] == 2
+    assert line["left_black"] and line["right_black"] and line["junction_qualified"] and not line["in_broad"]
+    assert (line["left"], line["right"], line["steer_q"], line["law_q"]) == (0x1234, 0x5678, -32, -2)
+    assert line["onset_skew_mm"] == 12
+    assert (line["command"], line["command_steer_q"], line["command_speed"]) == ("FOLLOW", -32, 100)
+    assert describe(golden_line, Motion()).startswith("LINE ")
+    for frame in (golden_line[:-1], golden_line[:5] + bytes([0x80]) + golden_line[6:],
+                  golden_line[:6] + bytes([0x07]) + golden_line[7:], golden_line[:15] + bytes([0x08]) + golden_line[16:]):
+        try:
+            decode_line_trace(frame)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("accepted malformed line trace")
     t = decode_telemetry(GOLDEN_TELEMETRY)
     assert frame_type(GOLDEN_TELEMETRY) == TELEMETRY and t["sequence"] == 0x2A and t["mission"] == "NAVIGATE"
     assert t["motion"] == "FAILED" and t["line"] == "VISIBLE" and t["action_id"] == 5 and t["mapped"]
@@ -490,7 +531,9 @@ def main():
             return
         if dashboard:
             try:
-                dashboard.push(dashboard_message(bytes(message.payload), motion))
+                frame = bytes(message.payload)
+                if frame_type(frame) != LINE_TRACE:	# monitor captures only; no dashboard view
+                    dashboard.push(dashboard_message(frame, motion))
             except ValueError as error:
                 dashboard.push({"type": "other", "text": f"undecodable frame ({error})"})
             return

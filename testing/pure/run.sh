@@ -19,13 +19,6 @@ for geometry in 0 1; do
         app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_smooth_$geometry"
     "$build_dir/test_smooth_$geometry"
 done
-# Short overshoot window and a limited exit hold, so the exit-drain and S-bend
-# release paths (off or unreachable with the defaults) are exercised.
-$CC $CFLAGS -DNAV_GEOMETRY_RELEASED=0 -DNAV_SENSOR_FORWARD_MM=0 -DNAV_CROSSBAR_MM=0 -DLINE_UNWIND_SAMPLES=5u -DLINE_HOLD_SAMPLES=10u \
-    testing/pure/test_smooth_navigation.c app_program/mission/mission_logic.c \
-    app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
-    app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_smooth_fast"
-"$build_dir/test_smooth_fast"
 $CC $CFLAGS testing/pure/test_encoder_math.c -o "$build_dir/test_encoder_math"
 $CC $CFLAGS testing/pure/test_motion_control.c app_program/subsystem2/motion_control.c \
     app_program/common/robot_data.c -lm -o "$build_dir/test_motion_control"
@@ -35,6 +28,9 @@ $CC $CFLAGS testing/pure/test_barcode.c app_program/subsystem3/barcode_decode.c 
     app_program/common/robot_data.c -o "$build_dir/test_barcode"
 $CC $CFLAGS testing/pure/test_ir_tracking.c app_program/subsystem3/ir_tracking.c -lm \
     -o "$build_dir/test_ir_tracking"
+$CC $CFLAGS testing/pure/test_line_replay.c app_program/subsystem3/ir_tracking.c app_program/mission/mission_logic.c \
+    app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
+    app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_line_replay"
 $CC $CFLAGS testing/pure/test_safety.c app_program/common/robot_data.c -o "$build_dir/test_safety"
 $CC $CFLAGS -DMISSION_BYPASS_RELEASED=1 -DMISSION_RECOVERY_RELEASED=1 testing/pure/test_mission.c app_program/mission/mission_logic.c \
     app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
@@ -73,8 +69,13 @@ $CC $CFLAGS testing/pure/test_motion_trace.c app_program/subsystem2/motion_trace
     app_program/subsystem1/mqtt_frame.c app_program/common/robot_data.c \
     -o "$build_dir/test_motion_trace"
 "$build_dir/test_motion_trace"
+$CC $CFLAGS testing/pure/test_line_trace.c app_program/mission/line_trace.c \
+    app_program/subsystem1/mqtt_frame.c app_program/common/robot_data.c \
+    -o "$build_dir/test_line_trace"
+"$build_dir/test_line_trace"
 "$build_dir/test_barcode"
 "$build_dir/test_ir_tracking"
+"$build_dir/test_line_replay"
 "$build_dir/test_safety"
 "$build_dir/test_mission"
 "$build_dir/test_mission_pending"

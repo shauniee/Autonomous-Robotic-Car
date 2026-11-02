@@ -25,7 +25,8 @@ typedef enum
     MQTT_TYPE_ACK = 5,		/* robot -> PC, {sequence, result} */
     MQTT_TYPE_SNAPSHOT_REQUEST = 6,	/* PC -> robot */
     MQTT_TYPE_JUNCTION_TEST = 7, /* PC -> Mission, next-junction test direction */
-    MQTT_TYPE_WHEEL_TRACE = 8 /* robot -> PC, best-effort Motion-release trace */
+    MQTT_TYPE_WHEEL_TRACE = 8, /* robot -> PC, best-effort Motion-release trace */
+    MQTT_TYPE_LINE_TRACE = 9 /* robot -> PC, best-effort Mission line decision trace */
 } mqtt_type_t;
 
 /* Frame lengths in bytes (exact). */
@@ -34,6 +35,7 @@ typedef enum
 #define MQTT_LEN_MAPPING 5u
 #define MQTT_LEN_JUNCTION_TEST 3u
 #define MQTT_LEN_WHEEL_TRACE 15u
+#define MQTT_LEN_LINE_TRACE 17u
 #define MQTT_LEN_ACK 3u
 #define MQTT_LEN_SNAPSHOT_REQUEST 2u
 #define MQTT_FRAME_MAX 23u
@@ -137,6 +139,34 @@ typedef struct
 
 unsigned mqtt_encode_wheel_trace(uint8_t *out, unsigned capacity,
     const mqtt_wheel_trace_t *trace);
+
+/* Line trace flag bits (byte 5). */
+#define MQTT_LINE_LEFT_BLACK	0x01u
+#define MQTT_LINE_RIGHT_BLACK	0x02u
+#define MQTT_LINE_IN_BROAD	0x04u
+#define MQTT_LINE_JUNCTION_OPEN	0x08u
+#define MQTT_LINE_JUNCTION_QUALIFIED	0x10u
+#define MQTT_LINE_ENTRY_CURVED	0x20u
+#define MQTT_LINE_JUNCTION_LOCKED	0x40u
+
+/* Local encoder input, one per fresh IR acquisition Mission acted on. */
+typedef struct
+{
+    uint32_t sampled_ms;	/* IR acquisition time */
+    uint8_t flags;		/* MQTT_LINE_*, bit 7 reserved */
+    uint8_t mission_state;	/* 0..15 */
+    uint8_t phase;		/* junction phase, 0..7 */
+    uint16_t wheel_count[2];	/* low 16 bits of the shared encoder counts */
+    int8_t steer_q;		/* steering law output, Q7 */
+    int8_t law_q;		/* law state: last side -1/+1, doubled in a bend, 0 none */
+    int8_t command_steer_q;	/* FOLLOW steering sent to Motion, else 0 */
+    uint8_t command_mode;	/* motion_mode_t, 0..3 */
+    uint16_t command_speed;	/* mm/s sent to Motion, 0..511 */
+    uint8_t onset_skew_mm;	/* both black: mm between the black onsets, 254 max; else 255 */
+} mqtt_line_trace_t;
+
+unsigned mqtt_encode_line_trace(uint8_t *out, unsigned capacity,
+    const mqtt_line_trace_t *trace);
 
 /* Header check: version, type and the exact length for that type. */
 mqtt_decode_t mqtt_frame_type(const uint8_t *frame, unsigned length, mqtt_type_t *type);

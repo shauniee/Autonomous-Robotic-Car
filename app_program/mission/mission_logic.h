@@ -39,8 +39,7 @@ typedef enum
     JUNCTION_PHASE_TURN,
     JUNCTION_PHASE_STRAIGHT,
     JUNCTION_PHASE_BRAKE,
-    JUNCTION_PHASE_ADVANCE,
-    JUNCTION_PHASE_EXIT
+    JUNCTION_PHASE_ADVANCE
 } MissionJunctionPhase;
 
 typedef struct
@@ -119,17 +118,17 @@ typedef struct
     uint8_t in_broad : 1;
     uint8_t junction_open : 1;
     uint8_t junction_qualified : 1;
-    uint8_t line_loss_pending : 1;
-    uint32_t line_lost_since_ms; /* first LOST acquisition in this interval */
-    uint32_t line_lost_sampled_ms; /* latest LOST acquisition, for continuity */
     uint32_t junction_sampled_ms;
-    uint8_t turn_line_phase : 2; /* 0 exit, 1 new black, 2 white, 3 invalid */
     uint8_t turn_code : 2; /* 0 none, 1 left, 2 right, 3 U-turn */
     int8_t line_steer_q; /* latest digital correction target, signed Q7 */
-    int8_t line_i_q; /* held integral part of line_steer_q */
-    uint8_t line_oppose_n; /* consecutive samples opposing the integral */
-    uint8_t line_i_hold : 1; /* integral held at zero after a curve-exit drain */
-    uint8_t line_hold_n; /* samples spent in that hold */
+    int8_t line_side; /* side last touched: -1 left, +1 right, 0 none */
+    int8_t line_prev; /* previous acquisition's touch: -1, 0, +1 */
+    uint8_t line_bend : 1; /* same-side touches close together: in a bend */
+    uint32_t touch_origin[2]; /* counts where the current touch began */
+    uint32_t dark_origin[2]; /* counts at the latest touching acquisition */
+    uint32_t onset[2][2]; /* counts where the left/right sensor last went black */
+    uint8_t onset_black : 2; /* black bits (left 1, right 2) at the last fresh acquisition */
+    uint32_t onset_sampled_ms; /* last acquisition used for onsets */
     uint32_t line_steer_sampled_ms; /* last acquisition used for steering */
     uint32_t turn_sampled_ms; /* last acquisition used by the turn edge sequence */
     uint32_t pause_since_ms;
@@ -148,5 +147,8 @@ bool mission_queue_direction(Mission *mission, uint8_t action);
 
 void mission_init(Mission *m, uint32_t now_ms);
 void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out);
+/* Diagnostic record of the line decision mission_step just made. */
+mqtt_line_trace_t mission_line_trace(const Mission *m, const MissionInputs *in,
+    const MissionOutputs *out);
 
 #endif /* MISSION_LOGIC_H */

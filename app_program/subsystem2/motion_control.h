@@ -61,15 +61,15 @@ uint8_t motion_cmd_action(const MotionCommand *cmd);
 MotionCommand motion_command_make(motion_mode_t mode, float speed_mmps, float target,
                                   int steering_q, unsigned action_id, uint32_t sampled_ms);
 
-/* TURN uses style 0/1/3 for degree targets, style 2 for signed path mm.
-   DISTANCE style 3 requests a ramped approach; FOLLOW retains signed Q7.
+/* TURN uses style 0/1/3 for degree targets; style 2 is invalid (it was the
+   removed smooth path). DISTANCE style 3 requests a ramped approach; FOLLOW
+   retains signed Q7.
    Command size/mode packing and MQTT frames are unchanged. */
 typedef enum
 {
     MOTION_TURN_PIVOT,
     MOTION_TURN_SWING,
-    MOTION_TURN_SMOOTH, /* target: signed whole mm path length, not degrees */
-    MOTION_TURN_RAMPED /* encoder pivot with acceleration/deceleration */
+    MOTION_TURN_RAMPED = 3 /* encoder pivot with acceleration/deceleration */
 } motion_turn_style_t;
 
 typedef struct {
@@ -90,7 +90,6 @@ typedef struct {
     uint32_t stalled_since_ms[2];
     uint16_t follow_base_q6 : 15; /* private unsigned Q6 mm/s, see specs */
     int8_t follow_steer_q; /* private applied Q7 steering, see specs */
-    uint32_t path_q8 : 20; /* 0..4095.996 mm; bounded reference lead */
     WheelPid pid[2];
 } MotionController;
 
