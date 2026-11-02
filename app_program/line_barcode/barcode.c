@@ -526,7 +526,9 @@ void barcode_service(bool cancel)
         barcode_result_t result =
             barcode_frame_edge(&frame, black, edge.left_count, edge.right_count,
             &symbol, &orientation);
+#if ROBOT_TRACE_ENABLED
         run_trace_add(frame.last_width, !black);
+#endif /* ROBOT_TRACE_ENABLED */
 #if BARCODE_DIAGNOSTICS
         if (diagnostic_head - diagnostic_tail < 32u)
         {
