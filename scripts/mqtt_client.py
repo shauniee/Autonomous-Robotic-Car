@@ -342,7 +342,7 @@ class Dashboard:
                 self.end_headers()
                 self.wfile.write(reply)
 
-        # Docker publishes this unauthenticated server only on host loopback.
+        # Unauthenticated: keep it on host loopback (the --http-host default).
         self.server = ThreadingHTTPServer((host, port), Handler)
         origin = f"http://127.0.0.1:{self.server.server_port}"
         self.server.daemon_threads = True
@@ -492,7 +492,7 @@ def main():
     parser.add_argument("--port", type=int, default=1883)
     parser.add_argument("--root", default="robot/s3", help="topic root (firmware: <root>/telemetry, /request, /status)")
     parser.add_argument("--http-port", type=int, default=8080, help="serve: dashboard port")
-    parser.add_argument("--http-host", default="127.0.0.1", help="serve: bind address (Docker uses 0.0.0.0)")
+    parser.add_argument("--http-host", default="127.0.0.1", help="serve: bind address")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:

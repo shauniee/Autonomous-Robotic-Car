@@ -71,9 +71,8 @@ where things stand and what to do next.
 ## How to run a trial
 
 1. Change one value in `app_program/common/robot_config.h`.
-2. Build the normal wireless image:
-   `docker compose run --rm --user "$(id -u):$(id -g)" firmware make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0`
-3. Copy `build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt.uf2` to a named file,
+2. Build and flash the full-course image: `./flash.sh`
+3. Copy `build_make/mtk3pico_smp1_usb_cdc_wifi_lwip_mqtt_course.uf2` to a named file,
    restore the source, and record the UF2 hash with the result.
 4. Run on battery with `mqtt_client.py monitor` saving to a file; analyse WHEEL
    targets (steering = target ratio, see INT-106 onwards).
