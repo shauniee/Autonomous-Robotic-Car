@@ -28,8 +28,8 @@ from pathlib import Path
 
 VERSION = 2
 TELEMETRY, EVENT, SNAPSHOT_REPLY, MAPPING, ACK, SNAPSHOT_REQUEST, JUNCTION_TEST = 1, 2, 3, 4, 5, 6, 7
-WHEEL_TRACE, LINE_TRACE = 8, 9
-LENGTHS = {TELEMETRY: 23, EVENT: 11, SNAPSHOT_REPLY: 23, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3, WHEEL_TRACE: 15, LINE_TRACE: 17}
+WHEEL_TRACE, LINE_TRACE, BARCODE_TRACE, TERRAIN_TRACE = 8, 9, 10, 11
+LENGTHS = {TELEMETRY: 23, EVENT: 11, SNAPSHOT_REPLY: 23, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3, WHEEL_TRACE: 15, LINE_TRACE: 17, BARCODE_TRACE: 18, TERRAIN_TRACE: 8}
 
 MISSION = ["READY", "FOLLOW_LINE", "NAVIGATE", "SCAN", "BYPASS", "REACQUIRE", "STOPPED"]
 MOTION = ["IDLE", "RUNNING", "DONE", "FAILED"]
@@ -132,7 +132,7 @@ def decode_wheel_trace(f):
 
 
 LINE_FLAGS = ("left_black", "right_black", "in_broad", "junction_open",
-              "junction_qualified", "entry_curved", "junction_locked")
+              "junction_qualified", "entry_curved", "junction_locked", "barcode_level")
 COMMAND_MODE = ["STOP", "FOLLOW", "DISTANCE", "TURN"]
 
 
@@ -141,15 +141,32 @@ def decode_line_trace(f):
         raise ValueError("not a line trace")
     sampled_ms, flags, state, left, right, steer, law, command_steer, command, skew = \
         struct.unpack_from("<IBBHHbbbHB", f, 1)
-    if flags & 0x80 or state & 0x80 or command >> 11 or (state & 0xF) >= len(MISSION):
+    if state & 0x80 or (state & 0xF) >= len(MISSION):
         raise ValueError("invalid line trace")
     trace = dict(type="line_trace", sampled_ms=sampled_ms,
                  mission=MISSION[state & 0xF], phase=state >> 4, left=left, right=right,
-                 steer_q=steer, law_q=law, command=COMMAND_MODE[command >> 9],
+                 steer_q=steer, law_q=law, command=COMMAND_MODE[command >> 9 & 3], barcode_edges=command >> 11,
                  command_steer_q=command_steer, command_speed=command & 0x1FF,
                  onset_skew_mm=None if skew == 255 else skew)
     trace.update({key: bool(flags >> bit & 1) for bit, key in enumerate(LINE_FLAGS)})
     return trace
+
+
+def decode_terrain_trace(f):
+    """Hump detector sample: time, tilt, state, peak rise, acceleration and validity flags."""
+    if frame_type(f) != TERRAIN_TRACE:
+        raise ValueError("not a terrain trace")
+    time_ms, pitch, flags, rise, accel, roll = struct.unpack_from("<HbBBBb", f, 1)
+    return (f"t={time_ms} pitch={pitch / 4:g} roll={roll / 4:g} state={flags & 7} rise={rise}mm accel={accel * 10}mg "
+            f"encoder_ok={flags >> 6 & 1} calibrated={flags >> 7}")
+
+
+def decode_barcode_trace(f):
+    """Sequence, then raw GP16 runs: H black or L white, width in encoder counts."""
+    if frame_type(f) != BARCODE_TRACE:
+        raise ValueError("not a barcode trace")
+    runs = struct.unpack_from("<8H", f, 2)
+    return f"#{f[1]} " + " ".join(f"{'H' if r >> 15 else 'L'}{r & 0x7FFF}" for r in runs if r & 0x7FFF)
 
 
 def decode_event(f):
@@ -221,6 +238,10 @@ def describe(frame, motion):
     kind = frame_type(frame)
     if kind == WHEEL_TRACE:
         return "WHEEL " + json.dumps(decode_wheel_trace(frame), separators=(",", ":"))
+    if kind == TERRAIN_TRACE:
+        return "HUMP " + decode_terrain_trace(frame)
+    if kind == BARCODE_TRACE:
+        return "BARS " + decode_barcode_trace(frame)
     if kind == LINE_TRACE:
         return "LINE " + json.dumps(decode_line_trace(frame), separators=(",", ":"))
     if kind in (TELEMETRY, SNAPSHOT_REPLY):
@@ -253,6 +274,8 @@ def dashboard_message(frame, motion):
                  direction=measured[2] if measured else None)
         return t
     message = {"type": "event" if kind == EVENT else "ack" if kind == ACK else "other", "text": describe(frame, motion)}
+    if kind == EVENT and frame[1] == 2:
+        message.update(hump_height_mm=frame[2] * HUMP_MM_PER_CODE, event_id=frame.hex())
     if kind == EVENT and frame[1] == 3:
         message.update(obstacle_depth_mm=struct.unpack_from("<H", frame, 9)[0],
                        event_id=frame.hex())
@@ -410,8 +433,11 @@ def self_test():
     assert line["onset_skew_mm"] == 12
     assert (line["command"], line["command_steer_q"], line["command_speed"]) == ("FOLLOW", -32, 100)
     assert describe(golden_line, Motion()).startswith("LINE ")
-    for frame in (golden_line[:-1], golden_line[:5] + bytes([0x80]) + golden_line[6:],
-                  golden_line[:6] + bytes([0x07]) + golden_line[7:], golden_line[:15] + bytes([0x08]) + golden_line[16:]):
+    assert describe(bytes([0x2B, 5, 0, 14, 0xF9, 3, 100, 0xFA]), Motion()).startswith("HUMP t=5 pitch=3.5 roll=-1.5 state=1 rise=3mm accel=1000mg encoder_ok=1 calibrated=1")
+    assert describe(bytes([0x2A, 7, 0x22, 0x80, 0x0C, 0]) + bytes(12), Motion()) == "BARS #7 H34 L12"
+    assert decode_line_trace(golden_line[:5] + bytes([0x80]) + golden_line[6:])["barcode_level"]
+    assert decode_line_trace(golden_line[:15] + bytes([0x0A]) + golden_line[16:])["barcode_edges"] == 1
+    for frame in (golden_line[:-1], golden_line[:6] + bytes([0x07]) + golden_line[7:]):
         try:
             decode_line_trace(frame)
         except ValueError:
@@ -434,6 +460,8 @@ def self_test():
     assert event["type"] == "event" and event["obstacle_depth_mm"] == 40
     assert event["event_id"] == obstacle.hex() and "OBSTACLE" in event["text"]
     assert "obstacle_depth_mm" not in dashboard_message(GOLDEN_EVENT, Motion())
+    hump = bytes([GOLDEN_EVENT[0], 2, 0]) + GOLDEN_EVENT[3:]
+    assert dashboard_message(hump, Motion())["hump_height_mm"] == 0
     ack = dashboard_message(bytes([0x25, 0x07, 0x01]), Motion())
     assert ack["type"] == "ack" and ack["sequence"] == 7 and not ack["ok"] and ack["result"].startswith("BUSY")
     assert [len(bits) for _, bits in FAULTS] == header_fault_widths(), "FAULTS disagrees with robot_data.h"
@@ -532,7 +560,7 @@ def main():
         if dashboard:
             try:
                 frame = bytes(message.payload)
-                if frame_type(frame) != LINE_TRACE:	# monitor captures only; no dashboard view
+                if frame_type(frame) not in (LINE_TRACE, BARCODE_TRACE, TERRAIN_TRACE):	# monitor captures only; no dashboard view
                     dashboard.push(dashboard_message(frame, motion))
             except ValueError as error:
                 dashboard.push({"type": "other", "text": f"undecodable frame ({error})"})

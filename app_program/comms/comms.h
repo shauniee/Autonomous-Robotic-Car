@@ -27,7 +27,9 @@ typedef enum
     MQTT_TYPE_SNAPSHOT_REQUEST = 6,	/* PC -> robot */
     MQTT_TYPE_JUNCTION_TEST = 7, /* PC -> Mission, next-junction test direction */
     MQTT_TYPE_WHEEL_TRACE = 8, /* robot -> PC, best-effort Motion-release trace */
-    MQTT_TYPE_LINE_TRACE = 9 /* robot -> PC, best-effort Mission line decision trace */
+    MQTT_TYPE_LINE_TRACE = 9, /* robot -> PC, best-effort Mission line decision trace */
+    MQTT_TYPE_BARCODE_TRACE = 10, /* robot -> PC, best-effort raw GP16 run widths */
+    MQTT_TYPE_TERRAIN_TRACE = 11 /* robot -> PC, best-effort hump detector state */
 } mqtt_type_t;
 
 /* Frame lengths in bytes (exact). */
@@ -37,6 +39,9 @@ typedef enum
 #define MQTT_LEN_JUNCTION_TEST 3u
 #define MQTT_LEN_WHEEL_TRACE 15u
 #define MQTT_LEN_LINE_TRACE 17u
+#define MQTT_LEN_BARCODE_TRACE 18u
+#define MQTT_BARCODE_TRACE_RUNS 8u
+#define MQTT_LEN_TERRAIN_TRACE 8u
 #define MQTT_LEN_ACK 3u
 #define MQTT_LEN_SNAPSHOT_REQUEST 2u
 #define MQTT_FRAME_MAX 23u
@@ -149,12 +154,13 @@ unsigned mqtt_encode_wheel_trace(uint8_t *out, unsigned capacity,
 #define MQTT_LINE_JUNCTION_QUALIFIED	0x10u
 #define MQTT_LINE_ENTRY_CURVED	0x20u
 #define MQTT_LINE_JUNCTION_LOCKED	0x40u
+#define MQTT_LINE_BARCODE_LEVEL	0x80u
 
 /* Local encoder input, one per fresh IR acquisition Mission acted on. */
 typedef struct
 {
     uint32_t sampled_ms;	/* IR acquisition time */
-    uint8_t flags;		/* MQTT_LINE_*, bit 7 reserved */
+    uint8_t flags;		/* MQTT_LINE_* */
     uint8_t mission_state;	/* 0..15 */
     uint8_t phase;		/* junction phase, 0..7 */
     uint16_t wheel_count[2];	/* low 16 bits of the shared encoder counts */
@@ -164,7 +170,17 @@ typedef struct
     uint8_t command_mode;	/* motion_mode_t, 0..3 */
     uint16_t command_speed;	/* mm/s sent to Motion, 0..511 */
     uint8_t onset_skew_mm;	/* both black: mm between the black onsets, 254 max; else 255 */
+    uint8_t barcode_edges;	/* running GP16 edge count, 0..31, wraps */
 } mqtt_line_trace_t;
+
+/* Terrain trace: bytes after the header are time ms low 16, pitch in quarter degrees,
+   state and flags, rise mm, acceleration in 10 mg units, roll in quarter degrees. */
+unsigned mqtt_encode_terrain_trace(uint8_t *out, unsigned capacity, uint16_t time_ms,
+    int8_t pitch_q2, uint8_t state_flags, uint8_t rise_mm, uint8_t accel_10mg, int8_t roll_q2);
+
+/* Barcode trace: 8 raw GP16 runs, each bit 15 black level, bits 14..0 width in counts. */
+unsigned mqtt_encode_barcode_trace(uint8_t *out, unsigned capacity, uint8_t sequence,
+    const uint16_t runs[MQTT_BARCODE_TRACE_RUNS]);
 
 unsigned mqtt_encode_line_trace(uint8_t *out, unsigned capacity,
     const mqtt_line_trace_t *trace);

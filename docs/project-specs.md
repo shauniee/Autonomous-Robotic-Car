@@ -77,11 +77,10 @@ and sonar electrical behavior confirmed by the user, without new numeric reading
 or a test PASS. Motor/encoder polarity still requires verification. Start needs
 functional IR/Motion, mapping, WiFi and MQTT. IMU calibration is attempted at boot
 with no IR software calibration; IMU failure is flagged but permits operation. During a run
-IR/Motion failure stops; ordinary IMU/sonar/network loss is report-only. Requested
-hump speed is half normal tracking speed. **Course speed guardrail (user,
+IR/Motion failure stops; ordinary IMU/sonar/network loss is report-only. **Course speed guardrail (user,
 2026-11-02):** line following, crossings, junction advances and junction pivots
-are commanded at exactly 100 mm/s, 50 mm/s while a hump is active; steering never
-lowers it. A compile-time assert fixes `MISSION_TRACK_SPEED_MMPS` at 100, and
+are commanded at exactly 100 mm/s, humps included (the earlier half-speed hump
+request was dropped by the user, INT-134); steering never lowers it. A compile-time assert fixes `MISSION_TRACK_SPEED_MMPS` at 100, and
 Mission stops rather than send any other speed while following or navigating.
 Recovery sweeps and obstacle bypass keep their own slower speeds. The original moving 70-degree
 recovery request was superseded by the stationary wider sweep revision in
@@ -156,7 +155,7 @@ instruction, hold zero steering
 at the normal line-follow speed for 25 mm of mean signed encoder travel, then
 resume ordinary tracking immediately, without a VISIBLE confirmation streak.
 Use continuous FOLLOW rather than a position action so there is no endpoint
-deceleration or transition STOP. Ordinary hump speed reduction and fresh usable
+deceleration or transition STOP. Fresh usable
 IR, stop, obstacle, Motion health and navigation deadline guards remain.
 Reuse `broad_origin[2]` for the straight segment's exit pose; private navigation
 phase 5 encodes this segment within the existing three-bit field. No wire or
@@ -310,7 +309,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | --- | --- | --- | --- | --- | --- |
 | Mapping letters (L, R, S, U) | mapping word, Mission on valid mapping | A-Z, 26 values, all four distinct | boot state UNMAPPED; rejected before install | 5 each, 20 total | 4 x 5-bit |
 | Mapping state | mapping word bit 20 | UNMAPPED / MAPPED | - | 1 | flag |
-| Line sensor readings (2 analog) | S3 snapshot struct | 0-4095 ADC counts; fractions 0..1 as 0..127; error and steering -1..+1 as -127..+127 | validity flags; averaged ADC saturates at 4095; fractions clamp to 0..127 | 12 each; 7 each; 8 each | struct; scaled integers ([ADR 0001](architecture.md#minimum-bit-data-representation)) |
+| Line sensor readings (2 digital) | `IrRawWord`, S3 | GPIO levels 0/1; fractions 0 or 127; error -127, 0 or +127 | invalid reading clears the valid flag; levels above 1 saturate to 1 | 1 + 1 + 1 valid in one 32-bit word; fractions 7 each; error 8 | word, single store |
 | Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 16 (wrapped encoder counts at the edge); level 1 | overflow sets fault bit; new edge dropped | 16+16+1 | struct |
 | Decoded barcode event | queue (8 deep), S3 | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1 (one 16-bit word) + 16+16 | packed word + 2 counts, accessors in `barcode.h` |
 | Mission state | Mission writer | READY, FOLLOW_LINE, NAVIGATE, SCAN, BYPASS, REACQUIRE, STOPPED; implemented codes 0..6, 7 invalid | invalid input inhibits movement | 3 logical (existing 4-bit wire slot retained) | Implemented 3-bit private state and atomic published byte; schema-v2 wire slot remains 4 bits; decoder uses seven-state labels |
@@ -319,7 +318,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 
 ### S3 bit-usage data contract (proposed; spec #100; final evidence #107)
 
-Historical source-pinned storage evidence below is retained unchanged; it is not a size prediction for the restructure. Storage bits come from `testing/line_barcode/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/comms/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](architecture.md#minimum-bit-data-representation) (retained representation decision); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
+Historical source-pinned storage evidence below is retained unchanged; it is not a size prediction for the restructure. The IR rows below predate the digital sensors: raw left and right are now one bit each (see the line sensor row above). Storage bits come from `testing/line_barcode/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/comms/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](architecture.md#minimum-bit-data-representation) (retained representation decision); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
 
 | Field | Current C type | Bounds / units | Chosen width (bits) | Final storage bits | Instances | Ticket |
 | --- | --- | --- | ---: | ---: | ---: | --- |
@@ -335,7 +334,7 @@ Historical source-pinned storage evidence below is retained unchanged; it is not
 | Barcode event: padding | bits 9-15 of `packed` (spare) | - | - | 7 | 8 | #104 |
 | Barcode event struct | `barcode_event_t` | - | - | 48 | 8 | - |
 | Barcode frame: previous left / right count | 2 x `barcode_count_t` (`uint16_t`) | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | 2 x 16 | 1 | #103 |
-| Barcode frame struct | `barcode_frame_t` | - | - | 1248 | 1 | - |
+| Barcode frame struct | `barcode_frame_t` | - | - | 496 | 1 | - |
 | IR reading (in tracker): left / right fraction | 2 x `uint8_t` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | 2 x 8 | 1 | #105 |
 | IR reading (in tracker): error | `int8_t` | -1..+1 as -127..+127 (ADR 0001) | 8 | 8 | 1 | #105 |
 | IR tracking output: error / steering | 2 x `int8_t` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | 2 x 8 | 0 (returned by value) | #105 |
@@ -357,7 +356,7 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 
 | Field | Storage / writer | Range | Invalid / overflow | Bits | Repr. |
 | --- | --- | --- | --- | --- | --- |
-| Hump height, working | task-local | 0-6553.5 mm, 0.1 mm, nearest | saturates at 65535 | 16 | fixed point |
+| Hump peak height, working | task-local | 0-6553.5 mm, 0.1 mm, nearest | saturates at 65535 | 16 | fixed point |
 | Hump height, reported | terrain word bits 0-6 | 0-126 (D06 scale), nearest | 127 invalid; saturates at 126 | 7 | fixed point |
 | Maximum hump height | terrain word bits 7-13 | 0-126, same scale | 127 invalid; saturates at 126 | 7 | fixed point |
 | Hump count | terrain word bits 14-21 | 0-255 | saturates at 255 | 8 | unsigned |
@@ -365,10 +364,11 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Persistent acceleration filter | `TerrainContext.filtered_accel_q16`, one S4 task writer | 3 signed raw-accelerometer axes with 16 fractional bits; widened bias-corrected range | saturates on int32 overflow | 3 x 32 | Q16 signed integers; local float calculations only (#110) |
 | Calibration accumulation | `TerrainContext.calib_sum`, S4 task | 100 x signed 16-bit raw samples per axis, -3276800..3276700 | cannot overflow signed 23 bits during 100 samples | 3 x 23 = 69 bits; 72-bit storage | GNU C packed 23-bit signed bit-fields (#110) |
 | Pitch estimate | `TerrainContext.pitch_cdeg`, S4 task | -9000..9000 centidegrees | rounded nearest 0.01 degree | 15 logical, 16 stored | `int16_t` (#110) |
+| Roll estimate | `TerrainContext.roll_cdeg`, S4 task | -9000..9000 centidegrees | rounded nearest 0.01 degree | 15 logical, 16 stored | `int16_t` (INT-156) |
+| Hump encounter travel | `TerrainContext.travel_counts`, S4 task | 0-65535 encoder counts while tilted | saturates at 65535 | 16 | `uint16_t` (INT-157) |
+| Roll average while stopped | `TerrainContext.roll_base_q8`, S4 task | -9000..9000 centidegrees, 1/256 centidegree | integer step, truncates | 32 | `int32_t` (INT-157) |
 | Terrain counters | `calib_count` / `flat_run`, S4 task | 0-100 / 0-10 | calibrated stops count at 100; flat run resets at 10 | 7 / 4 | C bit-fields (#110) |
-| Terrain private state / validity flags | `TerrainContext.state`, `height_valid`, `is_calibrated` | 0-4 / flag / flag | state 5-7 unused | 3 / 1 / 1 | C bit-fields (#110) |
-| Terrain encounter quality | `TerrainContext.window_qualified`, S4 task | one flag, cleared by any unqualified sample until the next climb | zero suppresses encounter count/height updates | 1 | C bit-field |
-| Terrain travel quality history | `TerrainTravelQuality`, S4 task | previous fresh acquisition and steady-start times, modulo 2^32 ms; prior mean signed speed -32767..32767 mm/s, nearest; primed/steady flags | invalid acquisition, gap, reverse, overflow, speed change or wheel mismatch restarts steady qualification; no wire changes | 2 x 32 + 16 + 2 logical bits | integer timestamps/speed and packed flags; 12 bytes including alignment |
+| Terrain private state / validity flags | `TerrainContext.state`, `height_valid`, `is_calibrated` | 0-2 / flag / flag | state 3-7 unused | 3 / 1 / 1 | C bit-fields (#110) |
 | Terrain private hump last/max codes | `TerrainContext.last_hump_code`, `max_hump_code` | 0-126; 127 invalid | saturates and retains max | 7 / 7 | C bit-fields (#110) |
 | Complete persistent TerrainContext | `TerrainContext`, S4 task | as above; 20 ms processing | D06 physical calibration pending; replay old float path for parity | 32 bytes on the current target compiler (SYS-12) | `testing/terrain/sizeof_probe.c` (#110) |
 
@@ -379,10 +379,10 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Scan state | scan word bits 0-2, Obstacle | 8 states (IDLE, SETTLING, COARSE, FINE, DONE, FAILED, CANCELLED, SIDE_WATCH) | out-of-range decodes as FAILED | 3 | encoded value |
 | Scan ID | scan word bits 3-6, Mission request | 0-15 | wraps | 4 | mask/shift |
 | Range, front / side | echo word, Obstacle | 0-8190 mm, nearest mm | 8191 or valid flag clear = no echo, never clear space; saturates to invalid | 13+1+16 (time low 16) | mask/shift |
-| Obstacle profile (geometry) | mutex-copied `ObstacleProfile`, S5 | closest angle -20..+20, valid flag; 4 unsigned mm measurements 0-65535; 2 signed mm coordinates | clamp to 16-bit limits; invalid profile not published | angle 6 + valid 1 + 6x16 = 103 logical; 112 stored (`sizeof` 14 bytes) | signed angle byte, validity bit in a separate byte, other 16-bit words |
-| ObstacleRay scan entry | `ObstacleRay` array, private S5 task | angle -20..+20; valid 0/1; range mm 0-65535 | invalid angle rejected by constructor, no echo = validity clear; range ignored | 6 + 1 + 16 = 23 logical bits; 32 stored bits (`sizeof` 4 bytes) | GNU C packed signed angle byte, validity byte and unaligned 16-bit range |
+| Obstacle profile (geometry) | mutex-copied `ObstacleProfile`, S5 | closest angle -50..+50, valid flag; 4 unsigned mm measurements 0-65535; 2 signed mm coordinates | clamp to 16-bit limits; invalid profile not published | angle 6 + valid 1 + 6x16 = 103 logical; 112 stored (`sizeof` 14 bytes) | signed angle byte, validity bit in a separate byte, other 16-bit words |
+| ObstacleRay scan entry | `ObstacleRay` array, private S5 task | angle -50..+50; valid 0/1; range mm 0-65535 | invalid angle rejected by constructor, no echo = validity clear; range ignored | 6 + 1 + 16 = 23 logical bits; 32 stored bits (`sizeof` 4 bytes) | GNU C packed signed angle byte, validity byte and unaligned 16-bit range |
 | Obstacle width / depth | profile width; depth from encoder travel | 0-65535 mm / counts | saturates | 16 | unsigned |
-| Side-watch servo angle / enabled | `side_command` atomic word, Mission writer | -20..+20 degrees / yes-no | clamped to sweep; value sign-extended on read | 6 + 1 logical; 32 stored (shared atomic word) | bits 1..8 signed angle, bit 0 enabled; accessors (#111) |
+| Side-watch servo angle / enabled | `side_command` atomic word, Mission writer | -50..+50 degrees / yes-no | clamped to sweep; value sign-extended on read | 6 + 1 logical; 32 stored (shared atomic word) | bits 1..8 signed angle, bit 0 enabled; accessors (#111) |
 
 ### Mission and Safety
 
@@ -481,7 +481,7 @@ Software restructure storage contract (2026-10-29, #131–#133; no new wire fiel
 | Mapping progress, one writer per counter | Request/reply tickets plus private submit/consume/take counters, modulo 2^32 | One outstanding request through reply consumption; no overwrite | 32 each |
 | Terrain evidence, I/O | Existing terrain word, acquisition/service ms and attempt sequence uint32; acquisition validity 1 bit | Pending data does not renew acquisition time; copy/age/validity required; timestamps wrap | 4 x 32 + 1 logical; naturally aligned 20-byte snapshot |
 | IMU startup outcome, I/O | 0 pending, 1 calibrated, 2 failed | Missing IMU publishes failed; never interpreted as calibrated | 2 / one 32-bit word |
-| S5 step phase/flags, Mission | Phase 0..2 + initialized/ready/scanning; scan counts 0..9, scan ID 0..15, commanded and target angles -20..20 integer degrees | Fixed nine-ray capacity; deadline/cancel/movement abort; no echo invalid; angle targets outside range rejected, no rounding | 2+3 bits; counts 4 each, ID 4, two signed 6-bit angle fields |
+| S5 step phase/flags, Mission | Phase 0..2 + initialized/ready/scanning; scan counts 0..13, scan ID 0..15, commanded and target angles -50..50 integer degrees | Fixed nine-ray capacity; deadline/cancel/movement abort; no echo invalid; angle targets outside range rejected, no rounding | 2+3 bits; counts 4 each, ID 4, two signed 6-bit angle fields |
 | Link readiness, kernel WiFi | bit 0 WiFi, bit 1 broker; boot 0 | Both required for local start; run loss report-only | 2 / one 32-bit word |
 | Event drops, event-mutex holder / one writer per core | `comms_event_log_t.dropped` counts ring overflow; `lock_misses[2]` counts failed bounded event-insertion locks (Mission core 1, Terrain core 0), one atomic uint32 per core; bridge-full returns false for retry | Each count saturates at UINT32_MAX; insertion waits at most the existing 2 ms snapshot-lock timeout; counters are debugger diagnostics, not new MQTT fields or delivery acknowledgements | 32 each; 64 stored for the two lock-miss words |
 
@@ -490,18 +490,13 @@ not a physical tuning or accuracy claim; one Mission writer):
 
 | Field | Range / scale / rounding | Invalid / overflow | Logical / stored bits |
 | --- | --- | --- | --- |
-| Filtered previous line error, or requested steering target when `LINE_BINARY_RAMP=1` | -1..+1 (binary target bounded by `MAX_STEER`), signed integer /32767; nearest, ties away from zero | -32768 unused; primed bit gates history; finite local calculation clamps before storage; binary target restarts on reversal/zero/gap/reset | 16 / 16 |
-| Integral steering contribution | +/-`LINE_I_LIMIT` (currently 0.40); signed integer /32767; nearest, ties away from zero | -32768 unused; reset zero; computation clamps to configured limit before storage; limit constrained to <=1 | 15 at current limit / 16; resolution chosen for host float-reference comparison, physical acceptance D07 pending |
-| Held steering | -127..127, signed Q7; existing output rounding retained | -128 unused; output clamps to `MAX_STEER` | 8 / 8 |
-| PID primed | no/yes, Mission private | reset false | 1 / 1 in a private byte |
+| Steering target | -127..127, signed Q7 (`line_steer_q`) | -128 unused; fixed correction values, checked by `_Static_assert` | 8 / 8 |
+| Last and previous touch | -1 left, 0 none, +1 right (`line_side`, `line_prev`) | only these codes are written | 2 each / 8 each |
+| In a bend | no/yes (`line_bend`) | reset false | 1 / 1 in a private byte |
 | Junction turn | 0 none, 1 left (+90 degrees), 2 right (-90), 3 U-turn (+180) | none yields zero target (Motion rejects a zero turn); only coordinator sets codes | 2 / 2 in private byte |
 
-Float remains only in local PID/filter/geometry computation, where existing
-gains and rate limits use fractional seconds. Persistent PID history uses the
-scales above; quantization is at storage boundaries, with no wire change.
-The /32767 scale provides exact +/-1 endpoints and half-step storage error
-<=1/65534. Host comparison against the prior float controller is software
-evidence only; cumulative error and physical steering still require D07/T15.
+Steering keeps no filter or integral history: it stores the Q7 target above and
+wheel counts where touches began. Float remains only in local geometry computation.
 Current working-tree target ABI, static RAM and inter-task copy sizes are
 recorded in [SYS-12](../testing/system/TEST_LOG.md#current-resource-audit-sys-12).
 The accepted-commit minimum-bit/resource audit remains Stage 9 work.
@@ -594,11 +589,11 @@ Uncalibrated software proposals for review (not course limits/module ratings):
 
 | Setting | Proposal / purpose | Physical acceptance |
 | --- | --- | --- |
-| Recovery | After white/white 200 mm past the last touch (revision 2026-11-02 below), brake then repeat +70/-70 degrees; 36 mm/s per wheel after rolling-scale correction; 30 s / 1200 mm mean absolute wheel excursion bound; 5 degree endpoint tolerance, separate 20 degree overshoot allowance | User requested qualified simplified sweep; D03/D07/D08/D13 pending |
+| Recovery | After white/white `LINE_LOST_MM` past the last touch (revision 2026-11-02 below), brake then repeat +70/-70 degrees; 36 mm/s per wheel after rolling-scale correction; 30 s / 1200 mm mean absolute wheel excursion bound; 5 degree endpoint tolerance, separate 20 degree overshoot allowance | User requested qualified simplified sweep; D03/D07/D08/D13 pending |
 | Recovery handoff | Brake on usable VISIBLE from either sensor; resume tracking without centering or confirmation streak | D04/D07/D10 physical acceptance pending |
 | Bypass line alignment | 5 mm/s after rolling-scale correction, independently configured from standalone recovery | D04/D07/D10 pending |
 | Scan | Three samples, at least two valid; depth enter/exit bands 30/60 mm; two adjacent rays; model range uncertainty 10 mm | D05/D10 pending; uncertainty is a proposed model input, not sensor accuracy |
-| Servo sampling | User-requested +/-20 degree travel; coarse rays -20/-10/0/+10/+20 degrees and 5 degree edge refinement; existing 300 ms settle and 60 ms repeat | Verify endpoints/mounting before release, D05 |
+| Servo sampling | User-stated +/-50 degree travel (2026-11-02; replaces +/-20, which could not see past a 100-200 mm obstacle at the stop distance); coarse rays every 10 degrees and 5 degree edge refinement; proposed 1 degree per 10 ms, 100 ms settle, 60 ms repeat | Verify endpoints/mounting before release, D05 |
 | Bypass | 9 mm/s after rolling-scale correction, <=50 mm motion chunks, 90 s / 4000 mm whole budget; <=2 s / two completed groups per sensing phase | D02/D03/D05/D07/D08/D13 pending |
 | Bypass geometry | Body length/width 200/180 mm, 30 mm clearance; offset >=250 mm, <=600 mm; conservative obstacle width >=200 mm | Proposals only; measure full swept envelope, D03 |
 | Rear-edge / return | Two distinct qualified side groups; 150/100 mm enter/release jump; <=1500 mm pass, <=250 mm baseline search; return within 25 mm lateral / 5 degrees and three distinct tracking acquisitions | D02/D05/D07/D10 pending |
@@ -631,7 +626,7 @@ It is valid only while the edge confirmation streak is nonzero; a new streak
 replaces it. Pose overflow fails the bypass before capture. Confirmed rear
 position adds the sonar forward mount and baseline ray's forward projection to
 this first position, keeping depth and return clearance in the profile's frame.
-At the user-requested +/-20 degree servo limits, angle needs six signed bits;
+At the user-stated +/-50 degree servo limits, angle needs seven signed bits;
 ray validity needs one more bit. Existing eight-bit angle storage is retained
 to preserve the current layouts; commands and constructors enforce the sweep. `ObstacleRay` becomes four packed bytes; `ObstacleProfile`
 remains 14 bytes because its previous alignment byte holds validity. Side-watch
@@ -770,7 +765,7 @@ the bit denotes activity. State changes clear it. No shared/wire fields change.
 Line-loss revision, 2026-11-02 (INT-127; host and build only): supersedes the
 500 ms qualification above. DOUT white/white is also the centred reading, so time
 alone stopped good straights, and the tracker never produced `IR_LINE_LOST`.
-Loss is now white/white for `LINE_LOST_MM` (200 mm, trial value) of encoder travel
+Loss is now white/white for `LINE_LOST_MM` (350 mm, trial value, INT-135) of encoder travel
 past the last one-black or broad-black acquisition, counted only after the first
 touch since entering FOLLOW (before it the line is between the sensors and cannot
 leave unseen). The steering drift toward the last side makes a centred robot touch
@@ -1057,7 +1052,7 @@ Control behavior is owned by [architecture](architecture.md#dout-navigation-cont
 | D03 | Effective driven-wheel separation; rolling scale/sign per wheel | Wheel-centre separation user-measured 120 mm; effective turning width and individual rolling verification pending; existing mean scale retained |
 | D02/D03 | Chassis centre forward and left of drive axle midpoint | Unknown; zero config is a placeholder, not a measurement |
 | D04 | Both tracking sensors forward/left of axle, optical centre spacing, height, polarity and dead zone | User-measured 120 mm from axle line to IR pair centre after moving the pair back 18 mm (`NAV_SENSOR_FORWARD_MM`; was 135, INT-117); modules 30 mm apart, outside both line edges. INT-98 slide: effective spot spacing 33 mm, effective line width 23 mm (right sensor), centred white/white band 10 mm, console polarity black=1. Left-sensor span, hysteresis, lateral offset and height pending |
-| D01/D04 | Barcode sensor forward/left of axle, mounted polarity, narrow/wide print widths, quiet/rearm zones | User reports 65 mm ahead of and 40 mm left of the left IR sensor, moved back 18 mm with the IR pair (INT-118), so about 185 mm forward and 55 mm left of the axle midpoint if the IR pair is centred; print widths, polarity and quiet/rearm zones unknown; decoder limits provisional |
+| D01/D04 | Barcode sensor forward/left of axle, mounted polarity, narrow/wide print widths, quiet/rearm zones | User reports 65 mm ahead of and 40 mm left of the left IR sensor, moved back 18 mm with the IR pair (INT-118), so about 185 mm forward and 55 mm left of the axle midpoint if the IR pair is centred; polarity and quiet/rearm zones unknown; user measures a narrow black bar on the course print at about 5 mm (INT-150); decoder limits provisional. User constraint (2026-11-02): the barcode sensor stays at the line sensors' height, because on a hump a lower sensor would hit the floor; narrowing its spot must not lower it (INT-140). User decision: the barcode sensor stays digital, no analog output |
 | D02 | Crossbar width, switching-position uncertainty, body swept clearance, tightest curve traces | Line and crossbar both 18 mm (two intersecting lines); a crossing reads both-black for about 23 mm of travel (INT-98 spot width); clearance and tightest-curve traces pending |
 | D07/D08 | Loaded speed response, braking distance, stationarity, arc error limits and pause behavior | Physical trials pending |
 
@@ -1069,9 +1064,9 @@ pivot. U-turn currently requires a laterally centred chassis (`y_c=0`); a nonzer
 lateral offset cannot be corrected by an in-place 180-degree pivot alone.
 
 Provisional commissioning settings, not measured limits: tracking at 100 mm/s
-with IR read every 10 ms. Steering (proposed trial values, no physical run yet;
-the INT-123 PI defaults are in git history): one sensor black 115/127 (about 90%
-inner-wheel cut), in a bend 127/127, bend lean on white/white 57/127 for 100 mm
+with IR read every 10 ms. Steering (proposed trial values; 115/127/57 veered off
+in INT-132, and the INT-123 PI defaults are in git history): one sensor black
+60/127, in a bend 90/127, bend lean on white/white 30/127 for 100 mm
 past the last touch, otherwise a 8/127 drift toward the last side; a same-side
 touch within 50 mm of the last, or one touch longer than 50 mm, is a bend. These
 copy the reference repo's wheel ratios under this S2 mix. Broad black requests
