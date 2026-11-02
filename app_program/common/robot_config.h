@@ -92,6 +92,22 @@ typedef int ER;
 #define MOTION_ACTION_TIMEOUT_MS 12000u /* D07 trial: corrected turn distances */
 #define MOTION_PERIOD_MS	20u
 
+/* Optional reset watchdog (D15). Off until electrically validated on the
+ * mounted robot. Enable explicitly in a controlled bench build, then test
+ * full reset, motor pin states and startup inhibition before deployment.
+ * RP2040-E1: hardware load needs two watchdog counts per microsecond. */
+#ifndef ROBOT_WATCHDOG_ENABLED
+#define ROBOT_WATCHDOG_ENABLED 0
+#endif
+#define ROBOT_WATCHDOG_TIMEOUT_MS 2000u
+#define ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS 250u
+_Static_assert(ROBOT_WATCHDOG_ENABLED == 0 || ROBOT_WATCHDOG_ENABLED == 1,
+    "watchdog enable is boolean");
+_Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
+    ROBOT_WATCHDOG_TIMEOUT_MS <= 8388u,
+    "RP2040 watchdog timeout must fit the 24-bit load");
+
+
 /* --- S3 line ------------------------------------------------------- */
 #define IR_SAMPLE_MS		10u	/* INT-115: 10 ms reads were the first change that helped at 100 mm/s */
 #define IR_MAX_GAP_MS		60u
