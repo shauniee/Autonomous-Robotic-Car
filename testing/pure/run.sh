@@ -12,6 +12,8 @@ CC=${CC:-cc}
 CFLAGS="-std=c11 -O2 -Wall -Wextra -Werror -pthread -DHOST_TEST"
 
 $CC $CFLAGS testing/pure/test_robot_time.c -o "$build_dir/test_robot_time"
+"$build_dir/test_watchdog"
+$CC $CFLAGS testing/pure/test_watchdog.c -o "$build_dir/test_watchdog"
 for geometry in 0 1; do
     $CC $CFLAGS -DNAV_GEOMETRY_RELEASED=$geometry -DNAV_SENSOR_FORWARD_MM=$((geometry * 150)) -DNAV_CROSSBAR_MM=$((geometry * 18)) \
         testing/pure/test_smooth_navigation.c app_program/mission/mission_logic.c \
