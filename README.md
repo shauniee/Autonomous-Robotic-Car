@@ -134,7 +134,15 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `FULL_COURSE=1` | Releases junction turns and obstacle bypass; `_course` image (`flash.sh` default) |
 | `TEST=1` | Firmware self-tests; forces S2 braking even if the controller enables motion |
 | `WATCHDOG=1` | **Opt-in bench validation only:** arms a 2-second RP2040 reset watchdog after Motion and Mission report fresh progress; `_wd` image. Default `0` until hardware validation (D15) |
+| `TRACE=0` | Skip high-rate diagnostic frame production (types 9/10/11, plus Terrain trace), retaining telemetry, events, ACKs and all safety; `_notrace` image. Default `TRACE=1` |
 | `CRASH_REPORT=1` | Crash/console copy on UART0; project uses `0` (GP0/GP1 conflict, [pins](docs/team.md#2-pins)) |
+
+For line-tracking A/B trials, keep the same course, battery condition and
+controller settings, but build one `TRACE=1` image and one `TRACE=0` image.
+Each build has a distinct profile name/hash; capture the same number of laps
+and compare success rates and latency, not just how smooth the dashboard
+looks. With `TRACE=0`, the dashboard still receives ordinary state/event
+telemetry but not high-rate wheel/line/barcode/terrain graphs.
 
 Watchdog policy (D15): `ROBOT_WATCHDOG_ENABLED=0` is the default; the
 1 MHz timer tick alone does **not** enable reset protection. For a controlled
