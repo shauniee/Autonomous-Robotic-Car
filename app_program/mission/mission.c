@@ -10,6 +10,7 @@
 #include "../comms/comms.h"
 #include "../common/buttons.h"
 #include "../common/robot_time.h"
+#include "../common/robot_watchdog.h"
 
 static _Atomic uint8_t published_state;	/* writer: Mission task; 7 states, 3 logical bits */
 
@@ -239,6 +240,11 @@ static void mission_task(INT stacd, void *exinf)
         {
             tm_printf((UB *)"[MISSION] command write failed; stopping\n");
             (void)motion_stop();
+        }
+        else
+        {
+            /* Mission progress is acknowledged only after command handoff. */
+            robot_watchdog_note_mission(robot_time_ms());
         }
         if (was_recovering && out.line_lost)
         {
