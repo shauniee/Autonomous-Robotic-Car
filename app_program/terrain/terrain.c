@@ -22,6 +22,48 @@ bool terrain_startup_complete(void)
     return rd_word_read(&startup_outcome) != 0u;
 }
 
+/* INT-154 diagnostics: why an encounter did or did not count. Same task as the
+   reader, so one pending frame is enough: every sample during an encounter, and
+   one per second on flat ground. */
+static uint8_t trace_frame[MQTT_LEN_TERRAIN_TRACE];
+static bool trace_pending;
+static uint32_t trace_flat_ms;
+
+static void terrain_trace_note(uint32_t now, const Gy511RawAxes *raw, bool encoder_valid)
+{
+    if (context.state == TERRAIN_STATE_FLAT &&
+        robot_time_elapsed(now, trace_flat_ms) < 1000u)
+    {
+        return;
+    }
+    trace_flat_ms = now;
+    float mg = terrain_acceleration_mg(raw);
+    int pitch = context.pitch_cdeg / 25;
+    int roll = context.roll_cdeg / 25;
+    uint32_t rise = context.rise_q / 10u;
+    uint8_t flags = (uint8_t)(context.state | (encoder_valid ? 0x40u : 0u) |
+        (context.is_calibrated ? 0x80u : 0u));
+    (void)mqtt_encode_terrain_trace(trace_frame, sizeof trace_frame, (uint16_t)now,
+        (int8_t)(pitch > 127 ? 127 : pitch < -127 ? -127 : pitch), flags,
+        (uint8_t)(rise > 255u ? 255u : rise), (uint8_t)(mg >= 2550.0f ? 255u : (unsigned)(mg / 10.0f)),
+        (int8_t)(roll > 127 ? 127 : roll < -127 ? -127 : roll));
+    trace_pending = true;
+}
+
+unsigned terrain_trace_take(uint8_t *out, unsigned capacity)
+{
+    if (!trace_pending || out == NULL || capacity < MQTT_LEN_TERRAIN_TRACE)
+    {
+        return 0u;
+    }
+    trace_pending = false;
+    for (unsigned i = 0u; i < MQTT_LEN_TERRAIN_TRACE; ++i)
+    {
+        out[i] = trace_frame[i];
+    }
+    return MQTT_LEN_TERRAIN_TRACE;
+}
+
 bool terrain_copy(TerrainSnapshot *out)
 {
     if (out == NULL || snapshot_mutex <= 0 ||
@@ -65,7 +107,6 @@ void terrain_step(uint32_t now)
     static uint8_t have_acquisition;
     static uint32_t last_left, last_right;
     static uint32_t travel_origin[2];
-    static TerrainTravelQuality travel_quality;
     static uint8_t previous_humps;
     if (!initialized)
     {
@@ -120,13 +161,6 @@ void terrain_step(uint32_t now)
         rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMU);
     }
     const uint32_t count[2] = {left, right};
-    const int32_t delta[2] = {
-        enc_travel_signed(left, travel_origin[0]),
-        enc_travel_signed(right, travel_origin[1])};
-    if (calibrating || result == GY511_SAMPLE_ERROR || stale)
-    {
-        travel_quality = (TerrainTravelQuality){0};
-    }
     float moved = terrain_travel_take(travel_origin, count, acquired,
         calibrating || result == GY511_SAMPLE_ERROR || stale);
     if (stale)
@@ -171,18 +205,17 @@ void terrain_step(uint32_t now)
     {
         MotionHealth health = {0};
         bool health_copied = motion_health_try(&health) >= E_OK;
-        bool encoder_valid = health_copied && health.sequence != 0u &&
-            robot_time_elapsed(now, health.serviced_ms) <= SAFETY_STALE_MS &&
+        /* A lock this poll lost says nothing about the encoders (INT-157). */
+        bool encoder_valid = (!health_copied || (health.sequence != 0u &&
+            robot_time_elapsed(now, health.serviced_ms) <= SAFETY_STALE_MS)) &&
             (rd_fault_get(RD_OWNER_MOTION) & RD_FAULT_ENCODER) == 0u;
         if (!encoder_valid)
         {
             /* Missing travel invalidates this window; keep completed results. */
             terrain_algo_invalidate_window(&context);
         }
-        bool qualified = terrain_travel_qualified(&travel_quality, now,
-            delta, encoder_valid && terrain_acceleration_qualified(&raw));
-        terrain_algo_process(&context, &raw,
-            encoder_valid && moved > 0.0f ? moved : 0.0f, qualified);
+        terrain_algo_process(&context, &raw, encoder_valid && moved > 0.0f ? moved : 0.0f, stationary);
+        terrain_trace_note(now, &raw, encoder_valid);
         if (!encoder_valid)
         {
             terrain_algo_invalidate_window(&context);

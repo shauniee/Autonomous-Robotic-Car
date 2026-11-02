@@ -157,15 +157,17 @@ static void motion_task(INT stacd, void *exinf)
     if (!encoder_ready) rd_fault_set(RD_OWNER_MOTION, RD_FAULT_ENCODER); /* permanent: no ISR */
     uint32_t seen_invalid_edges = drv_encoder_invalid_edges();
     uint32_t good_counts = 0u;
+    uint32_t invalid_score = 0u;
     uint32_t last_left = drv_encoder_count(ENCODER_LEFT), last_right = drv_encoder_count(ENCODER_RIGHT);
     for (;;)
     {
         /* Motion is the sole writer of its fault byte: the ISR only counts. */
         uint32_t invalid_edges = drv_encoder_invalid_edges();
         uint32_t left = drv_encoder_count(ENCODER_LEFT), right = drv_encoder_count(ENCODER_RIGHT);
-        if (invalid_edges != seen_invalid_edges)
+        uint32_t new_invalid = invalid_edges - seen_invalid_edges;
+        seen_invalid_edges = invalid_edges;
+        if (enc_invalid_score_update(&invalid_score, new_invalid))
         {
-            seen_invalid_edges = invalid_edges;
             good_counts = 0u;
             rd_fault_set(RD_OWNER_MOTION, RD_FAULT_ENCODER);
         }

@@ -73,7 +73,7 @@ static inline bool obstacle_range_sample_fresh(const obstacle_range_sample_t *sa
  *	Field widths are PROVISIONAL until #28/#54 sign off the S5 rows.
  */
 
-#define OBSTACLE_SCAN_CAPACITY 9u
+#define OBSTACLE_SCAN_CAPACITY 13u /* 11 coarse rays, one fine ray per edge */
 #define OBSTACLE_SCAN_STATE_BITS 3u
 
 typedef enum

@@ -24,7 +24,7 @@ Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement a
 ## Behaviour
 
 - **Boot:** up to 5 seconds to collect 100 fresh stationary samples at 50 Hz. Encoder movement restarts the count without extending the deadline. The USB console's `[IMU]` messages distinguish init failure, completion and timeout. A failure is flagged and report-only, and only a reboot retries it.
-- **Humps:** climb, crest, descent and complete-window validation, independent of Mission states. Mission requests half tracking speed during a fresh calibrated encounter.
+- **Humps:** course humps lift one wheel, so an encounter is sideways tilt (roll) of either sign, measured from its average while both wheels are stopped so the boot pose does not matter, over `HUMP_ROLL_ENTER_DEG` until it stays under `HUMP_ROLL_EXIT_DEG` for `HUMP_FLAT_SAMPLES`. It counts with `HUMP_MIN_TRAVEL_MM` of travel over the exit level and a height, track width times the sine of peak roll, between `HUMP_MIN_HEIGHT_MM` and `HUMP_MAX_HEIGHT_MM`. Past `HUMP_MAX_TRAVEL_MM` the tilt becomes the new average (INT-156, INT-157). Independent of Mission states. Humps do not change the course speed.
 - **Results:** only a valid completed encounter updates count or maximum, and results persist through starts and stops until reboot. Missing travel invalidates the current window but keeps completed results. Any failed quality sample disqualifies that encounter. Never fabricate height when data is missing, stale or dominated by acceleration.
 
 ## Contract
@@ -42,4 +42,3 @@ Algorithms pass synthetic replays; results are in the [terrain test log](../../t
 
 - D06, D13 and D14: measured references up to 30 mm, height-error target, threshold and filter decisions.
 - Test stationary, acceleration, braking, turning, climb, descent, impact, repeated reference passes, partial encounters and invalid-after-valid maximum (MR-16, MR-23, MR-29, T06, T07).
-- Investigate the detector staying on for a whole run (INT-122).

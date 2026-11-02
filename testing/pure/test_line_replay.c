@@ -224,37 +224,6 @@ static void test_recovery_blank_floor_is_not_reacquired(void)
     assert(recovery_tick(&r, &recovery, 0u, 0u).phase == RECOVERY_DONE);
 }
 
-/* The bypass return phase is the same: aligned white/white counts only after
-   the line was crossed. */
-static void test_bypass_blank_floor_is_not_the_line(void)
-{
-    bypass_control_t control = {.route = BYPASS_ROUTE_LINE, .work = BYPASS_WORK_LINE,
-        .started_ms = 100u, .line_started_ms = 100u};
-    bypass_input_t input = {.now_ms = 100u, .functional = true, .front_valid = true,
-        .front_sequence = 1u, .front_ms = 100u, .front_mm = 2000u,
-        .line_functional = true, .line_visible = true};
-    uint8_t action = 2u;
-    bypass_output_t out;
-    for (unsigned i = 0u; i < 3u * MISSION_CONFIRM_SAMPLES; ++i)
-    {
-        input.now_ms += TICK_MS;
-        input.front_ms = input.line_ms = input.now_ms;
-        bypass_control_step(&control, &input, &action, &out);
-        assert(out.route == BYPASS_ROUTE_LINE);
-    }
-    input.line_black = true;
-    input.line_error_q = -IR_SCALE_ONE;
-    for (unsigned i = 0u; i <= MISSION_CONFIRM_SAMPLES; ++i)
-    {
-        input.now_ms += TICK_MS;
-        input.front_ms = input.line_ms = input.now_ms;
-        bypass_control_step(&control, &input, &action, &out);
-        input.line_black = false;
-        input.line_error_q = 0;
-    }
-    assert(out.route == BYPASS_ROUTE_DONE);
-}
-
 /* A cached acquisition replayed by later releases is not new evidence: it
    neither turns a touch into a bend nor advances junction qualification. */
 static void test_cached_samples_do_not_advance(void)
@@ -286,7 +255,6 @@ int main(void)
     test_junction_after_curve_is_a_crossing();
     test_s_bend_follows_new_side();
     test_recovery_blank_floor_is_not_reacquired();
-    test_bypass_blank_floor_is_not_the_line();
     test_cached_samples_do_not_advance();
     puts("line replay: PASS");
     return 0;

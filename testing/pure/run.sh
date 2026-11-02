@@ -49,7 +49,7 @@ $CC $CFLAGS testing/pure/test_profile_edges.c app_program/obstacle/obstacle_prof
     -o "$build_dir/test_profile_edges"
 $CC $CFLAGS testing/pure/test_mqtt_frame.c app_program/comms/mqtt_frame.c \
     app_program/common/robot_data.c -o "$build_dir/test_mqtt_frame"
-$CC $CFLAGS testing/pure/test_terrain.c testing/pure/terrain_float_reference.c \
+$CC $CFLAGS testing/pure/test_terrain.c \
     app_program/terrain/terrain_algo.c app_program/common/robot_data.c -lm \
     -o "$build_dir/test_terrain"
 $CC $CFLAGS testing/pure/test_comms_report.c app_program/comms/report.c \

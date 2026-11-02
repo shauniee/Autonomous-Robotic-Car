@@ -68,7 +68,7 @@ static void mission_task(INT stacd, void *exinf)
             mission.state == MISSION_REACQUIRE ||
             mission.state == MISSION_NAVIGATE ||
             (mission.state == MISSION_BYPASS &&
-             mission.bypass.route == BYPASS_ROUTE_LINE);
+             mission.bypass.route == BYPASS_ROUTE_RETURN);
         safety_step(line_required);
         ButtonInputs buttons = drv_buttons_read();
         if (buttons.gp21_down || mission.state == MISSION_STOPPED)
@@ -109,11 +109,6 @@ static void mission_task(INT stacd, void *exinf)
             scan_profile.evidence.left_edge_valid && scan_profile.evidence.right_edge_valid;
         ObstacleProfile profile = scan_profile.profile;
         uint32_t scan = obstacle_scan_word();
-        TerrainSnapshot terrain = {0};
-        bool have_terrain = terrain_copy(&terrain) &&
-            terrain_evidence_fresh(&terrain, now, SAFETY_STALE_MS) &&
-            terrain_calibrated(terrain.terrain);
-        uint32_t terrain_state = terrain_state_code(terrain.terrain);
         barcode_event_t barcode = {0};
         bool have_barcode = barcode_pop(&barcode);
         MissionInputs in = {
@@ -139,10 +134,6 @@ static void mission_task(INT stacd, void *exinf)
             .wheel_count = {left_now, right_now},
             .motion_status = rd_motion_feedback_status(feedback),
             .motion_action = (uint8_t)rd_motion_feedback_action(feedback),
-            .hump_active = have_terrain &&
-                (terrain_state == TERRAIN_STATE_CLIMBING ||
-                 terrain_state == TERRAIN_STATE_CRESTING ||
-                 terrain_state == TERRAIN_STATE_DESCENDING),
             .stationary = robot_time_elapsed(now, still_since) >= MISSION_STATIONARY_MS,
             .front_valid = range_copied && front_sample.sequence != 0u && echo_valid(front),
             .front_age_ms = robot_time_elapsed(now, front_sample.sampled_ms),
@@ -166,12 +157,13 @@ static void mission_task(INT stacd, void *exinf)
             .left_clearance_mm = profile.left_clearance_mm,
             .right_clearance_mm = profile.right_clearance_mm,
             .have_barcode = have_barcode,
+            .barcode_level = gpio_get_val(BARCODE_GPIO) != 0,
+            .barcode_edges = (uint8_t)(drv_barcode_edge_count() & 31u),
             .barcode_action = barcode_event_action(&barcode),
             .barcode_letter = barcode_event_letter(&barcode)};
 
         MissionOutputs out;
-        bool was_recovering = mission.state == MISSION_REACQUIRE &&
-            !mission.reacquire_bypass;
+        bool was_recovering = mission.state == MISSION_REACQUIRE;
         bool was_moving = mission.state != MISSION_READY && mission.state != MISSION_STOPPED;
         mission_step(&mission, &in, &out);
         /* One record per fresh acquisition while moving, including the stop. */

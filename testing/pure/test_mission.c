@@ -485,22 +485,34 @@ static void fresh_front(MissionInputs *in, uint32_t now)
     in->front_wheel_count[1] = in->wheel_count[1];
 }
 
-static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm)
+/* Range of the watch ray from the current pose: sonar on the car's nose, ray
+   50 degrees back toward the line, hitting the box's flank or a far background. */
+static uint32_t side_ray_mm(const Mission *m, float box_front, float box_rear, float half_width)
+{
+    float side = m->bypass.left_side ? 1.0f : -1.0f;
+    float sonar_x = m->bypass.forward_q8 / 256.0f + OBSTACLE_SONAR_FORWARD_MM;
+    float across = side * m->bypass.left_q8 / 256.0f - half_width;
+    float along = across / tanf(SERVO_MAX_DEG * 0.0174532925f);
+    bool hit = across > 0.0f && sonar_x + along >= box_front && sonar_x + along <= box_rear;
+    return hit ? (uint32_t)lroundf(across / sinf(SERVO_MAX_DEG * 0.0174532925f)) : 2000u;
+}
+
+static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm, float depth_mm, float half_width)
 {
     Mission m;
     MissionInputs in = base(100u);
     uint32_t t;
     into_scanning(&m, &in, &t, left_mm, right_mm);
+    in.profile_forward_mm = 250; /* 150 mm range plus the sonar mount */
+    float box_front = 250.0f, box_rear = box_front + depth_mm;
     MissionOutputs out = bstep(&m, &in, &t);
     assert(m.bypass.left_side == (left_mm >= right_mm));
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_TURN);
-    bool depth_seen = false, reacquire_seen = false;
+    bool depth_seen = false;
     uint32_t routes = 0u;
-    for (unsigned i = 0u; i < 500u && m.state != MISSION_FOLLOW_LINE; ++i)
+    for (unsigned i = 0u; i < 500u && m.state == MISSION_BYPASS; ++i)
     {
-        assert(m.state == MISSION_BYPASS || m.state == MISSION_REACQUIRE);
         routes |= 1u << m.bypass.route;
-        reacquire_seen |= m.state == MISSION_REACQUIRE;
         if (motion_cmd_mode(&out.command) == MOTION_MODE_TURN ||
             motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE)
         {
@@ -512,28 +524,31 @@ static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm)
         }
         fresh_front(&in, t + 10u);
         in.side_valid = true;
-        in.side_mm = m.bypass.forward_q8 / 256 > 250 ? 700u : 400u;
+        in.side_mm = side_ray_mm(&m, box_front, box_rear, half_width);
         in.side_sampled_ms = t + 10u;
         in.side_sequence++;
-        /* Returning, the left sensor crosses the line once before aligning. */
-        bool crossing = m.bypass.route == BYPASS_ROUTE_LINE && !m.bypass.line_seen;
-        in.left_black = crossing;
-        in.line_error = crossing ? -IR_SCALE_ONE : 0;
+        /* The IR pair is ahead of the axle, so it reaches the line first. */
+        in.left_black = m.bypass.route == BYPASS_ROUTE_RETURN &&
+            fabsf(m.bypass.left_q8 / 256.0f) <= NAV_SENSOR_FORWARD_MM;
         out = bstep(&m, &in, &t);
         if (out.event_kind == MQTT_EVENT_OBSTACLE)
         {
-            /* First edge at ~300 mm, mount +100 mm, ray +376 mm,
-               profile front at 150 mm; allow 2 mm encoder quantization. */
-            assert(fabsf((float)out.event_arg2 - 626.0f) <= 2.0f);
+            /* Reads long by at most a chunk and a sample, never short. */
+            assert((float)out.event_arg2 >= depth_mm - 2.0f);
+            assert((float)out.event_arg2 <= depth_mm + 2.0f * BYPASS_CHUNK_MM + 2.0f);
             depth_seen = true;
         }
     }
-    assert(m.state == MISSION_FOLLOW_LINE && depth_seen && reacquire_seen);
+    assert(depth_seen && m.state == MISSION_NAVIGATE);
+    assert(m.phase == JUNCTION_PHASE_ADVANCE && m.turn_length_mm == NAV_SENSOR_FORWARD_MM);
+    assert(m.turn_code == (left_mm >= right_mm ? 1u : 2u));
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
+    /* The car's corner cleared the box before it turned back in. */
+    assert(m.bypass.forward_q8 / 256.0f + OBSTACLE_SONAR_FORWARD_MM > box_rear);
     assert((routes & (1u << BYPASS_ROUTE_OFFSET)) != 0u);
     assert((routes & (1u << BYPASS_ROUTE_PASS)) != 0u);
     assert((routes & (1u << BYPASS_ROUTE_REAR)) != 0u);
     assert((routes & (1u << BYPASS_ROUTE_RETURN)) != 0u);
-    assert(fabsf(m.bypass.left_q8 / 256.0f) <= BYPASS_RETURN_LATERAL_MM);
 }
 
 static void test_bypass_long_encoder_travel(void)
@@ -561,8 +576,10 @@ static void test_bypass_long_encoder_travel(void)
 
 static void test_bypass_full_sequence(void)
 {
-    run_bypass_sequence(800u, 400u);
-    run_bypass_sequence(400u, 900u);
+    run_bypass_sequence(800u, 400u, 150.0f, 100.0f);
+    run_bypass_sequence(400u, 900u, 150.0f, 100.0f);
+    run_bypass_sequence(800u, 400u, 100.0f, 50.0f);
+    run_bypass_sequence(800u, 400u, 200.0f, 75.0f);
 }
 
 static void test_bypass_failures(void)
@@ -696,7 +713,7 @@ static void test_stop_cancels_every_phase(void)
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
 }
 
-static void test_run_network_loss_and_hump_speed(void)
+static void test_run_network_loss(void)
 {
     Mission m;
     MissionInputs in = base(100u);
@@ -704,14 +721,7 @@ static void test_run_network_loss_and_hump_speed(void)
     in.start_blocked = true; /* connectivity lost after accepted local start */
     MissionOutputs out = step(&m, &in, t += 20u);
     assert(m.state == MISSION_FOLLOW_LINE && !out.stop_now);
-    unsigned normal = motion_cmd_speed(&out.command);
-    assert(normal == 100u);
-    in.hump_active = true;
-    out = step(&m, &in, t += 20u);
-    assert(motion_cmd_speed(&out.command) == 50u && m.state == MISSION_FOLLOW_LINE);
-    in.hump_active = false;
-    out = step(&m, &in, t += 20u);
-    assert(motion_cmd_speed(&out.command) == normal);
+    assert(motion_cmd_speed(&out.command) == 100u);
 }
 int main(void)
 {
@@ -727,7 +737,7 @@ int main(void)
     test_bypass_failures();
     test_missing_echo_policy();
     test_stop_cancels_every_phase();
-    test_run_network_loss_and_hump_speed();
+    test_run_network_loss();
     puts("mission retained safety/recovery/bypass: PASS");
     return 0;
 }

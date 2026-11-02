@@ -42,6 +42,16 @@ int main(void)
     }
     assert(enc_quad_step(4u, 0u) == ENC_QUAD_INVALID && enc_quad_step(0u, 4u) == ENC_QUAD_INVALID);
 
+    /* INT-138: lone invalid edges decay; a burst or sustained noise is a fault. */
+    uint32_t score = 0u;
+    for (unsigned i = 0u; i < 200u; ++i)
+    {
+        assert(!enc_invalid_score_update(&score, i % 2u == 0u ? 1u : 0u));
+    }
+    score = 0u;
+    assert(enc_invalid_score_update(&score, ENC_FAULT_INVALID_SCORE));
+    assert(!enc_invalid_score_update(&score, 0u) && score == ENC_FAULT_INVALID_SCORE - 1u);
+
     /* Travel across the wrap at the configured width. */
     uint32_t origin = ENC_COUNT_MASK - 2u;
     uint32_t count = origin;

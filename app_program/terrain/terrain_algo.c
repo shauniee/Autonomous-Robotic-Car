@@ -16,6 +16,9 @@
    raw-LSB Q16 units. Keep this ratio in sync with D06 calibration if tuned. */
 #define FILTER_DIV 5
 #define RAW_Q_ONE 65536ll
+/* Stopped roll average in 1/256 centidegree; 1/16 per 20 ms is about 0.3 s. */
+#define ROLL_BASE_ONE 256
+#define ROLL_BASE_DIV 16
 
 static int64_t round_div(int64_t value, int64_t divisor)
 {
@@ -39,46 +42,6 @@ static int32_t filter_axis(int32_t previous, int16_t raw, int32_t sum, bool vert
     if (vertical) corrected += (int64_t)(1.0f / ACCEL_MG_PER_LSB + 0.5f) * RAW_Q_ONE;
     return saturate_q16(round_div((int64_t)previous * (FILTER_DIV - 1) + corrected,
                                   FILTER_DIV));
-}
-
-bool terrain_travel_qualified(TerrainTravelQuality *quality,
-    uint32_t now, const int32_t delta[2], bool acquisition_qualified)
-{
-    uint32_t elapsed = robot_time_elapsed(now, quality->sampled_ms);
-    bool primed = quality->primed != 0u;
-    quality->sampled_ms = now;
-    quality->primed = acquisition_qualified;
-    if (!acquisition_qualified || !primed || elapsed == 0u ||
-        elapsed > SAFETY_STALE_MS)
-    {
-        quality->steady = 0u;
-        quality->speed_mmps = 0;
-        return false;
-    }
-    float left = (float)delta[0] * 1000.0f /
-        (ENC_COUNTS_PER_MM * (float)elapsed);
-    float right = (float)delta[1] * 1000.0f /
-        (ENC_COUNTS_PER_MM * (float)elapsed);
-    float speed = (left + right) * 0.5f;
-    bool qualified = left >= 0.0f && right >= 0.0f &&
-        speed <= INT16_MAX &&
-        fabsf(left - right) <= TERRAIN_QUALITY_WHEEL_DIFF_MMPS &&
-        fabsf(speed - quality->speed_mmps) <=
-            TERRAIN_QUALITY_SPEED_CHANGE_MMPS;
-    quality->speed_mmps = speed >= 0.0f && speed <= INT16_MAX ?
-        (int16_t)lroundf(speed) : 0;
-    if (!qualified)
-    {
-        quality->steady = 0u;
-        return false;
-    }
-    if (!quality->steady)
-    {
-        quality->steady = 1u;
-        quality->steady_since_ms = now;
-    }
-    return robot_time_elapsed(now, quality->steady_since_ms) >=
-        TERRAIN_QUALITY_STEADY_MS;
 }
 
 void terrain_algo_init(TerrainContext *ctx)
@@ -111,24 +74,14 @@ void terrain_algo_calibration_restart(TerrainContext *ctx)
     ctx->is_calibrated = false;
 }
 
-/* Working height in 0.1 mm units, saturating at the 16-bit limit. */
-static void rise_add(TerrainContext *ctx, float tenths_mm) {
-    float next = (float)ctx->rise_q + tenths_mm;
-    ctx->rise_q = next <= 0.0f ? 0u : (next >= 65535.0f ? 65535u : (uint16_t)(next + 0.5f));
-}
-
-bool terrain_acceleration_qualified(const Gy511RawAxes *raw)
+float terrain_acceleration_mg(const Gy511RawAxes *raw)
 {
-    float magnitude_mg = sqrtf((float)raw->x * raw->x +
+    return sqrtf((float)raw->x * raw->x +
         (float)raw->y * raw->y + (float)raw->z * raw->z) *
         ACCEL_MG_PER_LSB * 1000.0f;
-    return magnitude_mg >= TERRAIN_QUALITY_MIN_MG &&
-        magnitude_mg <= TERRAIN_QUALITY_MAX_MG;
 }
 
-void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw,
-    float delta_counts, bool travel_qualified) {
-    float delta_dist_mm = delta_counts / ENC_COUNTS_PER_MM;
+void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float delta_counts, bool stationary) {
     if (!ctx->is_calibrated) return;
 
     /* Local float values exist only inside this one processing release;
@@ -147,6 +100,9 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw,
     float pitch_deg = atan2f(filtered_y,
                              sqrtf(filtered_x * filtered_x + filtered_z * filtered_z)) * RAD_TO_DEG;
     ctx->pitch_cdeg = (int16_t)lroundf(pitch_deg * 100.0f);
+    float roll_deg = atan2f(filtered_x,
+        sqrtf(filtered_y * filtered_y + filtered_z * filtered_z)) * RAD_TO_DEG;
+    ctx->roll_cdeg = (int16_t)lroundf(roll_deg * 100.0f);
 
     /* 4. Impact detection (FR11): horizontal shock on level ground. IMPACT
        lasts while the shock does; Safety latches the stop it causes, and a
@@ -160,68 +116,57 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw,
         ctx->state = TERRAIN_STATE_FLAT;
     }
 
-    bool qualified = travel_qualified && isfinite(delta_counts) &&
-        delta_counts >= 0.0f && terrain_acceleration_qualified(raw);
-    if (!qualified)
-    {
-        ctx->window_qualified = 0u;
+    /* 5. Hump under one wheel: the course has no double humps, so the wheel lifts
+       the chassis sideways, and pitch does not show a climb and descent (INT-156).
+       Roll is judged against its average while stopped, as the boot pose offsets
+       it; averaging while moving would follow a hump's slow ramp (INT-157). A
+       short dip below the exit level does not end the encounter. */
+    float tilt_deg = fabsf(roll_deg - (float)ctx->roll_base_q8 / (100.0f * ROLL_BASE_ONE));
+    if (ctx->state == TERRAIN_STATE_FLAT) {
+        /* Not zero mean travel: a pivot has that too, and tilts (INT-158). */
+        if (stationary) {
+            ctx->roll_base_q8 += ((int32_t)ctx->roll_cdeg * ROLL_BASE_ONE - ctx->roll_base_q8) / ROLL_BASE_DIV;
+            return;
+        }
+        if (tilt_deg <= HUMP_ROLL_ENTER_DEG) {
+            return;
+        }
+        ctx->state = TERRAIN_STATE_ON_HUMP;
+        ctx->rise_q = 0u;
+        ctx->travel_counts = 0u;
+        ctx->flat_run = 0u;
+        ctx->height_valid = false;
     }
-
-    /* 5. Hump progression state machine (Figure 7) */
-    switch (ctx->state) {
-        case TERRAIN_STATE_FLAT:
-            if (pitch_deg > PITCH_CLIMB_THRESH_DEG) {
-                ctx->state = TERRAIN_STATE_CLIMBING;
-                ctx->rise_q = 0u;
-                ctx->height_valid = false;
-                ctx->window_qualified = qualified;
-            }
-            break;
-
-        case TERRAIN_STATE_CLIMBING:
-            if (delta_dist_mm > 0.0f) {
-                rise_add(ctx, sinf(pitch_deg * DEG_TO_RAD) * delta_dist_mm * 10.0f);
-            }
-            if (pitch_deg < PITCH_CLIMB_THRESH_DEG && pitch_deg > PITCH_DESC_THRESH_DEG) {
-                ctx->state = TERRAIN_STATE_CRESTING;
-            }
-            break;
-
-        case TERRAIN_STATE_CRESTING:
-            if (pitch_deg < PITCH_DESC_THRESH_DEG) {
-                ctx->state = TERRAIN_STATE_DESCENDING;
-                ctx->flat_run = 0u;
-            } else if (fabsf(pitch_deg) < 2.0f) {
-                /* The filtered pitch passes through zero between climb and descent;
-                   only a sustained flat reading is a premature flatten. */
-                if (++ctx->flat_run >= HUMP_FLAT_SAMPLES) {
-                    ctx->state = TERRAIN_STATE_FLAT;
-                    ctx->flat_run = 0u;
-                }
-            } else {
-                ctx->flat_run = 0u;
-            }
-            break;
-
-        case TERRAIN_STATE_DESCENDING:
-            if (fabsf(pitch_deg) < 2.0f) {
-                /* Complete climb-crest-descent window finished: only a valid, complete
-                   encounter adds an event. */
-                float mm = ((float)ctx->rise_q / 10.0f) * HUMP_CALIB_FACTOR;
-                ctx->height_valid = ctx->window_qualified &&
-                    mm >= (float)HUMP_MIN_HEIGHT_MM;
-                if (ctx->height_valid) {
-                    uint8_t code = (uint8_t)rd_sat_valid((uint32_t)(mm / (float)HUMP_MM_PER_COUNT + 0.5f), HUMP_RESULT_BITS);
-                    ctx->last_hump_code = code;
-                    if (code > ctx->max_hump_code) ctx->max_hump_code = code;
-                    if (ctx->hump_count < 255u) ctx->hump_count++;
-                }
-                ctx->state = TERRAIN_STATE_FLAT;
-            }
-            break;
-
-        case TERRAIN_STATE_IMPACT:
-            break;
+    float rise_q = TRACK_WIDTH_MM * sinf(tilt_deg * DEG_TO_RAD) * 10.0f;
+    if (rise_q > (float)ctx->rise_q) {
+        ctx->rise_q = rise_q >= 65535.0f ? 65535u : (uint16_t)(rise_q + 0.5f);
+    }
+    if (tilt_deg >= HUMP_ROLL_EXIT_DEG) {
+        if (delta_counts > 0.0f) {
+            float travel = (float)ctx->travel_counts + delta_counts;
+            ctx->travel_counts = travel >= 65535.0f ? 65535u : (uint16_t)(travel + 0.5f);
+        }
+        ctx->flat_run = 0u;
+        if ((float)ctx->travel_counts >= (float)HUMP_MAX_TRAVEL_MM * ENC_COUNTS_PER_MM) {
+            /* Too long for a hump: this is the new ground, not an encounter. */
+            ctx->roll_base_q8 = (int32_t)ctx->roll_cdeg * ROLL_BASE_ONE;
+            ctx->state = TERRAIN_STATE_FLAT;
+        }
+    } else if (++ctx->flat_run >= HUMP_FLAT_SAMPLES) {
+        /* Only a whole encounter of plausible height while driving adds an event;
+           the top limit rejects the car being lifted by hand. */
+        float mm = ((float)ctx->rise_q / 10.0f) * HUMP_CALIB_FACTOR;
+        ctx->height_valid = mm >= (float)HUMP_MIN_HEIGHT_MM &&
+            mm <= (float)HUMP_MAX_HEIGHT_MM &&
+            (float)ctx->travel_counts >= (float)HUMP_MIN_TRAVEL_MM * ENC_COUNTS_PER_MM;
+        if (ctx->height_valid) {
+            uint8_t code = (uint8_t)rd_sat_valid((uint32_t)(mm / (float)HUMP_MM_PER_COUNT + 0.5f), HUMP_RESULT_BITS);
+            ctx->last_hump_code = code;
+            if (code > ctx->max_hump_code) ctx->max_hump_code = code;
+            if (ctx->hump_count < 255u) ctx->hump_count++;
+        }
+        ctx->state = TERRAIN_STATE_FLAT;
+        ctx->flat_run = 0u;
     }
 }
 
@@ -229,8 +174,8 @@ void terrain_algo_invalidate_window(TerrainContext *ctx)
 {
     ctx->rise_q = 0u;
     ctx->flat_run = 0u;
+    ctx->travel_counts = 0u;
     ctx->height_valid = false;
-    ctx->window_qualified = 0u;
     if (ctx->state != TERRAIN_STATE_IMPACT)
     {
         ctx->state = TERRAIN_STATE_FLAT;

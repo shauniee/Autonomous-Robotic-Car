@@ -1,0 +1,17 @@
+S4-U05: skipped crest sample regression
+Date: 2026-11-02; tester: Codex
+Base HEAD: 4b1cc197c2fb25031ef5c5dae67b8afd8240299b
+Source: uncommitted working tree; SHA256 below
+Profile: Windows host GCC, -std=c11 -O2 -Wall -Wextra -Werror -mno-ms-bitfields -DHOST_TEST
+Before fix: assertion ctx.state == TERRAIN_STATE_DESCENDING failed at test_terrain.c:277.
+After fix: terrain: PASS; includes existing float-reference, quality, incomplete encounter and result packing checks.
+git diff --check: PASS
+No firmware build, flash, I2C measurement or physical hump pass claimed.
+920EFFE2AE8AA25F8625F1A38DC24143D0C99CF1C97B29BCA9A08B4A60A14CCB  testing/pure/test_terrain.c
+5D800110F55B5959CD1AE63844A40B0B34E4B5AD7FE6E41B5480E036E880A27C  testing/pure/terrain_float_reference.c
+B58CCCD5D0167ECEA7B06F6E5D32AFC9532A9DE9BFD2A4B8ABED39A4E5F42D3C  testing/pure/terrain_float_reference.h
+D735286F84BD0E800621EC3DC55614EC63E236BA4759B9BAEAF3FE4BE7BC97CA  app_program/terrain/terrain_algo.c
+21BB3E20A3EC456CE1E13E339D599A68F0E2FD39644A99C0EF2328C948274BAF  app_program/terrain/terrain.h
+E173D4DB0FFB390049290266A2E8CD005037EF4E89CDE192B0118CBCC28EEB9C  app_program/common/robot_config.h
+F1349F1E1B64F69FBDBE620CA70CB73DCDBD1C987EE4E598858918749CCEEDA1  app_program/common/robot_data.c
+C392CE55E3C90BF8A9A076928B0567899DEF38EEDCC4882E33B2392902E2016A  app_program/common/robot_data.h
