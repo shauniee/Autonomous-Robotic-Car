@@ -167,7 +167,9 @@ static void mission_task(INT stacd, void *exinf)
 
         MissionOutputs out;
         bool was_recovering = mission.state == MISSION_REACQUIRE;
+#if ROBOT_TRACE_ENABLED
         bool was_moving = mission.state != MISSION_READY && mission.state != MISSION_STOPPED;
+#endif
         mission_step(&mission, &in, &out);
         /* One record per fresh acquisition while moving, including the stop. */
 #if ROBOT_TRACE_ENABLED
