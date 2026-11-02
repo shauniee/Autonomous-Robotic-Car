@@ -274,6 +274,7 @@ static void motion_task(INT stacd, void *exinf)
         control_leave(irq);
 
         /* Encode only after output service, outside the IRQ exclusion. */
+#if ROBOT_TRACE_ENABLED
         mqtt_wheel_trace_t trace = {
             .sampled_ms = in.now_ms,
             .inhibited = APP_TEST != 0,
@@ -285,6 +286,7 @@ static void motion_task(INT stacd, void *exinf)
             trace.duty[w] = APP_TEST ? 0.0f : out.duty[w];
         }
         (void)motion_trace_publish(&trace);
+#endif /* ROBOT_TRACE_ENABLED */
 
         rd_word_publish(&feedback, rd_motion_feedback_pack(out.status, out.action_id, 0));
         if (output_er >= E_OK)
