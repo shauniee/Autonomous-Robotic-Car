@@ -258,8 +258,38 @@ static void test_travel_quality(void)
     assert(!terrain_travel_qualified(&quality, now, delta, true));
 }
 
+static void test_skipped_crest_sample(void)
+{
+    calibrate();
+    Gy511RawAxes climb = {.y = 171, .z = 470}; /* 20 degrees */
+    Gy511RawAxes descent = {.y = -433, .z = 250}; /* -60 degrees */
+    Gy511RawAxes flat = {.z = 500};
+    float counts = 2.3f * ENC_COUNTS_PER_MM;
+    for (unsigned i = 0u; i < 40u; ++i)
+    {
+        terrain_algo_process(&ctx, &climb, counts, true);
+    }
+    assert(ctx.state == TERRAIN_STATE_CLIMBING);
+    terrain_algo_process(&ctx, &descent, counts, true);
+    assert(ctx.state == TERRAIN_STATE_CLIMBING);
+    terrain_algo_process(&ctx, &descent, counts, true);
+    assert(ctx.pitch_cdeg < (int16_t)(PITCH_DESC_THRESH_DEG * 100.0f));
+    assert(ctx.state == TERRAIN_STATE_DESCENDING);
+    for (unsigned i = 0u; i < 40u; ++i)
+    {
+        terrain_algo_process(&ctx, &descent, counts, true);
+    }
+    for (unsigned i = 0u; i < 40u; ++i)
+    {
+        terrain_algo_process(&ctx, &flat, counts, true);
+    }
+    assert(ctx.state == TERRAIN_STATE_FLAT);
+    assert(ctx.hump_count == 1u && ctx.height_valid);
+}
+
 int main(void)
 {
+    test_skipped_crest_sample();
     test_travel_quality();
     test_dynamic_quality();
     test_evidence_and_invalid_window();

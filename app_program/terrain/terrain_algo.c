@@ -182,8 +182,16 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw,
             if (delta_dist_mm > 0.0f) {
                 rise_add(ctx, sinf(pitch_deg * DEG_TO_RAD) * delta_dist_mm * 10.0f);
             }
-            if (pitch_deg < PITCH_CLIMB_THRESH_DEG && pitch_deg > PITCH_DESC_THRESH_DEG) {
+            /* A fresh sample can cross the entire crest band in one release. */
+            if (pitch_deg < PITCH_DESC_THRESH_DEG)
+            {
+                ctx->state = TERRAIN_STATE_DESCENDING;
+                ctx->flat_run = 0u;
+            }
+            else if (pitch_deg < PITCH_CLIMB_THRESH_DEG)
+            {
                 ctx->state = TERRAIN_STATE_CRESTING;
+                ctx->flat_run = 0u;
             }
             break;
 
