@@ -17,9 +17,10 @@ Mission needs WiFi and MQTT before a local start. A disconnect during a run is r
 
 | File | Job |
 | --- | --- |
-| `comms.c`, `comms.h` | `comms_step` task work, `comms_event`, telemetry gathering |
-| `mqtt_frame.c`, `mqtt_frame.h` | Binary wire codec (host-tested) |
-| `report.c`, `report.h`, `comms_bridge.h` | Event log, report assembly, TX/RX bridge (host-tested) |
+| `comms.h` | The subsystem's only header: wire frames, bridge, event log and task API |
+| `comms.c` | `comms_step` task work, `comms_event`, telemetry gathering |
+| `mqtt_frame.c` | Binary wire codec (host-tested) |
+| `report.c` | Event log, report assembly, TX/RX bridge (host-tested) |
 | `comms_test.c` | Firmware self-tests |
 
 ## Contract

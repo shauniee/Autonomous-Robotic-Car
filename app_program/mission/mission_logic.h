@@ -11,11 +11,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "../line_barcode/line.h"
-#include "../obstacle/obstacle_profile.h"
-#include "../line_barcode/barcode.h"
-#include "../motion/motion_control.h"
-#include "../comms/mqtt_frame.h"
+#include "../line_barcode/line_barcode.h"
+#include "../obstacle/obstacle.h"
+#include "../motion/motion.h"
+#include "../comms/comms.h"
 #include "../common/robot_config.h"
 #include "recovery_control.h"
 #include "bypass_control.h"

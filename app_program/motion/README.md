@@ -16,9 +16,9 @@ Owner: Mahesha. Motion runs on core 1, outranks Mission and is the only writer o
 
 | File | Job |
 | --- | --- |
-| `motion.c`, `motion.h` | Task, motor and encoder drivers, wheel trace ring |
-| `motion_control.c`, `motion_control.h` | Controller: modes, ramps, wheel mix, PID (host-tested) |
-| `encoder_math.h` | Quadrature decode and wrap-safe travel |
+| `motion.h` | The subsystem's only header: encoder arithmetic, controller, task and driver APIs |
+| `motion.c` | Task, motor and encoder drivers, wheel trace ring |
+| `motion_control.c` | Controller: modes, ramps, wheel mix, PID (host-tested) |
 | `motion_test.c` | Firmware self-tests |
 
 ## Contract

@@ -5,8 +5,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../app_program/line_barcode/barcode.h"
-#include "../../app_program/motion/encoder_math.h"
+#include "../../app_program/line_barcode/line_barcode.h"
+#include "../../app_program/motion/motion.h"
 #include "../../app_program/common/robot_data.h"
 
 static barcode_frame_t frame;

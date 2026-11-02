@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
-#include "../../app_program/motion/motion_control.h"
+#include "../../app_program/motion/motion.h"
 
 #define PLANT_CPS_PER_DUTY 2000.0f
 #define MM_PER_COUNT (1.0f / ENC_COUNTS_PER_MM)

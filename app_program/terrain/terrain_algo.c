@@ -3,9 +3,9 @@
  */
 
 #include <math.h>
-#include "terrain_algo.h"
+#include "terrain.h"
 #include "../common/robot_data.h"
-#include "../motion/encoder_math.h"
+#include "../motion/motion.h"
 #include "../common/robot_config.h"
 
 #define RAD_TO_DEG              57.2957795f

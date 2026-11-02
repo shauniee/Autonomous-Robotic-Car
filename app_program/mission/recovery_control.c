@@ -1,5 +1,5 @@
 #include "recovery_control.h"
-#include "../motion/encoder_math.h"
+#include "../motion/motion.h"
 #include "../common/robot_time_math.h"
 #include <math.h>
 

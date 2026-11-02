@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../app_program/obstacle/obstacle_profile.h"
+#include "../../app_program/obstacle/obstacle.h"
 
 #define DEG_TO_RAD 0.0174532925f
 

@@ -1,7 +1,7 @@
 /* Host test for app_program/motion/encoder_math.h (issue #29). */
 #include <assert.h>
 #include <stdio.h>
-#include "../../app_program/motion/encoder_math.h"
+#include "../../app_program/motion/motion.h"
 
 int main(void)
 {

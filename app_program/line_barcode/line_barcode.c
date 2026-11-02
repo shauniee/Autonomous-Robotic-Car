@@ -1,5 +1,5 @@
+#include "../app.h"
 #include "line_barcode.h"
-#include "line.h"
 #include "../common/robot_config.h"
 #include "../motion/motion.h"
 #include <stdatomic.h>

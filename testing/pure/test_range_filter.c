@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
-#include "../../app_program/obstacle/obstacle_profile.h"
+#include "../../app_program/obstacle/obstacle.h"
 
 int main(void)
 {

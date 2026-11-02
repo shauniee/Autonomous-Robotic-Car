@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
-#include "../../app_program/line_barcode/line.h"
+#include "../../app_program/line_barcode/line_barcode.h"
 
 int main(void)
 {

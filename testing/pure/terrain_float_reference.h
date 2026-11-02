@@ -2,7 +2,7 @@
    This reference is deliberately independent of new fixed-point state. */
 #ifndef TERRAIN_FLOAT_REFERENCE_H
 #define TERRAIN_FLOAT_REFERENCE_H
-#include "../../app_program/terrain/terrain_algo.h"
+#include "../../app_program/terrain/terrain.h"
 typedef struct { float x, y, z; } FloatVec3;
 typedef struct {
     FloatVec3 accel_offset;

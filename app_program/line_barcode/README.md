@@ -19,9 +19,10 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). S3 
 
 | File | Job |
 | --- | --- |
-| `line.c`, `line.h` | DOUT acquisition and classification |
-| `barcode.c`, `barcode.h` | Edge capture, Code 39 decode, mapping and events |
-| `line_barcode.c`, `line_barcode.h` | `line_barcode_step` task work and the line snapshot |
+| `line_barcode.h` | The subsystem's only header |
+| `line.c` | DOUT acquisition and classification |
+| `barcode.c` | Edge capture, Code 39 decode, mapping and events |
+| `line_barcode.c` | `line_barcode_step` task work and the line snapshot |
 
 ## Line tracking
 

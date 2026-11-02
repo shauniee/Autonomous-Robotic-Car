@@ -1,15 +1,14 @@
 /* Use the port guard when mixing ISO C headers with tk/syslib.h. */
 #define PROHIBIT_DEF_SIZE_T
-#include "barcode.h"
+#include "line_barcode.h"
 #include <stddef.h>
-#include "../motion/encoder_math.h"
+#include "../motion/motion.h"
 #include "../common/robot_data.h"
 
 #ifndef HOST_TEST
 #include <stdatomic.h>
 #include "../app.h"
 #include "../common/drv_gpio_irq.h"
-#include "../motion/motion.h"
 #endif
 
 /* ---- Code 39 decoder and frame assembler ---- */

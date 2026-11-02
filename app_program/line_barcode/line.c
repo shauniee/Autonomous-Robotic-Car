@@ -1,6 +1,6 @@
 /* Use the port guard when mixing ISO C headers with tk/syslib.h. */
 #define PROHIBIT_DEF_SIZE_T
-#include "line.h"
+#include "line_barcode.h"
 #include <stddef.h>
 #ifndef HOST_TEST
 #include "../app.h"

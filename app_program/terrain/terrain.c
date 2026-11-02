@@ -1,3 +1,4 @@
+#include "../app.h"
 #include "terrain.h"
 #include "../common/robot_data.h"
 #include "../common/robot_time.h"

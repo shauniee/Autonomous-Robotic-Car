@@ -1,3 +1,4 @@
+#include "../app.h"
 #include "motion.h"
 #include "../test_report.h"
 #if APP_TEST

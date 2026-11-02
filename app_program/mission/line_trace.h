@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "../comms/mqtt_frame.h"
+#include "../comms/comms.h"
 
 /* Single producer: Mission. Single consumer: I/O.
    Full drops newest; neither side waits or touches motor authority. */

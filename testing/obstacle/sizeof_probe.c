@@ -1,5 +1,5 @@
 /* Cortex-M0+ storage evidence for obstacle bit packing (#111). */
-#include "../../app_program/obstacle/obstacle_profile.h"
+#include "../../app_program/obstacle/obstacle.h"
 #define PROBE(name, n) char probe_##name[(n)]
 #define SIZE(type) PROBE(sizeof_##type, sizeof(type))
 #define FIELD(type, field) PROBE(field_##type##__##field, sizeof(((type *)0)->field))

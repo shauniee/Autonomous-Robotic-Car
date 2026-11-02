@@ -1,10 +1,9 @@
 /* Compile-only target ABI evidence for the current three-task software. */
 #include "../../app_program/mission/mission_logic.h"
-#include "../../app_program/motion/motion_control.h"
-#include "../../app_program/terrain/terrain_algo.h"
-#include "../../app_program/obstacle/obstacle_profile.h"
+#include "../../app_program/motion/motion.h"
+#include "../../app_program/terrain/terrain.h"
 #include "../../app_program/obstacle/obstacle.h"
-#include "../../app_program/comms/report.h"
+#include "../../app_program/comms/comms.h"
 
 #define PROBE(type) char probe_sizeof_##type[sizeof(type)]
 PROBE(Mission);

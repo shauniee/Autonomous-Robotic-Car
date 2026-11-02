@@ -2,6 +2,7 @@
  * terrain_test.c - Automated target test runner for Buddy 4.
  */
 
+#include "../app.h"
 #include "terrain.h"
 
 #if APP_TEST

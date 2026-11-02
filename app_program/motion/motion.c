@@ -3,6 +3,9 @@
 #include <math.h>
 #include <stdatomic.h>
 #include <string.h>
+#ifndef HOST_TEST
+#include "../app.h"
+#endif
 #include "motion.h"
 
 #ifndef HOST_TEST

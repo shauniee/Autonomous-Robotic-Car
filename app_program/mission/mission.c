@@ -8,7 +8,6 @@
 #include "../motion/motion.h"
 #include "../obstacle/obstacle.h"
 #include "../comms/comms.h"
-#include "../comms/comms_bridge.h"
 #include "../common/buttons.h"
 #include "../common/robot_time.h"
 

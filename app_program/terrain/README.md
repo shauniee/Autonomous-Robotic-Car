@@ -16,8 +16,9 @@ Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement a
 
 | File | Job |
 | --- | --- |
-| `terrain.c`, `terrain.h` | Step, snapshot and GY-511 I2C driver |
-| `terrain_algo.c`, `terrain_algo.h` | Calibration, filter, classification and height (host-tested) |
+| `terrain.h` | The subsystem's only header |
+| `terrain.c` | Step, snapshot and GY-511 I2C driver |
+| `terrain_algo.c` | Calibration, filter, classification and height (host-tested) |
 | `terrain_test.c` | Firmware self-tests |
 
 ## Behaviour

@@ -13,6 +13,11 @@
 #ifndef ROBOT_CONFIG_H
 #define ROBOT_CONFIG_H
 
+/* Subsystem headers stay kernel-free so host tests and pure code can include
+   them; the kernel's size_t clashes with the C library's. Same type as the
+   kernel's ER (tk/typedef.h), which C11 allows to be repeated. */
+typedef int ER;
+
 /* Bench-only build (make NOGUARDS=1): automatic guards off (Safety faults,
    start blocking, motor-stall brake, line-loss stop), GP21 still stops. */
 #ifndef APP_NO_GUARDS

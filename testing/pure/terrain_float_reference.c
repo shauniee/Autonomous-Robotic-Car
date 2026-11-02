@@ -6,7 +6,7 @@
 #include <math.h>
 #include "terrain_float_reference.h"
 #include "../../app_program/common/robot_data.h"
-#include "../../app_program/motion/encoder_math.h"
+#include "../../app_program/motion/motion.h"
 #include "../../app_program/common/robot_config.h"
 
 #define RAD_TO_DEG              57.2957795f

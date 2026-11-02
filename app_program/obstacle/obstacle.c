@@ -1,5 +1,5 @@
+#include "../app.h"
 #include "obstacle.h"
-#include "obstacle_profile.h"
 #include <stdatomic.h>
 #include "../common/drv_gpio_irq.h"
 #include "../common/robot_time.h"

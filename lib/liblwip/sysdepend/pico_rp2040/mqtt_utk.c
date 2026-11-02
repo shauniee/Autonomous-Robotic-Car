@@ -9,7 +9,7 @@
 #include "lwip/sys.h"
 #include "cyw43.h"
 #include "wifi_secrets.h"
-#include "../../../../app_program/comms/comms_bridge.h"
+#include "../../../../app_program/comms/comms.h"
 #include <tm/tmonitor.h>
 #include <string.h>
 

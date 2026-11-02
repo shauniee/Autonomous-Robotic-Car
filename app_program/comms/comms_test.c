@@ -1,5 +1,5 @@
+#include "../app.h"
 #include "comms.h"
-#include "report.h"
 #include "../test_report.h"
 #if APP_TEST
 void comms_test(void)

@@ -1,4 +1,4 @@
-#include "../../app_program/terrain/terrain_algo.h"
+#include "../../app_program/terrain/terrain.h"
 /* Host test for the hump estimator and terrain word (issue #46). */
 #include <assert.h>
 #include <math.h>

@@ -1,5 +1,5 @@
 /* Cortex-M0+ compile-only storage evidence for #110. */
-#include "../../app_program/terrain/terrain_algo.h"
+#include "../../app_program/terrain/terrain.h"
 
 #define PROBE(name, n) char probe_##name[(n)]
 #define SIZE(type) PROBE(sizeof_##type, sizeof(type))

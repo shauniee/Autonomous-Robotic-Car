@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "../motion/motion_control.h"
-#include "../obstacle/obstacle_profile.h"
+#include "../motion/motion.h"
+#include "../obstacle/obstacle.h"
 
 typedef enum
 {

@@ -1,4 +1,4 @@
-#include "obstacle_profile.h"
+#include "obstacle.h"
 #include <math.h>
 #include <stddef.h>
 

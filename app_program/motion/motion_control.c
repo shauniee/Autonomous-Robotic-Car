@@ -1,4 +1,4 @@
-#include "motion_control.h"
+#include "motion.h"
 #include "../common/robot_time_math.h"
 #include <math.h>
 #include <stdlib.h>

@@ -1,7 +1,7 @@
 /* Host test for app_program/obstacle/obstacle_profile.[ch] (issue #49). */
 #include <assert.h>
 #include <stdio.h>
-#include "../../app_program/obstacle/obstacle_profile.h"
+#include "../../app_program/obstacle/obstacle.h"
 
 int main(void)
 {

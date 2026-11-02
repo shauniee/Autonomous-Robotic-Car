@@ -2,6 +2,7 @@
 
 ## Contents
 
+- [One header per subsystem — INT-131](#one-header-per-subsystem--int-131)
 - [Subsystem rename and file merge — INT-130](#subsystem-rename-and-file-merge--int-130)
 - [100 mm/s course speed guardrail — INT-129](#100-mms-course-speed-guardrail--int-129)
 - [Pivot junction turns — INT-128](#pivot-junction-turns--int-128)
@@ -3234,3 +3235,28 @@ identical timing, and no firmware or physical run was done. The integration size
 probe fails its `obstacle_range_sample_t == 16` assertion, as it did on the base
 under the old name. `testing/check_plan_completion.py` reports stale evidence, as
 it did on the base.
+
+## One header per subsystem — INT-131
+
+2026-11-02, Claude with Nicholas. Host and build only: base `49effa4` plus this
+uncommitted change, Arm GCC 13.3.1. No flash, no physical run. A structural refactor
+with no intended behaviour change.
+
+**Change:** 14 subsystem headers become 5 (`comms.h`, `motion.h`, `line_barcode.h`,
+`terrain.h`, `obstacle.h`), each beside its code. They no longer include the kernel,
+because its `size_t` clashes with the C library's in kernel-free files; `robot_config.h`
+repeats `typedef int ER`, the only kernel type they use, and kernel `.c` files include
+`app.h` themselves.
+
+**Defined before the run:** host suite passes; normal, TEST and both offline profiles
+plus the full-course image build; `sizeof` probes unchanged; the full-course machine
+code matches a clean build of `49effa4` byte for byte.
+
+**Result:** [host suite](logs/2026-11-02_INT-131/host.txt) PASS. [Clean profile
+builds](logs/2026-11-02_INT-131/firmware-profiles.txt) PASS; the only warning is in
+the SDK's lwIP `mqtt.c`. [Size probes](logs/2026-11-02_INT-131/sizeof-probes.txt)
+unchanged. **Full-course binary identical to `49effa4`** (`objcopy -O binary` sha256
+`72baa52d6aa82cfb…`, UF2 `b5f717e0c38ab8eb…`; [build](logs/2026-11-02_INT-131/firmware-course.txt)).
+
+**Found, not caused here:** `testing/integration/sizeof_probe.c` fails its
+`sizeof(obstacle_range_sample_t) == 16` assert, before and after this change.

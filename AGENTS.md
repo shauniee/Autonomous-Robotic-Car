@@ -12,6 +12,7 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 - **Facts:** each fact has one owning guide; other files link to it. Keep requirements, proposed design, implemented code and observed results distinct. Never invent course rules, calibrated limits, measurements or module ratings; unknown values go to the [pending decisions](docs/project-specs.md#pending-decisions).
 - **Code:** follow the [coding rules](docs/team.md#5-coding-rules). Only Motion writes the motors; networking never starts, stops or drives the robot ([authority](docs/architecture.md#authority)).
 - **Git:** one branch (`<type>/<slug>`: `feat`, `fix`, `chore`, `docs`, `test`) = one squash-merged PR into `main`. Never commit to `main`, `uat` or `legacy-main`; never force-push `main` or delete someone's branch. Push, open a PR or merge only when asked.
+- **Git Messages:** Never co author the commit messages, PRs, merge comments
 - **Never commit** `config/wifi_secrets.h`, credentials, `*.elf`, `*.uf2`, `*.map` or video files.
 - **Testing:** keep fixtures and evidence in `testing/`. Append results; never overwrite evidence or reuse a test ID. A build or host test is not a firmware or physical pass; record the exact commit with each result ([testing](testing/README.md#run-and-record)).
 - **Markdown:** `docs/` holds only `project-specs`, `team` and `architecture`; subsystem detail goes in each `app_program/<name>/README.md`. Every Markdown file starts with a contents list of its sections.

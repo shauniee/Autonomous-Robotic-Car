@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../app_program/comms/mqtt_frame.h"
+#include "../../app_program/comms/comms.h"
 
 static const uint8_t golden_telemetry[MQTT_LEN_TELEMETRY] = {
     0x21, 0x2A, 0x72, 0x45, 0x01, 0x02, 0x04, 0x08, 0x01, 0x03, 0x34, 0x12, 0x78, 0x56,

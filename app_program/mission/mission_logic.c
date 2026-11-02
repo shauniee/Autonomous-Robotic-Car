@@ -1,6 +1,6 @@
 #include "mission_logic.h"
 #include "../common/robot_time_math.h"
-#include "../motion/encoder_math.h"
+#include "../motion/motion.h"
 #include <math.h>
 #include <stdlib.h>
 

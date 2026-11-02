@@ -6,8 +6,8 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../app_program/comms/comms_bridge.h"
-#include "../../app_program/terrain/terrain_algo.h"
+#include "../../app_program/comms/comms.h"
+#include "../../app_program/terrain/terrain.h"
 
 #define MIN_WORD_READS 5000000u
 #define FRAMES 300000u
