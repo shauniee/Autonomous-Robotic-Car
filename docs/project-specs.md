@@ -316,9 +316,43 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Broad-black encounter start | `Mission.broad_since_ms`, Mission writer | uint32 milliseconds, modulo 2^32 | meaningful only while `in_broad`; unsigned elapsed subtraction handles wrap | 32 | private timestamp; no wire format |
 | Existing Safety latched cause | current Safety task | 4 cause bits (GP21, fault, stale line, stale motion) | 0 = not latched | 4 | Existing implementation only; retire task after equivalent Motion checks; target causes/width reviewed before conversion |
 
+### Current watchdog, Motion float and digital IR evidence (PR #149 follow-up; not owner-approved)
+
+The following rows describe **current source representations**, rather than
+revising the historical S3/ADC evidence kept below. These are software
+inspection notes; MCU compiler sizes and physical timing remain SYS-11/SYS-12/
+MR-39 work.
+
+| Field | Owner / storage | Valid range and update policy | Logical bits / C storage | Approval or measurement still needed |
+| --- | --- | --- | --- | --- |
+| Watchdog Motion heartbeat `motion_progress_ms` | Motion writes, I/O atomically reads (`_Atomic uint32_t`) when `WATCHDOG=1` | Successful service time in milliseconds, modulo 2^32; zero is uninitialised | 32 / 32 | D15: output-safe reset and on-target age measurements |
+| Watchdog Mission heartbeat `mission_progress_ms` | Mission writes, I/O atomically reads (`_Atomic uint32_t`) when `WATCHDOG=1` | Successful command-handoff time in milliseconds, modulo 2^32; zero uninitialised | 32 / 32 | D15: hanging/stalled command tests, on-target timing |
+| Watchdog last-fed Motion/Mission timestamps | I/O alone, two `uint32_t` values when `WATCHDOG=1` | Full modulo-2^32 timestamps retained for changed-since-last-feed comparison | 2 × 32 / 2 × 32 | D15: validate reset if either producer stops; no timestamp narrowing proposed |
+| Watchdog armed and reason-reported flags | I/O alone, two `bool` flags when `WATCHDOG=1` | Each 0 or 1, boot-local; one-time arming/message behaviour | 2 logical / target compiler storage pending | SYS-11: check compiled sections; do not assume 2 stored bits |
+| Wheel PID integral and previous speed | `WheelPid` per wheel, Motion exclusive writer | Signed continuous control/error terms in counts/s and counts (time-integrated) respectively; finite computation requires checking under extended runs | 2 × IEEE-754 binary32 per wheel, 4 × 32 = 128 bits for two wheels | D07: demonstrate numeric range, non-finite handling and whether a chosen fixed-point scale could preserve tuning/stability |
+
+**Floating-point audit:** current `WheelPid` remains `float` for the
+per-release wheel PID computation, including a derivative divided by measured
+`dt`. Binary32 is a deliberate *provisional implementation*, not proof of
+the minimum possible storage width. The PID's integral term is not assigned a
+documented global finite bound; choosing a narrower fixed-point replacement
+without measuring worst-case error and anti-windup behaviour would be
+speculative. Record measured peak magnitudes, overflow/non-finite tests and
+tuning response before owner sign-off. This is a documentation of the
+remaining tradeoff, **not** a claim that the Tribunal float requirement is done.
+
+**Current DOUT IR:** `IrRawWord` in `line_barcode.h` stores 1 bit left, 1
+bit right and 1 valid bit in one 32-bit atomic-suitable aligned store.
+`IrRaw` carries the two sampled 0/1 levels in `uint16_t` members as an
+API type; `IrTracker` and `LineIrSnapshot` carry an `IrRawWord`, not
+the historical two 12-bit ADC measurements. The following historical table
+is deliberately not rewritten and must **not** be used as the current RAM
+layout or MCU-size submission. Refresh linked-ELF/sizeof evidence for the
+exact final build and tag before approving minimum-bit claims.
+
 ### line_barcode bit-usage data contract (proposed; spec #100; final evidence #107)
 
-Historical source-pinned storage evidence below is retained unchanged; it is not a size prediction for the restructure. The IR rows below predate the digital sensors: raw left and right are now one bit each (see the line sensor row above). Storage bits come from `testing/line_barcode/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/comms/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](architecture.md#minimum-bit-data-representation) (retained representation decision); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
+Historical source-pinned storage evidence below is retained unchanged; it is not a size prediction for the restructure. The IR rows below predate the digital sensors: raw left and right are now one bit each (see the line sensor row above). Storage bits come from `testing/line_barcode/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/comms/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](architecture.md#minimum-bit-data-representation) (retained representation decision); raw IR followed the **historical** 12-bit ADC (0-4095) in that retired source snapshot (current DOUT is described above); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
 
 | Field | Current C type | Bounds / units | Chosen width (bits) | Final storage bits | Instances | Ticket |
 | --- | --- | --- | ---: | ---: | ---: | --- |
