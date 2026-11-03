@@ -80,7 +80,9 @@ void robot_watchdog_io_service(uint32_t now_ms)
             (unsigned)ROBOT_WATCHDOG_TIMEOUT_MS);
         return;
     }
-    if (fresh && motion != last_fed_motion && mission != last_fed_mission)
+    if (robot_watchdog_should_feed(now_ms, motion, mission,
+        last_fed_motion, last_fed_mission,
+        ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS))
     {
         out_w(ROBOT_WD_LOAD, ROBOT_WD_RELOAD);
         last_fed_motion = motion;
