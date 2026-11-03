@@ -29,4 +29,4 @@ PROBE(bypass_control_t);
 
 _Static_assert(sizeof(obstacle_range_group_t) == 12u, "range group ABI");
 _Static_assert(sizeof(obstacle_profile_evidence_t) == 6u, "profile evidence ABI");
-_Static_assert(sizeof(obstacle_range_sample_t) == 16u, "range acquisition ABI");
+_Static_assert(sizeof(obstacle_range_sample_t) == 20u, "range acquisition ABI");

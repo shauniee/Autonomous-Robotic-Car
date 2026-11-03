@@ -6,6 +6,7 @@
 - [Files](#files)
 - [Contract](#contract)
 - [Status and open items](#status-and-open-items)
+- [Diagnostic trace policy](#diagnostic-trace-policy)
 
 ## Scope
 
@@ -45,3 +46,21 @@ Codec, report assembly, mapping path, event log and bridge are host-tested; resu
 - Decisions D09, D13 and D14 are in [pending decisions](../../docs/project-specs.md#pending-decisions).
 - Still to test: mapping while stopped and moving; malformed, oversized and fragmented messages; full buffers and floods; startup order; reconnect; mid-run loss. Check diagnostics never delay Motion.
 - The Comms owner has not yet agreed the type 9 line trace.
+
+
+## Diagnostic trace policy
+
+`TRACE=1` (default) retains high-rate WHEEL, LINE, BARS and HUMP trace
+frames for controlled debugging. `TRACE=0` removes their production and
+transport while preserving 500 ms TELEMETRY, snapshots, EVENT, mapping and
+acknowledgement frames. Both profiles use the same schema, safety and local
+controls. In particular, TRACE=0 must not be confused with TEST=1 motor
+inhibition. This is an explicit Comms choice: **keep debug frames available**,
+but do not require them during a production lap.
+
+Record the exact source commit, TRACE flag and UF2 SHA-256, then compare the
+same number of physical laps and their actual results using
+`scripts/mission_trial_score.py`. Use `scripts/triage_mqtt_capture.py`
+for saved MQTT monitor logs. High-rate diagnostics can affect scheduling,
+but no causal impact is established until real matched trials pass.
+A missing debug frame is not evidence of a missing normal EVENT.
