@@ -207,7 +207,8 @@ static void mission_task(INT stacd, void *exinf)
            Logging never grants motor/navigation authority. */
         if (mission_barcode_event_needed(&in, &out))
         {
-            comms_event(MQTT_EVENT_BARCODE, in.barcode_letter, (uint16_t)in.barcode_action);
+            comms_event(MQTT_EVENT_BARCODE, in.barcode_letter,
+                (uint16_t)in.barcode_action);
         }
         if (out.event_kind != 0u)
         {

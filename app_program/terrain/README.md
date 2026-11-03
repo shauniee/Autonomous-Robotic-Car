@@ -6,6 +6,7 @@
 - [Files](#files)
 - [Behaviour](#behaviour)
 - [Contract](#contract)
+- [Terrain analysis (draft)](#terrain-analysis-draft)
 - [Status and open items](#status-and-open-items)
 
 ## Scope
@@ -35,6 +36,18 @@ Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement a
 - Bound I2C and each processing step, and never hold shared locks through I2C.
 
 Widths: [data table](../../docs/project-specs.md#5-data-representation-table-week-13). Fault policy: [fault bitmask](../../docs/architecture.md#fault-bitmask). The 1 mm/count reported scale stays unless measurements justify a change.
+
+## Terrain analysis (draft)
+
+Draft from existing evidence only. No reference height above one 10 mm hump has been measured.
+
+- **Detector:** pitch did not show a one-wheel hump, so INT-156 replaced it with roll.
+- **Counting:** INT-157 counted the wrong encounters, and INT-158 reported `humps=5` for 1 crossing because pivots moved the baseline. The fix passes host tests and has never run on the car.
+- **Height:** one 10 mm hump read about 12.5 mm uncorrected, which gives `HUMP_CALIB_FACTOR` 0.8. That is one height, not a calibration.
+- **Travel limit:** `HUMP_MIN_TRAVEL_MM` 50 rests on two crossings (76 and 156 mm) against curves of 26 mm or less.
+- **Turn rate:** no turn-rate monitor exists in Terrain. The GY-511 has no gyroscope, so any monitor must be encoder-derived and labelled so (T06).
+
+Missing before this is a report: reference humps up to 30 mm with an agreed error limit, labelled traces and an impact result.
 
 ## Status and open items
 

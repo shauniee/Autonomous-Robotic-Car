@@ -4,6 +4,7 @@
 
 - [How this list is ordered](#how-this-list-is-ordered)
 - [Where things stand](#where-things-stand)
+- [Decisions for Nicholas](#decisions-for-nicholas)
 - [1. Safety and electrical](#1-safety-and-electrical)
 - [2. Motion calibration](#2-motion-calibration)
 - [3. Line tracking (M1)](#3-line-tracking-m1)
@@ -36,10 +37,10 @@ IDs: `M` requirement, `MR` readiness check, `D` pending decision, `T` integrated
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| Firmware build | PR 149 merged to `main` without an Arm build. Host suite passes. | `99fe0d8`, INT-160 |
+| Firmware build | All watchdog and trace images build. Host suite passes. Not a firmware or physical pass. | INT-162, INT-174 |
 | Safety and electrical | No recorded result. Wiring is user-confirmed only. | MR-01 to MR-05 |
 | Watchdog | Code merged, off by default, never run on a Pico. No reset policy agreed. | `99fe0d8`, D15 |
-| Line tracking | Good laps seen, but the last run went off course and was not smooth. No measured success rate. | User observation, INT-136, INT-139b, INT-158; cause not analysed |
+| Line tracking | Good laps seen, but the last run went off course and was not smooth. No measured success rate. | User observation, INT-136, INT-139b, INT-158; capture analysis found no cause (INT-163) |
 | Barcode | User reports fully functional. All letters and a flipped print not tested. | User observation, INT-156 |
 | Junctions | Some turns passed; junction failures also logged. | INT-137, INT-139b, INT-153 |
 | Obstacle | Scans ran on real boxes with a measured width error. Bench check pending, and bypass has never run. | S5-U10, S5-U11 |
@@ -48,9 +49,21 @@ IDs: `M` requirement, `MR` readiness check, `D` pending decision, `T` integrated
 | Full mission | Never run as an acceptance check. | MR-35 to MR-40 |
 | Timing and resources | Not measured on the final build. | SYS-11, SYS-12 (October builds) |
 
+## Decisions for Nicholas
+
+All questions and decisions go to Nicholas. Proposed defaults are recorded as proposed, not as sign-off.
+
+- [ ] WiFi and broker settings (D09), and the message buffer wording (D09).
+- [ ] Whether obstacles sit only on straights (D12).
+- [ ] Print framing, quiet zones and tolerances (D01).
+- [ ] Error limits for lateral, turn, height, width and recovery (D10).
+- [ ] Stall guard for acceptance (D07) and the watchdog reset policy (D15).
+- [ ] Data table sign-off (#28) and fault-byte confirmation (#113). Proposed: keep 48 fault bits and 16-bit profile millimetres; store `WheelPid` as float.
+- [ ] Keep diagnostic frames 9, 10 and 11, and whether to delete the merged PR 149 branch.
+- [ ] Reopen or replace issue #117, and whether the Week 10 demonstration was held.
+
 ## 1. Safety and electrical
 
-- [ ] Build `main` with the Arm compiler before flashing: `WATCHDOG=0` and `1`, `TRACE=0` and `1`. PR 149 merged at `99fe0d8` without one, so a build failure is possible.
 - [ ] Sonar Echo high level measured at 3.3 V or below (MR-03, R5, D05). A higher level can damage the GPIO.
 - [ ] Every wire checked by continuity, with a photo (MR-01, A7).
 - [ ] GP26 Grove contact disconnected and GP28 jumper open (MR-02, A7).
@@ -81,10 +94,9 @@ Turns, distances and barcode widths all come from encoder travel.
 
 The 95% target is the user's. No success rate has been measured yet, so the first job is to get one.
 
-- [ ] Define one attempt and what counts as a success (for example, a full lap with no line loss), and write that down before running.
-- [ ] Run 20 laps with one image and no changes, record each lap, and calculate the rate with `scripts/mission_trial_score.py` (MR-26).
+- [ ] Agree the proposed [line success measure](app_program/line_barcode/README.md#line-success-measure) before running laps.
+- [ ] Run 20 laps with one image and no changes, and calculate the rate with `scripts/mission_trial_score.py` (MR-26). Film them: INT-163 found telemetry cannot show where the car left the line.
 - [ ] Repeat under two lighting conditions (MR-26, M1).
-- [ ] Analyse the off-course run in `testing/integration/logs/2026-11-02_raw-captures/int-157-run.txt.gz`, near the end of the run. `scripts/triage_mqtt_capture.py` flags anomalies but does not find causes.
 - [ ] Real line loss: the sweep finds the line, an exhausted search stops, and stale data does not start a blind search (MR-32, T11).
 - [ ] Work through the [open issues](app_program/line_barcode/README.md#open-issues): junction on three curves, `NAV_ONSET_SKEW_MM`, pivot hand-over.
 - [ ] Mounted IR levels, dead zone and left-sensor span at course lighting (MR-12 as revised for DOUT, D04, A3).
@@ -95,13 +107,13 @@ The 95% target is the user's. No success rate has been measured yet, so the firs
 
 - [ ] Action once at the junction for each of left, right, straight and U-turn at variable spacing, never undone (MR-28, D02). INT-153 stopped with a queued turn.
 - [ ] Print all 26 letters and run each at course speed, in both directions (MR-27, M2). Host tests cover the patterns only.
-- [ ] Flipped print, reading it from the other direction. C and P can complete early with an unknown orientation; nothing reads orientation today.
+- [ ] Flipped print on the car. All 26 letters decode in both directions on the host. C and P can complete with an unknown orientation, but Mission does not use orientation.
 - [ ] U-turn: confirm the stationary pause and return-line tracking. The pause is a 100 ms trial value; about 200 ms was requested (D02).
 - [ ] No queued turn: crosses straight and resumes tracking (MR-28).
 - [ ] Record reads against passes as a rate. A corrupted last guard still loses the read (INT-155, third pass).
 - [ ] Barcode sensor level over black and white on the mounted robot (MR-13, D04).
 - [ ] Issued print framing, quiet zones and tolerances (D01, A8).
-- [ ] Inverted print (white bars on black), if the course can have one. Decoding now needs black high (`BARCODE_BLACK_HIGH`), so an inverted print **will not read**. Decide whether this is needed.
+- [ ] Inverted print (white bars on black) will not read. Default: unsupported unless the course has one.
 - [ ] Barcode capture ring and event queue: peak use and overflow at course speed (T04).
 
 ## 5. Obstacle and bypass (M6 to M9)
@@ -115,10 +127,9 @@ Wheels stay off for the bench steps. Bypass has never run on the car.
 - [ ] Bypass runs with both sides open and one restricted: no collision, larger-gap side chosen, swept envelope confirmed (MR-30, M8, D03).
 - [ ] Rejoin the original line and continue (MR-30, M9, A9).
 - [ ] Depth measured against a tape, and the rear edge seen while bypassing (M7).
-- [ ] Confirm scans start only after fresh stationary feedback, with timestamped logs (Tribunal test plan, T09).
-- [ ] Cancel a scan and restore the servo to centre on a stop, with no-echo cases (Tribunal test plan, Gap 6).
+- [ ] Confirm on the car that scans start only after fresh stationary feedback, with timestamped logs (T09). Host logic passes.
+- [ ] Cancel a scan and restore the servo to centre on a stop, on the car, with no-echo cases (Gap 6). Mission and scan-guard host cases pass.
 - [ ] Measure bypass speeds, settle time and travel budgets (D05, D07).
-- [ ] Explain `SCAN` then `STOPPED` with `front=no echo` on broad black (INT-156 capture, from about line 8020).
 - [ ] Confirm obstacles only sit on straights (D12, A9). The course source is inconsistent; blocked on an answer.
 
 ## 6. Hump (M4, M5)
@@ -132,9 +143,9 @@ Flash the current image, let the car sit still on the track for a second, then p
 - [ ] Hump on a curve, and a hump just before a barcode.
 - [ ] Reverse direction over a hump: the side and roll sign are untested (D11).
 - [ ] Revisit `HUMP_MIN_TRAVEL_MM` 50: it rests on only two crossings.
-- [ ] Detector stuck on: a stuck encounter can still miss results; cause not investigated (INT-122, INT-133).
+- [ ] Detector stuck on: current code ends an encounter at `HUMP_MAX_TRAVEL_MM`, but a real hump inside that travel can be missed (INT-171). Check on the car.
 - [ ] Mounted calibration success and failure, with IMU disconnected (MR-11, D06).
-- [ ] Labelled traces for stationary, acceleration, turn, climb, descent and impact (T06). No monitor named for turn rate was found.
+- [ ] Labelled traces for stationary, acceleration, turn, climb, descent and impact (T06). No turn-rate monitor exists; the GY-511 has no gyroscope.
 
 ## 7. Telemetry and mapping (M10)
 
@@ -146,17 +157,15 @@ Flash the current image, let the car sit still on the track for a second, then p
 - [ ] Malformed, truncated and prohibited requests on the real link (T12, Gap 5). Host tests only so far.
 - [ ] All six fault bytes under controlled fault injection (S1-M01).
 - [ ] Rebuild the route from saved events (MR-38).
-- [ ] Decide whether event drops need reporting; neither kind of drop appears in telemetry.
 - [ ] Decide whether the professor's buffer wording requires literal RTOS message buffers (D09).
 
 ## 8. Faults seen and not explained
 
-- [ ] Encoder faults stopped runs earlier, and the bad edges have no known cause. PR 149 stops the laptop showing speeds from bursty packet timing, such as `L=1935 R=-222` (INT-157 capture), but that does not rule out real encoder glitches; check against `WHEEL` frames.
-- [ ] Pico restarts seen during earlier runs: confirm whether they were manual.
-- [ ] `Obstacle: no echo` appears in many runs. It is meant to be report-only; check it never causes a stop on its own.
-- [ ] `IMU calibration failed` on one boot (INT-154 capture).
-- [ ] `barcode capture overflow` is frequent. It no longer clears the runs; consider a larger ring if reads still fail.
-- [ ] `EVENT BARCODE` missing for one read that telemetry shows (INT-154 capture). PR 149 adds a fallback event with no test; confirm on a real run that every read gives one event and no duplicates.
+- [ ] Encoder faults stopped earlier runs, and those captures are not held. `WHEEL` frames in INT-154 to 157 show no glitch (INT-165). Watch for the fault again on the car, and for `encoder_ok=0` in `HUMP` frames.
+- [ ] Restarts: 10 clock restarts in INT-154 to 157, one while in NAVIGATE (INT-168). Nicholas to confirm whether they were manual.
+- [ ] `IMU calibration failed`: likely the car moved during boot (INT-166). Confirm by keeping it still, as in MR-11.
+- [ ] `barcode capture overflow` is frequent (INT-170). Compare it with read rate on the car; change the ring only if reads fail.
+- [ ] One `EVENT BARCODE` per read: host test added (INT-167). Confirm on a real run.
 
 ## 9. Full mission and repeatability
 
@@ -171,42 +180,37 @@ Flash the current image, let the car sit still on the track for a second, then p
 
 - [ ] Timing on the final image under combined load: WCET, jitter, missed deadlines and sensor-to-motor latency (MR-39, T15, A11, D13). This is the evidence that timing has not degraded.
 - [ ] No lost functionality: rerun the applicable set on the final commit (T15, T16).
-- [ ] RAM usage of the final build; SYS-11 and SYS-12 are October builds, and the architecture guide still cites SYS-11 as final.
+- [ ] RAM usage of the final image. Latest build is in INT-174; SYS-11 and SYS-12 are October builds.
 - [ ] Stack use and peak RAM measured (R3, D13). Never measured.
 - [ ] Data table signed off by each owner; most sections still say "proposed" (Gap 1, R2, issue #28).
 - [ ] Fault-byte owner confirmations (#113).
-- [ ] Justify or reduce telemetry fault bytes: 48 bits are sent and 12 are defined.
-- [ ] Add justification rows for stored floats, including `WheelPid`, or convert them to fixed point (Tribunal float audit).
-- [ ] Add data table rows for the fields PR 149 added: two 32-bit watchdog heartbeats and the I/O task's last-fed copies.
-- [ ] Update stale data table rows; some IR rows still describe the old ADC sensors.
-- [ ] Decide whether obstacle profiles are quantized as said at Tribunal; they still store 16-bit millimetres.
 - [ ] Height scale and rounding confirmed by reference humps; 16-bit working and 7-bit reported widths are in code (D06, Darrius's Tribunal item).
 - [ ] Packed-data race checks on the Pico under load, including lock duration (R1, R4, Gap 2). Host stress only so far.
 - [ ] Measure CPU cost of packing and unpacking (Tribunal resource review).
-- [ ] Audit core-0 I/O integration and cross-core hand-offs (D14).
-- [ ] Stale and frozen producers, expired commands and full buffers (T14).
+- [ ] Stale and frozen producers, expired commands and full buffers on the Pico (T14). Host cases exist in `test_safety`, `test_motion_control` and `test_comms_report`.
 
 ## 11. Reports, demonstrations and traceability
 
-- [ ] Link every result to its exact commit, image hash, setup and limit, with reruns kept (Gap 8, [testing](testing/README.md#run-and-record)).
+- [ ] Link every result to its exact commit, image hash, setup and limit, with reruns kept (Gap 8). These rows have no commit, and it cannot be recovered from the log: INT-39, INT-41, INT-133, INT-140b, INT-141, INT-142, INT-144, INT-150, INT-152, INT-159.
 - [ ] Record videos and fill the index; nothing is recorded yet ([video](video/README.md)).
 - [ ] Integrated demonstration (Team deliverable).
 - [ ] Telemetry demonstration (Comms deliverable).
 - [ ] Motion accuracy evaluation, from MR-21 to MR-23.
-- [ ] PID tuning report; only a tuning section exists in the Motion README.
-- [ ] Terrain analysis report; no such file found.
+- [ ] PID tuning report: [draft](app_program/motion/README.md#pid-tuning-report-draft) written; needs loaded data.
+- [ ] Terrain analysis report: [draft](app_program/terrain/README.md#terrain-analysis-draft) written; needs reference humps and traces.
 - [ ] Record the Week 10 partial-integration result, if it was held. Its format is still pending in the specs, and no result is in the repository.
 - [ ] Reopen or replace [issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117): it is closed with its acceptance checklist unticked.
 - [ ] Update the mission-readiness checklist as items pass.
 
 ## 12. Stretch goal
 
-- [ ] Magnetometer and encoder heading fusion. The briefing marks fusion higher, but it is not required; no magnetometer code exists.
+Nothing open. Magnetometer fusion is skipped by default because it is optional and cannot be verified without the car. Say if you want it.
+
 
 ## 13. Housekeeping
 
-- [ ] Shaun to confirm the diagnostic frames (types 9, 10 and 11). The Comms README now says to keep them, but also says type 9 is not agreed.
-- [ ] Shaun to delete the merged PR 149 branch `fix/watchdog-abi-hardware-procedures-20261102`, if no longer needed.
+- [ ] Diagnostic frames (types 9, 10 and 11): the Comms README says to keep them, but also says type 9 is not agreed. See [decisions](#decisions-for-nicholas).
+- [ ] Merged PR 149 branch `fix/watchdog-abi-hardware-procedures-20261102`: see [decisions](#decisions-for-nicholas).
 - [ ] Delete this file once it is done.
 
 ## Complete
@@ -237,6 +241,13 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] Readiness procedures updated for the digital IR sensors and reset flow, keeping MR-29 at 100 mm/s on humps.
 - [x] PR 147 closed.
 - [x] Overlapping logs trimmed; INT-135 and INT-136 are now 340 KB and 532 KB.
+- [x] Arm builds with `WATCHDOG=0/1` and `TRACE=0/1` (INT-162, INT-174); build only.
+- [x] Off-course capture analysed; no cause found, so the laps need video (INT-163).
+- [x] `SCAN` then `STOPPED` analysed: likely the car being lifted, not proven (INT-164).
+- [x] No echo never stops a run, in host tests (INT-169).
+- [x] Event drops stay debugger-only, by default decision; no telemetry fields added.
+- [x] Core-0 audit by source review, no defect found (INT-172); load is section 10.
+- [x] Data table: watchdog, float and digital IR rows; fault bytes and obstacle profile justified as proposed (INT-173).
 
 ## Superseded
 

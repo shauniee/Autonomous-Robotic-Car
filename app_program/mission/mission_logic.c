@@ -856,7 +856,8 @@ static void handle_reacquire(Mission *m, const MissionInputs *in,
     }
 }
 
-bool mission_barcode_event_needed(const MissionInputs *in, const MissionOutputs *out)
+bool mission_barcode_event_needed(const MissionInputs *in,
+    const MissionOutputs *out)
 {
     return in->have_barcode && out->event_kind != MQTT_EVENT_BARCODE &&
         in->barcode_letter != BARCODE_NO_LETTER;

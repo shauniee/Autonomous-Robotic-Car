@@ -8,6 +8,7 @@
 - [Barcode](#barcode)
 - [Where it stands](#where-it-stands)
 - [Open issues](#open-issues)
+- [Line success measure](#line-success-measure)
 - [How to run a trial](#how-to-run-a-trial)
 - [Lessons from the trials](#lessons-from-the-trials)
 
@@ -55,6 +56,15 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). lin
 4. **Loss and recovery.** Confirm no false loss at 350 mm (INT-135), and that the sweep finds the line from a real loss.
 5. **Hump detector stuck on (INT-122, INT-133).** It no longer changes speed, but a stuck encounter can still miss hump results; cause not investigated in Terrain.
 6. **Values to measure:** tightest curve radius, effective track width, spot spacing at the 120 mm position, left-sensor span and hysteresis.
+
+## Line success measure
+
+Proposed for M1, and needs Nicholas's agreement before the first scored lap. The 95% target is the user's.
+
+- **Attempt:** one lap of a written course layout, from a fresh GP20 start at 100 mm/s, on one image with no changes between laps.
+- **Success:** the car finishes the lap on the line with no hand contact, no `REACQUIRE` and no stop.
+- **Failure:** anything else, including a lap stopped for safety. Only a setup fault with a written reason may be left out, and it is still recorded.
+- **Rate:** at least 20 laps per image and lighting condition, scored by `scripts/mission_trial_score.py`, with `TRACE=1` and `TRACE=0` scored apart.
 
 ## How to run a trial
 

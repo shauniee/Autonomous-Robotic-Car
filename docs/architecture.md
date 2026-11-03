@@ -93,6 +93,8 @@ multi-producer events and mapping installation across cores: DI/EI protects only
 one core. The implemented event log uses a bounded cross-core mutex; its contention and
 load margins still require on-target measurements.
 
+**D14 audit (2026-11-03, source review, INT-172).** Task placement matches the table above, and `app_main.c` runs every `*_init` before starting Motion, I/O, then Mission. Fault bytes have one writing context each: Motion, Mission (Line, Obstacle, Mission), I/O (Terrain) and the kernel transport (Network). This matters because `rd_fault_set` is a load then a store. Cross-core data uses single-writer words, acquire/release SPSC rings or mapping tickets; only `comms_event` has two producing cores, and it uses the bounded mutex. `lock_misses` has one writer per core. No defect found. Not covered: contention, lock duration and load, which need the Pico.
+
 ## Mission loop
 
 Seven states: READY=0, FOLLOW_LINE=1, NAVIGATE=2, SCAN=3, BYPASS=4,
@@ -622,7 +624,7 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 | Telemetry | up to 768 bytes (`COMMS_TELEMETRY_PAYLOAD_MAX`) | 23 bytes |
 | Mapping | up to 512 bytes on `uat` | 5 bytes |
 
-Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Final message-size and RAM evidence: [SYS-11](../testing/system/TEST_LOG.md#results).
+Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Message sizes and RAM evidence, not yet final: [SYS-11](../testing/system/TEST_LOG.md#results) for October and INT-174 in the [integration log](../testing/integration/TEST_LOG.md) for the latest build. Final figures need the final image.
 
 Implementation limits: standalone recovery uses bounded stationary pivot sweeps;
 physical speed/geometry acceptance remains D07. Obstacle scans
