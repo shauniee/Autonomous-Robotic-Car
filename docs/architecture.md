@@ -625,7 +625,7 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 | Telemetry | up to 768 bytes (`COMMS_TELEMETRY_PAYLOAD_MAX`) | 22 bytes |
 | Mapping | up to 512 bytes on `uat` | 5 bytes |
 
-Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Message sizes and RAM evidence, not yet final: [SYS-11](../testing/system/TEST_LOG.md#results) for October and INT-174 in the [integration log](../testing/integration/TEST_LOG.md) for the latest build. Final figures need the final image.
+Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Message sizes and RAM evidence, not yet final: [SYS-11](../testing/system/TEST_LOG.md#results) for October and INT-178 in the [integration log](../testing/integration/TEST_LOG.md) for the latest build. Final figures need the final image.
 
 Implementation limits: standalone recovery uses bounded stationary pivot sweeps;
 physical speed/geometry acceptance remains D07. Obstacle scans

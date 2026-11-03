@@ -38,7 +38,7 @@ IDs: `M` requirement, `MR` readiness check, `D` pending decision, `T` integrated
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| Firmware build | All watchdog and trace images build. Host suite passes. Not a firmware or physical pass. | INT-162, INT-174 |
+| Firmware build | All watchdog and trace images build on this branch. Host suite passes. Not a firmware or physical pass. `main` is unchanged until the demonstration. | INT-162, INT-178 |
 | Safety and electrical | No recorded result. Wiring is user-confirmed only. | MR-01 to MR-05 |
 | Watchdog | Code merged, off by default, never run on a Pico. No reset policy agreed. | `99fe0d8`, D15 |
 | Line tracking | Good laps seen, but the last run went off course and was not smooth. No measured success rate. | User observation, INT-136, INT-139b, INT-158; capture analysis found no cause (INT-163) |
@@ -56,7 +56,7 @@ All questions and decisions go to Nicholas. Proposed defaults are recorded as pr
 
 - [ ] Print framing, quiet zones and tolerances (D01).
 - [ ] Error limits for lateral, turn, height, width and recovery (D10), and the watchdog reset policy (D15).
-- [ ] Data table: fault bytes accepted at 48 bits. Decide the [bit reductions](#bit-reduction-candidates), then sign off each group.
+- [ ] Data table: fault bytes accepted at 48 bits. Test the [bit reductions](#bit-reduction-candidates), then sign off each group.
 - [ ] Keep diagnostic frames 9, 10 and 11.
 
 ## 1. Safety and electrical
@@ -184,18 +184,20 @@ Flash the current image, let the car sit still on the track for a second, then p
 
 ### Bit reduction candidates
 
-Estimates from target compiler sizes (INT-177); nothing is built. Do these after the demonstration. Each needs host tests, then a car run. Application static data is 2076 bytes. Most of the other 82 KB of bss belongs to the SDK, lwIP and WiFi, which are outside this requirement.
+Built on this branch, not on `main`, with host tests and builds only (INT-178). Each needs a car run after the demonstration.
 
-| Order | Where | Now | Proposed | Saves | Risk |
-| --- | --- | --- | --- | --- | --- |
-| 1 | `TRACE=0` on the final image | Trace rings present | Removed | 3712 bits, measured | None to safety; no debug frames. Needs the A/B laps |
-| 2 | Barcode edge ring | 64 x 48 bits | Two 16-bit counts, levels in a 64-bit map | 960 bits | Low; touches the edge interrupt |
-| 3 | Encoder origins held in 32-bit words (`Mission`, `MotionController`, `bypass_control_t`, Terrain, Motion) | 32 bits each | 16 bits, as the counts already wrap at 16 | about 448 bits | Low; holds only while `ENC_COUNT_BITS` is 16 or less (D03) |
-| 4 | `LineIrSnapshot`, `IrTracker` | 192 and 160 bits | Drop fractions and error, which repeat the digital bits; one flags word | about 200 bits | Medium; touches Mission inputs |
-| 5 | `ObstacleRay`, `ObstacleProfile` | 32 and 112 bits | Ray 21 bits in 3 bytes (range 13); profile 70 bits, capped at 1023 mm | about 160 bits | Medium; check side choice when both clearances saturate |
-| 6 | `WheelPid` | 2 x 64 bits float | `int16` Q4 integral; drop `previous_speed` while `MOTION_KD` is 0 | 96 bits | Medium; needs a loaded-wheel comparison |
-| 7 | Timestamps in private state | uint32 ms | 16 bits with a checked bound for each timer | about 250 bits | High; a short timer can alias, and bypass allows 90 s (Gap 4) |
-| 8 | Telemetry width and depth | 2 x 16 bits | 2 x 10 bits | 1 byte per frame | Medium; changes wire format, decoders and tests |
+| Cut | Where | Result | Check on the car |
+| --- | --- | --- | --- |
+| Done | Barcode edge ring | 64 x 48 to 64 x 33 bits | Barcodes still read at course speed |
+| Done | Encoder counts and origins | 32 to 16 bits each | Turns, distances and bypass travel |
+| Done | `WheelPid` | 2 x 64 to 2 x 32 bits, no stored float | Loaded wheel speed against the old image |
+| Done | `ObstacleRay`, `ObstacleProfile` | 32 to 24 bits; 112 to 72 bits; capped at 1023 mm | Scan rays, profile and side choice |
+| Done | `IrTracker`, `LineIrSnapshot` | 160 to 64 bits; 192 to 96 bits | Line following and junctions |
+| Done | Telemetry width and depth | 23 to 22 bytes | Dashboard shows both on a real link |
+| Not done | `TRACE=0` as the default | Would save 3712 bits | Needs the A/B laps; removes debug frames |
+| Not done | 16-bit timestamps | Would save about 250 bits | Not recommended: a short timer can alias, and bypass allows 90 s (Gap 4) |
+
+Flash grew by 1056 bytes, because packed fields take more code to read.
 
 ## 11. Reports, demonstrations and traceability
 
@@ -227,7 +229,7 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] Networking cannot start, stop or drive the robot.
 - [x] Course speed fixed at 100 mm/s by a compile-time check.
 - [x] JSON replaced with binary frames in code and host tests; the real link is S1-M01 above.
-- [x] Message sizes fixed and asserted: 23, 11, 5, 3 and 2 bytes.
+- [x] Message sizes fixed and asserted: 22, 11, 5, 3 and 2 bytes, on this branch.
 - [x] Fault enums replaced with independent bits (Nicholas's Tribunal item).
 - [x] One encoded value for each state field.
 - [x] Scan state uses 3 bits (Jia Jing's Tribunal item).
