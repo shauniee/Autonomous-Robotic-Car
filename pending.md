@@ -47,7 +47,7 @@ by [project-specs](docs/project-specs.md#demo-and-full-course-decisions-2026-11-
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| Firmware build | PR 149 merged to `main` without an Arm build. Host suite passes. | `99fe0d8`, INT-160 |
+| Firmware build | Branch baseline passes host suite, all four WATCHDOG/TRACE TEST combinations and normal course build. Not flashed. | `3c10232`, INT-162–167 |
 | Safety and electrical | No recorded result. Wiring is user-confirmed only. | MR-01 to MR-05 |
 | Watchdog | Code merged, off by default, never run on a Pico. No reset policy agreed. | `99fe0d8`, D15 |
 | Line tracking | Good laps seen, but the last run went off course and was not smooth. No measured success rate. | User observation, INT-136, INT-139b, INT-158; cause not analysed |
@@ -146,7 +146,7 @@ have been implemented or measured in this planning revision.
 
 ## 1. Safety and electrical
 
-- [ ] Build the `fix/pending-nic2` candidate with the Arm compiler before flashing: `WATCHDOG=0` and `1`, `TRACE=0` and `1`. PR 149 merged at `99fe0d8` without one, so a build failure is possible.
+- [x] Build baseline `3c10232` with the Arm compiler: all four WATCHDOG/TRACE TEST combinations plus normal course image pass (INT-163–167). Rebuild the final candidate after source changes; no flash or physical PASS.
 - [ ] Sonar Echo high level measured at 3.3 V or below (MR-03, R5, D05). A higher level can damage the GPIO.
 - [ ] Every wire checked by continuity, with a photo (MR-01, A7).
 - [ ] GP26 Grove contact disconnected and GP28 jumper open (MR-02, A7).

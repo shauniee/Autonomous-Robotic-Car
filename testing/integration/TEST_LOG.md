@@ -183,6 +183,13 @@ Later cases are named in their result rows.
 | 2026-11-02 | INT-158 | `d97e3d9`+ | Nicholas, Claude | FAIL | [2026-11-02_INT-158/](logs/2026-11-02_INT-158/) | Hump baseline moved by pivots. Tracking off course, not analysed; `humps=5` against 1 crossed |
 | 2026-11-03 | INT-160 | `a7593b0` merged with `1288042`, plus fixes | Claude | PASS (host) | At commit | PR 149 host suite after fixing test order, a commented-out self-test and a triage script syntax error. No Arm build or Pico run; watchdog policy only |
 
+| 2026-11-03 | INT-162 | `3c102325519afa6ba36615b96c0a30f49e89b7f8` | Codex | PASS (host only) | — | `testing/pure/run.sh`: existing full suite, enabled/disabled stall guard, 5 million snapshot reads, 300000 frame stress and 100000 mapping exchanges; no robot or network execution |
+| 2026-11-03 | INT-163 | `3c102325519afa6ba36615b96c0a30f49e89b7f8` | Codex | PASS (Arm build only) | [profile measurements](logs/2026-11-03_INT-163-build-matrix.json) | `nic2_wd0_trace0_test1_course0`; text/data/bss 385132/424/84044 bytes; image hash in measurements; not flashed |
+| 2026-11-03 | INT-164 | `3c102325519afa6ba36615b96c0a30f49e89b7f8` | Codex | PASS (Arm build only) | [profile measurements](logs/2026-11-03_INT-163-build-matrix.json) | `nic2_wd0_trace1_test1_course0`; text/data/bss 387492/424/84508 bytes; image hash in measurements; not flashed |
+| 2026-11-03 | INT-165 | `3c102325519afa6ba36615b96c0a30f49e89b7f8` | Codex | PASS (Arm build only) | [profile measurements](logs/2026-11-03_INT-163-build-matrix.json) | `nic2_wd1_trace0_test1_course0`; text/data/bss 385616/424/84064 bytes; image hash in measurements; not flashed |
+| 2026-11-03 | INT-166 | `3c102325519afa6ba36615b96c0a30f49e89b7f8` | Codex | PASS (Arm build only) | [profile measurements](logs/2026-11-03_INT-163-build-matrix.json) | `nic2_wd1_trace1_test1_course0`; text/data/bss 387980/424/84528 bytes; image hash in measurements; not flashed |
+| 2026-11-03 | INT-167 | `3c102325519afa6ba36615b96c0a30f49e89b7f8` | Codex | PASS (Arm build only) | [profile measurements](logs/2026-11-03_INT-163-build-matrix.json) | `nic2_wd0_trace1_test0_course1`; text/data/bss 387764/424/84496 bytes; image hash in measurements; not flashed |
+
 ## Audits, not tests
 
 | Date | Test ID | Commit | Tester | Result | Log / evidence | Notes |
