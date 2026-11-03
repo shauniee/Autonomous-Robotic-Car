@@ -184,7 +184,7 @@ static void test_crawl_is_not_a_stall(void)
 {
     Sim s; sim_init(&s);
     s.wheel_gain[0] = s.wheel_gain[1] = 0.0f;
-    MotionCommand cmd = motion_command_make(MOTION_MODE_DISTANCE, 100.0f, 2.0f, 0, 9u, 0u);
+    MotionCommand cmd = motion_command_make(MOTION_MODE_DISTANCE, 5.0f, 100.0f, 0, 9u, 0u);
     for (int i = 0; i < (int)(MOTION_STALL_MS / MOTION_PERIOD_MS) * 2; ++i) {
         MotionOutput out = sim_step(&s, &cmd, false, 0);
         assert(!out.stall);
