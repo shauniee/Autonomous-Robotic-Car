@@ -556,7 +556,12 @@ void barcode_service(bool cancel)
         barcode_result_t result =
             barcode_frame_edge(&frame, black, edge.left_count, edge.right_count,
             &symbol, &orientation);
-        run_trace_add(frame.last_width, !black);
+        /* Compile-time constant: TRACE=0 removes this work at optimisation
+           without leaving the static diagnostic producer unused. */
+        if (ROBOT_TRACE_ENABLED)
+        {
+            run_trace_add(frame.last_width, !black);
+        }
 #if BARCODE_DIAGNOSTICS
         if (diagnostic_head - diagnostic_tail < 32u)
         {

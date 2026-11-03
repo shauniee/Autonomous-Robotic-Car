@@ -12,6 +12,8 @@ CC=${CC:-cc}
 CFLAGS="-std=c11 -O2 -Wall -Wextra -Werror -pthread -DHOST_TEST"
 
 $CC $CFLAGS testing/pure/test_robot_time.c -o "$build_dir/test_robot_time"
+$CC $CFLAGS testing/pure/test_watchdog.c -o "$build_dir/test_watchdog"
+"$build_dir/test_watchdog"
 for geometry in 0 1; do
     $CC $CFLAGS -DNAV_GEOMETRY_RELEASED=$geometry -DNAV_SENSOR_FORWARD_MM=$((geometry * 150)) -DNAV_CROSSBAR_MM=$((geometry * 18)) \
         testing/pure/test_smooth_navigation.c app_program/mission/mission_logic.c \
@@ -89,5 +91,7 @@ $CC $CFLAGS testing/pure/test_line_trace.c app_program/mission/line_trace.c \
 "$build_dir/test_terrain"
 "$build_dir/test_comms_report"
 "$build_dir/test_comms_stress"
+python3 testing/pure/test_mqtt_cli.py	# rejected ACKs and burst-safe speed estimate
 python3 scripts/mqtt_client.py --self-test	# laptop decoder agrees with the golden vectors
 python3 testing/pure/test_check_barr.py	# coding rule scan finds each violation, passes clean code
+python3 testing/pure/test_field_tools.py	# capture triage and recorded lap scoring

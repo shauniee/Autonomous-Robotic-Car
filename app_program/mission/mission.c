@@ -10,6 +10,7 @@
 #include "../comms/comms.h"
 #include "../common/buttons.h"
 #include "../common/robot_time.h"
+#include "../common/robot_watchdog.h"
 
 static _Atomic uint8_t published_state;	/* writer: Mission task; 7 states, 3 logical bits */
 
@@ -34,7 +35,9 @@ static void mission_task(INT stacd, void *exinf)
     uint32_t last_left = drv_encoder_count(ENCODER_LEFT), last_right = drv_encoder_count(ENCODER_RIGHT);
     uint32_t still_since = now;
     bool side_watching = false;
+#if ROBOT_TRACE_ENABLED
     uint32_t traced_ms = 0u;
+#endif
 
     for (;;)
     {
@@ -175,15 +178,19 @@ static void mission_task(INT stacd, void *exinf)
 
         MissionOutputs out;
         bool was_recovering = mission.state == MISSION_REACQUIRE;
+#if ROBOT_TRACE_ENABLED
         bool was_moving = mission.state != MISSION_READY && mission.state != MISSION_STOPPED;
+#endif
         mission_step(&mission, &in, &out);
         /* One record per fresh acquisition while moving, including the stop. */
+#if ROBOT_TRACE_ENABLED
         if (was_moving && in.line_sampled_ms != traced_ms)
         {
             mqtt_line_trace_t trace = mission_line_trace(&mission, &in, &out);
             (void)line_trace_publish(&trace);	/* full ring drops diagnostics only */
             traced_ms = in.line_sampled_ms;
         }
+#endif /* ROBOT_TRACE_ENABLED */
 
         if (out.stop_now && motion_stop() < E_OK)
         {
@@ -193,6 +200,16 @@ static void mission_task(INT stacd, void *exinf)
         {
             tm_printf((UB *)"[MISSION] navigation inhibited reason=%u "
                 "(1=measurements 2=geometry 3=entry)\n", (unsigned)out.nav_rejected);
+        }
+        /* Every decoded barcode needs a route event, including a barcode
+           consumed during a navigation transition or a manual test command.
+           Mission normally publishes its own event in FOLLOW; avoid duplicates.
+           Logging never grants motor/navigation authority. */
+        if (have_barcode && out.event_kind != MQTT_EVENT_BARCODE &&
+            barcode_event_letter(&barcode) != BARCODE_NO_LETTER)
+        {
+            comms_event(MQTT_EVENT_BARCODE, barcode_event_letter(&barcode),
+                (uint16_t)barcode_event_action(&barcode));
         }
         if (out.event_kind != 0u)
         {
@@ -250,6 +267,11 @@ static void mission_task(INT stacd, void *exinf)
         {
             tm_printf((UB *)"[MISSION] command write failed; stopping\n");
             (void)motion_stop();
+        }
+        else
+        {
+            /* Mission progress is acknowledged only after command handoff. */
+            robot_watchdog_note_mission(robot_time_ms());
         }
         if (was_recovering && out.line_lost)
         {

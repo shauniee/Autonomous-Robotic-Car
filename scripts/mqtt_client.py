@@ -210,12 +210,21 @@ class Motion:
         self.last = None
 
     def measure(self, left, right):
-        """(left mm/s, right mm/s, direction), or None for the first frame."""
+        """Arrival-time speed estimate, not the motor's measured encoder speed.
+
+        Telemetry is emitted about every 500 ms, but MQTT delivery is not a
+        periodic clock. Back-to-back delivery can make a 500 ms wheel count
+        change look like a huge speed spike (INT-157). Report unavailable when
+        the arrival gap is implausible instead of displaying false precision.
+        For actual per-wheel tuning use the timestamped WHEEL diagnostic frames.
+        """
         now = time.monotonic()
         previous, self.last = self.last, (now, left, right)
-        if previous is None or now - previous[0] <= 0:
+        if previous is None:
             return None
         dt = now - previous[0]
+        if not (0.25 <= dt <= 2.0):
+            return None
         speeds = [((count - old + 0x8000) & 0xFFFF) - 0x8000 for count, old in ((left, previous[1]), (right, previous[2]))]
         vl, vr = (d / COUNTS_PER_MM / dt for d in speeds)
         if abs(vl) < 5 and abs(vr) < 5:

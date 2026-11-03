@@ -219,6 +219,7 @@ void comms_step(uint32_t now)
 {
     /* Normal ACK/telemetry/events get first use of the bounded TX bridge. */
     report_step(now);
+#if ROBOT_TRACE_ENABLED
     /* Before the wheel and line traces, which keep the bridge full (INT-146). */
     {
         uint8_t frame[MQTT_LEN_TERRAIN_TRACE];
@@ -259,4 +260,5 @@ void comms_step(uint32_t now)
         }
         (void)comms_bridge_post(frame, length);
     }
+#endif /* ROBOT_TRACE_ENABLED */
 }
