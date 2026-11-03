@@ -244,10 +244,10 @@ Target sizes from `sizeof` with `arm-none-eabi-gcc` for the RP2040. **Used** is 
 | Subsystem | Used bits | Stored bits |
 | --- | ---: | ---: |
 | [Comms](app_program/comms/README.md) | 1227 | 1352 |
-| [Motion](app_program/motion/README.md) | 1137 | 1256 |
-| [Line and barcode](app_program/line_barcode/README.md) | 2470 | 3560 |
+| [Motion](app_program/motion/README.md) | 1137 | 1224 |
+| [Line and barcode](app_program/line_barcode/README.md) | 2470 | 2552 |
 | [Terrain](app_program/terrain/README.md) | 451 | 520 |
-| [Obstacle](app_program/obstacle/README.md) | 508 | 680 |
+| [Obstacle](app_program/obstacle/README.md) | 583 | 712 |
 | Mission | 1000 | 1136 |
 
 Totals cover the rows below, multiplied by their instances. Private working structs are listed under the tables and not counted, because they mix packed fields with full-width times.
@@ -266,10 +266,12 @@ Messages on the wire are separate from these totals:
 
 | Frame | Used | Stored |
 | --- | ---: | ---: |
-| Telemetry and snapshot reply | 183 | 184 |
+| Telemetry and snapshot reply | 171 | 176 |
 | Event | 83 | 88 |
 | Wheel trace | 120 | 120 |
 | Line trace | 124 | 136 |
+| Barcode trace | 144 | 144 |
+| Terrain trace | 61 | 64 |
 | Mapping | 36 | 40 |
 | Junction test | 19 | 24 |
 | Acknowledgement | 18 | 24 |
@@ -279,26 +281,26 @@ Messages on the wire are separate from these totals:
 
 | Data | Fields (bits) | Instances | Used | Stored |
 | --- | --- | ---: | ---: | ---: |
-| Encoder count | wrapped count 16 | 2 | 16 | 32 |
+| Encoder count | wrapped count 16 | 2 | 16 | 16 |
 | Feedback word | status 2, action 6 | 1 | 8 | 32 |
 | Command | time 32, target 12, speed 9, action 6, mode 2, steering 8 | 1 | 69 | 96 |
 | Health | service time 32, sequence 32, stopped 1, brake ack 1 | 1 | 66 | 96 |
 | Wheel trace record | see frame above | 8 | 120 | 120 |
 | Motion fault byte | stall, encoder | 1 | 2 | 8 |
 
-Not counted: `MotionController`, 480 stored.
+Not counted: `MotionController`, 352 stored, including `WheelPid` (2 x 32). `WATCHDOG=1` builds add 128 bits for two heartbeats and two last-fed copies.
 
 **Line and barcode**
 
 | Data | Fields (bits) | Instances | Used | Stored |
 | --- | --- | ---: | ---: | ---: |
-| IR raw word | left 1, right 1, valid 1 | 2 | 3 | 32 |
+| IR raw word | left 1, right 1, valid 1 | 2 | 3 | 8 |
 | Mapping word | letters 4x5, mapped 1 | 1 | 21 | 32 |
-| Barcode edge | counts 2x16, level 1 | 64 | 33 | 48 |
+| Barcode edge | counts 2x16, level 1 | 64 | 33 | 33 |
 | Barcode event | counts 2x16, letter 5, action 3, orientation 1 | 8 | 41 | 48 |
 | Line fault byte | IR invalid, capture overflow, event overflow | 1 | 3 | 8 |
 
-Not counted: `IrTracker`, 160 stored; `LineIrSnapshot`, 192 stored; `barcode_frame_t`, 496 stored.
+Not counted: `IrTracker`, 64 stored; `LineIrSnapshot`, 96 stored; `barcode_frame_t`, 496 stored.
 
 **Terrain**
 
@@ -316,8 +318,8 @@ Not counted: `IrTracker`, 160 stored; `LineIrSnapshot`, 192 stored; `barcode_fra
 | Echo word (front, side) | range 13, valid 1, time 16 | 2 | 30 | 32 |
 | Scan word | state 3, scan ID 4 | 1 | 7 | 32 |
 | Side-watch word | on 1, angle 6 | 1 | 7 | 32 |
-| Scan ray | angle 6, valid 1, range 16 | 9 | 23 | 32 |
-| Profile | angle 6, valid 1, measurements 6x16 | 1 | 103 | 112 |
+| Scan ray | angle 7, valid 1, range 13 | 15 | 21 | 24 |
+| Profile | angle 7, valid 1, distances 4x10, coordinates 2x11 | 1 | 70 | 72 |
 | Range group | values 5x13, counters 4x3 | 1 | 77 | 96 |
 | Profile evidence | widths 2x16, rays 3x4, edges 2 | 1 | 46 | 48 |
 | Obstacle fault byte | no echo | 1 | 1 | 8 |
@@ -331,7 +333,7 @@ Not counted: `IrTracker`, 160 stored; `LineIrSnapshot`, 192 stored; `barcode_fra
 | Line trace record | see frame above | 8 | 124 | 136 |
 | Mission fault byte | line lost | 1 | 1 | 8 |
 
-Not counted: `Mission`, 1792 stored, including `recovery_control_t` (128) and `bypass_control_t` (704).
+Not counted: `Mission`, 1312 stored, including `recovery_control_t` (96) and `bypass_control_t` (512).
 
 ## Manual build and flash
 
