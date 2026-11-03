@@ -616,10 +616,10 @@ static void handle_scan(Mission *m, const MissionInputs *in,
         ObstacleProfile profile =
         {
             .valid = true,
-                .closest_mm = in->profile_closest_mm,
-                .width_mm = in->profile_width_mm,
-                .left_clearance_mm = (uint16_t)in->left_clearance_mm,
-                .right_clearance_mm = (uint16_t)in->right_clearance_mm,
+                .closest_mm = obstacle_profile_mm(in->profile_closest_mm),
+                .width_mm = obstacle_profile_mm(in->profile_width_mm),
+                .left_clearance_mm = obstacle_profile_mm(in->left_clearance_mm),
+                .right_clearance_mm = obstacle_profile_mm(in->right_clearance_mm),
                 .obstacle_forward_mm = in->profile_forward_mm,
                 .obstacle_left_mm = in->profile_left_mm};
         bypass_input_t input = bypass_input(in);

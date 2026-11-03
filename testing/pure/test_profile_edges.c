@@ -68,6 +68,9 @@ static void test_full_sweep_from_stop(const obstacle_profile_config_t *config)
             assert(profile.right_clearance_mm >= MISSION_BYPASS_MIN_CLEAR_MM);
         }
     }
+    /* The wall 2000 mm away is past the profile limit: saturate, never wrap. */
+    assert(profile.left_clearance_mm == OBSTACLE_PROFILE_MAX_MM);
+    assert(profile.right_clearance_mm == OBSTACLE_PROFILE_MAX_MM);
     sweep(config, 130.0f, 200u, 300.0f, &profile);
     assert(profile.left_clearance_mm < MISSION_BYPASS_MIN_CLEAR_MM);
     assert(profile.right_clearance_mm >= MISSION_BYPASS_MIN_CLEAR_MM);
