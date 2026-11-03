@@ -280,7 +280,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Sequence | byte 1, Comms | 0-255 | wraps mod 256 | 8 | byte |
 | Mission state / motion status / line status | byte 2 | 0-15 / 0-3 / 0-3 | out of range rejected on encode and decode | 4 / 2 / 2 | mask/shift |
 | Action ID / mapped | byte 3 | 0-63 / flag | bit 7 reserved | 6 / 1 | mask/shift |
-| Fault bytes | bytes 4-9 | one byte per owner (six owners); 12 of 48 bits defined | - | 6 x 8 | bytes. Justification proposed: one single-writer byte per owner, read without masks; packing to 12 bits changes the wire format and needs a retest of the link |
+| Fault bytes | bytes 4-9 | one byte per owner (six owners); 12 of 48 bits defined | - | 6 x 8 | bytes. Accepted by Nicholas, 2026-11-03: one single-writer byte per owner, read without masks; packing to 12 bits changes the wire format and needs a retest of the link |
 | Encoder counts | bytes 10-13 | wrapped counts | wraps (modular) | 2 x 16 | little-endian |
 | Hump count / max height | bytes 14-15 | 0-255 / 0-126 (D06 scale) | 127 invalid, bit 7 valid flag (any hump completed); count and height saturate | 8 / 7+1 | mask/shift |
 | Front range | bytes 16-17 | 0-8190 mm, nearest mm | 8191 invalid, bit 13 valid flag; saturates to invalid | 13+1 | mask/shift |

@@ -15,6 +15,7 @@
 - [8. Faults seen and not explained](#8-faults-seen-and-not-explained)
 - [9. Full mission and repeatability](#9-full-mission-and-repeatability)
 - [10. Week 13 evidence (minimum-bit, timing, resources)](#10-week-13-evidence-minimum-bit-timing-resources)
+  - [Bit reduction candidates](#bit-reduction-candidates)
 - [11. Reports, demonstrations and traceability](#11-reports-demonstrations-and-traceability)
 - [12. Stretch goal](#12-stretch-goal)
 - [13. Housekeeping](#13-housekeeping)
@@ -53,13 +54,10 @@ IDs: `M` requirement, `MR` readiness check, `D` pending decision, `T` integrated
 
 All questions and decisions go to Nicholas. Proposed defaults are recorded as proposed, not as sign-off.
 
-- [ ] Broker on demonstration day: the specs say the instructor's, and your own WiFi is recorded (D09). Also supply the professor's buffer wording, which is not in this repository.
 - [ ] Print framing, quiet zones and tolerances (D01).
-- [ ] Error limits for lateral, turn, height, width and recovery (D10).
-- [ ] Stall guard for acceptance (D07): `tribunal1.md` does not name it. The watchdog is included, because A12 names it; write its reset policy (D15).
-- [ ] Data table sign-off and fault-byte confirmation, group by group. Proposed: keep 48 fault bits and 16-bit profile millimetres; store `WheelPid` as float.
+- [ ] Error limits for lateral, turn, height, width and recovery (D10), and the watchdog reset policy (D15).
+- [ ] Data table: fault bytes accepted at 48 bits. Decide the [bit reductions](#bit-reduction-candidates), then sign off each group.
 - [ ] Keep diagnostic frames 9, 10 and 11.
-- [ ] Week 10 demonstration: was it held, and with what result?
 
 ## 1. Safety and electrical
 
@@ -72,7 +70,7 @@ All questions and decisions go to Nicholas. Proposed defaults are recorded as pr
 - [ ] Measure output-brake latency against the 50 ms target, separately from physical stopping (A11, T02).
 - [ ] Reset cannot start the robot: held buttons, persistent fault, expired and old commands, inhibited boot (MR-07, A12, Gap 4).
 - [ ] TEST image on the current build: `[TEST]` lines print and motors stay braked (MR-06).
-- [ ] Stall guard: decide on it and enable it for acceptance, since it is off in the current trial configuration (MR-25, D07).
+- [ ] Stall guard: on for the full-course image (INT-176). Confirm on the car that it causes no false stop, and that a held wheel stops the run (MR-25, D07).
 - [ ] Watchdog: agree the reset policy (D15), then test a `WATCHDOG=1 TEST=1` image with wheels raised: reset on a stopped task, motor outputs through reset, no restart without GP20, and no false reset under WiFi load (SYS-06). The code is merged but off by default; do not enable it on a driving car until this passes.
 - [ ] Impact: tap test gives `Terrain: impact` and a latched stop (MR-16, D06).
 
@@ -146,7 +144,6 @@ Flash the current image, let the car sit still on the track for a second, then p
 
 ## 7. Telemetry and mapping (M10)
 
-- [ ] Get the instructor's WiFi and broker settings (D09). Blocked until supplied.
 - [ ] Pico telemetry at about 500 ms in the current binary format, saved (MR-08, S1-M01, Gap 5).
 - [ ] Start refused without a mapping (MR-09).
 - [ ] Mapping accepted while stopped, BUSY while following, cleared on reboot (MR-10, A8).
@@ -154,7 +151,7 @@ Flash the current image, let the car sit still on the track for a second, then p
 - [ ] Malformed, truncated and prohibited requests on the real link (T12, Gap 5). Host tests only so far.
 - [ ] All six fault bytes under controlled fault injection (S1-M01).
 - [ ] Rebuild the route from saved events (MR-38).
-- [ ] Decide whether the professor's buffer wording requires literal RTOS message buffers (D09).
+- [ ] Supply the professor's buffer wording (D09); it is not in this repository, so bounded rings stay.
 
 ## 8. Faults seen and not explained
 
@@ -185,6 +182,21 @@ Flash the current image, let the car sit still on the track for a second, then p
 - [ ] Measure CPU cost of packing and unpacking (Tribunal resource review).
 - [ ] Stale and frozen producers, expired commands and full buffers on the Pico (T14). Host cases exist in `test_safety`, `test_motion_control` and `test_comms_report`.
 
+### Bit reduction candidates
+
+Estimates from target compiler sizes (INT-177); nothing is built. Do these after the demonstration. Each needs host tests, then a car run. Application static data is 2076 bytes. Most of the other 82 KB of bss belongs to the SDK, lwIP and WiFi, which are outside this requirement.
+
+| Order | Where | Now | Proposed | Saves | Risk |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `TRACE=0` on the final image | Trace rings present | Removed | 3712 bits, measured | None to safety; no debug frames. Needs the A/B laps |
+| 2 | Barcode edge ring | 64 x 48 bits | Two 16-bit counts, levels in a 64-bit map | 960 bits | Low; touches the edge interrupt |
+| 3 | Encoder origins held in 32-bit words (`Mission`, `MotionController`, `bypass_control_t`, Terrain, Motion) | 32 bits each | 16 bits, as the counts already wrap at 16 | about 448 bits | Low; holds only while `ENC_COUNT_BITS` is 16 or less (D03) |
+| 4 | `LineIrSnapshot`, `IrTracker` | 192 and 160 bits | Drop fractions and error, which repeat the digital bits; one flags word | about 200 bits | Medium; touches Mission inputs |
+| 5 | `ObstacleRay`, `ObstacleProfile` | 32 and 112 bits | Ray 21 bits in 3 bytes (range 13); profile 70 bits, capped at 1023 mm | about 160 bits | Medium; check side choice when both clearances saturate |
+| 6 | `WheelPid` | 2 x 64 bits float | `int16` Q4 integral; drop `previous_speed` while `MOTION_KD` is 0 | 96 bits | Medium; needs a loaded-wheel comparison |
+| 7 | Timestamps in private state | uint32 ms | 16 bits with a checked bound for each timer | about 250 bits | High; a short timer can alias, and bypass allows 90 s (Gap 4) |
+| 8 | Telemetry width and depth | 2 x 16 bits | 2 x 10 bits | 1 byte per frame | Medium; changes wire format, decoders and tests |
+
 ## 11. Reports, demonstrations and traceability
 
 - [ ] Link every result to its exact commit, image hash, setup and limit, with reruns kept (Gap 8). These rows have no commit, and it cannot be recovered from the log: INT-39, INT-41, INT-133, INT-140b, INT-141, INT-142, INT-144, INT-150, INT-152, INT-159.
@@ -194,7 +206,6 @@ Flash the current image, let the car sit still on the track for a second, then p
 - [ ] Motion accuracy evaluation, from MR-21 to MR-23.
 - [ ] PID tuning report: [draft](app_program/motion/README.md#pid-tuning-report-draft) written; needs loaded data.
 - [ ] Terrain analysis report: [draft](app_program/terrain/README.md#terrain-analysis-draft) written; needs reference humps and traces.
-- [ ] Record the Week 10 partial-integration result, if it was held. Its format is still pending in the specs, and no result is in the repository.
 - [ ] Update the mission-readiness checklist as items pass.
 
 ## 12. Stretch goal
@@ -245,6 +256,9 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] Restarts: loose battery connection, hardware fix, by Nicholas (INT-175).
 - [x] Issue #117 stays closed; this file holds its open work, by Nicholas.
 - [x] PR 149 is merged; no branch action needed.
+- [x] WiFi and broker: own network and laptop broker, by Nicholas (D09). For another network, change `config/wifi_secrets.h` and rebuild.
+- [x] Week 10 issue set aside by Nicholas; a demonstration is on 2026-11-04.
+- [x] Fault bytes stay at 48 bits, by Nicholas.
 - [x] Core-0 audit by source review, no defect found (INT-172); load is section 10.
 - [x] Data table: watchdog, float and digital IR rows; fault bytes and obstacle profile justified as proposed (INT-173).
 
