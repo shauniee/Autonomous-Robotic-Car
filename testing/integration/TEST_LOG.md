@@ -3821,3 +3821,20 @@ one 10 mm hump; a taller hump is needed to check the scale. Host and build only 
 `int-*-monitor.txt` moved from the repository root to
 [raw captures](logs/2026-11-02_raw-captures/), gzip compressed, each checked to decompress to its original
 size. `int-158-run.txt` was deleted: it held no run. These entries were left as written.
+
+## INT-132 to INT-159 source lineage — PR #148 merge addendum (2026-11-03)
+
+PR [#148](https://github.com/shauniee/Autonomous-Robotic-Car/pull/148)
+merged as commit
+[`e5767602c8dd1b05f0e480440b728b48ce8bf124`](https://github.com/shauniee/Autonomous-Robotic-Car/commit/e5767602c8dd1b05f0e480440b728b48ce8bf124).
+It combines the INT-132..159 changes and compressed captures referenced by
+the individual entries above. The merge metadata identifies the published
+repository revision, **not** the original working-tree contents or physical
+test images; each historical entry's original source/image attribution stays
+unchanged. In particular, INT-158's five-counts-for-one-hump physical failure
+remains a FAIL, and its subsequent change was host/build-only at merge time.
+
+This is a provenance addendum only: no firmware execution, hardware trial,
+watchdog validation or corrected PASS result is asserted. PR #149 adds optional
+watchdog/diagnostic tooling on a separate draft branch and must not be treated
+as part of the #148 physical evidence.
