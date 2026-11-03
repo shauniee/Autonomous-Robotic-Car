@@ -91,7 +91,8 @@ def analyse(lines, limit=WHEEL_LIMIT_MMPS):
         "anomalies": anomalies,
         "limitations": [
             "A no-echo telemetry report alone is not a stop cause.",
-            "A speed spike may reflect encoder noise, wrap, missing telemetry intervals or actual motion; inspect WHEEL frames and video.",\n            "Terminal/dashboard speed is estimated from MQTT arrival times, not sensor timestamps; burst or delayed delivery makes it unreliable. Use WHEEL sampled_ms and video for confirmation.",
+            "A speed spike may reflect encoder noise, wrap, missing telemetry intervals or actual motion; inspect WHEEL frames and video.",
+            "Terminal/dashboard speed is estimated from MQTT arrival times, not sensor timestamps; burst or delayed delivery makes it unreliable. Use WHEEL sampled_ms and video for confirmation.",
             "A telemetry barcode display may persist without being a new read; it is not a per-pass event count.",
             "Missing frames/events in this capture do not prove the robot failed to produce them.",
             "Reset cause and safety/stopping distance require independent physical evidence.",

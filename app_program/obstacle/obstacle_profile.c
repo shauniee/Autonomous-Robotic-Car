@@ -191,15 +191,30 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
                 cosf((float)ray->angle_deg * OBSTACLE_PROFILE_DEG_TO_RAD);
             unsigned threshold = inside ? config->depth_exit_mm : config->depth_enter_mm;
             bool target = known[index] && forward <= front + (float)threshold;
-            if (background != NULL && target)
+            int next = index + direction;
+            if (!known[index] && inside && next >= 0 && next < (int)count &&
+                ray_valid(&rays[order[next]]) &&
+                (float)rays[order[next]].range_mm *
+                cosf((float)rays[order[next]].angle_deg *
+                    OBSTACLE_PROFILE_DEG_TO_RAD) <=
+                front + (float)config->depth_exit_mm)
             {
-                const ObstacleRay *reference = &background[order[index]];
-                known[index] = ray_valid(reference);
-                target = known[index] &&
-                    (uint32_t)ray->range_mm + config->background_separation_mm <= reference->range_mm;
+                /* a lost ping with the box on its far side is still the box */
+                foreground[index] = true;
             }
-            foreground[index] = target;
-            inside = target;
+            else
+            {
+                if (background != NULL && target)
+                {
+                    const ObstacleRay *reference = &background[order[index]];
+                    known[index] = ray_valid(reference);
+                    target = known[index] &&
+                        (uint32_t)ray->range_mm +
+                        config->background_separation_mm <= reference->range_mm;
+                }
+                foreground[index] = target;
+                inside = target;
+            }
         }
     }
     if (!foreground[centre])
@@ -217,8 +232,9 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
     {
         ++high;
     }
+    /* No echo past the box still marks its edge; only clearance needs a real
+       echo. */
     if (high - low + 1u < config->adjacent_rays || low == 0u || high + 1u >= count ||
-        !known[low - 1u] || !known[high + 1u] ||
         foreground[low - 1u] || foreground[high + 1u] ||
         rays[order[low]].angle_deg - rays[order[low - 1u]].angle_deg > config->maximum_gap_deg ||
         rays[order[high + 1u]].angle_deg - rays[order[high]].angle_deg > config->maximum_gap_deg)
@@ -247,23 +263,29 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
     /* A free ray proves empty space out to its echo, not just to the obstacle's
        front plane, which a limited sweep could never show as a wide gap. */
     float reach_left = 65535.0f, reach_right = 65535.0f;
-    for (unsigned i = high + 1u; i < count && known[i] && !foreground[i]; ++i)
+    for (unsigned i = high + 1u; i < count && !foreground[i]; ++i)
     {
         if (rays[order[i]].angle_deg - rays[order[i - 1u]].angle_deg > config->maximum_gap_deg)
         {
             break;
         }
-        ++free_left;
-        reach_left = fminf(reach_left, ray_left(&rays[order[i]]));
+        if (known[i])
+        {
+            ++free_left;
+            reach_left = fminf(reach_left, ray_left(&rays[order[i]]));
+        }
     }
-    for (unsigned i = low; i > 0u && known[i - 1u] && !foreground[i - 1u]; --i)
+    for (unsigned i = low; i > 0u && !foreground[i - 1u]; --i)
     {
         if (rays[order[i]].angle_deg - rays[order[i - 1u]].angle_deg > config->maximum_gap_deg)
         {
             break;
         }
-        ++free_right;
-        reach_right = fminf(reach_right, -ray_left(&rays[order[i - 1u]]));
+        if (known[i - 1u])
+        {
+            ++free_right;
+            reach_right = fminf(reach_right, -ray_left(&rays[order[i - 1u]]));
+        }
     }
     *out = (ObstacleProfile){.closest_angle_deg = 0,
         .closest_mm = distance_code(hypotf(front + OBSTACLE_SONAR_FORWARD_MM, OBSTACLE_SONAR_LEFT_MM)),
@@ -331,7 +353,8 @@ unsigned obstacle_profile_fine_angles(const ObstacleRay *coarse, unsigned count,
         for (unsigned i = 0u; i < count; ++i)
         {
             int angle = coarse[i].angle_deg * side;
-            if (angle > inside && angle < outside && ray_valid(&coarse[i]))
+            /* a ray with no echo also ends the box */
+            if (angle > inside && angle < outside)
             {
                 outside = angle;
             }

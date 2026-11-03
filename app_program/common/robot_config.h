@@ -31,7 +31,7 @@ typedef int ER;
 #define IO_PRIORITY 16 /* provisional existing Terrain priority; D13 */
 #define IO_PERIOD_MS 10u /* existing calibration cadence; D13 */
 
-/* --- S1 communications --------------------------------------------- */
+/* --- comms --------------------------------------------- */
 /* Diagnostic trace frames 9/10/11 are not required for ordinary telemetry.
  * TRACE=0 removes their high-rate production and draining for A/B line
  * tracking trials; TRACE=1 preserves the existing diagnostic behavior.
@@ -48,7 +48,7 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 #define COMMS_REQUESTS_PER_RELEASE 2u /* bounded by incoming bridge depth */
 #define COMMS_EVENTS_PER_RELEASE	2u
 
-/* --- S2 motion ------------------------------------------------------ */
+/* --- motion ------------------------------------------------------ */
 #define MOTION_MAX_DUTY		.80f	/* PROVISIONAL (D07): retained duty cap; verify motor/driver rating */
 #define MOTION_TARGET_MAX_MM 2000.0f /* D07: bounded by longest Mission leg; hardware validation pending */
 #define MOTION_EXPIRY_MS	60u	/* PROVISIONAL (D07): sample age limit */
@@ -95,7 +95,9 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 #define MOTION_KI		0.0010f	/* PROVISIONAL (D07) */
 #define MOTION_KD		0.0000f	/* PROVISIONAL (D07) */
 #define MOTION_DIST_TOL_MM	3.0f	/* PROVISIONAL (D07) */
-#define MOTION_ANGLE_TOL_DEG	2.0f	/* PROVISIONAL (D07) */
+/* PROVISIONAL (D07): a pivot brakes at the edge of this band, so it is always
+   short by about this much (2 degrees measured 88 of 90) */
+#define MOTION_ANGLE_TOL_DEG 1.0f
 #define MOTION_APPROACH_GAIN	4.0f	/* 1/s: speed = gain * remaining distance */
 #define MOTION_STATIONARY_CPS	5.0f	/* PROVISIONAL (D08): below this a wheel is stationary */
 #define MOTION_STALL_MS		400u	/* PROVISIONAL (D07) */
@@ -118,7 +120,7 @@ _Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
     "RP2040 watchdog timeout must fit the 24-bit load");
 
 
-/* --- S3 line ------------------------------------------------------- */
+/* --- line ------------------------------------------------------- */
 #define IR_SAMPLE_MS		10u	/* INT-115: 10 ms reads were the first change that helped at 100 mm/s */
 #define IR_MAX_GAP_MS		60u
 #define IR_LEFT_PIN		26u
@@ -148,7 +150,7 @@ _Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
 /* White reported as black with LOW polarity; use HIGH for black. */
 #define IR_BLACK_LEVEL 1u
 
-/* --- Mission (S3). UNMEASURED PLACEHOLDERS until #59/#61 (D01, D02, D07) ----- */
+/* --- Mission. UNMEASURED PLACEHOLDERS until #59/#61 (D01, D02, D07) ----- */
 /* Physical envelope/coverage release is pending D02/D03/D05/D07. The
    synthetic host fixture may explicitly enable the policy to exercise it. */
 #ifndef MISSION_BYPASS_RELEASED
@@ -157,8 +159,9 @@ _Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
 /* Bypass (D02, D12; curved sections out of scope until D12 is answered). */
 #define MISSION_OBSTACLE_STOP_MM	150u	/* user-confirmed trigger distance, D16 */
 #define MISSION_STATIONARY_MS		150u	/* encoders unchanged this long before a scan */
-#define MISSION_BYPASS_OFFSET_MM	250.0f	/* PROVISIONAL (D02): sideways offset to the parallel leg */
-#define MISSION_BYPASS_MIN_CLEAR_MM	300u	/* PROVISIONAL (D02): side clearance needed to try */
+/* User-chosen 2026-11-03: 160 mm measured body + 30 mm each side; unaccepted
+   on the car */
+#define MISSION_BYPASS_MIN_CLEAR_MM 220u
 #define MISSION_BYPASS_TIMEOUT_MS	90000u	/* whole bypass must finish by then */
 #define BYPASS_TURN_SPEED_MMPS 36u /* PROVISIONAL D07: recovery pivot speed; 7 mm/s overran the action timeout */
 
@@ -206,7 +209,7 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define BARCODE_DIAGNOSTICS 0
 #endif
 
-/* --- S3 barcode ---------------------------------------------------- */
+/* --- barcode ---------------------------------------------------- */
 #define BARCODE_GPIO		16u
 /* Widths are encoder counts of sensor travel. UNMEASURED PLACEHOLDERS until
    #59 measures print scale and polarity (D01, D04). */
@@ -218,7 +221,7 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define BARCODE_EDGE_CAPACITY	64u	/* power of two: indices wrap unsigned */
 #define BARCODE_SERVICE_BUDGET	16u
 
-/* --- S4 terrain ---------------------------------------------------- */
+/* --- terrain ---------------------------------------------------- */
 #define TERRAIN_CALIBRATION_PERIOD_MS 10u
 #define TERRAIN_CALIBRATION_TIMEOUT_MS 5000u /* software budget: 100 samples at
                                               50 Hz plus scheduling margin */
@@ -238,7 +241,7 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define HUMP_FLAT_SAMPLES	10u	/* PROVISIONAL (D06): releases below the exit level that end an encounter */
 #define HUMP_CALIB_FACTOR	0.8f	/* PROVISIONAL (D06): one 10 mm hump read about 12.5 uncorrected, INT-157 and INT-158 */
 
-/* --- S5 obstacle --------------------------------------------------- */
+/* --- obstacle --------------------------------------------------- */
 #define SONAR_REPEAT_MS		60u	/* PROVISIONAL (D05): trigger-to-trigger */
 #define SONAR_TIMEOUT_US	30000u	/* no echo after this long */
 #define SONAR_MIN_PULSE_US	150u	/* shorter than this is not a real echo */
@@ -248,40 +251,71 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define SERVO_PIN		12u
 #define SERVO_CENTRE_US		1500u	/* PROVISIONAL (D05): faces forward */
 #define SERVO_US_PER_DEG	10u	/* PROVISIONAL (D05): endpoints and scale */
-#define SERVO_MAX_DEG		50	/* user: the servo can do +/-50 degrees; calibrate D05 */
+/* user: the servo can do +/-60 degrees (2026-11-03); calibrate D05 */
+#define SERVO_MAX_DEG 60
+/* User-chosen side look while passing (2026-11-03), beyond the scan sweep;
+   calibrate D05 */
+#define SERVO_LOOK_DEG 70
 #define SERVO_STEP_MS		10u	/* PROVISIONAL (D05): 1 degree per step, a bypass look must fit BYPASS_SENSE_TIMEOUT_MS */
 #define SERVO_SETTLE_MS		100u	/* PROVISIONAL (D05) */
-#define OBSTACLE_COARSE_STEP_DEG	10	/* settled readings every 10 degrees, -50..50 */
+/* settled readings every 10 degrees, -60..60 */
+#define OBSTACLE_COARSE_STEP_DEG 10
 #define OBSTACLE_FINE_STEP_DEG	5	/* refine edges within the servo limits */
-#define OBSTACLE_SONAR_FORWARD_MM	100.0f	/* PROPOSAL: front mount relative to body centre, measure D05 */
+/* User-measured ahead of the axle (2026-11-03); D05 */
+#define OBSTACLE_SONAR_FORWARD_MM 105.0f
 #define OBSTACLE_SONAR_LEFT_MM	0.0f	/* PROVISIONAL (D05) */
 /* Proposed D05 settings for software verification, not calibrated limits.
    Physical release remains inhibited. */
 #define OBSTACLE_SCAN_GROUP_SAMPLES 3u
 #define OBSTACLE_SCAN_MIN_VALID 2u
 #define OBSTACLE_PROFILE_DEPTH_ENTER_MM 30u
-#define OBSTACLE_PROFILE_DEPTH_EXIT_MM 60u
+#define OBSTACLE_PROFILE_DEPTH_EXIT_MM 40u
 #define OBSTACLE_PROFILE_ADJACENT_RAYS 2u
 #define OBSTACLE_PROFILE_RANGE_ERROR_MM 10u /* proposed model input, not sensor accuracy */
 #define BYPASS_SPEED_MMPS 50u /* PROVISIONAL D07: 9 mm/s overran MISSION_BYPASS_TIMEOUT_MS */
-#define BYPASS_CHUNK_MM 50u
 #define BYPASS_TRAVEL_MM 4000u
-#define BYPASS_SENSE_TIMEOUT_MS 2000u
-#define BYPASS_SENSE_ATTEMPTS 2u
-#define BYPASS_BODY_WIDTH_MM 180u
-#define BYPASS_BODY_LENGTH_MM 200u
+/* PROVISIONAL D05: slewing 70 degrees is estimated at 1.75 s from scan
+   timing */
+#define BYPASS_SENSE_TIMEOUT_MS 4000u
+/* Outline from the axle centre, user-measured 2026-11-03, assuming the sonar
+   is on the centreline. The barcode sensor arm is the front-left corner.
+   D03. */
+#define BYPASS_BODY_NOSE_MM 155u /* forward, front face */
+#define BYPASS_BODY_ARM_FORWARD_MM 183u /* forward, barcode arm corner */
+#define BYPASS_BODY_NOSE_RIGHT_MM 39u /* right, front-right corner */
+#define BYPASS_BODY_LEFT_MM 85u /* left, barcode arm */
+#define BYPASS_BODY_RIGHT_MM 75u
+#define BYPASS_BODY_REAR_MM 95u
 #define BYPASS_CLEARANCE_MM 30u
-#define BYPASS_MAX_OFFSET_MM 600u
-#define BYPASS_FRONT_RESERVE_MM 50u
+/* PROVISIONAL D07: beyond a pivot's reach, for range jumps of about 10 mm
+   (S5-U11) */
+#define BYPASS_BACKUP_MARGIN_MM 20u
+/* PROVISIONAL D07: reversing is blind; total for one obstacle, covers the stop
+   distance down to contact */
+#define BYPASS_BACKUP_MAX_MM 150u
+/* PROVISIONAL D07: reverse this far and rescan when a scan shows no room to
+   pass */
+#define BYPASS_NO_ROOM_STEP_MM 50u
+#define BYPASS_MAX_OFFSET_MM 550u
+/* one drive, within MOTION_ACTION_TIMEOUT_MS at BYPASS_SPEED_MMPS */
+#define BYPASS_LEG_MAX_MM 550u
+/* User-chosen: car side to the measured box edge while passing */
+#define BYPASS_SAFE_GAP_MM 10u
+/* PROVISIONAL D05: travel with the side ray off the box before it counts as
+   clear */
+#define BYPASS_EDGE_MM 30u
 #define BYPASS_FRONT_MAX_AGE_MS 400u
-#define BYPASS_PASS_MAX_MM 1500u
-#define BYPASS_BASELINE_SEARCH_MM 250u
-#define BYPASS_SIDE_PRESENT_MM 500u
 #define BYPASS_EDGE_SAMPLES 2u
-#define BYPASS_EDGE_ENTER_MM 150u
-#define BYPASS_EDGE_EXIT_MM 100u
+/* side readings in a row inside the car before stopping; one bad ping must
+   not */
+#define BYPASS_CLOSE_SAMPLES 3u
 #define BYPASS_RETURN_HEADING_DEG 5u
 #define MISSION_SCAN_RETRIES 1u
+/* forward readings in a row, after a sweep, that mean the obstacle has gone */
+#define MISSION_SCAN_CLEAR_SAMPLES 3u
+/* beyond the stop distance plus any reverse, so a range jump is not a
+   removal */
+#define MISSION_SCAN_CLEAR_MARGIN_MM 30u
 #define OBSTACLE_EXPECTED_MAX_WIDTH_MM 200u /* supplied obstacle width upper bound */
 #define OBSTACLE_SCAN_DEADLINE_MS	20000u	/* includes slow slew and per-ray settling */
 #define ECHO_PIN		3	/* PROVISIONAL (D05): <= 3.3 V before connecting */
@@ -352,9 +386,17 @@ _Static_assert(COMMS_TELEMETRY_PERIOD_MS % COMMS_REPORT_PERIOD_MS == 0u && COMMS
 	"telemetry period must be a whole number of Reporting releases");
 _Static_assert(MISSION_CONFIRM_SAMPLES > 0u && MISSION_CONFIRM_SAMPLES <= 7u,
     "confirmation counters use three bits");
-_Static_assert(BYPASS_TRAVEL_MM <= 4095u && BYPASS_SENSE_ATTEMPTS <= 3u &&
-    BYPASS_EDGE_SAMPLES > 0u && BYPASS_EDGE_SAMPLES <= 7u,
+_Static_assert(BYPASS_BACKUP_MAX_MM <= 255u,
+    "Mission stores the reverse in 8 bits");
+_Static_assert(BYPASS_TRAVEL_MM <= 4095u && BYPASS_EDGE_SAMPLES > 0u &&
+    BYPASS_EDGE_SAMPLES <= 7u,
     "bounded bypass storage must fit its fields");
+_Static_assert(BYPASS_LEG_MAX_MM * 1000u / BYPASS_SPEED_MMPS <
+    MOTION_ACTION_TIMEOUT_MS && BYPASS_MAX_OFFSET_MM <= BYPASS_LEG_MAX_MM,
+    "a bypass leg must finish inside one Motion action");
+_Static_assert(SERVO_LOOK_DEG >= SERVO_MAX_DEG &&
+    SERVO_LOOK_DEG * (int)SERVO_US_PER_DEG < (int)SERVO_CENTRE_US,
+    "side look out of servo range");
 _Static_assert(RECOVERY_SPEED_MMPS > 0u &&
     RECOVERY_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS &&
     RECOVERY_TARGET_DEG > 0 && RECOVERY_TARGET_DEG <= 175 &&

@@ -1,4 +1,4 @@
-/* S1 minimum-bit sizeof probe (issue #112). Compile-only with:
+/* Comms minimum-bit sizeof probe (issue #112). Compile-only with:
    testing/line_barcode/sizeof_probe.sh testing/comms/sizeof_probe.c
    Use the target compiler; a host sizeof check alone does not prove RP2040 RAM use. */
 #include "../../app_program/comms/comms.h"

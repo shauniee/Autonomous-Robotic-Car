@@ -190,7 +190,7 @@ bool motion_command_fresh(const MotionCommand *cmd, uint32_t now_ms);
 void motion_control_step(MotionController *c, const MotionCommand *cmd,
                          const MotionInput *in, MotionOutput *out);
 
-/* Kernel-free packed Motion progress/stop snapshot, guarded by S2 mutex. */
+/* Kernel-free packed Motion progress/stop snapshot, guarded by Motion mutex. */
 
 typedef struct
 {

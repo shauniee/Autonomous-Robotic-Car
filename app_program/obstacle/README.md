@@ -1,4 +1,4 @@
-# Obstacle (S5)
+# Obstacle
 
 ## Contents
 
@@ -39,16 +39,16 @@ Suggested, not mandatory (record any omission and why): servo settling, repeated
 - Current APIs: `obstacle_range_samples`, `obstacle_range_try_copy`, `obstacle_scan_request`, `obstacle_scan_cancel`, `obstacle_scan_word`, `obstacle_side_watch`, `obstacle_profile_snapshot`, `obstacle_profile_try_copy`.
 - Phases advance by timestamps and short capture ISRs, never a busy-wait. Commanded servo angle is not a measured angle.
 - Front and side evidence have separate validity and times; side scans never refresh forward coverage.
-- No echo is unknown and report-only: neither infinite clearance nor a universal stop. A manoeuvre without its required evidence does not proceed.
+- No echo is unknown and report-only: neither infinite clearance nor a universal stop. A manoeuvre starts only from a supported profile.
 - Sonar age uses full 32-bit acquisition times; the 16-bit packed time is display-only.
 
 Widths: [data table](../../docs/project-specs.md#5-data-representation-table-week-13). Stop and start policy: [fault bitmask](../../docs/architecture.md#fault-bitmask).
 
 ## Scan and bypass
 
-- **Scan:** stop and confirm stationary, then visit every 10 degrees from -50 to +50, plus one 5 degree ray at each edge. Servo commands slew one degree per `SERVO_STEP_MS`; each position settles, takes a median sample group, and publishes it. Only 0 degrees refreshes forward coverage. The deadline is 20 s.
+- **Scan:** stop and confirm stationary, then visit every 10 degrees from -60 to +60, plus one 5 degree ray at each edge. Servo commands slew one degree per `SERVO_STEP_MS`; each position settles, takes a median sample group, and publishes it. Only 0 degrees refreshes forward coverage. A ray with no echo gets one more group before it counts as no echo. A ray belongs to the box if it lands within 40 mm behind the front face. No echo past the box marks its edge, but only a real echo counts as clearance; a lost ray with the box on its far side stays part of the box. The deadline is 20 s. When a sweep ends, with or without a profile, the servo returns forward and Mission reads ahead before using the result: three clear readings in a row (nothing within 150 mm, or no echo) mean the obstacle was removed, so the car carries on following the line; one blocked reading continues as below. A sweep with no profile retries once, then stops. A scan that shows the car can pass is swept once more and the narrower width kept, because the beam catches the box corner on some sweeps; telemetry reports that width.
 - **Estimate:** identify obstacle regions across consecutive angles with hysteresis, then estimate span and closest point. Clearance is the sideways reach of the free rays (`range * sin(angle)`, smallest wins) minus the obstacle's planned edge. Report the estimate, never the maximum expected width as a measurement. Unknown edge or clearance is not a supported gap.
-- **Bypass:** Mission sequences departure, passing with the servo 50 degrees toward the obstacle, rear-edge confirmation, rear clearance and return. The first black sensor on the return ends it, then Mission advances and pivots as at a junction. Depth comes from the encoder position at the first rear-edge reading, so it can read long by up to a 50 mm step. One lost echo never proves a rear edge. Both sides blocked, failed profile, poor coverage, new hazard, no line on the return or timeout brake and stop.
+- **Bypass:** Mission pivots by the least angle that keeps the facing side 10 mm off the measured box corner on a straight leg, solved from the scan, and drives until a straight run alongside the box would hold that gap. It turns parallel, looks 70 degrees toward the box and drives on without stopping. Once the ray is off the box for 30 mm of travel, it works out the rear position, drives until the facing side will clear it by 10 mm, pivots 90 degrees toward the line and drives until a sensor sees it, then advances and pivots as at a junction. Each leg is one continuous drive. The rear comes from the side range the ray last measured, or the scan's edge if it never saw that side; a too-wide scan can then place it about 15 mm short. If the car is too close to pivot, Mission reverses far enough to pivot and scans again. If the scan shows no room on either side, it reverses 50 mm and scans again. Reversing is blind along the approach and totals at most 150 mm for one obstacle, then it stops. No echo on a bounded leg is not a hazard; only a close echo or a silent sensor stops it. There is no forward check while looking sideways. Failed profile, no room or still too close after the full reverse, new hazard, no line on the return or timeout brake and stop.
 - **Release:** `MISSION_BYPASS_RELEASED` is 0 in source, and the `./flash.sh` full-course image sets it to 1. Bypass geometry and physical performance are still unaccepted, so supervise those runs.
 
 ## Physical checklist

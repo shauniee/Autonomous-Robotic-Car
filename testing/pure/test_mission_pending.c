@@ -34,6 +34,7 @@ int main(void)
     assert(out.scan_request);
     in.scan_id = out.scan_id;
     in.scan_state = OBSTACLE_SCAN_DONE;
+    in.front_sequence++; /* still blocked with the servo back forward */
     in.profile_valid = true;
     in.left_clearance_mm = 1000u;
     in.right_clearance_mm = 900u;

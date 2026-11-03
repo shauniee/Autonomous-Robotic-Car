@@ -1,6 +1,0 @@
-app_program/mission/bypass_control.c:282:78: error: comparison of integers of different signs: 'int' and 'unsigned int' [-Werror,-Wsign-compare]
-  282 |             if (abs(control->heading_cdeg - expected_heading(control) * 100) >
-      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^
-  283 |                 BYPASS_RETURN_HEADING_DEG * 100)
-      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.

@@ -21,7 +21,8 @@ ER line_barcode_init(void)
     mutex.mtxatr = TA_INHERIT; // set scheduling to priority inheritance
     ID id = tk_cre_mtx(&mutex); // create mutex
 #if APP_TEST
-    tm_printf((UB *)"[TEST] S3 snapshot mutex creation returned=%d\n", id);
+    tm_printf((UB *)"[TEST] line_barcode snapshot mutex creation returned=%d\n",
+        id);
 #endif
     if (id <= 0) // check if mutex created
     {
@@ -30,7 +31,8 @@ ER line_barcode_init(void)
     latest = (LineIrSnapshot){0};
     atomic_store_explicit(&snapshot_mutex, id, memory_order_release); // ensure setup first before informing mutex is ready
 #if APP_TEST
-    tm_printf((UB *)"[TEST] S3 snapshot mutex published=%d\n", atomic_load_explicit(&snapshot_mutex, memory_order_acquire));
+    tm_printf((UB *)"[TEST] line_barcode snapshot mutex published=%d\n",
+        atomic_load_explicit(&snapshot_mutex, memory_order_acquire));
 #endif
     return E_OK;
 }

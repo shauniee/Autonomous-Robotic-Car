@@ -1,3 +1,0 @@
-robot_time: PASS
-Assertion failed: (follow_cps > 870.0f && follow_cps < 880.0f), function main, file test_encoder_math.c, line 21.
-testing/pure/run.sh: line 54: 76002 Abort trap: 6           "$build_dir/test_encoder_math"

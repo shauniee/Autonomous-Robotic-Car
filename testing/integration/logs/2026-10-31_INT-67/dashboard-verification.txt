@@ -1,3 +1,0 @@
-Command: docker compose exec -T dashboard python -c import mqtt_client; print("Live counts/mm:", mqtt_client.COUNTS_PER_MM); mqtt_client.self_test()
-Live counts/mm: 11.649
-mqtt_client self-test: PASS

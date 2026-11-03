@@ -1,3 +1,0 @@
-mqtt_client self-test: PASS
-HTTP and mapping-origin checks: PASS
-MQTT round trip and dashboard stream: PASS (synthetic, no robot)

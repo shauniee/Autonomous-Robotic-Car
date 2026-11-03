@@ -1,7 +1,7 @@
 #!/bin/sh
 # Cortex-M0+ sizeof probe. Run from anywhere:
 #   testing/line_barcode/sizeof_probe.sh [optional/path/to/sizeof_probe.c]
-# Default remains the S3 probe for existing callers; other subsystems may
+# Default remains the line_barcode probe for existing callers; other subsystems may
 # supply their own source without copying the build flags.
 set -eu
 

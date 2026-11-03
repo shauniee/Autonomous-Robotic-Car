@@ -19,11 +19,11 @@
 - [Motion command contract](#motion-command-contract)
 - [Encoder contract](#encoder-contract)
 - [Subsystem summaries](#subsystem-summaries)
-  - [S1 Communications (comms)](#s1-communications-comms)
-  - [S2 Motion (motion)](#s2-motion-motion)
-  - [S3 Line, barcode and Mission (line_barcode)](#s3-line-barcode-and-mission-line_barcode)
-  - [S4 Terrain (terrain)](#s4-terrain-terrain)
-  - [S5 Obstacle and bypass (obstacle, with Mission)](#s5-obstacle-and-bypass-obstacle-with-mission)
+  - [Comms](#comms)
+  - [Motion](#motion)
+  - [line_barcode and Mission](#line_barcode-and-mission)
+  - [Terrain](#terrain)
+  - [Obstacle and bypass (with Mission)](#obstacle-and-bypass-with-mission)
 - [Time](#time)
 - [Post-Tribunal decisions](#post-tribunal-decisions)
 - [Minimum-bit data representation](#minimum-bit-data-representation)
@@ -88,7 +88,7 @@ Keep encoder/barcode/Echo capture under the existing core-1 GPIO dispatcher.
 I/O consolidation moves Terrain/Reporting application work, not WiFi/USB services.
 Never hold shared locks across I2C, servo settling, Echo wait, formatting or network
 work. Use bounded peripheral steps, acquisition timestamps and coherent copies.
-Measure network-load effects on IMU age and interrupt/control latency. Audit S1
+Measure network-load effects on IMU age and interrupt/control latency. Audit Comms
 multi-producer events and mapping installation across cores: DI/EI protects only
 one core. The implemented event log uses a bounded cross-core mutex; its contention and
 load margins still require on-target measurements.
@@ -245,7 +245,7 @@ is firmware execution or physical acceptance.
 
 - Motion alone writes motor PWM and owns the persistent motor stop latch.
 - Mission alone chooses movement, accepts mappings and coordinates local reset.
-- S3/S4/S5 supply evidence and helpers; they never independently drive motors.
+- line_barcode/Terrain/Obstacle supply evidence and helpers; they never independently drive motors.
 - Small safety functions are called by Mission/Motion, not a separate task.
 - Network work reports connectivity and transports configuration/diagnostics;
   it never starts, stops or writes motor outputs. Loss during a run is report-only.
@@ -264,7 +264,7 @@ One writer per storage unit; only that writer performs read-modify-write.
    acquisition time. Existing SPSC transport rings are retained provisionally;
    the professor's buffer diagram does not establish a required kernel primitive.
 
-Same-core DI/EI is not cross-core synchronization. S1 events gain producers on
+Same-core DI/EI is not cross-core synchronization. Comms events gain producers on
 both cores, so select bounded mutex/spinlock copies or per-producer rings before
 moving tasks. Mapping RX on core 0 must hand off to Mission on core 1 and wait
 asynchronously for installation outcome before ACK. Do not call Mission's mutable
@@ -283,12 +283,12 @@ This table owns target policy. `robot_data.c` now leaves IMU/calibration failure
 | GP21 / Motion local input | Block | Latch brake | Eligible GP21 release after serviced brake; GP20 starts separately |
 | Motion bit 0 stall / wheel controller (detection disabled in current trial; see [trial settings](project-specs.md#pending-decisions)) | Block while active | Latch stop | Cause cleared plus local reset; threshold uncalibrated D07 |
 | Motion bit 1 encoder / sustained invalid edges (`ENC_FAULT_INVALID_SCORE`, INT-138) or failed capture | Block | Latch stop | Validated encoder recovery; existing 64-count rule is provisional D03 |
-| Line bit 0 acquisition invalid / S3 | Block | Stop if required acquisition invalid/stale | Valid digital readings and local reset |
+| Line bit 0 acquisition invalid / line_barcode | Block | Stop if required acquisition invalid/stale | Valid digital readings and local reset |
 | Healthy line lost / Mission | No start on unusable line | Bounded REACQUIRE, then stop if exhausted | Line confirmed or operator reposition/reset |
 | Line bits 1/2 barcode capture/event overflow | Report | Report; never guess/replay an action | Existing encounter/run clearing behavior audited during integration |
 | Terrain bits 0/1 IMU acquisition/calibration failure | Flag, allow after bounded startup attempt | Flag; ordinary tracking continues | Successful reacquisition/calibration; no invented height |
 | Terrain bit 2 detected impact | Block while active | Latch stop | Cause cleared plus deliberate local reset |
-| Obstacle bit 0 no echo / S5 | Flag, not universal block | Flag; ordinary tracking continues; no inferred clear space | Fresh valid readings clear/report status |
+| Obstacle bit 0 no echo / Obstacle | Flag, not universal block | Flag; ordinary tracking continues; no inferred clear space | Fresh valid readings clear/report status |
 | Required scan/bypass evidence unavailable / Mission | Not ordinary readiness input | Brake/stop unsupported manoeuvre | Local reset after safe reposition/cause clearance |
 | Mission bit 0 recovery exhausted | Report historical reason | Already stopped | Clear on accepted new start |
 | Network bits 0/1 WiFi/broker unavailable | Mission blocks start | Report-only; healthy local run continues | Successful reconnect; no remote restart |
@@ -394,27 +394,27 @@ follow-up if evidence shows the existing capture is inadequate.
 
 ## Subsystem summaries
 
-### S1 Communications (comms)
+### Comms
 
 [README](../app_program/comms/README.md): bounded core-0 reporting functions; opaque
 TX/RX bridge to kernel MQTT; mapping ACK only after Mission installation.
 
-### S2 Motion (motion)
+### Motion
 
 [README](../app_program/motion/README.md): sole motor writer; wheel control, encoder
 actions and independent stop/expiry checks.
 
-### S3 Line, barcode and Mission (line_barcode)
+### line_barcode and Mission
 
-[README](../app_program/line_barcode/README.md): S3 retains line/barcode sensing/decoding;
-Mission coordination moves out. No independent S3 control thread in the target.
+[README](../app_program/line_barcode/README.md): line_barcode retains line/barcode sensing/decoding;
+Mission coordination moves out. No independent line_barcode control thread in the target.
 
-### S4 Terrain (terrain)
+### Terrain
 
 [README](../app_program/terrain/README.md): core-0 bounded IMU/terrain functions; measured
 encoder travel, filtered pitch, valid completed hump results and impact evidence.
 
-### S5 Obstacle and bypass (obstacle, with Mission)
+### Obstacle and bypass (with Mission)
 
 [README](../app_program/obstacle/README.md): bounded sonar/servo acquisition and uncertain
 width/clearance estimates; Mission owns supported bypass/original-line recovery.
@@ -445,7 +445,7 @@ owns every width.
 - **Bits:** `ceil(log2(valid values + invalid codes))`, justified by documented bounds, units, signedness, scale, rounding and invalid codes.
 - **Storage:** in-RAM packed state uses bit-fields behind accessors; the wire uses explicit masks and shifts (binary schema v2, replacing JSON). Combine fields only when they share one writer, never merely because widths fit.
 - **Faults:** one bit per condition in a shared [bitmask](#fault-bitmask), so simultaneous faults stay independent.
-- **Scaled values:** a 0..1 fraction is `uint8_t` 0..127 (`IR_SCALE_ONE`) and a -1..+1 value `int8_t` -127..+127. Float tunables fold to integers at compile time; base-10 display happens only on the laptop.
+- **Scaled values:** a 0..1 fraction is `uint8_t` 0..127 (`IR_SCALE_ONE`) and a -1..+1 value `int8_t` -127..+127. Float tunables fold to integers at compile time; base-10 display happens only on the laptop. Round to nearest; readers divide by `IR_SCALE_ONE` only at a float boundary. A finer step needs a test showing 1/127 (about 0.8 percent) is not enough.
 - **Exempt:** loop counters and short-lived temporaries.
 
 **Evidence, final implementation only:** the data table, RAM usage, message sizes and
@@ -494,7 +494,7 @@ contain left target in bits 0..14 and right target in bits 15..29 (signed
 15-bit counts/s), TEST inhibition in bit 30 and motor-output service success
 in bit 31. Bytes 9..10 and 11..12 are signed 16-bit measured left/right counts/s.
 Bytes 13 and 14 are signed left/right duty percentages. Invalid encodings and
-rounding are owned by the [data table](project-specs.md#s2-motion-encoder-width-provisional-until-d03-one-constant-enc_count_bits-in-robot_configh-branches-29-31).
+rounding are owned by the [data table](project-specs.md#motion-encoder-width-provisional-until-d03-one-constant-enc_count_bits-in-robot_configh-branches-29-31).
 Output failure marks both duty fields invalid. TEST reports zero duty with
 inhibition set. Targets represent computed wheel demands; serviced braking may
 override them. This is software output evidence, not electrical measurement.
@@ -508,20 +508,20 @@ Older laptop decoders reject this new type; use the matching decoder for traces.
 
 ### Barcode trace (18 bytes)
 
-Type 10 is outbound diagnostics only, added for INT-146 and filtered since INT-148; S1 owner agreement pending. Byte 0 is `2A`
+Type 10 is outbound diagnostics only, added for INT-146 and filtered since INT-148; Comms owner agreement pending. Byte 0 is `2A`
 hex, byte 1 a wrapping sequence, bytes 2..17 eight little-endian runs: bit 15 black level, bits
 14..0 width in encoder counts after chatter is merged, zero for an unused slot. A full ring drops frames.
 
 ### Terrain trace (8 bytes)
 
-Type 11 is outbound diagnostics only, added for INT-154; S1 owner agreement pending. Byte 0 is `2B` hex, bytes
+Type 11 is outbound diagnostics only, added for INT-154; Comms owner agreement pending. Byte 0 is `2B` hex, bytes
 1..2 time ms low 16, byte 3 signed pitch in quarter degrees, byte 4 bits 0..2 state, 6 encoder valid, 7 calibrated,
 byte 5 peak rise mm, byte 6 acceleration in 10 mg units, byte 7 signed roll in quarter degrees.
 
 ### Line trace (17 bytes)
 
 Type 9 is outbound diagnostics only, kept separate so the wheel trace is unchanged;
-S1 owner agreement pending. Byte 0 is `29` hex; bytes 1..4 are the
+Comms owner agreement pending. Byte 0 is `29` hex; bytes 1..4 are the
 IR acquisition time uint32 ms. Byte 5 flags: bit 0 left black, 1 right black,
 2 in broad black, 3 junction candidate open, 4 junction qualified, 5 curved entry,
 6 junction locked, 7 raw barcode GP16 level. Byte 6: bits 0..3 Mission state, 4..6 junction phase,
@@ -622,10 +622,10 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 | Telemetry | up to 768 bytes (`COMMS_TELEMETRY_PAYLOAD_MAX`) | 23 bytes |
 | Mapping | up to 512 bytes on `uat` | 5 bytes |
 
-Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Final message-size and RAM evidence: [SYS-11](../testing/system/TEST_LOG.md#3-final-memory-and-message-size-sys-11).
+Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Final message-size and RAM evidence: [SYS-11](../testing/system/TEST_LOG.md#results).
 
 Implementation limits: standalone recovery uses bounded stationary pivot sweeps;
-physical speed/geometry acceptance remains D07. S5 scans
+physical speed/geometry acceptance remains D07. Obstacle scans
 now have bounded median groups and qualified edge/model estimation. Their
 operating settings are provisional configured proposals, and physical bypass
 release remains inhibited. Supported forward/side coverage, rear-edge/original-line
@@ -633,7 +633,7 @@ validation and any resulting implementation corrections remain in the
 [remaining plan in #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#remaining-plan). These are not accepted floor
 features. Terrain publishes original acquisition/service times under a mutex;
 impact remains asserted until a fresh non-impact sample observes serviced braking.
-S1 events use a short cross-core mutex; events stay in the ring when the TX bridge
+Comms events use a short cross-core mutex; events stay in the ring when the TX bridge
 is full. Overflow overwrites oldest entries; lock misses drop the new event.
 Neither kind of drop is exposed in telemetry. Mapping uses a single
 outstanding word hand-off; only Mission installs/rejects before I/O ACKs.
