@@ -350,7 +350,7 @@ Historical source-pinned storage evidence below is retained unchanged; it is not
 
 Single-store check (#106, 2026-10-27): `arm-none-eabi-objdump -d` of `ir_tracking.o` (arm-none-eabi-gcc 15.3.1, offline normal profile) shows both writes of `IrTracker.raw` in `ir_tracking_sample` as one `str` to the aligned word; the snapshot copies the word whole. Removing the two `bool` flags freed bytes that alignment padding absorbs, so `IrTracker` (60 bytes) and `LineIrSnapshot` (40 bytes) keep their size.
 
-The final build (section-4 command) and the probe-to-object cross-check are recorded by #107 as S3-M01 in the [S3 test log](../testing/line_barcode/TEST_LOG.md#7-minimum-bit-final-memory-s3-m01--2026-10-27). On-target S3 loop timing (S3-M02) and the physical line-follow run need the robot and are tracked with the [mission-readiness checklist](../testing/mission-readiness.md).
+The final build (section-4 command) and the probe-to-object cross-check are recorded by #107 as S3-M01 in the [S3 test log](../testing/line_barcode/TEST_LOG.md#results). On-target S3 loop timing (S3-M02) and the physical line-follow run need the robot and are tracked with the [mission-readiness checklist](../testing/mission-readiness.md).
 
 ### S4 Terrain (scale provisional, 1 mm per count `HUMP_MM_PER_COUNT`, until D06; branches #45, #46)
 
@@ -498,7 +498,7 @@ not a physical tuning or accuracy claim; one Mission writer):
 Steering keeps no filter or integral history: it stores the Q7 target above and
 wheel counts where touches began. Float remains only in local geometry computation.
 Current working-tree target ABI, static RAM and inter-task copy sizes are
-recorded in [SYS-12](../testing/system/TEST_LOG.md#current-resource-audit-sys-12).
+recorded in [SYS-12](../testing/system/TEST_LOG.md#results).
 The accepted-commit minimum-bit/resource audit remains Stage 9 work.
 MQTT byte counts stay unchanged;
 the seven-state meaning replaces the old CALIBRATE/COMPLETE state labels, so
@@ -693,7 +693,7 @@ first baseline, stable telemetry was 65501 before the requested manual forward
 revolution and 2454 after. Signed 16-bit wrap-safe travel is +2489 counts.
 Both observations are close to 2500 counts/revolution (difference 0.96% of
 their mean); manual angle placement and repeatability remain unmeasured.
-See [INT-66](../testing/integration/TEST_LOG.md#operator-assisted-encoder-calibration--int-66).
+See [INT-66](../testing/integration/TEST_LOG.md#results).
 At that observation stage, no encoder/motor setting had changed. A manual 500 mm straight rolling
 measurement is next to establish effective counts/mm without powered motion;
 awaiting the operator's positioned baseline.

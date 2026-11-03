@@ -149,4 +149,4 @@ Measurements and release prerequisites are listed in
    limits from actual clearance and barcode capture margins before release.
 
 No physical trial can be completed without the robot; current software evidence
-is [INT-95](integration/TEST_LOG.md#dout-smooth-navigation--int-95).
+is [INT-95](integration/TEST_LOG.md#results).

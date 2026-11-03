@@ -30,7 +30,7 @@ IDs never change or get reused, including retired template cases. Retired defini
 
    Windows PuTTY supports Session → Logging → All session output. Observe the [power policy](../README.md#getting-started) during physical trials.
 5. Append a result row: date, ID, exact committed revision, tester, PASS/FAIL, measurements and evidence. Record the flashed-image checksum. Commit records and evidence together. Existing precommit checks instead identify the tested working tree through their source manifests plus base HEAD; base HEAD alone is insufficient.
-6. Record a failure and its reason; after a fix, append a new result. Never edit/delete a historical result or overwrite its evidence filename. Rerun affected subsystem/integration cases before merging, and the applicable full set before a demonstration.
+6. Record a failure and its reason; after a fix, append a new result. Keep old rows and never overwrite a capture, photo or measurement. Do not save build or host output: the result row and commit are enough. Gzip captures over 1 MB. Write-ups and output from before 2026-11-03 are at git tag `test-logs-full-2026-11-03`. Rerun affected subsystem/integration cases before merging, and the applicable full set before a demonstration.
 
 ## Preserved software evidence
 
@@ -43,7 +43,7 @@ Actual wireless checks are SYS-09/10 through [wireless setup](../README.md#getti
 ## Planned integrated trials
 
 Target procedures follow [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) and [mission-readiness](mission-readiness.md).
-Historical case definitions/results in TEST_LOG files remain unchanged. Differences
+Historical case definitions and results in TEST_LOG files stay as recorded. Differences
 such as GP20 reset, JSON output or a dedicated Safety task describe their recorded
 source, not target acceptance. Append a new procedure revision/result, never reuse
 retired IDs. MR-34 remains retired; MR-40 covers endless operation. S3-M02 remains

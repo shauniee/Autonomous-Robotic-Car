@@ -1,4 +1,0 @@
-tracking -> recovery slowdown: left duty=-0.116496 right duty=0.128173
-Assertion failed: (out.duty[0] >= 0.0f && out.duty[1] >= 0.0f), function test_follow_slowdown_never_reverses, file test_motion_control.c, line 206.
-
-Exit code: -6

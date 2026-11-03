@@ -1,7 +1,0 @@
-robot_time: PASS
-encoder_math: PASS
-INT-82: measured rolling scale and tracking/recovery count-speed targets PASS
-stress: 5000000 reads checked, 0 torn
-robot_data: PASS
-Assertion failed: (fabsf(out.duty[w] - expected) < 0.00001f), function test_follow_steering, file test_motion_control.c, line 243.
-testing/pure/run.sh: line 56: 55069 Abort trap: 6           "$build_dir/test_motion_control"

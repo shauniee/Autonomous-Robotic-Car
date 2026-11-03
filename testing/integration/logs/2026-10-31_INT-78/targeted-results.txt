@@ -1,2 +1,0 @@
-COMMAND: cc -std=c11 -O2 -Wall -Wextra -Werror -pthread testing/pure/test_motion_control.c app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o /var/folders/lc/4_0fnqwn5h3g5rf7pddqdkxc0000gn/T/tmpmfbv1grq/motion
-Assertion failed: (expected < MOTION_MAX_DUTY), function test_follow_steering, file test_motion_control.c, line 239.

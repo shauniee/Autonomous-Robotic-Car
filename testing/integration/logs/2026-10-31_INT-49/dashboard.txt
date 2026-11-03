@@ -1,5 +1,0 @@
-Source commit: 545a6a381b589f033076bd04df825469e2f0b537
-dashboard: PASS (live/state gating, request action, early ACK race)
-sensor ledger: PASS (valid zero, missing values, units, barcode, frame context, stale/empty)
-one-screen dashboard: PASS (seven Mission markers, custom mapping, duplicate/offline gating, early mapping ACK)
-subsystem health: PASS (S1–S5 order, separate Mission faults, direction/speed, calibration evidence/fault/unknown)

@@ -21,10 +21,10 @@ the immutable manifests and logs below identify each tested software source.
 
 | Case | Source commit | Recorded evidence / result |
 | --- | --- | --- |
-| INT-12 | `fe39e3a5a9ef37a3a1205e7470e89e9e3a19dc30` | [Manifest](logs/2026-10-29_INT-12_stage1-manifest.json), [host](logs/2026-10-29_INT-12_stage1-host.txt); host and four builds PASS |
-| INT-13 | `b862817a40b7b75c7d2524621a1fffb5949a8f0f` | [Manifest](logs/2026-10-29_INT-13_stage2-manifest.json), [host](logs/2026-10-29_INT-13_stage2-host.txt); host and four builds PASS |
-| INT-14 | `ab54479a1b0044871cd6a6132c1747d6b3628299` | [Manifest](logs/2026-10-29_INT-14_stage3-manifest.json), [host](logs/2026-10-29_INT-14_stage3-host.txt); host, 100000 concurrent mapping exchanges and four builds PASS |
-| INT-15 / S2-U06 | `407cbfa362a91db81706b255664a9425be0c33f6` | [Manifest](logs/2026-10-29_INT-15_stage4-manifest.json), [host](logs/2026-10-29_INT-15_stage4-final-host.txt), [strict compile](logs/2026-10-29_INT-15_stage4-strict-app.txt), [allocation/image audit](logs/2026-10-29_INT-15_stage4-audit.json); host, 33 strict application compilations and four builds PASS |
+| INT-12 | `fe39e3a5a9ef37a3a1205e7470e89e9e3a19dc30` | [Manifest](logs/2026-10-29_INT-12_stage1-manifest.json), host; host and four builds PASS |
+| INT-13 | `b862817a40b7b75c7d2524621a1fffb5949a8f0f` | [Manifest](logs/2026-10-29_INT-13_stage2-manifest.json), host; host and four builds PASS |
+| INT-14 | `ab54479a1b0044871cd6a6132c1747d6b3628299` | [Manifest](logs/2026-10-29_INT-14_stage3-manifest.json), host; host, 100000 concurrent mapping exchanges and four builds PASS |
+| INT-15 / S2-U06 | `407cbfa362a91db81706b255664a9425be0c33f6` | [Manifest](logs/2026-10-29_INT-15_stage4-manifest.json), host, [strict compile](logs/2026-10-29_INT-15_stage4-strict-app.txt), [allocation/image audit](logs/2026-10-29_INT-15_stage4-audit.json); host, 33 strict application compilations and four builds PASS |
 
 The final source audit finds three task creation sites, five application mutexes,
 one stop flag and no foreign motor/network calls. Linked task symbols are
