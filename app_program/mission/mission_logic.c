@@ -54,12 +54,12 @@ static void enter(Mission *m, MissionState next, uint32_t now_ms)
     m->line_steer_sampled_ms = now_ms - IR_MAX_GAP_MS - 1u;
 }
 
-static float travel_mm(const MissionInputs *in, const uint32_t origin[2])
+static float travel_mm(const MissionInputs *in, const enc_count_t origin[2])
 {
     return enc_mean_travel(in->wheel_count, origin) / ENC_COUNTS_PER_MM;
 }
 
-static void mark(uint32_t origin[2], const MissionInputs *in)
+static void mark(enc_count_t origin[2], const MissionInputs *in)
 {
     origin[0] = in->wheel_count[0];
     origin[1] = in->wheel_count[1];
@@ -130,7 +130,8 @@ static void note_onsets(Mission *m, const MissionInputs *in)
    together; curve skew darkens the inner sensor long before the outer. */
 static float onset_skew_mm(const Mission *m)
 {
-    return fabsf(enc_mean_travel(m->onset[0], m->onset[1])) / ENC_COUNTS_PER_MM;
+    const uint32_t first[2] = {m->onset[0][0], m->onset[0][1]};
+    return fabsf(enc_mean_travel(first, m->onset[1])) / ENC_COUNTS_PER_MM;
 }
 
 static uint8_t next_action_id(Mission *m)

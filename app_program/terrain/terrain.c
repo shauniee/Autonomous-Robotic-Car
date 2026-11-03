@@ -105,8 +105,8 @@ void terrain_step(uint32_t now)
     static uint8_t initialized, hardware_ready;
     static uint32_t started_ms, next_sample_ms, acquired_ms;
     static uint8_t have_acquisition;
-    static uint32_t last_left, last_right;
-    static uint32_t travel_origin[2];
+    static enc_count_t last_left, last_right;
+    static enc_count_t travel_origin[2];
     static uint8_t previous_humps;
     if (!initialized)
     {

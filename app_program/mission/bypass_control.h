@@ -18,7 +18,7 @@ typedef enum
 } bypass_work_t;
 typedef struct
 {
-    uint32_t origin[2], previous[2];
+    enc_count_t origin[2], previous[2];
     uint32_t started_ms, phase_ms, action_ms;
     uint32_t sensor_sequence, edge_counts;
     int32_t forward_q8 : 21;

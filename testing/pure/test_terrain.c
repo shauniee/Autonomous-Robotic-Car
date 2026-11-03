@@ -208,7 +208,7 @@ static void test_word_boundaries(void)
 
 static void test_evidence_and_invalid_window(void)
 {
-    uint32_t origin[2] = {1000u, 33767u};
+    enc_count_t origin[2] = {1000u, 33767u};
     const uint32_t pending[2] = {1010u, 33777u};
     const uint32_t fresh[2] = {1020u, 33788u};
     assert(terrain_travel_take(origin, pending, false, false) == 0.0f);

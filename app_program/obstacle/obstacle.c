@@ -160,7 +160,7 @@ typedef struct
     ObstacleRay rays[OBSTACLE_SCAN_CAPACITY];
     int16_t angles[OBSTACLE_SCAN_CAPACITY];
     uint32_t scan_started_ms, sent_us, settle_since_ms, next_ping_ms;
-    uint32_t left_origin, right_origin;
+    enc_count_t left_origin, right_origin;
     uint32_t misses;
     uint16_t group_retried : 1;
     uint16_t keep_narrower : 1;
@@ -429,8 +429,8 @@ void obstacle_step(uint32_t now)
         acquisition.id = atomic_load_explicit(&requested_scan_id, memory_order_relaxed);
         acquisition.keep_narrower = atomic_load_explicit(
             &requested_keep_narrower, memory_order_relaxed);
-        acquisition.left_origin = drv_encoder_count(ENCODER_LEFT);
-        acquisition.right_origin = drv_encoder_count(ENCODER_RIGHT);
+        acquisition.left_origin = (enc_count_t)drv_encoder_count(ENCODER_LEFT);
+        acquisition.right_origin = (enc_count_t)drv_encoder_count(ENCODER_RIGHT);
         cancel_echo();
         acquisition.phase = OBSTACLE_ACQUIRE_IDLE;
         acquisition.scan_started_ms = now;
