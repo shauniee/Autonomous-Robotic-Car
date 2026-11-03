@@ -112,7 +112,7 @@ bool rd_mapping_lookup(uint32_t word, uint8_t letter, rd_map_action_t *action);
 
 /* --- Motion feedback word (writer: Motion) ------------------------------
    2-bit status plus action ID. Action ID width is PROVISIONAL until the
-   S2 rows of DATA_REPRESENTATION are signed off. */
+   Motion rows of DATA_REPRESENTATION are signed off. */
 
 typedef enum { RD_MOTION_IDLE, RD_MOTION_RUNNING, RD_MOTION_DONE, RD_MOTION_FAILED } rd_motion_status_t;
 
@@ -147,12 +147,12 @@ static inline uint32_t rd_motion_feedback_action(uint32_t word)
    degrades a measurement but is not a hazard). */
 
 typedef enum {
-    RD_OWNER_MOTION,	/* S2 Motion task */
-    RD_OWNER_LINE,	/* S3 task: IR and barcode capture */
-    RD_OWNER_TERRAIN,	/* S4 */
-    RD_OWNER_OBSTACLE,	/* S5 */
-    RD_OWNER_MISSION,	/* Mission task */
-    RD_OWNER_NETWORK,	/* kernel task, core 0 */
+    RD_OWNER_MOTION, /* Motion task */
+    RD_OWNER_LINE, /* line_barcode task: IR and barcode capture */
+    RD_OWNER_TERRAIN, /* Terrain */
+    RD_OWNER_OBSTACLE, /* Obstacle */
+    RD_OWNER_MISSION, /* Mission task */
+    RD_OWNER_NETWORK, /* kernel task, core 0 */
     RD_OWNER_COUNT
 } rd_owner_t;
 

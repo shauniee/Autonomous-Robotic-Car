@@ -77,16 +77,16 @@ void terrain_algo_calibration_restart(TerrainContext *ctx);
 float terrain_acceleration_mg(const Gy511RawAxes *raw);
 
 /*
- *	Terrain word (writer: Terrain, one aligned word, single store). Layout is
- *	PROVISIONAL until #28/#53 sign off the S4 rows; scale is D06.
- *	  bits  0-6   last hump height result (7 bits)
- *	  bits  7-13  maximum hump height result (7 bits)
- *	  bits 14-21  hump count (8 bits, saturating)
- *	  bits 22-24  terrain state (3 bits)
- *	  bit  25     height valid (the last encounter produced a valid height)
- *	  bit  26     calibrated
- *	A result code equal to rd_invalid_code(HUMP_RESULT_BITS) means no valid
- *	height; the reported height is code * HUMP_MM_PER_COUNT millimetres.
+ * Terrain word (writer: Terrain, one aligned word, single store). Layout is
+ * PROVISIONAL until #28/#53 sign off the Terrain rows; scale is D06.
+ *   bits  0-6   last hump height result (7 bits)
+ *   bits  7-13  maximum hump height result (7 bits)
+ *   bits 14-21  hump count (8 bits, saturating)
+ *   bits 22-24  terrain state (3 bits)
+ *   bit  25     height valid (the last encounter produced a valid height)
+ *   bit  26     calibrated
+ * A result code equal to rd_invalid_code(HUMP_RESULT_BITS) means no valid
+ * height; the reported height is code * HUMP_MM_PER_COUNT millimetres.
  */
 
 #define TERRAIN_STATE_BITS 3u

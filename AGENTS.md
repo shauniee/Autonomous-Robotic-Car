@@ -28,7 +28,7 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 | Bits used by each subsystem | [README](README.md#bits-per-subsystem) |
 | Tasks, authority, shared data, fault policy, MQTT frame layouts | [architecture](docs/architecture.md) |
 | Members, pins, wiring, task budget, interfaces, coding rules | [team](docs/team.md) |
-| One subsystem: S1 comms, S2 motion, S3 line/barcode, S4 terrain, S5 obstacle | `app_program/<name>/README.md` (`comms`, `motion`, `line_barcode`, `terrain`, `obstacle`) |
+| One subsystem: comms, motion, line_barcode, terrain, obstacle | `app_program/<name>/README.md` (`comms`, `motion`, `line_barcode`, `terrain`, `obstacle`) |
 | Test IDs, how to record results, host tests | [testing](testing/README.md) |
 | Is the robot ready for a full run? | [mission-readiness checklist](testing/mission-readiness.md) |
 | Line-tracking state, open issues and how to run a trial | [line_barcode README](app_program/line_barcode/README.md) |

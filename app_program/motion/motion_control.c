@@ -400,6 +400,19 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
                 }
             }
         }
+        /* An arrived, braked wheel may roll back a little and cannot
+           restart. */
+        if (!within && motion_cmd_mode(cmd) == MOTION_MODE_TURN &&
+            c->turn_arrived == 3u)
+        {
+            within = true;
+            for (int w = 0; w < 2; ++w)
+            {
+                within = within && fabsf(goal[w] -
+                    (float)enc_travel_signed(in->count[w], c->origin[w])) <=
+                    2.0f * tol_counts;
+            }
+        }
         if (within)
         {
             c->status = RD_MOTION_DONE;

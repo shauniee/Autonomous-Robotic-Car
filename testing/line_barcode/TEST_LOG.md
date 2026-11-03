@@ -1,4 +1,4 @@
-# S3 IR service test log
+# line_barcode test log
 
 ## Contents
 
@@ -23,8 +23,8 @@ Owner Nicholas / 2501552. Template S3-U01 is retired, not reused. Host methods m
 | S3-U11 | Calibration-only local input workflow | TEST=1 synthetic button/time fixtures; physical GP20/21 and buzzer run separately | Held-at-boot, bounce, 30 ms release/press, cancel dominance, white retry, replacement and wraparound; 1/2/3 result counts |
 | S3-U12 | Portable snapshot and nonblocking copy | TEST=1 pure fixtures plus actual private mutex boundary | Raw/reference/contrast/normalized coherence; missing/invalid/uncalibrated/capturing/stale flags; unchanged sequence/time on aging; null and locked-copy rejection |
 | S3-U13 | ADC destination validation | TEST=1 `drv_ir_read(NULL)` only | Reject null before hardware access; S3-U04 hardware protocol/WCET remains separate |
-| S3-M01 | Minimum-bit final memory (spec #100) | Compile-only `testing/line_barcode/sizeof_probe.sh` plus section-4 build command and `arm-none-eabi-size` on the final implementation; S3 `.bss` objects from `nm`/map | Probe totals equal linked S3 objects; final storage bits recorded in the [bit-usage data contract](../../docs/project-specs.md#s3-bit-usage-data-contract-proposed-spec-100-final-evidence-107); no execution claim |
-| S3-M02 | Minimum-bit final S3 loop timing (spec #100) | On-target run of the final implementation; method defined before the run (#107) | Worst-case S3 loop time below its configured period, with margin per [D13](../../docs/project-specs.md#pending-decisions); recorded with exact commit; no value assumed |
+| S3-M01 | Minimum-bit final memory (spec #100) | Compile-only `testing/line_barcode/sizeof_probe.sh` plus section-4 build command and `arm-none-eabi-size` on the final implementation; line_barcode `.bss` objects from `nm`/map | Probe totals equal linked line_barcode objects; final storage bits recorded in the [bit-usage data contract](../../docs/project-specs.md#line_barcode-bit-usage-data-contract-proposed-spec-100-final-evidence-107); no execution claim |
+| S3-M02 | Minimum-bit final line_barcode loop timing (spec #100) | On-target run of the final implementation; method defined before the run (#107) | Worst-case line_barcode loop time below its configured period, with margin per [D13](../../docs/project-specs.md#pending-decisions); recorded with exact commit; no value assumed |
 | S3-BF01 | Both-black forward with invalid guidance | Host | Straight FOLLOW to the interval boundary; GP21 interrupts |
 | S3-BF02 | Minimum crossing distance | Host, build | 25 mm DISTANCE plus 3 mm tolerance; early sensing does not shorten it |
 | S3-U14 | Thin black patches and a held barcode | Host | Held barcode is not consumed by travel over white |
@@ -54,6 +54,6 @@ Owner Nicholas / 2501552. Template S3-U01 is retired, not reused. Host methods m
 | 2026-10-28 | S3-BF02 | `5e6a45b`+, [manifest](logs/2026-10-28_S3-BF02_manifest.json) | Codex | PASS (host, build) | At tag | 25 mm crossing distance; not flashed |
 | 2026-10-29 | S3-U14 / S3-U15 | `0448890`+, [working-source manifest](../integration/logs/2026-10-29_INT-16-manifest.json) | Not recorded | PASS (host only) | Host output; Actual-black qualification, straight outgoing confirmation, A-Z orientation/scale fixtures; software only | — |
 | 2026-10-30 | S3-U16 / S3-U17 | `cc3edb3`+, [working-source manifest](logs/2026-10-30_S3-U16-U17-manifest.json) | Codex | FAIL before fix, PASS after fix (host only) | Original regression failures; targeted host output, including 3516 IR replay samples | — |
-| 2026-10-30 | S3-U18 / S3-U19 | `8be851b`+, [source manifest](logs/2026-10-30_S3-U18-U19-manifest.json) | Codex | PASS (host only) | Build, test output. MSVC x64 C11, optimized, warnings as errors; 3516 replay samples plus calibration/cancellation/wrap checks and existing invalid-acquisition hysteresis. Docker engine unavailable; no GNU/Arm firmware build or physical pass. | — |
+| 2026-10-30 | S3-U18 / S3-U19 | `8be851b`+, [source manifest](logs/2026-10-30_S3-U18-U19-manifest.json) | Codex | PASS (host only) | Build, test output. MSVC x64 C11, optimized, warnings as errors; 3516 replay samples plus calibration/cancellation/wrap checks and existing invalid-acquisition hysteresis. No GNU/Arm firmware build or physical pass. | — |
 | 2026-10-31 | S3-U20 | `5e63fe0`+, [working-source manifest](logs/2026-10-31_S3-U20/manifest.json) | Codex | PASS (host tests and driver compilation); full firmware build FAIL | Barcode assertions, full host suite, Cortex-M0+ driver compile. Full firmware attempt fails on an unrelated `size_t` conflict through `terrain_evidence.h` in `io_task.c` and `mission.c`. No firmware execution or physical pass. | — |
 | 2026-10-31 | S3-U20 | `545a6a3` | Codex | PASS (host, dashboard, build) | INT-49 | Integrated source; supersedes the earlier full build FAIL; no physical barcode check |

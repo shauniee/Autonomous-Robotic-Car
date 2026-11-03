@@ -480,8 +480,13 @@ static void run_bypass(Mission *m, const MissionInputs *in,
     }
 }
 
-static void request_scan(Mission *m, MissionOutputs *out)
+static void request_scan(Mission *m, const MissionInputs *in,
+    MissionOutputs *out, bool second)
 {
+    m->scan_second = second;
+    out->scan_keep_narrower = second;
+    m->front_seen = (uint8_t)in->front_sequence;
+    m->front_clear = 0u;
     m->scan_id = (uint8_t)(m->scan_id >= 15u ? 0u : m->scan_id + 1u);
     out->scan_request = true;
     out->scan_id = m->scan_id;
@@ -494,9 +499,34 @@ static void enter_bypass(Mission *m, const MissionInputs *in,
     enter(m, MISSION_SCAN, in->now_ms);
     m->scan_phase = 0u;
     m->scan_retries = 0u;
+    m->scan_backing = 0u;
+    m->scan_second = 0u;
+    m->backed_mm = 0u;
     m->bypass_started_ms = in->now_ms;
     m->in_broad = false;
     out->command = stop_command(in->now_ms);
+}
+
+/* True once the forward readings after a sweep settle it: one blocked reading,
+   or MISSION_SCAN_CLEAR_SAMPLES clear ones in a row. The servo publishes no
+   forward reading until it is back at 0, so these cannot be left over from the
+   sweep. */
+static bool front_checked(Mission *m, const MissionInputs *in)
+{
+    if ((uint8_t)in->front_sequence == m->front_seen)
+    {
+        return false;
+    }
+    m->front_seen = (uint8_t)in->front_sequence;
+    if (in->front_valid && in->front_mm <=
+        MISSION_OBSTACLE_STOP_MM + (uint32_t)m->backed_mm +
+        MISSION_SCAN_CLEAR_MARGIN_MM)
+    {
+        m->front_clear = 0u;
+        return true;
+    }
+    ++m->front_clear;
+    return m->front_clear >= MISSION_SCAN_CLEAR_SAMPLES;
 }
 
 static void handle_scan(Mission *m, const MissionInputs *in,
@@ -508,11 +538,35 @@ static void handle_scan(Mission *m, const MissionInputs *in,
         to_stop(m, in, out, true);
         return;
     }
+    if (m->scan_backing)
+    {
+        if (in->motion_action == m->current_action &&
+            in->motion_status == RD_MOTION_FAILED)
+        {
+            to_stop(m, in, out, true);
+        }
+        else if (in->motion_action == m->current_action &&
+            in->motion_status == RD_MOTION_DONE)
+        {
+            m->scan_backing = 0u;
+            /* rescan: the old profile was from the closer position */
+            m->scan_phase = 0u;
+            m->scan_second = 0u;
+            m->scan_retries = 0u;
+        }
+        else
+        {
+            out->command = action_command(MOTION_MODE_DISTANCE,
+                BYPASS_SPEED_MMPS, -(float)m->backup_mm, m->current_action,
+                in->now_ms);
+        }
+        return;
+    }
     if (m->scan_phase == 0u)
     {
         if (in->stationary)
         {
-            request_scan(m, out);
+            request_scan(m, in, out, false);
         }
         return;
     }
@@ -520,40 +574,95 @@ static void handle_scan(Mission *m, const MissionInputs *in,
     {
         return; /* A previous scan result cannot satisfy a new request. */
     }
-    if (in->scan_state == OBSTACLE_SCAN_CANCELLED || in->scan_state == OBSTACLE_SCAN_FAILED)
+    if (in->scan_state == OBSTACLE_SCAN_FAILED ||
+        (in->scan_state == OBSTACLE_SCAN_DONE && in->profile_valid))
+    {
+        if (!front_checked(m, in))
+        {
+            return;
+        }
+        if (m->front_clear >= MISSION_SCAN_CLEAR_SAMPLES)
+        {
+            /* the obstacle was removed */
+            enter(m, MISSION_FOLLOW_LINE, in->now_ms);
+            return;
+        }
+    }
+    else
+    {
+        m->front_seen = (uint8_t)in->front_sequence; /* sweep still running */
+    }
+    /* A failed second sweep leaves the first sweep's profile in place. */
+    bool use_first = in->scan_state == OBSTACLE_SCAN_FAILED &&
+        m->scan_second && in->profile_valid;
+    if (!use_first && (in->scan_state == OBSTACLE_SCAN_CANCELLED ||
+        in->scan_state == OBSTACLE_SCAN_FAILED))
     {
         if (in->scan_state == OBSTACLE_SCAN_FAILED && in->stationary &&
             m->scan_retries < MISSION_SCAN_RETRIES)
         {
             ++m->scan_retries;
-            request_scan(m, out);
+            request_scan(m, in, out, false);
         }
         else
         {
             to_stop(m, in, out, true);
         }
     }
-    else if (in->scan_state == OBSTACLE_SCAN_DONE && in->profile_valid)
+    else if ((use_first || in->scan_state == OBSTACLE_SCAN_DONE) &&
+        in->profile_valid)
     {
         ObstacleProfile profile =
         {
             .valid = true,
                 .closest_mm = in->profile_closest_mm,
+                .width_mm = in->profile_width_mm,
                 .left_clearance_mm = (uint16_t)in->left_clearance_mm,
                 .right_clearance_mm = (uint16_t)in->right_clearance_mm,
                 .obstacle_forward_mm = in->profile_forward_mm,
                 .obstacle_left_mm = in->profile_left_mm};
         bypass_input_t input = bypass_input(in);
-        if (!MISSION_BYPASS_RELEASED ||
-            !bypass_control_begin(&m->bypass, &input, &profile,
-            in->profile_planning_mm, &m->action_id))
+        if (!MISSION_BYPASS_RELEASED)
         {
             to_stop(m, in, out, true);
         }
+        else if (bypass_control_can_begin(&input, &profile,
+            in->profile_planning_mm))
+        {
+            if (!m->scan_second)
+            {
+                request_scan(m, in, out, true);
+            }
+            else if (bypass_control_begin(&m->bypass, &input, &profile,
+                in->profile_planning_mm, &m->action_id))
+            {
+                enter(m, MISSION_BYPASS, in->now_ms);
+                run_bypass(m, in, out);
+            }
+            else
+            {
+                to_stop(m, in, out, true);
+            }
+        }
         else
         {
-            enter(m, MISSION_BYPASS, in->now_ms);
-            run_bypass(m, in, out);
+            /* Too close to pivot, or no room shown: reverse along the approach
+               and scan again. */
+            uint8_t backup = bypass_control_backup_mm(&profile,
+                in->profile_planning_mm);
+            backup = backup != 0u ? backup : BYPASS_NO_ROOM_STEP_MM;
+            if ((unsigned)m->backed_mm + backup > BYPASS_BACKUP_MAX_MM)
+            {
+                to_stop(m, in, out, true);
+                return;
+            }
+            m->scan_backing = 1u;
+            m->backed_mm = (uint8_t)(m->backed_mm + backup);
+            m->backup_mm = backup;
+            m->current_action = next_action_id(m);
+            out->command = action_command(MOTION_MODE_DISTANCE,
+                BYPASS_SPEED_MMPS, -(float)backup, m->current_action,
+                in->now_ms);
         }
     }
 }

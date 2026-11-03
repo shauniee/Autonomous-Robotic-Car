@@ -90,3 +90,4 @@ $CC $CFLAGS testing/pure/test_line_trace.c app_program/mission/line_trace.c \
 "$build_dir/test_comms_report"
 "$build_dir/test_comms_stress"
 python3 scripts/mqtt_client.py --self-test	# laptop decoder agrees with the golden vectors
+python3 testing/pure/test_check_barr.py	# coding rule scan finds each violation, passes clean code

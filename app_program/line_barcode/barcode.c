@@ -156,6 +156,17 @@ static uint32_t sensor_travel(uint32_t left, uint32_t right)
         right * (half - BARCODE_SENSOR_LEFT_MM)) / (2u * half);
 }
 
+bool barcode_run_is_chatter(barcode_count_t from_left,
+    barcode_count_t from_right, barcode_count_t left_count,
+    barcode_count_t right_count)
+{
+    /* Either direction: a pivot moves the wheels opposite ways. */
+    int32_t left = enc_travel_signed(left_count, from_left);
+    int32_t right = enc_travel_signed(right_count, from_right);
+    return sensor_travel((uint32_t)(left < 0 ? -left : left),
+        (uint32_t)(right < 0 ? -right : right)) < BARCODE_MIN_ELEMENT_COUNTS;
+}
+
 barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
     barcode_count_t left_count, barcode_count_t right_count, char *symbol,
     barcode_orientation_t *orientation)
@@ -254,6 +265,22 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
     }
     unsigned write = atomic_load_explicit(&head, memory_order_relaxed);
     unsigned read = atomic_load_explicit(&tail, memory_order_acquire);
+    barcode_count_t left = (barcode_count_t)drv_encoder_count(ENCODER_LEFT);
+    barcode_count_t right = (barcode_count_t)drv_encoder_count(ENCODER_RIGHT);
+    if (write != read)
+    {
+        const barcode_edge_t *newest =
+            &ring[(write - 1u) % BARCODE_EDGE_CAPACITY];
+        if (barcode_run_is_chatter(newest->left_count, newest->right_count,
+            left, right))
+        {
+            /* Chatter: this edge undoes the waiting one, so neither takes a
+               ring slot. */
+            capture_high = high;
+            atomic_store_explicit(&head, write - 1u, memory_order_release);
+            return;
+        }
+    }
     if ((unsigned)(write - read) >= BARCODE_EDGE_CAPACITY)
     {
         atomic_store_explicit(&overflows, atomic_load_explicit(&overflows, memory_order_relaxed) + 1u,
@@ -262,9 +289,7 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
     }
     capture_high = high;
     ring[write % BARCODE_EDGE_CAPACITY] = (barcode_edge_t){
-        .left_count = (barcode_count_t)drv_encoder_count(ENCODER_LEFT),
-        .right_count = (barcode_count_t)drv_encoder_count(ENCODER_RIGHT),
-        .high = high};
+        .left_count = left, .right_count = right, .high = high};
     atomic_store_explicit(&head, write + 1u, memory_order_release);
 }
 
@@ -307,14 +332,19 @@ void drv_barcode_enable(bool enabled)
 
 bool drv_barcode_take(barcode_edge_t *out)
 {
+    /* Masked: the handler can take back the newest edge, which may be this
+       one. */
+    UW state;
+    DI(state);
     unsigned read = atomic_load_explicit(&tail, memory_order_relaxed);
-    if (read == atomic_load_explicit(&head, memory_order_acquire))
+    bool found = read != atomic_load_explicit(&head, memory_order_acquire);
+    if (found)
     {
-        return false;
+        *out = ring[read % BARCODE_EDGE_CAPACITY];
+        atomic_store_explicit(&tail, read + 1u, memory_order_release);
     }
-    *out = ring[read % BARCODE_EDGE_CAPACITY];
-    atomic_store_explicit(&tail, read + 1u, memory_order_release);
-    return true;
+    EI(state);
+    return found;
 }
 
 uint32_t drv_barcode_edge_count(void)
@@ -330,13 +360,13 @@ uint32_t drv_barcode_overflow_count(void)
 /* ---- Scanner service ---- */
 static rd_word_t mapping_word;  /* writer: Mission via barcode_set_mapping */
 static _Atomic bool run_wanted; /* writer: Mission (barcode_start/stop) */
-static barcode_frame_t frame;   /* S3 task only */
+static barcode_frame_t frame;   /* line_barcode task only */
 static barcode_event_t events[BARCODE_EVENT_CAPACITY];
 static _Atomic unsigned event_head,
-    event_tail; /* head: S3 task, tail: Mission */
-static uint32_t seen_overflows; /* S3 task only */
-static _Atomic bool initialised;                 /* writer: S3 task, once */
-static bool running;                             /* S3 task only */
+    event_tail; /* head: line_barcode task, tail: Mission */
+static uint32_t seen_overflows; /* line_barcode task only */
+static _Atomic bool initialised; /* writer: line_barcode task, once */
+static bool running; /* line_barcode task only */
 
 #if BARCODE_DIAGNOSTICS
 static barcode_diagnostic_t diagnostics[32];

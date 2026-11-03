@@ -56,7 +56,7 @@ The 95% target is the user's. No success rate has been measured yet, so the firs
 
 Scan and bypass logic exists but has never run on the car. Wheels stay off for the bench steps.
 
-- [ ] S5-U10 with `./flash.sh test`: servo centre and limits, with +/-50 degrees unconfirmed (MR-18).
+- [ ] S5-U10 with `./flash.sh test`: servo centre and limits, with +/-60 degrees unconfirmed (MR-18).
 - [ ] Sonar against a board at 100, 250, 500 and 1000 mm, plus open space (MR-17).
 - [ ] Boxes of 100, 150 and 200 mm: check the `[SCAN]` rays and profile against a tape.
 - [ ] Both sides blocked: the robot stops rather than bypasses (MR-31).
@@ -78,7 +78,7 @@ Scan and bypass logic exists but has never run on the car. Wheels stay off for t
 - [ ] `scripts/dashboard.html` and `testing/pure/test_dashboard.mjs`: uncommitted local edits remove the robot animation and motion previews. Their origin is unconfirmed, so they were **left out of the merge**. Keep and commit, or discard.
 - [ ] Close PR 147 (`chore/common-cleanup`), whose commit is included in this merge.
 - [ ] Append the merge commit to the test log for INT-132 to INT-158, which ran on an uncommitted tree.
-- [ ] Remove or agree the diagnostic frames (types 9, 10 and 11): S1 owner agreement is pending.
+- [ ] Remove or agree the diagnostic frames (types 9, 10 and 11): Comms owner agreement is pending.
 - [ ] Trim overlapping logs, for example INT-135 and INT-136, at 8.5 MB and 14 MB.
 - [ ] Update the mission-readiness checklist as items pass.
 - [ ] Delete this file once it is done.

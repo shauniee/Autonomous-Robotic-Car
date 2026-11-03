@@ -31,17 +31,20 @@ static bool profile_ready;			/* guarded by profile_mutex */
 /* Mission -> Obstacle requests: one writer per counter (no atomic RMW on M0+). */
 static _Atomic uint32_t scan_requests, scan_served, cancel_requests, cancel_served;
 static _Atomic uint8_t requested_scan_id;
+static _Atomic bool requested_keep_narrower;
 static rd_word_t side_command;			/* writer: Mission; bit 0 on, bits 1-8 signed servo angle */
 
 uint32_t obstacle_scan_word(void) { return rd_word_read(&scan_word); }
 
-void obstacle_scan_request(uint8_t scan_id)
+void obstacle_scan_request(uint8_t scan_id, bool keep_narrower)
 {
     if (scan_id > 15u)
     {
         return;
     }
     atomic_store_explicit(&requested_scan_id, scan_id, memory_order_relaxed);
+    atomic_store_explicit(&requested_keep_narrower, keep_narrower,
+        memory_order_relaxed);
     atomic_store_explicit(&scan_requests, atomic_load_explicit(&scan_requests, memory_order_relaxed) + 1u,
         memory_order_release);
 }
@@ -101,8 +104,14 @@ static ER servo_init(void)
 
 static ER servo_angle(int angle_deg)
 {
-    if (angle_deg < -SERVO_MAX_DEG) angle_deg = -SERVO_MAX_DEG;
-    if (angle_deg > SERVO_MAX_DEG) angle_deg = SERVO_MAX_DEG;
+    if (angle_deg < -SERVO_LOOK_DEG)
+    {
+        angle_deg = -SERVO_LOOK_DEG;
+    }
+    if (angle_deg > SERVO_LOOK_DEG)
+    {
+        angle_deg = SERVO_LOOK_DEG;
+    }
     ER error = pwm_set_cc(SERVO_PIN, (UW)((int)SERVO_CENTRE_US + angle_deg * (int)SERVO_US_PER_DEG));
     return error < E_OK ? error : pwm_set_enabled(SERVO_PIN, TRUE);
 }
@@ -126,7 +135,8 @@ ER obstacle_init(void)
     return error;
 }
 
-/* 10 us trigger pulse from the hardware TIMER; the only busy wait in S5. */
+/* 10 us trigger pulse from the hardware TIMER; the only busy wait in
+   Obstacle. */
 static ER trigger(void)
 {
     ER error = gpio_set_val(TRIGGER_PIN, 0);
@@ -152,6 +162,8 @@ typedef struct
     uint32_t scan_started_ms, sent_us, settle_since_ms, next_ping_ms;
     uint32_t left_origin, right_origin;
     uint32_t misses;
+    uint16_t group_retried : 1;
+    uint16_t keep_narrower : 1;
     uint16_t count : 4;
     uint16_t planned : 4;
     uint16_t coarse : 4;
@@ -160,9 +172,11 @@ typedef struct
     uint8_t initialized : 1;
     uint8_t ready : 1;
     uint8_t scanning : 1;
-    int8_t angle : 7;
-    int8_t target_angle : 7;
+    int8_t angle;
+    int8_t target_angle;
 } obstacle_acquisition_t;
+_Static_assert(SERVO_LOOK_DEG <= INT8_MAX,
+    "commanded servo angle must fit its field");
 
 _Static_assert(OBSTACLE_SCAN_CAPACITY <= 15u,
     "scan counts must fit their four-bit fields");
@@ -198,7 +212,7 @@ static void cancel_echo(void)
 
 static bool set_angle(int16_t angle, uint32_t now)
 {
-    if (angle < -SERVO_MAX_DEG || angle > SERVO_MAX_DEG)
+    if (angle < -SERVO_LOOK_DEG || angle > SERVO_LOOK_DEG)
     {
         return false;
     }
@@ -220,9 +234,15 @@ static void finish_scan(obstacle_scan_state_t state, uint32_t now)
             &profile_config, &built, &evidence);
         if (ok && tk_loc_mtx(profile_mutex, TMO_POL) >= E_OK)
         {
-            profile = built;
-            profile_evidence = evidence;
-            profile_sampled_ms = now;
+            /* The beam catches the box's corner on some sweeps, so the narrower
+               reading is nearer. */
+            if (!acquisition.keep_narrower || !profile_ready ||
+                built.width_mm < profile.width_mm)
+            {
+                profile = built;
+                profile_evidence = evidence;
+                profile_sampled_ms = now;
+            }
             profile_ready = true;
             if (tk_unl_mtx(profile_mutex) < E_OK)
             {
@@ -235,8 +255,11 @@ static void finish_scan(obstacle_scan_state_t state, uint32_t now)
         }
         state = ok ? OBSTACLE_SCAN_DONE : OBSTACLE_SCAN_FAILED;
 #if APP_TEST
-        tm_printf((UB *)"[SCAN] %s width=%u closest=%u left=%u right=%u need=%u\n",
-            ok ? "profile" : "no profile", ok ? built.width_mm : 0u, ok ? built.closest_mm : 0u,
+        tm_printf((UB *)"[SCAN] %s width=%u uncertainty=%u closest=%u "
+            "left=%u right=%u need=%u\n",
+            ok ? "profile" : "no profile", ok ? built.width_mm : 0u,
+            ok ? evidence.width_model_uncertainty_mm : 0u,
+            ok ? built.closest_mm : 0u,
             ok ? built.left_clearance_mm : 0u, ok ? built.right_clearance_mm : 0u,
             MISSION_BYPASS_MIN_CLEAR_MM);
 #endif
@@ -308,6 +331,13 @@ static void range_complete(uint32_t range, uint32_t now)
         range = obstacle_range_group_median(&acquisition.group, &filtered) ?
             filtered : ECHO_RANGE_INVALID;
         acquisition.group = (obstacle_range_group_t){0};
+        if (range == ECHO_RANGE_INVALID && !acquisition.group_retried)
+        {
+            /* one more group before calling it no echo */
+            acquisition.group_retried = 1u;
+            return;
+        }
+        acquisition.group_retried = 0u;
         publish_range(range, now);
 #if APP_TEST
         tm_printf((UB *)"[SCAN] ray %d deg %s %u mm\n", (int)acquisition.angle,
@@ -397,12 +427,15 @@ void obstacle_step(uint32_t now)
     {
         atomic_store_explicit(&scan_served, requested, memory_order_release);
         acquisition.id = atomic_load_explicit(&requested_scan_id, memory_order_relaxed);
+        acquisition.keep_narrower = atomic_load_explicit(
+            &requested_keep_narrower, memory_order_relaxed);
         acquisition.left_origin = drv_encoder_count(ENCODER_LEFT);
         acquisition.right_origin = drv_encoder_count(ENCODER_RIGHT);
         cancel_echo();
         acquisition.phase = OBSTACLE_ACQUIRE_IDLE;
         acquisition.scan_started_ms = now;
         acquisition.group = (obstacle_range_group_t){0};
+        acquisition.group_retried = 0u;
         if (OBSTACLE_SCAN_GROUP_SAMPLES == 0u || OBSTACLE_SCAN_MIN_VALID == 0u ||
             OBSTACLE_PROFILE_ADJACENT_RAYS < 2u || OBSTACLE_PROFILE_DEPTH_ENTER_MM == 0u ||
             OBSTACLE_PROFILE_DEPTH_EXIT_MM < OBSTACLE_PROFILE_DEPTH_ENTER_MM ||

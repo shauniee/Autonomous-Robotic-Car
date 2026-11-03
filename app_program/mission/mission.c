@@ -84,6 +84,16 @@ static void mission_task(INT stacd, void *exinf)
                     "ignored: release GP20 then press again"),
                 state_names[mission.state], (int)buttons.gp21_down);
         }
+#if APP_TEST
+        /* TEST never leaves its boot stop, so GP20 scans in place for
+           S5-U10. */
+        if (event == BUTTON_EVENT_PRESSED && mission.state == MISSION_READY)
+        {
+            static uint8_t bench_scan_id;
+            bench_scan_id = (uint8_t)((bench_scan_id + 1u) & 15u);
+            obstacle_scan_request(bench_scan_id, false);
+        }
+#endif
 
         LineIrSnapshot snapshot = {0};
         MotionHealth health = {0};
@@ -151,6 +161,7 @@ static void mission_task(INT stacd, void *exinf)
             .scan_id = obstacle_scan_id(scan),
             .profile_valid = have_profile && profile.valid,
             .profile_closest_mm = profile.closest_mm,
+            .profile_width_mm = profile.width_mm,
             .profile_planning_mm = scan_profile.evidence.planning_width_mm,
             .profile_forward_mm = profile.obstacle_forward_mm,
             .profile_left_mm = profile.obstacle_left_mm,
@@ -224,7 +235,7 @@ static void mission_task(INT stacd, void *exinf)
         }
         if (out.scan_request)
         {
-            obstacle_scan_request(out.scan_id);
+            obstacle_scan_request(out.scan_id, out.scan_keep_narrower);
         }
         if (out.scan_cancel)
         {

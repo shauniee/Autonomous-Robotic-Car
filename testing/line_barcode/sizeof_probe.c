@@ -1,4 +1,4 @@
-/* S3 minimum-bit sizeof probe. Compile-only: run sizeof_probe.sh, which
+/* line_barcode minimum-bit sizeof probe. Compile-only: run sizeof_probe.sh, which
    builds this for Cortex-M0+ with the firmware's target flags and prints
    each probe symbol's size in bytes. Never linked into firmware. */
 #include "../../app_program/line_barcode/line_barcode.h"

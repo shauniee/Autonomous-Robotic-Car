@@ -14,7 +14,7 @@ Keep subsystem cases/results in `<name>/TEST_LOG.md`, cross-subsystem cases in `
 | Integration | `INT-01`, … | Both interface owners; [system contracts](../docs/architecture.md#shared-data-rules) and [line and barcode](../app_program/line_barcode/README.md) |
 | System | `SYS-01`, …; planned `T01`–`T16` | Team; [requirements](../docs/project-specs.md) |
 
-IDs never change or get reused, including retired template cases. Retired definitions remain in the relevant log; placeholder template rows are not observations.
+IDs never change or get reused, including retired template cases. Test IDs keep their old prefix: S1 is comms, S2 motion, S3 line_barcode, S4 terrain and S5 obstacle. Retired definitions remain in the relevant log; placeholder template rows are not observations.
 
 ## Run and record
 

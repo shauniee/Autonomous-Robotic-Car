@@ -1,4 +1,4 @@
-# Terrain (S4)
+# Terrain
 
 ## Contents
 

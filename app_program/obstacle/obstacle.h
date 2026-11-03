@@ -8,15 +8,15 @@
 #include "../common/robot_data.h"
 
 /*
- *	Kernel-free ultrasonic ranging helpers: pulse width to range, the packed
- *	front-range word and the no-echo counter.
+ * Kernel-free ultrasonic ranging helpers: pulse width to range, the packed
+ * front-range word and the no-echo counter.
  *
- *	Front-range word (writer: Obstacle). Layout is PROVISIONAL until the S5
- *	rows of DATA_REPRESENTATION are signed off (#28, #54):
- *	  bits  0-12  range in mm, 0..8190; 8191 is the invalid code
- *	  bit  13     valid (range is a real echo)
- *	  bits 16-31  low 16 bits of the sample time in kernel ms
- *	No echo is unknown, never clear space: valid is 0 and range is invalid.
+ * Front-range word (writer: Obstacle). Layout is PROVISIONAL until the Obstacle
+ * rows of DATA_REPRESENTATION are signed off (#28, #54):
+ *   bits  0-12  range in mm, 0..8190; 8191 is the invalid code
+ *   bit  13     valid (range is a real echo)
+ *   bits 16-31  low 16 bits of the sample time in kernel ms
+ * No echo is unknown, never clear space: valid is 0 and range is invalid.
  */
 
 #define ECHO_RANGE_BITS 13u
@@ -65,15 +65,15 @@ static inline bool obstacle_range_sample_fresh(const obstacle_range_sample_t *sa
 }
 
 /*
- *	Kernel-free obstacle profile and scan state. Rays are measured with the
- *	car stationary; angles are relative to forward, positive to the left.
+ * Kernel-free obstacle profile and scan state. Rays are measured with the
+ * car stationary; angles are relative to forward, positive to the left.
  *
- *	Scan state (writer: Obstacle) is one 3-bit encoded value. The profile is
- *	larger than 32 bits and is copied under a mutex.
- *	Field widths are PROVISIONAL until #28/#54 sign off the S5 rows.
+ * Scan state (writer: Obstacle) is one 3-bit encoded value. The profile is
+ * larger than 32 bits and is copied under a mutex.
+ * Field widths are PROVISIONAL until #28/#54 sign off the Obstacle rows.
  */
 
-#define OBSTACLE_SCAN_CAPACITY 13u /* 11 coarse rays, one fine ray per edge */
+#define OBSTACLE_SCAN_CAPACITY 15u /* 13 coarse rays, one fine ray per edge */
 #define OBSTACLE_SCAN_STATE_BITS 3u
 
 typedef enum
@@ -137,8 +137,14 @@ static inline ObstacleRay obstacle_ray_make(int16_t angle_deg, uint16_t range_mm
 
 static inline uint32_t obstacle_side_watch_pack(bool on, int16_t angle_deg)
 {
-    if (angle_deg < -SERVO_MAX_DEG) angle_deg = -SERVO_MAX_DEG;
-    if (angle_deg > SERVO_MAX_DEG) angle_deg = SERVO_MAX_DEG;
+    if (angle_deg < -SERVO_LOOK_DEG)
+    {
+        angle_deg = -SERVO_LOOK_DEG;
+    }
+    if (angle_deg > SERVO_LOOK_DEG)
+    {
+        angle_deg = SERVO_LOOK_DEG;
+    }
     /* Atomic word: bit 0 enabled, bits 1..8 signed 8-bit angle. */
     return (on ? 1u : 0u) | (((uint32_t)((uint8_t)angle_deg)) << 1u);
 }
@@ -253,7 +259,9 @@ ER obstacle_profile_snapshot(obstacle_profile_snapshot_t *out);
 /* Request a coarse-then-fine scan (id 0..15). Honoured only while the car is
    stationary; any movement, cancel or the deadline fails it. Mission starts it
    and polls obstacle_scan_word(). Single caller (Mission). */
-void obstacle_scan_request(uint8_t scan_id);
+/* keep_narrower: leave the current profile in place unless this sweep reads
+   narrower. */
+void obstacle_scan_request(uint8_t scan_id, bool keep_narrower);
 void obstacle_scan_cancel(void);
 
 /* Scan word (writer: Obstacle): bits 0-2 obstacle_scan_state_t, bits 3-6 scan id. */

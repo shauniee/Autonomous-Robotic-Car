@@ -1,4 +1,4 @@
-# S5 test log
+# Obstacle test log
 
 ## Contents
 
@@ -28,8 +28,8 @@ Owner: Jia Jing / obstacle. Template S5-U01 and S5-U02 are retired, not reused. 
 
 | Date | Test ID | Commit | Tester | Result | Log / evidence | Notes |
 |---|---|---|---|---|---|---|
-| 2026-10-27 | S5 CR-111 ray/profile/side-watch host regression + 4 profile builds | `b438bcc` | GitHub Actions | PASS | [Workflow run 40518950503](https://github.com/shauniee/Autonomous-Robotic-Car/actions/runs/40518950503) | Packed fields round-trip signed angles -60..60 and full 16-bit range; simulated obstacle geometry; NOT physical servo/echo tests |
-| 2026-10-27 | S5 CR-111 Cortex-M0+ sizeof probe | `b438bcc` | arm-none-eabi-gcc (Docker build image) | PASS | Same workflow, Obstacle sizeof step | `ObstacleRay` 3 bytes, `ObstacleProfile` 14 bytes; side-watch holds 8 meaningful bits in one 32-bit atomic word |
+| 2026-10-27 | Obstacle CR-111 ray/profile/side-watch host regression + 4 profile builds | `b438bcc` | GitHub Actions | PASS | [Workflow run 40518950503](https://github.com/shauniee/Autonomous-Robotic-Car/actions/runs/40518950503) | Packed fields round-trip signed angles -60..60 and full 16-bit range; simulated obstacle geometry; NOT physical servo/echo tests |
+| 2026-10-27 | Obstacle CR-111 Cortex-M0+ sizeof probe | `b438bcc` | arm-none-eabi-gcc | PASS | Same workflow, Obstacle sizeof step | `ObstacleRay` 3 bytes, `ObstacleProfile` 14 bytes; side-watch holds 8 meaningful bits in one 32-bit atomic word |
 | 2026-10-29 | S5-U03 / S5-U04 | `0448890`+, [working-source manifest](../integration/logs/2026-10-29_INT-16-manifest.json) | Not recorded | PASS (host only) | Host output; Bounded median/edge/model helpers and invalid/no-echo cases; synthetic fixture settings, not enabled production calibration | — |
 | 2026-10-30 | S5-U03/U04 | `62ee522`+, [INT-25 manifest](../integration/logs/2026-10-30_INT-25-accepted-manifest.json) | Codex | PASS (host, build) | At tag | INT-25: unused `s5_profile_build` and `s5_fine_angles` removed; helpers re-checked |
 | 2026-10-30 | S5-U05 | `cc3edb3`+, [working-source manifest](logs/2026-10-30_S5-U05-manifest.json) | Not recorded | PASS (host only) | Host suite output; no physical servo/echo or bypass acceptance | — |

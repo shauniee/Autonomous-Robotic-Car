@@ -109,14 +109,48 @@ int main(void)
     assert(obstacle_profile_estimate(rays, RAYS, NULL, &unknown, &profile, &evidence));
     assert(evidence.width_model_uncertainty_mm == UINT16_MAX);
     assert(profile.left_clearance_mm == 0u && profile.right_clearance_mm == 0u);
-    /* No echo never qualifies an edge or fills a gap between object rays. */
-    ObstacleProfile before = profile;
-    rays[2].valid = false;
-    assert(!obstacle_profile_estimate(rays, RAYS, NULL, &config, &profile, &evidence));
-    assert(memcmp(&before, &profile, sizeof before) == 0);
+    /* No echo past the box marks an edge but proves no clearance; with the box still
+       on its far side it does not cut the box short. The centre ray must have an echo. */
+    scene(rays, 150u);
+    rays[0].valid = rays[1].valid = false;
+    assert(obstacle_profile_estimate(rays, RAYS, NULL, &config, &profile, &evidence));
+    assert(profile.width_mm == ordered_width && profile.right_clearance_mm == 0u);
+    assert(profile.left_clearance_mm > 0u);
+    scene(rays, 150u);
+    rays[3].valid = false;
+    assert(obstacle_profile_estimate(rays, RAYS, NULL, &config, &profile, &evidence));
+    assert(profile.width_mm == ordered_width);
     scene(rays, 150u);
     rays[4].valid = false;
     assert(!obstacle_profile_estimate(rays, RAYS, NULL, &config, &profile, &evidence));
+    /* Rays logged in S5-U11 from scans that used to give no profile. */
+    {
+        static const int16_t logged[][OBSTACLE_SCAN_CAPACITY * 2u] = {
+            {-50, 377, -40, 566, -30, 196, -20, 186, -10, 177, 0, 177, 10, 174, 20, 193, 30, 224, 40, 0, 50, 0, -35, 205},
+            {-50, 363, -40, 298, -30, 196, -20, 185, -10, 177, 0, 177, 10, 173, 20, 205, 30, 381, 40, 384, 50, 361},
+            {-50, 800, -40, 835, -30, 137, -20, 144, -10, 121, 0, 121, 10, 113, 20, 127, 30, 123, 40, 170, 50, 772, -35, 0, 45, 679}};
+        static const unsigned logged_rays[] = {12u, 11u, 13u};
+        for (unsigned scan = 0u; scan < 3u; ++scan)
+        {
+            ObstacleRay real[OBSTACLE_SCAN_CAPACITY];
+            for (unsigned i = 0u; i < logged_rays[scan]; ++i)
+            {
+                real[i] = obstacle_ray_make(logged[scan][i * 2u], (uint16_t)logged[scan][i * 2u + 1u],
+                    logged[scan][i * 2u + 1u] != 0);
+            }
+            obstacle_profile_config_t robot = config;
+            robot.depth_exit_mm = OBSTACLE_PROFILE_DEPTH_EXIT_MM;
+            assert(obstacle_profile_estimate(real, logged_rays[scan], NULL, &robot, &profile, &evidence));
+        }
+    }
+    /* A no-echo ray ends the box for fine sampling, and a fine ray never repeats a coarse angle. */
+    {
+        ObstacleRay lost[5] = {obstacle_ray_make(-30, 0u, false), obstacle_ray_make(-20, 110u, true),
+            obstacle_ray_make(0, 100u, true), obstacle_ray_make(20, 110u, true), obstacle_ray_make(30, 2000u, true)};
+        int16_t extra[4];
+        unsigned added = obstacle_profile_fine_angles(lost, 5u, &config, extra, 4u);
+        assert(added == 2u && extra[0] == -25 && extra[1] == 25);
+    }
     /* A single low centre ray among background samples is not an obstacle region. */
     scene(rays, 1u);
     assert(!obstacle_profile_estimate(rays, RAYS, NULL, &config, &profile, &evidence));

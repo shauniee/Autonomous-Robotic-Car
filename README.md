@@ -132,7 +132,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `WIFI=cyw43`/`none` | W/WH radio / none (ordinary Pico must use `none`) |
 | `NET=none`/`lwip`, `MQTT=0`/`1` | Offline / TCP-IP; MQTT needs lwIP + WiFi |
 | `FULL_COURSE=1` | Releases junction turns and obstacle bypass; `_course` image (`flash.sh` default) |
-| `TEST=1` | Firmware self-tests; forces S2 braking even if the controller enables motion |
+| `TEST=1` | Firmware self-tests; forces Motion braking even if the controller enables motion |
 | `CRASH_REPORT=1` | Crash/console copy on UART0; project uses `0` (GP0/GP1 conflict, [pins](docs/team.md#2-pins)) |
 
 No active CMake target. The local checkpoint includes an optional dashboard; it is not the verified remote-main baseline. Offline profiles remain build/test tools; the target normal mission requires WiFi and MQTT before start.
@@ -162,7 +162,7 @@ Target startup/control instructions are owned by [architecture](docs/architectur
 | Step | Action | Expected response |
 | --- | --- | --- |
 | Map | `python3 scripts/mqtt_client.py map <L> <R> <S> <U> --broker <ip>` while stopped | `MAPPING ACK ... OK`; telemetry shows `mapped=yes` |
-| Start | Sensors on visible line, release then press GP20 | FOLLOW_LINE if mapped, fresh digital IR/data qualify and no start-blocking fault; otherwise refused and reported in telemetry. TEST still inhibits motors |
+| Start | Sensors on visible line, release then press GP20 | FOLLOW_LINE if mapped, fresh digital IR/data qualify and no start-blocking fault; otherwise refused and reported in telemetry. TEST always refuses, as Motion stays stopped, and runs an obstacle scan instead |
 | Stop | Press GP21 | Persistent stop; barcode scanning stopped |
 | Reset | Clear cause; freshly press GP21, then release after braking is serviced | STOPPED to READY; IMU calibration kept; no movement. A separate fresh GP20 press starts |
 | Restart | Release GP20, press again on a visible line | Fresh start; held buttons never restart |
