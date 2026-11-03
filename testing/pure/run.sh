@@ -44,9 +44,9 @@ $CC $CFLAGS testing/pure/test_mission_mapping.c app_program/mission/mission_mapp
     app_program/common/robot_data.c -o "$build_dir/test_mission_mapping"
 $CC $CFLAGS testing/pure/test_echo_range.c -o "$build_dir/test_echo_range"
 $CC $CFLAGS testing/pure/test_obstacle_profile.c app_program/obstacle/obstacle_profile.c \
-    -o "$build_dir/test_obstacle_profile"
+    -lm -o "$build_dir/test_obstacle_profile"
 $CC $CFLAGS testing/pure/test_range_filter.c app_program/obstacle/obstacle_profile.c \
-    -o "$build_dir/test_range_filter"
+    -lm -o "$build_dir/test_range_filter"
 $CC $CFLAGS testing/pure/test_profile_edges.c app_program/obstacle/obstacle_profile.c -lm \
     -o "$build_dir/test_profile_edges"
 $CC $CFLAGS testing/pure/test_mqtt_frame.c app_program/comms/mqtt_frame.c \
