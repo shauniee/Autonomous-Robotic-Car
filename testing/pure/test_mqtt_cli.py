@@ -60,4 +60,16 @@ with patch.dict(sys.modules, modules), patch.dict(cli.os.environ, {}, clear=True
             assert cli.main() == (0 if result == 0 else 1)
     with patch.object(sys, "argv", ["mqtt_client.py", "snapshot", "--broker", "unused"]):
         assert cli.main() == 0
-print("mqtt CLI: PASS (OK/rejected/unknown ACKs, sequence matching, snapshot)")
+# Arrival timestamps are not firmware timestamps. A packet burst or a long
+# disconnect must not be reported as a sudden wheel-speed change.
+with patch.object(cli.time, "monotonic", side_effect=(10.0, 10.05, 10.55, 14.0, 14.5)):
+    estimator = cli.Motion()
+    assert estimator.measure(0, 0) is None
+    assert estimator.measure(500, 500) is None  # burst: 50 ms, not a 500 ms motor sample
+    stable = estimator.measure(1000, 1000)
+    assert stable is not None and 80 < stable[0] < 90 and stable[2] == "straight"
+    assert estimator.measure(1500, 1500) is None  # 3.45 s disconnect
+    recovered = estimator.measure(2000, 2000)
+    assert recovered is not None and 80 < recovered[0] < 90
+
+print("mqtt CLI: PASS (OK/rejected/unknown ACKs, sequence matching, snapshot, burst-safe speed estimate)")
