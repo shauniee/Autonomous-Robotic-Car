@@ -181,7 +181,7 @@ Later cases are named in their result rows.
 | 2026-11-02 | INT-156 | `d97e3d9`+ | Nicholas, Claude | PASS barcode; FAIL on hump | [2026-11-02_INT-156/](logs/2026-11-02_INT-156/) | Hump detector replaced with roll. All letters and a flipped print not tested |
 | 2026-11-02 | INT-157 | `d97e3d9`+ | Nicholas, Claude | FAIL | [2026-11-02_INT-157/](logs/2026-11-02_INT-157/) | Humps counted on the wrong encounters. Hump count wrong |
 | 2026-11-02 | INT-158 | `d97e3d9`+ | Nicholas, Claude | FAIL | [2026-11-02_INT-158/](logs/2026-11-02_INT-158/) | Hump baseline moved by pivots. Tracking off course, not analysed; `humps=5` against 1 crossed |
-| 2026-11-03 | INT-160 | `a7593b0` merged with `1288042`, plus fixes | Nicholas, Claude | PASS (host) | At commit | PR 149 host suite after fixing test order, a commented-out self-test and a triage script syntax error. No Arm build or Pico run; watchdog policy only |
+| 2026-11-03 | INT-160 | `a7593b0` merged with `1288042`, plus fixes | Claude | PASS (host) | At commit | PR 149 host suite after fixing test order, a commented-out self-test and a triage script syntax error. No Arm build or Pico run; watchdog policy only |
 
 ## Audits, not tests
 
