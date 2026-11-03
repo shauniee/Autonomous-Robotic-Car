@@ -123,7 +123,7 @@ Scan and bypass logic exists but has never run on the car. Wheels stay off for t
 
 - [ ] `scripts/dashboard.html` and `testing/pure/test_dashboard.mjs`: uncommitted local edits remove the robot animation and motion previews. Their origin is unconfirmed, so they were **left out of the merge**. Keep and commit, or discard.
 - [x] PR 147 (`chore/common-cleanup`) is **closed (unmerged)** as of 2026-11-02; confirm the required cleanup was included in the newer main source before deleting any branch.
-- [ ] Append the merge commit to the test log for INT-132 to INT-158, which ran on an uncommitted tree.
+- [x] Record PR #148 merge commit `e5767602c8dd1b05f0e480440b728b48ce8bf124` for INT-132..159 in an append-only provenance addendum to `testing/integration/TEST_LOG.md`, preserving original uncommitted-tree/physical-image attributions and failed trials.
 - [x] S1 software decision: **retain optional diagnostic frames** (types 9, 10 and 11) for testing; add the distinct `TRACE=0` profile for A/B trials. Do not delete the wire schema; physical impact still unmeasured.
 - [ ] Review overlapping log sizes (e.g. INT-135/136); preserve immutable source-pinned evidence, and only archive/deduplicate after checking links and audit reproducibility.
 - [ ] Update the mission-readiness checklist as items pass.
