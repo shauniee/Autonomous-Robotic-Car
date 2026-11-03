@@ -190,6 +190,8 @@ Later cases are named in their result rows.
 | 2026-11-03 | INT-166 | `3c102325519afa6ba36615b96c0a30f49e89b7f8` | Codex | PASS (Arm build only) | [profile measurements](logs/2026-11-03_INT-163-build-matrix.json) | `nic2_wd1_trace1_test1_course0`; text/data/bss 387980/424/84528 bytes; image hash in measurements; not flashed |
 | 2026-11-03 | INT-167 | `3c102325519afa6ba36615b96c0a30f49e89b7f8` | Codex | PASS (Arm build only) | [profile measurements](logs/2026-11-03_INT-163-build-matrix.json) | `nic2_wd0_trace1_test0_course1`; text/data/bss 387764/424/84496 bytes; image hash in measurements; not flashed |
 
+| 2026-11-03 | INT-168 | `a5157f9d0461094ce2a30aac64b8671b2f6e77e9` | Codex | PASS (host only) | — | Eight field-tool cases: unavailable speeds preserve state transitions, malformed traces rejected, no unsupported lap PASS, globally unique IDs and lighting-separated samples |
+
 ## Audits, not tests
 
 | Date | Test ID | Commit | Tester | Result | Log / evidence | Notes |
@@ -205,3 +207,4 @@ Later cases are named in their result rows.
 | 2026-10-31 | INT-51 | `fc9fa5d` | Codex | PASS (links); plan BLOCKED | [2026-10-31_INT-51/](logs/2026-10-31_INT-51/) | Retire the duplicate plan |
 | 2026-11-02 | INT-159 | Not recorded | Claude | No run | [2026-11-02_raw-captures/](logs/2026-11-02_raw-captures/) | Raw captures moved. Gzipped; `int-158-run.txt` deleted, it held no run |
 | 2026-11-03 | INT-161 | `e576760` | Claude | No run | — | Merge lineage. PR 148 merged INT-132 to INT-159 as `e576760`; each row keeps its original source and result, including INT-158 FAIL |
+| 2026-11-03 | INT-169 | analysis tool `a5157f9d0461094ce2a30aac64b8671b2f6e77e9`; captures retain INT-154/156/157 lineage | Codex | AUDIT (no robot run) | [capture review](logs/2026-11-03_INT-169-capture-review.md) | Acquisition-time speeds compared with arrival-time estimates; physical root causes not inferred |
