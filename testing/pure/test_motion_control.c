@@ -178,6 +178,19 @@ static void test_distance_turn_actions(void)
     assert(fabsf(angle - 90.0f) <= 2.0f * MOTION_ANGLE_TOL_DEG + 2.0f);
 }
 
+/* INT-156: the end of an approach asks for 3 mm/s, too little to turn a wheel.
+   That wait is not a stall. */
+static void test_crawl_is_not_a_stall(void)
+{
+    Sim s; sim_init(&s);
+    s.wheel_gain[0] = s.wheel_gain[1] = 0.0f;
+    MotionCommand cmd = motion_command_make(MOTION_MODE_DISTANCE, 100.0f, 2.0f, 0, 9u, 0u);
+    for (int i = 0; i < (int)(MOTION_STALL_MS / MOTION_PERIOD_MS) * 2; ++i) {
+        MotionOutput out = sim_step(&s, &cmd, false, 0);
+        assert(!out.stall);
+    }
+}
+
 static void test_stall_and_timeout(void)
 {
     Sim s; sim_init(&s);
@@ -695,6 +708,7 @@ int main(void)
     test_distance_turn_actions();
     test_swing_turn();
     test_stall_and_timeout();
+    test_crawl_is_not_a_stall();
     test_follow_steering();
     test_follow_target_slew();
     test_follow_steering_slew();

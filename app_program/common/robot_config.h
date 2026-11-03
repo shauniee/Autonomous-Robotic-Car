@@ -101,6 +101,7 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 #define MOTION_APPROACH_GAIN	4.0f	/* 1/s: speed = gain * remaining distance */
 #define MOTION_STATIONARY_CPS	5.0f	/* PROVISIONAL (D08): below this a wheel is stationary */
 #define MOTION_STALL_MS		400u	/* PROVISIONAL (D07) */
+#define MOTION_STALL_MIN_TARGET_CPS (10.0f * ENC_COUNTS_PER_MM) /* PROVISIONAL (D07): the end of an approach asks for too little to turn a wheel; INT-156 sat at 3 mm/s for 1060 ms */
 #define MOTION_ACTION_TIMEOUT_MS 12000u /* D07 trial: corrected turn distances */
 #define MOTION_PERIOD_MS	20u
 
@@ -135,7 +136,7 @@ _Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
 #define MISSION_RECOVERY_RELEASED 1
 #endif
 #ifndef MOTION_STALL_GUARD_ENABLED
-#define MOTION_STALL_GUARD_ENABLED 0 /* user-requested trial configuration */
+#define MOTION_STALL_GUARD_ENABLED 0 /* the full-course build sets 1 */
 #endif
 #define RECOVERY_MS 30000u
 #define RECOVERY_TRAVEL_MM 1200u /* PROPOSAL D07: wheel excursion bound */

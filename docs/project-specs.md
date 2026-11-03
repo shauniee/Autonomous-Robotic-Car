@@ -458,7 +458,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D06 | Stationary boot IMU calibration (IR is digital, without software calibration): bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Confirm half-speed completion and validate the accepted results-retained-through-starts/stops-until-reboot lifecycle | Terrain / Nicholas |
 | D07 | Wheel/line gains, speed/duty/distance/turn/stall limits; repeated stationary +/-70 degree sweeps, pivot speed, wheel excursion budget and usable-line handoff; bypass/depth/clearance budgets | Owners / Nicholas |
 | D08 | Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | Motion / Nicholas |
-| D09 | WiFi: Nicholas's own network (2026-11-03), set in `config/wifi_secrets.h`. Broker: open, because the demonstration rules above say the instructor's broker. A normal mission requires both before starting; loss mid-run is report-only. The professor's buffer wording is not in this repository; bounded TX/RX rings stay until it is supplied | Nicholas |
+| D09 | Closed by Nicholas, 2026-11-03: his own WiFi and laptop broker. If the instructor's network is used, change `config/wifi_secrets.h` and rebuild before the mapping is announced; the code is the same. A normal mission requires both before starting; loss mid-run is report-only. The professor's buffer wording is not in this repository, so bounded TX/RX rings stay | Nicholas |
 | D10 | Agree first-cut lateral/turn/height/width error, recovery travel and repeatability targets before corresponding physical PASS; label proposals separately from course thresholds | Nicholas |
 | D11 | Settled 2026-10-29: barcode left, hump right. Validate sensing after reverse/U-turn traversal without inventing mirrored lane placement | line_barcode / Terrain |
 | D12 | Closed by Nicholas, 2026-11-03: obstacles sit on straights, and this is the operating assumption. Curved-course bypass is not supported or claimed; options are in the [Obstacle guide](../app_program/obstacle/README.md#curves-near-an-obstacle) | Nicholas |
@@ -618,6 +618,7 @@ guard for the current trial (`MOTION_STALL_GUARD_ENABLED=0`), independently
 of `APP_NO_GUARDS`. Command freshness, local stop, action deadlines and
 recovery limits remain active. Host tests cover both disabled and enabled
 stall configurations; this is not physical acceptance.
+On 2026-11-03 Nicholas turned the guard on for the full-course image (`FULL_COURSE=1`); TEST images keep it off. It has no recorded car run.
 
 Storage contract before implementation: recovery keeps two 32-bit encoder origins,
 32-bit start/acquisition times and one byte of phase/leg/confirmation flags.

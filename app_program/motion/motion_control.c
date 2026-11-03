@@ -433,7 +433,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
     brakes the run. */
     for (int w = 0; w < 2 && MOTION_STALL_GUARD_ENABLED && !APP_NO_GUARDS; ++w)
     {
-        if (fabsf(target_cps[w]) < MOTION_STATIONARY_CPS ||
+        if (fabsf(target_cps[w]) < MOTION_STALL_MIN_TARGET_CPS ||
             fabsf(speed_cps[w]) >= MOTION_STATIONARY_CPS)
         {
             c->stalled_since_ms[w] = in->now_ms;
