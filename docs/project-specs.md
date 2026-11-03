@@ -258,7 +258,7 @@ proposed; all encoding changes require compatibility review.
 Implemented IMU telemetry calibration status: unsigned 2-bit enum in the existing
 front-range wire word, unitless and unscaled; 0 unknown (legacy), 1 not calibrated,
 2 calibrated, 3 invalid/rejected. No rounding or saturation; reject overflow.
-Wire layout is owned by [architecture](architecture.md#telemetry-and-snapshot-reply-23-bytes).
+Wire layout is owned by [architecture](architecture.md#telemetry-and-snapshot-reply-22-bytes).
 
 Rules for every row:
 

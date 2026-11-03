@@ -29,7 +29,7 @@ from pathlib import Path
 VERSION = 2
 TELEMETRY, EVENT, SNAPSHOT_REPLY, MAPPING, ACK, SNAPSHOT_REQUEST, JUNCTION_TEST = 1, 2, 3, 4, 5, 6, 7
 WHEEL_TRACE, LINE_TRACE, BARCODE_TRACE, TERRAIN_TRACE = 8, 9, 10, 11
-LENGTHS = {TELEMETRY: 23, EVENT: 11, SNAPSHOT_REPLY: 23, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3, WHEEL_TRACE: 15, LINE_TRACE: 17, BARCODE_TRACE: 18, TERRAIN_TRACE: 8}
+LENGTHS = {TELEMETRY: 22, EVENT: 11, SNAPSHOT_REPLY: 22, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3, WHEEL_TRACE: 15, LINE_TRACE: 17, BARCODE_TRACE: 18, TERRAIN_TRACE: 8}
 
 MISSION = ["READY", "FOLLOW_LINE", "NAVIGATE", "SCAN", "BYPASS", "REACQUIRE", "STOPPED"]
 MOTION = ["IDLE", "RUNNING", "DONE", "FAILED"]
@@ -48,7 +48,7 @@ FAULTS = [
 ]
 
 GOLDEN_TELEMETRY = bytes([0x21, 0x2A, 0x72, 0x45, 0x01, 0x02, 0x04, 0x08, 0x01, 0x03, 0x34, 0x12, 0x78, 0x56,
-                          0x03, 0xF8, 0xD0, 0x30, 0x61, 0xA4, 0x01, 0xAA, 0x00])
+                          0x03, 0xF8, 0xD0, 0x30, 0x61, 0xA4, 0xA9, 0x02])
 GOLDEN_EVENT = bytes([0x22, 0x01, 0x19, 0xE8, 0x03, 0x10, 0x00, 0x11, 0x00, 0x02, 0x00])
 GOLDEN_MAPPING = bytes([0x24, 0x07, 0x20, 0x88, 0x01])
 
@@ -98,7 +98,10 @@ def decode_telemetry(f):
         raise ValueError("invalid range marked valid")
     if f[15] == 0xFF:
         raise ValueError("invalid hump height marked valid")
-    width, depth = struct.unpack_from("<HH", f, 19)
+    size = int.from_bytes(f[19:22], "little")
+    if size >> 20:
+        raise ValueError("reserved telemetry bits set")
+    width, depth = size & 0x3FF, size >> 10 & 0x3FF
     return {
         "sequence": f[1], "mission": name(MISSION, f[2] & 0xF), "motion": name(MOTION, (f[2] >> 4) & 3),
         "line": LINE[f[2] >> 6], "action_id": f[3] & 0x3F, "mapped": bool(f[3] & 0x40),
