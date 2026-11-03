@@ -6,6 +6,23 @@
 #include "../../app_program/mission/mission_logic.h"
 #include "../../app_program/common/robot_time_math.h"
 
+/* PR149 fallback: every consumed valid barcode gets one event without
+   duplicating the ordinary FOLLOW barcode event. */
+static void test_barcode_event_fallback_policy(void)
+{
+    assert(!mission_needs_barcode_event(false, 0u, 0u));
+    assert(!mission_needs_barcode_event(false, 0u, MQTT_EVENT_TURN));
+    assert(!mission_needs_barcode_event(true, BARCODE_NO_LETTER, 0u));
+    assert(!mission_needs_barcode_event(true, BARCODE_NO_LETTER, MQTT_EVENT_TURN));
+    for (uint8_t letter = 0u; letter < BARCODE_ALPHABET; ++letter)
+    {
+        assert(mission_needs_barcode_event(true, letter, 0u));
+        assert(mission_needs_barcode_event(true, letter, MQTT_EVENT_TURN));
+        assert(mission_needs_barcode_event(true, letter, MQTT_EVENT_OBSTACLE));
+        assert(!mission_needs_barcode_event(true, letter, MQTT_EVENT_BARCODE));
+    }
+}
+
 static MissionInputs base(uint32_t now)
 {
     return (MissionInputs){.now_ms = now, .inputs_ok = true, .guidance_valid = true,
@@ -1009,6 +1026,7 @@ static void test_run_network_loss(void)
 }
 int main(void)
 {
+    test_barcode_event_fallback_policy();
     test_start_and_reset_never_move();
     test_start_gate();
     test_follow_and_stops();
