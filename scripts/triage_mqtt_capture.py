@@ -8,10 +8,12 @@ import argparse
 from collections import Counter
 import gzip
 import json
+import math
 from pathlib import Path
 import re
 
-TELEMETRY = re.compile(r"^TELEMETRY #(?P<seq>\d+) state=(?P<state>[^ ]+).*?\bspeed L=(?P<left>-?[\d.]+) R=(?P<right>-?[\d.]+) mm/s.*?\bhumps=(?P<humps>\d+).*?\bfront=(?P<front>no echo|[\d.]+ mm).*?\bbarcode=(?P<barcode>[^ ]+)")
+TELEMETRY = re.compile(r"^TELEMETRY #(?P<seq>\d+) state=(?P<state>[^ ]+).*?\bhumps=(?P<humps>\d+).*?\bfront=(?P<front>no echo|[\d.]+ mm).*?\bbarcode=(?P<barcode>[^ ]+)")
+SPEED = re.compile(r"\bspeed L=(-?\d+(?:\.\d+)?) R=(-?\d+(?:\.\d+)?) mm/s")
 WHEEL_LIMIT_MMPS = 500.0
 
 
@@ -29,12 +31,13 @@ def analyse(lines, limit=WHEEL_LIMIT_MMPS):
     first_seq = None
     last_seq = None
     observed_speeds = []
+    wheel_peak = None
+    transitions = []
     for number, original in enumerate(lines, 1):
         line = original.strip()
-        if "TELEMETRY #" in line and not line.startswith("TELEMETRY #"):
-            line = line[line.index("TELEMETRY #"):]
-        if "EVENT " in line and not line.startswith("EVENT "):
-            line = line[line.index("EVENT "):]
+        record = re.search(r"\b(?:TELEMETRY #|EVENT |WHEEL |LINE )", line)
+        if record:
+            line = line[record.start():]
         if line.startswith("EVENT "):
             name = line.split(":", 1)[0].partition(" ")[2]
             events[name] += 1
@@ -48,9 +51,17 @@ def analyse(lines, limit=WHEEL_LIMIT_MMPS):
             totals["wheel_trace_frames"] += 1
             try:
                 trace = json.loads(line[6:])
+                if not isinstance(trace, dict):
+                    raise ValueError("wheel record must be an object")
                 for key in ("measured_left", "measured_right"):
                     value = trace.get(key)
-                    if isinstance(value, (int, float)) and abs(value) > limit:
+                    if value is None:
+                        continue
+                    if type(value) not in (int, float) or not math.isfinite(value):
+                        raise ValueError("invalid wheel speed")
+                    if wheel_peak is None or abs(value) > abs(wheel_peak["value"]):
+                        wheel_peak = {"line": number, "sampled_ms": trace.get("sampled_ms"), "field": key, "value": value}
+                    if abs(value) > limit:
                         anomalies.append({"line": number, "reason": "wheel_trace_speed_over_limit", "field": key, "value": value})
             except (ValueError, TypeError):
                 totals["undecodable_wheel_traces"] += 1
@@ -64,15 +75,20 @@ def analyse(lines, limit=WHEEL_LIMIT_MMPS):
         states[d["state"]] += 1
         if last_state is not None and d["state"] != last_state:
             totals["state_changes"] += 1
-            if d["state"] == "STOPPED":
-                anomalies.append({"line": number, "reason": "entered_STOPPED", "from": last_state})
+            transitions.append({"line": number, "from": last_state, "to": d["state"]})
+            if d["state"] in ("STOPPED", "FAULT", "REACQUIRE"):
+                anomalies.append({"line": number, "reason": "entered_" + d["state"], "from": last_state})
         last_state = d["state"]
         if d["front"] == "no echo":
             totals["telemetry_no_echo"] += 1
-        speed_left, speed_right = float(d["left"]), float(d["right"])
-        observed_speeds.append((speed_left, speed_right))
-        if abs(speed_left) > limit or abs(speed_right) > limit:
-            anomalies.append({"line": number, "reason": "averaged_speed_over_limit", "left": speed_left, "right": speed_right})
+        speed = SPEED.search(line)
+        if speed:
+            speed_left, speed_right = map(float, speed.groups())
+            observed_speeds.append((speed_left, speed_right))
+            if abs(speed_left) > limit or abs(speed_right) > limit:
+                anomalies.append({"line": number, "reason": "averaged_speed_over_limit", "left": speed_left, "right": speed_right})
+        else:
+            totals["telemetry_speed_unavailable"] += 1
         last_humps = int(d["humps"])
         if first_humps is None:
             first_humps = last_humps
@@ -85,6 +101,8 @@ def analyse(lines, limit=WHEEL_LIMIT_MMPS):
         "counts": dict(totals),
         "states": dict(states),
         "events": dict(events),
+        "state_transitions": transitions,
+        "peak_wheel_speed_mmps": wheel_peak,
         "first_and_last_hump_counts": [first_humps, last_humps],
         "first_and_last_telemetry_sequence": [first_seq, last_seq],
         "max_abs_telemetry_speed_mmps": max((abs(x) for pair in observed_speeds for x in pair), default=None),
@@ -106,7 +124,7 @@ def main():
     parser.add_argument("--speed-limit-mmps", type=float, default=WHEEL_LIMIT_MMPS)
     parser.add_argument("--max-anomalies", type=int, default=20)
     args = parser.parse_args()
-    if args.speed_limit_mmps <= 0 or args.max_anomalies < 0:
+    if not math.isfinite(args.speed_limit_mmps) or args.speed_limit_mmps <= 0 or args.max_anomalies < 0:
         parser.error("speed limit must be positive and max anomalies nonnegative")
     with open_capture(args.capture) as handle:
         result = analyse(handle, limit=args.speed_limit_mmps)
