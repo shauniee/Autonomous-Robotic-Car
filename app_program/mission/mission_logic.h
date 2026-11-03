@@ -156,6 +156,9 @@ bool mission_queue_direction(Mission *mission, uint8_t action);
 
 void mission_init(Mission *m, uint32_t now_ms);
 void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out);
+/* True when this release's read still needs its own route event: mission_step
+   reports reads only while following, and another event can replace that one. */
+bool mission_barcode_event_needed(const MissionInputs *in, const MissionOutputs *out);
 /* Diagnostic record of the line decision mission_step just made. */
 mqtt_line_trace_t mission_line_trace(const Mission *m, const MissionInputs *in,
     const MissionOutputs *out);
