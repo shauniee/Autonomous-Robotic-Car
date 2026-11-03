@@ -107,6 +107,28 @@ Each fact has one owning guide; other guides link to it. Assignment requirements
 
 Requirements are in [project-specs](docs/project-specs.md). Full-robot bring-up order is at the end of this section.
 
+### Software regression and firmware profile checks
+
+For kernel-free C/Python/MQTT checks, run
+`bash testing/pure/run.sh`. The new GitHub Actions workflow
+`.github/workflows/host-tests.yml` runs that suite and
+`node testing/pure/test_dashboard.mjs` on pull requests and main pushes.
+A green host check does not mean the Pico firmware built or that the robot
+has passed physical tests.
+
+The pending safety/profile matrix is defined by
+`testing/build_pending_profiles.sh`. Run
+`sh testing/build_pending_profiles.sh` only on a configured machine with
+`PICO_SDK_PATH`, `arm-none-eabi-gcc` and `make`. It **builds but never
+flashes** TEST/normal and TRACE 0/1 profiles plus the TEST-only WATCHDOG
+profiles. Inspect any compiler errors before preparing a wheels-raised test
+image. See [pending.md](pending.md) for unmet measurements and decisions.
+
+Draft physical-evidence reports:
+[Motion PID/accuracy](docs/reports/motion-accuracy-pid.md) and
+[Terrain analysis](docs/reports/terrain-analysis.md). Both require
+actual records, not host-derived PASS labels.
+
 ### Build profiles
 
 Build sequentially (shared `build_make/`). Give every flag each time; incompatible objects rebuild automatically.
