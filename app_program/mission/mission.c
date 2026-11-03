@@ -205,8 +205,8 @@ static void mission_task(INT stacd, void *exinf)
            consumed during a navigation transition or a manual test command.
            Mission normally publishes its own event in FOLLOW; avoid duplicates.
            Logging never grants motor/navigation authority. */
-        if (have_barcode && out.event_kind != MQTT_EVENT_BARCODE &&
-            barcode_event_letter(&barcode) != BARCODE_NO_LETTER)
+        if (mission_needs_barcode_event(have_barcode,
+            barcode_event_letter(&barcode), out.event_kind))
         {
             comms_event(MQTT_EVENT_BARCODE, barcode_event_letter(&barcode),
                 (uint16_t)barcode_event_action(&barcode));
