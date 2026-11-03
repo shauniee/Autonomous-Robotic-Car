@@ -1,9 +1,0 @@
-[TEST] S3-U06 PASS proportional steering, polarity, saturation and freshness
-[TEST] S3-U07 PASS calibration outcomes, ADC validity, hysteresis and wraparound
-Subsystem ADC: mux discard, eight-sample averages, errors and stalled-clock bound passed.
-[TEST] S3-U08 PASS nine observations, bounded recovery, stop/reset and invalid data
-Button calibration, contrast rejection, stop/reset, motor expiry and watchdog progress checks passed.
-[TEST] INT-05 PASS real S3 loop: recovery enable, stop/reset, ADC/interface failure and missed release
-Real Motion service with fake kernel: boot/stop latch, reset invalidation, expiry, failed mutex and TEST inhibition passed.
-[TEST] INT-05 PASS real S3 loop: recovery enable, stop/reset, ADC/interface failure and missed release
-Real Motion service with fake kernel: boot/stop latch, reset invalidation, expiry, failed mutex and TEST inhibition passed.

@@ -1,8 +1,0 @@
-Command: cc -std=c11 -O2 -Wall -Wextra -Werror -pthread -DMISSION_RECOVERY_RELEASED=1 -DMISSION_BYPASS_RELEASED=1 testing/pure/test_mission.c app_program/mission/mission_logic.c app_program/mission/recovery_control.c app_program/mission/bypass_control.c app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o /var/folders/lc/4_0fnqwn5h3g5rf7pddqdkxc0000gn/T/tmp72x3j9ly/test_mission
-mission scaled history: scenario 0, 10000 samples, max Q7 delta 0
-mission scaled history: scenario 1, 10000 samples, max Q7 delta 0
-mission scaled history: scenario 2, 10000 samples, max Q7 delta 1
-INT-24 no echo: PASS (tracking report-only; bypass offset stops)
-mission: PASS
-Command: cc -std=c11 -O2 -Wall -Wextra -Werror -pthread -DMISSION_RECOVERY_RELEASED=0 -DMISSION_BYPASS_RELEASED=0 testing/pure/test_mission_pending.c app_program/mission/mission_logic.c app_program/mission/recovery_control.c app_program/mission/bypass_control.c app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o /var/folders/lc/4_0fnqwn5h3g5rf7pddqdkxc0000gn/T/tmp72x3j9ly/test_mission_pending
-mission_pending: PASS (150 mm trigger; unreleased bypass stays stopped)

@@ -556,7 +556,7 @@ static void test_turn_endpoint_does_not_reactivate(void)
         cmd.sampled_ms = in.now_ms;
         motion_control_step(&control, &cmd, &in, &out);
         assert(out.status == RD_MOTION_RUNNING && out.duty[0] == 0.0f);
-        int excursion = (int)ceilf(TRACK_WIDTH_MM * 0.5f *
+        int excursion = (int)ceilf(2.0f * TRACK_WIDTH_MM * 0.5f *
             MOTION_ANGLE_TOL_DEG * 3.14159265f / 180.0f * ENC_COUNTS_PER_MM) + 12;
         for (int drift = -excursion; drift <= excursion; drift += 2 * excursion)
         {
@@ -569,7 +569,7 @@ static void test_turn_endpoint_does_not_reactivate(void)
             fflush(stdout);
             assert(out.duty[0] == 0.0f);
         }
-        /* Partner arrival must not hide drift outside tolerance. */
+        /* Partner arrival must not hide drift outside twice the tolerance. */
         in.count[1] = enc_advance(0u, direction * arc);
         in.now_ms += MOTION_PERIOD_MS;
         cmd.sampled_ms = in.now_ms;
@@ -586,6 +586,35 @@ static void test_turn_endpoint_does_not_reactivate(void)
         motion_control_step(&control, &cmd, &in, &out);
         assert(out.status == RD_MOTION_RUNNING && out.duty[0] != 0.0f);
     }
+}
+
+/* S5-U12: the left wheel arrived, braked and rolled back just past tolerance, and
+   the turn then waited out the action timeout on the car. */
+static void test_turn_rollback_completes(void)
+{
+    MotionController control;
+    motion_control_reset(&control);
+    MotionInput in = {.now_ms = 100u, .count = {0u, 0u}};
+    MotionCommand cmd = motion_command_make(MOTION_MODE_TURN, 36.0f, 90.0f, 0, 4u, in.now_ms);
+    MotionOutput out;
+    motion_control_step(&control, &cmd, &in, &out);
+    int arc = (int)lroundf(TRACK_WIDTH_MM * 0.5f * 90.0f *
+        3.14159265f / 180.0f * ENC_COUNTS_PER_MM);
+    int tol = (int)floorf(TRACK_WIDTH_MM * 0.5f *
+        MOTION_ANGLE_TOL_DEG * 3.14159265f / 180.0f * ENC_COUNTS_PER_MM);
+    in.count[0] = enc_advance(0u, -(arc - tol));
+    in.now_ms += MOTION_PERIOD_MS;
+    cmd.sampled_ms = in.now_ms;
+    motion_control_step(&control, &cmd, &in, &out);
+    assert(out.status == RD_MOTION_RUNNING && out.duty[0] == 0.0f);
+    /* Rolls back past tolerance before the right wheel arrives. */
+    in.count[0] = enc_advance(0u, -(arc - tol - 2));
+    in.count[1] = enc_advance(0u, arc - tol);
+    in.now_ms += MOTION_PERIOD_MS;
+    cmd.sampled_ms = in.now_ms;
+    motion_control_step(&control, &cmd, &in, &out);
+    assert(out.status == RD_MOTION_DONE);
+    puts("S5-U12: arrived turn wheel rolling back still completes PASS");
 }
 
 static void test_swing_turn(void)
@@ -672,6 +701,7 @@ int main(void)
     test_follow_slowdown_never_reverses();
     test_discrete_overspeed_does_not_reverse();
     test_turn_endpoint_does_not_reactivate();
+    test_turn_rollback_completes();
     puts("motion_control: PASS");
     return 0;
 }

@@ -3,436 +3,339 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Robot Telemetry</title>
+<title>Robot Control Panel</title>
 <style>
   :root {
-    --board: #121212; --cell: #1d1d1d; --cell-hi: #262626; --seam: #0a0a0a; --frame: #383838;
-    --ink: #f2f2f2; --ink-2: #b8b8b8; --ink-3: #999999;
-    --amber: #ffb000; --red: #ff7567; --red-lamp: #e36254; --red-cell: #3a1512; --green: #5fd38a; --steel: #8fb3d0;
-    --face: "DIN Condensed", "Bahnschrift", "Arial Narrow", "Helvetica Neue", sans-serif;
+    --panel: #0d0f11; --card: #15181b; --card-hi: #1d2226; --bezel: #2b3136;
+    --ink: #eef1f3; --ink-2: #b4bcc2; --ink-3: #8c959c;
+    --amber: #ffb000; --green: #5fd38a; --red: #ff5a4e; --steel: #8fb3d0; --cyan: #5ad1e6;
+    --flap: #0a0a0a; --flap-ink: #ffb000;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
-  * { box-sizing: border-box; scrollbar-color: var(--frame) var(--board); }
-  html { background: var(--board); color-scheme: dark; }
-  body { margin: 0; color: var(--ink); font: 14px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; }
-  ::selection { background: var(--amber); color: var(--board); }
-  :focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
-  header { min-height: 48px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; justify-content: space-between; padding: 10px 24px; border-bottom: 1px solid var(--frame); }
-  h1 { margin: 0; font: 700 22px/1.2 var(--face); letter-spacing: .06em; text-transform: uppercase; }
-  .lamps { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--ink-2); font-size: 12px; }
-  .lamp::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--ink-3); }
-  .lamp.ok::before { background: var(--green); } .lamp.warn::before { background: var(--amber); } .lamp.bad::before { background: var(--red-lamp); }
-  .lamp.warn, .stream-note { color: var(--amber); } .lamp.bad { color: var(--red); }
-  main { max-width: 1800px; margin: auto; padding: 12px 24px; display: grid; gap: 12px; }
-  h2 { margin: 0 0 10px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
-  .mission-band { display: grid; grid-template-columns: 190px 1fr; align-items: center; border: 1px solid var(--frame); background: var(--cell); }
-  .mission-current { padding: 8px 16px; border-right: 1px solid var(--frame); }
-  .mission-current h2 { margin-bottom: 4px; }
-  #mission-current { display: block; font: 700 25px/1.15 var(--face); overflow-wrap: anywhere; }
-  #mission-current.bad { color: var(--red); }
-  .mission-fault { display: block; font-size: 11px; margin-top: 4px; overflow-wrap: anywhere; }
-  .fault .on { color: var(--red); } .fault .gone { color: var(--ink-3); }
-  .mission-fault .none { display: none; }
-  .mission-states { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); list-style: none; margin: 0; padding: 8px 12px; gap: 6px; }
-  .mission-states li { padding: 10px 4px; text-align: center; font: 600 14px/1.2 var(--face); color: var(--ink-3); border: 1px solid transparent; overflow-wrap: anywhere; }
-  .mission-states li[aria-current="true"] { background: var(--cell-hi); border-color: var(--green); color: var(--green); }
-  .mission-states li.bad[aria-current="true"] { border-color: var(--red); color: var(--red); }
-  body.stale #mission-current, body.stale .mission-states li[aria-current="true"] { color: var(--ink-3); }
-  body.stale .mission-states li[aria-current="true"] { border-color: var(--ink-3); }
-  .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 16px; align-items: start; }
-  .telemetry, .configuration { display: grid; gap: 12px; min-width: 0; }
-  .configuration { gap: 10px; }
-  .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-  .section-heading h2 { margin: 0; }
-  .section-heading p { margin: 0; color: var(--ink-3); font-size: 12px; }
-  table { width: 100%; table-layout: fixed; border-collapse: collapse; background: var(--cell); border: 1px solid var(--frame); }
-  th.c-sub { width: 18%; } th.c-state { width: 17%; } th.c-read { width: 20%; } th.c-fault { width: 22%; }
-  th { padding: 8px 10px; background: var(--board); font-size: 11px; font-weight: 500; text-align: left; color: var(--ink-3); }
-  td { padding: 8px 10px; border-top: 1px solid var(--frame); font-size: 13px; vertical-align: top; overflow-wrap: anywhere; }
-  td:first-child { position: relative; padding-left: 24px; color: var(--ink-2); font-weight: 500; }
-  td:first-child::before { content: ""; position: absolute; left: 10px; top: 14px; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); }
-  tr.ok td:first-child::before { background: var(--green); } tr.warn td:first-child::before { background: var(--amber); }
-  tr.bad td { background: var(--red-cell); } tr.bad td:first-child::before { background: var(--red-lamp); }
-  td.state { font-weight: 600; } tr.bad td.state, td.fault .on { color: var(--red); } tr.warn td.state { color: var(--amber); }
-  td.fault, td.fault .gone, td.fault .none { color: var(--ink-3); }
-  body.stale td, body.stale td.fault .on { color: var(--ink-3); }
-  .sensor-ledger { display: grid; grid-template-columns: minmax(300px, 1.8fr) repeat(3, minmax(0, 1fr)); border: 1px solid var(--frame); background: var(--cell); }
-  .sensor-group { padding: 12px; min-width: 0; }
-  .sensor-group + .sensor-group { border-left: 1px solid var(--frame); }
-  .sensor-group h3 { margin: 0 0 8px; font-size: 12px; font-weight: 600; }
-  .sensor-group dl { margin: 0; }
-  .sensor-group dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 6px; padding: 4px 0; }
-  .sensor-group dt { color: var(--ink-3); font-size: 11px; }
-  .sensor-group dd { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
-  .sensor-group p { margin: 8px 0 0; color: var(--ink-3); font-size: 11px; }
-  .sensor-group dd.warn { color: var(--amber); } body.stale .sensor-group dd { color: var(--ink-3); }
-  .direction-icon { display: block; width: 24px; height: 24px; margin: auto; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-  .encoder-layout { display: grid; grid-template-columns: minmax(0, 1fr) 100px minmax(0, 1fr); gap: 8px; align-items: center; }
-  .wheel-readings { min-width: 0; }
-  .wheel-readings h4 { margin: 0 0 8px; font-size: 12px; font-weight: 600; }
-  .wheel-readings:last-child { text-align: right; }
-  .wheel-readings dl > div { display: block; padding: 3px 0; }
-  .wheel-readings dd { font-size: 14px; margin-top: 2px; }
-  .encoders h3 { margin-bottom: 4px; }
-  .robot-stage { height: 96px; display: grid; place-items: center; color: var(--green); }
-  .robot-plan { width: 75px; height: 96px; overflow: visible; transform-origin: center; }
-  .robot-stage[data-motion="straight"] .robot-plan { animation: roll-forward 1.6s ease-in-out infinite; }
-  .robot-stage[data-motion="reverse"] .robot-plan { animation: roll-forward 1.6s ease-in-out infinite reverse; }
-  .robot-stage[data-motion="left"] .robot-plan { animation: steer-left 1.8s ease-in-out infinite; }
-  .robot-stage[data-motion="right"] .robot-plan { animation: steer-right 1.8s ease-in-out infinite; }
-  .robot-stage[data-motion="uturn"] .robot-plan { animation: turn-around 2.4s cubic-bezier(.16, 1, .3, 1) infinite; }
-  .robot-stage[data-live="false"]:not([data-preview="true"]) { color: var(--ink-3); }
-  .robot-stage[data-live="false"]:not([data-preview="true"]) .robot-plan,
-  .robot-stage.offscreen .robot-plan, body.page-hidden .robot-plan { animation-play-state: paused; }
-  #encoder-caption { text-align: center; color: var(--ink-2); min-height: 15px; margin-top: 4px; }
-  .motion-previews { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
-  .motion-previews span { margin-right: auto; color: var(--ink-3); font-size: 11px; }
-  .motion-previews button { min-height: 28px; padding: 2px 5px; color: var(--ink-2); background: transparent; border-color: var(--frame); }
-  .motion-previews button:hover { color: var(--ink); background: var(--cell-hi); }
-  .motion-previews button[aria-pressed="true"] { color: var(--amber); border-color: var(--amber); }
-  .motion-previews .direction-icon { width: 20px; height: 20px; }
-  #motion-live { font-size: 11px; }
-  @keyframes roll-forward { 0%, 100% { transform: translateY(7px); } 50% { transform: translateY(-7px); } }
-  @keyframes steer-left { 0%, 100% { transform: translate(5px, 5px) rotate(0); } 55% { transform: translate(-7px, -5px) rotate(-30deg); } }
-  @keyframes steer-right { 0%, 100% { transform: translate(-5px, 5px) rotate(0); } 55% { transform: translate(7px, -5px) rotate(30deg); } }
-  @keyframes turn-around { 0%, 12% { transform: rotate(0); } 70%, 100% { transform: rotate(180deg); } }
-  @media (prefers-reduced-motion: reduce) {
-    .robot-stage[data-motion] .robot-plan { animation: none; }
-    .robot-stage[data-motion="left"] .robot-plan { transform: rotate(-30deg); }
-    .robot-stage[data-motion="right"] .robot-plan { transform: rotate(30deg); }
-    .robot-stage[data-motion="uturn"] .robot-plan { transform: rotate(180deg); }
-  }
-  .sensor-note { margin: 8px 0 0; color: var(--ink-3); font-size: 11px; }
-  form { margin: 0; border: 1px solid var(--frame); background: var(--cell); padding: 16px; display: grid; gap: 14px; }
-  .strip-title { font-weight: 600; font-size: 16px; }
-  .strip-title small { display: block; margin-top: 4px; color: var(--ink-3); font-size: 12px; font-weight: 400; }
+  * { box-sizing: border-box; }
+  html { background: var(--panel); color-scheme: dark; height: 100%; }
+  body { margin: 0; height: 100%; overflow: hidden; color: var(--ink); font: 13px/1.3 var(--sans); font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
   [hidden] { display: none !important; }
-  .calibration { border: 1px solid var(--frame); background: var(--cell); padding: 14px 16px; }
-  .calibration header { min-height: 0; padding: 0; border: 0; gap: 8px; }
-  .calibration h2 { margin: 0; }
-  #setup-progress { color: var(--amber); font-size: 12px; }
-  .calibration h3 { margin: 12px 0 6px; font-size: 16px; }
-  .calibration p { margin: 6px 0; color: var(--ink-2); font-size: 12px; }
-  .letters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-  .letters label { display: grid; gap: 6px; color: var(--ink-2); text-align: center; font-size: 11px; }
-  .letters input { width: 100%; height: 54px; border: 1px solid var(--frame); border-radius: 2px; background: var(--cell-hi); color: var(--ink); font: 700 32px/1 var(--face); text-align: center; text-transform: uppercase; caret-color: var(--amber); }
-  .letters input[aria-invalid="true"] { color: var(--red); border-color: var(--red); }
-  .ack { display: grid; gap: 4px; min-height: 54px; }
-  .ack b { font-size: 13px; font-weight: 600; }
-  .ack span { color: var(--ink-2); font-size: 12px; }
-  .ack.ok b { color: var(--green); } .ack.wait b { color: var(--amber); } .ack.bad b { color: var(--red); }
-  button { min-height: 38px; padding: 8px 14px; border: 1px solid transparent; border-radius: 2px; background: var(--amber); color: var(--board); cursor: pointer; font: 600 12px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  button:hover:not(:disabled) { background: #ffc340; } button:active:not(:disabled) { background: #e99f00; }
-  button:disabled { background: var(--frame); color: var(--ink-3); cursor: not-allowed; }
-  .send button { width: 100%; }
-  .junction { padding: 12px 16px; border: 1px solid var(--frame); }
-  .junction p { margin: 8px 0 0; color: var(--ink-3); font-size: 11px; }
-  #directions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  #directions button { padding: 4px; min-height: 34px; font-size: 11px; }
-  #direction-status { color: var(--ink-2); }
-  .lower { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, .65fr) minmax(0, 1fr); gap: 16px; }
-  .panel { background: var(--cell); border: 1px solid var(--frame); padding: 12px 16px; }
-  canvas { width: 100%; height: 85px; display: block; }
-  .legend { display: flex; gap: 18px; margin-top: 6px; color: var(--ink-2); font-size: 11px; }
+  h2 { margin: 0; font: 700 12px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
+  p { margin: 0; color: var(--ink-3); font-size: 12px; }
+
+  /* Split-flap tiles: one character cell per flap, flipped on change by put(). */
+  .flap { display: inline-block; position: relative; padding: .3em .5em .32em; border-radius: 4px; background: var(--flap);
+    color: var(--flap-ink); font: 700 24px/1.1 var(--mono); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 1px #000; transform-origin: 50% 50%; }
+  .flap::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #000; }
+  .flap.big { font-size: 30px; }
+  .flap.dim { color: var(--ink-3); }
+  .flap.bad { color: var(--red); } .flap.warn { color: var(--amber); } .flap.ok { color: var(--green); }
+  .flap-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+  /* Layout: fixed-height rows that fit one 16-inch screen. */
+  main { height: 100%; padding: 10px 14px; display: grid; gap: 10px; grid-template-rows: auto minmax(0, 1.1fr) minmax(0, 1.2fr) minmax(0, .55fr); }
+  .row { display: grid; gap: 10px; min-height: 0; }
+  .row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .row.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mission { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; background: var(--card); border: 2px solid var(--bezel); border-radius: 6px; }
+  .mission-now { display: flex; align-items: center; gap: 14px; }
+  #mission-current.bad { color: var(--red); }
+  .fault { display: block; font: 12px/1.4 var(--mono); color: var(--ink-3); overflow-wrap: anywhere; }
+  .fault .on { color: var(--red); } .fault .gone { color: var(--ink-3); }
+  #clock { font: 700 22px var(--mono); color: var(--amber); letter-spacing: .06em; }
+
+  /* Subsystem cards: a flipper on top, a short log below. */
+  .card { position: relative; min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; background: var(--card); border: 2px solid var(--bezel); border-radius: 6px; }
+  .card.ok { border-color: #2e5a41; } .card.warn { border-color: #6b5314; } .card.bad { border-color: #7a2c26; background: #1b1212; }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .card-head span { font: 12px var(--mono); color: var(--ink-3); }
+  .log { margin: 0; display: grid; font: 13px/1.35 var(--mono); }
+  .log > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; padding: 4px 0; border-bottom: 1px solid #22272b; }
+  .log dt { color: var(--ink-3); } .log dd { margin: 0; overflow-wrap: anywhere; color: var(--ink); }
+  .log dd.warn { color: var(--amber); }
+  body.stale .log dd { color: var(--ink-3); }
+  .motion-body { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 14px; align-items: start; min-height: 0; flex: 1; }
+  .motion-visual { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .barcode-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; min-height: 0; flex: 1; }
+  .log dd.ok { color: var(--green); } .log dd.bad { color: var(--red); }
+  .wheel-grid { display: grid; grid-template-columns: 76px minmax(0, 1fr) minmax(0, 1fr); font: 13px/1.35 var(--mono); font-variant-numeric: tabular-nums; }
+  .wheel-grid > span { padding: 5px 0; border-bottom: 1px solid #22272b; overflow-wrap: anywhere; }
+  .wheel-grid .wh { color: var(--ink-3); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .wheel-grid .wk { color: var(--ink-3); }
+  .wheel-grid .warn { color: var(--amber); }
+  body.stale .wheel-grid > span:not(.wh):not(.wk) { color: var(--ink-3); }
+  .corner { position: absolute; top: 10px; right: 10px; font: 700 12px/1 var(--mono); letter-spacing: .06em; padding: 8px 10px; border-radius: 3px; background: #0b0c0d; color: var(--ink-3); border: 1px solid #000; }
+  .corner.ok { color: var(--green); } .corner.warn { color: var(--amber); } .corner.bad { color: var(--red); }
+  canvas { width: 100%; height: 150px; display: block; background: #0a0c0d; border-radius: 3px; }
+  .legend { display: flex; gap: 14px; color: var(--ink-2); font: 12px var(--mono); }
   .legend i { display: inline-block; width: 14px; height: 2px; margin-right: 6px; vertical-align: middle; }
-  #events { list-style: none; margin: 0; padding: 0; height: 106px; overflow-y: auto; font-size: 12px; }
-  #events li { display: grid; grid-template-columns: 65px 1fr; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--frame); overflow-wrap: anywhere; }
+  .obstacle-body { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 14px; align-items: start; min-height: 0; flex: 1; }
+  .obstacle-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; }
+  .sonar { width: 100%; height: 232px; display: block; background: #07100b; border: 1px solid #1d3326; border-radius: 3px; }
+  .sonar text { fill: #7fb095; font: 12px var(--mono); }
+  .sonar .ring { fill: none; stroke: #1f4a33; stroke-width: 1; }
+  .sonar .beam { fill: rgba(95,211,138,.08); stroke: #2f7a52; stroke-width: 1; stroke-dasharray: 3 3; }
+  .sonar .sweep { stroke: var(--green); stroke-width: 1.5; opacity: .7; }
+  .sonar .obstacle { fill: rgba(255,176,0,.35); stroke: var(--amber); stroke-width: 1.5; }
+  .sonar .obstacle.unknown { fill: none; stroke-dasharray: 4 3; }
+  .history, #humps, #events { margin: 0; padding: 0; list-style: none; overflow-y: auto; font: 12px/1.4 var(--mono); min-height: 0; }
+  .history { padding-left: 20px; list-style: decimal; }
+  .history li, #humps li { padding: 2px 0; border-bottom: 1px solid #22272b; }
+  #events { flex: 1; }
+  #events li { display: grid; grid-template-columns: 66px 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px solid #22272b; overflow-wrap: anywhere; }
   #events li time { color: var(--ink-3); } #events li.ok span { color: var(--green); } #events li.refused span { color: var(--red); }
-  #events li.none { display: block; color: var(--ink-3); border: 0; }
-  #obstacles { margin: 0; padding-left: 32px; height: 106px; overflow-y: auto; font-size: 13px; }
-  #obstacles li { padding: 6px 0; border-bottom: 1px solid var(--frame); }
-  #obstacles li::marker { color: var(--ink-3); }
-  #obstacle-empty { margin: 0; height: 106px; color: var(--ink-3); font-size: 12px; }
-  .obstacle-note { margin: 6px 0 0; color: var(--ink-3); font-size: 11px; }
-  .bench-note { margin: 0; color: var(--ink-3); font-size: 11px; }
-  @media (min-width: 1101px) and (max-height: 800px) {
-    header { min-height: 44px; padding-top: 8px; padding-bottom: 8px; }
-    main, .telemetry, .configuration { gap: 12px; } main { padding-top: 12px; padding-bottom: 12px; }
-    .mission-current { padding: 8px 16px; } .mission-states { padding: 8px; }
-    td { padding-top: 7px; padding-bottom: 7px; } td:first-child::before { top: 13px; }
-    .sensor-group { padding: 10px; } .sensor-group dl > div { padding: 3px 0; }
-    form { padding: 12px; gap: 10px; } .letters input { height: 46px; }
-    canvas { height: 70px; } #events, #obstacles, #obstacle-empty { height: 91px; }
-  }
-  @media (max-width: 1100px) {
-    .workspace { grid-template-columns: minmax(0, 1fr) 300px; }
-    .sensor-ledger { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .encoders { grid-column: 1 / -1; }
-    .sensor-group:nth-child(2), .sensor-group:nth-child(4) { border-left: 0; }
-    .sensor-group:nth-child(n+2) { border-top: 1px solid var(--frame); }
-    .mission-band { grid-template-columns: 155px 1fr; }
-    .mission-states { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    td { font-size: 12px; padding: 8px 6px; }
-  }
-  @media (max-width: 800px) {
-    header { padding: 12px 16px; } main { padding: 16px; }
-    .workspace, .lower { grid-template-columns: 1fr; }
-    .mission-band { grid-template-columns: 1fr; } .mission-current { border-right: 0; border-bottom: 1px solid var(--frame); }
-    .mission-states { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .section-heading { flex-wrap: wrap; gap: 4px; }
-    td { font-size: 11px; } th { padding: 8px 6px; }
-    th.detail, td.detail { display: none; }
-    th.c-sub { width: 25%; } th.c-state { width: 25%; } th.c-read { width: 25%; } th.c-fault { width: 25%; }
+  #events li.none { display: block; color: var(--ink-3); }
+  .empty { color: var(--ink-3); font: 12px var(--mono); }
+  .sub-title { font: 700 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+
+  /* Mapping and junction controls. */
+  form { margin: 0; display: grid; gap: 8px; }
+  .letters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .letters label { display: grid; gap: 4px; justify-items: center; font: 12px var(--mono); color: var(--ink-2); }
+  .letters input { width: 100%; height: 42px; border: 1px solid #000; border-radius: 3px; background: var(--flap); color: var(--flap-ink); font: 700 24px/1 var(--mono); text-align: center; text-transform: uppercase; caret-color: var(--amber); }
+  .letters input[aria-invalid="true"] { color: var(--red); }
+  .code { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 3px; background: #0a0a0a; color: var(--cyan); font: 700 13px/1 var(--mono); }
+  .ack { display: grid; gap: 2px; font: 12px/1.35 var(--mono); }
+  .ack b { font-weight: 700; } .ack span { color: var(--ink-2); }
+  .ack.ok b { color: var(--green); } .ack.wait b { color: var(--amber); } .ack.bad b { color: var(--red); }
+  button { min-height: 36px; padding: 6px 12px; border: 1px solid #000; border-radius: 3px; background: var(--amber); color: #0a0a0a; cursor: pointer; font: 700 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+  button:hover:not(:disabled) { background: #ffc340; } button:active:not(:disabled) { background: #e99f00; }
+  button:disabled { background: #2a2f34; color: var(--ink-3); cursor: not-allowed; }
+  #send { width: 100%; }
+  #directions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  #directions button { min-height: 50px; font: 700 24px/1 var(--mono); }
+  #direction-status { font: 12px/1.35 var(--mono); color: var(--ink-2); }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; height: auto; }
+    main { height: auto; grid-template-rows: none; }
+    .row.three, .row.two { grid-template-columns: 1fr; }
+    .card { overflow: visible; }
   }
 </style>
 </head>
 <body class="stale">
-<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
-  <symbol id="arrow-left" viewBox="0 0 24 24"><path d="M12 21V12a5 5 0 0 0-5-5H3m5-5L3 7l5 5"></path></symbol>
-  <symbol id="arrow-right" viewBox="0 0 24 24"><path d="M12 21V12a5 5 0 0 1 5-5h4m-5-5 5 5-5 5"></path></symbol>
-  <symbol id="arrow-straight" viewBox="0 0 24 24"><path d="M12 21V3m-5 5 5-5 5 5"></path></symbol>
-  <symbol id="arrow-uturn" viewBox="0 0 24 24"><path d="M5 21V9a7 7 0 0 1 14 0v7m-5-5 5 5 4-5"></path></symbol>
-</defs></svg>
-<header>
-  <h1>Robot Telemetry</h1>
-  <div class="lamps" role="status">
-    <span id="link" class="lamp">Dashboard offline</span>
-    <span id="robot" class="lamp">Robot unknown</span>
-    <span id="age" class="lamp">No frames yet</span>
-  </div>
-</header>
 <main>
-  <section class="mission-band" aria-label="Mission states">
-    <div class="mission-current"><h2>Mission state</h2><strong id="mission-current" role="status">Awaiting telemetry</strong><span id="mission-fault" class="fault mission-fault"></span></div>
-    <ul class="mission-states" aria-label="Reported state, not a sequential progress bar">
-      <li id="mission-READY">READY</li><li id="mission-FOLLOW_LINE">FOLLOW_LINE</li>
-      <li id="mission-NAVIGATE">NAVIGATE</li><li id="mission-SCAN">SCAN</li>
-      <li id="mission-BYPASS">BYPASS</li><li id="mission-REACQUIRE">REACQUIRE</li>
-      <li id="mission-STOPPED" class="bad">STOPPED</li>
-    </ul>
+  <section class="mission" aria-label="Mission state">
+    <div class="mission-now">
+      <h2>Mission</h2>
+      <span id="mission-current" class="flap big" role="status">WAIT</span>
+      <span id="fault-Mission" class="fault"></span>
+    </div>
+    <span id="clock" aria-label="Local time">--:--:--</span>
   </section>
-  <div class="workspace">
-    <div class="telemetry">
-<section aria-label="Subsystem health"><div class="section-heading"><h2>Subsystem health</h2><p>All five subsystems</p></div>
-  <table aria-label="Subsystems">
-    <thead><tr><th scope="col" class="c-sub">Subsystem</th><th scope="col" class="c-state">State</th><th scope="col" class="c-read">Reading</th><th scope="col" class="detail">Detail</th><th scope="col" class="c-fault">Fault</th></tr></thead>
-    <tbody>
-      <tr id="row-Network"><td>S1 · Comms</td><td class="state">-</td><td class="reading">-</td><td class="detail">-</td><td class="fault"><span class="none">-</span></td></tr>
-      <tr id="row-Motion"><td>S2 · Motion</td><td class="state">-</td><td class="reading">-</td><td class="detail">-</td><td class="fault"><span class="none">-</span></td></tr>
-      <tr id="row-Line"><td>S3 · Line & barcode</td><td class="state">-</td><td class="reading">-</td><td class="detail">-</td><td class="fault"><span class="none">-</span></td></tr>
-      <tr id="row-Terrain"><td>S4 · Terrain</td><td class="state">-</td><td class="reading">-</td><td class="detail">-</td><td class="fault"><span class="none">-</span></td></tr>
-      <tr id="row-Obstacle"><td>S5 · Obstacle</td><td class="state">-</td><td class="reading">-</td><td class="detail">-</td><td class="fault"><span class="none">-</span></td></tr>
-    </tbody>
-  </table>
-</section>
-  <section aria-labelledby="sensor-title">
-    <div class="section-heading"><h2 id="sensor-title">Sensor readings</h2><p id="sensor-frame">Waiting for the first telemetry frame</p></div>
-    <div class="sensor-ledger">
-      <section class="sensor-group encoders" aria-label="Wheel encoders"><h3>Wheel encoders</h3>
-        <div class="encoder-layout">
-          <div class="wheel-readings"><h4>Left wheel</h4><dl>
-            <div><dt>Average speed</dt><dd id="sensor-speed-left">—</dd></div>
-            <div><dt>Target</dt><dd id="trace-target-left">—</dd></div>
-            <div><dt>PID speed</dt><dd id="trace-speed-left">—</dd></div>
-            <div><dt>Duty</dt><dd id="trace-duty-left">—</dd></div>
-            <div><dt>Count</dt><dd id="sensor-count-left">—</dd></div>
-          </dl></div>
-          <div id="encoder-motion" class="robot-stage" data-motion="stopped" data-preview="false" aria-hidden="true">
-            <svg class="robot-plan" viewBox="0 0 100 128" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
-              <path d="M44 13 50 6l6 7" stroke-linecap="round"></path>
-              <rect x="25" y="25" width="50" height="76" rx="10" fill="var(--cell-hi)"></rect>
-              <rect x="14" y="43" width="10" height="39" rx="2" fill="var(--frame)"></rect>
-              <rect x="76" y="43" width="10" height="39" rx="2" fill="var(--frame)"></rect>
-              <path d="M25 62h50M39 36h22M40 89h20" stroke="var(--ink-3)"></path>
-              <circle cx="35" cy="28" r="3" fill="currentColor" stroke="none"></circle>
-              <circle cx="65" cy="28" r="3" fill="currentColor" stroke="none"></circle>
-              <circle cx="50" cy="74" r="7" stroke="var(--ink-3)"></circle>
-            </svg>
+
+  <div class="row three">
+    <!-- comms -->
+    <section class="card" id="card-Comms" aria-labelledby="title-Comms">
+      <div class="card-head"><h2 id="title-Comms">Comms</h2></div>
+      <div class="flap-row"><span class="flap big" id="flap-Comms">UNKNOWN</span></div>
+      <dl class="log">
+        <div><dt>Frame</dt><dd id="sensor-sequence">—</dd></div>
+        <div><dt>Robot</dt><dd id="sensor-online">Unknown</dd></div>
+        <div><dt>Stream</dt><dd id="sensor-stream">Waiting for telemetry</dd></div>
+      </dl>
+      <span class="fault" id="fault-Comms"></span>
+    </section>
+
+    <!-- motion -->
+    <section class="card" id="card-Motion" aria-labelledby="title-Motion">
+      <div class="card-head"><h2 id="title-Motion">Motion</h2></div>
+      <div class="flap-row"><span class="flap big" id="flap-Motion">IDLE</span></div>
+      <div class="motion-body">
+        <div class="motion-visual">
+          <canvas id="chart" role="img" aria-label="Left and right average wheel speed over the last 60 seconds"></canvas>
+          <div class="legend"><span><i style="background:var(--ink)"></i>Left</span><span><i style="background:var(--steel)"></i>Right</span></div>
+        </div>
+        <div class="obstacle-side">
+          <div class="wheel-grid" role="table" aria-label="Wheel details">
+            <span class="wh" role="columnheader"></span><span class="wh" role="columnheader">Left</span><span class="wh" role="columnheader">Right</span>
+            <span class="wk" role="rowheader">Speed</span><span id="sensor-speed-left" role="cell">—</span><span id="sensor-speed-right" role="cell">—</span>
+            <span class="wk" role="rowheader">Duty</span><span id="trace-duty-left" role="cell">—</span><span id="trace-duty-right" role="cell">—</span>
+            <span class="wk" role="rowheader">Count</span><span id="sensor-count-left" role="cell">—</span><span id="sensor-count-right" role="cell">—</span>
           </div>
-          <div class="wheel-readings"><h4>Right wheel</h4><dl>
-            <div><dt>Average speed</dt><dd id="sensor-speed-right">—</dd></div>
-            <div><dt>Target</dt><dd id="trace-target-right">—</dd></div>
-            <div><dt>PID speed</dt><dd id="trace-speed-right">—</dd></div>
-            <div><dt>Duty</dt><dd id="trace-duty-right">—</dd></div>
-            <div><dt>Count</dt><dd id="sensor-count-right">—</dd></div>
-          </dl></div>
+          <p id="trace-status" hidden></p>
+          <span class="fault" id="fault-Motion"></span>
         </div>
-        <p id="trace-status">No wheel trace received.</p>
-        <p id="encoder-caption"><span id="motion-source">Live</span> · <span id="sensor-direction">Awaiting sample</span></p>
-        <div id="motion-previews" class="motion-previews" aria-label="Diagram previews, no robot commands">
-          <span>Preview</span>
-          <button type="button" data-motion="left" aria-label="Preview left motion" title="Preview left" aria-pressed="false"><svg class="direction-icon" aria-hidden="true"><use href="#arrow-left"></use></svg></button>
-          <button type="button" data-motion="right" aria-label="Preview right motion" title="Preview right" aria-pressed="false"><svg class="direction-icon" aria-hidden="true"><use href="#arrow-right"></use></svg></button>
-          <button type="button" data-motion="straight" aria-label="Preview straight motion" title="Preview straight" aria-pressed="false"><svg class="direction-icon" aria-hidden="true"><use href="#arrow-straight"></use></svg></button>
-          <button type="button" data-motion="uturn" aria-label="Preview U-turn motion" title="Preview U-turn" aria-pressed="false"><svg class="direction-icon" aria-hidden="true"><use href="#arrow-uturn"></use></svg></button>
-          <button id="motion-live" type="button" aria-pressed="true">Live</button>
+      </div>
+    </section>
+
+    <!-- terrain -->
+    <section class="card" id="card-Terrain" aria-labelledby="title-Terrain">
+      <span class="corner" id="imu-badge" role="status">IMU UNKNOWN</span>
+      <div class="card-head"><h2 id="title-Terrain">Terrain</h2></div>
+      <div class="flap-row"><span class="flap big" id="flap-Terrain">0 HUMPS</span></div>
+      <dl class="log">
+        <div><dt>Humps</dt><dd id="sensor-humps">—</dd></div>
+        <div><dt>Max hump</dt><dd id="sensor-height">—</dd></div>
+      </dl>
+      <span class="fault" id="fault-Terrain"></span>
+      <h2 class="sub-title">Hump log</h2>
+      <p class="empty" id="hump-empty">No hump measurements yet.</p>
+      <ol id="humps" hidden tabindex="0" aria-label="Past hump heights"></ol>
+    </section>
+  </div>
+
+  <div class="row two">
+    <!-- line_barcode + mapping -->
+    <section class="card" id="card-Barcode" aria-labelledby="title-Barcode">
+      <div class="card-head"><h2 id="title-Barcode">Line &amp; barcode</h2></div>
+      <div class="flap-row">
+        <span class="flap big" id="flap-Line" aria-label="Line status">—</span>
+        <span class="flap big" id="flap-Barcode-letter" aria-label="Letter detected">–</span>
+      </div>
+      <div class="barcode-body">
+      <div class="obstacle-side">
+      <dl class="log">
+        <div><dt>Mapping</dt><dd id="sensor-mapped">—</dd></div>
+      </dl>
+      <span class="fault" id="fault-Line"></span>
+      <h2 class="sub-title">Barcode log</h2>
+      <p class="empty" id="barcode-empty">No barcodes passed yet.</p>
+      <ol class="history" id="barcodes" aria-label="Barcodes passed" tabindex="0" hidden></ol>
+      </div>
+      <form id="map" novalidate>
+        <h2 class="sub-title">Barcode mapping</h2>
+        <div class="letters">
+          <label title="Left"><span class="code">L</span><input aria-label="Left" name="l" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
+          <label title="Right"><span class="code">R</span><input aria-label="Right" name="r" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
+          <label title="Straight"><span class="code">S</span><input aria-label="Straight" name="s" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
+          <label title="U-turn"><span class="code">U</span><input aria-label="U-turn" name="u" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
         </div>
-        <p>Counts wrap at 65,536. U-turn is preview only.</p>
-      </section>
-      <section class="sensor-group" aria-label="Line & barcode"><h3>Line & barcode</h3><dl>
-        <div><dt>Line status</dt><dd id="sensor-line">—</dd></div>
-        <div><dt>Last letter</dt><dd id="sensor-barcode">—</dd></div>
-        <div><dt>Mapped action</dt><dd id="sensor-barcode-action">—</dd></div>
-        <div><dt>Mapping installed</dt><dd id="sensor-mapped">—</dd></div>
-      </dl><p>Latest decoded letter and its mapped action.</p></section>
-      <section class="sensor-group" aria-label="Ultrasonic range"><h3>Ultrasonic range</h3><dl>
+        <div id="ack" class="ack" aria-live="polite"><b id="ackhead">Not sent</b><span id="ackmsg">Enter the four letters announced on mission day.</span></div>
+        <button id="send" type="submit" disabled>Send mapping</button>
+      </form>
+      </div>
+    </section>
+
+    <!-- obstacle + sonar -->
+    <section class="card" id="card-Obstacle" aria-labelledby="title-Obstacle">
+      <div class="card-head"><h2 id="title-Obstacle">Obstacle</h2><span>ultrasonic</span></div>
+      <div class="flap-row"><span class="flap big" id="flap-Obstacle">NO ECHO</span></div>
+      <div class="obstacle-body">
+      <svg class="sonar" viewBox="0 0 300 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ultrasonic fan with the latest obstacle at its measured range">
+        <!-- Cone edges at SERVO_LOOK_DEG (70) either side of forward, reaching the outer ring. -->
+        <path class="beam" d="M150,226 L-42.6,155.9 A205,205 0 0 1 342.6,155.9 Z"></path>
+        <circle class="ring" id="sonar-ring-1" cx="150" cy="226" r="68"></circle>
+        <circle class="ring" id="sonar-ring-2" cx="150" cy="226" r="137"></circle>
+        <circle class="ring" id="sonar-ring-3" cx="150" cy="226" r="205"></circle>
+        <rect class="obstacle" id="sonar-block" x="130" y="20" width="40" height="10" style="display:none"></rect>
+        <text id="sonar-readout" text-anchor="middle" style="display:none"></text>
+        <line class="sweep" x1="150" y1="226" x2="-42.6" y2="155.9"></line>
+        <line class="sweep" x1="150" y1="226" x2="342.6" y2="155.9"></line>
+        <text x="8" y="14" id="sonar-scale">scale —</text>
+        <text x="150" y="238" text-anchor="middle">0°</text>
+      </svg>
+      <div class="obstacle-side">
+      <dl class="log">
         <div><dt>Front range</dt><dd id="sensor-front">—</dd></div>
-        <div><dt>Range result</dt><dd id="sensor-front-valid">—</dd></div>
-        <div><dt>Last obstacle width</dt><dd id="sensor-width">—</dd></div>
-        <div><dt>Last obstacle depth</dt><dd id="sensor-depth">—</dd></div>
-      </dl><p>No echo does not mean clear. Dimensions are completed results.</p></section>
-      <section class="sensor-group" aria-label="Terrain"><h3>Terrain</h3><dl>
-        <div><dt>Humps detected</dt><dd id="sensor-humps">—</dd></div>
-        <div><dt>Maximum height</dt><dd id="sensor-height">—</dd></div>
-        <div><dt>Height result</dt><dd id="sensor-height-valid">—</dd></div>
-      </dl><p>Retained maximum, not the current terrain height.</p></section>
-    </div>
-    <p class="sensor-note"><span id="sensor-freshness" class="stream-note">No readings received.</span> Raw IR levels, IMU acceleration / pitch and servo angle are not included in telemetry.</p>
-  </section>
-
-
-
-  </div>
-  <aside class="configuration" aria-label="Sensor verification, barcode configuration and junction testing">
-  <section id="setup" class="calibration" aria-labelledby="setup-title">
-    <header><h2 id="setup-title">Before starting</h2></header>
-    <p>IR reports black / white. Verify both sensors at mounted height with drive power disconnected; there is no software IR capture.</p>
-    <p>Encoders feed each wheel’s speed PID. Compare target, PID speed and duty before changing motor gains.</p>
-    <p>Install the barcode mapping below, then use GP20 to start locally. GP21 stops / resets.</p>
-  </section>
-  <form id="map" novalidate>
-    <div class="strip-title">Custom barcode mapping<small id="installed">Awaiting robot mapping status</small></div>
-    <div class="letters">
-      <label title="Left"><svg class="direction-icon" aria-hidden="true"><use href="#arrow-left"></use></svg><input aria-label="Left" name="l" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
-      <label title="Right"><svg class="direction-icon" aria-hidden="true"><use href="#arrow-right"></use></svg><input aria-label="Right" name="r" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
-      <label title="Straight"><svg class="direction-icon" aria-hidden="true"><use href="#arrow-straight"></use></svg><input aria-label="Straight" name="s" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
-      <label title="U-turn"><svg class="direction-icon" aria-hidden="true"><use href="#arrow-uturn"></use></svg><input aria-label="U-turn" name="u" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
-    </div>
-    <div id="ack" class="ack" aria-live="polite"><b id="ackhead">Not sent</b><span id="ackmsg">Enter the four letters announced on mission day.</span></div>
-    <div class="send"><button id="send" type="submit" disabled>Send mapping</button></div>
-  </form>
-
-  <section class="junction" aria-labelledby="junction-title">
-    <h2 id="junction-title">Junction testing</h2>
-    <p>Start locally with GP20, then activate one direction before the next junction.
-      It runs once; stop with GP21 to cancel. Barcode mapping is still required to start.</p>
-    <div id="directions">
-      <button type="button" data-action="1" aria-label="Left" title="Left" disabled><svg class="direction-icon" aria-hidden="true"><use href="#arrow-left"></use></svg></button>
-      <button type="button" data-action="2" aria-label="Right" title="Right" disabled><svg class="direction-icon" aria-hidden="true"><use href="#arrow-right"></use></svg></button>
-      <button type="button" data-action="3" aria-label="Straight" title="Straight" disabled><svg class="direction-icon" aria-hidden="true"><use href="#arrow-straight"></use></svg></button>
-      <button type="button" data-action="4" aria-label="U-turn" title="U-turn" disabled><svg class="direction-icon" aria-hidden="true"><use href="#arrow-uturn"></use></svg></button>
-    </div>
-    <p id="direction-status" role="status">Waiting for live line following.</p>
-  </section>
-
-  </aside>
-  </div>
-  <div class="lower">
-    <section>
-      <h2>Wheel speed · mm/s · last 60 s</h2>
-      <div class="panel">
-        <canvas id="chart" role="img" aria-label="Left and right average wheel speed over the last 60 seconds"></canvas>
-        <div class="legend"><span><i style="background:var(--ink)"></i>Left</span><span><i style="background:var(--steel)"></i>Right</span></div>
+        <div><dt>Width</dt><dd id="sensor-width">—</dd></div>
+        <div><dt>Depth</dt><dd id="sensor-depth">—</dd></div>
+      </dl>
+      <span class="fault" id="fault-Obstacle"></span>
+      <h2 class="sub-title">Obstacle history</h2>
+      <p class="empty" id="obstacle-empty">No obstacle measurements yet.</p>
+      <ol class="history" id="obstacles" aria-label="Past obstacles, width by depth" tabindex="0" hidden></ol>
+      </div>
       </div>
     </section>
-    <section aria-labelledby="obstacle-title">
-      <h2 id="obstacle-title">Obstacle history</h2>
-      <div class="panel">
-        <p id="obstacle-empty">No completed obstacle measurements yet.</p>
-        <ol id="obstacles" aria-label="Past obstacles, width by length" tabindex="0" hidden></ol>
-        <p class="obstacle-note">Width × length · latest 200 this page session</p>
+  </div>
+
+  <div class="row two">
+    <!-- Junction testing -->
+    <section class="card" aria-labelledby="junction-title">
+      <div class="card-head"><h2 id="junction-title">Junction testing</h2><span>GP21 cancels</span></div>
+      <div id="directions">
+        <button type="button" data-action="1" aria-label="Left" title="Left" disabled>L</button>
+        <button type="button" data-action="2" aria-label="Right" title="Right" disabled>R</button>
+        <button type="button" data-action="3" aria-label="Straight" title="Straight" disabled>S</button>
+        <button type="button" data-action="4" aria-label="U-turn" title="U-turn" disabled>U</button>
       </div>
+      <p id="direction-status" role="status">Waiting for live line following.</p>
     </section>
-    <section>
-      <h2>Events and acknowledgements</h2>
-      <div class="panel"><ol id="events" aria-label="Events and acknowledgements"><li class="none">No events yet. Robot events and command acknowledgements appear here.</li></ol></div>
+
+    <!-- Event log -->
+    <section class="card" aria-labelledby="events-title">
+      <div class="card-head"><h2 id="events-title">Event log</h2><span>this session</span></div>
+      <ol id="events" aria-label="Events and acknowledgements"><li class="none">No events yet.</li></ol>
     </section>
   </div>
-<p class="bench-note">Local controls: GP20 start · GP21 stop / reset. Mapping changes are accepted only in READY or STOPPED.</p>
 </main>
 <script>
 const $ = id => document.getElementById(id);
 const history = [];          // {t, l, r} wheel speeds for the chart
 const obstacles = [];
+const humps = [];
+function showHump(m) {
+  if (!Number.isFinite(m.hump_height_mm) || m.hump_height_mm < 0 || humps.some(h => h.id === m.event_id)) return;
+  const item = document.createElement("li");
+  item.textContent = `${m.hump_height_mm} mm · ${new Date().toLocaleTimeString([], {hour12: false})}`;
+  humps.push({id: m.event_id, element: item});
+  $("humps").prepend(item);
+  if (humps.length > 200) humps.shift().element.remove();
+  $("humps").hidden = false;
+  $("hump-empty").hidden = true;
+}
 let obstacleWidth = null, obstacleNumber = 0;
 const seen = {}, cleared = {}; // owner -> faults active last frame / faults cleared this run
-let lastFrame = 0, robotOnline = null, mission = null, pending = null;
+let lastFrame = 0, robotOnline = null, linked = null, mission = null, pending = null, encoderDirection = null;
+const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// Keep each reading atomic and readable during the 500 ms telemetry stream.
+// Keep each reading atomic; a changed flap turns over once, like a departure board.
 function put(el, text) {
   text = String(text);
-  if (el.textContent !== text) el.textContent = text;
+  if (el.textContent === text) return;
+  el.textContent = text;
+  if (el.classList.contains("flap") && el.animate && !reducedMotion())
+    el.animate([{transform: "rotateX(-90deg)", opacity: .4}, {transform: "rotateX(0)", opacity: 1}], {duration: 280, easing: "ease-out"});
 }
-function lamp(id, text, kind) { $(id).textContent = text; $(id).className = "lamp" + (kind ? " " + kind : ""); }
-function row(owner, state, reading, detail, kind) {
-  const r = $("row-" + owner);
-  put(r.querySelector(".state"), state); put(r.querySelector(".reading"), reading); put(r.querySelector(".detail"), detail);
-  r.className = kind || "";
+// Each card: one flipper, one tone (ok / warn / bad), no hidden states.
+function board(owner, word, kind) {
+  if (word != null) {
+    put($("flap-" + owner), word);
+    $("flap-" + owner).className = "flap big " + (kind || "");
+  }
+  $("card-" + owner).className = "card " + (kind || "");
 }
 function faults(owner, active) {
-  const cell = owner === "Mission" ? $("mission-fault") : $("row-" + owner).querySelector(".fault");
+  const cell = $("fault-" + owner);
   const gone = cleared[owner] ||= new Set();
   for (const f of seen[owner] || []) if (!active.includes(f)) gone.add(f);
   for (const f of active) gone.delete(f);
   seen[owner] = active;
-  // One line per cell: active faults in red, then the faults cleared this run, dimmed.
+  // One line per card: active faults in red, then the faults cleared this run, dimmed.
   const span = (className, textContent) => Object.assign(document.createElement("span"), { className, textContent });
   cell.replaceChildren(...(active.length
     ? [span("on", active.join(", ")), ...(gone.size ? [span("gone", ` · ${gone.size} cleared`)] : [])]
-    : [gone.size ? span("gone", [...gone].join(", ") + " cleared") : span("none", "None")]));
+    : [gone.size ? span("gone", [...gone].join(", ") + " cleared") : span("none", "No faults")]));
   const text = cell.textContent;
   cell.title = active.length && gone.size ? `Active: ${active.join(", ")}. Cleared: ${[...gone].join(", ")}.` : text;
   return active.length > 0;
 }
 
 // Direction is encoder-derived; a U-turn cannot be identified by this frame.
-const encoderDirections = {straight: "Forward", reverse: "Reverse", left: "Left", right: "Right", stopped: "Stopped", uturn: "U-turn"};
-let encoderDirection = null, encoderPreview = null;
-function renderEncoder() {
-  const live = lastFrame && Date.now() - lastFrame < 2000 && robotOnline !== false;
-  const direction = encoderPreview || encoderDirection;
-  $("encoder-motion").setAttribute("data-motion", direction || "stopped");
-  $("encoder-motion").setAttribute("data-preview", String(!!encoderPreview));
-  $("encoder-motion").setAttribute("data-live", String(!!live));
-  $("motion-source").textContent = encoderPreview ? "Preview only" : live ? "Live" : lastFrame ? "Last reading" : "Live";
-  $("sensor-direction").textContent = encoderDirections[direction] || "Awaiting sample";
-  $("motion-previews").querySelectorAll("button[data-motion]").forEach(b => {
-    b.setAttribute("aria-pressed", String(b.dataset.motion === encoderPreview));
-  });
-  $("motion-live").setAttribute("aria-pressed", String(!encoderPreview));
-}
-$("motion-previews").addEventListener("click", e => {
-  const button = e.target.closest("button");
-  if (!button) return;
-  const direction = button.dataset.motion;
-  if (button.id !== "motion-live" && !["left", "right", "straight", "uturn"].includes(direction)) return;
-  encoderPreview = button.id === "motion-live" ? null : direction;
-  renderEncoder();
-});
-const syncPageVisibility = () => document.body.classList.toggle("page-hidden", document.hidden);
-document.addEventListener("visibilitychange", syncPageVisibility);
-syncPageVisibility();
-if (typeof IntersectionObserver !== "undefined") {
-  new IntersectionObserver(entries => {
-    $("encoder-motion").classList.toggle("offscreen", !entries[0].isIntersecting);
-  }).observe($("encoder-motion"));
-}
+const directionWords = {straight: "STRAIGHT", left: "LEFT", right: "RIGHT", uturn: "U-TURN", reverse: "REVERSE", stopped: "STOPPED"};
 
 // Keep missing/invalid measurements distinct from a reported zero.
 function showSensors(t) {
   const value = (id, text, warning = false) => {
-    $(id).textContent = text;
+    put($(id), text);
     $(id).classList.toggle("warn", warning);
   };
   const speed = v => v == null ? "Awaiting sample" : `${v} mm/s`;
   const dimension = v => v == null || v === 0 ? "No result" : `${v} mm`;
+  value("sensor-sequence", t.sequence);
   value("sensor-speed-left", speed(t.speed_left), t.speed_left == null);
   value("sensor-speed-right", speed(t.speed_right), t.speed_right == null);
   value("sensor-count-left", t.left);
   value("sensor-count-right", t.right);
-  encoderDirection = ["straight", "reverse", "left", "right", "stopped"].includes(t.direction) ? t.direction : null;
-  renderEncoder();
-  value("sensor-line", t.line, t.line !== "VISIBLE");
-  value("sensor-barcode", ["none", "-"].includes(t.barcode) ? "None decoded" : t.barcode);
-  value("sensor-barcode-action", t.barcode_action);
-  value("sensor-mapped", t.mapped ? "Yes" : "No", !t.mapped);
+  encoderDirection = ["straight", "reverse", "left", "right", "stopped", "uturn"].includes(t.direction) ? t.direction : null;
+  put($("sensor-mapped"), t.mapped ? "Yes" : "No");
+  $("sensor-mapped").className = t.mapped ? "ok" : "bad";
   value("sensor-front", t.front_mm == null ? "Unavailable" : `${t.front_mm} mm`, t.front_mm == null);
-  value("sensor-front-valid", t.front_mm == null ? "No valid echo" : "Valid echo", t.front_mm == null);
   value("sensor-width", dimension(t.obstacle_width_mm));
   value("sensor-depth", dimension(t.obstacle_depth_mm));
   value("sensor-humps", t.hump_count);
   value("sensor-height", t.hump_max_mm == null ? "No valid maximum" : `${t.hump_max_mm} mm`);
-  value("sensor-height-valid", t.hump_max_mm == null ? "Awaiting valid hump" : "Valid maximum");
-  $("sensor-frame").textContent = `Frame ${t.sequence} · ${t.mission} · Motion ${t.motion} · Action ID ${t.action_id}`;
   sensorFreshness();
 }
 let traceReceived = 0, traceSample = null, traceSummary = "";
@@ -440,25 +343,58 @@ function showWheelTrace(t) {
   const gap = traceSample == null ? 0 : (t.sampled_ms - traceSample) >>> 0;
   traceSample = t.sampled_ms;
   traceReceived = Date.now();
-  for (const wheel of ["left", "right"]) {
-    $("trace-target-" + wheel).textContent = t["target_" + wheel] == null ? "Unavailable" : t["target_" + wheel] + " mm/s";
-    $("trace-speed-" + wheel).textContent = t["measured_" + wheel] == null ? "Unavailable" : t["measured_" + wheel] + " mm/s";
-    $("trace-duty-" + wheel).textContent = t["duty_" + wheel] == null ? "Unavailable" : t["duty_" + wheel] + "%";
-  }
+  for (const wheel of ["left", "right"])
+    put($("trace-duty-" + wheel), t["duty_" + wheel] == null ? "Unavailable" : t["duty_" + wheel] + "%");
   traceSummary = `Wheel trace t=${t.sampled_ms} ms · ${t.inhibited ? "TEST: motors inhibited" : "normal firmware"} · ${t.output_ok ? "output serviced" : "output failed"}` +
     (gap > 30 ? ` · sample gap ${gap} ms` : "");
   traceFreshness();
 }
+// The trace line appears only when the wheel output is abnormal or stale.
 function traceFreshness() {
-  $("trace-status").textContent = !traceReceived ? "No wheel trace received." :
-    traceSummary + (Date.now() - traceReceived >= 2000 || robotOnline === false ? " · stale / last received" : "");
+  const stale = traceReceived && (Date.now() - traceReceived >= 2000 || robotOnline === false);
+  const abnormal = /inhibited|failed|sample gap/.test(traceSummary);
+  $("trace-status").hidden = !traceReceived || !(stale || abnormal);
+  $("trace-status").textContent = stale ? traceSummary + " · stale / last received" : traceSummary;
 }
 function sensorFreshness() {
   traceFreshness();
-  const live = lastFrame && Date.now() - lastFrame < 2000;
-  $("sensor-freshness").textContent = live ? "Latest received readings." : lastFrame
-    ? "Stream stale — showing last received readings." : "No readings received.";
-  $("sensor-freshness").className = live ? "" : "stream-note";
+  const live = lastFrame && Date.now() - lastFrame < 2000 && robotOnline !== false;
+  $("sensor-online").textContent = robotOnline === null ? "Unknown" : robotOnline ? "Online" : "Offline";
+  $("sensor-stream").textContent = live ? "Live" : lastFrame ? "Stale / last received" : "Waiting for telemetry";
+  renderComms();
+}
+function renderComms() {
+  const word = linked === false ? "NO LINK" : robotOnline === null ? "UNKNOWN" : robotOnline ? "ONLINE" : "OFFLINE";
+  board("Comms", word, linked === false || robotOnline === false ? "bad" : robotOnline ? "ok" : "warn");
+}
+// IMU calibration sits in the terrain card corner so it is visible without a log row.
+function renderImu(calibrated) {
+  const badge = $("imu-badge");
+  badge.textContent = calibrated === true ? "IMU CALIBRATED" : calibrated === false ? "IMU NOT CALIBRATED" : "IMU UNKNOWN";
+  badge.className = "corner " + (calibrated === true ? "ok" : calibrated === false ? "warn" : "");
+}
+// Sonar fan: range is drawn to a display scale that always fits the latest reading.
+function drawSonar(t) {
+  const range = t.front_mm, depth = t.obstacle_depth_mm > 0 ? t.obstacle_depth_mm : 0;
+  const max = Math.max(600, (range || 0) + depth + 150), k = 205 / max;
+  put($("sonar-scale"), `scale 0–${max} mm`);
+  // SVG ignores the hidden attribute, so visibility is set through style.display.
+  // The object is drawn only while it is detected; the W × D readout only once both are measured.
+  const present = range != null && (t.mission === "SCAN" || t.mission === "BYPASS");
+  const block = $("sonar-block"), readout = $("sonar-readout");
+  block.style.display = present ? "" : "none";
+  readout.style.display = present && obstacleWidth != null && depth ? "" : "none";
+  if (!present) return;
+  const w = obstacleWidth == null ? 60 : Math.max(4, obstacleWidth * k);
+  const top = 226 - (range + depth) * k;
+  block.setAttribute("x", 150 - w / 2);
+  block.setAttribute("width", w);
+  block.setAttribute("y", top);
+  block.setAttribute("height", Math.max(3, depth * k));
+  block.setAttribute("class", "obstacle" + (obstacleWidth == null || !depth ? " unknown" : ""));
+  readout.setAttribute("x", 150);
+  readout.setAttribute("y", Math.max(12, top - 6));
+  put(readout, `W ${obstacleWidth} × L ${depth} mm`);
 }
 
 function showTelemetry(t) {
@@ -467,34 +403,37 @@ function showTelemetry(t) {
   obstacleWidth = t.mission === "SCAN" ? null : t.obstacle_width_mm > 0 ? t.obstacle_width_mm : null;
   if (t.mission === "FOLLOW_LINE" && ["READY", "STOPPED"].includes(mission)) for (const o in cleared) cleared[o].clear();
   mission = t.mission;
-  $("mission-current").textContent = mission;
-  $("mission-current").className = mission === "STOPPED" ? "bad" : "";
-  for (const state of ["READY", "FOLLOW_LINE", "NAVIGATE", "SCAN", "BYPASS", "REACQUIRE", "STOPPED"]) {
-    $("mission-" + state).setAttribute("aria-current", state === mission ? "true" : "false");
-  }
+  put($("mission-current"), mission.replace("_", " "));
   showSensors(t);
   document.body.classList.remove("stale");
   const byOwner = o => t.faults.filter(f => f.startsWith(o + ": ")).map(f => f.slice(o.length + 2));
   const mf = faults("Mission", byOwner("Mission"));
-  $("mission-current").className = mf || t.mission === "STOPPED" ? "bad" : "";
+  $("mission-current").className = "flap big " + (mf || t.mission === "STOPPED" ? "bad" : "");
+
+  // barcode: letter and its navigation action are the flippers.
   const lf = faults("Line", byOwner("Line"));
-  row("Line", t.line, t.barcode === "none" ? "No barcode" : "Barcode " + t.barcode, lf ? "Sensor fault" : t.line === "UNKNOWN" ? "Reading unavailable" : "Digital status",
-      lf || t.line === "LOST" ? "bad" : t.line === "VISIBLE" ? "ok" : "warn");
+  const lineKind = lf || t.line === "LOST" ? "bad" : t.line === "VISIBLE" ? "ok" : "warn";
+  put($("flap-Line"), t.line ?? "—");
+  $("flap-Line").className = "flap big " + lineKind;
+  board("Barcode", null, !t.mapped ? "bad" : lineKind);
+
+  // motion: navigation word, or the motion state when no direction is known.
   const of = faults("Motion", byOwner("Motion"));
-  row("Motion", t.motion, t.direction === "straight" ? "Forward" : t.direction ?? "Awaiting sample",
-      t.speed_left == null || t.speed_right == null ? "Speed unavailable" : `L ${t.speed_left} / R ${t.speed_right} mm/s`, of || t.motion === "FAILED" ? "bad" : "ok");
+  board("Motion", directionWords[encoderDirection] || t.motion, of || t.motion === "FAILED" ? "bad" : "ok");
+
+  // obstacle: detected only while the mission is handling an obstacle, which the stop-range trigger starts; other readings are clear, and no echo is not clear.
   const sf = faults("Obstacle", byOwner("Obstacle"));
-  row("Obstacle", t.front_mm == null ? "No echo" : "Echo", t.front_mm == null ? "-" : t.front_mm + " mm",
-      `Last ${t.obstacle_width_mm} × ${t.obstacle_depth_mm} mm`, sf ? "bad" : t.front_mm == null ? "warn" : "ok");
+  const detected = t.mission === "SCAN" || t.mission === "BYPASS";
+  board("Obstacle", detected ? "DETECTED" : t.front_mm == null ? "NO ECHO" : "CLEAR", sf ? "bad" : detected || t.front_mm == null ? "warn" : "ok");
+  drawSonar(t);
+
+  // terrain: hump count, calibration in the corner.
   const tf = faults("Terrain", byOwner("Terrain"));
-  const calibration = t.imu_calibrated === true ? "Calibrated" :
-      t.imu_calibrated === false ? "Not calibrated" : "Calibration unknown";
-  row("Terrain", t.hump_count + (t.hump_count === 1 ? " hump" : " humps"),
-      t.hump_max_mm == null ? "No valid max" : "Max " + t.hump_max_mm + " mm", calibration,
-      tf ? "bad" : t.imu_calibrated === true ? "ok" : "warn");
-  const nf = faults("Network", byOwner("Network"));
-  row("Network", robotOnline === false ? "Offline" : robotOnline ? "Online" : "Unknown", "Live", "Broker link", nf ? "bad" : "ok");
-  $("installed").textContent = t.mapped ? "Mapping installed on robot" : "No mapping installed";
+  board("Terrain", `${t.hump_count} ${t.hump_count === 1 ? "HUMP" : "HUMPS"}`, tf ? "bad" : t.imu_calibrated === true ? "ok" : "warn");
+  renderImu(t.imu_calibrated);
+
+  faults("Comms", byOwner("Network"));
+  renderComms();
   if (t.speed_left != null) {
     history.push({ t: lastFrame, l: t.speed_left, r: t.speed_right });
     while (history.length && history[0].t < lastFrame - 60000) history.shift();
@@ -509,11 +448,34 @@ function showObstacle(m) {
   const list = $("obstacles");
   const li = document.createElement("li");
   li.value = ++obstacleNumber;
-  li.textContent = `${obstacleWidth == null ? "Width unavailable" : obstacleWidth + "mm"} × ${m.obstacle_depth_mm}mm`;
+  li.textContent = `W ${obstacleWidth == null ? "unavailable" : obstacleWidth + " mm"} · D ${m.obstacle_depth_mm} mm`;
   obstacles.push({id: m.event_id, element: li});
   list.append(li);
   if (obstacles.length > 200) obstacles.shift().element.remove();
   $("obstacle-empty").hidden = true;
+  list.hidden = false;
+  list.scrollTop = list.scrollHeight;
+}
+
+// Each barcode the robot passes arrives as an event: letter, action and time.
+const barcodes = [];
+// The robot reports TURN at every junction; only a real action (not UNMAPPED) empties the queue.
+function showTurn(m) {
+  if (/^EVENT TURN: turn (?!UNMAPPED)/.test(m.text ?? "")) put($("flap-Barcode-letter"), "–");
+}
+function showBarcode(m) {
+  const match = /^EVENT BARCODE: letter (\S+) -> (\S+) at t=\d+ ms/.exec(m.text ?? "");
+  if (!match || barcodes.some(b => b.id === m.text)) return;
+  const [, letter, action] = match;
+  // The letter flipper is a queue: it holds the newest scanned letter until its navigation action is taken.
+  put($("flap-Barcode-letter"), letter);
+  const item = document.createElement("li");
+  item.textContent = `${letter} · ${action.replace("_", "-")} · ${new Date().toLocaleTimeString([], {hour12: false})}`;
+  barcodes.push({id: m.text, element: item});
+  const list = $("barcodes");
+  list.append(item);
+  if (barcodes.length > 200) barcodes.shift().element.remove();
+  $("barcode-empty").hidden = true;
   list.hidden = false;
   list.scrollTop = list.scrollHeight;
 }
@@ -535,12 +497,12 @@ function draw() {
   ctx.scale(dpr, dpr);
   const w = c.clientWidth, h = c.clientHeight, css = getComputedStyle(document.documentElement);
   const max = Math.max(50, ...history.map(p => Math.max(Math.abs(p.l), Math.abs(p.r))));
-  const now = Date.now(), x = t => w - (now - t) / 60000 * w, y = v => h / 2 - v / max * (h / 2 - 8);
-  ctx.strokeStyle = css.getPropertyValue("--frame"); ctx.lineWidth = 1;
+  const now = Date.now(), x = t => w - (now - t) / 60000 * w, y = v => h / 2 - v / max * (h / 2 - 6);
+  ctx.strokeStyle = css.getPropertyValue("--bezel"); ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
-  ctx.fillStyle = css.getPropertyValue("--ink-3"); ctx.font = "13px " + css.getPropertyValue("--face");
-  ctx.fillText("+" + Math.round(max), 4, 14); ctx.fillText("-" + Math.round(max), 4, h - 4);
-  if (!history.length) { ctx.fillText("Waiting for encoder speed", w / 2 - 70, h / 2 - 8); return; }
+  ctx.fillStyle = css.getPropertyValue("--ink-3"); ctx.font = "11px " + css.getPropertyValue("--mono");
+  ctx.fillText("+" + Math.round(max), 4, 11); ctx.fillText("-" + Math.round(max), 4, h - 3);
+  if (!history.length) { ctx.fillText("Waiting for encoder speed", w / 2 - 70, h / 2 - 6); return; }
   for (const [key, color] of [["l", "--ink"], ["r", "--steel"]]) {
     ctx.strokeStyle = css.getPropertyValue(color); ctx.lineWidth = 2; ctx.beginPath();
     history.forEach((p, i) => i ? ctx.lineTo(x(p.t), y(p[key])) : ctx.moveTo(x(p.t), y(p[key])));
@@ -595,7 +557,7 @@ function showDirectionAck(m) {
   return true;
 }
 
-// Barcode mapping
+// Barcode mapping; input order is L, R, S, U.
 const inputs = [...$("map").querySelectorAll("input")];
 function letters() { return inputs.map(i => i.value).join(""); }
 function ack(kind, head, msg) { $("ack").className = "ack " + kind; $("ackhead").textContent = head; $("ackmsg").textContent = msg; }
@@ -611,7 +573,6 @@ function validate() {
 // The robot accepts a mapping only while READY or STOPPED; it still checks and answers BUSY otherwise.
 function gate() {
   directionGate();
-  renderEncoder();
   const live = lastFrame && Date.now() - lastFrame < 2000;
   const reason = robotOnline === false ? "Robot is offline; wait for reconnection." : directionPending ? "Waiting for junction-test acknowledgement." : pending ? "Waiting for the robot's acknowledgement."
     : !live ? "No live telemetry; mapping needs the robot online."
@@ -626,7 +587,7 @@ inputs.forEach((input, n) => {
   input.addEventListener("input", () => {
     input.value = input.value.replace(/[^a-z]/gi, "").toUpperCase();
     if (input.value && n < 3) inputs[n + 1].focus();
-    if (!pending) { const err = validate(); ack("", "Not sent", err || "Ready to send " + letters().split("").join(" ") + "."); }
+    if (!pending) { const err = validate(); err?.includes("used twice") ? ack("bad", "Not sent", err) : ack("", "", ""); }
     gate();
   });
   input.addEventListener("keydown", e => { if (e.key === "Backspace" && !input.value && n) inputs[n - 1].focus(); });
@@ -664,33 +625,31 @@ function showMappingAck(m) {
   if (pending.sequence === null) { pending.early.push(m); return; }
   if (pending.sequence !== m.sequence) return;
   clearTimeout(pending.timer);
-  if (m.ok) ack("ok", "Installed · seq " + m.sequence,
-    pending.letters.split("").join(" / ") + " · Left / Right / Straight / U-turn. Kept until reboot.");
+  if (m.ok) ack("", "", "");
   else ack("bad", "Refused · " + m.result, m.result.startsWith("BUSY") ? "Robot is moving. Stop it with GP21, then send again." : "Check the four letters and send again.");
   pending = null; gate();
 }
 
 setInterval(() => {
+  put($("clock"), new Date().toLocaleTimeString([], {hour12: false}));
   sensorFreshness();
   if (!lastFrame) return;
-  const s = (Date.now() - lastFrame) / 1000, live = s < 2;
-  lamp("age", live ? "Live" : `Last frame ${s.toFixed(0)} s ago`, live ? "ok" : "warn");
+  const live = Date.now() - lastFrame < 2000;
   document.body.classList.toggle("stale", !live);
-  if (!live) put($("row-Network").querySelector(".reading"), `Stale ${s.toFixed(0)} s`);
   gate();
 }, 500);
 addEventListener("resize", draw);
 
 const source = new EventSource("/events");
-source.onopen = () => lamp("link", "Dashboard connected", "ok");
-source.onerror = () => lamp("link", "Dashboard offline, retrying", "bad");
+source.onopen = () => { linked = true; renderComms(); };
+source.onerror = () => { linked = false; renderComms(); };
 source.onmessage = e => {
   const m = JSON.parse(e.data);
   if (m.type === "telemetry") showTelemetry(m);
-  else if (m.type === "status") { robotOnline = m.online; lamp("robot", m.online ? "Robot online" : "Robot offline", m.online ? "ok" : "bad"); }
+  else if (m.type === "status") { robotOnline = m.online; renderComms(); }
   else if (m.type === "wheel_trace") showWheelTrace(m);
   else if (m.type === "ack") showAck(m);
-  else { if (m.type === "event") showObstacle(m); addEvent(m.text); }
+  else { if (m.type === "event") { showObstacle(m); showHump(m); showBarcode(m); showTurn(m); } addEvent(m.text); }
 };
 draw();
 gate();

@@ -1,2 +1,0 @@
-dashboard: PASS (live/state gating, request action, early ACK race)
-sensor ledger: PASS (valid zero, missing values, units, barcode, frame context, stale/empty)

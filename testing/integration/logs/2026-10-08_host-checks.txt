@@ -1,6 +1,0 @@
-Independent IR module: paired calibration and fresh bounded steering contract passed.
-Subsystem ADC: mux discard, eight-sample averages, errors and stalled-clock bound passed.
-IR calibration, PID, loss and safety checks passed.
-Button calibration, contrast rejection, stop/reset, motor expiry and watchdog progress checks passed.
-Real Motion service with fake kernel: boot/stop latch, reset invalidation, expiry, failed mutex and TEST inhibition passed.
-Real Motion service with fake kernel: boot/stop latch, reset invalidation, expiry, failed mutex and TEST inhibition passed.

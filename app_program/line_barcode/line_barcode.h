@@ -8,9 +8,10 @@
 
 /* Digital raw readings are GPIO levels 0 or 1. */
 
-/* Base-2 scaled integers (ADR 0001): a 0..1 fraction is stored as 0..127 and
-   a signed -1..+1 value as -127..+127 (int8_t). Divide by IR_SCALE_ONE only
-   at a float boundary (Mission building the S2 motion command). */
+/* Base-2 scaled integers (docs/architecture.md): a 0..1 fraction is stored as
+   0..127 and a signed -1..+1 value as -127..+127 (int8_t). Divide by
+   IR_SCALE_ONE only at a float boundary (Mission building the motion
+   command). */
 #define IR_SCALE_ONE 127
 
 typedef struct
@@ -90,7 +91,7 @@ void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
                         uint32_t now);
 IrReading ir_tracking_reading(IrRaw raw);
 IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now);
-/* Portable data for S1 and future Mission consumers; no wire format implied.
+/* Portable data for Comms and future Mission consumers; no wire format implied.
    Invalid fraction/error fields are zero; use validity flags. */
 typedef struct
 {
@@ -117,7 +118,7 @@ void ir_snapshot_refresh(LineIrSnapshot *snapshot, uint32_t now);
 const char *ir_tracking_line_name(IrLine line);
 #endif
 
-/* Called only by S3; shared timebase must already be initialized. */
+/* Called only by line_barcode; shared timebase must already be initialized. */
 bool drv_ir_tracking_init(void);
 /* False leaves *raw unchanged. No connectivity inference from digital levels. */
 bool drv_ir_tracking_read(IrRaw *raw);
@@ -131,8 +132,8 @@ bool drv_ir_tracking_read(IrRaw *raw);
 #define BARCODE_ELEMENTS 25u	/* end of the first guard, gap, letter, gap, last guard */
 #define BARCODE_ALPHABET 26u
 
-/* Encoder counts as S3 stores them: the shared ENC_COUNT_BITS width, wrapped.
-   Travel between two counts uses modular subtraction (motion.h). */
+/* Encoder counts as line_barcode stores them: the shared ENC_COUNT_BITS width,
+   wrapped. Travel between two counts uses modular subtraction (motion.h). */
 typedef uint16_t barcode_count_t;
 _Static_assert(ENC_COUNT_BITS <= 16u, "barcode_count_t narrower than ENC_COUNT_BITS");
 /* The longest window (25 elements at the longest width) spans less than half
@@ -227,6 +228,11 @@ typedef struct
 } barcode_frame_t;
 
 void barcode_frame_reset(barcode_frame_t *f);
+/* True if the sensor travelled too little between two edges for a real
+   element. */
+bool barcode_run_is_chatter(barcode_count_t from_left,
+    barcode_count_t from_right, barcode_count_t left_count,
+    barcode_count_t right_count);
 
 /* Feed one edge. `black` is the level after the edge. Returns BARCODE_DECODED
    (symbol/orientation set) when a symbol completes, BARCODE_NO_RESULT while
@@ -267,10 +273,10 @@ uint32_t drv_barcode_overflow_count(void);
 uint32_t drv_barcode_edge_count(void);
 
 /*
- *	Barcode scanner owned by the S3 task (core 1): edge ring -> frame
- *	assembler -> Code 39 A-Z decoder -> mapped action -> small event queue.
- *	Boots UNMAPPED and disabled; start is refused until a mapping of four
- *	distinct letters (left, right, straight, U-turn) is installed.
+ * Barcode scanner owned by the line_barcode task (core 1): edge ring -> frame
+ * assembler -> Code 39 A-Z decoder -> mapped action -> small event queue.
+ * Boots UNMAPPED and disabled; start is refused until a mapping of four
+ * distinct letters (left, right, straight, U-turn) is installed.
  */
 
 /* Core-1 task only: claim GP16 on the dispatcher. False on failure. */
@@ -284,15 +290,15 @@ bool barcode_set_mapping(const uint8_t letters[4]);
 bool barcode_mapped(void);
 
 /* Mission only. Start is refused (false) until a mapping is installed; it
-   drops stale events and asks the S3 task to rearm. The S3 task applies
-   start/stop at its next release, resetting the frame and the barcode
-   overflow bits. */
+   drops stale events and asks the line_barcode task to rearm. The line_barcode
+   task applies start/stop at its next release, resetting the frame and the
+   barcode overflow bits. */
 bool barcode_start(void);
 void barcode_stop(void);
 
-/* S3 task, once per release: apply start/stop, drain the ring with a fixed
-   edge budget, assemble and decode frames, queue events, map overflow to the
-   Line fault byte. cancel (GP21 held) disables scanning while held. */
+/* line_barcode task, once per release: apply start/stop, drain the ring with a
+   fixed edge budget, assemble and decode frames, queue events, map overflow to
+   the Line fault byte. cancel (GP21 held) disables scanning while held. */
 void barcode_service(bool cancel);
 
 /* Exactly one consumer removes events. False when empty. */
@@ -301,7 +307,8 @@ bool barcode_pop(barcode_event_t *event);
 /* Task side: one raw run-width trace frame for the laptop. 0 when empty. */
 unsigned barcode_trace_take(uint8_t *out, unsigned capacity);
 
-/* S3-task-only optional diagnostic ring. Never called from ISR/Mission. */
+/* line_barcode-task-only optional diagnostic ring. Never called from
+   ISR/Mission. */
 typedef struct {
     uint16_t left, right, width;
     uint16_t result : 3;

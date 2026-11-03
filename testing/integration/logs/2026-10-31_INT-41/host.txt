@@ -1,3 +1,0 @@
-dashboard: PASS (live/state gating, request action, early ACK race)
-sensor ledger: PASS (valid zero, missing values, units, barcode, frame context, stale/empty)
-one-screen dashboard: PASS (seven Mission markers, custom mapping, duplicate/offline gating, early mapping ACK)

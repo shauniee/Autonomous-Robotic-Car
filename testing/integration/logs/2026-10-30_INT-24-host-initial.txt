@@ -1,8 +1,0 @@
-app_program/mission/mission_logic.c:80:52: error: use of undeclared identifier 'BARCODE_UTURN'; did you mean 'BARCODE_U_TURN'?
-   80 |         (action == BARCODE_RIGHT ? 2u : (action == BARCODE_UTURN ? 3u : 0u));
-      |                                                    ^~~~~~~~~~~~~
-      |                                                    BARCODE_U_TURN
-app_program/mission/../subsystem3/barcode_decode.h:34:5: note: 'BARCODE_U_TURN' declared here
-   34 |     BARCODE_U_TURN
-      |     ^
-1 error generated.

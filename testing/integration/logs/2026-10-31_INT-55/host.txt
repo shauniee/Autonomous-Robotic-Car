@@ -1,4 +1,0 @@
-app_program/mission/bypass_control.c:423:68: error: use of undeclared identifier 'RECOVERY_ALIGN_ERROR_Q'
-  423 |             if (input->line_visible && abs(input->line_error_q) <= RECOVERY_ALIGN_ERROR_Q)
-      |                                                                    ^~~~~~~~~~~~~~~~~~~~~~
-1 error generated.

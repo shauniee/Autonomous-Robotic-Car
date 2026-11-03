@@ -55,7 +55,8 @@ typedef struct
     IrLine line;
     bool left_black;
     bool right_black; /* normalized right IR; requires usable fresh sample */
-    int8_t line_error;		/* S3 right - left, Q7; + right black, steer left */
+    /* line_barcode right - left, Q7; + right black, steer left */
+    int8_t line_error;
     uint32_t line_sampled_ms;
     uint32_t wheel_count[2];
     rd_motion_status_t motion_status;
@@ -71,7 +72,7 @@ typedef struct
     uint8_t scan_id;
     bool profile_valid;
     uint32_t left_clearance_mm, right_clearance_mm;
-    uint16_t profile_closest_mm, profile_planning_mm;
+    uint16_t profile_closest_mm, profile_planning_mm, profile_width_mm;
     int16_t profile_forward_mm, profile_left_mm;
     uint8_t barcode_letter;	/* 0..25, 31 none */
     bool barcode_level;		/* raw GP16 level, diagnostics only */
@@ -94,6 +95,7 @@ typedef struct
     uint16_t event_arg2;
     uint8_t scan_id;
     bool scan_request;		/* ask Obstacle for a scan */
+    bool scan_keep_narrower; /* the second sweep at this position */
     bool scan_cancel;
     bool side_watch_on;		/* hold the servo toward the obstacle */
     int16_t side_watch_deg;
@@ -139,6 +141,13 @@ typedef struct
     uint32_t bypass_started_ms;
     uint8_t scan_phase : 1;
     uint8_t scan_retries : 1;
+    uint8_t scan_backing : 1;
+    uint8_t scan_second : 1; /* the second sweep at this position is running */
+    uint8_t front_clear : 2;
+    /* low bits of the last forward reading counted after a sweep */
+    uint8_t front_seen;
+    uint8_t backup_mm;
+    uint8_t backed_mm; /* total reversed for this obstacle */
     uint8_t scan_id : 4;
 
 } Mission;
