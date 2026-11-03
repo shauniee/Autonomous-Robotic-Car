@@ -31,6 +31,11 @@ flashed a Pico or measured any new success rate. The branch
   transitions and speed anomalies, without assuming cause. Verify suspected
   anomalies against WHEEL frames, raw encoder data and video. The compressed
   capture has **not** been reanalysed/validated in this PR.
+- [x] **Arrival-time speed spike protection:** the laptop monitor/dashboard now
+  leaves estimated speed unavailable for MQTT arrival gaps shorter than 250 ms
+  or longer than 2 seconds, rather than showing a false wheel-speed spike.
+  Timestamped WHEEL traces and raw encoder counts remain available; this does
+  **not** fix or rule out physical encoder glitches.
 - [x] **Measured success-rate calculation:** record each real lap in a CSV
   with the header `trial_id,firmware_sha,uf2_sha256,trace,success,notes`
   (PASS/FAIL only; no blank/trial estimates), then run
