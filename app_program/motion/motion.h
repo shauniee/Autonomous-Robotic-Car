@@ -148,8 +148,11 @@ typedef enum
     MOTION_TURN_RAMPED = 3 /* encoder pivot with acceleration/deceleration */
 } motion_turn_style_t;
 
+/* Integral: Q4 counts, about +-2047, past what MOTION_KI can use at the duty cap.
+   Previous speed: whole counts/s, past any wheel's reach. */
 typedef struct {
-    float integral, previous_speed;
+    int16_t integral_q4;
+    int16_t previous_cps;
 } WheelPid;
 
 typedef struct {

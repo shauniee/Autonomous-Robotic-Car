@@ -178,6 +178,19 @@ static void test_distance_turn_actions(void)
     assert(fabsf(angle - 90.0f) <= 2.0f * MOTION_ANGLE_TOL_DEG + 2.0f);
 }
 
+/* Stored PID state saturates, never wraps: a burst of counts must not read as
+   a wheel running backward. */
+static void test_pid_state_saturates(void)
+{
+    assert(sizeof(WheelPid) == 4u);
+    Sim s; sim_init(&s);
+    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW, 100.0f, 0.0f, 0, 1u, s.now);
+    (void)sim_step(&s, &cmd, false, 0);
+    s.count[0] = enc_advance(s.count[0], 5000);
+    (void)sim_step(&s, &cmd, false, 0);
+    assert(s.ctl.pid[0].previous_cps == 32767);
+}
+
 /* INT-156: the end of an approach asks for 3 mm/s, too little to turn a wheel.
    That wait is not a stall. */
 static void test_crawl_is_not_a_stall(void)
@@ -709,6 +722,7 @@ int main(void)
     test_swing_turn();
     test_stall_and_timeout();
     test_crawl_is_not_a_stall();
+    test_pid_state_saturates();
     test_follow_steering();
     test_follow_target_slew();
     test_follow_steering_slew();
