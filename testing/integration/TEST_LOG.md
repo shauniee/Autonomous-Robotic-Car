@@ -211,3 +211,4 @@ Later cases are named in their result rows.
 | 2026-11-03 | INT-172 | `4037b48` | Claude | Audit; no defect (source only) | — | D14 core-0 audit, recorded in `docs/architecture.md`. Contention, lock duration and load not measured; they need the Pico |
 | 2026-11-03 | INT-173 | `4037b48` | Claude | MEASURED (target compiler) | — | `sizeof_probe.sh`: `IrTracker` 20 bytes, `LineIrSnapshot` 24 bytes; `IrRawWord` uses 3 bits. Data table updated |
 | 2026-11-03 | INT-174 | `4037b48` | Claude | PASS (build, host); MEASURED (build) | — | Arm builds repeated, six images. Full-course image `2fd47223`: text 387800, data 424, bss 84496. Host suite, dashboard, CLI, HTTP and field-tool tests pass. Latest build, not the final image; not a firmware or physical pass |
+| 2026-11-03 | INT-175 | `02d30fa` | Nicholas, Claude | User report | — | INT-168 restarts: Nicholas reports the battery was not connected properly, a hardware fix. Closed; no firmware cause investigated |

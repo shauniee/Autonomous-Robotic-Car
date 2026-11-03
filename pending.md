@@ -53,14 +53,13 @@ IDs: `M` requirement, `MR` readiness check, `D` pending decision, `T` integrated
 
 All questions and decisions go to Nicholas. Proposed defaults are recorded as proposed, not as sign-off.
 
-- [ ] WiFi and broker settings (D09), and the message buffer wording (D09).
-- [ ] Whether obstacles sit only on straights (D12).
+- [ ] Broker on demonstration day: the specs say the instructor's, and your own WiFi is recorded (D09). Also supply the professor's buffer wording, which is not in this repository.
 - [ ] Print framing, quiet zones and tolerances (D01).
 - [ ] Error limits for lateral, turn, height, width and recovery (D10).
-- [ ] Stall guard for acceptance (D07) and the watchdog reset policy (D15).
-- [ ] Data table sign-off (#28) and fault-byte confirmation (#113). Proposed: keep 48 fault bits and 16-bit profile millimetres; store `WheelPid` as float.
-- [ ] Keep diagnostic frames 9, 10 and 11, and whether to delete the merged PR 149 branch.
-- [ ] Reopen or replace issue #117, and whether the Week 10 demonstration was held.
+- [ ] Stall guard for acceptance (D07): `tribunal1.md` does not name it. The watchdog is included, because A12 names it; write its reset policy (D15).
+- [ ] Data table sign-off and fault-byte confirmation, group by group. Proposed: keep 48 fault bits and 16-bit profile millimetres; store `WheelPid` as float.
+- [ ] Keep diagnostic frames 9, 10 and 11.
+- [ ] Week 10 demonstration: was it held, and with what result?
 
 ## 1. Safety and electrical
 
@@ -94,7 +93,6 @@ Turns, distances and barcode widths all come from encoder travel.
 
 The 95% target is the user's. No success rate has been measured yet, so the first job is to get one.
 
-- [ ] Agree the proposed [line success measure](app_program/line_barcode/README.md#line-success-measure) before running laps.
 - [ ] Run 20 laps with one image and no changes, and calculate the rate with `scripts/mission_trial_score.py` (MR-26). Film them: INT-163 found telemetry cannot show where the car left the line.
 - [ ] Repeat under two lighting conditions (MR-26, M1).
 - [ ] Real line loss: the sweep finds the line, an exhausted search stops, and stale data does not start a blind search (MR-32, T11).
@@ -130,7 +128,6 @@ Wheels stay off for the bench steps. Bypass has never run on the car.
 - [ ] Confirm on the car that scans start only after fresh stationary feedback, with timestamped logs (T09). Host logic passes.
 - [ ] Cancel a scan and restore the servo to centre on a stop, on the car, with no-echo cases (Gap 6). Mission and scan-guard host cases pass.
 - [ ] Measure bypass speeds, settle time and travel budgets (D05, D07).
-- [ ] Confirm obstacles only sit on straights (D12, A9). The course source is inconsistent; blocked on an answer.
 
 ## 6. Hump (M4, M5)
 
@@ -162,7 +159,6 @@ Flash the current image, let the car sit still on the track for a second, then p
 ## 8. Faults seen and not explained
 
 - [ ] Encoder faults stopped earlier runs, and those captures are not held. `WHEEL` frames in INT-154 to 157 show no glitch (INT-165). Watch for the fault again on the car, and for `encoder_ok=0` in `HUMP` frames.
-- [ ] Restarts: 10 clock restarts in INT-154 to 157, one while in NAVIGATE (INT-168). Nicholas to confirm whether they were manual.
 - [ ] `IMU calibration failed`: likely the car moved during boot (INT-166). Confirm by keeping it still, as in MR-11.
 - [ ] `barcode capture overflow` is frequent (INT-170). Compare it with read rate on the car; change the ring only if reads fail.
 - [ ] One `EVENT BARCODE` per read: host test added (INT-167). Confirm on a real run.
@@ -199,7 +195,6 @@ Flash the current image, let the car sit still on the track for a second, then p
 - [ ] PID tuning report: [draft](app_program/motion/README.md#pid-tuning-report-draft) written; needs loaded data.
 - [ ] Terrain analysis report: [draft](app_program/terrain/README.md#terrain-analysis-draft) written; needs reference humps and traces.
 - [ ] Record the Week 10 partial-integration result, if it was held. Its format is still pending in the specs, and no result is in the repository.
-- [ ] Reopen or replace [issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117): it is closed with its acceptance checklist unticked.
 - [ ] Update the mission-readiness checklist as items pass.
 
 ## 12. Stretch goal
@@ -210,7 +205,6 @@ Nothing open. Magnetometer fusion is skipped by default because it is optional a
 ## 13. Housekeeping
 
 - [ ] Diagnostic frames (types 9, 10 and 11): the Comms README says to keep them, but also says type 9 is not agreed. See [decisions](#decisions-for-nicholas).
-- [ ] Merged PR 149 branch `fix/watchdog-abi-hardware-procedures-20261102`: see [decisions](#decisions-for-nicholas).
 - [ ] Delete this file once it is done.
 
 ## Complete
@@ -246,6 +240,11 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] `SCAN` then `STOPPED` analysed: likely the car being lifted, not proven (INT-164).
 - [x] No echo never stops a run, in host tests (INT-169).
 - [x] Event drops stay debugger-only, by default decision; no telemetry fields added.
+- [x] M1 success measure agreed: one lap with correct barcodes, navigation and hump count, by Nicholas.
+- [x] Obstacles on straights, by Nicholas (D12); curve options are in the [Obstacle guide](app_program/obstacle/README.md#curves-near-an-obstacle).
+- [x] Restarts: loose battery connection, hardware fix, by Nicholas (INT-175).
+- [x] Issue #117 stays closed; this file holds its open work, by Nicholas.
+- [x] PR 149 is merged; no branch action needed.
 - [x] Core-0 audit by source review, no defect found (INT-172); load is section 10.
 - [x] Data table: watchdog, float and digital IR rows; fault bytes and obstacle profile justified as proposed (INT-173).
 

@@ -59,10 +59,14 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). lin
 
 ## Line success measure
 
-Proposed for M1, and needs Nicholas's agreement before the first scored lap. The 95% target is the user's.
+Agreed by Nicholas on 2026-11-03 for M1. The 95% target is the user's.
 
-- **Attempt:** one lap of a written course layout, from a fresh GP20 start at 100 mm/s, on one image with no changes between laps.
-- **Success:** the car finishes the lap on the line with no hand contact, no `REACQUIRE` and no stop.
+- **Attempt:** one lap of a written course layout, from a fresh GP20 start at 100 mm/s, on one image with no changes between laps. The lap includes barcodes, junctions and humps.
+- **Success, all of these:**
+  - the car finishes the lap on the line with no hand contact, no `REACQUIRE` and no stop
+  - each barcode reads as the printed letter
+  - each junction takes the correct action, once
+  - `humps=` equals the crossings, and each height is within the agreed limit (D10, not yet set)
 - **Failure:** anything else, including a lap stopped for safety. Only a setup fault with a written reason may be left out, and it is still recorded.
 - **Rate:** at least 20 laps per image and lighting condition, scored by `scripts/mission_trial_score.py`, with `TRACE=1` and `TRACE=0` scored apart.
 

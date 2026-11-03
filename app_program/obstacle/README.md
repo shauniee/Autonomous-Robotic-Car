@@ -7,6 +7,7 @@
 - [Lecturer expectations](#lecturer-expectations)
 - [Contract](#contract)
 - [Scan and bypass](#scan-and-bypass)
+- [Curves near an obstacle](#curves-near-an-obstacle)
 - [Physical checklist](#physical-checklist)
 - [Status and open items](#status-and-open-items)
 
@@ -50,6 +51,31 @@ Widths: [data table](../../docs/project-specs.md#5-data-representation-table-wee
 - **Estimate:** identify obstacle regions across consecutive angles with hysteresis, then estimate span and closest point. Clearance is the sideways reach of the free rays (`range * sin(angle)`, smallest wins) minus the obstacle's planned edge. Report the estimate, never the maximum expected width as a measurement. Unknown edge or clearance is not a supported gap.
 - **Bypass:** Mission pivots by the least angle that keeps the facing side 10 mm off the measured box corner on a straight leg, solved from the scan, and drives until a straight run alongside the box would hold that gap. It turns parallel, looks 70 degrees toward the box and drives on without stopping. Once the ray is off the box for 30 mm of travel, it works out the rear position, drives until the facing side will clear it by 10 mm, pivots 90 degrees toward the line and drives until a sensor sees it, then advances and pivots as at a junction. Each leg is one continuous drive. The rear comes from the side range the ray last measured, or the scan's edge if it never saw that side; a too-wide scan can then place it about 15 mm short. If the car is too close to pivot, Mission reverses far enough to pivot and scans again. If the scan shows no room on either side, it reverses 50 mm and scans again. Reversing is blind along the approach and totals at most 150 mm for one obstacle, then it stops. No echo on a bounded leg is not a hazard; only a close echo or a silent sensor stops it. There is no forward check while looking sideways. Failed profile, no room or still too close after the full reverse, new hazard, no line on the return or timeout brake and stop.
 - **Release:** `MISSION_BYPASS_RELEASED` is 0 in source, and the `./flash.sh` full-course image sets it to 1. Bypass geometry and physical performance are still unaccepted, so supervise those runs.
+
+## Curves near an obstacle
+
+Options only; none is built. Obstacles on straights are the operating assumption (D12).
+
+The bypass plans in the car's frame at the stop, and it treats the line as straight through that point:
+
+| Case | What happens with the current code |
+| --- | --- |
+| Curve before the box | The car stops at an angle to the line, so width, clearance and the return target are skewed. The sonar faces along the car, so a box on the bend can be seen late. An object beside the line can trigger a scan |
+| Line after the box bends toward the pass side | The line can be crossed during `PASS`, where it is not checked. The car then fails or stops |
+| Line after the box bends away from the pass side | `RETURN` drives back to the old line position, finds no line and stops |
+| Rejoin direction | After the touch, Mission pivots by a fixed junction turn (`m->bypass.left_side`), which assumes the line is square to the car |
+
+These cases apply to bends in either direction and to either pass side. All of them end in a bounded stop, not a blind drive, but host tests do not cover curves and no car run has tested them.
+
+| Option | Change | Limit |
+| --- | --- | --- |
+| A. Refuse on a bend | Stop safely when `line_bend` is set at the trigger | Scores no bypass on a bend, but the behaviour is honest and predictable |
+| B. Heading at the stop | Estimate entry heading from encoder travel since `straight_origin`, and plan in the line's frame | Encoder drift and slip; no gyroscope. Fixes a curve before the box only |
+| C. Line search after the box | Check the line during `PASS` and search with `recovery_control` instead of one fixed return | Could join a branch or the wrong direction (A9); needs heading limits |
+| D. Rejoin pivot from sensors | Pivot until the sensors straddle the line, with the turn limited to the forward direction | Needs a measured tightest curve radius |
+| E. All of B, C and D | Full curved bypass, either direction | Largest change and the most car time |
+
+Without A, a bend ends in a bypass failure or a false scan. If curves become required, build A first, then C and D, then B. Measure the tightest curve radius before any of these.
 
 ## Physical checklist
 
