@@ -406,8 +406,25 @@ static void test_event_packing(void)
     _Static_assert(sizeof(barcode_event_t) == 6u, "barcode event is two counts plus one packed word");
 }
 
+static void test_chatter_filter(void)
+{
+    const barcode_count_t top = (barcode_count_t)ENC_COUNT_MASK;
+    assert(barcode_run_is_chatter(100u, 100u, 100u, 100u)); /* wheels still */
+    assert(barcode_run_is_chatter(100u, 100u, 100u + BARCODE_MIN_ELEMENT_COUNTS - 1u,
+        100u + BARCODE_MIN_ELEMENT_COUNTS - 1u));
+    assert(!barcode_run_is_chatter(100u, 100u, 100u + BARCODE_MIN_ELEMENT_COUNTS,
+        100u + BARCODE_MIN_ELEMENT_COUNTS));
+    /* The counters wrap, and a pivot runs the wheels opposite ways. */
+    assert(barcode_run_is_chatter(top, top, 2u, 2u));
+    assert(!barcode_run_is_chatter(top, top, 100u, 100u));
+    assert(barcode_run_is_chatter(100u, 100u, 98u, 102u));
+    assert(!barcode_run_is_chatter(1000u, 1000u, 900u, 1100u));
+    puts("barcode chatter filter PASS");
+}
+
 int main(void)
 {
+    test_chatter_filter();
     test_samples();
     test_alphabet_vectors();
     test_noisy_approach();

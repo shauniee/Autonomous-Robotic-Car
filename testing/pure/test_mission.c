@@ -423,10 +423,31 @@ static void test_recovery_sweep_targets(void)
     }
 }
 
+/* The box is still there when the servo comes back forward from a sweep. */
 static MissionOutputs bstep(Mission *m, MissionInputs *in, uint32_t *t)
 {
     *t += 10u;
-    return step(m, in, *t);
+    if (m->state != MISSION_SCAN || !m->scan_phase || in->scan_id != m->scan_id ||
+        (in->scan_state != OBSTACLE_SCAN_DONE && in->scan_state != OBSTACLE_SCAN_FAILED))
+    {
+        return step(m, in, *t);
+    }
+    bool valid = in->front_valid;
+    uint32_t range = in->front_mm;
+    in->front_valid = true;
+    in->front_mm = MISSION_OBSTACLE_STOP_MM;
+    in->front_sequence++;
+    MissionOutputs out = step(m, in, *t);
+    if (out.scan_request && out.scan_keep_narrower) /* the second sweep gives the same profile */
+    {
+        in->scan_id = out.scan_id;
+        in->front_sequence++;
+        *t += 10u;
+        out = step(m, in, *t);
+    }
+    in->front_valid = valid;
+    in->front_mm = range;
+    return out;
 }
 
 static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t,
@@ -448,6 +469,7 @@ static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t,
     in->scan_state = OBSTACLE_SCAN_DONE;
     in->profile_valid = true;
     in->profile_closest_mm = 300u;
+    in->profile_width_mm = 200u;
     in->profile_planning_mm = OBSTACLE_EXPECTED_MAX_WIDTH_MM;
     in->profile_forward_mm = 150;
     in->left_clearance_mm = left_mm;
@@ -485,66 +507,109 @@ static void fresh_front(MissionInputs *in, uint32_t now)
     in->front_wheel_count[1] = in->wheel_count[1];
 }
 
-/* Range of the watch ray from the current pose: sonar on the car's nose, ray
-   50 degrees back toward the line, hitting the box's flank or a far background. */
-static uint32_t side_ray_mm(const Mission *m, float box_front, float box_rear, float half_width)
+/* Range of the side ray from the current pose, hitting the box's side or the background. */
+static uint32_t side_ray_mm(const Mission *m, float box_front, float box_rear, float half_width,
+    bool *hit)
 {
     float side = m->bypass.left_side ? 1.0f : -1.0f;
     float sonar_x = m->bypass.forward_q8 / 256.0f + OBSTACLE_SONAR_FORWARD_MM;
     float across = side * m->bypass.left_q8 / 256.0f - half_width;
-    float along = across / tanf(SERVO_MAX_DEG * 0.0174532925f);
-    bool hit = across > 0.0f && sonar_x + along >= box_front && sonar_x + along <= box_rear;
-    return hit ? (uint32_t)lroundf(across / sinf(SERVO_MAX_DEG * 0.0174532925f)) : 2000u;
+    float along = across / tanf(SERVO_LOOK_DEG * 0.0174532925f);
+    *hit = across > 0.0f && sonar_x + along >= box_front && sonar_x + along <= box_rear;
+    return *hit ? (uint32_t)lroundf(across / sinf(SERVO_LOOK_DEG * 0.0174532925f)) : 2000u;
 }
 
-static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm, float depth_mm, float half_width)
+static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm, float depth_mm,
+    float half_width, bool background_echoes)
 {
     Mission m;
     MissionInputs in = base(100u);
     uint32_t t;
     into_scanning(&m, &in, &t, left_mm, right_mm);
-    in.profile_forward_mm = 250; /* 150 mm range plus the sonar mount */
+    in.profile_forward_mm = 250; /* 145 mm range plus the sonar mount */
+    in.profile_closest_mm = 250u;
+    in.profile_width_mm = (uint16_t)lroundf(half_width * 2.0f);
     float box_front = 250.0f, box_rear = box_front + depth_mm;
     MissionOutputs out = bstep(&m, &in, &t);
-    assert(m.bypass.left_side == (left_mm >= right_mm));
+    bool left = left_mm >= right_mm;
+    assert(m.state == MISSION_BYPASS && m.bypass.left_side == left);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_TURN);
+    assert(abs(motion_cmd_target(&out.command)) == m.bypass.out_deg);
+    assert(m.bypass.out_deg > 0u && m.bypass.out_deg < 90u);
+    float facing = left ? BYPASS_BODY_RIGHT_MM : BYPASS_BODY_LEFT_MM;
     bool depth_seen = false;
     uint32_t routes = 0u;
-    for (unsigned i = 0u; i < 500u && m.state == MISSION_BYPASS; ++i)
+    unsigned drives = 0u;
+    uint8_t driving = 0u;
+    float driven = 0.0f;
+    for (unsigned i = 0u; i < 3000u && m.state == MISSION_BYPASS; ++i)
     {
         routes |= 1u << m.bypass.route;
-        if (motion_cmd_mode(&out.command) == MOTION_MODE_TURN ||
-            motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE)
+        in.stationary = true;
+        in.motion_status = RD_MOTION_IDLE;
+        if (motion_cmd_mode(&out.command) == MOTION_MODE_TURN)
         {
             complete_action(&in, &out);
         }
-        else
+        else if (motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE)
         {
-            in.motion_status = RD_MOTION_IDLE;
+            /* A leg runs as one action, moving a little per release. */
+            uint8_t id = motion_cmd_action(&out.command);
+            if (id != driving)
+            {
+                driving = id;
+                driven = 0.0f;
+                ++drives;
+            }
+            int target = motion_cmd_target(&out.command);
+            float step_mm = fminf(1.0f, (float)target - driven);
+            int32_t counts = (int32_t)lroundf((driven + step_mm) * ENC_COUNTS_PER_MM) -
+                (int32_t)lroundf(driven * ENC_COUNTS_PER_MM);
+            in.wheel_count[0] += (uint32_t)counts;
+            in.wheel_count[1] += (uint32_t)counts;
+            driven += step_mm;
+            in.stationary = false;
+            in.motion_action = id;
+            in.motion_status = driven >= (float)target ? RD_MOTION_DONE : RD_MOTION_RUNNING;
         }
         fresh_front(&in, t + 10u);
-        in.side_valid = true;
-        in.side_mm = side_ray_mm(&m, box_front, box_rear, half_width);
+        bool hit;
+        in.side_mm = side_ray_mm(&m, box_front, box_rear, half_width, &hit);
+        in.side_valid = hit || background_echoes;
         in.side_sampled_ms = t + 10u;
         in.side_sequence++;
         /* The IR pair is ahead of the axle, so it reaches the line first. */
         in.left_black = m.bypass.route == BYPASS_ROUTE_RETURN &&
             fabsf(m.bypass.left_q8 / 256.0f) <= NAV_SENSOR_FORWARD_MM;
         out = bstep(&m, &in, &t);
+        float across = (left ? 1.0f : -1.0f) * m.bypass.left_q8 / 256.0f;
+        if (m.bypass.route == BYPASS_ROUTE_PASS || m.bypass.route == BYPASS_ROUTE_REAR)
+        {
+            /* The measured box edge stays the safe gap off the facing side. */
+            assert(across - facing >= half_width + BYPASS_SAFE_GAP_MM - MOTION_DIST_TOL_MM);
+            assert(across - facing <= half_width + BYPASS_SAFE_GAP_MM + MOTION_DIST_TOL_MM);
+            assert(out.side_watch_on && out.side_watch_deg == (left ? -SERVO_LOOK_DEG : SERVO_LOOK_DEG));
+        }
+        if (m.bypass.route == BYPASS_ROUTE_IN)
+        {
+            /* Its facing side swings no further back than this, clear of the rear. */
+            assert(m.bypass.forward_q8 / 256.0f - facing >= box_rear + BYPASS_SAFE_GAP_MM - 2.0f);
+            /* It stops as soon as that holds, unless the ray had already passed the rear. */
+            assert(depth_mm <= 100.0f ||
+                m.bypass.forward_q8 / 256.0f - facing <= box_rear + BYPASS_SAFE_GAP_MM + 5.0f);
+        }
         if (out.event_kind == MQTT_EVENT_OBSTACLE)
         {
-            /* Reads long by at most a chunk and a sample, never short. */
+            /* Reads long, never short. */
             assert((float)out.event_arg2 >= depth_mm - 2.0f);
-            assert((float)out.event_arg2 <= depth_mm + 2.0f * BYPASS_CHUNK_MM + 2.0f);
             depth_seen = true;
         }
     }
     assert(depth_seen && m.state == MISSION_NAVIGATE);
     assert(m.phase == JUNCTION_PHASE_ADVANCE && m.turn_length_mm == NAV_SENSOR_FORWARD_MM);
-    assert(m.turn_code == (left_mm >= right_mm ? 1u : 2u));
+    assert(m.turn_code == (left ? 1u : 2u));
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
-    /* The car's corner cleared the box before it turned back in. */
-    assert(m.bypass.forward_q8 / 256.0f + OBSTACLE_SONAR_FORWARD_MM > box_rear);
+    assert(drives == 3u); /* one drive per leg, never stop and go */
     assert((routes & (1u << BYPASS_ROUTE_OFFSET)) != 0u);
     assert((routes & (1u << BYPASS_ROUTE_PASS)) != 0u);
     assert((routes & (1u << BYPASS_ROUTE_REAR)) != 0u);
@@ -555,7 +620,7 @@ static void test_bypass_long_encoder_travel(void)
 {
     bypass_control_t control;
     bypass_input_t in = {.now_ms = 100u, .stationary = true, .functional = true};
-    ObstacleProfile profile = {.valid = true, .closest_mm = 500u,
+    ObstacleProfile profile = {.valid = true, .closest_mm = 500u, .width_mm = 200u,
         .left_clearance_mm = 800u, .right_clearance_mm = 400u};
     uint8_t action = 1u;
     assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
@@ -576,10 +641,235 @@ static void test_bypass_long_encoder_travel(void)
 
 static void test_bypass_full_sequence(void)
 {
-    run_bypass_sequence(800u, 400u, 150.0f, 100.0f);
-    run_bypass_sequence(400u, 900u, 150.0f, 100.0f);
-    run_bypass_sequence(800u, 400u, 100.0f, 50.0f);
-    run_bypass_sequence(800u, 400u, 200.0f, 75.0f);
+    run_bypass_sequence(800u, 400u, 150.0f, 100.0f, true);
+    run_bypass_sequence(400u, 900u, 150.0f, 100.0f, true);
+    run_bypass_sequence(800u, 400u, 100.0f, 50.0f, true);
+    run_bypass_sequence(800u, 400u, 200.0f, 75.0f, true);
+    run_bypass_sequence(800u, 400u, 150.0f, 75.0f, false); /* open room: no echo past the rear */
+    run_bypass_sequence(800u, 400u, 40.0f, 75.0f, true); /* ray already past a shallow box */
+}
+
+static void test_bypass_real_outline(void)
+{
+    bypass_control_t control;
+    bypass_input_t in = {.now_ms = 100u, .stationary = true, .functional = true};
+    uint8_t action = 1u;
+    /* Between the two pivots' reach: only a left pivot keeps the barcode arm clear. */
+    ObstacleProfile profile = {.valid = true, .closest_mm = 220u, .width_mm = 200u,
+        .left_clearance_mm = 400u, .right_clearance_mm = 800u};
+    assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
+    assert(control.left_side);
+    profile.left_clearance_mm = 219u;
+    assert(!bypass_control_begin(&control, &in, &profile, 200u, &action));
+    profile.closest_mm = 240u;
+    assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
+    assert(!control.left_side);
+    profile.closest_mm = 210u;
+    profile.left_clearance_mm = 800u;
+    assert(!bypass_control_begin(&control, &in, &profile, 200u, &action));
+    /* The passing offset uses the side that faces the box. */
+    profile.closest_mm = 500u;
+    profile.obstacle_left_mm = 100;
+    assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
+    assert(control.left_side && control.offset_mm == 285);
+    /* F sin(a) - E cos(a) = d for F 500, E 200, d 85: the least pivot, rounded up. */
+    assert(control.out_deg == 32u);
+
+    /* Forward travel keeps the arm, not the sonar, clear of what is ahead. */
+    in = (bypass_input_t){.now_ms = 100u, .stationary = true, .functional = true};
+    profile.obstacle_left_mm = 0;
+    assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
+    int32_t counts = (int32_t)lroundf((float)control.out_deg * 0.0174532925f *
+        TRACK_WIDTH_MM * 0.5f * ENC_COUNTS_PER_MM);
+    in.count[0] = (uint32_t)-counts;
+    in.count[1] = (uint32_t)counts;
+    in.now_ms += 20u;
+    in.motion_action = control.action_id;
+    in.motion_status = RD_MOTION_DONE;
+    bypass_output_t out;
+    bypass_control_step(&control, &in, &action, &out);
+    assert(control.route == BYPASS_ROUTE_OFFSET && control.work == BYPASS_WORK_DRIVE);
+    assert(lroundf(control.action_target * sinf(control.out_deg * 0.0174532925f)) >= 185);
+    in.now_ms += 20u;
+    in.front_valid = true;
+    in.front_mm = 109u;
+    in.front_ms = in.now_ms;
+    bypass_control_step(&control, &in, &action, &out);
+    assert(out.route == BYPASS_ROUTE_OFFSET);
+    in.front_mm = 108u;
+    bypass_control_step(&control, &in, &action, &out);
+    assert(out.route == BYPASS_ROUTE_FAILED);
+    puts("Obstacle: bypass uses the measured outline PASS");
+}
+
+/* Scan again after a reverse, from a further position. */
+static MissionOutputs front_reading(Mission *m, MissionInputs *in, uint32_t *t, bool valid, uint32_t mm)
+{
+    in->front_valid = valid;
+    in->front_mm = mm;
+    in->front_sequence++;
+    *t += 10u;
+    return step(m, in, *t);
+}
+
+static MissionOutputs finish_scan_at(Mission *m, MissionInputs *in, uint32_t *t, uint32_t closest)
+{
+    in->scan_id = m->scan_id;
+    in->scan_state = OBSTACLE_SCAN_DONE;
+    in->profile_closest_mm = closest;
+    return bstep(m, in, t);
+}
+
+static void test_scan_obstacle_removed(void)
+{
+    Mission m;
+    MissionInputs in = base(100u);
+    uint32_t t;
+    /* Removed while the sweep ran, so the scan's profile is out of date: no bypass. */
+    into_scanning(&m, &in, &t, 800u, 800u);
+    in.scan_state = OBSTACLE_SCAN_FINE;
+    in.front_sequence++; /* the sweep's own 0 degree ray does not count */
+    t += 10u;
+    (void)step(&m, &in, t);
+    in.scan_state = OBSTACLE_SCAN_DONE;
+    t += 10u;
+    MissionOutputs out = step(&m, &in, t);
+    assert(m.state == MISSION_SCAN && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    out = front_reading(&m, &in, &t, false, 0u);
+    out = front_reading(&m, &in, &t, true, 900u);
+    assert(m.state == MISSION_SCAN && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    out = front_reading(&m, &in, &t, false, 0u);
+    assert(m.state == MISSION_FOLLOW_LINE && !out.stop_now);
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_FOLLOW_LINE && motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
+
+    /* A failed scan with the box gone also carries on, without the retry. */
+    in = base(100u);
+    into_scanning(&m, &in, &t, 800u, 800u);
+    in.scan_state = OBSTACLE_SCAN_FAILED;
+    for (unsigned i = 0u; i < MISSION_SCAN_CLEAR_SAMPLES; ++i)
+    {
+        out = front_reading(&m, &in, &t, false, 0u);
+        assert(!out.scan_request);
+    }
+    assert(m.state == MISSION_FOLLOW_LINE && !out.stop_now);
+
+    /* A dropped ping is not a removal: one blocked reading restarts the count and bypasses. */
+    in = base(100u);
+    into_scanning(&m, &in, &t, 800u, 800u);
+    (void)front_reading(&m, &in, &t, false, 0u);
+    (void)front_reading(&m, &in, &t, false, 0u);
+    out = front_reading(&m, &in, &t, true, MISSION_OBSTACLE_STOP_MM);
+    assert(m.state == MISSION_SCAN && out.scan_request && m.front_clear == 0u);
+    puts("Obstacle: obstacle removed during a scan resumes the line PASS");
+}
+
+static void test_bypass_reverses_when_too_close(void)
+{
+    Mission m;
+    MissionInputs in = base(100u);
+    uint32_t t;
+    /* Only the right has room, and its pivot needs 232 mm from the axle. */
+    into_scanning(&m, &in, &t, 100u, 800u);
+    MissionOutputs out = finish_scan_at(&m, &in, &t, 220u);
+    assert(m.state == MISSION_SCAN && m.scan_backing);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
+    assert(motion_cmd_target(&out.command) == -32.0f);
+    complete_action(&in, &out);
+    in.stationary = false;
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_SCAN && !m.scan_backing && m.scan_phase == 0u);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    in.scan_state = OBSTACLE_SCAN_SETTLING; /* the old DONE must not satisfy the rescan */
+    in.stationary = true;
+    out = bstep(&m, &in, &t);
+    assert(out.scan_request && m.scan_phase == 1u);
+    out = finish_scan_at(&m, &in, &t, 252u);
+    assert(m.state == MISSION_BYPASS && !m.bypass.left_side);
+
+    /* No gain from the reverse (raised wheels, or the box followed): it stops at the limit. */
+    in = base(100u);
+    into_scanning(&m, &in, &t, 100u, 800u);
+    for (unsigned total = 32u; total <= BYPASS_BACKUP_MAX_MM; total += 32u)
+    {
+        out = finish_scan_at(&m, &in, &t, 220u);
+        assert(m.scan_backing && m.backed_mm == total);
+        complete_action(&in, &out);
+        (void)bstep(&m, &in, &t);
+        in.scan_state = OBSTACLE_SCAN_SETTLING;
+        in.stationary = true;
+        out = bstep(&m, &in, &t);
+        assert(out.scan_request && !out.scan_keep_narrower);
+    }
+    out = finish_scan_at(&m, &in, &t, 220u);
+    assert(m.state == MISSION_STOPPED && out.stop_now);
+
+    /* A failed reverse stops. */
+    in = base(100u);
+    into_scanning(&m, &in, &t, 100u, 800u);
+    out = finish_scan_at(&m, &in, &t, 220u);
+    in.motion_action = motion_cmd_action(&out.command);
+    in.motion_status = RD_MOTION_FAILED;
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_STOPPED && out.stop_now);
+
+    /* No room on either side: reverse in steps and look again, then bypass once it shows. */
+    in = base(100u);
+    into_scanning(&m, &in, &t, 100u, 100u);
+    out = finish_scan_at(&m, &in, &t, 300u);
+    assert(m.scan_backing && motion_cmd_target(&out.command) == -(float)BYPASS_NO_ROOM_STEP_MM);
+    complete_action(&in, &out);
+    (void)bstep(&m, &in, &t);
+    in.scan_state = OBSTACLE_SCAN_SETTLING;
+    in.stationary = true;
+    out = bstep(&m, &in, &t);
+    assert(out.scan_request);
+    in.left_clearance_mm = 800u;
+    out = finish_scan_at(&m, &in, &t, 350u);
+    assert(m.state == MISSION_BYPASS && m.bypass.left_side);
+
+    /* Never any room: it stops once the full reverse is used. */
+    in = base(100u);
+    into_scanning(&m, &in, &t, 100u, 100u);
+    for (unsigned total = BYPASS_NO_ROOM_STEP_MM; total <= BYPASS_BACKUP_MAX_MM; total += BYPASS_NO_ROOM_STEP_MM)
+    {
+        out = finish_scan_at(&m, &in, &t, 300u);
+        assert(m.scan_backing && m.backed_mm == total);
+        complete_action(&in, &out);
+        (void)bstep(&m, &in, &t);
+        in.scan_state = OBSTACLE_SCAN_SETTLING;
+        in.stationary = true;
+        out = bstep(&m, &in, &t);
+        assert(out.scan_request);
+    }
+    out = finish_scan_at(&m, &in, &t, 300u);
+    assert(m.state == MISSION_STOPPED && out.stop_now);
+
+    /* After a reverse the box reads farther than the stop distance, but it has not gone. */
+    in = base(100u);
+    into_scanning(&m, &in, &t, 100u, 100u);
+    out = finish_scan_at(&m, &in, &t, 300u);
+    complete_action(&in, &out);
+    (void)bstep(&m, &in, &t);
+    in.scan_state = OBSTACLE_SCAN_SETTLING;
+    in.stationary = true;
+    out = bstep(&m, &in, &t);
+    in.scan_id = m.scan_id;
+    in.scan_state = OBSTACLE_SCAN_DONE;
+    out = front_reading(&m, &in, &t, true, MISSION_OBSTACLE_STOP_MM + BYPASS_NO_ROOM_STEP_MM);
+    assert(m.state == MISSION_SCAN && m.scan_backing && m.front_clear == 0u);
+
+    /* Two sweeps: the second asks to keep the narrower profile, and if it fails the
+       first still stands. */
+    in = base(100u);
+    into_scanning(&m, &in, &t, 800u, 800u);
+    out = front_reading(&m, &in, &t, true, MISSION_OBSTACLE_STOP_MM);
+    assert(m.state == MISSION_SCAN && out.scan_request && out.scan_keep_narrower);
+    in.scan_id = out.scan_id;
+    in.scan_state = OBSTACLE_SCAN_FAILED;
+    out = front_reading(&m, &in, &t, true, MISSION_OBSTACLE_STOP_MM);
+    assert(m.state == MISSION_BYPASS && !out.stop_now);
+    puts("Obstacle: too close or no room reverses within the limit, two sweeps PASS");
 }
 
 static void test_bypass_failures(void)
@@ -587,10 +877,7 @@ static void test_bypass_failures(void)
     Mission m;
     MissionInputs in = base(100u);
     uint32_t t;
-    into_scanning(&m, &in, &t, MISSION_BYPASS_MIN_CLEAR_MM - 1u,
-        MISSION_BYPASS_MIN_CLEAR_MM - 1u);
-    MissionOutputs out = bstep(&m, &in, &t);
-    assert(m.state == MISSION_STOPPED && out.stop_now);
+    MissionOutputs out;
 
     /* Wrong scan IDs cannot release movement; failed scans retry boundedly. */
     in = base(100u);
@@ -634,8 +921,6 @@ static void test_bypass_failures(void)
     out = bstep(&m, &in, &t);
     complete_action(&in, &out);
     fresh_front(&in, t + 10u);
-    bstep(&m, &in, &t);
-    fresh_front(&in, t + 10u);
     out = bstep(&m, &in, &t);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
     in.motion_status = RD_MOTION_RUNNING;
@@ -673,15 +958,14 @@ static void test_missing_echo_policy(void)
     fresh_front(&in, t + 10u);
     out = bstep(&m, &in, &t);
     assert(m.bypass.route == BYPASS_ROUTE_OFFSET);
-    fresh_front(&in, t + 10u);
-    out = bstep(&m, &in, &t);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
     in.motion_status = RD_MOTION_RUNNING;
+    fresh_front(&in, t + 10u);
     in.front_valid = false;
     out = bstep(&m, &in, &t);
-    assert(m.state == MISSION_STOPPED && out.stop_now);
-    assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
-    puts("INT-24 no echo: PASS (tracking report-only; bypass offset stops)");
+    assert(m.state == MISSION_BYPASS);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
+    puts("INT-24 no echo: PASS (report-only while tracking and on a bounded bypass leg)");
 }
 
 static void test_stop_cancels_every_phase(void)
@@ -735,6 +1019,9 @@ int main(void)
     test_bypass_full_sequence();
     test_bypass_long_encoder_travel();
     test_bypass_failures();
+    test_bypass_real_outline();
+    test_bypass_reverses_when_too_close();
+    test_scan_obstacle_removed();
     test_missing_echo_policy();
     test_stop_cancels_every_phase();
     test_run_network_loss();

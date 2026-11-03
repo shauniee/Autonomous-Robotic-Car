@@ -1,2 +1,0 @@
-1d7f3dd8e69b5ba10afeab73cdc97a9b918f78d5e42f967c1bbec93131fed4d8  build_make/mtk3pico_smp1_usb_cdc_wifi.elf
-809fb4331282962a8d5ea873fe8c3bcde1003bcf77ba209e0e8525aa4bd07aa7  build_make/mtk3pico_smp1_usb_cdc_wifi.uf2

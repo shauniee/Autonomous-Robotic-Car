@@ -1,9 +1,0 @@
-robot_time: PASS
-encoder_math: PASS
-INT-81: measured rolling scale and tracking/recovery count-speed targets PASS
-stress: 5000000 reads checked, 0 torn
-robot_data: PASS
-INT-81: FOLLOW gentle entry and progressive tight-curve targets PASS
-tracking -> recovery slowdown: left duty=0.000000 right duty=0.000000
-Assertion failed: (out.status == RD_MOTION_RUNNING && !out.stall), function test_follow_slowdown_never_reverses, file test_motion_control.c, line 274.
-testing/pure/run.sh: line 56: 49401 Abort trap: 6           "$build_dir/test_motion_control"

@@ -1,4 +1,4 @@
-# Motion (S2)
+# Motion
 
 ## Contents
 

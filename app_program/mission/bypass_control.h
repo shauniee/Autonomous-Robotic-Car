@@ -14,8 +14,7 @@ typedef enum
 } bypass_route_t;
 typedef enum
 {
-    BYPASS_WORK_TURN, BYPASS_WORK_SIDE, BYPASS_WORK_FRONT,
-    BYPASS_WORK_DRIVE
+    BYPASS_WORK_TURN, BYPASS_WORK_DRIVE, BYPASS_WORK_LOOK, BYPASS_WORK_STOP
 } bypass_work_t;
 typedef struct
 {
@@ -26,16 +25,17 @@ typedef struct
     int32_t left_q8 : 21;
     int32_t rear_clear_q8 : 21;
     int32_t edge_forward_q8 : 21;
-    int16_t heading_cdeg, offset_mm, pass_start_mm, obstacle_front_mm;
+    int16_t heading_cdeg, offset_mm, centre_mm, obstacle_front_mm;
     int16_t action_target;
-    uint16_t baseline_mm, depth_mm;
+    uint16_t depth_mm, half_width_mm, flank_mm;
     uint8_t action_id;
+    uint8_t out_deg;
     uint8_t route : 4;
     uint8_t work : 3;
     uint8_t left_side : 1;
-    uint8_t baseline_valid : 1;
-    uint8_t edge_streak : 3;
-    uint8_t attempts : 2;
+    uint8_t edge_open : 1;
+    uint8_t edge_samples : 3;
+    uint8_t close_samples : 2;
 } bypass_control_t;
 typedef struct
 {
@@ -60,6 +60,12 @@ typedef struct
 
 /* A supported measured profile and stationary input are prerequisites.
    Planning width is supplied separately from the reported measurement. */
+/* Millimetres to reverse so a side with room can pivot, or 0 if none
+   applies. */
+uint8_t bypass_control_backup_mm(const ObstacleProfile *profile,
+    uint16_t planning_width_mm);
+bool bypass_control_can_begin(const bypass_input_t *input,
+    const ObstacleProfile *profile, uint16_t planning_width_mm);
 bool bypass_control_begin(bypass_control_t *control, const bypass_input_t *input,
     const ObstacleProfile *profile, uint16_t planning_width_mm, uint8_t *action_id);
 void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,

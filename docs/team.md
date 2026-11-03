@@ -108,9 +108,9 @@ allocations; not measured live high-water marks):
 | Application object | Allocation / ownership |
 | --- | --- |
 | Tasks | Motion and Mission on core 1, I/O on core 0: exactly three creation call sites |
-| Mutexes | Five: Motion command/health, line snapshot, S5 profile, cross-core events, Terrain evidence |
+| Mutexes | Five: Motion command/health, line snapshot, Obstacle profile, cross-core events, Terrain evidence |
 | Event flags | One persistent Motion stop/inhibit flag |
-| Static rings | Existing barcode capture/events and S1 bridge/events; no generic bus |
+| Static rings | Existing barcode capture/events and Comms bridge/events; no generic bus |
 | Task stacks | 2048 bytes requested each, 6144 bytes total requested; final stack margins unmeasured |
 
 Limits in [config/config.h](../config/config.h) are total capacities, including
@@ -129,8 +129,8 @@ by [architecture](architecture.md#shared-data-rules).
 | --- | --- |
 | Mission to Motion | One latest packed command, bounded mutex copy; Motion owns feedback and stop latch |
 | Local GP21 to Motion | Independent input check, persistent stop; no command-mutex/telemetry dependency |
-| S3 evidence to Mission | Bounded in-task sensing/decoder steps; retain original acquisition times |
-| Mission to S5 | Scan/side-watch intent and bounded acquisition steps, never a second motor writer |
+| line_barcode evidence to Mission | Bounded in-task sensing/decoder steps; retain original acquisition times |
+| Mission to Obstacle | Scan/side-watch intent and bounded acquisition steps, never a second motor writer |
 | Terrain to Mission/Motion | Core-0 coherent evidence with age/validity; no cross-core runtime `motion_stop()` call |
 | I/O to Mission mapping | Bounded hand-off; Mission installs whole mapping while stopped and returns result before ACK |
 | Mission/Terrain to Reporting | Cross-core event synchronization required; same-core DI/EI is insufficient |
@@ -142,7 +142,7 @@ software copy or brake acknowledgement is not physical stationarity.
 
 ## 5. Coding rules
 
-Apply to new or changed application code (imported kernel need not be reformatted). Informed by Barr Group 2018 embedded C guidance; not a compliance certification.
+Apply to new or changed application code (imported kernel need not be reformatted). Informed by Barr Group 2018 embedded C guidance; not a compliance certification. `python3 scripts/check_barr.py` scans changed `app_program` lines for the mechanical rules below (`--all` for every line); a Claude Code hook runs it once Claude has finished its edits, before it reports them. The review checklist stays manual.
 
 - **Language/layout:** GNU C11 (`-std=gnu11`). Use C11 acquire/release for word snapshots and startup publication; no atomic RMW helpers on Cortex-M0+. Isolate other extensions in drivers. Four spaces, LF, one statement per line, braces on every body, opening brace on its own line, ~80 columns. Space operators, parenthesize precedence, comment purpose/units/bounds/assumptions, remove dead code.
 - **Modules:** one purpose each; lowercase `snake_case.c/.h`, guarded header, minimal exports; never include a `.c` or absolute path. Public functions prefixed with module name; private `static`. Named constants; prefer functions to macros (macros evaluate args once, parenthesized). Types `module_name_t`.

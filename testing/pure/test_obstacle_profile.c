@@ -12,7 +12,7 @@ int main(void)
         assert(obstacle_scan_state_unpack(w) == (obstacle_scan_state_t)s);
         for (uint8_t id = 0u; id < 16u; ++id)
         {
-            /* Use S5's encoding and Mission's reader, including id zero/max. */
+            /* Use Obstacle's encoding and Mission's reader, including id zero/max. */
             uint32_t scan = w | obstacle_scan_id_pack(id);
             assert(obstacle_scan_id(scan) == id);
             assert(obstacle_scan_state_unpack(scan & 7u) == (obstacle_scan_state_t)s);
@@ -41,7 +41,7 @@ int main(void)
     }
     ObstacleRay invalid = obstacle_ray_make((int16_t)(SERVO_MAX_DEG + 1), 42u, true);
     assert(!invalid.valid && invalid.range_mm == 0u);
-    assert(obstacle_side_watch_angle(obstacle_side_watch_pack(false, -90)) == -SERVO_MAX_DEG);
+    assert(obstacle_side_watch_angle(obstacle_side_watch_pack(false, -90)) == -SERVO_LOOK_DEG);
     assert((obstacle_side_watch_pack(false, 0) & 1u) == 0u);
 
     puts("obstacle_profile: PASS");

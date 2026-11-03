@@ -1,4 +1,0 @@
-app_program/subsystem2/motion_control.c:222:30: error: use of undeclared identifier 'MOTION_STALL_GUARD_ENABLED'
-  222 |     for (int w = 0; w < 2 && MOTION_STALL_GUARD_ENABLED && !APP_NO_GUARDS; ++w) {
-      |                              ^~~~~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.

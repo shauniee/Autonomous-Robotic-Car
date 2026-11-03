@@ -1,4 +1,0 @@
-subsystem1/status_protocol.c exit=0
-subsystem1/subsystem1_test.c exit=0
-pico_rp2040/mqtt_utk.c exit=0
-pico_rp2040/cyw43_utk.c exit=0

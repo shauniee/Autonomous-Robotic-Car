@@ -1,8 +1,0 @@
-[NET=none MQTT=0 CRASH_REPORT=0 TEST=1] exit=0 warnings=0 errors=0
-[NET=none MQTT=0 CRASH_REPORT=0 TEST=0] exit=0 warnings=0 errors=0
-[NET=lwip MQTT=1 CRASH_REPORT=0 TEST=1] exit=0 warnings=1 errors=0
-/Users/nicholasbay/.robot-car-tools/pico-sdk/lib/lwip/src/apps/mqtt/mqtt.c:153:1: warning: 'mqtt_msg_type_to_str' defined but not used [-Wunused-funct
-[NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0] exit=0 warnings=1 errors=0
-/Users/nicholasbay/.robot-car-tools/pico-sdk/lib/lwip/src/apps/mqtt/mqtt.c:153:1: warning: 'mqtt_msg_type_to_str' defined but not used [-Wunused-funct
-[NET=lwip MQTT=1 CRASH_REPORT=0 TEST=0 FULL_COURSE=1] exit=0 warnings=1 errors=0
-/Users/nicholasbay/.robot-car-tools/pico-sdk/lib/lwip/src/apps/mqtt/mqtt.c:153:1: warning: 'mqtt_msg_type_to_str' defined but not used [-Wunused-funct
