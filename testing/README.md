@@ -42,7 +42,7 @@ Actual wireless checks are SYS-09/10 through [wireless setup](../README.md#getti
 
 ## Planned integrated trials
 
-Target procedures follow [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) and [mission-readiness](mission-readiness.md).
+Target procedures follow [pending work](../pending.md) and [mission-readiness](mission-readiness.md).
 Historical case definitions and results in TEST_LOG files stay as recorded. Differences
 such as GP20 reset, JSON output or a dedicated Safety task describe their recorded
 source, not target acceptance. Append a new procedure revision/result, never reuse
@@ -74,7 +74,7 @@ All remain pending until actual measurements/results are recorded. This retains 
 
 Acceptance targets/unknown values are owned by [project-specs](../docs/project-specs.md#pending-decisions), not inferred from a case name. Demonstration links belong in the [video index](../video/README.md#video-index) and the corresponding result row.
 
-The live completion checklist is [issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117).
+The live completion checklist is [pending work](../pending.md).
 `python3 testing/check_plan_completion.py` checks the latest appended
 source-manifest/stage audit, not live issue checkboxes or robot operation:
 exit 1 means current BLOCKED evidence, exit 2 means stale source identity.

@@ -4,6 +4,10 @@
 
 - [How this list is ordered](#how-this-list-is-ordered)
 - [Where things stand](#where-things-stand)
+- [Resolution plan](#resolution-plan)
+- [Required coverage](#required-coverage)
+- [What cannot be resolved without the robot](#what-cannot-be-resolved-without-the-robot)
+- [Minimum-bit priorities](#minimum-bit-priorities)
 - [1. Safety and electrical](#1-safety-and-electrical)
 - [2. Motion calibration](#2-motion-calibration)
 - [3. Line tracking (M1)](#3-line-tracking-m1)
@@ -32,6 +36,13 @@ Most important first, in sections and within each section. The order is by impor
 
 IDs: `M` requirement, `MR` readiness check, `D` pending decision, `T` integrated trial, `A` Tribunal assumption, `R` Tribunal risk, `Gap` Tribunal Version C. `docs/tribunal1.md` is frozen; differences from it are listed under [Superseded](#superseded).
 
+This is the single live completion plan. Issue #117 stays closed; no replacement
+issue is needed. Work is on `fix/pending-nic2`, based on `7275347`; PR 149 is
+already merged as `99fe0d8`. No edits, commits or merges go to `main` in this task.
+All questions and decisions go to Nicholas; subsystem names below identify code,
+not another person's approval. Confirmed acceptance/profile decisions are owned
+by [project-specs](docs/project-specs.md#demo-and-full-course-decisions-2026-11-03).
+
 ## Where things stand
 
 | Area | State | Evidence |
@@ -48,9 +59,94 @@ IDs: `M` requirement, `MR` readiness check, `D` pending decision, `T` integrated
 | Full mission | Never run as an acceptance check. | MR-35 to MR-40 |
 | Timing and resources | Not measured on the final build. | SYS-11, SYS-12 (October builds) |
 
+## Resolution plan
+
+This revision plans the remaining implementation and validation; it does not
+claim new builds, tests or robot passes. Execute in order, completing each
+software correction with a focused regression before physical trials. The
+2026-11-04 demo is a milestone, not a waiver of required features or evidence.
+
+| Step | Work and affected files | Completion evidence / dependency |
+| --- | --- | --- |
+| P0 — baseline and decisions | Use this file throughout; keep Tribunal frozen. Nicholas settles D01/D02 print/pause details, D05/D10 accuracy limits, D09 buffer wording/network settings, D12 course applicability, 100 mm/s scope during slower bypass, and D15 watchdog policy. Record answers only in project-specs. | Branch created; active links updated. Unknown values remain pending, not guessed. No need to contact other owners. |
+| P1 — software baseline | Build the candidate with all four WATCHDOG/TRACE combinations using the documented wireless profile, including a TEST image. Run `testing/pure/run.sh`; record exact source/profile and final image checksum under testing without saving build/host output. Fix compilation/regression failures before tuning. | Arm build plus host result rows; neither is a Pico pass. Confirm stall guard off for demo and on for the separately identified full-course image. Audit build flag support before claiming a new profile switch exists. |
+| P2 — existing failures | Analyse INT-157's off-course tail using acquisition-time WHEEL/line records, not bursty laptop arrival rates; compare INT-156 SCAN→STOPPED with the precise guard/release condition. Trace INT-154 calibration failure, barcode overflow and missing event through their producers/consumers. Inspect INT-122/133 stuck hump windows. Leave the ten battery-related restarts out. | A supported cause or explicitly unresolved hypothesis per symptom, linked to source/capture. Add smallest reproducing fixtures under testing; fix the shared producer/consumer only after reproduction. No invented hardware diagnosis. |
+| P3 — tracking, barcode and navigation | Review `line.c`, `barcode.c`, `mission_logic.c`, `motion_control.c`, `report.c` and related host tests: curve/junction qualification, onset skew, pivot hand-over, queued-action lifetime, C/P bidirectional decoding, truncated guards, overflow retention and exactly one event per read. Audit PR 149 fallback against tests before adding coverage. Update scorer input/procedure to enforce the agreed lap conditions. | Host regression for each demonstrated defect; scorer must not infer physical success from telemetry alone. Separate lighting datasets and image profiles; unique run IDs. Robot gate: sections 2–4 and 8. |
+| P4 — terrain and obstacle completeness | Review `terrain_algo.c`/`terrain.c` for completed-encounter counting, turn rejection, stuck windows, invalid height/max retention and boot calibration. Review `obstacle.c`, `obstacle_profile.c`, `bypass_control.c` and Mission for fresh stationary gating, no-echo policy, cancellation/centering, blocked sides, rear-edge depth and original-line rejoin. | Host fixtures for relevant failure paths; no threshold/geometry release without physical evidence. Verify whether the existing fix removes 5-for-1 hump counting on the current image before adding another fix. Bypass remains a required feature, not a stretch goal. |
+| P5 — compact data and communication | Apply the ranked [minimum-bit priorities](#minimum-bit-priorities). Census all persistent storage, including private state, diagnostics, queues and watchdog state. Fix stale rows, use target size probes, preserve ownership/invalid codes and update both protocol endpoints if the wire changes. Audit frozen producers, expiry, full buffers, mapping BUSY/reboot rules and cross-core handoffs. | Boundary/rollover/invalid/concurrency host checks, final Arm layout and static RAM; physical timing/stack/link acceptance remains P7/P8. Resolve event-loss observability before accepting route reconstruction. |
+| P6 — safe physical commissioning | With the robot: electrical checks, TEST inhibition, reset/start/stop/impact, motor direction, encoders, wheel/track geometry, loaded PID, IR polarity/lighting, sonar/servo and mounted IMU. Nicholas records all calibration and chosen limits. | Sections 1–2; MR-01–25 as applicable. Watchdog is opt-in bench work until D15 passes. Demo stall exception never disables other guards. |
+| P7 — feature and lap trials | Run all section 3–7 cases: A–Z in both directions, all four actions and no-command crossing, reference humps, obstacle ranges/width/depth, safe bypass/rejoin, actual MQTT and faults. Then run the agreed lap; score 20 unchanged-image attempts per lighting condition for the existing 95% sample target (at least 19/20), and compare equal TRACE-on/off batches. | Captures plus video/reference measurements, including failures. Three unchanged-image full-course successes remain separate MR-36/37 evidence. Line-loss/blocked-route/GP21 safety cases are separate intentional-stop trials, not qualifying laps. |
+| P8 — submission and closeout | Measure final combined-load WCET/jitter/deadlines, sensor-to-output and brake latency, IRQ/lock duration, packing CPU cost, stack/peak RAM and buffer occupancy. Record exact final RAM/message sizes; rerun changed functionality. Complete route reconstruction, motion/PID and terrain analyses in owning subsystem READMEs, integrated/telemetry demo evidence and video index. Recover Week 10 evidence only if it exists. | Sections 9–11, T14–T16, MR-35–40. No fabricated retrospective pass; missing historical evidence stays labelled missing. Update readiness from actual results. |
+| P9 — optional closeout | Keep magnetometer fusion optional. Reconcile diagnostic-frame wording with Nicholas. Keep this completion record; leave old merged branch deletion outside the task. | Sections 12–13 have an explicit disposition; optional work cannot delay required completion. |
+
+## Required coverage
+
+`docs/tribunal1.md` has no table labelled FR/NFR. Until Nicholas identifies another
+source, this plan conservatively retains all M1–M10 from the owning requirements
+guide plus the Tribunal's functional, safety and resource obligations. These
+labels are a crosswalk, not invented instructor requirement IDs.
+
+| Requirement / obligation | Plan coverage and closure |
+| --- | --- |
+| M1 line tracking and lighting tolerance | P2/P3/P6/P7; sections 2–3; qualifying lap plus measured repeatability |
+| M2 A–Z in either direction, stored until next junction | P3/P7; section 4; both traversal directions, one action/event per read, physical print coverage |
+| M3 all four encoder actions, including one wheel on hump | P3/P6/P7; sections 2, 4 and 6; ground distance/angle measurements and navigation trials |
+| M4/M5 detection, each height/count and retained maximum | P4/P6/P7; section 6; reference measurements, exact crossing count, no pivot false positives |
+| M6/M7 obstacle detection, profile, clearance and depth | P4/P6/P7; section 5; measured boards/boxes and side/rear-edge evidence |
+| M8/M9 safe bypass and original-line continuation | P4/P7; section 5; both sides, restricted/blocked cases, envelope and correct rejoin. Rejoining during BYPASS/NAVIGATE is required; a standalone REACQUIRE during the qualifying lap fails it. |
+| M10 two-way MQTT, runtime mapping, readable telemetry and route evidence | P5/P7/P8; section 7; instructor broker, malformed requests, BUSY/reboot, fault visibility and reconnect |
+| Autonomous, undisclosed route, endless operation, micro T-Kernel | P7/P8; sections 9/11; unfamiliar runtime letters, repeated encounters, no remote driving or hard-coded route |
+| Single motor writer, stop precedence, freshness, reset and fault independence | P2/P5/P6/P8; sections 1/8/10; separate intentional fault/stop tests; networking has no movement authority |
+| Race-free minimum-bit data, precision, invalid/overflow behavior | P5/P8; section 10 and Tribunal Gaps 1–7; field census, accessor/boundary checks, final sizes and on-target timing |
+| Electrical, timing, stack, performance and repeatability | P6/P7/P8; sections 1/9/10 and Tribunal risks R1–R5; measured values, not host inference |
+| Reports, demonstrations and traceability | P8; section 11 and Tribunal Gap 8; unique result IDs, exact source/image, saved measurements/video links |
+
+## What cannot be resolved without the robot
+
+Software investigation, fixes, host tests, Arm builds, static RAM/layout analysis,
+protocol fixtures, report structure and procedure preparation can happen now.
+They cannot close these physical items:
+
+| Blocked acceptance | Why the robot or actual environment is needed | Checklist coverage |
+| --- | --- | --- |
+| Electrical and stopping safety | Continuity, Echo voltage, power rails under load, braking distance/output waveforms, impact, held-button/reset and watchdog behavior need hardware measurements. The loose-battery restart cause is already explained. | Section 1; MR-01–07, MR-16, MR-24/25, SYS-06 |
+| Motion and encoder calibration | Actual wheel travel/sign, edge errors/rates, geometry, floor PID, slip and turn accuracy cannot be inferred from raised-wheel or host tests. | Section 2; MR-14/15, MR-19–23 |
+| Robust line/barcode/junction behavior | Mounted sensor levels, lighting, issued prints, physical overflow rate, three curves, action hand-over, TRACE effect and untouched 100 mm/s laps require the course. | Sections 3–4, 8; MR-12/13, MR-26–28/32 |
+| Hump accuracy and reliability | Current fix needs actual crossings; height scale/error, reverse/curve/pivot effects, minimum detectable hump, stuck detection and disconnected-IMU behavior require measured references. | Section 6; MR-11/16/23/29 |
+| Obstacle and full bypass | Servo endpoints, sonar error, swept envelope, width/depth, blocked sides and original-line rejoin have no accepted integrated physical evidence. | Section 5; MR-17/18/30/31 |
+| End-to-end instructor telemetry | Laptop fixtures can prove codec behavior, not Pico radio timing, reconnect, real mapping/fault injection or access to the instructor network. Credentials alone do not prove connectivity. | Section 7; MR-08–10/33/38 |
+| Loaded resources and repeatability | WCET/jitter/ISR/lock cost, live stack/peak RAM, actual queue high-water marks, three full runs, 20-lap samples and physical videos require the running final image. | Sections 9–11; MR-35–40 |
+
+Separately blocked on Nicholas, not on hardware access: unconfirmed numeric
+accuracy/recovery limits, print polarity/scope, course assumptions, watchdog
+policy and buffer wording. Instructor settings can be entered when available;
+no application-code redesign is planned for that configuration change.
+
+## Minimum-bit priorities
+
+The source-based calculations, proposed layouts and limits are owned by the
+[data audit](docs/project-specs.md#minimum-bit-audit-2026-11-03); no RAM savings
+have been implemented or measured in this planning revision.
+
+1. Correct the census first: include private state, stored floats, watchdog
+   copies, diagnostic rings and alignment; fix signed-angle undercounts.
+2. Preserve precision while packing the barcode edge ring and private flags.
+   Retain ring capacity; frequent overflow is a reason to investigate, not shrink it.
+3. Pack 12 independent wire fault bits into two bytes only with a coordinated
+   schema update, laptop decoder/dashboard changes and golden-vector regressions.
+4. Pack ray angle/validity losslessly; consider smaller sonar/profile fields only
+   after proving every producer's range and invalid behavior. Quantization needs
+   an agreed measurement error budget.
+5. Bound stored PID values before fixed-point conversion; validate loaded control
+   after conversion. Keep 32-bit freshness timestamps and cross-core publication
+   words unless a safe narrower lifetime/atomic contract is proven.
+6. Prove final logical bits, target storage, static RAM and live performance.
+   Existing README subtotals omit private objects and cannot establish a complete
+   minimum-bit implementation.
+
 ## 1. Safety and electrical
 
-- [ ] Build `main` with the Arm compiler before flashing: `WATCHDOG=0` and `1`, `TRACE=0` and `1`. PR 149 merged at `99fe0d8` without one, so a build failure is possible.
+- [ ] Build the `fix/pending-nic2` candidate with the Arm compiler before flashing: `WATCHDOG=0` and `1`, `TRACE=0` and `1`. PR 149 merged at `99fe0d8` without one, so a build failure is possible.
 - [ ] Sonar Echo high level measured at 3.3 V or below (MR-03, R5, D05). A higher level can damage the GPIO.
 - [ ] Every wire checked by continuity, with a photo (MR-01, A7).
 - [ ] GP26 Grove contact disconnected and GP28 jumper open (MR-02, A7).
@@ -60,7 +156,7 @@ IDs: `M` requirement, `MR` readiness check, `D` pending decision, `T` integrated
 - [ ] Measure output-brake latency against the 50 ms target, separately from physical stopping (A11, T02).
 - [ ] Reset cannot start the robot: held buttons, persistent fault, expired and old commands, inhibited boot (MR-07, A12, Gap 4).
 - [ ] TEST image on the current build: `[TEST]` lines print and motors stay braked (MR-06).
-- [ ] Stall guard: decide on it and enable it for acceptance, since it is off in the current trial configuration (MR-25, D07).
+- [ ] Stall guard: keep it off for the 2026-11-04 demo; enable and physically verify it for full-course acceptance (MR-25, D07; confirmed profile decision in project-specs).
 - [ ] Watchdog: agree the reset policy (D15), then test a `WATCHDOG=1 TEST=1` image with wheels raised: reset on a stopped task, motor outputs through reset, no restart without GP20, and no false reset under WiFi load (SYS-06). The code is merged but off by default; do not enable it on a driving car until this passes.
 - [ ] Impact: tap test gives `Terrain: impact` and a latched stop (MR-16, D06).
 
@@ -81,7 +177,7 @@ Turns, distances and barcode widths all come from encoder travel.
 
 The 95% target is the user's. No success rate has been measured yet, so the first job is to get one.
 
-- [ ] Define one attempt and what counts as a success (for example, a full lap with no line loss), and write that down before running.
+- [x] Qualifying-lap definition agreed with Nicholas; apply the [acceptance contract](docs/project-specs.md#demo-and-full-course-decisions-2026-11-03). Height accuracy still needs the D10 limit before an accuracy PASS.
 - [ ] Run 20 laps with one image and no changes, record each lap, and calculate the rate with `scripts/mission_trial_score.py` (MR-26).
 - [ ] Repeat under two lighting conditions (MR-26, M1).
 - [ ] Analyse the off-course run in `testing/integration/logs/2026-11-02_raw-captures/int-157-run.txt.gz`, near the end of the run. `scripts/triage_mqtt_capture.py` flags anomalies but does not find causes.
@@ -126,7 +222,7 @@ Wheels stay off for the bench steps. Bypass has never run on the car.
 Flash the current image, let the car sit still on the track for a second, then press GP20.
 
 - [ ] Cross the 10 mm hump at least 3 times with barcode turns in the lap. Pass: `humps=` matches the crossings exactly, and pivots add nothing (INT-158 bug, M4).
-- [ ] Reference humps up to the 30 mm limit, three passes each, reported against actual height (MR-29, M5, A4, D06). `HUMP_CALIB_FACTOR` 0.8 comes from one hump height.
+- [ ] Reference humps from the user-selected 10 mm minimum up to the 30 mm limit, three passes each, reported against actual height (MR-29, M5, A4, D06). `HUMP_CALIB_FACTOR` 0.8 comes from one hump height.
 - [ ] Agree a height error limit; "a few millimetres" is not an accepted target (A10, D10, Gap 7).
 - [ ] Turn accuracy with one wheel on a hump (MR-23, M3).
 - [ ] Hump on a curve, and a hump just before a barcode.
@@ -138,7 +234,7 @@ Flash the current image, let the car sit still on the track for a second, then p
 
 ## 7. Telemetry and mapping (M10)
 
-- [ ] Get the instructor's WiFi and broker settings (D09). Blocked until supplied.
+- [ ] Configure ignored network secrets for the instructor network/broker when supplied (D09). Keep application code/schema unchanged; perform the connection/mapping/subscriber smoke check on that network.
 - [ ] Pico telemetry at about 500 ms in the current binary format, saved (MR-08, S1-M01, Gap 5).
 - [ ] Start refused without a mapping (MR-09).
 - [ ] Mapping accepted while stopped, BUSY while following, cleared on reboot (MR-10, A8).
@@ -152,7 +248,7 @@ Flash the current image, let the car sit still on the track for a second, then p
 ## 8. Faults seen and not explained
 
 - [ ] Encoder faults stopped runs earlier, and the bad edges have no known cause. PR 149 stops the laptop showing speeds from bursty packet timing, such as `L=1935 R=-222` (INT-157 capture), but that does not rule out real encoder glitches; check against `WHEEL` frames.
-- [ ] Pico restarts seen during earlier runs: confirm whether they were manual.
+- [x] Ten Pico restarts in INT-154 to INT-157: Nicholas identified a loose battery connection, a hardware fix. Excluded from software fault investigation; this does not establish a loaded-supply PASS.
 - [ ] `Obstacle: no echo` appears in many runs. It is meant to be report-only; check it never causes a stop on its own.
 - [ ] `IMU calibration failed` on one boot (INT-154 capture).
 - [ ] `barcode capture overflow` is frequent. It no longer clears the runs; consider a larger ring if reads still fail.
@@ -173,8 +269,8 @@ Flash the current image, let the car sit still on the track for a second, then p
 - [ ] No lost functionality: rerun the applicable set on the final commit (T15, T16).
 - [ ] RAM usage of the final build; SYS-11 and SYS-12 are October builds, and the architecture guide still cites SYS-11 as final.
 - [ ] Stack use and peak RAM measured (R3, D13). Never measured.
-- [ ] Data table signed off by each owner; most sections still say "proposed" (Gap 1, R2, issue #28).
-- [ ] Fault-byte owner confirmations (#113).
+- [ ] Nicholas reviews the complete data table; remove stale per-person approval dependencies while retaining unmeasured bounds as provisional (Gap 1, R2).
+- [ ] Nicholas confirms fault meanings and simultaneous-fault coverage; software writers retain their separate ownership (former #113 scope).
 - [ ] Justify or reduce telemetry fault bytes: 48 bits are sent and 12 are defined.
 - [ ] Add justification rows for stored floats, including `WheelPid`, or convert them to fixed point (Tribunal float audit).
 - [ ] Add data table rows for the fields PR 149 added: two 32-bit watchdog heartbeats and the I/O task's last-fed copies.
@@ -196,7 +292,7 @@ Flash the current image, let the car sit still on the track for a second, then p
 - [ ] PID tuning report; only a tuning section exists in the Motion README.
 - [ ] Terrain analysis report; no such file found.
 - [ ] Record the Week 10 partial-integration result, if it was held. Its format is still pending in the specs, and no result is in the repository.
-- [ ] Reopen or replace [issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117): it is closed with its acceptance checklist unticked.
+- [x] Issue #117 stays closed; live work and acceptance are tracked in this file. Active guide links now point here; historical evidence stays unchanged.
 - [ ] Update the mission-readiness checklist as items pass.
 
 ## 12. Stretch goal
@@ -205,9 +301,9 @@ Flash the current image, let the car sit still on the track for a second, then p
 
 ## 13. Housekeeping
 
-- [ ] Shaun to confirm the diagnostic frames (types 9, 10 and 11). The Comms README now says to keep them, but also says type 9 is not agreed.
-- [ ] Shaun to delete the merged PR 149 branch `fix/watchdog-abi-hardware-procedures-20261102`, if no longer needed.
-- [ ] Delete this file once it is done.
+- [ ] Nicholas confirms final diagnostic-frame retention (types 9, 10 and 11); reconcile the Comms README and record the chosen TRACE profile. Keep diagnostics available for investigation until that decision.
+- [x] PR 149 is merged. Deleting its old branch is optional housekeeping, outside this task; do not block acceptance on it or delete another person's branch.
+- [ ] Retain this file as the completion record, closing each item only with evidence or an explicit superseding decision.
 
 ## Complete
 
