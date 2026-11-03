@@ -21,6 +21,20 @@ static inline bool robot_watchdog_progress_fresh(uint32_t now_ms,
         (uint32_t)(now_ms - mission_ms) <= maximum_age_ms;
 }
 
+/* Feed only after both producer tasks have made *new* progress since
+ * the previous hardware reload. A duplicated timestamp never refreshes the
+ * watchdog. This is policy evidence, not a physical reset test.
+ */
+static inline bool robot_watchdog_should_feed(uint32_t now_ms,
+    uint32_t motion_ms, uint32_t mission_ms,
+    uint32_t last_fed_motion, uint32_t last_fed_mission,
+    uint32_t maximum_age_ms)
+{
+    return robot_watchdog_progress_fresh(now_ms, motion_ms, mission_ms,
+        maximum_age_ms) &&
+        motion_ms != last_fed_motion && mission_ms != last_fed_mission;
+}
+
 #if ROBOT_WATCHDOG_ENABLED
 void robot_watchdog_note_motion(uint32_t serviced_ms);
 void robot_watchdog_note_mission(uint32_t serviced_ms);
