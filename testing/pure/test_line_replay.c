@@ -28,9 +28,9 @@ static void read_line(Rig *r)
     r->in.guidance_valid = s.guidance_valid;
     r->in.usable_line = s.normalized_valid;
     r->in.line = s.line;
-    r->in.line_error = s.error;
-    r->in.left_black = s.left_fraction != 0u;
-    r->in.right_black = s.right_fraction != 0u;
+    r->in.line_error = ir_snapshot_error(&s);
+    r->in.left_black = s.left_black;
+    r->in.right_black = s.right_black;
     r->in.line_sampled_ms = s.sampled_ms;
     uint32_t count = (uint32_t)lroundf(r->counts) & ENC_COUNT_MASK;
     r->in.wheel_count[0] = r->in.wheel_count[1] = count;
