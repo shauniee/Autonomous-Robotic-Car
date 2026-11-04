@@ -49,7 +49,7 @@ This file is the one list of changes and planned changes. `main` stays as it is,
 | `origin/fix/pending-software-readiness-20261104` (PR 151) | Testable watchdog feed rule, GitHub host tests, build matrix script, report drafts | Merged. Barcode rule combined with the one below; report tables moved into the Motion and Terrain READMEs, because `docs/` holds three guides only |
 | `chore/resolve-pending`, same commit as `origin/fix/pending-nic1` | Bit cuts, stall guard on for the full course, capture analysis, Nicholas's decisions | Merged |
 | `fix/pending-nic2` | Stricter lap scorer and capture triage, qualifying lap and minimum-bit audit | Merged. Test rows renumbered |
-| `fix/crossing-exit-steer` (`526e5b5`) | Straight crossings: ramped 36 mm advance, 6 mm candidate, no false bend on regaining the line | Merged with 16-bit encoder origins. Test rows and log folders renumbered |
+| `fix/crossing-exit-steer` (`526e5b5`) | Straight crossings: 36 mm no-steering pass (now rolling), 6 mm candidate, no false bend on regaining the line | Merged with 16-bit encoder origins. Test rows and log folders renumbered |
 | `chore/audit-dead-code` (`a1ddfab`) | Removes `TerrainSnapshot`, `LPF_ALPHA`, `MISSION_CONFIRM_SAMPLES`, the empty obstacle test and the old plan checker | Redone by hand; comment-only edits from that commit were not carried over |
 
 Reused test IDs, renumbered because an ID is never reused:
@@ -78,7 +78,7 @@ Already merged or closed, so nothing is left to bring in: `test/obstacle-width-b
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| Firmware build | `main` is the working image and is unchanged. On `chore/centralise-pending`, all eight images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193 to INT-196 |
+| Firmware build | `main` is the working image and is unchanged. On `chore/centralise-pending`, all eight images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193 to INT-197 |
 | Safety and electrical | No recorded result. Wiring is user-confirmed only. | MR-01 to MR-05 |
 | Watchdog | Code merged, off by default, never run on a Pico. No reset policy agreed. | `99fe0d8`, D15 |
 | Line tracking | Straight-crossing fix not yet run on the car in its final form (INT-191). Good laps seen, but the last run went off course and was not smooth. No measured success rate. | User observation, INT-136, INT-139b, INT-158; capture analysis found no cause (INT-163) |
@@ -178,7 +178,8 @@ The 95% target is the user's. No success rate has been measured yet, so the firs
 - [ ] Check that diagnostics do not change driving: compare the same number of laps on `./flash.sh trial` and `./flash.sh`.
 - [ ] Lift-style profile on the car (professor's comment): film moving off and slowing down on the floor. Check the wheels do not sit still and then jump at the very start, because the first targets are below what friction may allow; tune `MOTION_ACCEL_MMPS2`, `MOTION_JERK_MMPS3` and `MOTION_KS`.
 - [ ] Accuracy with the profile: rerun straight, turn and advance distances, because stop points depend on how closely the wheels follow it (MR-21, MR-22).
-- [ ] Junction advance: the car rests where the distance says, with the axle over the crossing centre, now that it slows on the profile. A turn too late to stop there is rejected (`nav_rejected=2`).
+- [ ] Straight crossings roll through at course speed with no stop or pause: check on the car that it holds straight across the bar and regains the line (MR-28). Heading drift was the reason for the earlier stop, so film it; lengthen or shorten `NAV_STRAIGHT_MM` one trial at a time if needed.
+- [ ] Junction advance on a turn: the car rests where the distance says, with the axle over the crossing centre, now that it slows on the profile. A turn too late to stop there is rejected (`nav_rejected=2`).
 - [ ] Pivot end: a pivot stops at once when the sensor finds the branch, which may still look abrupt. If it does, try a slower final part of the pivot, then recheck the landing point.
 - [ ] Smoothness: judge jerkiness on film and `WHEEL` traces at 100 mm/s. If it is not very smooth, lower `COURSE_SPEED_MMPS` one trial at a time; speed is the second priority. Below 60 mm/s needs a new feedforward fit.
 - [ ] Change one value per trial and record each as a new INT entry.
@@ -354,6 +355,7 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] Lap scorer rejects incomplete PASS rows and needs 19 of 20; triage keeps state transitions (INT-185).
 - [x] Saved captures reviewed; no steering cause can be proven from them (INT-186).
 - [x] Dead terrain snapshot, unused settings and old plan checker removed (INT-193).
+- [x] Straight crossings roll through without stopping, by Nicholas (INT-197, host and build only).
 - [x] Lift-style profile for every planned move, with obstacle stops slowing on it; safety stops stay immediate (INT-195, host and build only).
 - [x] `motion_stop_distance_mm` tells other subsystems the travel of a planned stop. Obstacle slowing starts at 183 mm to rest at 150 mm, the bypass rests at the rear of the box, and late junction turns are rejected (INT-196, host and build only).
 - [x] Watchdog policy: on for `full_course` after the SYS-06 bench test passes, by Nicholas (D15).

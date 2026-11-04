@@ -681,9 +681,8 @@ A post-exit lock requires non-broad travel before another candidate can commit.
 Distance/yaw checks cannot prove that an arbitrary black patch is a cross junction.
 
 A straight or unqueued crossing takes the same first step as a turn (proposed
-2026-11-04, host-tested only; replaces the heading-restore exit): a ramped distance
-action runs straight on the encoders from commit past the bar, slowing to a stop, so
-neither sensor can steer on the bar. After the stationary pause it returns to
+2026-11-04, host-tested only; replaces the heading-restore exit and the stop): the car rolls at course speed with no steering for `NAV_STRAIGHT_MM` from commit
+(Nicholas, 2026-11-04: no stop and no pause), so neither sensor can steer on the bar. It then returns to
 tracking with the last side kept for the drift and line loss armed; the first touch
 afterwards marks a bend only past the bend lean distance, since regaining the line
 takes longer than a straight touch. It needs no turn geometry and no edge excursion.

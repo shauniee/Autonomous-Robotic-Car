@@ -685,7 +685,7 @@ Uncalibrated software proposals for review (not course limits/module ratings):
 | Bypass line alignment | 5 mm/s after rolling-scale correction, independently configured from standalone recovery | D04/D07/D10 pending |
 | Scan | Three samples, at least two valid; depth enter/exit bands 30/40 mm; two adjacent rays; model range uncertainty 10 mm | D05/D10 pending; uncertainty is a proposed model input, not sensor accuracy |
 | Servo sampling | User-stated +/-60 degree travel (2026-11-03; +/-50 from 2026-11-02 replaced +/-20, which could not see past a 100-200 mm obstacle at the stop distance); coarse rays every 10 degrees and 5 degree edge refinement; proposed 1 degree per 10 ms, 100 ms settle, 60 ms repeat | Verify endpoints/mounting before release, D05 |
-| Bypass | 50 mm/s continuous legs of <=550 mm, 36 mm/s pivots, 90 s / 4000 mm whole budget; <=2 s for the side look to settle | D02/D03/D05/D07/D08/D13 pending |
+| Bypass | `COURSE_SPEED_MMPS` continuous legs of <=550 mm, 36 mm/s pivots, 90 s / 4000 mm whole budget; <=2 s for the side look to settle | D02/D03/D05/D07/D08/D13 pending |
 | Bypass geometry | User-measured outline from the axle centre (2026-11-03): nose 155 mm, barcode arm corner 183 mm forward and 85 mm left, right side 75 mm, rear 95 mm, sonar 105 mm forward and assumed on the centreline; 30 mm clearance; 10 mm gap to the measured box edge and 70 degree side look (user-chosen), least pivot solved from the scan, offset <=550 mm; conservative obstacle width >=200 mm | Tape measurements; clearance values remain proposals, swept envelope unconfirmed, D03 |
 | Rear-edge / return | Two distinct qualified side groups; 150/100 mm enter/release jump; <=1500 mm pass, <=250 mm baseline search; return within 25 mm lateral / 5 degrees and three distinct tracking acquisitions | D02/D05/D07/D10 pending |
 | Height quality | Raw acceleration norm 900..1100 mg, wheel speed difference <=30 mm/s, speed change <=30 mm/s per fresh sample, 200 ms steady data before a height window | D06/D07/D10 pending; suppress unqualified height results |
@@ -1167,7 +1167,7 @@ value, to be set from type 9 line traces). Motion releases at
 1800 Q/s and builds at 900 Q/s; steering is mixed centre-preserving, left
 v(1+q/127) and right v(1-q/127), so the robot centre keeps the commanded speed
 (the outer wheel reaches 200 mm/s at full steering; INT-129). Wheel feedforward KF 0.0001, KS 0.05, KP 0.0001
-(INT-100 to INT-102). Candidate travel is 6 mm (INT-189; 9 mm in INT-98 missed real crossings, INT-188). A straight crossing advances 36 mm on the encoders, ramping to a stop, then tracks (INT-189). Curved turn entry then stops rather than assuming pose.
+(INT-100 to INT-102). Candidate travel is 6 mm (INT-189; 9 mm in INT-98 missed real crossings, INT-188). A straight crossing rolls 36 mm at course speed with no steering, without stopping, then tracks (INT-189). Curved turn entry then stops rather than assuming pose.
 Entry-relative yaw bound 5 degrees; junction pivots (trial values copied from the
 reference repo, no physical run) are bounded at 120 degrees for left/right and 210
 for U-turn, look for the new branch from 60 and 150 degrees, at the 100 mm/s

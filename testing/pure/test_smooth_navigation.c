@@ -47,21 +47,14 @@ static MissionOutputs junction(Mission *m, MissionInputs *in, int action)
     move(in, NAV_CONFIRM_MM + 1, NAV_CONFIRM_MM + 1);
     return tick(m, in);
 }
-/* Motion finishes the ramped advance; the robot stops and Mission pauses. */
-static MissionOutputs finish_advance(Mission *m, MissionInputs *in)
+/* A straight crossing rolls its distance over the bar, then tracks. */
+static MissionOutputs finish_straight(Mission *m, MissionInputs *in)
 {
     assert(m->state == MISSION_NAVIGATE && m->phase == JUNCTION_PHASE_ADVANCE);
-    in->motion_action = m->current_action;
-    in->motion_status = RD_MOTION_DONE;
-    tick(m, in);
-    in->motion_status = RD_MOTION_IDLE;
-    in->stationary = true;
-    MissionOutputs out;
-    for (int i = 0; i < 20 && m->state == MISSION_NAVIGATE; i++)
-        out = tick(m, in);
-    in->stationary = false;
-    return out;
+    move(in, NAV_STRAIGHT_MM + 1, NAV_STRAIGHT_MM + 1);
+    return tick(m, in);
 }
+
 static void tracking(void)
 {
     Mission m;
@@ -148,7 +141,7 @@ static void navigation(void)
         if (action == BARCODE_STRAIGHT)
         {
             assert(m.state == MISSION_NAVIGATE && !out.stop_now);
-            assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
+            assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
             continue;
         }
         assert(m.state == MISSION_STOPPED && out.stop_now);
@@ -184,15 +177,14 @@ static void navigation(void)
         MissionOutputs out = tick(&m, &in);
         assert(m.state == MISSION_NAVIGATE && !out.stop_now);
         assert(m.held == BARCODE_UNMAPPED && out.nav_rejected == 0u);
-        /* Straight through on encoders, slowing to a stop past the bar. */
-        assert(m.phase == JUNCTION_PHASE_ADVANCE);
-        assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
-        assert(motion_cmd_steering(&out.command) == MOTION_TURN_RAMPED);
-        assert(motion_cmd_target(&out.command) == NAV_STRAIGHT_MM);
+        /* Rolls straight over the bar at course speed, never stopping. */
+        assert(m.phase == JUNCTION_PHASE_ADVANCE && !out.stop_now);
+        assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
+        assert(motion_cmd_steering(&out.command) == 0);
         assert(motion_cmd_speed(&out.command) == COURSE_SPEED_MMPS);
         in.line = IR_LINE_VISIBLE;
         in.left_black = in.right_black = false;
-        out = finish_advance(&m, &in);
+        out = finish_straight(&m, &in);
         assert(m.state == MISSION_FOLLOW_LINE && m.junction_locked);
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
         assert(motion_cmd_speed(&out.command) > 0);
@@ -209,7 +201,7 @@ static void navigation(void)
     assert(m.state == MISSION_NAVIGATE); /* the trailing sensor never steers */
     in.left_black = false;
     in.line_error = 0;
-    finish_advance(&m, &in);
+    finish_straight(&m, &in);
     assert(m.state == MISSION_FOLLOW_LINE && m.junction_locked);
     /* Both black on a curve (inner sensor black long before the outer) keeps
        the turn and never becomes an unqueued crossing. */
@@ -353,7 +345,7 @@ static void crossing_keeps_last_side(void)
     assert(m.state == MISSION_NAVIGATE);
     in.line = IR_LINE_VISIBLE;
     in.left_black = in.right_black = false;
-    MissionOutputs out = finish_advance(&m, &in);
+    MissionOutputs out = finish_straight(&m, &in);
     assert(m.state == MISSION_FOLLOW_LINE && m.line_side == -1);
     assert(motion_cmd_steering(&out.command) == -LINE_DRIFT_Q);
     move(&in, LINE_LOST_MM + 1.0f, LINE_LOST_MM + 1.0f);

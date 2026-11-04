@@ -206,7 +206,7 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define NAV_CONFIRM_MM 6u /* PROVISIONAL D02 trial INT-189: both black this far is a crossing; shorter reads were not, and real ones can read under 9 mm */
 #define NAV_ONSET_SKEW_MM 15u /* PROVISIONAL D02 trial: both sensors went black within this = crossing; set from line traces */
 #define NAV_REARM_MM 10u
-#define NAV_STRAIGHT_MM 36u /* PROVISIONAL D02 trial INT-189: straight crossing advance from commit, twice the crossbar */
+#define NAV_STRAIGHT_MM 36u /* PROVISIONAL D02 trial INT-189: straight roll at course speed from commit, no steering, twice the crossbar */
 /* Junction pivots end on the line: the leading sensor black then not black,
    looked for only past the sense angle so the branch being left never counts.
    Reference-repo values, PROVISIONAL D02/D07 trial. */
@@ -367,8 +367,6 @@ _Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS, "stall limit must pre
 _Static_assert(MOTION_ACCEL_MMPS2 > 0u && MOTION_ACCEL_MMPS2 <= 1000u &&
     MOTION_JERK_MMPS3 * MOTION_PERIOD_MS >= 1000u,
     "the profile must fit its 11-bit field and move every release");
-_Static_assert(NAV_STRAIGHT_MM >= MOTION_STOP_MM(COURSE_SPEED_MMPS),
-    "a straight crossing advance must have room for its stop");
 _Static_assert(MOTION_SPEED_MAX_MMPS * 64.0f < 32767u,
     "FOLLOW base history must fit 15-bit Q6 storage");
 _Static_assert(MOTION_FOLLOW_STEER_QPS > 0u &&

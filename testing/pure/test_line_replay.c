@@ -163,21 +163,17 @@ static void test_junction_after_curve_is_a_crossing(void)
         (MQTT_LINE_LEFT_BLACK | MQTT_LINE_RIGHT_BLACK));
 }
 
-/* Motion finishes the advance; the robot stops, then Mission pauses and follows.
-   The bits are what the sensors read once stopped. */
+/* The car rolls the rest of the crossing, never stopping. The bits are what the
+   sensors read as it leaves. */
 static void finish_advance(Rig *r, unsigned left, unsigned right)
 {
     assert(r->m.state == MISSION_NAVIGATE && r->m.phase == JUNCTION_PHASE_ADVANCE);
-    r->in.motion_action = r->m.current_action;
-    r->in.motion_status = RD_MOTION_DONE;
-    tick_mm(r, left, right, true, 0.0f);
-    r->in.motion_status = RD_MOTION_IDLE;
-    r->in.stationary = true;
-    for (unsigned i = 0u; i < 40u && r->m.state == MISSION_NAVIGATE; ++i)
+    for (unsigned i = 0u; i < 2u * NAV_STRAIGHT_MM && r->m.state == MISSION_NAVIGATE; ++i)
     {
-        tick_mm(r, left, right, true, 0.0f);
+        assert(motion_cmd_speed(&r->out.command) == COURSE_SPEED_MMPS);
+        tick(r, left, right);
     }
-    r->in.stationary = false;
+    assert(r->m.state == MISSION_FOLLOW_LINE);
 }
 
 /* Drive onto a crossbar until the crossing commits. */
@@ -201,7 +197,7 @@ static void test_short_both_black_decides_the_crossing(void)
     {
         tick(&r, 1u, 1u);
     }
-    assert(r.m.state == MISSION_NAVIGATE && motion_cmd_mode(&r.out.command) == MOTION_MODE_DISTANCE);
+    assert(r.m.state == MISSION_NAVIGATE && motion_cmd_steering(&r.out.command) == 0);
 
     start(&r);
     for (unsigned i = 0u; i + 1u < NAV_CONFIRM_MM; ++i)
@@ -226,8 +222,8 @@ static void test_crossing_exit_ignores_trailing_sensor(void)
     {
         tick(&r, 1u, 0u);
         assert(r.m.state == MISSION_NAVIGATE);
-        assert(motion_cmd_mode(&r.out.command) == MOTION_MODE_DISTANCE);
-        assert(motion_cmd_steering(&r.out.command) == MOTION_TURN_RAMPED);
+        assert(motion_cmd_mode(&r.out.command) == MOTION_MODE_FOLLOW);
+        assert(motion_cmd_steering(&r.out.command) == 0);
     }
     finish_advance(&r, 0u, 0u);
     assert(following(&r) && r.m.line_side == 1 && steering(&r) == LINE_DRIFT_Q);

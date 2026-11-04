@@ -349,7 +349,7 @@ static void handle_follow(Mission *m, const MissionInputs *in,
         m->cross_side = m->line_side;
         m->exit_seen = 0u;
         mission_turn_target_set(m, action);
-        m->turn_length_mm = turning ? (int16_t)lroundf(d) : (int16_t)NAV_STRAIGHT_MM;
+        m->turn_length_mm = turning ? (int16_t)lroundf(d) : 0;
         m->phase = JUNCTION_PHASE_ADVANCE;
         m->current_action = next_action_id(m);
         m->broad_origin[0] = in->wheel_count[0];
@@ -738,6 +738,26 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
     {
         m->turn_sampled_ms = in->line_sampled_ms;
     }
+    if (m->phase == JUNCTION_PHASE_ADVANCE && m->turn_code == 0u)
+    {
+        /* Straight crossing: roll over the bar at course speed with no steering,
+           so neither sensor can steer on it, then track. */
+        if (travel_mm(in, m->broad_origin) < NAV_STRAIGHT_MM)
+        {
+            out->command = follow_command(in, 0, 1u);
+            return;
+        }
+        enter(m, MISSION_FOLLOW_LINE, in->now_ms);
+        m->broad_origin[0] = in->wheel_count[0];
+        m->broad_origin[1] = in->wheel_count[1];
+        /* INT-139: keep the last side, so a white exit drifts back toward the line
+           with line loss armed instead of driving on blind. */
+        m->line_side = m->cross_side;
+        m->line_crossed = 1u; /* the mark below is not a touch: no bend from it */
+        mark(m->dark_origin, in);
+        handle_follow(m, in, out);
+        return;
+    }
     if (m->phase == JUNCTION_PHASE_ADVANCE)
     {
         out->command = motion_command_make(MOTION_MODE_DISTANCE,
@@ -770,26 +790,16 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
             return;
         }
         m->exit_seen = 0u;
-        if (m->phase == JUNCTION_PHASE_BRAKE || m->turn_code == 0u)
+        if (m->phase == JUNCTION_PHASE_BRAKE)
         {
             enter(m, MISSION_FOLLOW_LINE, in->now_ms);
             m->broad_origin[0] = in->wheel_count[0];
             m->broad_origin[1] = in->wheel_count[1];
-            if (m->turn_code == 0u)
-            {
-                /* INT-139: keep the last side, so a white exit drifts back toward
-                   the line with line loss armed instead of driving on blind. */
-                m->line_side = m->cross_side;
-                m->line_crossed = 1u; /* the mark below is not a touch: no bend from it */
-            }
-            else
-            {
-                /* INT-136: the pivot coasts past the branch, which can leave both
-                   sensors white with the line behind the trailing sensor. Lean back
-                   toward it, with line loss armed, instead of driving on blind. */
-                m->line_side = m->turn_code == 1u ? 1 : -1;
-                m->line_bend = 1u;
-            }
+            /* INT-136: the pivot coasts past the branch, which can leave both
+               sensors white with the line behind the trailing sensor. Lean back
+               toward it, with line loss armed, instead of driving on blind. */
+            m->line_side = m->turn_code == 1u ? 1 : -1;
+            m->line_bend = 1u;
             mark(m->dark_origin, in);
             handle_follow(m, in, out);
             return;
