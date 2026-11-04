@@ -351,7 +351,7 @@ Not counted: `IrTracker`, 64 stored; `LineIrSnapshot`, 96 stored; `barcode_frame
 | Line trace record | see frame above | 8 | 124 | 136 |
 | Mission fault byte | line lost | 1 | 1 | 8 |
 
-Not counted: `Mission`, 1312 stored, including `recovery_control_t` (96) and `bypass_control_t` (512).
+Not counted: `Mission`, 1280 stored, including `recovery_control_t` (96) and `bypass_control_t` (512).
 
 ## Manual build and flash
 

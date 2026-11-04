@@ -22,7 +22,7 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 
 | Need | Guide |
 | --- | --- |
-| Full feature implementation sequence and source baseline | [pending work](pending.md) |
+| All open work, planned changes and where each branch went | [pending work](pending.md) |
 | Build, flash, calibrate, MQTT laptop tool, bring-up order | [README](README.md) |
 | Requirements, minimum-bit change requirement, data table, pending decisions | [project-specs](docs/project-specs.md) |
 | Bits used by each subsystem | [README](README.md#bits-per-subsystem) |
