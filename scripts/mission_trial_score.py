@@ -10,12 +10,19 @@ from collections import defaultdict
 import csv
 import math
 from pathlib import Path
+import re
 
 POSITIVE = ("lap_complete", "barcode_ok", "navigation_ok", "hump_count_ok")
 NEGATIVE = ("hand_contact", "reacquire", "stopped_fault", "restarted")
 MEASUREMENTS = ("course_speed_mmps", "max_height_error_mm", "height_limit_mm")
 FIELDS = ("trial_id", "firmware_sha", "uf2_sha256", "trace", "lighting",
           "success", "evidence", "notes") + POSITIVE + NEGATIVE + MEASUREMENTS
+
+
+def course_speed():
+    """The setting in robot_config.h: one source, so changing it needs no edit here."""
+    config = Path(__file__).resolve().parents[1] / "app_program/common/robot_config.h"
+    return float(re.search(r"#define COURSE_SPEED_MMPS (\d+)u", config.read_text()).group(1))
 
 
 def validate_result(row, number):
@@ -36,7 +43,7 @@ def validate_result(row, number):
         if not math.isfinite(value) or value < 0:
             raise ValueError(f"CSV row {number}: {key} must be finite and nonnegative")
         values[key] = value
-    if passed and (values["course_speed_mmps"] != 100 or
+    if passed and (values["course_speed_mmps"] != course_speed() or
                    values["max_height_error_mm"] > values["height_limit_mm"]):
         raise ValueError(f"CSV row {number}: PASS violates speed or height limit")
 

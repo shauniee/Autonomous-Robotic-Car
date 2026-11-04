@@ -74,8 +74,8 @@ Agreed by Nicholas on 2026-11-03 for M1. The 95% target is the user's.
 ## How to run a trial
 
 1. Change one value in `app_program/common/robot_config.h`.
-2. Build and flash: `./flash.sh`.
-3. Copy `build_make/full_course.uf2` to a named file, restore the source, and record the hash the script prints.
+2. Build and flash: `./flash.sh trial`.
+3. Copy `build_make/trial.uf2` to a named file, restore the source, and record the hash the script prints.
 4. Run on battery with `mqtt_client.py monitor` saving to a file; analyse `WHEEL` and `LINE` records.
 5. Run `testing/pure/run.sh` before changing any default; append a new INT entry.
 

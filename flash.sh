@@ -1,6 +1,7 @@
 #!/bin/sh
 # Builds the firmware and copies it to the Pico.
-#   ./flash.sh        full course: motors on, junction turns and bypass released
+#   ./flash.sh        full course: motors on, junction turns and bypass released, no diagnostics
+#   ./flash.sh trial  driving test: same as the full course, with diagnostics on
 #   ./flash.sh test   wireless self-test image: motors always inhibited
 # Hold BOOTSEL while plugging in USB; the script waits for the RPI-RP2 drive.
 set -eu
@@ -12,8 +13,9 @@ wait_seconds=60
 
 case "${1:-course}" in
     course) profile="TEST=0 FULL_COURSE=1"; name=full_course ;;
+    trial) profile="TEST=0 FULL_COURSE=1 TRACE=1"; name=trial ;;
     test) profile="TEST=1 FULL_COURSE=0"; name=test ;;
-    *) echo "Usage: ./flash.sh [course|test]" >&2; exit 2 ;;
+    *) echo "Usage: ./flash.sh [course|trial|test]" >&2; exit 2 ;;
 esac
 
 [ -x "$tools/arm/bin/arm-none-eabi-gcc" ] && [ -d "$tools/pico-sdk" ] || {

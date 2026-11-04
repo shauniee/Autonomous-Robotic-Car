@@ -133,15 +133,9 @@ labels are a crosswalk, not invented instructor requirement IDs.
 All questions and decisions go to Nicholas. Proposed defaults are recorded as proposed, not as sign-off.
 
 - [ ] Print framing, quiet zones and tolerances (D01).
-- [ ] Error limits for lateral, turn, height, width and recovery (D10), and the watchdog reset policy (D15).
+- [ ] Remaining error limits: height, width, measured speed and recovery (D10).
+- [ ] Watchdog: confirm the proposal to turn it on for `full_course` after the SYS-06 bench test passes (D15).
 - [ ] Data table: fault bytes accepted at 48 bits. Test the [bit reductions](#bit-reduction-candidates), then sign off each group.
-- [ ] Keep diagnostic frames 9, 10 and 11.
-- [ ] Network (D09): two records disagree, your own WiFi and laptop broker or the instructor's. Only `config/wifi_secrets.h` differs.
-- [ ] Obstacle course speed (D07): bypass moves slower than 100 mm/s, so a whole obstacle lap cannot claim 100 mm/s unless the qualifying lap allows it.
-- [ ] Measured-speed variation allowed on a qualifying lap (D07, D10).
-- [ ] U-turn pause: 100 ms trial value, about 200 ms requested (D02).
-- [ ] Inverted print (white bars on black): proposed unsupported.
-- [ ] `TRACE=0` as the final default, after the A/B laps.
 
 ## 1. Safety and electrical
 
@@ -166,8 +160,8 @@ Turns, distances and barcode widths all come from encoder travel.
 - [ ] Encoder counts per revolution, both wheels, repeated across speeds and reversals (MR-14, A2, D03). Only manual trials so far.
 - [ ] Forced encoder fault appears and clears (MR-15).
 - [ ] Measure wheel diameter and effective track width; only wheel-centre separation is recorded (MR-20, D03).
-- [ ] 1 m straight, five times: distance and lateral error, Tribunal proposal at most 10 mm (MR-21, A13, D07).
-- [ ] 90 left, 90 right and 180 degrees, five each: heading error, Tribunal proposal at most 5 degrees (MR-22, A13, D07).
+- [ ] 1 m straight, five times: distance and lateral error, lateral limit at most 10 mm (MR-21, A13, D07).
+- [ ] 90 left, 90 right and 180 degrees, five each: heading error, limit at most 5 degrees (MR-22, A13, D07).
 - [ ] Loaded wheel PID response on the floor; INT-100 to INT-102 used raised wheels only (D07).
 - [ ] Encoder width of 16 bits confirmed with the robot, including the maximum edge rate (D03, Mahesha's Tribunal item).
 
@@ -182,20 +176,20 @@ The 95% target is the user's. No success rate has been measured yet, so the firs
 - [ ] Real line loss: the sweep finds the line, an exhausted search stops, and stale data does not start a blind search (MR-32, T11).
 - [ ] Work through the [open issues](app_program/line_barcode/README.md#open-issues): junction on three curves, `NAV_ONSET_SKEW_MM`, pivot hand-over.
 - [ ] Mounted IR levels, dead zone and left-sensor span at course lighting (MR-12 as revised for DOUT, D04, A3).
-- [ ] Check whether the diagnostic traces affect tracking: compare the same number of laps on `TRACE=1` and `TRACE=0` images. The build option exists; no laps have been run.
+- [ ] Check that diagnostics do not change driving: compare the same number of laps on `./flash.sh trial` and `./flash.sh`.
+- [ ] Smoothness: judge jerkiness on film and `WHEEL` traces at 100 mm/s. If it is not very smooth, lower `COURSE_SPEED_MMPS` one trial at a time; speed is the second priority. Below 60 mm/s needs a new feedforward fit.
 - [ ] Change one value per trial and record each as a new INT entry.
 
 ## 4. Barcode and junctions (M2, M3)
 
 - [ ] Action once at the junction for each of left, right, straight and U-turn at variable spacing, never undone (MR-28, D02). INT-153 stopped with a queued turn.
 - [ ] Print all 26 letters and run each at course speed, in both directions (MR-27, M2). Host tests cover the patterns only.
-- [ ] Flipped print on the car. All 26 letters decode in both directions on the host. C and P can complete with an unknown orientation, but Mission does not use orientation.
-- [ ] U-turn: confirm the stationary pause and return-line tracking. The pause is a 100 ms trial value; about 200 ms was requested (D02).
+- [ ] Flipped print on the car, turned 180 degrees and read from either end (Nicholas: must read). All 26 letters decode in both directions on the host. C and P can complete with an unknown orientation, but Mission does not use orientation.
+- [ ] U-turn: confirm the stationary pause and return-line tracking. The pause is now 200 ms in code, unmeasured (D02).
 - [ ] No queued turn: crosses straight and resumes tracking (MR-28).
 - [ ] Record reads against passes as a rate. A corrupted last guard still loses the read (INT-155, third pass).
 - [ ] Barcode sensor level over black and white on the mounted robot (MR-13, D04).
 - [ ] Issued print framing, quiet zones and tolerances (D01, A8).
-- [ ] Inverted print (white bars on black) will not read. Default: unsupported unless the course has one.
 - [ ] Barcode capture ring and event queue: peak use and overflow at course speed (T04).
 
 ## 5. Obstacle and bypass (M6 to M9)
@@ -206,6 +200,7 @@ Wheels stay off for the bench steps. Bypass has never run on the car.
 - [ ] Sonar against a board at 100, 250, 500 and 1000 mm, plus open space; MR-17 is still PENDING without a saved measurement (A5, D05).
 - [ ] Boxes of 100, 150 and 200 mm: check the `[SCAN]` rays and profile against a tape. S5-U11 used 150 and 220 mm, with mean width error of about 18 mm and no agreed target (M7).
 - [ ] Both sides blocked: the robot stops rather than bypasses (MR-31).
+- [ ] Bypass at 100 mm/s, including its blind reverse, which was 50 mm/s and has never run: start with a wheels-raised check, then the bench, and stop if the side ray misses the box edge (D07).
 - [ ] Bypass runs with both sides open and one restricted: no collision, larger-gap side chosen, swept envelope confirmed (MR-30, M8, D03).
 - [ ] Rejoin the original line and continue (MR-30, M9, A9).
 - [ ] Depth measured against a tape, and the rear edge seen while bypassing (M7).
@@ -239,6 +234,7 @@ Flash the current image, let the car sit still on the track for a second, then p
 - [ ] Malformed, truncated and prohibited requests on the real link (T12, Gap 5). Host tests only so far.
 - [ ] All six fault bytes under controlled fault injection (S1-M01).
 - [ ] Rebuild the route from saved events (MR-38).
+- [ ] Get the instructor's WiFi and broker settings, put them in `config/wifi_secrets.h` and check connection, mapping and subscription on that network (D09).
 - [ ] Supply the professor's buffer wording (D09); it is not in this repository, so bounded rings stay.
 
 ## 8. Faults seen and not explained
@@ -282,7 +278,7 @@ Built on `chore/centralise-pending`, not on `main`, with host tests and builds o
 | Done | `ObstacleRay`, `ObstacleProfile` | 32 to 24 bits; 112 to 72 bits; capped at 1023 mm | Scan rays, profile and side choice |
 | Done | `IrTracker`, `LineIrSnapshot` | 160 to 64 bits; 192 to 96 bits | Line following and junctions |
 | Done | Telemetry width and depth | 23 to 22 bytes | Dashboard shows both on a real link |
-| Not done | `TRACE=0` as the default | Would save 3712 bits | Needs the A/B laps; removes debug frames |
+| Done | `TRACE=0` in `full_course` | See INT-194 | Trial and course images drive alike |
 | Not done | 16-bit timestamps | Would save about 250 bits | Not recommended: a short timer can alias, and bypass allows 90 s (Gap 4) |
 
 Flash grew by 1056 bytes, because packed fields take more code to read.
@@ -306,7 +302,6 @@ Nothing open. Magnetometer fusion is skipped by default because it is optional a
 
 ## 13. Housekeeping
 
-- [ ] Diagnostic frames (types 9, 10 and 11): the Comms README says to keep them, but also says type 9 is not agreed. See [decisions](#decisions-for-nicholas).
 - [ ] `testing/pure/test_check_barr.py:114` fails on Windows (S4-U08), so the host suite stops there on that machine. It passes on macOS; a Windows machine is needed to check a fix.
 - [ ] Remove the stray `115200` file from the main checkout; it is untracked and holds only an error message from a terminal command.
 - [ ] Keep this file as the completion record, closing each item only with evidence or a stated decision.
@@ -318,7 +313,7 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] Uses micro T-Kernel, not FreeRTOS.
 - [x] Only Motion writes the motors.
 - [x] Networking cannot start, stop or drive the robot.
-- [x] Course speed fixed at 100 mm/s by a compile-time check.
+- [x] One course speed, `COURSE_SPEED_MMPS`, 100 mm/s today, used by following, junction advances and bypass (INT-194). Lowering it needs one line.
 - [x] JSON replaced with binary frames in code and host tests; the real link is S1-M01 above.
 - [x] Message sizes fixed and asserted: 22, 11, 5, 3 and 2 bytes on `chore/centralise-pending`; `main` still sends 23.
 - [x] Fault enums replaced with independent bits (Nicholas's Tribunal item).
@@ -349,13 +344,17 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] Restarts: loose battery connection, hardware fix, by Nicholas (INT-175).
 - [x] Issue #117 stays closed; this file holds its open work, by Nicholas.
 - [x] PR 149 is merged; no branch action needed.
-- [x] WiFi and broker: own network and laptop broker, by Nicholas (D09). For another network, change `config/wifi_secrets.h` and rebuild.
+- [x] Network: the instructor's, by Nicholas (D09); only `config/wifi_secrets.h` changes.
 - [x] One barcode event rule with an A-Z bound and host tests, replacing two versions (INT-193); real run is in section 8.
 - [x] Watchdog feed rule needs both tasks fresh and advancing, host tested (PR 151); bench test is in section 1.
 - [x] Host tests run on GitHub for PRs and `main` (PR 151). This branch has not been pushed, so that run has not happened for it.
 - [x] Lap scorer rejects incomplete PASS rows and needs 19 of 20; triage keeps state transitions (INT-185).
 - [x] Saved captures reviewed; no steering cause can be proven from them (INT-186).
 - [x] Dead terrain snapshot, unused settings and old plan checker removed (INT-193).
+- [x] Diagnostics only in test images: `full_course` is `TRACE=0`, `./flash.sh trial` drives with them, by Nicholas (INT-194).
+- [x] Accuracy limits of 10 mm lateral and 5 degrees heading, by Nicholas (D10).
+- [x] Colour-inverted prints out of scope; 180-degree flip required and already in the decoder, by Nicholas.
+- [x] Priorities: smoothness and accuracy first, then speed, by Nicholas.
 - [x] Week 10 issue set aside by Nicholas; a demonstration is on 2026-11-04.
 - [x] Fault bytes stay at 48 bits, by Nicholas.
 - [x] Core-0 audit by source review, no defect found (INT-172); load is section 10.

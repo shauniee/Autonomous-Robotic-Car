@@ -146,7 +146,11 @@ _Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
 #define RECOVERY_OVERSHOOT_DEG 20 /* PROPOSAL D07/D08: coast before reversal */
 #define MOTION_FOLLOW_SLEW_MMPS2 250u /* PROVISIONAL D07: common FOLLOW base ramp */
 #define MOTION_FOLLOW_STEER_QPS 900u /* PROVISIONAL D07: applied steering slew */
-#define MISSION_TRACK_SPEED_MMPS 100.0f /* user hard guardrail: fixed course speed, not overridable */
+/* The one course speed: line following, crossings, junction advances and bypass
+   driving. Smoothness and accuracy come first, then speed. Below 60 mm/s the
+   feedforward fit does not apply (INT-100); retune before going there. */
+#define COURSE_SPEED_MMPS 100u
+#define MISSION_TRACK_SPEED_MMPS ((float)COURSE_SPEED_MMPS)
 /* White reported as black with LOW polarity; use HIGH for black. */
 #define IR_BLACK_LEVEL 1u
 
@@ -202,7 +206,7 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define NAV_TURN_SENSE_DEG 60.0f
 #define NAV_UTURN_MAX_DEG 210.0f
 #define NAV_UTURN_SENSE_DEG 150.0f
-#define NAV_PAUSE_MS 100u
+#define NAV_PAUSE_MS 200u /* Nicholas D02: U-turn stationary pause; PROVISIONAL until measured */
 #define NAV_DECEL_MS 500u
 #ifndef BARCODE_DIAGNOSTICS
 #define BARCODE_DIAGNOSTICS 0
@@ -274,7 +278,7 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define OBSTACLE_PROFILE_DEPTH_EXIT_MM 40u
 #define OBSTACLE_PROFILE_ADJACENT_RAYS 2u
 #define OBSTACLE_PROFILE_RANGE_ERROR_MM 10u /* proposed model input, not sensor accuracy */
-#define BYPASS_SPEED_MMPS 50u /* PROVISIONAL D07: 9 mm/s overran MISSION_BYPASS_TIMEOUT_MS */
+#define BYPASS_SPEED_MMPS COURSE_SPEED_MMPS /* Nicholas D07: one speed; 9 mm/s overran MISSION_BYPASS_TIMEOUT_MS */
 #define BYPASS_TRAVEL_MM 4000u
 /* PROVISIONAL D05: slewing 70 degrees is estimated at 1.75 s from scan
    timing */
@@ -364,9 +368,6 @@ _Static_assert(MOTION_FOLLOW_STEER_QPS > 0u &&
     MISSION_TRACK_SPEED_MMPS > 0.0f &&
     MISSION_TRACK_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS,
     "tracking speed and steering step must remain bounded");
-/* User hard guardrail, 2026-11-02: line following, crossings and junction turns
-   run at 100 mm/s, humps included; recovery and bypass stay slow. */
-_Static_assert(MISSION_TRACK_SPEED_MMPS == 100.0f, "course speed is fixed at 100 mm/s");
 _Static_assert(MISSION_TRACK_SPEED_MMPS * 2.0f <= MOTION_SPEED_MAX_MMPS,
 	"Mission speeds must stay within the Motion speed limit");
 _Static_assert(SONAR_TIMEOUT_US / 1000u < SONAR_REPEAT_MS && SONAR_MIN_PULSE_US < SONAR_TIMEOUT_US &&

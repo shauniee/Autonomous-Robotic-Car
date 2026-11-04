@@ -46,18 +46,17 @@ Codec, report assembly, mapping path, event log and bridge are host-tested; resu
 - Decisions D09, D13 and D14 are in [pending decisions](../../docs/project-specs.md#pending-decisions).
 - Still to test: mapping while stopped and moving; malformed, oversized and fragmented messages; full buffers and floods; startup order; reconnect; mid-run loss. Check diagnostics never delay Motion.
 - Type 9 LINE trace remains available when `TRACE=1`, and is suppressed with other high-rate diagnostic frames by `TRACE=0`. The software policy is implemented; No new wire format was authorised.
-- Nicholas decides final retention of diagnostic types 9, 10 and 11 through the [pending work](../../pending.md#13-housekeeping); no separate Comms-owner approval is needed.
 
 
 ## Diagnostic trace policy
 
-`TRACE=1` (default) retains high-rate WHEEL, LINE, BARS and HUMP trace
-frames for controlled debugging. `TRACE=0` removes their production and
+`TRACE=1` (test and trial images) retains high-rate WHEEL, LINE, BARS and HUMP trace
+frames for controlled debugging; the `full_course` image is `TRACE=0`. `TRACE=0` removes their production and
 transport while preserving 500 ms TELEMETRY, snapshots, EVENT, mapping and
 acknowledgement frames. Both profiles use the same schema, safety and local
 controls. In particular, TRACE=0 must not be confused with TEST=1 motor
 inhibition. This is an explicit Comms choice: **keep debug frames available**,
-but do not require them during a production lap.
+and never in `full_course`.
 
 Record the exact source commit, TRACE flag and UF2 SHA-256, then compare the
 same number of physical laps and their actual results using

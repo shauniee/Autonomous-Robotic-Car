@@ -100,8 +100,8 @@ closed and PR 149 is already merged. The demo is 2026-11-04 (Singapore time).
 
 **Qualifying lap (user acceptance criterion):** one complete lap, successful
 barcode decoding with the correct mapped navigation, exact hump-crossing count
-and valid height measurements within the agreed D10 error limit, at the requested
-100 mm/s course setpoint; no hand contact, `REACQUIRE`, `STOPPED`, `FAULT` or
+and valid height measurements within the agreed D10 error limit, at the configured
+`COURSE_SPEED_MMPS` (100 mm/s today); no hand contact, `REACQUIRE`, `STOPPED`, `FAULT` or
 restart between start and completion. Programmed junction pauses and stationary
 obstacle scans are allowed (Nicholas clarification). Use a marked lap boundary
 for observation, not an automatic finish in firmware. A deliberate GP21 stop
@@ -111,9 +111,7 @@ physical speed accuracy. D07/D10 must define acceptable measured-speed variation
 
 The existing 95% sample target and full-course three-run repeatability checks
 remain; one successful lap does not establish either. All M1–M10 and applicable
-Tribunal safety/resource obligations remain required. The current code uses
-slower obstacle-bypass motion; do not claim a whole obstacle course runs at
-100 mm/s without resolving that scope under D07. Standalone recovery is tested
+Tribunal safety/resource obligations remain required. Bypass drives at the same `COURSE_SPEED_MMPS`, and it has never run at that speed on the car. Standalone recovery is tested
 separately and fails the qualifying lap if entered; original-line rejoin within
 bypass remains required under M9.
 
@@ -127,7 +125,15 @@ active. The optional reset watchdog remains disabled for driving until D15 bench
 validation; no approval to enable it is inferred from the merged implementation.
 Record the exact settings with each image and result.
 
-**Network:** two records disagree: D09 (20:35) says Nicholas's own WiFi and laptop broker, and this section's first draft (21:33) said the instructor's network. Nicholas confirms which under D09. Either way only the ignored `config/wifi_secrets.h` changes, which creates a distinct image to identify. Do not put secrets in evidence or version control.
+**Network:** the instructor's network and broker (Nicholas, 2026-11-04). Only the ignored `config/wifi_secrets.h` changes, which creates a distinct image to identify. Do not put secrets in evidence or version control.
+
+**Priorities (Nicholas, 2026-11-04):** very smooth runs with little to no jerkiness come first, with accuracy. Speed comes second: as fast as smoothness and accuracy allow. `COURSE_SPEED_MMPS` in `robot_config.h` is the one setting for course and bypass driving, so a slower trial changes one line. Pivots and standalone recovery keep their own lower speeds.
+
+**Accuracy limits (Nicholas, 2026-11-04):** at most 10 mm lateral error over a 1 m straight and at most 5 degrees heading error on turns, from Tribunal A13. Height, width, measured-speed and recovery limits stay open under D10.
+
+**Diagnostics (Nicholas, 2026-11-04):** diagnostics belong in test images, which need not save memory. `full_course` builds with `TRACE=0` for minimal bit usage; `./flash.sh trial` is the driving image with diagnostics.
+
+**Flipped barcodes (Nicholas, 2026-11-04):** the print can be turned 180 degrees, so the sensor must read it from either end. The decoder already does this and host tests cover all 26 letters; the car check is open. Colour-inverted prints are out of scope.
 
 **Known restart cause:** Nicholas attributes the ten restarts in INT-154–157 to
 a poorly connected battery, a hardware fix. Exclude them from unexplained
@@ -527,20 +533,20 @@ Single register. Record answers and measured values here once, then link from ot
 | ID | Decision / missing evidence | Owner |
 | --- | --- | --- |
 | D01 | Verify issued Code 39 framing/print scales, quiet zones, polarity, width tolerances and encounter rearm; both orientations must yield the same letter | Nicholas |
-| D02 | Mounted junction confirmation/turn centre, barcode-to-junction offsets, multiple pending characters, no-command crossing qualification, U-turn pause reference (requested about 200 ms), bypass/reverse boundaries and failed-scan retry policy; endless/no undo is settled | Nicholas |
+| D02 | Mounted junction confirmation/turn centre, barcode-to-junction offsets, multiple pending characters, no-command crossing qualification, U-turn pause 200 ms in code, to be measured, bypass/reverse boundaries and failed-scan retry policy; endless/no undo is settled | Nicholas |
 | D03 | Verify motor and encoder polarity, counts/revolution, ratings/levels, geometry, full car/turning envelope and maximum edge rate. Remote signs +1/+1 versus local -1/+1 are not a calibration decision; preserve barcode half-range bound | Nicholas |
 | D04 | Mounted IR position/spacing/height, contrast/noise/lighting range and barcode black polarity; wiring user-confirmed, measured sensing margins still pending | Nicholas |
 | D05 | Sonar electrical behavior user-confirmed; retain recorded Echo-voltage evidence when available. Calibrate repeat interval/range/servo centre/endpoints/settling, sample groups/median/edge hysteresis, coverage and width-estimation uncertainty | Nicholas |
 | D06 | Stationary boot IMU calibration (IR is digital, without software calibration): bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Validate 100 mm/s course-speed completion and the accepted results-retained-through-starts/stops-until-reboot lifecycle | Nicholas |
-| D07 | Demo stall guard off, full-course guard on (confirmed above); wheel/line gains, speed/duty/distance/turn/stall limits; repeated stationary +/-70 degree sweeps, pivot speed, wheel excursion budget and usable-line handoff; bypass/depth/clearance budgets and requested 100 mm/s lap scope versus currently slower bypass | Nicholas |
+| D07 | Demo stall guard off, full-course guard on (confirmed above); wheel/line gains, speed/duty/distance/turn/stall limits; repeated stationary +/-70 degree sweeps, pivot speed, wheel excursion budget and usable-line handoff; bypass/depth/clearance budgets ; course and bypass driving share `COURSE_SPEED_MMPS`, 100 mm/s today, smoothness first | Nicholas |
 | D08 | Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | Nicholas |
-| D09 | Open: Nicholas confirms the network, their own WiFi and laptop broker (recorded 2026-11-03 20:35) or the instructor's (recorded 21:33). Change `config/wifi_secrets.h` and rebuild before the mapping is announced; the code is the same. A normal mission requires both before starting; loss mid-run is report-only. Bounded TX/RX rings stay until the professor's buffer wording is supplied | Nicholas |
-| D10 | Qualifying lap agreed above; minimum hump height is 10 mm, not an error tolerance. Height-measurement error is still undecided. Agree remaining lateral/turn/height/width/speed error and recovery travel limits before corresponding physical PASS; label proposals separately from course thresholds | Nicholas |
+| D09 | Closed by Nicholas, 2026-11-04: the instructor's WiFi and broker, changing only `config/wifi_secrets.h`. Settings still to be supplied, and the link checked on that network. A normal mission requires both before starting; loss mid-run is report-only. Bounded TX/RX rings stay until the professor's buffer wording is supplied | Nicholas |
+| D10 | Qualifying lap agreed above; minimum hump height is 10 mm, not an error tolerance. Lateral (10 mm) and turn (5 degrees) limits agreed above. Agree remaining height/width/speed error and recovery travel limits before corresponding physical PASS; label proposals separately from course thresholds | Nicholas |
 | D11 | Settled 2026-10-29: barcode left, hump right. Validate sensing after reverse/U-turn traversal without inventing mirrored lane placement | Nicholas |
 | D12 | Closed by Nicholas, 2026-11-03: obstacles sit on straights, and this is the operating assumption. Curved-course bypass is not supported or claimed; options are in the [Obstacle guide](../app_program/obstacle/README.md#curves-near-an-obstacle) | Nicholas |
 | D13 | Numeric target priorities/periods, execution budgets, timeout slack, data-age limits, worst sensor-to-PWM latency, GPIO ISR time, stack margin and load-test criteria; user authorized existing numeric settings as provisional software defaults on 2026-10-29; physical scheduling/age acceptance remains open | Nicholas |
 | D14 | Core swap superseded. Audit core-0 I/O integration, cross-core event producers/mapping hand-off, synchronization and required initialization order; kernel WiFi/USB and capture core unchanged | Nicholas |
-| D15 | Included: Tribunal A12 names watchdog recovery (Nicholas's rule, 2026-11-03). `WATCHDOG` stays 0 until the SYS-06 bench test passes. Watchdog reset policy/scope, enabled-state audit and physical reset/output behavior; tick initialization is not proof of watchdog protection. No new framework in this restructure | Nicholas |
+| D15 | Proposed, awaiting Nicholas: turn on for `full_course` once SYS-06 passes. Included: Tribunal A12 names watchdog recovery (Nicholas's rule, 2026-11-03). `WATCHDOG` stays 0 until the SYS-06 bench test passes. Watchdog reset policy/scope, enabled-state audit and physical reset/output behavior; tick initialization is not proof of watchdog protection. No new framework in this restructure | Nicholas |
 | D16 | Settled 2026-10-29: configurable 15 cm is the obstacle trigger distance (150 mm). It does not authorize any travel without valid forward sonar | Nicholas |
 
 Implementation note (2026-10-29, #130): Mission's local reset handshake has

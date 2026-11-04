@@ -121,10 +121,14 @@ COURSE_SUFFIX := _course
 endif
 # Explicit opt-in for RP2040 task-progress watchdog: disabled pending
 # physical reset/output validation. WATCHDOG=1 builds are marked _wd.
-# TRACE=0 suppresses high-rate wheel/line/barcode/terrain diagnostics,
-# preserving normal telemetry, ACKs and events. Compare with TRACE=1
-# using equal length physical trials and distinct profile/UF2 hashes.
+# TRACE=0 removes high-rate wheel/line/barcode/terrain diagnostics, keeping
+# normal telemetry, ACKs and events. Test images default to TRACE=1; a course
+# image defaults to TRACE=0 for the least memory (flash.sh trial overrides it).
+ifeq ($(FULL_COURSE),1)
+TRACE ?= 0
+else
 TRACE ?= 1
+endif
 ifneq ($(filter $(TRACE),0 1),$(TRACE))
 $(error TRACE must be 0 or 1)
 endif

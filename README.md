@@ -40,7 +40,8 @@ For an Apple Silicon Mac with [Homebrew](https://brew.sh). Other systems: [Manua
 3. Build and flash. The script waits for the drive: hold BOOTSEL while plugging in USB.
 
    ```sh
-   ./flash.sh        # full course: motors on, junction turns and obstacle bypass released
+   ./flash.sh        # full course: motors on, junction turns and obstacle bypass released, no diagnostics
+   ./flash.sh trial  # driving test: same as the full course, with diagnostics on
    ./flash.sh test   # wireless self-test image: motors always inhibited
    ```
 
@@ -142,6 +143,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | Profile | Output in `build_make/` |
 | --- | --- |
 | `./flash.sh` | `full_course.uf2` |
+| `./flash.sh trial` | `trial.uf2` |
 | `./flash.sh test` | `test.uf2` |
 
 | Option | Meaning |
@@ -153,11 +155,11 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `FULL_COURSE=1` | Releases junction turns and obstacle bypass; `_course` image (`flash.sh` default) |
 | `TEST=1` | Firmware self-tests; forces Motion braking even if the controller enables motion |
 | `WATCHDOG=1` | **Opt-in bench validation only:** arms a 2-second RP2040 reset watchdog after Motion and Mission report fresh progress; `_wd` image. Default `0` until hardware validation (D15) |
-| `TRACE=0` | Skip high-rate diagnostic frame production (types 9/10/11, plus Terrain trace), retaining telemetry, events, ACKs and all safety; `_notrace` image. Default `TRACE=1` |
+| `TRACE=0` | Skip high-rate diagnostic frame production (types 9/10/11, plus Terrain trace), retaining telemetry, events, ACKs and all safety; `_notrace` image. Default `TRACE=0` with `FULL_COURSE=1`, otherwise `TRACE=1` |
 | `CRASH_REPORT=1` | Crash/console copy on UART0; project uses `0` (GP0/GP1 conflict, [pins](docs/team.md#2-pins)) |
 
-For line-tracking A/B trials, keep the same course, battery condition and
-controller settings, but build one `TRACE=1` image and one `TRACE=0` image.
+Diagnostics belong in test images (Nicholas, 2026-11-04): `full_course` has none, for the least memory. To check they do not change driving, keep the same course, battery condition and
+controller settings, and compare `./flash.sh trial` with `./flash.sh`.
 Each build has a distinct profile name/hash; capture the same number of laps
 and compare success rates and latency, not just how smooth the dashboard
 looks. With `TRACE=0`, the dashboard still receives ordinary state/event

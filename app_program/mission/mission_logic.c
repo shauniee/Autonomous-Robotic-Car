@@ -879,7 +879,7 @@ void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out)
         to_stop(m, in, out, true);
         break;
     }
-    /* User hard guardrail: every moving command on the course runs at the course
+    /* Every moving command on the course runs at the course
        speed; anything else is a defect, so stop rather than drive it. */
     if ((m->state == MISSION_FOLLOW_LINE || m->state == MISSION_NAVIGATE) &&
         motion_cmd_mode(&out->command) != MOTION_MODE_STOP &&
