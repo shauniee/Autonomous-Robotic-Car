@@ -309,7 +309,7 @@ Messages on the wire are separate from these totals:
 | Wheel trace record | see frame above | 8 | 120 | 120 |
 | Motion fault byte | stall, encoder | 1 | 2 | 8 |
 
-Not counted: `MotionController`, 352 stored, including `WheelPid` (2 x 32). `WATCHDOG=1` builds add 128 bits for two heartbeats and two last-fed copies.
+Not counted: `MotionController`, 384 stored, including `WheelPid` (2 x 32). `WATCHDOG=1` builds add 128 bits for two heartbeats and two last-fed copies.
 
 **Line and barcode**
 
