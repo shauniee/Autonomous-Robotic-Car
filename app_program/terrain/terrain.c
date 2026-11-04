@@ -148,6 +148,9 @@ void terrain_step(uint32_t now)
     gy511_sample_result_t result = hardware_ready ? drv_gy511_sample(&raw) : GY511_SAMPLE_ERROR;
     now = robot_time_ms();
     bool acquired = result == GY511_SAMPLE_FRESH;
+#if TERRAIN_DIAGNOSTICS
+    bool trace_encoder_valid = false;
+#endif
     bool stale = !have_acquisition ||
         robot_time_elapsed(now, acquired_ms) > SAFETY_STALE_MS;
     if (result == GY511_SAMPLE_ERROR)
@@ -160,6 +163,11 @@ void terrain_step(uint32_t now)
         have_acquisition = 1u;
         rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMU);
     }
+#if TERRAIN_DIAGNOSTICS
+    const int32_t delta[2] = {
+        enc_travel_signed(left, travel_origin[0]),
+        enc_travel_signed(right, travel_origin[1])};
+#endif
     const uint32_t count[2] = {left, right};
     float moved = terrain_travel_take(travel_origin, count, acquired,
         calibrating || result == GY511_SAMPLE_ERROR || stale);
@@ -214,6 +222,9 @@ void terrain_step(uint32_t now)
             /* Missing travel invalidates this window; keep completed results. */
             terrain_algo_invalidate_window(&context);
         }
+#if TERRAIN_DIAGNOSTICS
+        trace_encoder_valid = encoder_valid;
+#endif
         terrain_algo_process(&context, &raw, encoder_valid && moved > 0.0f ? moved : 0.0f, stationary);
         /* Compile-time constant; retain a syntactic reference to the
            private producer for warning-free TRACE=0 builds. */
@@ -248,6 +259,24 @@ void terrain_step(uint32_t now)
         terrain_algo_invalidate_window(&context);
     }
     publish(now, result);
+#if TERRAIN_DIAGNOSTICS
+    /* USB queues without waiting for a host; losses remain visible in the trace. */
+    if (acquired)
+    {
+        static uint32_t trace_sequence;
+        extern volatile UW tm_usb_dropped;
+        tm_printf((UB *)"[IMU_RAW] %u,%u,%d,%d,%d,%d,%d,%d,"
+            "%u,%u,%u,%d,%u,%u,%u,%u,%u\n",
+            (unsigned)++trace_sequence, (unsigned)now,
+            (int)raw.x, (int)raw.y, (int)raw.z,
+            (int)context.pitch_cdeg, (int)delta[0], (int)delta[1],
+            (unsigned)context.is_calibrated, (unsigned)context.state,
+            (unsigned)trace_encoder_valid, (int)context.roll_cdeg,
+            (unsigned)stationary,
+            (unsigned)context.height_valid, (unsigned)context.hump_count,
+            (unsigned)context.rise_q, (unsigned)tm_usb_dropped);
+    }
+#endif
 }
 
 ER terrain_init(void)

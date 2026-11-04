@@ -96,6 +96,16 @@ endif
 # Motion never brakes on a stall and Mission searches for a lost line instead
 # of stopping. Never use it on the
 # course. The image gets a _noguards suffix.
+TERRAIN_DIAGNOSTICS ?= 0
+ifneq ($(filter $(TERRAIN_DIAGNOSTICS),0 1),$(TERRAIN_DIAGNOSTICS))
+$(error TERRAIN_DIAGNOSTICS must be 0 or 1)
+endif
+ifeq ($(TERRAIN_DIAGNOSTICS),1)
+TERRAIN_SUFFIX := _imudiag
+ifneq ($(CONSOLE),usb_cdc)
+$(error TERRAIN_DIAGNOSTICS=1 requires CONSOLE=usb_cdc)
+endif
+endif
 BARCODE_DIAGNOSTICS ?= 0
 ifneq ($(filter $(BARCODE_DIAGNOSTICS),0 1),$(BARCODE_DIAGNOSTICS))
 $(error BARCODE_DIAGNOSTICS must be 0 or 1)
@@ -161,7 +171,7 @@ endif
 # a live hazard: an SMP=1 build was once flashed in place of an SMP=0 one and
 # only the banner in the log revealed it.
 #
-EXE_FILE := mtk3pico_smp$(SMP)_$(CONSOLE)$(WIFI_SUFFIX)$(NET_SUFFIX)$(MQTT_SUFFIX)$(CRASH_SUFFIX)$(TEST_SUFFIX)$(COURSE_SUFFIX)$(NOGUARDS_SUFFIX)$(WATCHDOG_SUFFIX)$(TRACE_SUFFIX)
+EXE_FILE := mtk3pico_smp$(SMP)_$(CONSOLE)$(WIFI_SUFFIX)$(NET_SUFFIX)$(MQTT_SUFFIX)$(CRASH_SUFFIX)$(TEST_SUFFIX)$(COURSE_SUFFIX)$(NOGUARDS_SUFFIX)$(WATCHDOG_SUFFIX)$(TRACE_SUFFIX)$(TERRAIN_SUFFIX)
 
 GCC := arm-none-eabi-gcc
 AS := arm-none-eabi-gcc
@@ -233,6 +243,7 @@ CFLAGS  += -DCNF_SMP=1
 ASFLAGS += -DCNF_SMP=1
 endif
 CFLAGS  += -DAPP_TEST=$(TEST) -DROBOT_WATCHDOG_ENABLED=$(WATCHDOG) -DROBOT_TRACE_ENABLED=$(TRACE)
+CFLAGS  += -DTERRAIN_DIAGNOSTICS=$(TERRAIN_DIAGNOSTICS)
 CFLAGS  += -DAPP_NO_GUARDS=$(NOGUARDS) -DBARCODE_DIAGNOSTICS=$(BARCODE_DIAGNOSTICS)
 CFLAGS  += -DNAV_GEOMETRY_RELEASED=$(FULL_COURSE) -DMISSION_BYPASS_RELEASED=$(FULL_COURSE)
 CFLAGS  += -DTM_CONSOLE_UART=$(CRASH_REPORT)
@@ -269,7 +280,7 @@ endif
 
 # The compiler version is part of the profile, so objects from different
 # toolchains are never linked together.
-PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-noguards$(NOGUARDS)-bcdiag$(BARCODE_DIAGNOSTICS)-course$(FULL_COURSE)-watchdog$(WATCHDOG)-trace$(TRACE)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
+PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-noguards$(NOGUARDS)-bcdiag$(BARCODE_DIAGNOSTICS)-course$(FULL_COURSE)-watchdog$(WATCHDOG)-trace$(TRACE)-imudiag$(TERRAIN_DIAGNOSTICS)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
 PROFILE_FILE := .build_profile
 
 ifneq ($(strip $(shell cat $(PROFILE_FILE) 2>/dev/null)),$(PROFILE_ID))

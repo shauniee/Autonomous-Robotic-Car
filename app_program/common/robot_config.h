@@ -222,6 +222,9 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define BARCODE_SERVICE_BUDGET	16u
 
 /* --- terrain ---------------------------------------------------- */
+#ifndef TERRAIN_DIAGNOSTICS
+#define TERRAIN_DIAGNOSTICS 0
+#endif
 #define TERRAIN_CALIBRATION_PERIOD_MS 10u
 #define TERRAIN_CALIBRATION_TIMEOUT_MS 5000u /* software budget: 100 samples at
                                               50 Hz plus scheduling margin */
