@@ -335,15 +335,13 @@ are 0/89.6 mm/s, or the reverse. Actual outer speed is not guaranteed constant
 while the base and applied steering ramp independently. Straight navigation
 uses the same guidance/speed policy on visible IR. The left/right pre-turn
 approach retains zero requested steering and the tracking ceiling.
-Motion slews the common FOLLOW base speed at a provisional 250 mm/s per
-second (5 mm/s per 20 ms release), then mixes applied steering. Both ramps
+Every planned move uses one lift-style speed profile (professor's comment, 2026-11-04): FOLLOW, DISTANCE and TURN all change speed with `MOTION_ACCEL_MMPS2` limited by `MOTION_JERK_MMPS3`, both provisional at 250 mm/s per second and 1000 mm/s per second squared, so acceleration builds and fades instead of stepping. A move brakes when its remaining distance reaches the profile's stop distance, and a lagging wheel is also held to the speed it can still stop from. An obstacle is a planned stop: Mission sends a ramped DISTANCE of `MOTION_STOP_MM`, then scans. A pivot ending on a sensor reading still brakes at once, as do all safety stops. Motion then mixes applied steering. Both ramps
 permit one period at startup, none at duplicate timestamps and at most one
 period after a late release. They use control-release time while command
 freshness retains original sensor acquisition time; cached data cannot extend
 expiry. Zero-speed FOLLOW, STOP, invalid/stale commands, reset and faults
 brake immediately and clear both histories. Shared FOLLOW smoothing/mixing
-also applies to bypass guidance. Discrete distance/turn endpoint control and
-the turn encoder-progress speed ceiling remain unchanged. Stored units/ranges
+also applies to bypass guidance. Stored units/ranges
 are owned by [project specs](project-specs.md#pending-decisions). Physical
 curve retention, acceleration and speed-loop tuning remain provisional D07.
 FOLLOW wheel targets are nonnegative. When the wheel PID reduces speed, its

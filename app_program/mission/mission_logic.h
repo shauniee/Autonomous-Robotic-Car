@@ -148,6 +148,7 @@ typedef struct
     uint8_t backup_mm;
     uint8_t backed_mm; /* total reversed for this obstacle */
     uint8_t scan_id : 4;
+    uint8_t scan_stopping : 1; /* slowing to a profile stop before the scan */
 
 } Mission;
 

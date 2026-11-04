@@ -27,7 +27,12 @@ int main(void)
     in.line_sampled_ms = in.now_ms;
     mission_step(&mission, &in, &out);
     assert(mission.state == MISSION_SCAN);
-    assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE); /* planned slow-down */
+    in.motion_action = motion_cmd_action(&out.command);
+    in.motion_status = RD_MOTION_DONE;
+    in.now_ms += 10u;
+    mission_step(&mission, &in, &out);
+    in.motion_status = RD_MOTION_IDLE;
     in.stationary = true;
     in.now_ms += 10u;
     mission_step(&mission, &in, &out);

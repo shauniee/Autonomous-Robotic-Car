@@ -7,6 +7,8 @@
 #define LAST_ACTION_ID rd_mask(RD_MOTION_ACTION_BITS)
 
 static bool obstacle_ahead(const MissionInputs *in);
+static void handle_scan(Mission *m, const MissionInputs *in,
+    MissionOutputs *out);
 static void handle_reacquire(Mission *m, const MissionInputs *in,
     MissionOutputs *out);
 static void enter_bypass(Mission *m, const MissionInputs *in,
@@ -500,7 +502,9 @@ static void enter_bypass(Mission *m, const MissionInputs *in,
     m->backed_mm = 0u;
     m->bypass_started_ms = in->now_ms;
     m->in_broad = false;
-    out->command = stop_command(in->now_ms);
+    m->scan_stopping = 1u;
+    m->current_action = next_action_id(m);
+    handle_scan(m, in, out);
 }
 
 /* True once the forward readings after a sweep settle it: one blocked reading,
@@ -532,6 +536,26 @@ static void handle_scan(Mission *m, const MissionInputs *in,
         MISSION_BYPASS_TIMEOUT_MS)
     {
         to_stop(m, in, out, true);
+        return;
+    }
+    if (m->scan_stopping)
+    {
+        bool ours = in->motion_action == m->current_action;
+        if (ours && in->motion_status == RD_MOTION_FAILED)
+        {
+            to_stop(m, in, out, true);
+        }
+        else if (ours && in->motion_status == RD_MOTION_DONE)
+        {
+            m->scan_stopping = 0u;
+        }
+        else
+        {
+            /* Slow down on the profile; the rest of this file's stops are safety stops. */
+            out->command = motion_command_make(MOTION_MODE_DISTANCE, MISSION_TRACK_SPEED_MMPS,
+                (float)MOTION_STOP_MM(COURSE_SPEED_MMPS), MOTION_TURN_RAMPED,
+                m->current_action, in->now_ms);
+        }
         return;
     }
     if (m->scan_backing)

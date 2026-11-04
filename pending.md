@@ -78,7 +78,7 @@ Nothing else changes firmware without the robot, because every remaining value n
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| Firmware build | `main` is the working image and is unchanged. On `chore/centralise-pending`, all eight images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193, INT-194 |
+| Firmware build | `main` is the working image and is unchanged. On `chore/centralise-pending`, all eight images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193 to INT-195 |
 | Safety and electrical | No recorded result. Wiring is user-confirmed only. | MR-01 to MR-05 |
 | Watchdog | Code merged, off by default, never run on a Pico. No reset policy agreed. | `99fe0d8`, D15 |
 | Line tracking | Straight-crossing fix not yet run on the car in its final form (INT-191). Good laps seen, but the last run went off course and was not smooth. No measured success rate. | User observation, INT-136, INT-139b, INT-158; capture analysis found no cause (INT-163) |
@@ -134,7 +134,6 @@ All questions and decisions go to Nicholas. Proposed defaults are recorded as pr
 
 - [ ] Print framing, quiet zones and tolerances (D01).
 - [ ] Remaining error limits: height, width, measured speed and recovery (D10).
-- [ ] Watchdog: confirm the proposal to turn it on for `full_course` after the SYS-06 bench test passes (D15).
 - [ ] Data table: fault bytes accepted at 48 bits. Test the [bit reductions](#bit-reduction-candidates), then sign off each group.
 
 ## 1. Safety and electrical
@@ -149,7 +148,7 @@ All questions and decisions go to Nicholas. Proposed defaults are recorded as pr
 - [ ] Reset cannot start the robot: held buttons, persistent fault, expired and old commands, inhibited boot (MR-07, A12, Gap 4).
 - [ ] TEST image on the current build: `[TEST]` lines print and motors stay braked (MR-06).
 - [ ] Stall guard: on for the full-course image (INT-176), off on `main`, which the demonstration uses. Confirm on the car that it causes no false stop, and that a held wheel stops the run (MR-25, D07).
-- [ ] Watchdog: agree the reset policy (D15), then test a `WATCHDOG=1 TEST=1` image with wheels raised: reset on a stopped task, motor outputs through reset, no restart without GP20, and no false reset under WiFi load (SYS-06). The code is merged but off by default; do not enable it on a driving car until this passes.
+- [ ] Watchdog (D15, decided): test a `WATCHDOG=1 TEST=1` image with wheels raised: reset on a stopped task, motor outputs through reset, no restart without GP20, and no false reset under WiFi load (SYS-06). Then turn it on for `full_course`. Do not enable it on a driving car until this passes.
 - [ ] Impact: tap test gives `Terrain: impact` and a latched stop (MR-16, D06).
 
 ## 2. Motion calibration
@@ -177,6 +176,9 @@ The 95% target is the user's. No success rate has been measured yet, so the firs
 - [ ] Work through the [open issues](app_program/line_barcode/README.md#open-issues): junction on three curves, `NAV_ONSET_SKEW_MM`, pivot hand-over.
 - [ ] Mounted IR levels, dead zone and left-sensor span at course lighting (MR-12 as revised for DOUT, D04, A3).
 - [ ] Check that diagnostics do not change driving: compare the same number of laps on `./flash.sh trial` and `./flash.sh`.
+- [ ] Lift-style profile on the car (professor's comment): film moving off and slowing down on the floor. Check the wheels do not sit still and then jump at the very start, because the first targets are below what friction may allow; tune `MOTION_ACCEL_MMPS2`, `MOTION_JERK_MMPS3` and `MOTION_KS`.
+- [ ] Accuracy with the profile: rerun straight, turn and advance distances, because stop points depend on how closely the wheels follow it (MR-21, MR-22).
+- [ ] Pivot end: a pivot stops at once when the sensor finds the branch, which may still look abrupt. If it does, try a slower final part of the pivot, then recheck the landing point.
 - [ ] Smoothness: judge jerkiness on film and `WHEEL` traces at 100 mm/s. If it is not very smooth, lower `COURSE_SPEED_MMPS` one trial at a time; speed is the second priority. Below 60 mm/s needs a new feedforward fit.
 - [ ] Change one value per trial and record each as a new INT entry.
 
@@ -205,6 +207,7 @@ Wheels stay off for the bench steps. Bypass has never run on the car.
 - [ ] Rejoin the original line and continue (MR-30, M9, A9).
 - [ ] Depth measured against a tape, and the rear edge seen while bypassing (M7).
 - [ ] Record the stop reason for `SCAN` then `STOPPED` if it recurs. INT-164 suggests the car was lifted, and INT-186 confirms the saved capture cannot prove it.
+- [ ] Obstacle stop on the profile: the car now travels about 33 mm after the 150 mm trigger before scanning. Confirm that clearance is enough and the scan is unaffected (D16).
 - [ ] Confirm on the car that scans start only after fresh stationary feedback, with timestamped logs (T09). Host logic passes.
 - [ ] Cancel a scan and restore the servo to centre on a stop, on the car, with no-echo cases (Gap 6). Mission and scan-guard host cases pass.
 - [ ] Measure bypass speeds, settle time and travel budgets (D05, D07).
@@ -351,6 +354,8 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] Lap scorer rejects incomplete PASS rows and needs 19 of 20; triage keeps state transitions (INT-185).
 - [x] Saved captures reviewed; no steering cause can be proven from them (INT-186).
 - [x] Dead terrain snapshot, unused settings and old plan checker removed (INT-193).
+- [x] Lift-style profile for every planned move, with obstacle stops slowing on it; safety stops stay immediate (INT-195, host and build only).
+- [x] Watchdog policy: on for `full_course` after the SYS-06 bench test passes, by Nicholas (D15).
 - [x] Diagnostics only in test images: `full_course` is `TRACE=0`, `./flash.sh trial` drives with them, by Nicholas (INT-194).
 - [x] Accuracy limits of 10 mm lateral and 5 degrees heading, by Nicholas (D10).
 - [x] Colour-inverted prints out of scope; 180-degree flip required and already in the decoder, by Nicholas.

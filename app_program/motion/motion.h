@@ -168,6 +168,7 @@ typedef struct {
     enc_count_t previous_count[2];
     uint32_t stalled_since_ms[2];
     uint16_t follow_base_q6 : 15; /* private unsigned Q6 mm/s, see specs */
+    int16_t profile_accel : 11; /* applied acceleration, signed whole mm/s^2 */
     int8_t follow_steer_q; /* private applied Q7 steering, see specs */
     WheelPid pid[2];
 } MotionController;

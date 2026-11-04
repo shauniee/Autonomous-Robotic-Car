@@ -36,7 +36,8 @@ Owner: Mahesha. Motion runs on core 1, outranks Mission and is the only writer o
 - GP21 is read before the command copy and again inside the output critical section. Motion latches faults, expiry and failed actions itself. GP21 release resets only after the cause clears and the brake is serviced; a separate GP20 press starts.
 - A command's sample time cannot be refreshed by copying. Stationarity comes from measured encoders, not zero demand or a software acknowledgement.
 - **FOLLOW** ramps the common base, then steering, then mixes left `v(1+q/127)` and right `v(1-q/127)`, so the robot centre keeps the commanded speed. STOP, stale or zero-speed requests bypass both ramps.
-- **TURN** style 0 is a pivot, 1 a single-wheel swing and 3 a ramped pivot; style 2 is rejected. DISTANCE style 3 is a ramped approach.
+- **Speed profile:** every planned move starts and stops like a lift, with acceleration limited by `MOTION_ACCEL_MMPS2` and its rate of change by `MOTION_JERK_MMPS3`. Lower either in `robot_config.h` for a gentler move, at the cost of more stopping distance. Safety stops skip the profile.
+- **TURN** style 0 is a pivot, 1 a single-wheel swing and 3 a pivot that keeps its speed from a FOLLOW hand-over; style 2 is rejected. DISTANCE style 3 does the same.
 
 Packed widths: [data table](../../docs/project-specs.md#5-data-representation-table-week-13). Keep wrapping counts with per-consumer origins.
 

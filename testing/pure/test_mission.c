@@ -478,6 +478,36 @@ static MissionOutputs bstep(Mission *m, MissionInputs *in, uint32_t *t)
     return out;
 }
 
+/* An obstacle is a planned stop: the car slows on the profile before scanning. */
+static void slow_to_rest(Mission *m, MissionInputs *in, uint32_t *t, MissionOutputs *out)
+{
+    assert(motion_cmd_mode(&out->command) == MOTION_MODE_DISTANCE);
+    assert(motion_cmd_steering(&out->command) == MOTION_TURN_RAMPED);
+    assert(motion_cmd_target(&out->command) == (int)MOTION_STOP_MM(COURSE_SPEED_MMPS));
+    assert(!out->scan_request);
+    in->motion_action = motion_cmd_action(&out->command);
+    in->motion_status = RD_MOTION_DONE;
+    *out = bstep(m, in, t);
+    in->motion_status = RD_MOTION_IDLE;
+}
+
+static void test_obstacle_slow_down_can_still_stop(void)
+{
+    Mission m;
+    MissionInputs in = base(100u);
+    uint32_t t = to_follow(&m, &in);
+    in.front_valid = true;
+    in.front_age_ms = 0u;
+    in.front_mm = MISSION_OBSTACLE_STOP_MM;
+    MissionOutputs out = bstep(&m, &in, &t);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
+    in.stop_down = true; /* a safety stop never waits for the profile */
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_STOPPED && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+
+    puts("obstacle slow-down: GP21 still stops at once PASS");
+}
+
 static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t,
     uint32_t left_mm, uint32_t right_mm)
 {
@@ -487,9 +517,9 @@ static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t,
     in->front_mm = MISSION_OBSTACLE_STOP_MM;
     MissionOutputs out = bstep(m, in, t);
     assert(m->state == MISSION_SCAN);
-    assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    slow_to_rest(m, in, t, &out);
     out = bstep(m, in, t);
-    assert(!out.scan_request);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP && !out.scan_request);
     in->stationary = true;
     out = bstep(m, in, t);
     assert(out.scan_request && m->scan_phase == 1u);
@@ -1079,6 +1109,7 @@ int main(void)
     test_scan_obstacle_removed();
     test_missing_echo_policy();
     test_one_barcode_event_per_read();
+    test_obstacle_slow_down_can_still_stop();
     test_stop_cancels_every_phase();
     test_run_network_loss();
     puts("mission retained safety/recovery/bypass: PASS");

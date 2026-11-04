@@ -98,7 +98,6 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 /* PROVISIONAL (D07): a pivot brakes at the edge of this band, so it is always
    short by about this much (2 degrees measured 88 of 90) */
 #define MOTION_ANGLE_TOL_DEG 1.0f
-#define MOTION_APPROACH_GAIN	4.0f	/* 1/s: speed = gain * remaining distance */
 #define MOTION_STATIONARY_CPS	5.0f	/* PROVISIONAL (D08): below this a wheel is stationary */
 #define MOTION_STALL_MS		400u	/* PROVISIONAL (D07) */
 #define MOTION_STALL_MIN_TARGET_CPS (10.0f * ENC_COUNTS_PER_MM) /* PROVISIONAL (D07): the end of an approach asks for too little to turn a wheel; INT-156 sat at 3 mm/s for 1060 ms */
@@ -144,7 +143,14 @@ _Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
 #define RECOVERY_TARGET_DEG 70 /* user: sweep each side of the stopped pose */
 #define RECOVERY_TARGET_TOL_DEG 5
 #define RECOVERY_OVERSHOOT_DEG 20 /* PROPOSAL D07/D08: coast before reversal */
-#define MOTION_FOLLOW_SLEW_MMPS2 250u /* PROVISIONAL D07: common FOLLOW base ramp */
+/* Lift-style speed profile for every planned move: acceleration builds and fades
+   at the jerk limit. PROVISIONAL D07 trial values; lower either for a gentler
+   move. Safety stops ignore this and brake at once. */
+#define MOTION_ACCEL_MMPS2 250u
+#define MOTION_JERK_MMPS3 1000u
+/* Travel for a profile stop from speed v, in whole mm, rounded up. */
+#define MOTION_STOP_MM(v) ((v) * (v) / (2u * MOTION_ACCEL_MMPS2) + \
+    (v) * MOTION_ACCEL_MMPS2 / (2u * MOTION_JERK_MMPS3) + 1u)
 #define MOTION_FOLLOW_STEER_QPS 900u /* PROVISIONAL D07: applied steering slew */
 /* The one course speed: line following, crossings, junction advances and bypass
    driving. Smoothness and accuracy come first, then speed. Below 60 mm/s the
@@ -207,7 +213,6 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define NAV_UTURN_MAX_DEG 210.0f
 #define NAV_UTURN_SENSE_DEG 150.0f
 #define NAV_PAUSE_MS 200u /* Nicholas D02: U-turn stationary pause; PROVISIONAL until measured */
-#define NAV_DECEL_MS 500u
 #ifndef BARCODE_DIAGNOSTICS
 #define BARCODE_DIAGNOSTICS 0
 #endif
@@ -357,9 +362,11 @@ _Static_assert(MOTION_SPEED_MAX_MMPS > 0.0f && ENC_COUNTS_PER_MM > 0.0f &&
 _Static_assert(MOTION_TARGET_MAX_MM * ENC_COUNTS_PER_MM < ENC_COUNT_MASK / 2u,
     "distance targets must fit encoder signed half range");
 _Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS, "stall limit must precede the action timeout");
-_Static_assert(MOTION_FOLLOW_SLEW_MMPS2 > 0u &&
-    MOTION_FOLLOW_SLEW_MMPS2 <= 1000u,
-    "FOLLOW slew must be positive and fit bounded arithmetic");
+_Static_assert(MOTION_ACCEL_MMPS2 > 0u && MOTION_ACCEL_MMPS2 <= 1000u &&
+    MOTION_JERK_MMPS3 * MOTION_PERIOD_MS >= 1000u,
+    "the profile must fit its 11-bit field and move every release");
+_Static_assert(MOTION_STOP_MM(COURSE_SPEED_MMPS) < MISSION_OBSTACLE_STOP_MM,
+    "a profile stop must end short of the obstacle trigger distance");
 _Static_assert(MOTION_SPEED_MAX_MMPS * 64.0f < 32767u,
     "FOLLOW base history must fit 15-bit Q6 storage");
 _Static_assert(MOTION_FOLLOW_STEER_QPS > 0u &&

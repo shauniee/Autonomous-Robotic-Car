@@ -163,6 +163,37 @@ static float wheel_duty(WheelPid *p, float target_cps, float speed_cps,
     return bounded;
 }
 
+/* One release of the lift-style profile: speed follows desired while acceleration
+   changes at no more than the jerk limit. Returns the new speed in mm/s. */
+static float profile_step(MotionController *c, float desired, float dt)
+{
+    const float limit = MOTION_ACCEL_MMPS2, jerk = MOTION_JERK_MMPS3;
+    float speed = c->follow_base_q6 / 64.0f, accel = c->profile_accel;
+    float error = desired - speed;
+    float wanted = copysignf(fminf(limit, sqrtf(2.0f * jerk * fabsf(error))), error);
+    accel += fminf(fmaxf(wanted - accel, -jerk * dt), jerk * dt);
+    speed += accel * dt;
+    if ((error >= 0.0f ? speed >= desired : speed <= desired) ||
+        (fabsf(desired - speed) <= jerk * dt * dt && fabsf(accel) <= jerk * dt))
+    {
+        speed = desired; /* arrived: end on the target with no acceleration left */
+        accel = 0.0f;
+    }
+    c->profile_accel = (int16_t)lroundf(accel);
+    c->follow_base_q6 = (uint16_t)lroundf(fmaxf(speed, 0.0f) * 64.0f);
+    return c->follow_base_q6 / 64.0f;
+}
+
+/* Highest wheel speed, counts/s, that can still stop in the distance left on the
+   profile. This closes the position loop when a wheel lags its target. */
+static float reachable_cps(float remaining_counts)
+{
+    const float limit = MOTION_ACCEL_MMPS2;
+    float settle = limit / (2.0f * MOTION_JERK_MMPS3);
+    return limit * (sqrtf(settle * settle +
+        2.0f * fabsf(remaining_counts) / (COUNTS_PER_MM * limit)) - settle) * COUNTS_PER_MM;
+}
+
 static void brake(MotionOutput *out, rd_motion_status_t status, uint8_t id)
 {
     out->duty[LEFT] = out->duty[RIGHT] = 0.0f;
@@ -197,6 +228,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
     if (starting)
     {
         uint16_t base = c->follow_base_q6;
+        int accel = c->profile_accel;
         WheelPid previous_pid[2] = {c->pid[0], c->pid[1]};
         bool continuous = c->active &&
             ((c->mode == MOTION_MODE_FOLLOW &&
@@ -208,6 +240,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         if (continuous)
         {
             c->follow_base_q6 = base;
+            c->profile_accel = (int16_t)accel;
             c->pid[0] = previous_pid[0];
             c->pid[1] = previous_pid[1];
         }
@@ -274,7 +307,6 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         uint32_t ramp_ms =
             starting ? MOTION_PERIOD_MS
         : (dt_ms < MOTION_PERIOD_MS ? dt_ms : MOTION_PERIOD_MS);
-        uint32_t step_q6 = MOTION_FOLLOW_SLEW_MMPS2 * 64u * ramp_ms / 1000u;
         if (c->follow_base_q6 > MOTION_SPEED_MAX_MMPS * 64.0f ||
             c->follow_steer_q < -127)
         {
@@ -283,22 +315,15 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
             return;
         }
         uint32_t requested = (uint32_t)motion_cmd_speed(cmd) * 64u;
-        uint32_t previous = c->follow_base_q6;
         if (requested == 0u)
         {
-            previous = 0u;
-        }
-        else if (requested > previous)
-        {
-            uint32_t delta = requested - previous;
-            previous += delta < step_q6 ? delta : step_q6;
+            c->follow_base_q6 = 0u;
+            c->profile_accel = 0;
         }
         else
         {
-            uint32_t delta = previous - requested;
-            previous -= delta < step_q6 ? delta : step_q6;
+            (void)profile_step(c, (float)motion_cmd_speed(cmd), ramp_ms * .001f);
         }
-        c->follow_base_q6 = (uint16_t)previous;
         unsigned rate =
             motion_cmd_steering(cmd) == 0 ||
             (c->follow_steer_q != 0 &&
@@ -319,7 +344,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         c->follow_steer_q =
             requested == 0u ? 0 : (int8_t)(c->follow_steer_q + steer_delta);
         /* Smooth the differential as well as translation before mixing. */
-        vmax_cps = ((float)previous / 64.0f) * COUNTS_PER_MM;
+        vmax_cps = (c->follow_base_q6 / 64.0f) * COUNTS_PER_MM;
         /* Centre-preserving mix: the outer wheel gains what the inner loses, so
            the robot centre keeps the commanded speed while steering. */
         float steering = (float)c->follow_steer_q / 127.0f;
@@ -352,24 +377,25 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
                 tol_counts *= 2.0f;
             }
         }
-        if (motion_cmd_steering(cmd) == MOTION_TURN_RAMPED)
+        float remaining_mm = 0.0f;
+        for (unsigned w = 0; w < 2; ++w)
         {
-            float speed = c->follow_base_q6 / 64.0f;
-            float acceleration = motion_cmd_speed(cmd) * 1000.0f / NAV_DECEL_MS;
-            float remaining = 0.0f;
-            for (unsigned w = 0; w < 2; ++w)
-            {
-                float error = fabsf(goal[w] - enc_travel_signed(in->count[w], c->origin[w]));
-                remaining = fmaxf(remaining, fmaxf(error - tol_counts, 0.0f));
-            }
-            float desired = fminf(motion_cmd_speed(cmd),
-                sqrtf(2.0f * acceleration * remaining / COUNTS_PER_MM));
-            float release_dt = starting ? .020f : fminf(dt_ms * .001f, .020f);
-            float step = acceleration * release_dt;
-            speed += fminf(fmaxf(desired - speed, -step), step);
-            c->follow_base_q6 = (uint16_t)lroundf(speed * 64.0f);
-            vmax_cps = speed * COUNTS_PER_MM;
+            /* Aim for the goal itself: stopping a little short lands inside the tolerance. */
+            remaining_mm = fmaxf(remaining_mm, fabsf(goal[w] -
+                enc_travel_signed(in->count[w], c->origin[w])) / COUNTS_PER_MM);
         }
+        /* Brake when the profile's stop distance reaches what is left, counting
+           the speed still to come from acceleration. Once braking, stay braking. */
+        const float limit = MOTION_ACCEL_MMPS2, jerk = MOTION_JERK_MMPS3;
+        float speed = c->follow_base_q6 / 64.0f, accel = c->profile_accel;
+        float peak = speed + (accel > 0.0f ? accel * accel / (2.0f * jerk) : 0.0f);
+        float stop_mm = peak * peak / (2.0f * limit) + peak * limit / (2.0f * jerk) +
+            (accel > 0.0f ? (speed + peak) * 0.5f * accel / jerk : 0.0f) -
+            2.0f * speed * (float)MOTION_PERIOD_MS * .001f; /* discrete release timing */
+        bool braking = remaining_mm <= stop_mm ||
+            (accel < 0.0f && speed <= motion_cmd_speed(cmd));
+        vmax_cps = profile_step(c, braking ? 0.0f : (float)motion_cmd_speed(cmd),
+            starting ? .020f : fminf(dt_ms * .001f, .020f)) * COUNTS_PER_MM;
         bool within = true;
         for (int w = 0; w < 2; ++w)
         {
@@ -380,7 +406,20 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
                 target_cps[w] = 0.0f;
                 continue;
             }
-            if (fabsf(remaining) <= tol_counts || (swing && remaining < 0.0f))
+            /* Just past the goal counts as arrived: reversing for it would hunt. A
+               larger overshoot is still corrected below. */
+            bool passed = remaining * goal[w] < 0.0f && (swing ||
+                fabsf(remaining) <= 2.0f * tol_counts);
+            bool inside = fabsf(remaining) <= tol_counts || passed;
+            if (inside && !passed && vmax_cps > 0.0f &&
+                motion_cmd_mode(cmd) == MOTION_MODE_DISTANCE)
+            {
+                /* Finish slowing down instead of braking from speed at the edge
+                   of the tolerance; a turn's tolerance is already slow. */
+                within = false;
+                target_cps[w] = copysignf(vmax_cps, goal[w]);
+            }
+            else if (inside)
             {
                 target_cps[w] = 0.0f;
                 if (motion_cmd_mode(cmd) == MOTION_MODE_TURN)
@@ -402,16 +441,16 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
                 }
                 else
                 {
-                    target_cps[w] = copysignf(
-                        fminf(vmax_cps, fabsf(remaining) * MOTION_APPROACH_GAIN),
-                        remaining);
+                    target_cps[w] = copysignf(fminf(vmax_cps, reachable_cps(fabsf(remaining) + tol_counts)), remaining);
                 }
             }
         }
         /* An arrived, braked wheel may roll back a little and cannot
            restart. */
-        if (!within && motion_cmd_mode(cmd) == MOTION_MODE_TURN &&
-            c->turn_arrived == 3u)
+        /* The same when the profile has slowed to rest just short: restarting for
+           the last few mm would be a visible creep. */
+        if (!within && (c->follow_base_q6 == 0u || (motion_cmd_mode(cmd) == MOTION_MODE_TURN &&
+            c->turn_arrived == 3u)))
         {
             within = true;
             for (int w = 0; w < 2; ++w)

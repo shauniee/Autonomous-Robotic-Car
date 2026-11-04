@@ -129,6 +129,8 @@ Record the exact settings with each image and result.
 
 **Priorities (Nicholas, 2026-11-04):** very smooth runs with little to no jerkiness come first, with accuracy. Speed comes second: as fast as smoothness and accuracy allow. `COURSE_SPEED_MMPS` in `robot_config.h` is the one setting for course and bypass driving, so a slower trial changes one line. Pivots and standalone recovery keep their own lower speeds.
 
+**Lift-style motion (professor's comment, 2026-11-04):** moving off and slowing down must be smooth, like a lift, never jumping straight to full speed. Safety stops stay immediate.
+
 **Accuracy limits (Nicholas, 2026-11-04):** at most 10 mm lateral error over a 1 m straight and at most 5 degrees heading error on turns, from Tribunal A13. Height, width, measured-speed and recovery limits stay open under D10.
 
 **Diagnostics (Nicholas, 2026-11-04):** diagnostics belong in test images, which need not save memory. `full_course` builds with `TRACE=0` for minimal bit usage; `./flash.sh trial` is the driving image with diagnostics.
@@ -385,6 +387,7 @@ RAM and layout can be measured without the robot; execution cost cannot.
 | Watchdog heartbeats | `motion_progress_ms`, `mission_progress_ms`: Motion and Mission write, I/O reads; only in `WATCHDOG=1` builds | uint32 ms | wraps; age by modular subtraction | 2 x 32 | `_Atomic uint32_t` |
 | Watchdog last-fed copies | `last_fed_motion`, `last_fed_mission`, I/O only; only in `WATCHDOG=1` builds | uint32 ms | wraps; compared for change | 2 x 32 | `uint32_t` |
 | Watchdog boot flags | `armed`, `boot_reason_reported`, I/O only; only in `WATCHDOG=1` builds | 0 or 1 | set once per boot | 2 x 1 | `bool`; compiled storage pending final build |
+| Applied acceleration | `MotionController.profile_accel`, Motion only | -1000..+1000 mm/s^2 in whole units, compile-time limit | reset to 0 with the speed | 11 | signed bit-field; whole units keep the 20 mm/s^2 step per release exact |
 | Wheel PID state | `WheelPid.integral_q4`, `previous_cps` in `MotionController.pid[2]`, Motion | integral about +-2047 counts at 1/16 count; speed +-32767 whole counts/s | saturates, never wraps | 2 x 2 x 16 | fixed point; floats in the law are temporaries. Needs a loaded-wheel comparison |
 | Motion output and wheel trace input | `MotionOutput`, `mqtt_wheel_trace_t` floats | per-iteration locals, not persistent | - | exempt | Persistent traces store encoded bytes |
 
@@ -546,7 +549,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D12 | Closed by Nicholas, 2026-11-03: obstacles sit on straights, and this is the operating assumption. Curved-course bypass is not supported or claimed; options are in the [Obstacle guide](../app_program/obstacle/README.md#curves-near-an-obstacle) | Nicholas |
 | D13 | Numeric target priorities/periods, execution budgets, timeout slack, data-age limits, worst sensor-to-PWM latency, GPIO ISR time, stack margin and load-test criteria; user authorized existing numeric settings as provisional software defaults on 2026-10-29; physical scheduling/age acceptance remains open | Nicholas |
 | D14 | Core swap superseded. Audit core-0 I/O integration, cross-core event producers/mapping hand-off, synchronization and required initialization order; kernel WiFi/USB and capture core unchanged | Nicholas |
-| D15 | Proposed, awaiting Nicholas: turn on for `full_course` once SYS-06 passes. Included: Tribunal A12 names watchdog recovery (Nicholas's rule, 2026-11-03). `WATCHDOG` stays 0 until the SYS-06 bench test passes. Watchdog reset policy/scope, enabled-state audit and physical reset/output behavior; tick initialization is not proof of watchdog protection. No new framework in this restructure | Nicholas |
+| D15 | Decided by Nicholas, 2026-11-04: turn on for `full_course` once the SYS-06 bench test passes, and not before. Included: Tribunal A12 names watchdog recovery (Nicholas's rule, 2026-11-03). `WATCHDOG` stays 0 until the SYS-06 bench test passes. Watchdog reset policy/scope, enabled-state audit and physical reset/output behavior; tick initialization is not proof of watchdog protection. No new framework in this restructure | Nicholas |
 | D16 | Settled 2026-10-29: configurable 15 cm is the obstacle trigger distance (150 mm). It does not authorize any travel without valid forward sonar | Nicholas |
 
 Implementation note (2026-10-29, #130): Mission's local reset handshake has
@@ -1008,7 +1011,7 @@ than both targets climbing equally after a turn. Replace the two unsigned
 Q6 wheel histories with one private `follow_base_q6` field: 0..32000 (0..500
 mm/s), exact whole-mm/s requests scaled by 64, truncating per-release slew
 increments, 15 bits including invalid 32001..32767; reset zero, invalid brakes,
-updates saturate toward requested speed without overflow. The 250 mm/s/s
+updates saturate toward requested speed without overflow. (Superseded 2026-11-04 by the lift-style profile in [architecture](architecture.md).) The 250 mm/s/s
 provisional base ramp, one-period cap on late releases, no progress for
 duplicate timestamps and immediate zero/stop/fault reset remain. Mixed wheel
 targets are local floats, bounded by existing mixing and duty limits; a wheel
