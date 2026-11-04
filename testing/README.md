@@ -76,9 +76,6 @@ All remain pending until actual measurements/results are recorded. This retains 
 Acceptance targets/unknown values are owned by [project-specs](../docs/project-specs.md#pending-decisions), not inferred from a case name. Demonstration links belong in the [video index](../video/README.md#video-index) and the corresponding result row.
 
 The live completion checklist is [pending work](../pending.md).
-`python3 testing/check_plan_completion.py` checks the latest appended
-source-manifest/stage audit, not live issue checkboxes or robot operation:
-exit 1 means current BLOCKED evidence, exit 2 means stale source identity.
 Historical plan references in recorded logs refer to their original revisions.
 
 ## Qualifying lap records

@@ -130,21 +130,6 @@ static inline float terrain_travel_take(enc_count_t origin[2],
     return travel;
 }
 
-typedef struct
-{
-    uint32_t terrain, sampled_ms, serviced_ms, sequence;
-    uint8_t acquisition_valid : 1;
-} TerrainSnapshot;
-
-static inline bool terrain_evidence_fresh(const TerrainSnapshot *sample,
-    uint32_t now, uint32_t age_limit)
-{
-    return sample != 0 && sample->acquisition_valid != 0u &&
-        sample->sequence != 0u &&
-        robot_time_elapsed(now, sample->sampled_ms) <= age_limit &&
-        robot_time_elapsed(now, sample->serviced_ms) <= age_limit;
-}
-
 /* A short impact observation must survive until Motion services braking.
    Call only on a fresh IMU sample; missing data cannot clear a cause. */
 static inline bool terrain_impact_pending(bool previous, bool detected,
@@ -168,7 +153,6 @@ uint32_t terrain_read_word(void);
 void terrain_step(uint32_t now_ms);
 /* I/O task only: one pending hump-detector trace frame. 0 when none. */
 unsigned terrain_trace_take(uint8_t *out, unsigned capacity);
-bool terrain_copy(TerrainSnapshot *out);
 bool terrain_startup_complete(void);
 
 /*

@@ -265,7 +265,7 @@ Target sizes from `sizeof` with `arm-none-eabi-gcc` for the RP2040. **Used** is 
 | [Comms](app_program/comms/README.md) | 1227 | 1352 |
 | [Motion](app_program/motion/README.md) | 1137 | 1224 |
 | [Line and barcode](app_program/line_barcode/README.md) | 2470 | 2552 |
-| [Terrain](app_program/terrain/README.md) | 451 | 520 |
+| [Terrain](app_program/terrain/README.md) | 327 | 360 |
 | [Obstacle](app_program/obstacle/README.md) | 585 | 712 |
 | Mission | 1000 | 1136 |
 
@@ -327,7 +327,6 @@ Not counted: `IrTracker`, 64 stored; `LineIrSnapshot`, 96 stored; `barcode_frame
 | --- | --- | ---: | ---: | ---: |
 | Terrain word | last 7, max 7, count 8, state 3, height valid 1, calibrated 1 | 1 | 27 | 32 |
 | `TerrainContext` | filter 3x32, calibration 3x23, rise 16, travel 16, roll average 32, pitch 15, roll 15, codes 2x7, count 8, flat run 4, calibration count 7, state 3, flags 2 | 1 | 297 | 320 |
-| `TerrainSnapshot` | word 27, times 2x32, sequence 32, valid 1 | 1 | 124 | 160 |
 | Terrain fault byte | IMU, calibration, impact | 1 | 3 | 8 |
 
 **Obstacle**

@@ -144,7 +144,6 @@ _Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
 #define RECOVERY_TARGET_DEG 70 /* user: sweep each side of the stopped pose */
 #define RECOVERY_TARGET_TOL_DEG 5
 #define RECOVERY_OVERSHOOT_DEG 20 /* PROPOSAL D07/D08: coast before reversal */
-#define MISSION_CONFIRM_SAMPLES 3u
 #define MOTION_FOLLOW_SLEW_MMPS2 250u /* PROVISIONAL D07: common FOLLOW base ramp */
 #define MOTION_FOLLOW_STEER_QPS 900u /* PROVISIONAL D07: applied steering slew */
 #define MISSION_TRACK_SPEED_MMPS 100.0f /* user hard guardrail: fixed course speed, not overridable */
@@ -231,7 +230,7 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define TERRAIN_PERIOD_MS	20u
 #define GY511_TIMEOUT_US	5000u
 #define ACCEL_MG_PER_LSB	0.002f	/* g per digit: 2 mg/digit at +/- 4 g, high resolution (LSM303DLHC) */
-#define LPF_ALPHA		0.20f	/* IIR filter weight; PROVISIONAL (D06) */
+#define FILTER_DIV		5	/* IIR filter weight 1/5; PROVISIONAL (D06) */
 #define HUMP_ROLL_ENTER_DEG	3.5f	/* PROVISIONAL (D06): from the roll average while stopped */
 #define HUMP_ROLL_EXIT_DEG	2.0f	/* PROVISIONAL (D06) */
 #define IMPACT_THRESHOLD_G	2.5f	/* PROVISIONAL (D06); must stay below the +/- 4 g range */
@@ -387,8 +386,6 @@ _Static_assert(HUMP_ROLL_ENTER_DEG > HUMP_ROLL_EXIT_DEG && HUMP_ROLL_EXIT_DEG > 
 	"hump roll exit must sit below entry");
 _Static_assert(COMMS_TELEMETRY_PERIOD_MS % COMMS_REPORT_PERIOD_MS == 0u && COMMS_EVENT_CAPACITY >= 4u,
 	"telemetry period must be a whole number of Reporting releases");
-_Static_assert(MISSION_CONFIRM_SAMPLES > 0u && MISSION_CONFIRM_SAMPLES <= 7u,
-    "confirmation counters use three bits");
 _Static_assert(BYPASS_BACKUP_MAX_MM <= 255u,
     "Mission stores the reverse in 8 bits");
 _Static_assert(BYPASS_TRAVEL_MM <= 4095u && BYPASS_EDGE_SAMPLES > 0u &&

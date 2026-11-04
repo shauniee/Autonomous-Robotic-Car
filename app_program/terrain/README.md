@@ -19,7 +19,7 @@ Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement a
 | File | Job |
 | --- | --- |
 | `terrain.h` | The subsystem's only header |
-| `terrain.c` | Step, snapshot and GY-511 I2C driver |
+| `terrain.c` | Step, packed word and GY-511 I2C driver |
 | `terrain_algo.c` | Calibration, filter, classification and height (host-tested) |
 | `terrain_test.c` | Firmware self-tests |
 
@@ -31,7 +31,7 @@ Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement a
 
 ## Contract
 
-- `terrain_step` and `terrain_copy` publish acquisition and progress age beside packed results; unchanged words do not prove sensor progress. `terrain_read_word` gives the packed word.
+- `terrain_step` publishes the packed word and `terrain_read_word` reads it. An unchanged word does not prove new acquisition.
 - Use measured encoder travel with a private origin and modular subtraction. Never reset shared counts or substitute nominal travel.
 - Publish impact evidence for Motion and Mission through shared data; never call a core-1 stop API across cores. A short impact must not disappear before it is seen.
 - Bound I2C and each processing step, and never hold shared locks through I2C.

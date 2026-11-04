@@ -38,4 +38,9 @@ for profile in '0 0 0' '0 1 0' '1 0 0' '1 1 0' '1 0 1' '1 1 1'; do
     TEST="$test_mode" FULL_COURSE=0 NOGUARDS=0 \
     TRACE="$trace_mode" WATCHDOG="$watchdog_mode"
 done
+# The image flash.sh course builds; it alone turns the stall guard on.
+printf '\n=== TEST=0 FULL_COURSE=1 ===\n'
+make -C "$root/build_make" -j"$jobs" SMP=1 CONSOLE=usb_cdc \
+  WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 \
+  TEST=0 FULL_COURSE=1 NOGUARDS=0 TRACE=1 WATCHDOG=0
 echo "All requested *compilation* profiles finished; physical tests are still pending."

@@ -22,7 +22,6 @@ Owner: Jia Jing. Bounded sonar and servo acquisition with uncertain width and cl
 | `obstacle.h` | The subsystem's only header |
 | `obstacle.c` | `obstacle_step`: trigger, Echo, servo settle, scan phases, range snapshots |
 | `obstacle_profile.c` | Range filter, edge detection and profile (host-tested) |
-| `obstacle_test.c` | Firmware self-tests |
 
 ## Lecturer expectations
 
@@ -70,7 +69,7 @@ These cases apply to bends in either direction and to either pass side. All of t
 | Option | Change | Limit |
 | --- | --- | --- |
 | A. Refuse on a bend | Stop safely when `line_bend` is set at the trigger | Scores no bypass on a bend, but the behaviour is honest and predictable |
-| B. Heading at the stop | Estimate entry heading from encoder travel since `straight_origin`, and plan in the line's frame | Encoder drift and slip; no gyroscope. Fixes a curve before the box only |
+| B. Heading at the stop | Estimate entry heading from encoder travel since the last centred tracking (a new stored origin, since none exists now), and plan in the line's frame | Encoder drift and slip; no gyroscope. Fixes a curve before the box only |
 | C. Line search after the box | Check the line during `PASS` and search with `recovery_control` instead of one fixed return | Could join a branch or the wrong direction (A9); needs heading limits |
 | D. Rejoin pivot from sensors | Pivot until the sensors straddle the line, with the turn limited to the forward direction | Needs a measured tightest curve radius |
 | E. All of B, C and D | Full curved bypass, either direction | Largest change and the most car time |

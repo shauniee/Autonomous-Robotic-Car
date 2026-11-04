@@ -8,8 +8,6 @@
 
 /* ---- Terrain task ---- */
 static rd_word_t terrain_word, startup_outcome; /* writer: I/O */
-static ID snapshot_mutex;
-static TerrainSnapshot snapshot; /* guarded by snapshot_mutex */
 static TerrainContext context;
 
 uint32_t terrain_read_word(void)
@@ -64,40 +62,11 @@ unsigned terrain_trace_take(uint8_t *out, unsigned capacity)
     return MQTT_LEN_TERRAIN_TRACE;
 }
 
-bool terrain_copy(TerrainSnapshot *out)
+static void publish(void)
 {
-    if (out == NULL || snapshot_mutex <= 0 ||
-        tk_loc_mtx(snapshot_mutex, RD_SNAPSHOT_LOCK_MS) < E_OK)
-    {
-        return false;
-    }
-    *out = snapshot;
-    return tk_unl_mtx(snapshot_mutex) >= E_OK;
-}
-
-static void publish(uint32_t now, gy511_sample_result_t result)
-{
-    static TerrainSnapshot latest; /* only I/O writes, even if a copy is skipped */
-    latest.terrain = terrain_pack(context.last_hump_code, context.max_hump_code,
-        context.hump_count, (uint32_t)context.state, context.height_valid,
-        context.is_calibrated);
-    latest.serviced_ms = now;
-    ++latest.sequence;
-    if (result == GY511_SAMPLE_ERROR)
-    {
-        latest.acquisition_valid = 0u;
-    }
-    if (result == GY511_SAMPLE_FRESH)
-    {
-        latest.sampled_ms = now;
-        latest.acquisition_valid = 1u;
-    }
-    rd_word_publish(&terrain_word, latest.terrain);
-    if (tk_loc_mtx(snapshot_mutex, TMO_POL) >= E_OK)
-    {
-        snapshot = latest;
-        (void)tk_unl_mtx(snapshot_mutex);
-    }
+    rd_word_publish(&terrain_word, terrain_pack(context.last_hump_code,
+        context.max_hump_code, context.hump_count, (uint32_t)context.state,
+        context.height_valid, context.is_calibrated));
 }
 
 void terrain_step(uint32_t now)
@@ -130,7 +99,7 @@ void terrain_step(uint32_t now)
             tm_printf((UB *)"[IMU] calibration started: keep wheels still; "
                 "timeout_ms=%u\n", (unsigned)TERRAIN_CALIBRATION_TIMEOUT_MS);
         }
-        publish(robot_time_ms(), GY511_SAMPLE_ERROR);
+        publish();
         return;
     }
     if ((int32_t)(now - next_sample_ms) < 0)
@@ -258,7 +227,7 @@ void terrain_step(uint32_t now)
     {
         terrain_algo_invalidate_window(&context);
     }
-    publish(now, result);
+    publish();
 #if TERRAIN_DIAGNOSTICS
     /* USB queues without waiting for a host; losses remain visible in the trace. */
     if (acquired)
@@ -281,10 +250,7 @@ void terrain_step(uint32_t now)
 
 ER terrain_init(void)
 {
-    T_CMTX mutex = {0};
-    mutex.mtxatr = TA_INHERIT;
-    snapshot_mutex = tk_cre_mtx(&mutex);
-    return snapshot_mutex > 0 ? E_OK : E_SYS;
+    return E_OK;
 }
 
 /* ---- GY-511 driver ---- */
