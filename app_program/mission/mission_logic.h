@@ -152,6 +152,18 @@ typedef struct
 
 } Mission;
 
+/* Kernel-free policy for the additional Mission->Comms barcode event.
+ * The normal FOLLOW event is authoritative; a consumed decoded letter in
+ * another state still needs a route record. Never report the no-letter code.
+ * Does not grant navigation or motor authority.
+ */
+static inline bool mission_needs_barcode_event(bool have_barcode,
+    uint8_t barcode_letter, uint8_t emitted_kind)
+{
+    return have_barcode && barcode_letter < BARCODE_ALPHABET &&
+        emitted_kind != MQTT_EVENT_BARCODE;
+}
+
 bool mission_queue_direction(Mission *mission, uint8_t action);
 
 void mission_init(Mission *m, uint32_t now_ms);

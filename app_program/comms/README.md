@@ -45,7 +45,7 @@ Codec, report assembly, mapping path, event log and bridge are host-tested; resu
 
 - Decisions D09, D13 and D14 are in [pending decisions](../../docs/project-specs.md#pending-decisions).
 - Still to test: mapping while stopped and moving; malformed, oversized and fragmented messages; full buffers and floods; startup order; reconnect; mid-run loss. Check diagnostics never delay Motion.
-- The Comms owner has not yet agreed the type 9 line trace.
+- Type 9 LINE trace remains available when `TRACE=1`, and is suppressed with other high-rate diagnostic frames by `TRACE=0`. The software policy is implemented; **formal S1 owner/assessment sign-off remains pending**. No new wire format was authorised.
 
 
 ## Diagnostic trace policy

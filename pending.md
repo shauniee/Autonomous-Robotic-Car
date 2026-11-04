@@ -2,6 +2,8 @@
 
 ## Contents
 
+- [Software fix branch under review (not physical acceptance)](#software-fix-branch-under-review-not-physical-acceptance)
+
 - [How this list is ordered](#how-this-list-is-ordered)
 - [Where things stand](#where-things-stand)
 - [1. Safety and electrical](#1-safety-and-electrical)
@@ -31,6 +33,41 @@ Most important first, in sections and within each section. The order is by impor
 5. Reports, stretch goals and housekeeping.
 
 IDs: `M` requirement, `MR` readiness check, `D` pending decision, `T` integrated trial, `A` Tribunal assumption, `R` Tribunal risk, `Gap` Tribunal Version C. `docs/tribunal1.md` is frozen; differences from it are listed under [Superseded](#superseded).
+
+## Software fix branch under review (not physical acceptance)
+
+Branch: `fix/pending-software-readiness-20261104` (created from
+`main` at `7275347`, not from retired PR #149).
+
+- [x] Add a regression test covering the barcode-event fallback decision,
+  including all A-Z letters, unrelated event types and avoiding duplicate
+  normal FOLLOW barcode events. Actual MQTT delivery still needs S1-M01.
+- [x] Extract and test the watchdog's rule requiring **both** Mission and
+  Motion to report fresh, new progress. This is a host-level policy test;
+  `WATCHDOG=0` remains the default, and D15 reset-output bench tests remain.
+- [x] Add `.github/workflows/host-tests.yml` so PRs and pushes to main
+  automatically run the host C/Python and dashboard tests. CI/Arm build
+  results must be checked after PR creation; introducing CI is not a PASS.
+- [x] Add `testing/build_pending_profiles.sh` to run six serial build
+  configurations (normal/TEST, TRACE=0/1 and TEST-only WATCHDOG=1)
+  on a configured Arm/Pico SDK development machine. It never flashes the
+  robot and has **not yet been run** in this review.
+- [x] Add source-pinned Week 13 data-budget explanations for the two atomic
+  watchdog heartbeat words, two last-fed timestamps, boot flags, and
+  `WheelPid` float state. Fixed-point/float owner approval is **pending**.
+- [x] Explicitly distinguish current 1-bit DOUT IR from the earlier
+  historical 12-bit ADC rows rather than rewriting old measurements.
+- [x] Add source-grounded drafts of the Motion PID/accuracy and Terrain
+  analysis reports under `docs/reports/`. They require real measurements.
+- [x] Resolve the Comms README wording conflict: type 9 diagnostics are
+  optional software traces, **not** an approved new mandatory interface.
+- [ ] Review PR checks and verify with an actual Cortex-M0+ firmware build.
+- [ ] Run the on-robot electrical, sensor, actuator, telemetry, timing and
+  repeatability checks below; none are satisfied by this branch.
+
+The sections below remain the acceptance source of truth. Do **not**
+mark physical or owner-approval tasks complete just because this branch
+adds test cases, scripts, or draft report structure.
 
 ## Where things stand
 
