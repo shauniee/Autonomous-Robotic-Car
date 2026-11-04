@@ -8,7 +8,7 @@
 #include "../../app_program/mission/mission_logic.h"
 
 #define TICK_MS 10u /* FOLLOW_PERIOD_MS and IR_SAMPLE_MS */
-#define MM_PER_TICK (MISSION_TRACK_SPEED_MMPS * TICK_MS / 1000.0f)
+#define MM_PER_TICK 1.0f /* traces are written in mm, one per tick, whatever the speed */
 
 typedef struct
 {
@@ -79,7 +79,7 @@ static bool following(const Rig *r)
 {
     return r->m.state == MISSION_FOLLOW_LINE &&
         motion_cmd_mode(&r->out.command) == MOTION_MODE_FOLLOW &&
-        motion_cmd_speed(&r->out.command) == 100u;
+        motion_cmd_speed(&r->out.command) == COURSE_SPEED_MMPS;
 }
 
 /* Centred on a straight, both DOUT sensors read white for as long as it

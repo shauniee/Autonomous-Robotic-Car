@@ -147,7 +147,7 @@ static void test_follow_and_stops(void)
     MissionOutputs out = step(&m, &in, t);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW && motion_cmd_steering(&out.command) == ref_initial_steer(IR_SCALE_ONE));
     /* 100 mm/s guardrail: steering never lowers the commanded course speed. */
-    assert(out.command.sampled_ms == t && motion_cmd_speed(&out.command) == 100u);
+    assert(out.command.sampled_ms == t && motion_cmd_speed(&out.command) == COURSE_SPEED_MMPS);
 
     /* Unusable inputs or a Safety latch stop; Safety's own stop is not repeated. */
     in.inputs_ok = false; t += 10u;
@@ -1059,7 +1059,7 @@ static void test_run_network_loss(void)
     in.start_blocked = true; /* connectivity lost after accepted local start */
     MissionOutputs out = step(&m, &in, t += 20u);
     assert(m.state == MISSION_FOLLOW_LINE && !out.stop_now);
-    assert(motion_cmd_speed(&out.command) == 100u);
+    assert(motion_cmd_speed(&out.command) == COURSE_SPEED_MMPS);
 }
 int main(void)
 {

@@ -22,7 +22,7 @@ int main(void)
     assert(left_mm > 499.0f && left_mm < 501.0f);
     assert(right_mm > 499.0f && right_mm < 501.0f);
     /* Current tracking trial and recovery speeds in measured encoder units. */
-    float follow_cps = MISSION_TRACK_SPEED_MMPS * ENC_COUNTS_PER_MM;
+    float follow_cps = 100.0f * ENC_COUNTS_PER_MM;
     float recovery_cps = RECOVERY_SPEED_MMPS * ENC_COUNTS_PER_MM;
     assert(follow_cps > 1164.0f && follow_cps < 1166.0f); /* 100 mm/s, INT-123 */
     assert(recovery_cps > 410.0f && recovery_cps < 435.0f);

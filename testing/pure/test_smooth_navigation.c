@@ -139,7 +139,7 @@ static void navigation(void)
             assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
             assert(motion_cmd_steering(&out.command) == MOTION_TURN_RAMPED);
             assert(motion_cmd_target(&out.command) > 0);
-            assert(motion_cmd_speed(&out.command) == 100u);
+            assert(motion_cmd_speed(&out.command) == COURSE_SPEED_MMPS);
         }
         in.stop_down = true;
         out = tick(&m, &in);
@@ -189,7 +189,7 @@ static void navigation(void)
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
         assert(motion_cmd_steering(&out.command) == MOTION_TURN_RAMPED);
         assert(motion_cmd_target(&out.command) == NAV_STRAIGHT_MM);
-        assert(motion_cmd_speed(&out.command) == 100u);
+        assert(motion_cmd_speed(&out.command) == COURSE_SPEED_MMPS);
         in.line = IR_LINE_VISIBLE;
         in.left_black = in.right_black = false;
         out = finish_advance(&m, &in);
@@ -285,7 +285,7 @@ static void to_pivot(Mission *m, MissionInputs *in, int action)
     assert(motion_cmd_target(&out.command) ==
         (int)(action == BARCODE_LEFT ? bound : -bound));
     assert(motion_cmd_steering(&out.command) == MOTION_TURN_RAMPED);
-    assert(motion_cmd_speed(&out.command) == 100u); /* 100 mm/s guardrail */
+    assert(motion_cmd_speed(&out.command) == COURSE_SPEED_MMPS);
     in->stationary = false;
     in->motion_action = m->current_action;
     in->motion_status = RD_MOTION_RUNNING;

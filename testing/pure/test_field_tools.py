@@ -13,7 +13,7 @@ class TrialScoreTests(unittest.TestCase):
     def row(self, num, result, trace="1", firmware="abc", image="sha1"):
         row = dict(trial_id=str(num), success=result, trace=trace,
                    firmware_sha=firmware, uf2_sha256=image, notes="",
-                   lighting="room", evidence="fixture", course_speed_mmps="100",
+                   lighting="room", evidence="fixture", course_speed_mmps=str(mission_trial_score.course_speed()),
                    max_height_error_mm="1", height_limit_mm="2")
         row.update({key: "yes" for key in mission_trial_score.POSITIVE})
         row.update({key: "no" for key in mission_trial_score.NEGATIVE})
@@ -38,7 +38,7 @@ class TrialScoreTests(unittest.TestCase):
                 (k, "yes") for k in mission_trial_score.NEGATIVE] + [
                 ("max_height_error_mm", "3"), ("height_limit_mm", ""),
                 ("max_height_error_mm", "nan"), ("height_limit_mm", "inf"),
-                ("course_speed_mmps", "90"), ("evidence", ""), ("trace", "2")]:
+                ("course_speed_mmps", str(mission_trial_score.course_speed() + 1)), ("evidence", ""), ("trace", "2")]:
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 row = self.row(1, "PASS")
                 row[key] = value
