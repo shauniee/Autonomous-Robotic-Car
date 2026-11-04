@@ -54,7 +54,8 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). lin
 3. **Turn commissioning.** Measure the advance landing point, pivot coast at 100 mm/s and hand-over to FOLLOW.
 4. **Loss and recovery.** Confirm no false loss at 350 mm (INT-135), and that the sweep finds the line from a real loss.
 5. **Hump detector stuck on (INT-122, INT-133).** It no longer changes speed, but a stuck encounter can still miss hump results; cause not investigated in Terrain.
-6. **Values to measure:** tightest curve radius, effective track width, spot spacing at the 120 mm position, left-sensor span and hysteresis.
+6. **Left IR clears black late (INT-167).** Not removed by the potentiometer; a module swap and a slow hand test will separate the module from its mounting.
+7. **Values to measure:** tightest curve radius, effective track width, spot spacing at the 120 mm position, left-sensor span and hysteresis.
 
 ## How to run a trial
 

@@ -51,6 +51,7 @@ static void enter(Mission *m, MissionState next, uint32_t now_ms)
     m->line_side = 0;
     m->line_prev = 0;
     m->line_bend = 0u;
+    m->line_crossed = 0u;
     m->line_steer_sampled_ms = now_ms - IR_MAX_GAP_MS - 1u;
 }
 
@@ -82,11 +83,14 @@ static int line_digital_steering(Mission *m, const MissionInputs *in)
             if (sign != m->line_prev)
             {
                 float window = m->line_bend ? LINE_BEND_LEAN_MM : LINE_BEND_TOUCH_MM;
-                m->line_bend = sign == m->line_side &&
+                m->line_bend = !m->line_crossed && sign == m->line_side &&
                     travel_mm(in, m->dark_origin) <= window;
                 mark(m->touch_origin, in);
             }
-            else if (travel_mm(in, m->touch_origin) > LINE_BEND_TOUCH_MM)
+            /* INT-165: the first touch after a crossing is regaining the line, which
+               takes longer than a straight touch; only a very long one is a bend. */
+            else if (travel_mm(in, m->touch_origin) >
+                (m->line_crossed ? LINE_BEND_LEAN_MM : LINE_BEND_TOUCH_MM))
             {
                 m->line_bend = 1u; /* black longer than a straight touch */
             }
@@ -96,6 +100,10 @@ static int line_digital_steering(Mission *m, const MissionInputs *in)
         }
         else
         {
+            if (m->line_prev != 0)
+            {
+                m->line_crossed = 0u; /* that touch has ended */
+            }
             bool lean = m->line_bend &&
                 travel_mm(in, m->dark_origin) <= LINE_BEND_LEAN_MM;
             steer = m->line_side * (lean ? LINE_BEND_LEAN_Q : LINE_DRIFT_Q);
@@ -335,17 +343,9 @@ static void handle_follow(Mission *m, const MissionInputs *in,
         m->cross_side = m->line_side;
         m->exit_seen = 0u;
         mission_turn_target_set(m, action);
-        m->turn_length_mm = turning ? (int16_t)lroundf(d) : 0;
-        m->phase = turning ? JUNCTION_PHASE_ADVANCE : JUNCTION_PHASE_STRAIGHT;
+        m->turn_length_mm = turning ? (int16_t)lroundf(d) : (int16_t)NAV_STRAIGHT_MM;
+        m->phase = JUNCTION_PHASE_ADVANCE;
         m->current_action = next_action_id(m);
-        float since_straight = enc_mean_travel(in->wheel_count, m->straight_origin) /
-            ENC_COUNTS_PER_MM;
-        if (since_straight < 0.0f || since_straight > NAV_HEADING_REF_MM)
-        {
-            /* No recent straight reference: hold the heading at commit. */
-            m->straight_origin[0] = in->wheel_count[0];
-            m->straight_origin[1] = in->wheel_count[1];
-        }
         m->broad_origin[0] = in->wheel_count[0];
         m->broad_origin[1] = in->wheel_count[1];
         m->turn_sampled_ms = in->line_sampled_ms;
@@ -398,11 +398,6 @@ static void handle_follow(Mission *m, const MissionInputs *in,
         out->scan_cancel = true;
         out->side_watch_on = false;
         return;
-    }
-    if (in->line_error == 0 && abs(steer) <= LINE_DRIFT_Q)
-    {
-        m->straight_origin[0] = in->wheel_count[0];
-        m->straight_origin[1] = in->wheel_count[1];
     }
     out->command = follow_command(in, steer, 1u);
 }
@@ -682,52 +677,14 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
         to_stop(m, in, out, true);
         return;
     }
-    float travel =
-        enc_mean_travel(in->wheel_count, m->broad_origin) / ENC_COUNTS_PER_MM;
     float heading = enc_heading_deg(
         enc_travel_signed(in->wheel_count[0], m->broad_origin[0]),
         enc_travel_signed(in->wheel_count[1], m->broad_origin[1]));
     bool broad = in->left_black && in->right_black;
-    bool single = in->left_black != in->right_black;
     bool fresh = in->line_sampled_ms != m->turn_sampled_ms;
     if (fresh)
     {
         m->turn_sampled_ms = in->line_sampled_ms;
-    }
-    if (m->phase == JUNCTION_PHASE_STRAIGHT)
-    {
-        if (travel > NAV_EXIT_MAX_MM)
-        {
-            to_stop(m, in, out, true);
-            return;
-        }
-        /* Pre-crossing heading: the crossbar can turn the robot, and white/white
-           alone cannot reveal that skew. */
-        float straight_heading = enc_heading_deg(
-            enc_travel_signed(in->wheel_count[0], m->straight_origin[0]),
-            enc_travel_signed(in->wheel_count[1], m->straight_origin[1]));
-        if (fresh && !broad && in->line_error != 0)
-        {
-            m->cross_side = in->line_error < 0 ? -1 : 1;
-        }
-        bool clear = travel >= 2.0f * NAV_CROSSBAR_MM; /* past a skewed crossbar edge */
-        if (fresh && !broad &&
-            ((clear && single) || fabsf(straight_heading) <= NAV_ENTRY_MAX_DEG))
-        {
-            enter(m, MISSION_FOLLOW_LINE, in->now_ms);
-            m->broad_origin[0] = in->wheel_count[0];
-            m->broad_origin[1] = in->wheel_count[1];
-            /* INT-139: keep the last side, so a white exit drifts back toward
-               the line with line loss armed instead of driving on blind. */
-            m->line_side = m->cross_side;
-            mark(m->dark_origin, in);
-            handle_follow(m, in, out);
-            return;
-        }
-        /* Restore the pre-crossing heading while IR is ambiguous. */
-        int steer = (int)fminf(fmaxf(straight_heading * 8.0f, -32.0f), 32.0f);
-        out->command = follow_command(in, steer, 1u);
-        return;
     }
     if (m->phase == JUNCTION_PHASE_ADVANCE)
     {
@@ -761,16 +718,26 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
             return;
         }
         m->exit_seen = 0u;
-        if (m->phase == JUNCTION_PHASE_BRAKE)
+        if (m->phase == JUNCTION_PHASE_BRAKE || m->turn_code == 0u)
         {
             enter(m, MISSION_FOLLOW_LINE, in->now_ms);
             m->broad_origin[0] = in->wheel_count[0];
             m->broad_origin[1] = in->wheel_count[1];
-            /* INT-136: the pivot coasts past the branch, which can leave both
-               sensors white with the line behind the trailing sensor. Lean back
-               toward it, with line loss armed, instead of driving on blind. */
-            m->line_side = m->turn_code == 1u ? 1 : -1;
-            m->line_bend = 1u;
+            if (m->turn_code == 0u)
+            {
+                /* INT-139: keep the last side, so a white exit drifts back toward
+                   the line with line loss armed instead of driving on blind. */
+                m->line_side = m->cross_side;
+                m->line_crossed = 1u; /* the mark below is not a touch: no bend from it */
+            }
+            else
+            {
+                /* INT-136: the pivot coasts past the branch, which can leave both
+                   sensors white with the line behind the trailing sensor. Lean back
+                   toward it, with line loss armed, instead of driving on blind. */
+                m->line_side = m->turn_code == 1u ? 1 : -1;
+                m->line_bend = 1u;
+            }
             mark(m->dark_origin, in);
             handle_follow(m, in, out);
             return;

@@ -679,13 +679,13 @@ commitment. Straight and unqueued crossings do not require turn geometry.
 A post-exit lock requires non-broad travel before another candidate can commit.
 Distance/yaw checks cannot prove that an arbitrary black patch is a cross junction.
 
-Straight navigation steers back to the encoder heading saved when tracking last
-ran centred with no steering (if within the reference distance; otherwise the
-heading at commit), because a crossbar can turn the robot and white/white cannot
-show that skew. It resumes IR guidance on a fresh non-broad sample once that
-heading is restored, or on a one-black sample after clearing twice the crossbar
-width. Straight continuation does not require an edge excursion. Exit
-distance/deadline failure stops while broad black persists.
+A straight or unqueued crossing takes the same first step as a turn (proposed
+2026-11-04, host-tested only; replaces the heading-restore exit): a ramped distance
+action runs straight on the encoders from commit past the bar, slowing to a stop, so
+neither sensor can steer on the bar. After the stationary pause it returns to
+tracking with the last side kept for the drift and line loss armed; the first touch
+afterwards marks a bend only past the bend lean distance, since regaining the line
+takes longer than a straight touch. It needs no turn geometry and no edge excursion.
 
 Left, right and U-turn share one path (proposed 2026-11-02, host-tested only;
 replaces the smooth cubic path, removed from Motion). A ramped distance action
