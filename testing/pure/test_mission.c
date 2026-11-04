@@ -483,7 +483,7 @@ static void slow_to_rest(Mission *m, MissionInputs *in, uint32_t *t, MissionOutp
 {
     assert(motion_cmd_mode(&out->command) == MOTION_MODE_DISTANCE);
     assert(motion_cmd_steering(&out->command) == MOTION_TURN_RAMPED);
-    assert(motion_cmd_target(&out->command) == (int)MOTION_STOP_MM(COURSE_SPEED_MMPS));
+    assert(motion_cmd_target(&out->command) == motion_stop_distance_mm(COURSE_SPEED_MMPS));
     assert(!out->scan_request);
     in->motion_action = motion_cmd_action(&out->command);
     in->motion_status = RD_MOTION_DONE;
@@ -491,21 +491,44 @@ static void slow_to_rest(Mission *m, MissionInputs *in, uint32_t *t, MissionOutp
     in->motion_status = RD_MOTION_IDLE;
 }
 
-static void test_obstacle_slow_down_can_still_stop(void)
+static void test_obstacle_stops_at_the_stop_distance(void)
 {
+    assert(motion_stop_distance_mm(COURSE_SPEED_MMPS) == MOTION_STOP_MM(COURSE_SPEED_MMPS));
     Mission m;
     MissionInputs in = base(100u);
     uint32_t t = to_follow(&m, &in);
     in.front_valid = true;
     in.front_age_ms = 0u;
-    in.front_mm = MISSION_OBSTACLE_STOP_MM;
+
+    /* Just outside the slowing distance: keeps following. */
+    in.front_mm = MISSION_OBSTACLE_SLOW_MM + 1u;
     MissionOutputs out = bstep(&m, &in, &t);
-    assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
-    in.stop_down = true; /* a safety stop never waits for the profile */
+    assert(m.state == MISSION_FOLLOW_LINE);
+
+    /* An old reading counts the travel since it: 20 mm on, this is the slowing
+       distance, and the stop is shorter by the same 20 mm's worth of room. */
+    in.front_mm = MISSION_OBSTACLE_SLOW_MM + 20u;
+    in.wheel_count[0] = in.wheel_count[1] = (uint32_t)lroundf(20.0f * ENC_COUNTS_PER_MM);
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_SCAN && motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
+    int target = motion_cmd_target(&out.command);
+    assert(abs(target - (int)motion_stop_distance_mm(COURSE_SPEED_MMPS)) <= 1);
+
+    /* A safety stop never waits for the profile. */
+    in.stop_down = true;
     out = bstep(&m, &in, &t);
     assert(m.state == MISSION_STOPPED && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
 
-    puts("obstacle slow-down: GP21 still stops at once PASS");
+    /* An obstacle first seen inside the stop distance brakes at once. */
+    Mission late;
+    MissionInputs near = base(100u);
+    t = to_follow(&late, &near);
+    near.front_valid = true;
+    near.front_age_ms = 0u;
+    near.front_mm = MISSION_OBSTACLE_STOP_MM;
+    out = bstep(&late, &near, &t);
+    assert(late.state == MISSION_SCAN && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    puts("obstacle: slows at stop distance + deceleration, stops at once when late PASS");
 }
 
 static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t,
@@ -514,7 +537,7 @@ static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t,
     *t = to_follow(m, in);
     in->front_valid = true;
     in->front_age_ms = 0u;
-    in->front_mm = MISSION_OBSTACLE_STOP_MM;
+    in->front_mm = MISSION_OBSTACLE_SLOW_MM;
     MissionOutputs out = bstep(m, in, t);
     assert(m->state == MISSION_SCAN);
     slow_to_rest(m, in, t, &out);
@@ -667,7 +690,7 @@ static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm, float depth
     assert(m.phase == JUNCTION_PHASE_ADVANCE && m.turn_length_mm == NAV_SENSOR_FORWARD_MM);
     assert(m.turn_code == (left ? 1u : 2u));
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
-    assert(drives == 3u); /* one drive per leg, never stop and go */
+    assert(drives == 4u); /* out, pass, slow to the rear, back */ /* one drive per leg, never stop and go */
     assert((routes & (1u << BYPASS_ROUTE_OFFSET)) != 0u);
     assert((routes & (1u << BYPASS_ROUTE_PASS)) != 0u);
     assert((routes & (1u << BYPASS_ROUTE_REAR)) != 0u);
@@ -1109,7 +1132,7 @@ int main(void)
     test_scan_obstacle_removed();
     test_missing_echo_policy();
     test_one_barcode_event_per_read();
-    test_obstacle_slow_down_can_still_stop();
+    test_obstacle_stops_at_the_stop_distance();
     test_stop_cancels_every_phase();
     test_run_network_loss();
     puts("mission retained safety/recovery/bypass: PASS");

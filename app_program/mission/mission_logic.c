@@ -7,6 +7,7 @@
 #define LAST_ACTION_ID rd_mask(RD_MOTION_ACTION_BITS)
 
 static bool obstacle_ahead(const MissionInputs *in);
+static bool obstacle_in_stopping_range(const MissionInputs *in);
 static void handle_scan(Mission *m, const MissionInputs *in,
     MissionOutputs *out);
 static void handle_reacquire(Mission *m, const MissionInputs *in,
@@ -273,7 +274,7 @@ static void handle_follow(Mission *m, const MissionInputs *in,
         out->event_arg2 = (uint16_t)in->barcode_action;
     }
 
-    if (obstacle_ahead(in))
+    if (obstacle_in_stopping_range(in))
     {
         enter_bypass(m, in, out);
         return;
@@ -333,7 +334,9 @@ static void handle_follow(Mission *m, const MissionInputs *in,
             enc_mean_travel(in->wheel_count, m->entry_origin) / ENC_COUNTS_PER_MM;
         /* Advance until the axle is over the crossing centre, then pivot. */
         float d = NAV_SENSOR_FORWARD_MM + NAV_CROSSBAR_MM * 0.5f - travel;
-        if (turning && (lroundf(d) <= 0 || d > MOTION_TARGET_MAX_MM))
+        /* Too late to stop at the crossing centre on the profile. */
+        if (turning && (d < motion_stop_distance_mm(COURSE_SPEED_MMPS) ||
+            d > MOTION_TARGET_MAX_MM))
         {
             out->nav_rejected = 2u;
             to_stop(m, in, out, true);
@@ -406,6 +409,21 @@ static void handle_follow(Mission *m, const MissionInputs *in,
 }
 
 /* ---- Bounded profile/coverage handover ---------------------------------- */
+/* The range now: the last reading less the travel since it was sampled. */
+static int32_t front_now_mm(const MissionInputs *in)
+{
+    float counts = ((float)enc_travel_signed(in->wheel_count[0], in->front_wheel_count[0]) +
+        (float)enc_travel_signed(in->wheel_count[1], in->front_wheel_count[1])) * 0.5f;
+    return (int32_t)in->front_mm - (int32_t)lroundf(counts / ENC_COUNTS_PER_MM);
+}
+
+static bool obstacle_in_stopping_range(const MissionInputs *in)
+{
+    return in->front_valid && in->front_age_ms <= BYPASS_FRONT_MAX_AGE_MS &&
+        front_now_mm(in) <= (int32_t)MISSION_OBSTACLE_STOP_MM +
+        (int32_t)motion_stop_distance_mm(COURSE_SPEED_MMPS);
+}
+
 static bool obstacle_ahead(const MissionInputs *in)
 {
     return in->front_valid && in->front_age_ms <= BYPASS_FRONT_MAX_AGE_MS &&
@@ -502,7 +520,17 @@ static void enter_bypass(Mission *m, const MissionInputs *in,
     m->backed_mm = 0u;
     m->bypass_started_ms = in->now_ms;
     m->in_broad = false;
+    /* Planned stop at MISSION_OBSTACLE_STOP_MM. Already inside it (an obstacle that
+       appeared late): brake now rather than roll closer. */
+    int32_t room = front_now_mm(in) - (int32_t)MISSION_OBSTACLE_STOP_MM;
+    if (room <= 0)
+    {
+        m->scan_stopping = 0u;
+        out->command = stop_command(in->now_ms);
+        return;
+    }
     m->scan_stopping = 1u;
+    m->turn_length_mm = (int16_t)room;
     m->current_action = next_action_id(m);
     handle_scan(m, in, out);
 }
@@ -553,8 +581,7 @@ static void handle_scan(Mission *m, const MissionInputs *in,
         {
             /* Slow down on the profile; the rest of this file's stops are safety stops. */
             out->command = motion_command_make(MOTION_MODE_DISTANCE, MISSION_TRACK_SPEED_MMPS,
-                (float)MOTION_STOP_MM(COURSE_SPEED_MMPS), MOTION_TURN_RAMPED,
-                m->current_action, in->now_ms);
+                m->turn_length_mm, MOTION_TURN_RAMPED, m->current_action, in->now_ms);
         }
         return;
     }

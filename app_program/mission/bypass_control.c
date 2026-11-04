@@ -423,10 +423,17 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
             {
                 control->sensor_sequence = input->side_sequence;
                 side_observation(control, input, output);
+                if (control->route == BYPASS_ROUTE_REAR)
+                {
+                    /* Slow to rest at the point that clears the box, or as soon
+                       after it as the stop allows. */
+                    drive(control, input, BYPASS_ROUTE_REAR, fmaxf(
+                        (float)control->rear_clear_q8 / BYPASS_Q8 - forward_mm(control),
+                        motion_stop_distance_mm(BYPASS_SPEED_MMPS)), action_id);
+                    finished = false;
+                }
             }
-            if (control->route == BYPASS_ROUTE_REAR &&
-                forward_mm(control) >=
-                (float)control->rear_clear_q8 / BYPASS_Q8)
+            if (finished && control->route == BYPASS_ROUTE_REAR)
             {
                 control->work = BYPASS_WORK_STOP;
             }
@@ -472,6 +479,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
     else if (control->work == BYPASS_WORK_DRIVE)
     {
         output->command = motion_command_make(MOTION_MODE_DISTANCE, BYPASS_SPEED_MMPS,
-            control->action_target, 0, control->action_id, input->now_ms);
+            control->action_target, control->route == BYPASS_ROUTE_REAR ? MOTION_TURN_RAMPED : 0,
+            control->action_id, input->now_ms);
     }
 }

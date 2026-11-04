@@ -65,7 +65,7 @@ Already merged or closed, so nothing is left to bring in: `test/obstacle-width-b
 
 ## Planned changes
 
-Nothing else changes firmware without the robot, because every remaining value needs a measurement. In order:
+`chore/centralise-pending` is the working branch: every software item that can be done without the robot is done on it, and the rest of this file needs the robot, a measurement or a decision. Issues that appear on this branch but not on `main` are diagnosed here and added to this file. In order:
 
 1. Nicholas answers the [decisions](#decisions-for-nicholas) that need no robot.
 2. With the robot, flash a `TEST=1` image from `chore/centralise-pending` and run [section 1](#1-safety-and-electrical) and [section 2](#2-motion-calibration).
@@ -78,7 +78,7 @@ Nothing else changes firmware without the robot, because every remaining value n
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| Firmware build | `main` is the working image and is unchanged. On `chore/centralise-pending`, all eight images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193 to INT-195 |
+| Firmware build | `main` is the working image and is unchanged. On `chore/centralise-pending`, all eight images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193 to INT-196 |
 | Safety and electrical | No recorded result. Wiring is user-confirmed only. | MR-01 to MR-05 |
 | Watchdog | Code merged, off by default, never run on a Pico. No reset policy agreed. | `99fe0d8`, D15 |
 | Line tracking | Straight-crossing fix not yet run on the car in its final form (INT-191). Good laps seen, but the last run went off course and was not smooth. No measured success rate. | User observation, INT-136, INT-139b, INT-158; capture analysis found no cause (INT-163) |
@@ -178,6 +178,7 @@ The 95% target is the user's. No success rate has been measured yet, so the firs
 - [ ] Check that diagnostics do not change driving: compare the same number of laps on `./flash.sh trial` and `./flash.sh`.
 - [ ] Lift-style profile on the car (professor's comment): film moving off and slowing down on the floor. Check the wheels do not sit still and then jump at the very start, because the first targets are below what friction may allow; tune `MOTION_ACCEL_MMPS2`, `MOTION_JERK_MMPS3` and `MOTION_KS`.
 - [ ] Accuracy with the profile: rerun straight, turn and advance distances, because stop points depend on how closely the wheels follow it (MR-21, MR-22).
+- [ ] Junction advance: the car rests where the distance says, with the axle over the crossing centre, now that it slows on the profile. A turn too late to stop there is rejected (`nav_rejected=2`).
 - [ ] Pivot end: a pivot stops at once when the sensor finds the branch, which may still look abrupt. If it does, try a slower final part of the pivot, then recheck the landing point.
 - [ ] Smoothness: judge jerkiness on film and `WHEEL` traces at 100 mm/s. If it is not very smooth, lower `COURSE_SPEED_MMPS` one trial at a time; speed is the second priority. Below 60 mm/s needs a new feedforward fit.
 - [ ] Change one value per trial and record each as a new INT entry.
@@ -207,7 +208,7 @@ Wheels stay off for the bench steps. Bypass has never run on the car.
 - [ ] Rejoin the original line and continue (MR-30, M9, A9).
 - [ ] Depth measured against a tape, and the rear edge seen while bypassing (M7).
 - [ ] Record the stop reason for `SCAN` then `STOPPED` if it recurs. INT-164 suggests the car was lifted, and INT-186 confirms the saved capture cannot prove it.
-- [ ] Obstacle stop on the profile: the car now travels about 33 mm after the 150 mm trigger before scanning. Confirm that clearance is enough and the scan is unaffected (D16).
+- [ ] Obstacle stop on the car: against a board, the car starts slowing at 183 mm and rests at 150 mm. Measure the rest distance with a tape; sonar noise or wheel lag will move it (D16).
 - [ ] Confirm on the car that scans start only after fresh stationary feedback, with timestamped logs (T09). Host logic passes.
 - [ ] Cancel a scan and restore the servo to centre on a stop, on the car, with no-echo cases (Gap 6). Mission and scan-guard host cases pass.
 - [ ] Measure bypass speeds, settle time and travel budgets (D05, D07).
@@ -218,7 +219,6 @@ Flash the current image, let the car sit still on the track for a second, then p
 
 - [ ] Cross the 10 mm hump at least 3 times with barcode turns in the lap. Pass: `humps=` matches the crossings exactly, and pivots add nothing (INT-158 bug, M4).
 - [ ] Reference humps from the user-selected 10 mm minimum up to the 30 mm limit, three passes each, reported against actual height (MR-29, M5, A4, D06). `HUMP_CALIB_FACTOR` 0.8 comes from one hump height.
-- [ ] Agree a height error limit; "a few millimetres" is not an accepted target (A10, D10, Gap 7).
 - [ ] Turn accuracy with one wheel on a hump (MR-23, M3).
 - [ ] Hump on a curve, and a hump just before a barcode.
 - [ ] Reverse direction over a hump: the side and roll sign are untested (D11).
@@ -262,8 +262,8 @@ Flash the current image, let the car sit still on the track for a second, then p
 - [ ] No lost functionality: rerun the applicable set on the final commit (T15, T16).
 - [ ] RAM usage of the final image. Latest build is in INT-174; SYS-11 and SYS-12 are October builds.
 - [ ] Stack use and peak RAM measured (R3, D13). Never measured.
-- [ ] Data table signed off by each owner; most sections still say "proposed" (Gap 1, R2, issue #28).
-- [ ] Fault-byte owner confirmations (#113).
+- [ ] Nicholas reviews the data table; most sections still say "proposed" (Gap 1, R2).
+- [ ] Nicholas confirms fault meanings and simultaneous-fault coverage (former #113).
 - [ ] Height scale and rounding confirmed by reference humps; 16-bit working and 7-bit reported widths are in code (D06, Darrius's Tribunal item).
 - [ ] Packed-data race checks on the Pico under load, including lock duration (R1, R4, Gap 2). Host stress only so far.
 - [ ] Measure CPU cost of packing and unpacking (Tribunal resource review).
@@ -355,6 +355,7 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] Saved captures reviewed; no steering cause can be proven from them (INT-186).
 - [x] Dead terrain snapshot, unused settings and old plan checker removed (INT-193).
 - [x] Lift-style profile for every planned move, with obstacle stops slowing on it; safety stops stay immediate (INT-195, host and build only).
+- [x] `motion_stop_distance_mm` tells other subsystems the travel of a planned stop. Obstacle slowing starts at 183 mm to rest at 150 mm, the bypass rests at the rear of the box, and late junction turns are rejected (INT-196, host and build only).
 - [x] Watchdog policy: on for `full_course` after the SYS-06 bench test passes, by Nicholas (D15).
 - [x] Diagnostics only in test images: `full_course` is `TRACE=0`, `./flash.sh trial` drives with them, by Nicholas (INT-194).
 - [x] Accuracy limits of 10 mm lateral and 5 degrees heading, by Nicholas (D10).

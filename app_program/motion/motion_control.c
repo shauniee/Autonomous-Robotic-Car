@@ -231,7 +231,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         int accel = c->profile_accel;
         WheelPid previous_pid[2] = {c->pid[0], c->pid[1]};
         bool continuous = c->active &&
-            ((c->mode == MOTION_MODE_FOLLOW &&
+            (((c->mode == MOTION_MODE_FOLLOW || c->mode == MOTION_MODE_DISTANCE) &&
               motion_cmd_mode(cmd) == MOTION_MODE_DISTANCE &&
               motion_cmd_steering(cmd) == MOTION_TURN_RAMPED) ||
              (c->mode == MOTION_MODE_TURN &&

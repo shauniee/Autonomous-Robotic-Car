@@ -17,12 +17,12 @@ int main(void)
     assert(mission.state == MISSION_FOLLOW_LINE);
     in.start_pressed = false;
     in.front_valid = true;
-    in.front_mm = 151u;
+    in.front_mm = MISSION_OBSTACLE_SLOW_MM + 1u;
     in.now_ms += 10u;
     in.line_sampled_ms = in.now_ms;
     mission_step(&mission, &in, &out);
-    assert(mission.state == MISSION_FOLLOW_LINE); /* above the clarified trigger */
-    in.front_mm = 150u;
+    assert(mission.state == MISSION_FOLLOW_LINE); /* above the slowing distance */
+    in.front_mm = MISSION_OBSTACLE_SLOW_MM;
     in.now_ms += 10u;
     in.line_sampled_ms = in.now_ms;
     mission_step(&mission, &in, &out);
@@ -33,6 +33,7 @@ int main(void)
     in.now_ms += 10u;
     mission_step(&mission, &in, &out);
     in.motion_status = RD_MOTION_IDLE;
+    in.front_mm = MISSION_OBSTACLE_STOP_MM; /* the slow-down closed the gap */
     in.stationary = true;
     in.now_ms += 10u;
     mission_step(&mission, &in, &out);

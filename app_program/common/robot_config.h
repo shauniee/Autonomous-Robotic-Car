@@ -167,7 +167,9 @@ _Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
 #define MISSION_BYPASS_RELEASED 0
 #endif
 /* Bypass (D02, D12; curved sections out of scope until D12 is answered). */
-#define MISSION_OBSTACLE_STOP_MM	150u	/* user-confirmed trigger distance, D16 */
+#define MISSION_OBSTACLE_STOP_MM	150u	/* user-confirmed distance to stop at, D16 */
+/* Start slowing this far out, so the planned stop ends at MISSION_OBSTACLE_STOP_MM. */
+#define MISSION_OBSTACLE_SLOW_MM (MISSION_OBSTACLE_STOP_MM + MOTION_STOP_MM(COURSE_SPEED_MMPS))
 #define MISSION_STATIONARY_MS		150u	/* encoders unchanged this long before a scan */
 /* User-chosen 2026-11-03: 160 mm measured body + 30 mm each side; unaccepted
    on the car */
@@ -365,8 +367,8 @@ _Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS, "stall limit must pre
 _Static_assert(MOTION_ACCEL_MMPS2 > 0u && MOTION_ACCEL_MMPS2 <= 1000u &&
     MOTION_JERK_MMPS3 * MOTION_PERIOD_MS >= 1000u,
     "the profile must fit its 11-bit field and move every release");
-_Static_assert(MOTION_STOP_MM(COURSE_SPEED_MMPS) < MISSION_OBSTACLE_STOP_MM,
-    "a profile stop must end short of the obstacle trigger distance");
+_Static_assert(NAV_STRAIGHT_MM >= MOTION_STOP_MM(COURSE_SPEED_MMPS),
+    "a straight crossing advance must have room for its stop");
 _Static_assert(MOTION_SPEED_MAX_MMPS * 64.0f < 32767u,
     "FOLLOW base history must fit 15-bit Q6 storage");
 _Static_assert(MOTION_FOLLOW_STEER_QPS > 0u &&

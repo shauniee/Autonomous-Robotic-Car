@@ -187,6 +187,14 @@ typedef struct {
 } MotionOutput;
 
 /* Forget any action: next valid command starts fresh. */
+/* Travel, whole mm, of a planned stop from speed_mmps. Any subsystem that plans
+   around a stop uses this, so its distances stay right when the profile changes. */
+static inline uint16_t motion_stop_distance_mm(uint16_t speed_mmps)
+{
+    uint32_t v = speed_mmps;
+    return (uint16_t)MOTION_STOP_MM(v);
+}
+
 void motion_control_reset(MotionController *c);
 
 /* True when a command may drive the wheels: valid fields and a sample no
