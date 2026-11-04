@@ -271,7 +271,7 @@ Target sizes from `sizeof` with `arm-none-eabi-gcc` for the RP2040. **Used** is 
 | [Obstacle](app_program/obstacle/README.md) | 585 | 712 |
 | Mission | 1000 | 1136 |
 
-These partial totals need a final-image refresh under the [data audit](docs/project-specs.md#minimum-bit-audit-2026-11-03); they do not establish minimum total RAM. Totals cover the rows below, multiplied by their instances. Private working structs are listed under the tables and not counted, because they mix packed fields with full-width times.
+Tables count `TRACE=1` images; `full_course` is `TRACE=0` and leaves out the trace records. These partial totals need a final-image refresh under the [data audit](docs/project-specs.md#minimum-bit-audit-2026-11-03); they do not establish minimum total RAM. Totals cover the rows below, multiplied by their instances. Private working structs are listed under the tables and not counted, because they mix packed fields with full-width times.
 
 **Comms**
 

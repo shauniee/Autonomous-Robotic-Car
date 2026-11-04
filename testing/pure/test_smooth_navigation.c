@@ -252,7 +252,7 @@ static void navigation(void)
     assert(m.phase == JUNCTION_PHASE_PAUSE_WAIT);
     in.stationary = true;
     tick(&m, &in);
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < (int)(NAV_PAUSE_MS / 20u) - 1; i++)
         tick(&m, &in);
     assert(m.phase == JUNCTION_PHASE_PAUSE_WAIT);
     tick(&m, &in);

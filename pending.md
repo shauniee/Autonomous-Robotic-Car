@@ -78,7 +78,7 @@ Nothing else changes firmware without the robot, because every remaining value n
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| Firmware build | `main` is the working image and is unchanged. On `chore/centralise-pending`, all seven images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193 |
+| Firmware build | `main` is the working image and is unchanged. On `chore/centralise-pending`, all eight images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193, INT-194 |
 | Safety and electrical | No recorded result. Wiring is user-confirmed only. | MR-01 to MR-05 |
 | Watchdog | Code merged, off by default, never run on a Pico. No reset policy agreed. | `99fe0d8`, D15 |
 | Line tracking | Straight-crossing fix not yet run on the car in its final form (INT-191). Good laps seen, but the last run went off course and was not smooth. No measured success rate. | User observation, INT-136, INT-139b, INT-158; capture analysis found no cause (INT-163) |
@@ -278,7 +278,7 @@ Built on `chore/centralise-pending`, not on `main`, with host tests and builds o
 | Done | `ObstacleRay`, `ObstacleProfile` | 32 to 24 bits; 112 to 72 bits; capped at 1023 mm | Scan rays, profile and side choice |
 | Done | `IrTracker`, `LineIrSnapshot` | 160 to 64 bits; 192 to 96 bits | Line following and junctions |
 | Done | Telemetry width and depth | 23 to 22 bytes | Dashboard shows both on a real link |
-| Done | `TRACE=0` in `full_course` | See INT-194 | Trial and course images drive alike |
+| Done | `TRACE=0` in `full_course` | 464 bytes less RAM, 2304 bytes less flash (INT-194) | Trial and course images drive alike |
 | Not done | 16-bit timestamps | Would save about 250 bits | Not recommended: a short timer can alias, and bypass allows 90 s (Gap 4) |
 
 Flash grew by 1056 bytes, because packed fields take more code to read.
