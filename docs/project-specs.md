@@ -369,6 +369,7 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Roll average while stopped | `TerrainContext.roll_base_q8`, Terrain task | -9000..9000 centidegrees, 1/256 centidegree | integer step, truncates | 32 | `int32_t` (INT-157) |
 | Terrain counters | `calib_count` / `flat_run`, Terrain task | 0-100 / 0-10 | calibrated stops count at 100; flat run resets at 10 | 7 / 4 | C bit-fields (#110) |
 | Terrain private state / validity flags | `TerrainContext.state`, `height_valid`, `is_calibrated` | 0-2 / flag / flag | state 3-7 unused | 3 / 1 / 1 | C bit-fields (#110) |
+| Terrain USB diagnostic sequence | `terrain_step` local static, I/O writer; only `TERRAIN_DIAGNOSTICS=1` | unsigned 0..2^32-1, one increment per fresh acquisition | wraps modulo 2^32; reboot restarts; missing rows detected by host | 32 | USB text only; no MQTT change |
 | Terrain private hump last/max codes | `TerrainContext.last_hump_code`, `max_hump_code` | 0-126; 127 invalid | saturates and retains max | 7 / 7 | C bit-fields (#110) |
 | Complete persistent TerrainContext | `TerrainContext`, Terrain task | as above; 20 ms processing | D06 physical calibration pending; replay old float path for parity | 32 bytes on the current target compiler (SYS-12) | `testing/terrain/sizeof_probe.c` (#110) |
 
