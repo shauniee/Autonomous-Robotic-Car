@@ -192,11 +192,10 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND
 #define NAV_CROSSBAR_MM 18 /* User-reported stripe thickness; specs D02 */
 #endif
 #define NAV_ENTRY_MAX_DEG 5.0f
-#define NAV_CONFIRM_MM 9u /* PROVISIONAL D02: half the 18 mm crossing */
+#define NAV_CONFIRM_MM 6u /* PROVISIONAL D02 trial INT-189: both black this far is a crossing; shorter reads were not, and real ones can read under 9 mm */
 #define NAV_ONSET_SKEW_MM 15u /* PROVISIONAL D02 trial: both sensors went black within this = crossing; set from line traces */
 #define NAV_REARM_MM 10u
-#define NAV_HEADING_REF_MM 100u /* PROVISIONAL D02: oldest straight heading used to cross */
-#define NAV_EXIT_MAX_MM 150u
+#define NAV_STRAIGHT_MM 36u /* PROVISIONAL D02 trial INT-189: straight crossing advance from commit, twice the crossbar */
 /* Junction pivots end on the line: the leading sensor black then not black,
    looked for only past the sense angle so the branch being left never counts.
    Reference-repo values, PROVISIONAL D02/D07 trial. */

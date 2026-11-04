@@ -163,6 +163,134 @@ static void test_junction_after_curve_is_a_crossing(void)
         (MQTT_LINE_LEFT_BLACK | MQTT_LINE_RIGHT_BLACK));
 }
 
+/* Motion finishes the advance; the robot stops, then Mission pauses and follows.
+   The bits are what the sensors read once stopped. */
+static void finish_advance(Rig *r, unsigned left, unsigned right)
+{
+    assert(r->m.state == MISSION_NAVIGATE && r->m.phase == JUNCTION_PHASE_ADVANCE);
+    r->in.motion_action = r->m.current_action;
+    r->in.motion_status = RD_MOTION_DONE;
+    tick_mm(r, left, right, true, 0.0f);
+    r->in.motion_status = RD_MOTION_IDLE;
+    r->in.stationary = true;
+    for (unsigned i = 0u; i < 40u && r->m.state == MISSION_NAVIGATE; ++i)
+    {
+        tick_mm(r, left, right, true, 0.0f);
+    }
+    r->in.stationary = false;
+}
+
+/* Drive onto a crossbar until the crossing commits. */
+static void cross_bar(Rig *r)
+{
+    while (r->m.state != MISSION_NAVIGATE)
+    {
+        tick(r, 1u, 1u);
+        assert(r->m.state != MISSION_STOPPED);
+    }
+}
+
+/* INT-188: on the car one sensor left the bar under 9 mm after both were black,
+   the crossing never committed and tracking followed the other sensor off the
+   line. That read now commits; a shorter both-black still does not. */
+static void test_short_both_black_decides_the_crossing(void)
+{
+    Rig r;
+    start(&r);
+    for (unsigned i = 0u; i < NAV_CONFIRM_MM + 1u && r.m.state == MISSION_FOLLOW_LINE; ++i)
+    {
+        tick(&r, 1u, 1u);
+    }
+    assert(r.m.state == MISSION_NAVIGATE && motion_cmd_mode(&r.out.command) == MOTION_MODE_DISTANCE);
+
+    start(&r);
+    for (unsigned i = 0u; i + 1u < NAV_CONFIRM_MM; ++i)
+    {
+        tick(&r, 1u, 1u);
+    }
+    tick(&r, 1u, 0u);
+    assert(following(&r) && steering(&r) == -LINE_EDGE_Q);
+}
+
+/* INT-154: the left sensor stayed black about 12 mm past the right on most
+   exits. Through the advance that is the bar, not a line touch: the command stays
+   the straight advance, and the last side is kept for the drift afterwards. */
+static void test_crossing_exit_ignores_trailing_sensor(void)
+{
+    Rig r;
+    start(&r);
+    tick(&r, 0u, 1u); /* last seen on the right, so the trailing left is opposite */
+    tick(&r, 0u, 0u);
+    cross_bar(&r);
+    for (unsigned i = 0u; i < 12u; ++i)
+    {
+        tick(&r, 1u, 0u);
+        assert(r.m.state == MISSION_NAVIGATE);
+        assert(motion_cmd_mode(&r.out.command) == MOTION_MODE_DISTANCE);
+        assert(motion_cmd_steering(&r.out.command) == MOTION_TURN_RAMPED);
+    }
+    finish_advance(&r, 0u, 0u);
+    assert(following(&r) && r.m.line_side == 1 && steering(&r) == LINE_DRIFT_Q);
+}
+
+/* The exit resets the last-touch origin, which must not make the first real
+   touch afterwards look like a same-side re-touch. */
+static void test_first_touch_after_crossing_is_not_a_bend(void)
+{
+    Rig r;
+    start(&r);
+    tick(&r, 0u, 1u);
+    tick(&r, 0u, 0u);
+    cross_bar(&r);
+    finish_advance(&r, 0u, 0u);
+    assert(following(&r));
+    tick(&r, 0u, 1u);
+    assert(following(&r) && !r.m.line_bend && steering(&r) == LINE_EDGE_Q);
+}
+
+/* INT-190: regaining the line after a crossing can take over 50 mm of one touch.
+   That is no bend: no harder steering and no lean once it clears. The next
+   touch is ordinary again, and a very long first touch is still a bend. */
+static void test_long_first_touch_after_crossing_does_not_lean(void)
+{
+    Rig r;
+    start(&r);
+    tick(&r, 0u, 1u);
+    tick(&r, 0u, 0u);
+    cross_bar(&r);
+    finish_advance(&r, 0u, 0u);
+    for (unsigned i = 0u; i < LINE_BEND_TOUCH_MM + 10u; ++i)
+    {
+        tick(&r, 1u, 0u);
+        assert(following(&r) && steering(&r) == -LINE_EDGE_Q);
+    }
+    tick(&r, 0u, 0u);
+    assert(following(&r) && !r.m.line_crossed && steering(&r) == -LINE_DRIFT_Q);
+    tick(&r, 1u, 0u); /* same side, close by: the usual bend rule is back */
+    assert(following(&r) && r.m.line_bend && steering(&r) == -LINE_BEND_EDGE_Q);
+
+    start(&r);
+    tick(&r, 0u, 1u);
+    tick(&r, 0u, 0u);
+    cross_bar(&r);
+    finish_advance(&r, 0u, 0u);
+    for (unsigned i = 0u; i < LINE_BEND_LEAN_MM + 2u; ++i)
+    {
+        tick(&r, 1u, 0u);
+    }
+    assert(following(&r) && r.m.line_bend && steering(&r) == -LINE_BEND_EDGE_Q);
+}
+
+/* A lone black still there when the advance ends is the line: track it. */
+static void test_touch_past_the_bar_is_tracked(void)
+{
+    Rig r;
+    start(&r);
+    cross_bar(&r);
+    finish_advance(&r, 1u, 0u);
+    assert(following(&r) && !r.m.line_bend && steering(&r) == -LINE_EDGE_Q);
+}
+
 /* S-bend: one sensor, then the other. Keep driving and follow the new side
    while the second sensor is still black. */
 static void test_s_bend_follows_new_side(void)
@@ -253,6 +381,11 @@ int main(void)
     test_lost_after_touch_enters_recovery();
     test_curve_skew_keeps_turning();
     test_junction_after_curve_is_a_crossing();
+    test_short_both_black_decides_the_crossing();
+    test_crossing_exit_ignores_trailing_sensor();
+    test_first_touch_after_crossing_is_not_a_bend();
+    test_long_first_touch_after_crossing_does_not_lean();
+    test_touch_past_the_bar_is_tracked();
     test_s_bend_follows_new_side();
     test_recovery_blank_floor_is_not_reacquired();
     test_cached_samples_do_not_advance();

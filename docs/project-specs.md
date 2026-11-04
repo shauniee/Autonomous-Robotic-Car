@@ -574,6 +574,7 @@ not a physical tuning or accuracy claim; one Mission writer):
 | Steering target | -127..127, signed Q7 (`line_steer_q`) | -128 unused; fixed correction values, checked by `_Static_assert` | 8 / 8 |
 | Last and previous touch | -1 left, 0 none, +1 right (`line_side`, `line_prev`) | only these codes are written | 2 each / 8 each |
 | In a bend | no/yes (`line_bend`) | reset false | 1 / 1 in a private byte |
+| Left a crossing, no touch yet | no/yes (`line_crossed`) | reset false | 1 / 1 in a private byte |
 | Junction turn | 0 none, 1 left (+90 degrees), 2 right (-90), 3 U-turn (+180) | none yields zero target (Motion rejects a zero turn); only coordinator sets codes | 2 / 2 in private byte |
 
 Steering keeps no filter or integral history: it stores the Q7 target above and
@@ -1157,12 +1158,11 @@ value, to be set from type 9 line traces). Motion releases at
 1800 Q/s and builds at 900 Q/s; steering is mixed centre-preserving, left
 v(1+q/127) and right v(1-q/127), so the robot centre keeps the commanded speed
 (the outer wheel reaches 200 mm/s at full steering; INT-129). Wheel feedforward KF 0.0001, KS 0.05, KP 0.0001
-(INT-100 to INT-102). Candidate travel is 9 mm (INT-98). A straight crossing restores the heading saved within the last
-100 mm of centred, low-steering tracking (INT-104). Curved turn entry then stops rather than assuming pose.
+(INT-100 to INT-102). Candidate travel is 6 mm (INT-189; 9 mm in INT-98 missed real crossings, INT-188). A straight crossing advances 36 mm on the encoders, ramping to a stop, then tracks (INT-189). Curved turn entry then stops rather than assuming pose.
 Entry-relative yaw bound 5 degrees; junction pivots (trial values copied from the
 reference repo, no physical run) are bounded at 120 degrees for left/right and 210
 for U-turn, look for the new branch from 60 and 150 degrees, at the 100 mm/s
-course speed; rearm 10 mm; straight exit travel bound 150 mm. All require measurement
+course speed; rearm 10 mm. All require measurement
 under D02/D07. Pause is 100 ms after stationarity before and after every turn; nominal approach acceleration uses requested speed / 0.5 s.
 Actual approach distance and completion remain encoder governed.
 
