@@ -169,7 +169,7 @@ Wheels stay off for the bench steps. Bypass has never run on the car.
 Flash the current image, let the car sit still on the track for a second, then press GP20.
 
 - [ ] Cross the 10 mm hump at least 3 times with barcode turns in the lap. Pass: `humps=` matches the crossings exactly, and pivots add nothing (INT-158 bug, M4).
-- [ ] Reference humps up to the 30 mm limit, three passes each, reported against actual height (MR-29, M5, A4, D06). `HUMP_CALIB_FACTOR` 0.8 comes from one hump height.
+- [ ] Reference humps from the user-selected 10 mm minimum up to the 30 mm limit, three passes each, reported against actual height (MR-29, M5, A4, D06). `HUMP_CALIB_FACTOR` 0.8 comes from one hump height.
 - [ ] Agree a height error limit; "a few millimetres" is not an accepted target (A10, D10, Gap 7).
 - [ ] Turn accuracy with one wheel on a hump (MR-23, M3).
 - [ ] Hump on a curve, and a hump just before a barcode.

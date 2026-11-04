@@ -14,7 +14,7 @@
 - [Bits per subsystem](#bits-per-subsystem)
 - [Manual build and flash](#manual-build-and-flash)
 
-Start with the [consolidated completion plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) in issue #117. The core software is implemented; physical calibration, timing and full mission acceptance remain incomplete. Unresolved limits live in [pending decisions](docs/project-specs.md#pending-decisions).
+Start with the [pending work](pending.md). The core software is implemented; physical calibration, timing and full mission acceptance remain incomplete. Unresolved limits live in [pending decisions](docs/project-specs.md#pending-decisions).
 
 An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, hump measurement, obstacle avoidance and WiFi telemetry. Firmware uses micro T-Kernel 3.0 on the RP2040. See [project specifications](docs/project-specs.md) for required outcomes and [Getting started](#getting-started) for what runs today.
 
@@ -80,7 +80,7 @@ the Homebrew packages the installer added (`--dry-run` lists them first).
 
 | Guide | Use it for |
 | --- | --- |
-| [Implementation plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) | Single live plan and remaining acceptance |
+| [pending work](pending.md) | Single live plan and remaining acceptance |
 | [Project specifications](docs/project-specs.md) | Requirements, change requirement (minimum-bit), data table, assessment, pending decisions |
 | [Team](docs/team.md) | Owners, pins and wiring, task and kernel-object budget, interfaces, coding rules |
 | [Architecture](docs/architecture.md) | Target three-task contracts, looping Mission, stop/freshness rules, shared data and MQTT protocol |
@@ -249,7 +249,7 @@ Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--p
 
 ### Bring-up order and project tasks
 
-Follow the [consolidated issue plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#remaining-plan) and the
+Follow the [pending work](pending.md) and the
 [mission-readiness checklist](testing/mission-readiness.md). The three-task
 Motion/Mission/I/O refactor is implemented; remaining work is calibration,
 feature release, measured timing/load and mixed looping-mission acceptance.
@@ -266,10 +266,10 @@ Target sizes from `sizeof` with `arm-none-eabi-gcc` for the RP2040. **Used** is 
 | [Motion](app_program/motion/README.md) | 1137 | 1224 |
 | [Line and barcode](app_program/line_barcode/README.md) | 2470 | 2552 |
 | [Terrain](app_program/terrain/README.md) | 451 | 520 |
-| [Obstacle](app_program/obstacle/README.md) | 583 | 712 |
+| [Obstacle](app_program/obstacle/README.md) | 585 | 712 |
 | Mission | 1000 | 1136 |
 
-Totals cover the rows below, multiplied by their instances. Private working structs are listed under the tables and not counted, because they mix packed fields with full-width times.
+These partial totals need a final-image refresh under the [data audit](docs/project-specs.md#minimum-bit-audit-2026-11-03); they do not establish minimum total RAM. Totals cover the rows below, multiplied by their instances. Private working structs are listed under the tables and not counted, because they mix packed fields with full-width times.
 
 **Comms**
 
@@ -336,7 +336,7 @@ Not counted: `IrTracker`, 64 stored; `LineIrSnapshot`, 96 stored; `barcode_frame
 | --- | --- | ---: | ---: | ---: |
 | Echo word (front, side) | range 13, valid 1, time 16 | 2 | 30 | 32 |
 | Scan word | state 3, scan ID 4 | 1 | 7 | 32 |
-| Side-watch word | on 1, angle 6 | 1 | 7 | 32 |
+| Side-watch word | on 1, angle 8 | 1 | 9 | 32 |
 | Scan ray | angle 7, valid 1, range 13 | 15 | 21 | 24 |
 | Profile | angle 7, valid 1, distances 4x10, coordinates 2x11 | 1 | 70 | 72 |
 | Range group | values 5x13, counters 4x3 | 1 | 77 | 96 |
@@ -392,5 +392,5 @@ are configured as provisional software proposals, and physical bypass release
 remains inhibited; encountering the trigger brakes and unsupported evidence stops
 the manoeuvre. Do not interpret the passing synthetic
 profile fixtures as an enabled full bypass. The user confirmed that physical
-trials are unavailable; [full-plan completion](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#done-when)
+trials are unavailable; [pending work](pending.md)
 remains BLOCKED.

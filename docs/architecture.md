@@ -39,7 +39,7 @@
 
 ## Plan status and scope
 
-[Issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns the live plan and completion status.
+[pending work](../pending.md) owns the live plan and completion status.
 The implementation creates Motion, Mission and core-0 I/O only; software
 checks do not establish physical calibration or acceptance. Requirements and
 calibrated values are owned by [project-specs](project-specs.md); wiring by
@@ -232,15 +232,15 @@ Target: `app_program/mission/` holds coordinator and small policy helpers;
 `app_program/common/` holds startup/shared contracts and I/O orchestration as
 appropriate. Keep `comms/` through `obstacle/` for their reusable modules.
 No separate Safety task. Move files/build/includes only with tested implementation
-stages in [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#remaining-plan). `mqtt_utk.c` stays in the kernel
+stages in [pending work](../pending.md). `mqtt_utk.c` stays in the kernel
 library and only WiFi service context calls MQTT/lwIP.
 
 ## Implementation order and acceptance
 
-[Issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns
+[pending work](../pending.md) owns
 the live work sequence and incorporates #129–#133. The Motion/Mission/I/O
 refactor is implemented; remaining calibration, feature release and integrated
-acceptance follow that issue and the physical procedures. No host/build result
+acceptance follow that file and the physical procedures. No host/build result
 is firmware execution or physical acceptance.
 
 ## Authority
@@ -633,7 +633,7 @@ now have bounded median groups and qualified edge/model estimation. Their
 operating settings are provisional configured proposals, and physical bypass
 release remains inhibited. Supported forward/side coverage, rear-edge/original-line
 validation and any resulting implementation corrections remain in the
-[remaining plan in #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#remaining-plan). These are not accepted floor
+[pending work](../pending.md). These are not accepted floor
 features. Terrain publishes original acquisition/service times under a mutex;
 impact remains asserted until a fresh non-impact sample observes serviced braking.
 Comms events use a short cross-core mutex; events stay in the ring when the TX bridge

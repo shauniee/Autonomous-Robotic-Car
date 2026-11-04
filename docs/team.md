@@ -27,12 +27,12 @@ A **subsystem** is one student's folder (may hold several tasks and peripherals)
 
 Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [video](../video/README.md). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
 
-**Implementation status.** The current source baseline and consolidated issue
-plan are linked from [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#status). The code
+**Implementation status.** The current source baseline and completion
+plan are linked from [pending work](../pending.md). The code
 contains Motion PID/actions, Mission/Safety, line/barcode, Terrain, Obstacle and
 Reporting modules; this is not physical acceptance. Older smaller bench/task
 arrangements are historical. Target coordination is in [architecture](architecture.md).
-Nicholas reviews this documentation plan; subsystem responsibilities remain.
+Nicholas is the sole contact for pending decisions and approvals; historical subsystem attribution and code writer responsibilities remain.
 
 ## 2. Pins
 

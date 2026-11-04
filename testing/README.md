@@ -3,6 +3,7 @@
 ## Contents
 
 - [Run and record](#run-and-record)
+- [Qualifying lap records](#qualifying-lap-records)
 - [Preserved software evidence](#preserved-software-evidence)
 - [Planned integrated trials](#planned-integrated-trials)
 
@@ -42,7 +43,7 @@ Actual wireless checks are SYS-09/10 through [wireless setup](../README.md#getti
 
 ## Planned integrated trials
 
-Target procedures follow [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) and [mission-readiness](mission-readiness.md).
+Target procedures follow [pending work](../pending.md) and [mission-readiness](mission-readiness.md).
 Historical case definitions and results in TEST_LOG files stay as recorded. Differences
 such as GP20 reset, JSON output or a dedicated Safety task describe their recorded
 source, not target acceptance. Append a new procedure revision/result, never reuse
@@ -74,8 +75,41 @@ All remain pending until actual measurements/results are recorded. This retains 
 
 Acceptance targets/unknown values are owned by [project-specs](../docs/project-specs.md#pending-decisions), not inferred from a case name. Demonstration links belong in the [video index](../video/README.md#video-index) and the corresponding result row.
 
-The live completion checklist is [issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117).
+The live completion checklist is [pending work](../pending.md).
 `python3 testing/check_plan_completion.py` checks the latest appended
 source-manifest/stage audit, not live issue checkboxes or robot operation:
 exit 1 means current BLOCKED evidence, exit 2 means stale source identity.
 Historical plan references in recorded logs refer to their original revisions.
+
+## Qualifying lap records
+
+Use `scripts/mission_trial_score.py` for the [agreed lap](../docs/project-specs.md#demo-and-full-course-decisions-2026-11-03).
+Create a CSV under `testing/integration/logs/` with this header (no invented runs):
+
+```csv
+trial_id,firmware_sha,uf2_sha256,trace,lighting,success,evidence,notes,lap_complete,barcode_ok,navigation_ok,hump_count_ok,hand_contact,reacquire,stopped_fault,restarted,course_speed_mmps,max_height_error_mm,height_limit_mm
+```
+
+Use unique IDs across every image, exact source/image hashes, TRACE 0/1, a stable
+lighting label and PASS/FAIL. `evidence` identifies the capture, video/time window
+and measurement record; quoted CSV cells may contain a semicolon-separated list.
+The eight condition columns use `yes`/`no`; blank is allowed only for failed
+attempts whose outcome was not observed. Numeric cells are finite, nonnegative;
+failed attempts may leave unmeasured values blank. Failed runs stay in the sample.
+
+Before running, Nicholas records the height error limit in D10. The minimum hump
+height of 10 mm is not that limit. For each lap record actual reference heights,
+reported heights, crossing and event counts, expected/observed junction actions,
+start/end boundary, measured speed evidence and the chosen accuracy limits.
+`max_height_error_mm` is the largest absolute reported-versus-reference error;
+`height_limit_mm` is the agreed limit, never inferred by the scoring tool.
+`course_speed_mmps` is the commanded course setpoint; measured-speed acceptance
+must also be supported by the evidence/notes. Retain the separate bypass-speed
+scope decision. A programmed pause is allowed; STOPPED/FAULT or restart is not.
+
+The scorer rejects contradictory or incomplete PASS rows, groups by exact image,
+TRACE and lighting, and requires at least 19/20 for the 95% sample target. It does
+not inspect a video or certify hardware. Do not combine different lighting into
+one batch. GP21 after the recorded finish boundary is outside the lap; deliberate
+fault/recovery tests use separate result records. Old six-column CSVs must be
+supplemented with real evidence, not automatically promoted to this contract.
