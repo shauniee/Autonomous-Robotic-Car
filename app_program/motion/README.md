@@ -6,6 +6,7 @@
 - [Files](#files)
 - [Contract](#contract)
 - [Wheel-speed tuning](#wheel-speed-tuning)
+- [PID tuning report (draft)](#pid-tuning-report-draft)
 - [Status and open items](#status-and-open-items)
 
 ## Scope
@@ -49,6 +50,33 @@ Mission chooses steering, Motion mixes wheel targets and each encoder closes its
 4. If measured speed oscillates under constant targets, look at wheel control, encoder noise, friction and power. If targets oscillate and wheels follow, look at IR and steering.
 
 The [wheel trace](../../docs/architecture.md#wheel-trace-15-bytes) is best effort: timestamp gaps show missing releases. Neither a graph nor a host test is a physical pass.
+
+## PID tuning report (draft)
+
+Draft from existing evidence only. All of it is on raised wheels, so it does not show loaded behaviour.
+
+| Trial | Change | Observed |
+| --- | --- | --- |
+| INT-100 | Feedforward fit, raised wheels | The log row names 60, 100 and 140 mm/s; `robot_config.h` says 60 to 200 mm/s and gives left 1.05e-4, right 0.95e-4. The range needs checking against the saved evidence |
+| INT-101 | 100 mm/s step with fitted feedforward | Peak 112 mm/s; wheels alternate below 60 mm/s at KP 0.0003 |
+| INT-102 | KP lowered to 0.0001 | The alternation is gone |
+
+Current values, all provisional (D07): `MOTION_KS` 0.05, `MOTION_KF` 0.0001, `MOTION_KP` 0.0001, `MOTION_KI` 0.0010, `MOTION_KD` 0.
+
+Missing before this is a report: loaded response on the floor, settling time and steady error per wheel, and a repeat with the final mechanics.
+
+### Measurements to collect
+
+Record each run separately with source SHA, UF2 hash, setup and evidence. Limits stay pending until agreed.
+
+| Test | Attempts | Controlled setup | Record | Acceptance |
+| --- | --- | --- | --- | --- |
+| MR-14 encoder travel/reversals | 3 per wheel and speed | Wheel raised; measured revolution | Counts, direction, missed/invalid edges | Agree D03 |
+| MR-21 1 m straight | 5 | Floor, unchanged firmware and battery | Actual distance, lateral error, wheel WHEEL traces | Agree D07 |
+| MR-22 left/right 90°, U-turn 180° | 5 each | Same profile, measured mark | Heading errors and stop position | Agree D07 |
+| MR-23 one-wheel hump turn | 5 each type | Known ramp and loading | Change in heading error | Agree D07 |
+| MR-24 GP21 stop | Repeated | Controlled speed, clear run-out | Brake-output latency; physical stopping distance | Agree D08; evaluate 50 ms proposal |
+| MR-25 motor stall | Repeated | Guard-enabled acceptance image only | Detection delay, latched fault and reset | Agree D07 |
 
 ## Status and open items
 

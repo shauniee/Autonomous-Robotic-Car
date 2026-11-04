@@ -36,6 +36,3 @@ FIELD(IrTracker, raw);
 
 SIZE(LineIrSnapshot);
 FIELD(LineIrSnapshot, raw);
-FIELD(LineIrSnapshot, left_fraction);
-FIELD(LineIrSnapshot, right_fraction);
-FIELD(LineIrSnapshot, error);

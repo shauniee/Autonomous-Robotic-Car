@@ -52,6 +52,10 @@ static inline bool enc_invalid_score_update(uint32_t *score, uint32_t new_edges)
 }
 
 /* count + delta, wrapped to ENC_COUNT_BITS. */
+/* A stored count or origin: the values wrap at ENC_COUNT_BITS. */
+typedef uint16_t enc_count_t;
+_Static_assert(ENC_COUNT_BITS <= 16u, "enc_count_t narrower than ENC_COUNT_BITS");
+
 static inline uint32_t enc_advance(uint32_t count, int delta)
 {
     return (count + (uint32_t)delta) & ENC_COUNT_MASK;
@@ -73,7 +77,7 @@ static inline int32_t enc_travel_signed(uint32_t now, uint32_t origin)
 /* Average displacements, never lifetime counts: wheels may diverge through
    repeated turns. Each wheel's displacement must stay below its half range. */
 static inline float enc_mean_travel(const uint32_t count[2],
-    const uint32_t origin[2])
+    const enc_count_t origin[2])
 {
     int64_t total = (int64_t)enc_travel_signed(count[0], origin[0]) +
         enc_travel_signed(count[1], origin[1]);
@@ -144,8 +148,11 @@ typedef enum
     MOTION_TURN_RAMPED = 3 /* encoder pivot with acceleration/deceleration */
 } motion_turn_style_t;
 
+/* Integral: Q4 counts, about +-2047, past what MOTION_KI can use at the duty cap.
+   Previous speed: whole counts/s, past any wheel's reach. */
 typedef struct {
-    float integral, previous_speed;
+    int16_t integral_q4;
+    int16_t previous_cps;
 } WheelPid;
 
 typedef struct {
@@ -157,8 +164,8 @@ typedef struct {
     motion_mode_t mode;
     rd_motion_status_t status;
     uint32_t start_ms, previous_ms;
-    uint32_t origin[2];
-    uint32_t previous_count[2];
+    enc_count_t origin[2];
+    enc_count_t previous_count[2];
     uint32_t stalled_since_ms[2];
     uint16_t follow_base_q6 : 15; /* private unsigned Q6 mm/s, see specs */
     int8_t follow_steer_q; /* private applied Q7 steering, see specs */

@@ -29,12 +29,13 @@ int main(void)
     assert(obstacle_scan_guard(false, false, false) == OBSTACLE_SCAN_FAILED);
     assert(obstacle_scan_guard(false, false, true) == OBSTACLE_SCAN_COARSE);
 
-    /* Minimum-bit packing retains the complete signed angle and 16-bit
+    /* Minimum-bit packing retains the complete signed angle and 13-bit
        measurement. Both structures are checked against Cortex-M0+ layout. */
-    assert(sizeof(ObstacleRay) == 4u && sizeof(ObstacleProfile) == 14u);
+    assert(sizeof(ObstacleRay) == 3u && sizeof(ObstacleProfile) == 9u);
+    assert(obstacle_ray_make(0, 65535u, true).range_mm == ECHO_RANGE_INVALID);	/* never wraps */
     for (int angle = -SERVO_MAX_DEG; angle <= SERVO_MAX_DEG; ++angle) {
-        ObstacleRay roundtrip = obstacle_ray_make((int16_t)angle, 65535u, true);
-        assert(roundtrip.valid && roundtrip.angle_deg == angle && roundtrip.range_mm == 65535u);
+        ObstacleRay roundtrip = obstacle_ray_make((int16_t)angle, 8190u, true);
+        assert(roundtrip.valid && roundtrip.angle_deg == angle && roundtrip.range_mm == 8190u);
         uint32_t packed = obstacle_side_watch_pack(true, (int16_t)angle);
         assert((packed & 1u) != 0u && (packed & ~0x1FFu) == 0u);
         assert(obstacle_side_watch_angle(packed) == angle);

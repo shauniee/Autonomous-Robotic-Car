@@ -28,7 +28,7 @@
 - [Post-Tribunal decisions](#post-tribunal-decisions)
 - [Minimum-bit data representation](#minimum-bit-data-representation)
 - [MQTT binary protocol, schema version 2](#mqtt-binary-protocol-schema-version-2)
-  - [Telemetry and snapshot reply (23 bytes)](#telemetry-and-snapshot-reply-23-bytes)
+  - [Telemetry and snapshot reply (22 bytes)](#telemetry-and-snapshot-reply-22-bytes)
   - [Wheel trace (15 bytes)](#wheel-trace-15-bytes)
   - [Terrain trace (8 bytes)](#terrain-trace-8-bytes)
   - [Line trace (17 bytes)](#line-trace-17-bytes)
@@ -92,6 +92,8 @@ Measure network-load effects on IMU age and interrupt/control latency. Audit Com
 multi-producer events and mapping installation across cores: DI/EI protects only
 one core. The implemented event log uses a bounded cross-core mutex; its contention and
 load margins still require on-target measurements.
+
+**D14 audit (2026-11-03, source review, INT-172).** Task placement matches the table above, and `app_main.c` runs every `*_init` before starting Motion, I/O, then Mission. Fault bytes have one writing context each: Motion, Mission (Line, Obstacle, Mission), I/O (Terrain) and the kernel transport (Network). This matters because `rd_fault_set` is a load then a store. Cross-core data uses single-writer words, acquire/release SPSC rings or mapping tickets; only `comms_event` has two producing cores, and it uses the bounded mutex. `lock_misses` has one writer per core. No defect found. Not covered: contention, lock duration and load, which need the Pico.
 
 ## Mission loop
 
@@ -539,7 +541,7 @@ TX or a full ring drops records without waiting. Sample-time gaps reveal drops.
 There is no request, movement authority or live tuning input. `mqtt_client.py
 monitor` prints `LINE` JSON; the dashboard does not display it.
 
-### Telemetry and snapshot reply (23 bytes)
+### Telemetry and snapshot reply (22 bytes)
 
 | Byte | Bits | Field | Range |
 | --- | --- | --- | --- |
@@ -562,8 +564,9 @@ monitor` prints `LINE` JSON; the dashboard does not display it.
 | 16-17 | 15-14 | IMU calibration | 0 unknown (older firmware), 1 not calibrated, 2 calibrated, 3 invalid |
 | 18 | 4-0 | last decoded barcode letter | 0-25 (A-Z), 31 none |
 | 18 | 7-5 | action it maps to | 0 unmapped, 1 left, 2 right, 3 straight, 4 U-turn |
-| 19-20 | 15-0 | latest obstacle width, mm | 0 none |
-| 21-22 | 15-0 | latest obstacle depth, mm | 0 none |
+| 19-21 | 9-0 | latest obstacle width, mm | 0 none; saturates at 1023 |
+| 19-21 | 19-10 | latest obstacle depth, mm | 0 none; saturates at 1023 |
+| 21 | 7-4 | reserved | zero; a set bit is rejected |
 
 IMU calibration reports Terrain's calibration flag independently of hump results
 and current sensor faults. This uses two formerly reserved bits without changing
@@ -609,7 +612,7 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 
 | Frame | Bytes |
 | --- | --- |
-| Telemetry | `21 2A 72 45 01 02 04 08 01 03 34 12 78 56 03 F8 D0 30 61 A4 01 AA 00` |
+| Telemetry | `21 2A 72 45 01 02 04 08 01 03 34 12 78 56 03 F8 D0 30 61 A4 A9 02` |
 | Event (barcode Z, action 2) | `22 01 19 E8 03 10 00 11 00 02 00` |
 | Mapping A left, B right, C straight, D U-turn, sequence 7 | `24 07 20 88 01` |
 | Acknowledgement installed, sequence 7 | `25 07 00` |
@@ -619,10 +622,10 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 
 | Message | Baseline on `main` (JSON) | Binary |
 | --- | --- | --- |
-| Telemetry | up to 768 bytes (`COMMS_TELEMETRY_PAYLOAD_MAX`) | 23 bytes |
+| Telemetry | up to 768 bytes (`COMMS_TELEMETRY_PAYLOAD_MAX`) | 22 bytes |
 | Mapping | up to 512 bytes on `uat` | 5 bytes |
 
-Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Final message-size and RAM evidence: [SYS-11](../testing/system/TEST_LOG.md#results).
+Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Message sizes and RAM evidence, not yet final: [SYS-11](../testing/system/TEST_LOG.md#results) for October and INT-178 in the [integration log](../testing/integration/TEST_LOG.md) for the latest build. Final figures need the final image.
 
 Implementation limits: standalone recovery uses bounded stationary pivot sweeps;
 physical speed/geometry acceptance remains D07. Obstacle scans

@@ -177,8 +177,12 @@ unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type
     put16(&out[16], (uint16_t)(t->front_mm |
         (t->front_valid ? 0x2000u : 0u) | (t->imu_calibration << 14)));
     out[18] = (uint8_t)(t->barcode_letter | (t->barcode_action << 5));
-    put16(&out[19], t->obstacle_width_mm);
-    put16(&out[21], t->obstacle_depth_mm);
+    uint32_t width = t->obstacle_width_mm > MQTT_OBSTACLE_MAX_MM ? MQTT_OBSTACLE_MAX_MM : t->obstacle_width_mm;
+    uint32_t depth = t->obstacle_depth_mm > MQTT_OBSTACLE_MAX_MM ? MQTT_OBSTACLE_MAX_MM : t->obstacle_depth_mm;
+    uint32_t size = width | depth << 10;
+    out[19] = (uint8_t)size;
+    out[20] = (uint8_t)(size >> 8);
+    out[21] = (uint8_t)(size >> 16);	/* bits 4-7 reserved, zero */
     return MQTT_LEN_TELEMETRY;
 }
 
@@ -193,7 +197,7 @@ mqtt_decode_t mqtt_decode_telemetry(const uint8_t *f, unsigned length, mqtt_type
     uint8_t letter = f[18] & 0x1Fu;
     uint16_t front = get16(&f[16]);
     if ((letter > 25u && letter != MQTT_NO_LETTER) || (f[18] >> 5) > 4u ||
-        f[15] == 0xFFu || (front & 0x3FFFu) == 0x3FFFu ||
+        f[15] == 0xFFu || (front & 0x3FFFu) == 0x3FFFu || (f[21] & 0xF0u) != 0u ||
         (front >> 14) > MQTT_IMU_CALIBRATED)
     {
         return MQTT_DECODE_RANGE;
@@ -216,8 +220,9 @@ mqtt_decode_t mqtt_decode_telemetry(const uint8_t *f, unsigned length, mqtt_type
     t->front_valid = (front & 0x2000u) != 0u;
     t->barcode_letter = letter;
     t->barcode_action = f[18] >> 5;
-    t->obstacle_width_mm = get16(&f[19]);
-    t->obstacle_depth_mm = get16(&f[21]);
+    uint32_t size = (uint32_t)f[19] | (uint32_t)f[20] << 8 | (uint32_t)f[21] << 16;
+    t->obstacle_width_mm = (uint16_t)(size & 0x3FFu);
+    t->obstacle_depth_mm = (uint16_t)(size >> 10 & 0x3FFu);
     return MQTT_DECODE_OK;
 }
 

@@ -104,13 +104,14 @@ static bool ray_valid(const ObstacleRay *ray)
 static uint16_t distance_code(float value)
 {
     return value <= 0.0f ? 0u :
-        (value >= 65535.0f ? UINT16_MAX : (uint16_t)(value + 0.5f));
+        (value >= (float)OBSTACLE_PROFILE_MAX_MM ? OBSTACLE_PROFILE_MAX_MM : (uint16_t)(value + 0.5f));
 }
 
 static int16_t coordinate_code(float value)
 {
-    return value <= -32768.0f ? INT16_MIN :
-        (value >= 32767.0f ? INT16_MAX : (int16_t)lroundf(value));
+    const float limit = (float)OBSTACLE_PROFILE_MAX_MM;
+    return value <= -limit ? -(int16_t)OBSTACLE_PROFILE_MAX_MM :
+        (value >= limit ? (int16_t)OBSTACLE_PROFILE_MAX_MM : (int16_t)lroundf(value));
 }
 
 static float plane_left(float forward, float angle)

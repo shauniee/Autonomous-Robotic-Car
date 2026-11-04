@@ -75,7 +75,7 @@ Turns, distances and barcode widths all come from encoder travel, so these value
 | MR-22 | 90 degrees left, 90 degrees right, 180 degrees; five each | Final heading error measured and agreed (Tribunal proposal: at most 5 degrees) | Errors per turn (D07) |
 | MR-23 | Repeat MR-22 with one wheel on a hump | Error measured and compared with MR-22 (M3 requires accuracy to hold) | Errors with one wheel raised |
 | MR-24 | Press GP21 at follow speed | Robot stops; distance measured and agreed | Stopping distance (D08) |
-| MR-25 | Use an agreed/calibrated guard-enabled acceptance image, wheels raised and controlled load; stall detection is disabled in the current trial build | `Motion: motor stall` and a latched stop; cause-clear GP21 press/release returns READY without restarting | Time to detect (`MOTION_STALL_MS`, D07) |
+| MR-25 | Use the full-course image, which has the guard on, with wheels raised and controlled load | `Motion: motor stall` and a latched stop; cause-clear GP21 press/release returns READY without restarting | Time to detect (`MOTION_STALL_MS`, D07) |
 
 ## Phase 4: Each feature on a test track (T03, T04, T07, T09, T10, T11, T13)
 

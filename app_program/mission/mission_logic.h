@@ -108,14 +108,14 @@ typedef struct
     barcode_action_t held;	/* barcode command held for the next cross junction */
     recovery_control_t recovery;
     uint32_t state_since_ms;
-    uint32_t broad_origin[2]; /* broad entry or active navigation phase origin */
+    enc_count_t broad_origin[2]; /* broad entry or active navigation phase origin */
     uint32_t broad_since_ms; /* start of this broad-black encounter, wraps */
     uint8_t junction_locked : 1;
     uint8_t entry_curved : 1;
     uint8_t exit_seen : 1;
     int16_t turn_length_mm : 12; /* signed whole mm, +/-2000 */
-    uint32_t entry_origin[2];
-    uint32_t straight_origin[2]; /* counts when last tracking centred with little steering */
+    enc_count_t entry_origin[2];
+    enc_count_t straight_origin[2]; /* counts when last tracking centred with little steering */
     uint8_t manual_held : 1; /* test direction protects held from barcode replacement */
     uint8_t in_broad : 1;
     uint8_t junction_open : 1;
@@ -127,9 +127,9 @@ typedef struct
     int8_t line_prev; /* previous acquisition's touch: -1, 0, +1 */
     int8_t cross_side; /* side the line was last seen on, across a straight crossing */
     uint8_t line_bend : 1; /* same-side touches close together: in a bend */
-    uint32_t touch_origin[2]; /* counts where the current touch began */
-    uint32_t dark_origin[2]; /* counts at the latest touching acquisition */
-    uint32_t onset[2][2]; /* counts where the left/right sensor last went black */
+    enc_count_t touch_origin[2]; /* counts where the current touch began */
+    enc_count_t dark_origin[2]; /* counts at the latest touching acquisition */
+    enc_count_t onset[2][2]; /* counts where the left/right sensor last went black */
     uint8_t onset_black : 2; /* black bits (left 1, right 2) at the last fresh acquisition */
     uint32_t onset_sampled_ms; /* last acquisition used for onsets */
     uint32_t line_steer_sampled_ms; /* last acquisition used for steering */
@@ -152,22 +152,14 @@ typedef struct
 
 } Mission;
 
-/* Kernel-free policy for the additional Mission->Comms barcode event.
- * The normal FOLLOW event is authoritative; a consumed decoded letter in
- * another state still needs a route record. Never report the no-letter code.
- * Does not grant navigation or motor authority.
- */
-static inline bool mission_needs_barcode_event(bool have_barcode,
-    uint8_t barcode_letter, uint8_t emitted_kind)
-{
-    return have_barcode && barcode_letter < BARCODE_ALPHABET &&
-        emitted_kind != MQTT_EVENT_BARCODE;
-}
-
 bool mission_queue_direction(Mission *mission, uint8_t action);
 
 void mission_init(Mission *m, uint32_t now_ms);
 void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out);
+/* True when this release's read still needs its own route event: mission_step
+   reports reads only while following, and another event can replace that one. */
+bool mission_barcode_event_needed(const MissionInputs *in,
+    const MissionOutputs *out);
 /* Diagnostic record of the line decision mission_step just made. */
 mqtt_line_trace_t mission_line_trace(const Mission *m, const MissionInputs *in,
     const MissionOutputs *out);

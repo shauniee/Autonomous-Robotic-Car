@@ -10,16 +10,27 @@
    duplicating the ordinary FOLLOW barcode event. */
 static void test_barcode_event_fallback_policy(void)
 {
-    assert(!mission_needs_barcode_event(false, 0u, 0u));
-    assert(!mission_needs_barcode_event(false, 0u, MQTT_EVENT_TURN));
-    assert(!mission_needs_barcode_event(true, BARCODE_NO_LETTER, 0u));
-    assert(!mission_needs_barcode_event(true, BARCODE_NO_LETTER, MQTT_EVENT_TURN));
+    MissionInputs in = {.have_barcode = false, .barcode_letter = 0u};
+    MissionOutputs out = {.event_kind = 0u};
+    assert(!mission_barcode_event_needed(&in, &out));
+    out.event_kind = MQTT_EVENT_TURN;
+    assert(!mission_barcode_event_needed(&in, &out));
+    in.have_barcode = true;
+    in.barcode_letter = BARCODE_NO_LETTER;
+    assert(!mission_barcode_event_needed(&in, &out));
+    out.event_kind = 0u;
+    assert(!mission_barcode_event_needed(&in, &out));
     for (uint8_t letter = 0u; letter < BARCODE_ALPHABET; ++letter)
     {
-        assert(mission_needs_barcode_event(true, letter, 0u));
-        assert(mission_needs_barcode_event(true, letter, MQTT_EVENT_TURN));
-        assert(mission_needs_barcode_event(true, letter, MQTT_EVENT_OBSTACLE));
-        assert(!mission_needs_barcode_event(true, letter, MQTT_EVENT_BARCODE));
+        in.barcode_letter = letter;
+        out.event_kind = 0u;
+        assert(mission_barcode_event_needed(&in, &out));
+        out.event_kind = MQTT_EVENT_TURN;
+        assert(mission_barcode_event_needed(&in, &out));
+        out.event_kind = MQTT_EVENT_OBSTACLE;
+        assert(mission_barcode_event_needed(&in, &out));
+        out.event_kind = MQTT_EVENT_BARCODE;
+        assert(!mission_barcode_event_needed(&in, &out));
     }
 }
 
@@ -985,6 +996,32 @@ static void test_missing_echo_policy(void)
     puts("INT-24 no echo: PASS (report-only while tracking and on a bounded bypass leg)");
 }
 
+/* Each read gives one route event: Mission's own while following, otherwise the
+   task's fallback, including when another event replaces Mission's (INT-154). */
+static void test_one_barcode_event_per_read(void)
+{
+    Mission m;
+    MissionInputs in = base(100u);
+    uint32_t t = to_follow(&m, &in);
+    MissionOutputs out = bstep(&m, &in, &t);
+    assert(!mission_barcode_event_needed(&in, &out));	/* no read */
+
+    in.have_barcode = true;
+    in.barcode_letter = 3u;
+    in.barcode_action = BARCODE_LEFT;
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_FOLLOW_LINE && out.event_kind == MQTT_EVENT_BARCODE);
+    assert(out.event_arg == 3u && !mission_barcode_event_needed(&in, &out));
+
+    MissionOutputs other = {.event_kind = MQTT_EVENT_TURN};
+    assert(mission_barcode_event_needed(&in, &other));
+    other.event_kind = 0u;			/* a read outside following */
+    assert(mission_barcode_event_needed(&in, &other));
+    in.barcode_letter = BARCODE_NO_LETTER;	/* no decoded letter to report */
+    assert(!mission_barcode_event_needed(&in, &other));
+    puts("barcode events: PASS (one per read)");
+}
+
 static void test_stop_cancels_every_phase(void)
 {
     _Static_assert(MISSION_STATE_COUNT == 7u, "seven states, no COMPLETE");
@@ -1041,6 +1078,7 @@ int main(void)
     test_bypass_reverses_when_too_close();
     test_scan_obstacle_removed();
     test_missing_echo_policy();
+    test_one_barcode_event_per_read();
     test_stop_cancels_every_phase();
     test_run_network_loss();
     puts("mission retained safety/recovery/bypass: PASS");

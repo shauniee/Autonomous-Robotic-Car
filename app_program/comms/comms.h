@@ -33,7 +33,8 @@ typedef enum
 } mqtt_type_t;
 
 /* Frame lengths in bytes (exact). */
-#define MQTT_LEN_TELEMETRY 23u
+#define MQTT_OBSTACLE_MAX_MM 1023u	/* 10 bits each on the wire */
+#define MQTT_LEN_TELEMETRY 22u
 #define MQTT_LEN_EVENT 11u
 #define MQTT_LEN_MAPPING 5u
 #define MQTT_LEN_JUNCTION_TEST 3u
@@ -85,8 +86,8 @@ typedef struct
     bool front_valid;
     uint8_t barcode_letter;	/* 0..25 or MQTT_NO_LETTER */
     uint8_t barcode_action;	/* 0..7 (barcode_action_t) */
-    uint16_t obstacle_width_mm;	/* latest profile; 0 none */
-    uint16_t obstacle_depth_mm;	/* latest bypass; 0 none */
+    uint16_t obstacle_width_mm;	/* latest profile; 0 none; saturates at MQTT_OBSTACLE_MAX_MM */
+    uint16_t obstacle_depth_mm;	/* latest bypass; 0 none; saturates at MQTT_OBSTACLE_MAX_MM */
 } mqtt_telemetry_t;
 
 typedef enum

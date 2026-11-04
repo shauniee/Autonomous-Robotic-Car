@@ -124,22 +124,30 @@ bool motion_command_fresh(const MotionCommand *cmd, uint32_t now_ms)
 
 /* Feedforward (static friction + speed) plus PID on counts/s, conditional
 anti-windup. dt in seconds. */
+#define WHEEL_INTEGRAL_ONE 16.0f
+
+/* Saturate, never wrap: a wrapped integral would drive the wheel backward. */
+static int16_t wheel_pid_store(float value)
+{
+    return (int16_t)lroundf(fminf(fmaxf(value, -32767.0f), 32767.0f));
+}
+
 static float wheel_duty(WheelPid *p, float target_cps, float speed_cps,
     float dt)
 {
     if (fabsf(target_cps) < 0.001f)
     {
-        *p = (WheelPid){.previous_speed = speed_cps};
+        *p = (WheelPid){.previous_cps = wheel_pid_store(speed_cps)};
         return 0.0f;
     }
     float error = target_cps - speed_cps;
-    float integral = p->integral + error * dt;
+    float integral = (float)p->integral_q4 / WHEEL_INTEGRAL_ONE + error * dt;
     float friction = target_cps > 0.0f
     ? MOTION_KS
     : -MOTION_KS; /* duty to start turning at all */
     float output = friction + MOTION_KF * target_cps + MOTION_KP * error +
     MOTION_KI * integral -
-    MOTION_KD * (speed_cps - p->previous_speed) / dt;
+    MOTION_KD * (speed_cps - (float)p->previous_cps) / dt;
     /* Speed overshoot brakes instead of reversing against the requested
     wheel direction. Position control can still request the opposite
     direction after passing its target; pivots retain signed wheel targets.
@@ -149,9 +157,9 @@ static float wheel_duty(WheelPid *p, float target_cps, float speed_cps,
     float bounded = fminf(fmaxf(output, lower), upper);
     if (output == bounded || (output - bounded) * error < 0.0f)
     {
-        p->integral = integral;
+        p->integral_q4 = wheel_pid_store(integral * WHEEL_INTEGRAL_ONE);
     }
-    p->previous_speed = speed_cps;
+    p->previous_cps = wheel_pid_store(speed_cps);
     return bounded;
 }
 
@@ -433,7 +441,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
     brakes the run. */
     for (int w = 0; w < 2 && MOTION_STALL_GUARD_ENABLED && !APP_NO_GUARDS; ++w)
     {
-        if (fabsf(target_cps[w]) < MOTION_STATIONARY_CPS ||
+        if (fabsf(target_cps[w]) < MOTION_STALL_MIN_TARGET_CPS ||
             fabsf(speed_cps[w]) >= MOTION_STATIONARY_CPS)
         {
             c->stalled_since_ms[w] = in->now_ms;

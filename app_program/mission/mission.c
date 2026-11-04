@@ -140,9 +140,9 @@ static void mission_task(INT stacd, void *exinf)
             .guidance_valid = snapshot.guidance_valid,
             .usable_line = snapshot.normalized_valid,
             .line = snapshot.line,
-            .line_error = snapshot.error,
-            .left_black = snapshot.left_fraction != 0u,
-            .right_black = snapshot.right_fraction != 0u,
+            .line_error = ir_snapshot_error(&snapshot),
+            .left_black = snapshot.left_black,
+            .right_black = snapshot.right_black,
             .line_sampled_ms = snapshot.sampled_ms,
             .wheel_count = {left_now, right_now},
             .motion_status = rd_motion_feedback_status(feedback),
@@ -205,11 +205,10 @@ static void mission_task(INT stacd, void *exinf)
            consumed during a navigation transition or a manual test command.
            Mission normally publishes its own event in FOLLOW; avoid duplicates.
            Logging never grants motor/navigation authority. */
-        if (mission_needs_barcode_event(have_barcode,
-            barcode_event_letter(&barcode), out.event_kind))
+        if (mission_barcode_event_needed(&in, &out))
         {
-            comms_event(MQTT_EVENT_BARCODE, barcode_event_letter(&barcode),
-                (uint16_t)barcode_event_action(&barcode));
+            comms_event(MQTT_EVENT_BARCODE, in.barcode_letter,
+                (uint16_t)in.barcode_action);
         }
         if (out.event_kind != 0u)
         {
