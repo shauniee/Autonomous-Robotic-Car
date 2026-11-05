@@ -87,7 +87,7 @@ Each feature is tested alone before the full course.
 | MR-27 | Printed course barcodes in both directions at operating speed; verify incomplete capture rejects rather than invents a character (M2) | Same correct character/action in both directions; one pending action per encounter; no two-second blind delay or guessed character | Reads, misses and misreads per letter (D01) |
 | MR-28 | Barcode before a cross junction for each of left, right, straight and U-turn (M3), with measured `NAV_SENSOR_FORWARD_MM`, `NAV_CROSSBAR_MM`, encoder scale and signed geometry | One queued action executes at the qualified junction at variable barcode distances. For turns: measured approach to axle-centre, stationary pause, line-confirmed pivot and outgoing tracking; U-turn pause/limits validated. Do not accept a turn from an unqualified broad-black curve or an uncalibrated geometry release | Measured entry/skew, advance distance, pivot stop/overshoot and outgoing-line success (D02/D03). All four actions work (Nicholas, 2026-11-05), observed only |
 | MR-29 | Reference humps of known heights up to 30 mm ([hump requirement](../docs/project-specs.md#course-rules)): the lower practice ramp, one slightly below and one at or near 30 mm; three passes each (M4, M5), including a single-wheel case. First confirm on the robot that a 30 mm-or-lower single-wheel ramp crosses the climb-entry threshold | 100 mm/s held through the encounter; count/height/max/events correct; reference error and valid-completion behavior measured and agreed | Reported vs actual per hump (D06) |
-| MR-30 | Reference obstacles across 100-200 mm width, with both sides open then one restricted; vary position/background/material (M6-M9) | Stops, scans, bypasses on the side with more space, reports width and depth, rejoins the original line | Width/depth error, repeatability/uncertainty, chosen gap, clearance, bypass time and reacquisition success (D02, D05, D10) |
+| MR-30 | Reference obstacles across 100-200 mm width, offset left and right of the line; vary position/background/material (M6-M9) | Stops, scans, bypasses on the side with the shorter distance to the box edge, reports width and depth, rejoins the original line | Width/depth error, repeatability/uncertainty, chosen gap, clearance, bypass time and reacquisition success (D02, D05, D10) |
 | MR-31 | Boxes blocking both sides | Robot stops instead of bypassing | - |
 | MR-32 | Induce healthy-sensor line loss while following; separately freeze/fail acquisition | Brake and confirm stationarity, then the current bounded wider left/right pivot sweep with braking before reversals; either sensor initiates alignment, stable intended-line tracking resumes; exhausted search stops; stale acquisition does not enter blind search | Sweep sequence, travel, time and false-line acceptance (D07) |
 | MR-33 | Stop the broker during a run, then restart it | Robot keeps driving; `Network: broker lost` shows after reconnect | - |
@@ -113,14 +113,6 @@ MR-40 is a newly allocated endless-operation check, not reuse of retired MR-34.
 | --- | --- | --- | --- |
 | MR-39 | Final-image concurrent load: line acquisition, Mission/Motion, IMU timeout, barcode/Echo IRQ, servo, telemetry and reconnect; separate TEST and normal loads | Agreed D13 periods/budgets/margins met; no required stale-data replay; local stop independent of queue load | Exact image/profile, line-to-output latency, WCET/release jitter, missed deadlines, IRQ edge rate/time, stack/RAM and ring high-water marks; host/TEST is not full motor-load acceptance |
 | MR-40 | Revisit the same loop junction with/without pending actions; run repeated feature cycles, then GP21; interrupt WiFi/MQTT mid-run | No automatic finish or undo; healthy local run survives network loss; new start requires WiFi/MQTT; GP21 stops, eligible release returns READY, fresh GP20 starts | Session encounters, stop reasons, action/event order, reference video and unchanged image/constants |
-
-Watchdog fault injection remains a separate pending D15/SYS-06 procedure. The
-watchdog is **on for `full_course`** (Nicholas, 2026-11-05) and off otherwise,
-so tick setup and host/compile checks are not acceptance. Before driving that image,
-build the bench image with `WATCHDOG=1 TEST=1`. With wheels raised and one power source, confirm normal Motion/Mission/I-O
-progress keeps the watchdog fed; stop a producer without faking its progress and
-measure reset time, boot-inhibited outputs, GP20 re-start requirements and any
-unintended reset under WiFi/network load. No physical watchdog PASS is claimed.
 
 The complete remaining-work checklist is [pending work](../pending.md).
 This file owns physical procedures, not a second completion tracker. For final

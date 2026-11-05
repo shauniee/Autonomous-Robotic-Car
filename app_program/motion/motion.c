@@ -13,7 +13,6 @@
 #include "../common/drv_gpio_irq.h"
 #include "../common/robot_data.h"
 #include "../common/robot_time.h"
-#include "../common/robot_watchdog.h"
 #endif
 
 #ifndef HOST_TEST
@@ -297,7 +296,6 @@ static void motion_task(INT stacd, void *exinf)
                 progress.serviced_ms = serviced_ms;
                 ++progress.sequence;
                 tk_unl_mtx(command_mutex);
-                robot_watchdog_note_motion(serviced_ms);
             }
             else
             {

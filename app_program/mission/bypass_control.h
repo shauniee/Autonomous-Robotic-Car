@@ -30,7 +30,6 @@ typedef struct
     uint16_t half_width_mm;
     uint16_t flank_mm;
     uint8_t action_id;
-    uint8_t spare_mm; /* room left to step out; 255 is six steps */
     uint8_t route : 4;
     uint8_t work : 3;
     uint8_t left_side : 1;

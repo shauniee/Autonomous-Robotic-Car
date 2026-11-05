@@ -111,15 +111,9 @@ static float facing_half_mm(bool pass_left)
     return pass_left ? BYPASS_BODY_RIGHT_MM : BYPASS_BODY_LEFT_MM;
 }
 
-static bool has_clearance(const ObstacleProfile *profile, bool left)
-{
-    uint16_t clearance = left ? profile->left_clearance_mm : profile->right_clearance_mm;
-    return clearance >= fmaxf(MISSION_BYPASS_MIN_CLEAR_MM,
-        BYPASS_BODY_LEFT_MM + BYPASS_BODY_RIGHT_MM +
-        2.0f * BYPASS_CLEARANCE_MM);
-}
-
-/* Sideways distance from the line's centre to the box's edge on that side. */
+/* Sideways distance from the servo axis to the box's edge on that side. The
+   profile gets each edge from the forward range and the edge ray's angle:
+   range * tan(angle). */
 static float edge_mm(const ObstacleProfile *profile, bool left)
 {
     return (left ? profile->obstacle_left_mm : -profile->obstacle_left_mm) +
@@ -140,11 +134,16 @@ static float offset_mm(const ObstacleProfile *profile, bool left)
     return edge_mm(profile, left) + pass_distance_mm(left);
 }
 
+/* The shorter distance to an edge picks the side; a tie goes left. */
+static bool pass_left(const ObstacleProfile *profile)
+{
+    return edge_mm(profile, true) <= edge_mm(profile, false);
+}
+
 static bool side_usable(const ObstacleProfile *profile, bool left)
 {
     float offset = offset_mm(profile, left);
-    return has_clearance(profile, left) &&
-        profile->closest_mm > pivot_reach_mm(left) &&
+    return profile->closest_mm > pivot_reach_mm(left) &&
         offset > 0.0f && offset <= BYPASS_MAX_OFFSET_MM;
 }
 
@@ -152,15 +151,8 @@ uint8_t bypass_control_backup_mm(const ObstacleProfile *profile,
     uint16_t planning_width_mm)
 {
     (void)planning_width_mm;
-    float least = BYPASS_BACKUP_MAX_MM + 1.0f;
-    for (int side = 0; side < 2; ++side)
-    {
-        if (has_clearance(profile, side != 0))
-        {
-            least = fminf(least, pivot_reach_mm(side != 0) +
-                BYPASS_BACKUP_MARGIN_MM - profile->closest_mm);
-        }
-    }
+    float least = pivot_reach_mm(pass_left(profile)) +
+        BYPASS_BACKUP_MARGIN_MM - profile->closest_mm;
     return least > 0.0f && least <= BYPASS_BACKUP_MAX_MM ?
         (uint8_t)ceilf(least) : 0u;
 }
@@ -188,7 +180,7 @@ bool bypass_control_can_begin(const bypass_input_t *input,
     return input != NULL && profile != NULL && input->stationary &&
         input->functional && profile->valid &&
         planning_width_mm >= OBSTACLE_EXPECTED_MAX_WIDTH_MM &&
-        (side_usable(profile, true) || side_usable(profile, false));
+        side_usable(profile, pass_left(profile));
 }
 
 bool bypass_control_begin(bypass_control_t *control,
@@ -200,9 +192,7 @@ bool bypass_control_begin(bypass_control_t *control,
     {
         return false;
     }
-    /* The side nearer the line's centre leaves the route least. */
-    bool left = side_usable(profile, true) && (!side_usable(profile, false) ||
-        edge_mm(profile, true) <= edge_mm(profile, false));
+    bool left = pass_left(profile);
     float offset = offset_mm(profile, left);
     *control = (bypass_control_t){.origin = {input->count[0], input->count[1]},
         .previous = {input->count[0], input->count[1]},
@@ -211,9 +201,6 @@ bool bypass_control_begin(bypass_control_t *control,
         .offset_mm = (int16_t)lroundf(left ? offset : -offset),
         .centre_mm = profile->obstacle_left_mm,
         .half_width_mm = (uint16_t)(profile->width_mm / 2u),
-        .spare_mm = (uint8_t)fminf(255.0f, (left ? profile->left_clearance_mm :
-            profile->right_clearance_mm) - pass_distance_mm(left) -
-            facing_half_mm(!left)),
         .obstacle_front_mm = profile->obstacle_forward_mm};
     turn(control, input, BYPASS_ROUTE_OUT, left ? 90 : -90, action_id);
     return true;
@@ -236,14 +223,13 @@ static void step_out(bypass_control_t *control, float across)
 {
     float box_ahead = (float)control->obstacle_front_mm - forward_mm(control);
     int offset = abs(control->offset_mm) + (int)BYPASS_STEP_OUT_MM;
-    if (control->spare_mm < BYPASS_STEP_OUT_MM || offset > (int)BYPASS_MAX_OFFSET_MM ||
+    if (offset > (int)BYPASS_MAX_OFFSET_MM ||
         hypotf(box_ahead, across) <= hypotf(BYPASS_BODY_REAR_MM,
             facing_half_mm(control->left_side)))
     {
         fail(control);
         return;
     }
-    control->spare_mm = (uint8_t)(control->spare_mm - BYPASS_STEP_OUT_MM);
     control->offset_mm = (int16_t)(control->left_side ? offset : -offset);
     control->close_samples = 0u;
     control->edge_open = 0u;
