@@ -8,7 +8,7 @@
 #include "../../app_program/mission/mission_logic.h"
 
 #define TICK_MS 10u /* FOLLOW_PERIOD_MS and IR_SAMPLE_MS */
-#define MM_PER_TICK (MISSION_TRACK_SPEED_MMPS * TICK_MS / 1000.0f)
+#define MM_PER_TICK 1.0f /* traces are written in mm, one per tick, whatever the speed */
 
 typedef struct
 {
@@ -28,9 +28,9 @@ static void read_line(Rig *r)
     r->in.guidance_valid = s.guidance_valid;
     r->in.usable_line = s.normalized_valid;
     r->in.line = s.line;
-    r->in.line_error = s.error;
-    r->in.left_black = s.left_fraction != 0u;
-    r->in.right_black = s.right_fraction != 0u;
+    r->in.line_error = ir_snapshot_error(&s);
+    r->in.left_black = s.left_black;
+    r->in.right_black = s.right_black;
     r->in.line_sampled_ms = s.sampled_ms;
     uint32_t count = (uint32_t)lroundf(r->counts) & ENC_COUNT_MASK;
     r->in.wheel_count[0] = r->in.wheel_count[1] = count;
@@ -79,7 +79,7 @@ static bool following(const Rig *r)
 {
     return r->m.state == MISSION_FOLLOW_LINE &&
         motion_cmd_mode(&r->out.command) == MOTION_MODE_FOLLOW &&
-        motion_cmd_speed(&r->out.command) == 100u;
+        motion_cmd_speed(&r->out.command) == COURSE_SPEED_MMPS;
 }
 
 /* Centred on a straight, both DOUT sensors read white for as long as it
@@ -163,6 +163,163 @@ static void test_junction_after_curve_is_a_crossing(void)
         (MQTT_LINE_LEFT_BLACK | MQTT_LINE_RIGHT_BLACK));
 }
 
+/* The car rolls the rest of the crossing, never stopping. The bits are what the
+   sensors read as it leaves. */
+static void finish_advance(Rig *r, unsigned left, unsigned right)
+{
+    assert(r->m.state == MISSION_NAVIGATE && r->m.phase == JUNCTION_PHASE_ADVANCE);
+    for (unsigned i = 0u; i < 2u * NAV_STRAIGHT_MM && r->m.state == MISSION_NAVIGATE; ++i)
+    {
+        assert(motion_cmd_speed(&r->out.command) == COURSE_SPEED_MMPS);
+        tick(r, left, right);
+    }
+    assert(r->m.state == MISSION_FOLLOW_LINE);
+}
+
+/* Drive onto a crossbar until the crossing commits. */
+static void cross_bar(Rig *r)
+{
+    while (r->m.state != MISSION_NAVIGATE)
+    {
+        tick(r, 1u, 1u);
+        assert(r->m.state != MISSION_STOPPED);
+    }
+}
+
+/* INT-188: on the car one sensor left the bar under 9 mm after both were black,
+   the crossing never committed and tracking followed the other sensor off the
+   line. That read now commits; a shorter both-black still does not. */
+static void test_short_both_black_decides_the_crossing(void)
+{
+    Rig r;
+    start(&r);
+    for (unsigned i = 0u; i < NAV_CONFIRM_MM + 1u && r.m.state == MISSION_FOLLOW_LINE; ++i)
+    {
+        tick(&r, 1u, 1u);
+    }
+    assert(r.m.state == MISSION_NAVIGATE && motion_cmd_steering(&r.out.command) == 0);
+
+    start(&r);
+    for (unsigned i = 0u; i + 1u < NAV_CONFIRM_MM; ++i)
+    {
+        tick(&r, 1u, 1u);
+    }
+    tick(&r, 1u, 0u);
+    assert(following(&r) && steering(&r) == -LINE_KP_Q);
+}
+
+/* INT-154: the left sensor stayed black about 12 mm past the right on most
+   exits. Through the advance that is the bar, not a line touch: the command stays
+   the straight advance, and the last side is kept for the drift afterwards. */
+static void test_crossing_exit_ignores_trailing_sensor(void)
+{
+    Rig r;
+    start(&r);
+    tick(&r, 0u, 1u); /* last seen on the right, so the trailing left is opposite */
+    tick(&r, 0u, 0u);
+    cross_bar(&r);
+    for (unsigned i = 0u; i < 12u; ++i)
+    {
+        tick(&r, 1u, 0u);
+        assert(r.m.state == MISSION_NAVIGATE);
+        assert(motion_cmd_mode(&r.out.command) == MOTION_MODE_FOLLOW);
+        assert(motion_cmd_steering(&r.out.command) == 0);
+    }
+    finish_advance(&r, 0u, 0u);
+    assert(following(&r) && r.m.line_side == 1 && steering(&r) == LINE_DRIFT_Q);
+}
+
+/* The crossing clears the integral: the first touch after it starts at P alone. */
+static void test_first_touch_after_crossing_has_no_integral(void)
+{
+    Rig r;
+    start(&r);
+    for (unsigned i = 0u; i < 20u; ++i)
+    {
+        tick(&r, 0u, 1u);
+    }
+    assert(r.m.line_i_q == 0 && steering(&r) > LINE_KP_Q);
+    tick(&r, 0u, 0u);
+    assert(r.m.line_i_q > 0);
+    cross_bar(&r);
+    finish_advance(&r, 0u, 0u);
+    assert(following(&r) && r.m.line_i_q == 0 && steering(&r) == LINE_DRIFT_Q);
+    tick(&r, 0u, 1u);
+    assert(following(&r) && steering(&r) == LINE_KP_Q);
+}
+
+/* INT-190: regaining the line after a crossing can take over 50 mm of one touch.
+   Correction grows from P with distance instead of jumping, stops at its limit,
+   and fades on white/white rather than holding a lean. */
+static void test_long_first_touch_after_crossing_grows_then_fades(void)
+{
+    Rig r;
+    start(&r);
+    tick(&r, 0u, 1u);
+    tick(&r, 0u, 0u);
+    cross_bar(&r);
+    finish_advance(&r, 0u, 0u);
+    int previous = 0;
+    for (unsigned i = 0u; i < 2u * LINE_I_MAX_Q; ++i)
+    {
+        tick(&r, 1u, 0u);
+        assert(following(&r) && -steering(&r) >= previous &&
+            -steering(&r) <= LINE_KP_Q + LINE_I_MAX_Q);
+        previous = -steering(&r);
+    }
+    assert(previous == LINE_KP_Q + LINE_I_MAX_Q);
+    tick(&r, 0u, 0u);
+    assert(following(&r) && -steering(&r) < LINE_I_MAX_Q + 1 && -steering(&r) > LINE_DRIFT_Q);
+    for (unsigned i = 0u; i < 2u * LINE_I_MAX_Q; ++i)
+    {
+        tick(&r, 0u, 0u);
+    }
+    assert(following(&r) && steering(&r) == -LINE_DRIFT_Q);
+}
+
+/* Both black holds the integral; the same side afterwards resumes from it. */
+static void test_both_black_freezes_integral(void)
+{
+    Rig r;
+    start(&r);
+    for (unsigned i = 0u; i < 10u; ++i)
+    {
+        tick(&r, 1u, 0u);
+    }
+    int before = -steering(&r);
+    assert(before > LINE_KP_Q);
+    for (unsigned i = 0u; i + 1u < NAV_CONFIRM_MM; ++i)
+    {
+        tick(&r, 1u, 1u); /* below the crossing distance */
+    }
+    tick(&r, 1u, 0u);
+    assert(following(&r) && -steering(&r) >= before && -steering(&r) <= before + 2);
+}
+
+/* The other side touching clears the integral at once (S-bend). */
+static void test_other_side_clears_integral(void)
+{
+    Rig r;
+    start(&r);
+    for (unsigned i = 0u; i < 2u * LINE_I_MAX_Q; ++i)
+    {
+        tick(&r, 1u, 0u);
+    }
+    assert(steering(&r) == -(LINE_KP_Q + LINE_I_MAX_Q));
+    tick(&r, 0u, 1u);
+    assert(following(&r) && steering(&r) == LINE_KP_Q);
+}
+
+/* A lone black still there when the advance ends is the line: track it. */
+static void test_touch_past_the_bar_is_tracked(void)
+{
+    Rig r;
+    start(&r);
+    cross_bar(&r);
+    finish_advance(&r, 1u, 0u);
+    assert(following(&r) && steering(&r) == -LINE_KP_Q);
+}
+
 /* S-bend: one sensor, then the other. Keep driving and follow the new side
    while the second sensor is still black. */
 static void test_s_bend_follows_new_side(void)
@@ -225,16 +382,16 @@ static void test_recovery_blank_floor_is_not_reacquired(void)
 }
 
 /* A cached acquisition replayed by later releases is not new evidence: it
-   neither turns a touch into a bend nor advances junction qualification. */
+   neither grows the integral nor advances junction qualification. */
 static void test_cached_samples_do_not_advance(void)
 {
     Rig r;
     start(&r);
     tick(&r, 1u, 0u);
-    for (unsigned i = 0u; i < 5u; ++i) /* within IR_MAX_GAP_MS, past LINE_BEND_TOUCH_MM */
+    for (unsigned i = 0u; i < 5u; ++i) /* within IR_MAX_GAP_MS */
     {
         tick_mm(&r, 1u, 0u, false, 12.0f);
-        assert(following(&r) && !r.m.line_bend && steering(&r) == -LINE_EDGE_Q);
+        assert(following(&r) && steering(&r) == -LINE_KP_Q);
     }
 
     start(&r);
@@ -253,6 +410,13 @@ int main(void)
     test_lost_after_touch_enters_recovery();
     test_curve_skew_keeps_turning();
     test_junction_after_curve_is_a_crossing();
+    test_short_both_black_decides_the_crossing();
+    test_crossing_exit_ignores_trailing_sensor();
+    test_first_touch_after_crossing_has_no_integral();
+    test_both_black_freezes_integral();
+    test_other_side_clears_integral();
+    test_long_first_touch_after_crossing_grows_then_fades();
+    test_touch_past_the_bar_is_tracked();
     test_s_bend_follows_new_side();
     test_recovery_blank_floor_is_not_reacquired();
     test_cached_samples_do_not_advance();

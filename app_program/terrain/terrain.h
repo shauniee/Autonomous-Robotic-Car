@@ -118,7 +118,7 @@ static inline bool terrain_code_to_mm(uint32_t code, uint32_t *mm)
 }
 
 /* Pending acquisition retains travel; failure discards its entire window. */
-static inline float terrain_travel_take(uint32_t origin[2],
+static inline float terrain_travel_take(enc_count_t origin[2],
     const uint32_t count[2], bool acquired, bool discard)
 {
     float travel = acquired && !discard ? enc_mean_travel(count, origin) : 0.0f;
@@ -128,21 +128,6 @@ static inline float terrain_travel_take(uint32_t origin[2],
         origin[1] = count[1];
     }
     return travel;
-}
-
-typedef struct
-{
-    uint32_t terrain, sampled_ms, serviced_ms, sequence;
-    uint8_t acquisition_valid : 1;
-} TerrainSnapshot;
-
-static inline bool terrain_evidence_fresh(const TerrainSnapshot *sample,
-    uint32_t now, uint32_t age_limit)
-{
-    return sample != 0 && sample->acquisition_valid != 0u &&
-        sample->sequence != 0u &&
-        robot_time_elapsed(now, sample->sampled_ms) <= age_limit &&
-        robot_time_elapsed(now, sample->serviced_ms) <= age_limit;
 }
 
 /* A short impact observation must survive until Motion services braking.
@@ -168,7 +153,6 @@ uint32_t terrain_read_word(void);
 void terrain_step(uint32_t now_ms);
 /* I/O task only: one pending hump-detector trace frame. 0 when none. */
 unsigned terrain_trace_take(uint8_t *out, unsigned capacity);
-bool terrain_copy(TerrainSnapshot *out);
 bool terrain_startup_complete(void);
 
 /*

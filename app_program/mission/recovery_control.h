@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "../motion/motion.h"
 
 typedef enum
 {
@@ -13,7 +14,8 @@ typedef enum
 } recovery_phase_t;
 typedef struct
 {
-    uint32_t origin[2], started_ms;
+    enc_count_t origin[2];
+    uint32_t started_ms;
     uint8_t phase : 3;
     uint8_t right : 1;
     uint8_t turning : 1;

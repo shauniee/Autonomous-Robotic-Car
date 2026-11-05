@@ -14,7 +14,7 @@
 - [Bits per subsystem](#bits-per-subsystem)
 - [Manual build and flash](#manual-build-and-flash)
 
-Start with the [consolidated completion plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) in issue #117. The core software is implemented; physical calibration, timing and full mission acceptance remain incomplete. Unresolved limits live in [pending decisions](docs/project-specs.md#pending-decisions).
+Start with the [pending work](pending.md). The core software is implemented; physical calibration, timing and full mission acceptance remain incomplete. Unresolved limits live in [pending decisions](docs/project-specs.md#pending-decisions).
 
 An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, hump measurement, obstacle avoidance and WiFi telemetry. Firmware uses micro T-Kernel 3.0 on the RP2040. See [project specifications](docs/project-specs.md) for required outcomes and [Getting started](#getting-started) for what runs today.
 
@@ -40,7 +40,8 @@ For an Apple Silicon Mac with [Homebrew](https://brew.sh). Other systems: [Manua
 3. Build and flash. The script waits for the drive: hold BOOTSEL while plugging in USB.
 
    ```sh
-   ./flash.sh        # full course: motors on, junction turns and obstacle bypass released
+   ./flash.sh        # full course: motors on, junction turns and obstacle bypass released, no diagnostics
+   ./flash.sh trial  # driving test: same as the full course, with diagnostics on
    ./flash.sh test   # wireless self-test image: motors always inhibited
    ```
 
@@ -80,7 +81,7 @@ the Homebrew packages the installer added (`--dry-run` lists them first).
 
 | Guide | Use it for |
 | --- | --- |
-| [Implementation plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) | Single live plan and remaining acceptance |
+| [pending work](pending.md) | Single live plan and remaining acceptance |
 | [Project specifications](docs/project-specs.md) | Requirements, change requirement (minimum-bit), data table, assessment, pending decisions |
 | [Team](docs/team.md) | Owners, pins and wiring, task and kernel-object budget, interfaces, coding rules |
 | [Architecture](docs/architecture.md) | Target three-task contracts, looping Mission, stop/freshness rules, shared data and MQTT protocol |
@@ -107,6 +108,25 @@ Each fact has one owning guide; other guides link to it. Assignment requirements
 
 Requirements are in [project-specs](docs/project-specs.md). Full-robot bring-up order is at the end of this section.
 
+### Software regression and firmware profile checks
+
+For kernel-free C/Python/MQTT checks, run
+`bash testing/pure/run.sh`. The new GitHub Actions workflow
+`.github/workflows/host-tests.yml` runs that suite and
+`node testing/pure/test_dashboard.mjs` on pull requests and main pushes.
+A green host check does not mean the Pico firmware built or that the robot
+has passed physical tests.
+
+The pending safety/profile matrix is defined by
+`testing/build_pending_profiles.sh`. Run
+`sh testing/build_pending_profiles.sh` only on a configured machine with
+`PICO_SDK_PATH`, `arm-none-eabi-gcc` and `make`. It **builds but never
+flashes** TEST/normal and TRACE 0/1 profiles plus the TEST-only WATCHDOG
+profiles. Inspect any compiler errors before preparing a wheels-raised test
+image. See [pending.md](pending.md) for unmet measurements and decisions.
+
+Draft reports: [PID tuning](app_program/motion/README.md#pid-tuning-report-draft) and [Terrain analysis](app_program/terrain/README.md#terrain-analysis-draft). Both need real measurements, not host passes.
+
 ### Build profiles
 
 Build sequentially (shared `build_make/`). Give every flag each time; incompatible objects rebuild automatically.
@@ -123,6 +143,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | Profile | Output in `build_make/` |
 | --- | --- |
 | `./flash.sh` | `full_course.uf2` |
+| `./flash.sh trial` | `trial.uf2` |
 | `./flash.sh test` | `test.uf2` |
 
 | Option | Meaning |
@@ -134,11 +155,11 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `FULL_COURSE=1` | Releases junction turns and obstacle bypass; `_course` image (`flash.sh` default) |
 | `TEST=1` | Firmware self-tests; forces Motion braking even if the controller enables motion |
 | `WATCHDOG=1` | **Opt-in bench validation only:** arms a 2-second RP2040 reset watchdog after Motion and Mission report fresh progress; `_wd` image. Default `0` until hardware validation (D15) |
-| `TRACE=0` | Skip high-rate diagnostic frame production (types 9/10/11, plus Terrain trace), retaining telemetry, events, ACKs and all safety; `_notrace` image. Default `TRACE=1` |
+| `TRACE=0` | Skip high-rate diagnostic frame production (types 9/10/11, plus Terrain trace), retaining telemetry, events, ACKs and all safety; `_notrace` image. Default `TRACE=0` with `FULL_COURSE=1`, otherwise `TRACE=1` |
 | `CRASH_REPORT=1` | Crash/console copy on UART0; project uses `0` (GP0/GP1 conflict, [pins](docs/team.md#2-pins)) |
 
-For line-tracking A/B trials, keep the same course, battery condition and
-controller settings, but build one `TRACE=1` image and one `TRACE=0` image.
+Diagnostics belong in test images (Nicholas, 2026-11-04): `full_course` has none, for the least memory. To check they do not change driving, keep the same course, battery condition and
+controller settings, and compare `./flash.sh trial` with `./flash.sh`.
 Each build has a distinct profile name/hash; capture the same number of laps
 and compare success rates and latency, not just how smooth the dashboard
 looks. With `TRACE=0`, the dashboard still receives ordinary state/event
@@ -230,7 +251,7 @@ Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--p
 
 ### Bring-up order and project tasks
 
-Follow the [consolidated issue plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#remaining-plan) and the
+Follow the [pending work](pending.md) and the
 [mission-readiness checklist](testing/mission-readiness.md). The three-task
 Motion/Mission/I/O refactor is implemented; remaining work is calibration,
 feature release, measured timing/load and mixed looping-mission acceptance.
@@ -244,13 +265,13 @@ Target sizes from `sizeof` with `arm-none-eabi-gcc` for the RP2040. **Used** is 
 | Subsystem | Used bits | Stored bits |
 | --- | ---: | ---: |
 | [Comms](app_program/comms/README.md) | 1227 | 1352 |
-| [Motion](app_program/motion/README.md) | 1137 | 1256 |
-| [Line and barcode](app_program/line_barcode/README.md) | 2470 | 3560 |
-| [Terrain](app_program/terrain/README.md) | 451 | 520 |
-| [Obstacle](app_program/obstacle/README.md) | 508 | 680 |
+| [Motion](app_program/motion/README.md) | 1137 | 1224 |
+| [Line and barcode](app_program/line_barcode/README.md) | 2470 | 2552 |
+| [Terrain](app_program/terrain/README.md) | 327 | 360 |
+| [Obstacle](app_program/obstacle/README.md) | 585 | 712 |
 | Mission | 1000 | 1136 |
 
-Totals cover the rows below, multiplied by their instances. Private working structs are listed under the tables and not counted, because they mix packed fields with full-width times.
+Tables count `TRACE=1` images; `full_course` is `TRACE=0` and leaves out the trace records. These partial totals need a final-image refresh under the [data audit](docs/project-specs.md#minimum-bit-audit-2026-11-03); they do not establish minimum total RAM. Totals cover the rows below, multiplied by their instances. Private working structs are listed under the tables and not counted, because they mix packed fields with full-width times.
 
 **Comms**
 
@@ -266,10 +287,12 @@ Messages on the wire are separate from these totals:
 
 | Frame | Used | Stored |
 | --- | ---: | ---: |
-| Telemetry and snapshot reply | 183 | 184 |
+| Telemetry and snapshot reply | 171 | 176 |
 | Event | 83 | 88 |
 | Wheel trace | 120 | 120 |
 | Line trace | 124 | 136 |
+| Barcode trace | 144 | 144 |
+| Terrain trace | 61 | 64 |
 | Mapping | 36 | 40 |
 | Junction test | 19 | 24 |
 | Acknowledgement | 18 | 24 |
@@ -279,26 +302,26 @@ Messages on the wire are separate from these totals:
 
 | Data | Fields (bits) | Instances | Used | Stored |
 | --- | --- | ---: | ---: | ---: |
-| Encoder count | wrapped count 16 | 2 | 16 | 32 |
+| Encoder count | wrapped count 16 | 2 | 16 | 16 |
 | Feedback word | status 2, action 6 | 1 | 8 | 32 |
 | Command | time 32, target 12, speed 9, action 6, mode 2, steering 8 | 1 | 69 | 96 |
 | Health | service time 32, sequence 32, stopped 1, brake ack 1 | 1 | 66 | 96 |
 | Wheel trace record | see frame above | 8 | 120 | 120 |
 | Motion fault byte | stall, encoder | 1 | 2 | 8 |
 
-Not counted: `MotionController`, 480 stored.
+Not counted: `MotionController`, 384 stored, including `WheelPid` (2 x 32). `WATCHDOG=1` builds add 128 bits for two heartbeats and two last-fed copies.
 
 **Line and barcode**
 
 | Data | Fields (bits) | Instances | Used | Stored |
 | --- | --- | ---: | ---: | ---: |
-| IR raw word | left 1, right 1, valid 1 | 2 | 3 | 32 |
+| IR raw word | left 1, right 1, valid 1 | 2 | 3 | 8 |
 | Mapping word | letters 4x5, mapped 1 | 1 | 21 | 32 |
-| Barcode edge | counts 2x16, level 1 | 64 | 33 | 48 |
+| Barcode edge | counts 2x16, level 1 | 64 | 33 | 33 |
 | Barcode event | counts 2x16, letter 5, action 3, orientation 1 | 8 | 41 | 48 |
 | Line fault byte | IR invalid, capture overflow, event overflow | 1 | 3 | 8 |
 
-Not counted: `IrTracker`, 160 stored; `LineIrSnapshot`, 192 stored; `barcode_frame_t`, 496 stored.
+Not counted: `IrTracker`, 64 stored; `LineIrSnapshot`, 96 stored; `barcode_frame_t`, 496 stored.
 
 **Terrain**
 
@@ -306,7 +329,6 @@ Not counted: `IrTracker`, 160 stored; `LineIrSnapshot`, 192 stored; `barcode_fra
 | --- | --- | ---: | ---: | ---: |
 | Terrain word | last 7, max 7, count 8, state 3, height valid 1, calibrated 1 | 1 | 27 | 32 |
 | `TerrainContext` | filter 3x32, calibration 3x23, rise 16, travel 16, roll average 32, pitch 15, roll 15, codes 2x7, count 8, flat run 4, calibration count 7, state 3, flags 2 | 1 | 297 | 320 |
-| `TerrainSnapshot` | word 27, times 2x32, sequence 32, valid 1 | 1 | 124 | 160 |
 | Terrain fault byte | IMU, calibration, impact | 1 | 3 | 8 |
 
 **Obstacle**
@@ -315,9 +337,9 @@ Not counted: `IrTracker`, 160 stored; `LineIrSnapshot`, 192 stored; `barcode_fra
 | --- | --- | ---: | ---: | ---: |
 | Echo word (front, side) | range 13, valid 1, time 16 | 2 | 30 | 32 |
 | Scan word | state 3, scan ID 4 | 1 | 7 | 32 |
-| Side-watch word | on 1, angle 6 | 1 | 7 | 32 |
-| Scan ray | angle 6, valid 1, range 16 | 9 | 23 | 32 |
-| Profile | angle 6, valid 1, measurements 6x16 | 1 | 103 | 112 |
+| Side-watch word | on 1, angle 8 | 1 | 9 | 32 |
+| Scan ray | angle 7, valid 1, range 13 | 15 | 21 | 24 |
+| Profile | angle 7, valid 1, distances 4x10, coordinates 2x11 | 1 | 70 | 72 |
 | Range group | values 5x13, counters 4x3 | 1 | 77 | 96 |
 | Profile evidence | widths 2x16, rays 3x4, edges 2 | 1 | 46 | 48 |
 | Obstacle fault byte | no echo | 1 | 1 | 8 |
@@ -331,7 +353,7 @@ Not counted: `IrTracker`, 160 stored; `LineIrSnapshot`, 192 stored; `barcode_fra
 | Line trace record | see frame above | 8 | 124 | 136 |
 | Mission fault byte | line lost | 1 | 1 | 8 |
 
-Not counted: `Mission`, 1792 stored, including `recovery_control_t` (128) and `bypass_control_t` (704).
+Not counted: `Mission`, 1280 stored, including `recovery_control_t` (96) and `bypass_control_t` (512).
 
 ## Manual build and flash
 
@@ -371,5 +393,5 @@ are configured as provisional software proposals, and physical bypass release
 remains inhibited; encountering the trigger brakes and unsupported evidence stops
 the manoeuvre. Do not interpret the passing synthetic
 profile fixtures as an enabled full bypass. The user confirmed that physical
-trials are unavailable; [full-plan completion](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#done-when)
+trials are unavailable; [pending work](pending.md)
 remains BLOCKED.

@@ -3,12 +3,18 @@
 #include <stdio.h>
 #include "../../app_program/motion/motion.h"
 
+static float mean(const uint32_t count[2], const uint32_t origin[2])
+{
+    const enc_count_t stored[2] = {(enc_count_t)origin[0], (enc_count_t)origin[1]};
+    return enc_mean_travel(count, stored);
+}
+
 int main(void)
 {
     /* INT-66: independently recorded wheel deltas over the measured 500 mm. */
     const uint32_t measured_before[2] = {2210u, 9u};
     const uint32_t measured_after[2] = {8043u, 5825u};
-    float measured_mm = enc_mean_travel(measured_after, measured_before) /
+    float measured_mm = mean(measured_after, measured_before) /
         ENC_COUNTS_PER_MM;
     assert(measured_mm > 499.99f && measured_mm < 500.01f);
     float left_mm = 5833.0f / ENC_COUNTS_PER_MM;
@@ -16,21 +22,21 @@ int main(void)
     assert(left_mm > 499.0f && left_mm < 501.0f);
     assert(right_mm > 499.0f && right_mm < 501.0f);
     /* Current tracking trial and recovery speeds in measured encoder units. */
-    float follow_cps = MISSION_TRACK_SPEED_MMPS * ENC_COUNTS_PER_MM;
+    float follow_cps = 100.0f * ENC_COUNTS_PER_MM;
     float recovery_cps = RECOVERY_SPEED_MMPS * ENC_COUNTS_PER_MM;
     assert(follow_cps > 1164.0f && follow_cps < 1166.0f); /* 100 mm/s, INT-123 */
     assert(recovery_cps > 410.0f && recovery_cps < 435.0f);
     /* Lifetime wheel separation must not affect local displacement. */
     const uint32_t before[2] = {1000u, 33767u};
     const uint32_t after[2] = {1001u, 33769u};
-    assert(enc_mean_travel(after, before) == 1.5f);
-    assert(enc_mean_travel(before, after) == -1.5f);
+    assert(mean(after, before) == 1.5f);
+    assert(mean(before, after) == -1.5f);
     const uint32_t wrapping[2] = {ENC_COUNT_MASK, 1234u};
     const uint32_t advanced[2] = {1u, 1236u};
-    assert(enc_mean_travel(advanced, wrapping) == 2.0f);
+    assert(mean(advanced, wrapping) == 2.0f);
     const uint32_t pivot[2] = {999u, 33768u};
-    assert(enc_mean_travel(pivot, before) == 0.0f);
-    assert(enc_mean_travel(before, before) == 0.0f);
+    assert(mean(pivot, before) == 0.0f);
+    assert(mean(before, before) == 0.0f);
     /* Quadrature: forward Gray cycle 00,01,11,10 gives +1 each step, reverse -1. */
     const unsigned fwd[] = {0u, 1u, 3u, 2u};
     for (unsigned i = 0u; i < 4u; ++i) {

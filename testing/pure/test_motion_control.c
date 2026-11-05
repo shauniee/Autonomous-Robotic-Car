@@ -157,7 +157,7 @@ static void test_distance_turn_actions(void)
         assert(out.status == RD_MOTION_DONE && out.action_id == 5u && out.duty[0] == 0.0f);
     }
     /* A new action ID starts a fresh action (origin reset): reverse 100 mm. */
-    cmd = motion_command_make(MOTION_MODE_DISTANCE, 200.0f, -100.0f, 0, 6u, cmd.sampled_ms);
+    cmd = motion_command_make(MOTION_MODE_DISTANCE, COURSE_SPEED_MMPS, -100.0f, 0, 6u, cmd.sampled_ms);
     uint32_t reverse_origin = s.count[0];
     out = sim_step(&s, &cmd, false, 0);
     assert(out.status == RD_MOTION_RUNNING && out.action_id == 6u && out.duty[0] < 0.0f);
@@ -176,6 +176,32 @@ static void test_distance_turn_actions(void)
     float angle = (dr - dl) / TRACK_WIDTH_MM * (180.0f / 3.14159265f);
     assert(dl < 0.0f && dr > 0.0f);
     assert(fabsf(angle - 90.0f) <= 2.0f * MOTION_ANGLE_TOL_DEG + 2.0f);
+}
+
+/* Stored PID state saturates, never wraps: a burst of counts must not read as
+   a wheel running backward. */
+static void test_pid_state_saturates(void)
+{
+    assert(sizeof(WheelPid) == 4u);
+    Sim s; sim_init(&s);
+    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW, 100.0f, 0.0f, 0, 1u, s.now);
+    (void)sim_step(&s, &cmd, false, 0);
+    s.count[0] = enc_advance(s.count[0], 5000);
+    (void)sim_step(&s, &cmd, false, 0);
+    assert(s.ctl.pid[0].previous_cps == 32767);
+}
+
+/* INT-156: the end of an approach asks for 3 mm/s, too little to turn a wheel.
+   That wait is not a stall. */
+static void test_crawl_is_not_a_stall(void)
+{
+    Sim s; sim_init(&s);
+    s.wheel_gain[0] = s.wheel_gain[1] = 0.0f;
+    MotionCommand cmd = motion_command_make(MOTION_MODE_DISTANCE, 5.0f, 100.0f, 0, 9u, 0u);
+    for (int i = 0; i < (int)(MOTION_STALL_MS / MOTION_PERIOD_MS) * 2; ++i) {
+        MotionOutput out = sim_step(&s, &cmd, false, 0);
+        assert(!out.stall);
+    }
 }
 
 static void test_stall_and_timeout(void)
@@ -250,8 +276,7 @@ static void test_follow_steering(void)
         out = sim_step(&s, &cmd, false, 0);
         for (unsigned w = 0; w < 2u; ++w)
         {
-            float initial_base = fminf(20.0f,
-                MOTION_FOLLOW_SLEW_MMPS2 * MOTION_PERIOD_MS / 1000.0f);
+            float initial_base = s.ctl.follow_base_q6 / 64.0f;
             float initial_mmps = targets[i][w] * initial_base / 20.0f;
             float cps = initial_mmps * ENC_COUNTS_PER_MM;
             float expected = cps == 0.0f ? 0.0f : MOTION_KS + cps * (MOTION_KF + MOTION_KP +
@@ -259,12 +284,12 @@ static void test_follow_steering(void)
             assert(expected < MOTION_MAX_DUTY);
             assert(fabsf(out.duty[w] - expected) < 0.00001f);
         }
-        for (unsigned release = 0; release < 8u; ++release)
+        for (unsigned release = 0; release < 40u; ++release)
         {
             out = sim_step(&s, &cmd, false, 0);
             assert(out.status == RD_MOTION_RUNNING);
         }
-        assert(s.ctl.follow_base_q6 == 1280u);
+        assert(s.ctl.follow_base_q6 == motion_cmd_speed(&cmd) * 64u);
     }
     puts("INT-85: FOLLOW base ramp preserves gentle/tight wheel ratios from rest PASS");
     /* Zero commanded speed brakes but the status is not a stationarity proof. */
@@ -302,7 +327,7 @@ static void test_follow_target_slew(void)
         assert(c.follow_base_q6 == 4800u);
     }
     /* Lower base demands ramp down, with no reset on steering reversal. */
-    for (unsigned i = 0; i < 12u; ++i)
+    for (unsigned i = 0; i < 30u; ++i)
     {
         unsigned before = c.follow_base_q6;
         MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
@@ -356,13 +381,13 @@ static void test_follow_target_slew(void)
     in.now_ms += 100u;
     cmd.sampled_ms = in.now_ms;
     motion_control_step(&c, &cmd, &in, &out);
-    assert(c.follow_base_q6 == before + 320u);
+    assert(c.follow_base_q6 > before && c.follow_base_q6 <= before + 320u);
     motion_control_reset(&c);
     cmd = motion_command_make(MOTION_MODE_FOLLOW, 1.0f, 0.0f,
         0, 1u, in.now_ms);
     motion_control_step(&c, &cmd, &in, &out);
-    assert(c.follow_base_q6 == 64u);
-    for (unsigned i = 0; i < 105u; ++i)
+    assert(c.follow_base_q6 > 0u && c.follow_base_q6 <= 64u);
+    for (unsigned i = 0; i < (500u * 1000u / MOTION_ACCEL_MMPS2 + MOTION_ACCEL_MMPS2 * 1000u / MOTION_JERK_MMPS3) / MOTION_PERIOD_MS + 5u; ++i)
     {
         in.now_ms += MOTION_PERIOD_MS;
         in.count[0] = enc_advance(in.count[0], 12);
@@ -382,6 +407,94 @@ static void test_follow_target_slew(void)
     puts("INT-85: common base slew, reversal, wrap, duplicates, bounds and immediate brakes PASS");
 }
 
+/* Lift-style profile: no jump in speed or acceleration moving off or slowing down,
+   for any planned move, while a STOP still brakes at once. */
+static void check_profile(motion_mode_t mode, float speed, float target, int style)
+{
+    MotionController c;
+    motion_control_reset(&c);
+    MotionInput in = {.now_ms = 1000u};
+    MotionOutput out;
+    int previous_q6 = 0, previous_step = 0;
+    int peak = 0, first_motion = -1, finished = 0;
+    bool slowing = false;
+    float travel[2] = {0.0f, 0.0f};
+    const int max_step = (int)(MOTION_ACCEL_MMPS2 * MOTION_PERIOD_MS * 64u / 1000u) + 1;
+    const int max_jerk = (int)(MOTION_JERK_MMPS3 * MOTION_PERIOD_MS * MOTION_PERIOD_MS * 64u / 1000000u) + 2;
+    for (unsigned i = 0u; i < 3000u; ++i)
+    {
+        MotionCommand cmd = motion_command_make(mode, speed, target, style, 1u, in.now_ms);
+        motion_control_step(&c, &cmd, &in, &out);
+        if (out.status == RD_MOTION_DONE)
+        {
+            finished = 1;
+            break;
+        }
+        assert(out.status == RD_MOTION_RUNNING);
+        int q6 = c.follow_base_q6, step = q6 - previous_q6;
+        assert(abs(step) <= max_step);
+        /* No jolt: acceleration builds at the jerk limit. Reaching the target speed
+           may drop the last of it, which is bounded and far below a full ramp. */
+        bool settled = q6 == (int)(speed * 64.0f) || q6 == 0;
+        assert(abs(step - previous_step) <= (settled ? 6 * max_jerk : max_jerk));
+        /* One rise and one fall: no creeping restart near the end. */
+        slowing = slowing || step < 0;
+        assert(!slowing || step <= 0);
+        peak = q6 > peak ? q6 : peak;
+        if (first_motion < 0 && q6 > 0)
+        {
+            first_motion = q6;
+        }
+        previous_q6 = q6;
+        previous_step = step;
+        in.now_ms += MOTION_PERIOD_MS;
+        for (int w = 0; w < 2; ++w)
+        {
+            /* an ideal wheel follows its target */
+            travel[w] += out.target_cps[w] * MOTION_PERIOD_MS * .001f;
+            int whole = (int)travel[w];
+            travel[w] -= (float)whole;
+            in.count[w] = enc_advance(in.count[w], whole);
+        }
+    }
+    assert(finished);
+    assert(first_motion > 0 && first_motion <= max_step);
+    assert(peak <= (int)(speed * 64.0f) + 1);
+}
+
+static void test_lift_profile(void)
+{
+    check_profile(MOTION_MODE_DISTANCE, COURSE_SPEED_MMPS, 400.0f, 0);
+    check_profile(MOTION_MODE_DISTANCE, COURSE_SPEED_MMPS, -150.0f, 0);
+    check_profile(MOTION_MODE_DISTANCE, COURSE_SPEED_MMPS, 36.0f, MOTION_TURN_RAMPED);
+    check_profile(MOTION_MODE_TURN, 36.0f, 90.0f, MOTION_TURN_PIVOT);
+    check_profile(MOTION_MODE_TURN, COURSE_SPEED_MMPS, -180.0f, MOTION_TURN_RAMPED);
+
+    /* Moving off in FOLLOW takes a real time to reach course speed. */
+    MotionController c;
+    motion_control_reset(&c);
+    MotionInput in = {.now_ms = 1000u};
+    MotionOutput out;
+    unsigned releases = 0u;
+    while (c.follow_base_q6 < COURSE_SPEED_MMPS * 64u)
+    {
+        MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW, COURSE_SPEED_MMPS, 0.0f, 0, 1u, in.now_ms);
+        motion_control_step(&c, &cmd, &in, &out);
+        in.now_ms += MOTION_PERIOD_MS;
+        in.count[0] = enc_advance(in.count[0], 12);
+        in.count[1] = enc_advance(in.count[1], 12);
+        ++releases;
+        assert(releases < 500u);
+    }
+    assert(releases * MOTION_PERIOD_MS >= 1000u * COURSE_SPEED_MMPS / MOTION_ACCEL_MMPS2);
+
+    /* A STOP during the move is not profiled. */
+    MotionCommand stop = motion_command_make(MOTION_MODE_STOP, 0.0f, 0.0f, 0, 0u, in.now_ms);
+    motion_control_step(&c, &stop, &in, &out);
+    assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f && c.follow_base_q6 == 0u);
+    puts("lift profile: no jump moving off or slowing down, STOP still immediate PASS");
+}
+
 static void test_follow_steering_slew(void)
 {
     MotionController c;
@@ -390,7 +503,10 @@ static void test_follow_steering_slew(void)
     MotionOutput out;
     /* Entry, full reversal through zero, and return to straight. */
     const int targets[] = {127, -127, 0};
-    const unsigned releases[] = {8u, 16u, 8u};
+    const unsigned build = 127u * 1000u / (MOTION_FOLLOW_STEER_QPS * MOTION_PERIOD_MS) + 1u;
+    const unsigned reverse = 127u * 1000u / (LINE_REVERSE_QPS * MOTION_PERIOD_MS) + 1u;
+    const unsigned release = 127u * 1000u / (LINE_RELEASE_QPS * MOTION_PERIOD_MS) + 1u;
+    const unsigned releases[] = {build, reverse + build, release};
     for (unsigned phase = 0; phase < 3u; ++phase)
     {
         for (unsigned i = 0; i < releases[phase]; ++i)
@@ -401,7 +517,11 @@ static void test_follow_steering_slew(void)
             motion_control_step(&c, &cmd, &in, &out);
             assert(out.status == RD_MOTION_RUNNING);
             int delta = c.follow_steer_q - previous;
-            assert(delta >= -(int)(LINE_RELEASE_QPS*MOTION_PERIOD_MS/1000u) && delta <= (int)(LINE_RELEASE_QPS*MOTION_PERIOD_MS/1000u));
+            /* Each direction keeps its own rate: build, reversal, then release. */
+            int limit = (int)((phase == 2u ? LINE_RELEASE_QPS :
+                previous != 0 && (previous < 0) != (targets[phase] < 0) ? LINE_REVERSE_QPS :
+                MOTION_FOLLOW_STEER_QPS) * MOTION_PERIOD_MS / 1000u);
+            assert(delta >= -limit && delta <= limit);
             assert(c.follow_steer_q >= -127 && c.follow_steer_q <= 127);
             int held = c.follow_steer_q;
             motion_control_step(&c, &cmd, &in, &out);
@@ -670,7 +790,7 @@ static void test_wheel_trace_inputs(void)
         50.0f, 0.0f, 0, 1u, in.now_ms);
     motion_control_step(&c, &cmd, &in, &out);
     assert(isnan(out.measured_cps[0]) && isnan(out.measured_cps[1]));
-    assert(fabsf(out.target_cps[0] - 5.0f * ENC_COUNTS_PER_MM) < 0.01f);
+    assert(c.follow_base_q6 > 0u && fabsf(out.target_cps[0] - c.follow_base_q6 / 64.0f * ENC_COUNTS_PER_MM) < 0.01f);
     in.now_ms += 20u;
     in.count[0] = enc_advance(in.count[0], 20);
     in.count[1] = enc_advance(in.count[1], -10);
@@ -678,7 +798,7 @@ static void test_wheel_trace_inputs(void)
     motion_control_step(&c, &cmd, &in, &out);
     assert(fabsf(out.measured_cps[0] - 1000.0f) < 0.01f);
     assert(fabsf(out.measured_cps[1] + 500.0f) < 0.01f);
-    assert(fabsf(out.target_cps[1] - 10.0f * ENC_COUNTS_PER_MM) < 0.01f);
+    assert(fabsf(out.target_cps[1] - c.follow_base_q6 / 64.0f * ENC_COUNTS_PER_MM) < 0.01f);
     in.now_ms += MOTION_EXPIRY_MS + 1u;
     motion_control_step(&c, &cmd, &in, &out);
     assert(out.target_cps[0] == 0.0f && out.target_cps[1] == 0.0f);
@@ -695,8 +815,11 @@ int main(void)
     test_distance_turn_actions();
     test_swing_turn();
     test_stall_and_timeout();
+    test_crawl_is_not_a_stall();
+    test_pid_state_saturates();
     test_follow_steering();
     test_follow_target_slew();
+    test_lift_profile();
     test_follow_steering_slew();
     test_follow_slowdown_never_reverses();
     test_discrete_overspeed_does_not_reverse();

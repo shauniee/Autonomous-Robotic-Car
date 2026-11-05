@@ -18,7 +18,7 @@ typedef enum
 } bypass_work_t;
 typedef struct
 {
-    uint32_t origin[2], previous[2];
+    enc_count_t origin[2], previous[2];
     uint32_t started_ms, phase_ms, action_ms;
     uint32_t sensor_sequence, edge_counts;
     int32_t forward_q8 : 21;
@@ -29,7 +29,7 @@ typedef struct
     int16_t action_target;
     uint16_t depth_mm, half_width_mm, flank_mm;
     uint8_t action_id;
-    uint8_t out_deg;
+    uint8_t spare_mm; /* room left to step out; 255 is six steps */
     uint8_t route : 4;
     uint8_t work : 3;
     uint8_t left_side : 1;

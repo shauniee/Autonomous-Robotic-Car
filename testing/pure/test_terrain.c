@@ -208,7 +208,7 @@ static void test_word_boundaries(void)
 
 static void test_evidence_and_invalid_window(void)
 {
-    uint32_t origin[2] = {1000u, 33767u};
+    enc_count_t origin[2] = {1000u, 33767u};
     const uint32_t pending[2] = {1010u, 33777u};
     const uint32_t fresh[2] = {1020u, 33788u};
     assert(terrain_travel_take(origin, pending, false, false) == 0.0f);
@@ -224,17 +224,6 @@ static void test_evidence_and_invalid_window(void)
     assert(terrain_impact_pending(true, false, false));
     assert(terrain_impact_pending(true, true, true));
     assert(!terrain_impact_pending(true, false, true));
-    TerrainSnapshot sample = {.sampled_ms = 100u, .serviced_ms = 100u,
-        .sequence = 1u, .acquisition_valid = 1u};
-    assert(terrain_evidence_fresh(&sample, 160u, 60u));
-    sample.serviced_ms = 160u;
-    ++sample.sequence;
-    assert(!terrain_evidence_fresh(&sample, 161u, 60u)); /* frozen acquisition */
-    sample.sampled_ms = UINT32_MAX - 10u;
-    sample.serviced_ms = 5u;
-    assert(terrain_evidence_fresh(&sample, 5u, 60u));
-    sample.acquisition_valid = 0u;
-    assert(!terrain_evidence_fresh(&sample, 5u, 60u));
     TerrainContext context;
     terrain_algo_init(&context);
     context.hump_count = 2u;

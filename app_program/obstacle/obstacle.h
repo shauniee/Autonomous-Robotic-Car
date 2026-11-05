@@ -90,31 +90,39 @@ typedef enum
 } obstacle_scan_state_t;
 
 /* Each ray: 8-bit signed proposed servo angle (bounded by SERVO_MAX_DEG), 1-bit validity,
-   16-bit range. Attribute packed prevents unwanted byte padding; this
+   13-bit range, as the echo word. Attribute packed prevents unwanted byte padding; this
    array is task-private, and the wider profile is mutex-copied. */
 typedef struct __attribute__((packed))
 {
     int8_t angle_deg;
-    uint8_t valid : 1;
-    uint16_t range_mm;
+    uint16_t range_mm : 13;
+    uint16_t valid : 1;
 } ObstacleRay;
 
-/* Closest angle and validity occupy the former angle/alignment bytes. All six geometrical distances
-   and coordinates remain 16-bit: D05 has no validated tighter sonar bound. */
-typedef struct
+/* Distances saturate at OBSTACLE_PROFILE_MAX_MM: past it a side has more room than
+   any bypass uses (BYPASS_MAX_OFFSET_MM), so the exact value changes nothing. */
+#define OBSTACLE_PROFILE_MAX_MM 1023u
+_Static_assert(BYPASS_MAX_OFFSET_MM < OBSTACLE_PROFILE_MAX_MM, "profile cap below bypass reach");
+
+typedef struct __attribute__((packed))
 {
-    int8_t closest_angle_deg;
+    int8_t closest_angle_deg : 7;
     uint8_t valid : 1;
-    uint16_t closest_mm;
-    uint16_t width_mm;
-    uint16_t left_clearance_mm;
-    uint16_t right_clearance_mm;
-    int16_t obstacle_forward_mm;
-    int16_t obstacle_left_mm;
+    uint16_t closest_mm : 10;
+    uint16_t width_mm : 10;
+    uint16_t left_clearance_mm : 10;
+    uint16_t right_clearance_mm : 10;
+    int16_t obstacle_forward_mm : 11;
+    int16_t obstacle_left_mm : 11;
 } ObstacleProfile;
 
-_Static_assert(sizeof(ObstacleRay) == 4u, "packed obstacle ray must use 32 bits");
-_Static_assert(sizeof(ObstacleProfile) == 14u, "obstacle profile layout changed unexpectedly");
+_Static_assert(sizeof(ObstacleRay) == 3u, "packed obstacle ray must use 24 bits");
+_Static_assert(sizeof(ObstacleProfile) == 9u, "obstacle profile layout changed unexpectedly");
+
+static inline uint16_t obstacle_profile_mm(uint32_t mm)
+{
+    return (uint16_t)(mm > OBSTACLE_PROFILE_MAX_MM ? OBSTACLE_PROFILE_MAX_MM : mm);
+}
 
 /* Public construction/decoding helpers: callers do not mask packed fields. */
 static inline ObstacleRay obstacle_ray_make(int16_t angle_deg, uint16_t range_mm, bool valid)
@@ -130,7 +138,7 @@ static inline ObstacleRay obstacle_ray_make(int16_t angle_deg, uint16_t range_mm
     {
         ray.angle_deg = (int8_t)angle_deg;
         ray.valid = valid;
-        ray.range_mm = range_mm;
+        ray.range_mm = range_mm >= ECHO_RANGE_INVALID ? ECHO_RANGE_INVALID : range_mm;
     }
     return ray;
 }
@@ -253,7 +261,7 @@ typedef struct
     obstacle_profile_evidence_t evidence;
     uint32_t sampled_ms;
 } obstacle_profile_snapshot_t;
-_Static_assert(sizeof(obstacle_profile_snapshot_t) == 24u, "profile snapshot ABI");
+_Static_assert(sizeof(obstacle_profile_snapshot_t) == 20u, "profile snapshot ABI");
 ER obstacle_profile_snapshot(obstacle_profile_snapshot_t *out);
 
 /* Request a coarse-then-fine scan (id 0..15). Honoured only while the car is

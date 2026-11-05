@@ -39,12 +39,11 @@ void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
     IrReading reading = ir_tracking_reading(raw);
     reading.valid = acquired && reading.valid;
     tracker->raw = ir_raw_word(raw, reading.valid);
-    tracker->have_sample = true;
+    tracker->have_sample = 1u;
     tracker->sample_ms = now;
-    tracker->reading = reading;
-    tracker->line = !reading.valid ? IR_LINE_UNKNOWN :
+    tracker->line = (uint8_t)(!reading.valid ? IR_LINE_UNKNOWN :
         (reading.left_fraction && reading.right_fraction ?
-            IR_LINE_BROAD_BLACK : IR_LINE_VISIBLE);
+            IR_LINE_BROAD_BLACK : IR_LINE_VISIBLE));
 }
 
 IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
@@ -56,11 +55,11 @@ IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
     }
     output.sampled_ms = tracker->sample_ms;
     bool usable = tracker->have_sample && ir_raw_word_valid(tracker->raw) &&
-        tracker->reading.valid &&
         (uint32_t)(now - tracker->sample_ms) <= IR_MAX_GAP_MS;
-    output.line = usable ? tracker->line : IR_LINE_UNKNOWN;
+    output.line = usable ? (IrLine)tracker->line : IR_LINE_UNKNOWN;
     output.valid = usable && output.line == IR_LINE_VISIBLE;
-    output.error = output.valid ? tracker->reading.error : 0;
+    output.error = output.valid ?
+        ir_tracking_reading(ir_raw_word_raw(tracker->raw)).error : 0;
     return output;
 }
 
@@ -70,18 +69,15 @@ void ir_snapshot_refresh(LineIrSnapshot *snapshot, uint32_t now)
     {
         return;
     }
-    snapshot->sample_age_ms = snapshot->have_sample ?
-        (uint32_t)(now - snapshot->sampled_ms) : 0u;
     snapshot->sample_fresh = snapshot->have_sample &&
         ir_raw_word_valid(snapshot->raw) &&
-        (snapshot->sample_age_ms <= IR_MAX_GAP_MS);
+        (uint32_t)(now - snapshot->sampled_ms) <= IR_MAX_GAP_MS;
     if (!snapshot->sample_fresh)
     {
-        snapshot->normalized_valid = false;
-        snapshot->guidance_valid = false;
-        snapshot->left_fraction = 0u;
-        snapshot->right_fraction = 0u;
-        snapshot->error = 0;
+        snapshot->normalized_valid = 0u;
+        snapshot->guidance_valid = 0u;
+        snapshot->left_black = 0u;
+        snapshot->right_black = 0u;
         snapshot->line = IR_LINE_UNKNOWN;
     }
 }
@@ -99,17 +95,16 @@ LineIrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t sequence,
     snapshot.raw = ir_raw_word(ir_raw_word_raw(tracker->raw),
         tracker->have_sample && ir_raw_word_valid(tracker->raw));
     snapshot.have_sample = tracker->have_sample;
-    IrReading reading = tracker->reading;
-    snapshot.normalized_valid = ir_raw_word_valid(snapshot.raw) && reading.valid;
+    IrReading reading = ir_tracking_reading(ir_raw_word_raw(tracker->raw));
+    snapshot.normalized_valid = ir_raw_word_valid(snapshot.raw);
     if (snapshot.normalized_valid)
     {
-        snapshot.left_fraction = reading.left_fraction;
-        snapshot.right_fraction = reading.right_fraction;
-        snapshot.error = reading.error;
+        snapshot.left_black = reading.left_fraction != 0u;
+        snapshot.right_black = reading.right_fraction != 0u;
     }
     IrTrackingOutput output = ir_tracking_output(tracker, now);
     snapshot.guidance_valid = output.valid;
-    snapshot.line = output.line;
+    snapshot.line = (uint8_t)output.line;
     ir_snapshot_refresh(&snapshot, now);
     return snapshot;
 }

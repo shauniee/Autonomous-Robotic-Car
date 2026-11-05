@@ -47,6 +47,14 @@ static MissionOutputs junction(Mission *m, MissionInputs *in, int action)
     move(in, NAV_CONFIRM_MM + 1, NAV_CONFIRM_MM + 1);
     return tick(m, in);
 }
+/* A straight crossing rolls its distance over the bar, then tracks. */
+static MissionOutputs finish_straight(Mission *m, MissionInputs *in)
+{
+    assert(m->state == MISSION_NAVIGATE && m->phase == JUNCTION_PHASE_ADVANCE);
+    move(in, NAV_STRAIGHT_MM + 1, NAV_STRAIGHT_MM + 1);
+    return tick(m, in);
+}
+
 static void tracking(void)
 {
     Mission m;
@@ -54,52 +62,46 @@ static void tracking(void)
     follow(&m, &in);
     in.line_error = -127;
     MissionOutputs out = tick(&m, &in);
-    assert(motion_cmd_steering(&out.command) == -LINE_EDGE_Q && !m.line_bend);
+    assert(motion_cmd_steering(&out.command) == -LINE_KP_Q);
     move(&in, 5, 5);
     mission_step(&m, &in, &out); /* a repeated sample changes nothing */
-    assert(m.line_steer_q == -LINE_EDGE_Q);
+    assert(m.line_steer_q == -LINE_KP_Q);
     /* Both black requests no steering: a crossbar must not keep a turn going. */
     in.line = IR_LINE_BROAD_BLACK;
     in.guidance_valid = false;
     out = tick(&m, &in);
     assert(motion_cmd_steering(&out.command) == 0);
+    assert(m.line_i_q == (int)lroundf(5.0f * LINE_KI_QPMM)); /* I froze at 5 mm */
     in.line = IR_LINE_VISIBLE;
     in.guidance_valid = true;
     /* White/white drifts gently toward the side last touched. */
     in.line_error = 0;
     tick(&m, &in);
     assert(m.line_steer_q == -LINE_DRIFT_Q);
-    /* The same side again within LINE_BEND_TOUCH_MM is a bend: steer harder,
-       and lean into it on white/white until LINE_BEND_LEAN_MM past the touch. */
-    move(&in, LINE_BEND_TOUCH_MM - 10, LINE_BEND_TOUCH_MM - 10);
+    /* A long touch grows I by distance, up to its limit. */
     in.line_error = -127;
     tick(&m, &in);
-    assert(m.line_bend && m.line_steer_q == -LINE_BEND_EDGE_Q);
-    in.line_error = 0;
-    move(&in, LINE_BEND_LEAN_MM - 10, LINE_BEND_LEAN_MM - 10);
-    tick(&m, &in);
-    assert(m.line_steer_q == -LINE_BEND_LEAN_Q);
     move(&in, 20, 20);
     tick(&m, &in);
-    assert(m.line_steer_q == -LINE_DRIFT_Q);
-    /* The other side touching ends the bend at once (S-bend). */
-    in.line_error = 127;
+    assert(m.line_steer_q == -(int)lroundf(LINE_KP_Q + m.line_i_q + 20.0f * LINE_KI_QPMM));
+    move(&in, 2.0f * LINE_I_MAX_Q, 2.0f * LINE_I_MAX_Q);
     tick(&m, &in);
-    assert(!m.line_bend && m.line_steer_q == LINE_EDGE_Q);
-    /* A touch held longer than LINE_BEND_TOUCH_MM is a bend too. */
-    for (int i = 0; i < 6; i++)
-    {
-        move(&in, 10, 10);
-        tick(&m, &in);
-    }
-    assert(m.line_bend && m.line_steer_q == LINE_BEND_EDGE_Q);
-    /* A same-side touch long after the last one is a straight correction. */
+    assert(m.line_steer_q == -(LINE_KP_Q + LINE_I_MAX_Q));
+    /* White/white fades I by distance, down to the drift. */
     in.line_error = 0;
-    move(&in, LINE_BEND_LEAN_MM + 50, LINE_BEND_LEAN_MM + 50);
     tick(&m, &in);
+    assert(m.line_steer_q == -LINE_I_MAX_Q && m.line_i_q == LINE_I_MAX_Q);
+    move(&in, 20, 20);
+    tick(&m, &in);
+    assert(m.line_steer_q == -(int)lroundf(LINE_I_MAX_Q - 20.0f * LINE_I_FADE_QPMM));
+    /* The same side resumes from the faded I, and does not jump to the limit. */
+    in.line_error = -127;
+    tick(&m, &in);
+    assert(m.line_steer_q == -(int)lroundf(LINE_KP_Q + LINE_I_MAX_Q - 20.0f * LINE_I_FADE_QPMM));
+    /* The other side touching clears I at once (S-bend). */
     in.line_error = 127;
     tick(&m, &in);
-    assert(!m.line_bend && m.line_steer_q == LINE_EDGE_Q);
+    assert(m.line_i_q == 0 && m.line_steer_q == LINE_KP_Q);
     for (int i = 0; i < 100; i++)
         tick(&m, &in);
     assert(m.state == MISSION_FOLLOW_LINE);
@@ -124,7 +126,7 @@ static void navigation(void)
             assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
             assert(motion_cmd_steering(&out.command) == MOTION_TURN_RAMPED);
             assert(motion_cmd_target(&out.command) > 0);
-            assert(motion_cmd_speed(&out.command) == 100u);
+            assert(motion_cmd_speed(&out.command) == COURSE_SPEED_MMPS);
         }
         in.stop_down = true;
         out = tick(&m, &in);
@@ -169,12 +171,14 @@ static void navigation(void)
         MissionOutputs out = tick(&m, &in);
         assert(m.state == MISSION_NAVIGATE && !out.stop_now);
         assert(m.held == BARCODE_UNMAPPED && out.nav_rejected == 0u);
+        /* Rolls straight over the bar at course speed, never stopping. */
+        assert(m.phase == JUNCTION_PHASE_ADVANCE && !out.stop_now);
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
-        assert(motion_cmd_speed(&out.command) > 0);
         assert(motion_cmd_steering(&out.command) == 0);
+        assert(motion_cmd_speed(&out.command) == COURSE_SPEED_MMPS);
         in.line = IR_LINE_VISIBLE;
         in.left_black = in.right_black = false;
-        out = tick(&m, &in);
+        out = finish_straight(&m, &in);
         assert(m.state == MISSION_FOLLOW_LINE && m.junction_locked);
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
         assert(motion_cmd_speed(&out.command) > 0);
@@ -188,9 +192,10 @@ static void navigation(void)
     in.right_black = false;
     in.line_error = -127;
     tick(&m, &in);
+    assert(m.state == MISSION_NAVIGATE); /* the trailing sensor never steers */
     in.left_black = false;
     in.line_error = 0;
-    tick(&m, &in);
+    finish_straight(&m, &in);
     assert(m.state == MISSION_FOLLOW_LINE && m.junction_locked);
     /* Both black on a curve (inner sensor black long before the outer) keeps
        the turn and never becomes an unqueued crossing. */
@@ -218,24 +223,6 @@ static void navigation(void)
     in.line_error = 0;
     tick(&m, &in);
     assert(m.state == MISSION_FOLLOW_LINE && m.line_steer_q > 0);
-    /* A crossing that skewed the robot steers back to the pre-crossing heading
-       before white/white hands over to tracking. */
-    in = input();
-    follow(&m, &in);
-    move(&in, 36, 0); /* about 17 degrees right while approaching */
-    in.line = IR_LINE_BROAD_BLACK;
-    in.left_black = in.right_black = true;
-    tick(&m, &in);
-    move(&in, NAV_CONFIRM_MM + 1, NAV_CONFIRM_MM + 1);
-    out = tick(&m, &in);
-    assert(m.state == MISSION_NAVIGATE && motion_cmd_steering(&out.command) < 0);
-    in.line = IR_LINE_VISIBLE;
-    in.left_black = in.right_black = false;
-    out = tick(&m, &in);
-    assert(m.state == MISSION_NAVIGATE && motion_cmd_steering(&out.command) < 0);
-    move(&in, 0, 36);
-    tick(&m, &in);
-    assert(m.state == MISSION_FOLLOW_LINE && m.junction_locked);
 #if NAV_GEOMETRY_RELEASED
     /* A U-turn pause cannot run while wheels are moving. */
     in = input();
@@ -251,7 +238,7 @@ static void navigation(void)
     assert(m.phase == JUNCTION_PHASE_PAUSE_WAIT);
     in.stationary = true;
     tick(&m, &in);
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < (int)(NAV_PAUSE_MS / 20u) - 1; i++)
         tick(&m, &in);
     assert(m.phase == JUNCTION_PHASE_PAUSE_WAIT);
     tick(&m, &in);
@@ -284,7 +271,7 @@ static void to_pivot(Mission *m, MissionInputs *in, int action)
     assert(motion_cmd_target(&out.command) ==
         (int)(action == BARCODE_LEFT ? bound : -bound));
     assert(motion_cmd_steering(&out.command) == MOTION_TURN_RAMPED);
-    assert(motion_cmd_speed(&out.command) == 100u); /* 100 mm/s guardrail */
+    assert(motion_cmd_speed(&out.command) == COURSE_SPEED_MMPS);
     in->stationary = false;
     in->motion_action = m->current_action;
     in->motion_status = RD_MOTION_RUNNING;
@@ -326,7 +313,7 @@ static void pivot_turns(void)
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
         /* INT-136: both sensors white after the pivot: lean back toward the line. */
         assert(motion_cmd_steering(&out.command) ==
-            (action == BARCODE_LEFT ? LINE_BEND_LEAN_Q : -LINE_BEND_LEAN_Q));
+            (action == BARCODE_LEFT ? LINE_TURN_LEAN_Q : -LINE_TURN_LEAN_Q));
     }
 }
 #endif
@@ -352,7 +339,7 @@ static void crossing_keeps_last_side(void)
     assert(m.state == MISSION_NAVIGATE);
     in.line = IR_LINE_VISIBLE;
     in.left_black = in.right_black = false;
-    MissionOutputs out = tick(&m, &in);
+    MissionOutputs out = finish_straight(&m, &in);
     assert(m.state == MISSION_FOLLOW_LINE && m.line_side == -1);
     assert(motion_cmd_steering(&out.command) == -LINE_DRIFT_Q);
     move(&in, LINE_LOST_MM + 1.0f, LINE_LOST_MM + 1.0f);

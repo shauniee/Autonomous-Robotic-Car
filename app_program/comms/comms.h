@@ -33,7 +33,8 @@ typedef enum
 } mqtt_type_t;
 
 /* Frame lengths in bytes (exact). */
-#define MQTT_LEN_TELEMETRY 23u
+#define MQTT_OBSTACLE_MAX_MM 1023u	/* 10 bits each on the wire */
+#define MQTT_LEN_TELEMETRY 22u
 #define MQTT_LEN_EVENT 11u
 #define MQTT_LEN_MAPPING 5u
 #define MQTT_LEN_JUNCTION_TEST 3u
@@ -85,8 +86,8 @@ typedef struct
     bool front_valid;
     uint8_t barcode_letter;	/* 0..25 or MQTT_NO_LETTER */
     uint8_t barcode_action;	/* 0..7 (barcode_action_t) */
-    uint16_t obstacle_width_mm;	/* latest profile; 0 none */
-    uint16_t obstacle_depth_mm;	/* latest bypass; 0 none */
+    uint16_t obstacle_width_mm;	/* latest profile; 0 none; saturates at MQTT_OBSTACLE_MAX_MM */
+    uint16_t obstacle_depth_mm;	/* latest bypass; 0 none; saturates at MQTT_OBSTACLE_MAX_MM */
 } mqtt_telemetry_t;
 
 typedef enum
@@ -165,7 +166,7 @@ typedef struct
     uint8_t phase;		/* junction phase, 0..7 */
     uint16_t wheel_count[2];	/* low 16 bits of the shared encoder counts */
     int8_t steer_q;		/* steering law output, Q7 */
-    int8_t law_q;		/* law state: last side -1/+1, doubled in a bend, 0 none */
+    int8_t law_q;		/* last side times the integral held at the last touch transition, Q7 */
     int8_t command_steer_q;	/* FOLLOW steering sent to Motion, else 0 */
     uint8_t command_mode;	/* motion_mode_t, 0..3 */
     uint16_t command_speed;	/* mm/s sent to Motion, 0..511 */

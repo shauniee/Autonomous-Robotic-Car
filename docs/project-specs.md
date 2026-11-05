@@ -5,6 +5,7 @@
 - [DOUT navigation commissioning](#dout-navigation-commissioning)
 
 - [Source provenance and requested design](#source-provenance-and-requested-design)
+- [Demo and full-course decisions, 2026-11-03](#demo-and-full-course-decisions-2026-11-03)
 - [1. Mission and required outcomes](#1-mission-and-required-outcomes)
   - [Encounter behaviour](#encounter-behaviour)
   - [Course rules](#course-rules)
@@ -14,7 +15,8 @@
 - [4. Change in requirement: minimum-bit data representation](#4-change-in-requirement-minimum-bit-data-representation)
   - [Historical baseline, issue #22 (not required)](#historical-baseline-issue-22-not-required)
 - [5. Data representation table (Week 13)](#5-data-representation-table-week-13)
-  - [Comms (proposed; frame layouts in architecture; needs Shaun's sign-off)](#comms-proposed-frame-layouts-in-architecture-needs-shauns-sign-off)
+  - [Minimum-bit audit, 2026-11-03](#minimum-bit-audit-2026-11-03)
+  - [Comms (proposed; frame layouts in architecture; Nicholas review)](#comms-proposed-frame-layouts-in-architecture-nicholas-review)
   - [Motion (encoder width provisional until D03; one constant `ENC_COUNT_BITS` in `robot_config.h`; branches #29, #31)](#motion-encoder-width-provisional-until-d03-one-constant-enc_count_bits-in-robot_configh-branches-29-31)
   - [line_barcode and Mission (branches #35, #36, #37; pending rows converted by #52 after Nicholas confirms)](#line_barcode-and-mission-branches-35-36-37-pending-rows-converted-by-52-after-nicholas-confirms)
   - [line_barcode bit-usage data contract (proposed; spec #100; final evidence #107)](#line_barcode-bit-usage-data-contract-proposed-spec-100-final-evidence-107)
@@ -49,7 +51,7 @@ team confirmations below remain distinct sources; this review does not
 reclassify them as statements in the attached PDFs or remove later course
 updates such as the minimum-bit requirement.
 
-**Reconciled design, 2026-10-29:** [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns implementation
+**Reconciled design, 2026-10-29:** [pending work](../pending.md) owns implementation
 sequence; [architecture](architecture.md) owns task/control contracts. Three
 application tasks retain core 1 Motion/Mission and core 0 I/O, with kernel WiFi/USB
 unchanged. Motion has higher scheduling priority than Mission. No separate Safety
@@ -88,6 +90,57 @@ recovery request was superseded by the stationary wider sweep revision in
 cancels pending movement. GP21 release may reset after cause clearance/brake;
 GP20 starts separately. No two-second barcode disabling rule remains.
 
+## Demo and full-course decisions, 2026-11-03
+
+Nicholas is the sole decision contact and approver for the remaining work,
+including data contracts previously awaiting named subsystem owners. Historical
+attribution remains historical; code-level writer/authority rules are unchanged.
+All unresolved work is tracked in [pending work](../pending.md); issue #117 stays
+closed and PR 149 is already merged. The demo is 2026-11-04 (Singapore time).
+
+**Qualifying lap (user acceptance criterion):** one complete lap, successful
+barcode decoding with the correct mapped navigation, exact hump-crossing count
+and valid height measurements within the agreed D10 error limit, at the configured
+`COURSE_SPEED_MMPS` (100 mm/s today); no hand contact, `REACQUIRE`, `STOPPED`, `FAULT` or
+restart between start and completion. Programmed junction pauses and stationary
+obstacle scans are allowed (Nicholas clarification). Use a marked lap boundary
+for observation, not an automatic finish in firmware. A deliberate GP21 stop
+after completing the lap is outside its scoring interval. Record commanded
+speed separately from measured speed; a 100 mm/s setpoint alone does not prove
+physical speed accuracy. D07/D10 must define acceptable measured-speed variation.
+
+The existing 95% sample target and full-course three-run repeatability checks
+remain; one successful lap does not establish either. All M1–M10 and applicable
+Tribunal safety/resource obligations remain required. Bypass drives at the same `COURSE_SPEED_MMPS`, with good runs observed on the car at that speed and no measurements (INT-203, INT-204). Standalone recovery is tested
+separately and fails the qualifying lap if entered; original-line rejoin within
+bypass remains required under M9.
+
+**Hump range:** Nicholas sets 10 mm as the minimum hump to detect and measure;
+the existing course maximum remains 30 mm. This is not an error tolerance.
+The permitted height-measurement error remains undecided under D10.
+
+**Profiles:** `MOTION_STALL_GUARD_ENABLED=0` for the demo; enabled and physically
+verified for full-course acceptance. Other stop/freshness/deadline guards stay
+active. The optional reset watchdog remains disabled for driving until D15 bench
+validation; no approval to enable it is inferred from the merged implementation.
+Record the exact settings with each image and result.
+
+**Network:** the instructor's network and broker (Nicholas, 2026-11-04). Only the ignored `config/wifi_secrets.h` changes, which creates a distinct image to identify. Do not put secrets in evidence or version control.
+
+**Priorities (Nicholas, 2026-11-04):** very smooth runs with little to no jerkiness come first, with accuracy. Speed comes second: as fast as smoothness and accuracy allow. `COURSE_SPEED_MMPS` in `robot_config.h` is the one setting for course and bypass driving, so a slower trial changes one line. Pivots and standalone recovery keep their own lower speeds.
+
+**Lift-style motion (professor's comment, 2026-11-04):** moving off and slowing down must be smooth, like a lift, never jumping straight to full speed. Safety stops stay immediate.
+
+**Accuracy limits (Nicholas, 2026-11-04):** at most 10 mm lateral error over a 1 m straight and at most 5 degrees heading error on turns, from Tribunal A13. Height, width, measured-speed and recovery limits stay open under D10.
+
+**Diagnostics (Nicholas, 2026-11-04):** diagnostics belong in test images, which need not save memory. `full_course` builds with `TRACE=0` for minimal bit usage; `./flash.sh trial` is the driving image with diagnostics.
+
+**Flipped barcodes (Nicholas, 2026-11-04):** the print can be turned 180 degrees, so the sensor must read it from either end. The decoder already does this and host tests cover all 26 letters; the car check is open. Colour-inverted prints are out of scope.
+
+**Known restart cause:** Nicholas attributes the ten restarts in INT-154–157 to
+a poorly connected battery, a hardware fix. Exclude them from unexplained
+software-reset work; no new electrical measurement or physical PASS is implied.
+
 ## 1. Mission and required outcomes
 
 The default project is an autonomous robot car on a predefined course, using onboard sensing and embedded software on a Raspberry Pi Pico with micro T-Kernel (using FreeRTOS is penalised; no amount given). Remote driving is outside the mission. The course has a black line, navigation barcodes before cross junctions, humps and static obstacles. Features are encountered in no fixed order. The final map is undisclosed until demonstration, so no route may be hard-coded. Success is repeatable behaviour across runs, not isolated functions.
@@ -113,7 +166,7 @@ The default project is an autonomous robot car on a predefined course, using onb
 | Barcode | Decode in either direction; hold the command; do not turn on reading |
 | Cross junction | Execute the held straight, left, right or U-turn there |
 | Hump | Detect, estimate height, report; coordinate motion and line following while one wheel is raised |
-| Blocking obstacle | Scan left/right with the servo ultrasonic sensor, estimate width and clearance (full car width), pick a bypass side (the side with the larger gap); leave margin for the car's width |
+| Blocking obstacle | Scan left/right with the servo ultrasonic sensor, estimate width and clearance (full car width), pick a bypass side (the side with room whose edge is nearer the line's centre, Nicholas 2026-11-05); leave margin for the car's width |
 | Bypass | Leave the line, travel round without line guidance, keep observing until passed |
 | After bypass | Rejoin the original line and resume |
 | U-turn detail | At the junction, brake, pause approximately 200 ms, turn 180 degrees and track the return branch; never undo the turn (user request; pause reference pending D02/D08) |
@@ -258,7 +311,7 @@ proposed; all encoding changes require compatibility review.
 Implemented IMU telemetry calibration status: unsigned 2-bit enum in the existing
 front-range wire word, unitless and unscaled; 0 unknown (legacy), 1 not calibrated,
 2 calibrated, 3 invalid/rejected. No rounding or saturation; reject overflow.
-Wire layout is owned by [architecture](architecture.md#telemetry-and-snapshot-reply-23-bytes).
+Wire layout is owned by [architecture](architecture.md#telemetry-and-snapshot-reply-22-bytes).
 
 Rules for every row:
 
@@ -267,11 +320,39 @@ Rules for every row:
 - Wire format uses explicit masks and shifts; in-RAM packed state may use bit-fields behind accessors.
 - Stored floating-point and timestamp values need a bit-budget justification or fixed point.
 - Loop counters and short-lived temporaries are exempt.
-- **pending** = owner has not supplied the value (nothing assumed). **proposed** = drafted from the named issue branch, not signed off until the owner confirms in the issue #28 thread. This file records no approval that has not been given. Layout is reviewed jointly before any field is converted.
+- **pending** = the value has not been supplied (nothing assumed). **proposed** = not yet approved by Nicholas. Earlier named-owner/issue sign-off labels below are historical and do not require another person; Nicholas reviews the layout before conversion. This file records no approval that has not been given.
 
 All rows are unsigned and rounding "none" unless stated. Columns: field | storage / writer | range (unit) | scale, rounding | invalid code, overflow | bits | representation.
 
-### Comms (proposed; frame layouts in architecture; needs Shaun's sign-off)
+### Minimum-bit audit, 2026-11-03
+
+Source inspection at base `7275347`; the "Current" column describes that base. Since then the barcode ring, encoder counts, `WheelPid`, rays, profile and IR cuts are built (INT-178), and telemetry fault bytes stay at 48 bits by Nicholas's decision, so the fault-byte row is declined. The [rows above](#5-data-representation-table-week-13) hold the current values.
+Minimum logical width and target `sizeof` are different. The README's subtotal
+excludes private controllers and diagnostic state and is not a complete RAM audit.
+Re-run the existing Arm size probes and final linker-size inspection after edits.
+No before/after course submission is required; final-image evidence is required.
+
+| Object / source | Current representation and minimum | Proposed action / storage effect | Required proof before acceptance |
+| --- | --- | --- | --- |
+| Barcode capture ring (`line_barcode.h`, `barcode.c`) | 64 entries, two 16-bit counts + level = 33 logical bits/entry; current 6-byte entries = 384 bytes | First option: explicit 5-byte entries, 320 bytes (64 saved), preserving counts. Tighter option: two count arrays + a 64-bit level bitmap = 264 bytes (120 saved); 33 bits/entry is the current information lower bound. These are alternatives, not additive savings. | Keep 64 entries, ISR sole producer, publication order and coherent reads. Bitmap RMW stays producer-owned. Test wrap, overflow and initial level; measure ISR cost on target. Do not infer every other edge's level without proving missed/coalesced-edge semantics. |
+| Six telemetry fault bytes (`comms.h`, `mqtt_frame.c`) | 2+3+3+1+1+2 = 12 independent fault bits, currently 48 wire bits | Pack the copied snapshot into 16 bits, four reserved bits; telemetry could become 19 instead of 23 bytes (4 saved/frame, about 17%). Keep separate owner storage; do not merge live writers. | Explicit revised schema/version and old-version policy; update firmware codec/reporting, Python decoder, dashboard, fixtures, golden vectors and docs together. Test all simultaneous faults and malformed reserved bits. No silent schema-v2 length change. |
+| Nine scan rays (`obstacle.h`) | Current 4 bytes each. Scan angle -60..60 requires 7 bits (121 values), validity 1, full range 16: 24 logical bits, not 23 | Combine angle + validity in one byte and explicit range bytes: 3 bytes/ray, 27 instead of 36 bytes (9 saved), without quantization | Accessors, signed extrema, invalid angle/echo tests; update producer, profile consumers and target size assert/probe. No native packed struct on the wire. |
+| Obstacle profile (`obstacle.h`) | Angle 7 + valid 1 + six 16-bit values = 104 logical bits; currently 14 bytes | 13 explicit bytes is the information lower bound for the current domains (1 byte saved); retaining natural alignment may still use 14. Prioritize rays over a complex profile rewrite for one byte. | Preserve signed forward/lateral coordinates, full width/depth/clearance domains and validity. Demonstrate actual target savings and acceptable accessor cost. |
+| Sonar/profile quantization | Echo uses 13 bits for 0..8190 mm plus invalid 8191; ray constructor currently accepts full `uint16_t`. Geometry/depth are not bounded by obstacle width 100–200 mm. | First audit every producer. A proven 13-bit ray range with 7-bit angle and validity is 21 logical bits, still 3 bytes/ray. Pack across arrays only if the extra savings justify access cost. Coarser units require an error budget; do not select one merely to fit a byte. | D05/D10 reference errors, maximum range, uncertainty and conservative clearance rounding. No echo stays unknown; round clearance down and obstacle envelope up if quantized. Do not truncate depth or signed coordinates. |
+| Private flags/enums (`MotionController`, `barcode_frame_t`, `io_task.c`, Mission) | Stored `bool` and enum fields still exist. Watchdog `armed` and `boot_reason_reported` are two private bools. Terrain state has 3 defined values plus possible invalid, needing 2 logical bits rather than 3. | Census actual compiler enum sizes; combine same-writer fields behind accessors, pack private bools, and reorder to reduce padding. Count byte savings only after probes; reducing one logical bit may save zero bytes. | Preserve invalid-state behavior. Do not pack cross-core atomics together just because each is boolean. Public state encoding changes require compatibility review. |
+| `WheelPid` (`motion.h`, `motion_control.c`) | Two floats per wheel, four 32-bit persistent values = 16 bytes. Integral and previous speed are not temporary computations. | Document bounds, fractional precision, rounding and saturation; replace with fixed-point only after a numeric error analysis. Two 16-bit values/wheel would be 8 bytes, but that range/precision has not been justified. KD is zero but KI is nonzero in this baseline. Consider conditional removal of derivative history only after auditing gain configuration and tuning paths; integral state is still required. | Trace comparison and min/max/overflow tests, then loaded PID/turn/stop tests. A comment claiming "local float" does not justify persistent storage under the coding rule. |
+| Encoder counts and origins | Configured 16-bit modulo count often stored in 32-bit words; constructor supports wider configurations | Keep the current provisional 16-bit logical contract for now. Narrow private copies only after checking every user and wrap arithmetic; keep cross-core atomic publication units justified. A 2000 mm target × 11.649 counts/mm exceeds the half-range of 15 bits, so 15 bits cannot preserve the current target contract. | D03 edge rate and geometry; preserve signed delta and half-range bounds, missed barcodes and continuous consumer origins. Never reset a shared counter at barcode detection. |
+| Motion command / health | Command currently 12 target bytes; 32-bit time + target domain -2000..2000 needs 12 logical bits, speed 9, action 6, mode 2, steering 8 = 69 bits. Health includes time and sequence. | Distinguish the stored 16-bit target from its 12-bit logical domain and correct stale speed comments/rows; byte-packed command lower bound is 9 bytes, but aligned representation may remain 12. Preserve expiry and mutex copies; profile cost before trading alignment for 3 bytes. | Constructor/invalid/STOP/style/expiry/rollover tests and all callers; no narrowing timestamp merely because normal leases are short. |
+| Watchdog progress (`io_task.c`) | Two atomic 32-bit producer times + two private 32-bit last-fed copies = 128 bits / 16 bytes when enabled, plus the two bools | Add these missing data rows. Retain 32-bit wrapping milliseconds and separate producer words. `WATCHDOG=0` compiles this state out; that is a profile difference, not a compression claim. | Zero means no progress; freshness and new-since-feed must survive wrap and stalled tasks. Narrow times could alias after long stalls; require a complete epoch/lifetime proof before conversion. |
+| Diagnostic storage and final totals | TRACE controls production/draining; README totals omit some rings, indices, private state and persistent copies | Inspect linked symbols for TRACE=0/1; compile out any genuinely unused diagnostic storage without dropping required telemetry. Audit bytes actually removed; do not assume the existing TRACE switch removes every allocation. | Keep diagnostic functionality available for investigation; measured tracking/timing comparison and final image/profile census. Never shrink navigation/capture buffers before measuring peak occupancy. |
+
+Implementation order: census/correct rows; lossless same-writer packing; protocol
+compaction with both endpoints; then precision-dependent conversion only after
+bounds and error budgets are approved. Finish with unchanged functionality,
+combined-load timing, live stack/peak RAM and final message-size evidence. Static
+RAM and layout can be measured without the robot; execution cost cannot.
+
+### Comms (proposed; frame layouts in architecture; Nicholas review)
 
 | Field | Storage / writer | Range | Invalid / overflow | Bits | Repr. |
 | --- | --- | --- | --- | --- | --- |
@@ -280,12 +361,12 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Sequence | byte 1, Comms | 0-255 | wraps mod 256 | 8 | byte |
 | Mission state / motion status / line status | byte 2 | 0-15 / 0-3 / 0-3 | out of range rejected on encode and decode | 4 / 2 / 2 | mask/shift |
 | Action ID / mapped | byte 3 | 0-63 / flag | bit 7 reserved | 6 / 1 | mask/shift |
-| Fault bytes | bytes 4-9 | one byte per owner (six owners) | - | 6 x 8 | bytes |
+| Fault bytes | bytes 4-9 | one byte per owner (six owners); 12 of 48 bits defined | - | 6 x 8 | bytes. Accepted by Nicholas, 2026-11-03: one single-writer byte per owner, read without masks; packing to 12 bits changes the wire format and needs a retest of the link |
 | Encoder counts | bytes 10-13 | wrapped counts | wraps (modular) | 2 x 16 | little-endian |
 | Hump count / max height | bytes 14-15 | 0-255 / 0-126 (D06 scale) | 127 invalid, bit 7 valid flag (any hump completed); count and height saturate | 8 / 7+1 | mask/shift |
 | Front range | bytes 16-17 | 0-8190 mm, nearest mm | 8191 invalid, bit 13 valid flag; saturates to invalid | 13+1 | mask/shift |
 | Last barcode letter / action | byte 18 | 0-25 or 31 none / 0-7 | 31 = no letter | 5 / 3 | mask/shift |
-| Obstacle width / depth | bytes 19-22 | 0-65535 mm | 0 = none yet; saturates | 2 x 16 | little-endian |
+| Obstacle width / depth | bytes 19-21 | 0-1023 mm each | 0 = none yet; saturates; 4 reserved bits are zero | 2 x 10 | masks and shifts |
 | Event record: kind / arg / time / position / arg2 | 11-byte schema-v2 MQTT frame, Comms | kind 1-4; arg is 0-25 letter, 0-127 height code, or 0-7 action; time low 16 bits ms; two encoder counts; arg2 0-65535 obstacle depth or action | kind 0 and 5-15 rejected; time/counts wrap; obstacle depth saturates | 4 / 8 / 16 / 2x16 / 16 on wire; kind uses four low bits of byte 1 | explicit little-endian masks/shifts; **unchanged** (#112) |
 | Comms RAM event entry: kind/arg/time/encoder counts/arg2 | `comms_packed_event_t` in event ring, Comms | kind 1-4, arg 0-127, remaining fields 0-65535 | invalid kind/arg rejected without changing ring; time/counts wrap | 3 / 7 / 16 / 2x16 / 16 = 74 logical bits; 80 stored (10 bytes incl. 6 spare bits) | 16-bit kind/arg field + 4x16-bit fields, accessor pack/unpack (#112) |
 | Comms event ring indices | `comms_event_log_t.indices`, Comms | head 0-15; count 0-16 | valid operations maintain ranges | 4 / 5 = 9 logical bits; 16 stored (7 spare bits) | masks/shifts in internal accessors (#112) |
@@ -298,10 +379,17 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Field | Storage / writer | Range | Invalid / overflow | Bits | Repr. |
 | --- | --- | --- | --- | --- | --- |
 | Encoder count per wheel | wrapping counter, encoder ISR (core 1) | wrapped counts; mm per count from D03 geometry | wraps; consumers use modular subtraction | 16 (provisional) | fixed-width |
+| Encoder origins and previous counts | `enc_count_t` in `Mission`, `MotionController`, `bypass_control_t`, `recovery_control_t`, Terrain and Obstacle; one writer each | as the counts | wraps; modular subtraction | 16 each | `uint16_t` |
 | Motion command: mode/speed/steering/target/action/time | `MotionCommand`, Mission writer -> Motion mutex copy | mode 0-3; speed 0-500 whole mm/s (MOTION_SPEED_MAX_MMPS); steering -127..127 Q7; target -2000..2000 whole mm (DISTANCE) or -360..360 whole degrees (TURN); ID 0-63; sampled time uint32 ms | invalid constructor returns STOP; invalid packed/reserved fields and expired sample brake; target bound **provisional D07** | 2 / 9 / 8 / 16 / 6 / 32 logical = 73 bits; 96 stored (`sizeof` 12 bytes) | 16-bit speed+ID, 16-bit mode+Q7 steering, 16-bit target, 32-bit sampled time; accessor-only; #109 |
 | Motion health: service time / sequence / stopped / brake ack | `MotionHealth`, Motion writer guarded by command mutex | times and sequence uint32; flags yes/no | sequence/time wrap; brake acknowledgement only after serviced stop | 32 / 32 / 1 / 1 logical = 66 bits; 96 stored (`sizeof` 12 bytes) | 2 flags in one uint8, 2x uint32; accessors; #109 |
 | Motion feedback: status, action ID | feedback word, Motion | status 4 values (IDLE/RUNNING/DONE/FAILED); ID 0-63 | ID wraps; ID 1 reserved for FOLLOW | 2 + 6 (ID width provisional) | one word, single store |
 | Wheel tuning trace | Motion writes eight 15-byte encoded records; I/O consumes via acquire/release SPSC indices | acquisition/release time uint32 ms; two signed 15-bit targets -16383..16383 counts/s; two signed 16-bit measured speeds -32767..32767 counts/s; two signed duty percentages -100..100; TEST and output-success flags | nearest integer; target -16384 / measured -32768 invalid (nonfinite/out of range); failed output has duty -128; full ring drops newest, timestamp gaps expose loss; indices uint32 wrap with occupancy bounded to eight | 32 + 2x15 + 2x16 + 2x8 + 2 = 112 payload bits, plus 8-bit frame header; 120-byte slots + two 32-bit indices | schema-v2 type 8, explicit encoding; local float calculations only; no remote motion command |
+| Watchdog heartbeats | `motion_progress_ms`, `mission_progress_ms`: Motion and Mission write, I/O reads; only in `WATCHDOG=1` builds | uint32 ms | wraps; age by modular subtraction | 2 x 32 | `_Atomic uint32_t` |
+| Watchdog last-fed copies | `last_fed_motion`, `last_fed_mission`, I/O only; only in `WATCHDOG=1` builds | uint32 ms | wraps; compared for change | 2 x 32 | `uint32_t` |
+| Watchdog boot flags | `armed`, `boot_reason_reported`, I/O only; only in `WATCHDOG=1` builds | 0 or 1 | set once per boot | 2 x 1 | `bool`; compiled storage pending final build |
+| Applied acceleration | `MotionController.profile_accel`, Motion only | -1000..+1000 mm/s^2 in whole units, compile-time limit | reset to 0 with the speed | 11 | signed bit-field; whole units keep the 20 mm/s^2 step per release exact |
+| Wheel PID state | `WheelPid.integral_q4`, `previous_cps` in `MotionController.pid[2]`, Motion | integral about +-2047 counts at 1/16 count; speed +-32767 whole counts/s | saturates, never wraps | 2 x 2 x 16 | fixed point; floats in the law are temporaries. Needs a loaded-wheel comparison |
+| Motion output and wheel trace input | `MotionOutput`, `mqtt_wheel_trace_t` floats | per-iteration locals, not persistent | - | exempt | Persistent traces store encoded bytes |
 
 ### line_barcode and Mission (branches #35, #36, #37; pending rows converted by #52 after Nicholas confirms)
 
@@ -310,7 +398,7 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 | Mapping letters (L, R, S, U) | mapping word, Mission on valid mapping | A-Z, 26 values, all four distinct | boot state UNMAPPED; rejected before install | 5 each, 20 total | 4 x 5-bit |
 | Mapping state | mapping word bit 20 | UNMAPPED / MAPPED | - | 1 | flag |
 | Line sensor readings (2 digital) | `IrRawWord`, line_barcode | GPIO levels 0/1; fractions 0 or 127; error -127, 0 or +127 | invalid reading clears the valid flag; levels above 1 saturate to 1 | 1 + 1 + 1 valid in one 32-bit word; fractions 7 each; error 8 | word, single store |
-| Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 16 (wrapped encoder counts at the edge); level 1 | overflow sets fault bit; new edge dropped | 16+16+1 | struct |
+| Barcode edge ring entry | ISR ring, barcode ISR | counts 2 x 16 (wrapped encoder counts at the edge); level 1, held in a per-slot bit map | overflow sets fault bit; new edge dropped | 16+16+1 | counts array plus `ring_high` bits |
 | Decoded barcode event | queue (8 deep), line_barcode | letter 0-25; action 0-4; orientation 0-1; position (left/right counts) | unmapped action 0; queue full sets fault bit, newest dropped | 5+3+1 (one 16-bit word) + 16+16 | packed word + 2 counts, accessors in `barcode.h` |
 | Mission state | Mission writer | READY, FOLLOW_LINE, NAVIGATE, SCAN, BYPASS, REACQUIRE, STOPPED; implemented codes 0..6, 7 invalid | invalid input inhibits movement | 3 logical (existing 4-bit wire slot retained) | Implemented 3-bit private state and atomic published byte; schema-v2 wire slot remains 4 bits; decoder uses seven-state labels |
 | Broad-black encounter start | `Mission.broad_since_ms`, Mission writer | uint32 milliseconds, modulo 2^32 | meaningful only while `in_broad`; unsigned elapsed subtraction handles wrap | 32 | private timestamp; no wire format |
@@ -318,15 +406,15 @@ All rows are unsigned and rounding "none" unless stated. Columns: field | storag
 
 ### line_barcode bit-usage data contract (proposed; spec #100; final evidence #107)
 
-Historical source-pinned storage evidence below is retained unchanged; it is not a size prediction for the restructure. The IR rows below predate the digital sensors: raw left and right are now one bit each (see the line sensor row above). Storage bits come from `testing/line_barcode/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/comms/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow [ADR 0001](architecture.md#minimum-bit-data-representation) (retained representation decision); raw IR follows the 12-bit ADC (0-4095); letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
+Storage evidence below is historical and source-pinned, except the barcode level and IR rows, which were updated on 2026-11-03 from `sizeof_probe.sh` (INT-178). Storage bits come from `testing/line_barcode/sizeof_probe.sh` (accepts an optional probe source; e.g. `testing/comms/sizeof_probe.c`, arm-none-eabi-gcc 15.3.1, target flags of `build_make/pico_rp2040.mk`); #107 cross-checks struct totals against the linked `.bss` objects in `arm-none-eabi-size`. Instances count persistent copies only; per-iteration local copies are exempt. Each chosen width is justified by the bounds in its row: counts follow `ENC_COUNT_BITS` (16, provisional until D03); fractions (0..1 as 0..127) and error/steering (-1..+1 as -127..+127) follow the [scaled values rule](architecture.md#minimum-bit-data-representation); raw IR is one digital bit per sensor, and error is derived from those bits; letter/action/orientation follow the decoded-barcode row above. The ticket in the last column implements the width; #107 records final storage bits from the probes. No comparison with the original implementation is required.
 
 | Field | Current C type | Bounds / units | Chosen width (bits) | Final storage bits | Instances | Ticket |
 | --- | --- | --- | ---: | ---: | ---: | --- |
 | Barcode edge: sample time (`sampled_us`) | deleted (was `uint32_t`) | Never read | 0 (deleted) | 0 | 64 | #102 |
 | Barcode edge: left / right count | 2 x `barcode_count_t` (`uint16_t`) | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | 2 x 16 | 64 | #103 |
-| Barcode edge: level (`high`) | `bool` | Boolean | 1 | 8 | 64 | - |
-| Barcode edge: padding | - | - | - | 8 | 64 | #102, #103 |
-| Barcode edge struct | `barcode_edge_t` | - | - | 48 | 64 | - |
+| Barcode edge: level (`high`) | one bit of `ring_high` | Boolean | 1 | 1 | 64 | INT-178 |
+| Barcode edge: padding | none in the ring | - | - | 0 | 64 | INT-178 |
+| Barcode edge in the ring | `ring`, `ring_high` | - | - | 33 | 64 | INT-178 |
 | Barcode event: left / right count | 2 x `barcode_count_t` (`uint16_t`) | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | 2 x 16 | 8 | #103 |
 | Barcode event: letter | bits 0-4 of `packed` (`uint16_t`) | Letter 0-25; 31 = no letter | 5 | 5 | 8 | #104 |
 | Barcode event: action | bits 5-7 of `packed` | Action 0-4 | 3 | 3 | 8 | #104 |
@@ -335,18 +423,18 @@ Historical source-pinned storage evidence below is retained unchanged; it is not
 | Barcode event struct | `barcode_event_t` | - | - | 48 | 8 | - |
 | Barcode frame: previous left / right count | 2 x `barcode_count_t` (`uint16_t`) | Encoder counts, `ENC_COUNT_BITS` (16, provisional until D03) | 2 x 16 | 2 x 16 | 1 | #103 |
 | Barcode frame struct | `barcode_frame_t` | - | - | 496 | 1 | - |
-| IR reading (in tracker): left / right fraction | 2 x `uint8_t` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | 2 x 8 | 1 | #105 |
-| IR reading (in tracker): error | `int8_t` | -1..+1 as -127..+127 (ADR 0001) | 8 | 8 | 1 | #105 |
-| IR tracking output: error / steering | 2 x `int8_t` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | 2 x 8 | 0 (returned by value) | #105 |
-| IR tracker: raw left / right | bits 0-23 of `IrRawWord` (`uint32_t`) | 12-bit ADC, 0-4095 | 2 x 12 | 2 x 12 | 1 | #106 |
-| IR tracker: sample valid | bit 24 of `IrRawWord` (bits 25-31 spare) | Boolean | 1 | 1 (+7 spare) | 1 | #106 |
-| IR tracker struct | `IrTracker` | - | - | 480 | 1 (line_barcode task stack) | - |
-| IR snapshot: left / right fraction | 2 x `uint8_t` | 0..1 as 0..127 (ADR 0001) | 2 x 7 | 2 x 8 | 1 | #105 |
-| IR snapshot: error / steering | 2 x `int8_t` | -1..+1 as -127..+127 (ADR 0001) | 2 x 8 | 2 x 8 | 1 | #105 |
+| IR reading: left / right fraction | 2 x `uint8_t`, returned by value, not stored | 0 or 127 | 2 x 1 | 0 | 0 | INT-178 |
+| IR reading: error | `int8_t`, returned by value, not stored | -127, 0 or +127 | 2 | 0 | 0 | INT-178 |
+| IR tracking output: error / steering | 2 x `int8_t` | -1..+1 as -127..+127 | 2 x 8 | 2 x 8 | 0 (returned by value) | #105 |
+| IR tracker: raw left / right | bits 0-1 of `IrRawWord` (`uint8_t`) | one digital bit each, 0-1 | 2 x 1 | 2 x 1 | 1 | INT-178 |
+| IR tracker: sample valid | bit 2 of `IrRawWord` (bits 3-7 spare) | Boolean | 1 | 1 (+5 spare) | 1 | INT-178 |
+| IR tracker struct | `IrTracker` | - | - | 64 | 1 (static, Mission task) | INT-178 |
+| IR snapshot: left / right black | 2 bit-fields of `LineIrSnapshot` | Boolean | 2 x 1 | 2 x 1 | 1 | INT-178 |
+| IR snapshot: error | derived by `ir_snapshot_error`, not stored | -127, 0 or +127 | 0 | 0 | 0 | INT-178 |
 | Mission state (published copy) | `_Atomic uint8_t` (was `uint32_t`) | 8 states | 3 | 8 (smallest atomic store) | 1 | #105 |
-| IR snapshot: raw left / right | bits 0-23 of `IrRawWord` (`uint32_t`) | 12-bit ADC, 0-4095 | 2 x 12 | 2 x 12 | 1 | #106 |
-| IR snapshot: acquisition valid | bit 24 of `IrRawWord` (bits 25-31 spare) | Boolean | 1 | 1 (+7 spare) | 1 | #106 |
-| IR snapshot struct | `LineIrSnapshot` | - | - | 320 | 1 | - |
+| IR snapshot: raw left / right | bits 0-1 of `IrRawWord` (`uint8_t`) | one digital bit each, 0-1 | 2 x 1 | 2 x 1 | 1 | INT-178 |
+| IR snapshot: acquisition valid | bit 2 of `IrRawWord` (bits 3-7 spare) | Boolean | 1 | 1 (+5 spare) | 1 | INT-178 |
+| IR snapshot struct | `LineIrSnapshot` | - | - | 96 | 1 | INT-178 |
 
 Single-store check (#106, 2026-10-27): `arm-none-eabi-objdump -d` of `ir_tracking.o` (arm-none-eabi-gcc 15.3.1, offline normal profile) shows both writes of `IrTracker.raw` in `ir_tracking_sample` as one `str` to the aligned word; the snapshot copies the word whole. Removing the two `bool` flags freed bytes that alignment padding absorbs, so `IrTracker` (60 bytes) and `LineIrSnapshot` (40 bytes) keep their size.
 
@@ -369,6 +457,7 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Roll average while stopped | `TerrainContext.roll_base_q8`, Terrain task | -9000..9000 centidegrees, 1/256 centidegree | integer step, truncates | 32 | `int32_t` (INT-157) |
 | Terrain counters | `calib_count` / `flat_run`, Terrain task | 0-100 / 0-10 | calibrated stops count at 100; flat run resets at 10 | 7 / 4 | C bit-fields (#110) |
 | Terrain private state / validity flags | `TerrainContext.state`, `height_valid`, `is_calibrated` | 0-2 / flag / flag | state 3-7 unused | 3 / 1 / 1 | C bit-fields (#110) |
+| Terrain USB diagnostic sequence | `terrain_step` local static, I/O writer; only `TERRAIN_DIAGNOSTICS=1` | unsigned 0..2^32-1, one increment per fresh acquisition | wraps modulo 2^32; reboot restarts; missing rows detected by host | 32 | USB text only; no MQTT change |
 | Terrain private hump last/max codes | `TerrainContext.last_hump_code`, `max_hump_code` | 0-126; 127 invalid | saturates and retains max | 7 / 7 | C bit-fields (#110) |
 | Complete persistent TerrainContext | `TerrainContext`, Terrain task | as above; 20 ms processing | D06 physical calibration pending; replay old float path for parity | 32 bytes on the current target compiler (SYS-12) | `testing/terrain/sizeof_probe.c` (#110) |
 
@@ -379,10 +468,11 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Scan state | scan word bits 0-2, Obstacle | 8 states (IDLE, SETTLING, COARSE, FINE, DONE, FAILED, CANCELLED, SIDE_WATCH) | out-of-range decodes as FAILED | 3 | encoded value |
 | Scan ID | scan word bits 3-6, Mission request | 0-15 | wraps | 4 | mask/shift |
 | Range, front / side | echo word, Obstacle | 0-8190 mm, nearest mm | 8191 or valid flag clear = no echo, never clear space; saturates to invalid | 13+1+16 (time low 16) | mask/shift |
-| Obstacle profile (geometry) | mutex-copied `ObstacleProfile`, Obstacle | closest angle -50..+50, valid flag; 4 unsigned mm measurements 0-65535; 2 signed mm coordinates | clamp to 16-bit limits; invalid profile not published | angle 6 + valid 1 + 6x16 = 103 logical; 112 stored (`sizeof` 14 bytes) | signed angle byte, validity bit in a separate byte, other 16-bit words |
-| ObstacleRay scan entry | `ObstacleRay` array, private Obstacle task | angle -50..+50; valid 0/1; range mm 0-65535 | invalid angle rejected by constructor, no echo = validity clear; range ignored | 6 + 1 + 16 = 23 logical bits; 32 stored bits (`sizeof` 4 bytes) | GNU C packed signed angle byte, validity byte and unaligned 16-bit range |
-| Obstacle width / depth | profile width; depth from encoder travel | 0-65535 mm / counts | saturates | 16 | unsigned |
-| Side-watch servo angle / enabled | `side_command` atomic word, Mission writer | -60..+60 degrees / yes-no | clamped to sweep; value sign-extended on read | 6 + 1 logical; 32 stored (shared atomic word) | bits 1..8 signed angle, bit 0 enabled; accessors (#111) |
+| Obstacle profile (geometry) | mutex-copied `ObstacleProfile`, Obstacle | closest angle, valid flag; 4 unsigned mm 0-1023; 2 signed mm +-1023 | saturate at the limits, which exceed `BYPASS_MAX_OFFSET_MM`; invalid profile not published | 7 + 1 + 4 x 10 + 2 x 11 = 70, in 9 bytes | packed bit-fields |
+| Obstacle profile quantization | Tribunal said profiles would be quantized | - | - | range limited, 1 mm step kept | The bypass keeps 50 mm beside the box and S5-U11 mean width error is about 18 mm with no agreed target, so a coarser step has no measured basis |
+| ObstacleRay scan entry | `ObstacleRay` array, private Obstacle task | angle; valid 0/1; range mm 0-8191 | invalid angle rejected by constructor, range saturates at `ECHO_RANGE_INVALID`, no echo = validity clear | 8 + 1 + 13 = 22, in 3 bytes | packed bit-fields |
+| Obstacle width / depth | profile width; depth from encoder travel | width 0-1023 mm; depth stored 16 bits, sent as 0-1023 mm | saturates | 10 / 16 | unsigned |
+| Side-watch servo angle / enabled | `side_command` atomic word, Mission writer | -60..+60 degrees / yes-no | clamped to sweep; value sign-extended on read | 8 + 1 logical; 32 stored (shared atomic word) | bits 1..8 signed angle, bit 0 enabled; accessors (#111) |
 
 ### Mission and Safety
 
@@ -441,26 +531,26 @@ Feature counts/order or full route; multiple barcodes before a junction; issued 
 
 ## Pending decisions
 
-Single register. Record answers and measured values here once, then link from other guides.
+Single register. Record answers and measured values here once, then link from other guides. Nicholas is the decision owner for every row; subsystem labels elsewhere identify the affected code only.
 
 | ID | Decision / missing evidence | Owner |
 | --- | --- | --- |
-| D01 | Verify issued Code 39 framing/print scales, quiet zones, polarity, width tolerances and encounter rearm; both orientations must yield the same letter | line_barcode / Nicholas |
-| D02 | Mounted junction confirmation/turn centre, barcode-to-junction offsets, multiple pending characters, no-command crossing qualification, U-turn pause reference (requested about 200 ms), bypass/reverse boundaries and failed-scan retry policy; endless/no undo is settled | Nicholas |
-| D03 | Verify motor and encoder polarity, counts/revolution, ratings/levels, geometry, full car/turning envelope and maximum edge rate. Remote signs +1/+1 versus local -1/+1 are not a calibration decision; preserve barcode half-range bound | Motion / Nicholas |
-| D04 | Mounted IR position/spacing/height, contrast/noise/lighting range and barcode black polarity; wiring user-confirmed, measured sensing margins still pending | line_barcode |
-| D05 | Sonar electrical behavior user-confirmed; retain recorded Echo-voltage evidence when available. Calibrate repeat interval/range/servo centre/endpoints/settling, sample groups/median/edge hysteresis, coverage and width-estimation uncertainty | Obstacle |
-| D06 | Stationary boot IMU calibration (IR is digital, without software calibration): bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Confirm half-speed completion and validate the accepted results-retained-through-starts/stops-until-reboot lifecycle | Terrain / Nicholas |
-| D07 | Wheel/line gains, speed/duty/distance/turn/stall limits; repeated stationary +/-70 degree sweeps, pivot speed, wheel excursion budget and usable-line handoff; bypass/depth/clearance budgets | Owners / Nicholas |
-| D08 | Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | Motion / Nicholas |
-| D09 | Instructor WiFi/broker settings; normal mission requires both before starting, loss mid-run report-only. Decide whether professor buffer wording requires literal RTOS message buffers; existing bounded TX/RX rings retained provisionally | Comms / Nicholas |
-| D10 | Agree first-cut lateral/turn/height/width error, recovery travel and repeatability targets before corresponding physical PASS; label proposals separately from course thresholds | Nicholas |
-| D11 | Settled 2026-10-29: barcode left, hump right. Validate sensing after reverse/U-turn traversal without inventing mirrored lane placement | line_barcode / Terrain |
-| D12 | Straight-only obstacles are the user's operating assumption; confirm course applicability despite inconsistent earlier briefing wording; do not claim curved-course bypass support | Nicholas |
-| D13 | Numeric target priorities/periods, execution budgets, timeout slack, data-age limits, worst sensor-to-PWM latency, GPIO ISR time, stack margin and load-test criteria; user authorized existing numeric settings as provisional software defaults on 2026-10-29; physical scheduling/age acceptance remains open | Owners / Nicholas |
-| D14 | Core swap superseded. Audit core-0 I/O integration, cross-core event producers/mapping hand-off, synchronization and required initialization order; kernel WiFi/USB and capture core unchanged | Owners |
-| D15 | Watchdog reset policy/scope, enabled-state audit and physical reset/output behavior; tick initialization is not proof of watchdog protection. No new framework in this restructure | Nicholas |
-| D16 | Settled 2026-10-29: configurable 15 cm is the obstacle trigger distance (150 mm). It does not authorize any travel without valid forward sonar | Nicholas |
+| D01 | Verify issued Code 39 framing/print scales, quiet zones, polarity, width tolerances and encounter rearm; both orientations must yield the same letter | Nicholas |
+| D02 | Mounted junction confirmation/turn centre, barcode-to-junction offsets, multiple pending characters, no-command crossing qualification, U-turn pause 200 ms in code, to be measured, bypass/reverse boundaries and failed-scan retry policy; endless/no undo is settled | Nicholas |
+| D03 | Verify motor and encoder polarity, counts/revolution, ratings/levels, geometry, full car/turning envelope and maximum edge rate. Remote signs +1/+1 versus local -1/+1 are not a calibration decision; preserve barcode half-range bound | Nicholas |
+| D04 | Mounted IR position/spacing/height, contrast/noise/lighting range and barcode black polarity; wiring user-confirmed, measured sensing margins still pending | Nicholas |
+| D05 | Sonar electrical behavior user-confirmed; retain recorded Echo-voltage evidence when available. Calibrate repeat interval/range/servo centre/endpoints/settling, sample groups/median/edge hysteresis, coverage and width-estimation uncertainty | Nicholas |
+| D06 | Stationary boot IMU calibration (IR is digital, without software calibration): bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Validate 100 mm/s course-speed completion and the accepted results-retained-through-starts/stops-until-reboot lifecycle | Nicholas |
+| D07 | Demo stall guard off, full-course guard on (confirmed above); wheel/line gains, speed/duty/distance/turn/stall limits; repeated stationary +/-70 degree sweeps, pivot speed, wheel excursion budget and usable-line handoff; bypass/depth/clearance budgets ; course and bypass driving share `COURSE_SPEED_MMPS`, 100 mm/s today, smoothness first | Nicholas |
+| D08 | Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | Nicholas |
+| D09 | Closed by Nicholas, 2026-11-04: the instructor's WiFi and broker, changing only `config/wifi_secrets.h`. Settings still to be supplied, and the link checked on that network. A normal mission requires both before starting; loss mid-run is report-only. Bounded TX/RX rings stay until the professor's buffer wording is supplied | Nicholas |
+| D10 | Qualifying lap agreed above; minimum hump height is 10 mm, not an error tolerance. Lateral (10 mm) and turn (5 degrees) limits agreed above. Agree remaining height/width/speed error and recovery travel limits before corresponding physical PASS; label proposals separately from course thresholds | Nicholas |
+| D11 | Settled 2026-10-29: barcode left, hump right. Validate sensing after reverse/U-turn traversal without inventing mirrored lane placement | Nicholas |
+| D12 | Closed by Nicholas, 2026-11-03: obstacles sit on straights, and this is the operating assumption. Curved-course bypass is not supported or claimed; options are in the [Obstacle guide](../app_program/obstacle/README.md#curves-near-an-obstacle) | Nicholas |
+| D13 | Numeric target priorities/periods, execution budgets, timeout slack, data-age limits, worst sensor-to-PWM latency, GPIO ISR time, stack margin and load-test criteria; user authorized existing numeric settings as provisional software defaults on 2026-10-29; physical scheduling/age acceptance remains open | Nicholas |
+| D14 | Core swap superseded. Audit core-0 I/O integration, cross-core event producers/mapping hand-off, synchronization and required initialization order; kernel WiFi/USB and capture core unchanged | Nicholas |
+| D15 | Decided by Nicholas, 2026-11-04: turn on for `full_course` once the SYS-06 bench test passes, and not before. Included: Tribunal A12 names watchdog recovery (Nicholas's rule, 2026-11-03). `WATCHDOG` stays 0 until the SYS-06 bench test passes. Watchdog reset policy/scope, enabled-state audit and physical reset/output behavior; tick initialization is not proof of watchdog protection. No new framework in this restructure | Nicholas |
+| D16 | Settled 2026-10-29: configurable 15 cm is the obstacle trigger distance (150 mm). The car stops at that distance: it starts slowing earlier by `motion_stop_distance_mm`, 191 mm at 100 mm/s (Nicholas, 2026-11-04). It does not authorize any travel without valid forward sonar | Nicholas |
 
 Implementation note (2026-10-29, #130): Mission's local reset handshake has
 three exclusive states (boot, await GP21 press, await GP21 release), encoded as
@@ -492,11 +582,12 @@ not a physical tuning or accuracy claim; one Mission writer):
 | --- | --- | --- | --- |
 | Steering target | -127..127, signed Q7 (`line_steer_q`) | -128 unused; fixed correction values, checked by `_Static_assert` | 8 / 8 |
 | Last and previous touch | -1 left, 0 none, +1 right (`line_side`, `line_prev`) | only these codes are written | 2 each / 8 each |
-| In a bend | no/yes (`line_bend`) | reset false | 1 / 1 in a private byte |
+| Steering integral | 0..`LINE_I_MAX_Q`, Q7 magnitude, held at the last touch transition (`line_i_q`); side from `line_side`; nearest integer | clamped to the limit, reset 0 | 6 / 8 |
 | Junction turn | 0 none, 1 left (+90 degrees), 2 right (-90), 3 U-turn (+180) | none yields zero target (Motion rejects a zero turn); only coordinator sets codes | 2 / 2 in private byte |
 
-Steering keeps no filter or integral history: it stores the Q7 target above and
-wheel counts where touches began. Float remains only in local geometry computation.
+Steering keeps no filter history: it stores the Q7 target and integral above and
+wheel counts where touches began. The integral between transitions comes from
+those counts, so no rounding accumulates. Float remains only in local geometry computation.
 Current working-tree target ABI, static RAM and inter-task copy sizes are
 recorded in [SYS-12](../testing/system/TEST_LOG.md#results).
 The accepted-commit minimum-bit/resource audit remains Stage 9 work.
@@ -594,8 +685,8 @@ Uncalibrated software proposals for review (not course limits/module ratings):
 | Bypass line alignment | 5 mm/s after rolling-scale correction, independently configured from standalone recovery | D04/D07/D10 pending |
 | Scan | Three samples, at least two valid; depth enter/exit bands 30/40 mm; two adjacent rays; model range uncertainty 10 mm | D05/D10 pending; uncertainty is a proposed model input, not sensor accuracy |
 | Servo sampling | User-stated +/-60 degree travel (2026-11-03; +/-50 from 2026-11-02 replaced +/-20, which could not see past a 100-200 mm obstacle at the stop distance); coarse rays every 10 degrees and 5 degree edge refinement; proposed 1 degree per 10 ms, 100 ms settle, 60 ms repeat | Verify endpoints/mounting before release, D05 |
-| Bypass | 50 mm/s continuous legs of <=550 mm, 36 mm/s pivots, 90 s / 4000 mm whole budget; <=2 s for the side look to settle | D02/D03/D05/D07/D08/D13 pending |
-| Bypass geometry | User-measured outline from the axle centre (2026-11-03): nose 155 mm, barcode arm corner 183 mm forward and 85 mm left, right side 75 mm, rear 95 mm, sonar 105 mm forward and assumed on the centreline; 30 mm clearance; 10 mm gap to the measured box edge and 70 degree side look (user-chosen), least pivot solved from the scan, offset <=550 mm; conservative obstacle width >=200 mm | Tape measurements; clearance values remain proposals, swept envelope unconfirmed, D03 |
+| Bypass | `COURSE_SPEED_MMPS` continuous legs of <=550 mm, 36 mm/s pivots, 90 s / 4000 mm whole budget; <=2 s for the side look to settle | D02/D03/D05/D07/D08/D13 pending |
+| Bypass geometry | User-measured outline from the axle centre (2026-11-03): nose 155 mm, barcode arm corner 183 mm forward and 85 mm left, right side 75 mm, rear 95 mm, sonar 105 mm forward and assumed on the centreline; 30 mm clearance; 20 mm gap past the box rear (user-chosen 2026-11-05; at least 200 mm of box passed, provisional), 60 degree side look (the servo's measured limit), 90 degree pivots with a leg of box edge plus half the car's length (125 mm, Nicholas 2026-11-05) and at least the 10 mm too-close limit plus a provisional 40 mm allowance from the car's side, offset <=550 mm; conservative obstacle width >=200 mm | Tape measurements; clearance values remain proposals, swept envelope unconfirmed, D03 |
 | Rear-edge / return | Two distinct qualified side groups; 150/100 mm enter/release jump; <=1500 mm pass, <=250 mm baseline search; return within 25 mm lateral / 5 degrees and three distinct tracking acquisitions | D02/D05/D07/D10 pending |
 | Height quality | Raw acceleration norm 900..1100 mg, wheel speed difference <=30 mm/s, speed change <=30 mm/s per fresh sample, 200 ms steady data before a height window | D06/D07/D10 pending; suppress unqualified height results |
 | Retry / reverse | One stationary rescan; two sweeps at each position; blind reverse along the approach, 150 mm in total for one obstacle (user decision 2026-11-03), with no rear coverage | Provisional, D07 |
@@ -613,6 +704,7 @@ guard for the current trial (`MOTION_STALL_GUARD_ENABLED=0`), independently
 of `APP_NO_GUARDS`. Command freshness, local stop, action deadlines and
 recovery limits remain active. Host tests cover both disabled and enabled
 stall configurations; this is not physical acceptance.
+On 2026-11-03 Nicholas turned the guard on for the full-course image (`FULL_COURSE=1`); TEST images keep it off. It has no recorded car run.
 
 Storage contract before implementation: recovery keeps two 32-bit encoder origins,
 32-bit start/acquisition times and one byte of phase/leg/confirmation flags.
@@ -626,7 +718,7 @@ It is valid only while the edge confirmation streak is nonzero; a new streak
 replaces it. Pose overflow fails the bypass before capture. Confirmed rear
 position adds the sonar forward mount and baseline ray's forward projection to
 this first position, keeping depth and return clearance in the profile's frame.
-At the user-stated +/-70 degree side look, angle needs eight signed bits;
+At the +/-60 degree side look, angle needs eight signed bits;
 ray validity needs one more bit. Existing eight-bit angle storage is retained
 to preserve the current layouts; commands and constructors enforce the sweep. `ObstacleRay` becomes four packed bytes; `ObstacleProfile`
 remains 14 bytes because its previous alignment byte holds validity. Side-watch
@@ -919,7 +1011,7 @@ than both targets climbing equally after a turn. Replace the two unsigned
 Q6 wheel histories with one private `follow_base_q6` field: 0..32000 (0..500
 mm/s), exact whole-mm/s requests scaled by 64, truncating per-release slew
 increments, 15 bits including invalid 32001..32767; reset zero, invalid brakes,
-updates saturate toward requested speed without overflow. The 250 mm/s/s
+updates saturate toward requested speed without overflow. (Superseded 2026-11-04 by the lift-style profile in [architecture](architecture.md).) The 250 mm/s/s
 provisional base ramp, one-period cap on late releases, no progress for
 duplicate timestamps and immediate zero/stop/fault reset remain. Mixed wheel
 targets are local floats, bounded by existing mixing and duty limits; a wheel
@@ -1066,21 +1158,18 @@ lateral offset cannot be corrected by an in-place 180-degree pivot alone.
 Provisional commissioning settings, not measured limits: tracking at 100 mm/s
 with IR read every 10 ms. Steering (proposed trial values; 115/127/57 veered off
 in INT-132, and the INT-123 PI defaults are in git history): one sensor black
-60/127, in a bend 90/127, bend lean on white/white 30/127 for 100 mm
-past the last touch, otherwise a 8/127 drift toward the last side; a same-side
-touch within 50 mm of the last, or one touch longer than 50 mm, is a bend. These
-copy the reference repo's wheel ratios under this Motion mix. Broad black requests
+P 45/127 plus I growing 1/127 per mm of that touch up to 45/127; on white/white I
+fades 0.5/127 per mm, never below a 8/127 drift toward the last side. Broad black requests
 none; at broad entry, black onsets more than 15 mm apart mark curve skew (trial
-value, to be set from type 9 line traces). Motion releases at
-1800 Q/s and builds at 900 Q/s; steering is mixed centre-preserving, left
+value, to be set from type 9 line traces). Motion releases to zero at
+1800 Q/s, reverses at 600 Q/s until zero and builds at 300 Q/s (about the 250 mm/s2 course limit at each wheel at 100 mm/s; lowered 2026-11-05 for the jolt on straight-line touches); steering is mixed centre-preserving, left
 v(1+q/127) and right v(1-q/127), so the robot centre keeps the commanded speed
 (the outer wheel reaches 200 mm/s at full steering; INT-129). Wheel feedforward KF 0.0001, KS 0.05, KP 0.0001
-(INT-100 to INT-102). Candidate travel is 9 mm (INT-98). A straight crossing restores the heading saved within the last
-100 mm of centred, low-steering tracking (INT-104). Curved turn entry then stops rather than assuming pose.
+(INT-100 to INT-102). Candidate travel is 6 mm (INT-189; 9 mm in INT-98 missed real crossings, INT-188). A straight crossing rolls 36 mm at course speed with no steering, without stopping, then tracks (INT-189). Curved turn entry then stops rather than assuming pose.
 Entry-relative yaw bound 5 degrees; junction pivots (trial values copied from the
 reference repo, no physical run) are bounded at 120 degrees for left/right and 210
 for U-turn, look for the new branch from 60 and 150 degrees, at the 100 mm/s
-course speed; rearm 10 mm; straight exit travel bound 150 mm. All require measurement
+course speed; rearm 10 mm. All require measurement
 under D02/D07. Pause is 100 ms after stationarity before and after every turn; nominal approach acceleration uses requested speed / 0.5 s.
 Actual approach distance and completion remain encoder governed.
 
@@ -1094,7 +1183,7 @@ Storage extension (one writer per object; local floating point geometry only):
 | Mission navigation phase | 0..6, 7 invalid | Invalid stops | 3 / existing field |
 | Mission turn advance | 1..2000 whole mm | Invalid stops before construction | 12 / signed bit-field |
 | Mission locked/curved/exit flags | independent 0/1 | Reset/start manages encounter | 1 each / bit-fields |
-| Mission entry origins | encoder counts modulo configured width | Half-range modular arithmetic | 2 x ENC_COUNT_BITS / uint32 |
+| Mission entry origins | encoder counts modulo configured width | Half-range modular arithmetic | 2 x ENC_COUNT_BITS / uint16 |
 | Barcode diagnostic | 2 wrapping counts, width 0..65535 counts; result 0..6; orientation 0/1; letter 0..25 or 31; action 0..4 | Width saturates; queue drops counted; no guessed letter | 16+16+16+3+1+5+3 / 8 bytes on target |
 
 MotionCommand remains 12 bytes with the existing mutex and two-bit mode. TURN

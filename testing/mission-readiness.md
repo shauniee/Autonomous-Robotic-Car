@@ -16,13 +16,13 @@ Ordered physical checks that decide whether the robot is ready for a full run. C
 
 - Record every result as a row in [system/TEST_LOG.md](system/TEST_LOG.md) with the `MR-nn` ID, date, commit, tester, PASS/FAIL and the measured value, following [Run and record](README.md#run-and-record).
 - **Record** names the value to write down and, where it replaces a placeholder, the constant in `app_program/common/robot_config.h` and the pending decision (Dnn) in [project-specs](../docs/project-specs.md#pending-decisions). After changing a constant, rebuild and repeat the checks that depend on it.
-- Where no accepted target exists, the pass condition is "measured and agreed": the team records the value and agrees the limit in the pending-decisions register. Never pass a check on a build or a host test alone.
+- Where no accepted target exists, the pass condition is "measured and agreed": Nicholas records the value and agrees the limit in the pending-decisions register. Never pass a check on a build or a host test alone.
 - The `T` column links each check to the planned integrated trials in [testing](README.md#planned-integrated-trials).
 
-Current procedure revision: 2026-11-02, aligned to the [consolidated issue plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117).
+Current procedure revision: 2026-11-03, aligned to the [pending work](../pending.md).
 Existing results retain their historical procedure/source meaning; this page does
-not convert old observations into target passes. #117 tracks physical work and
-remains open. Agree pending numeric limits before corresponding PASS decisions.
+not convert old observations into target passes. The linked pending work tracks
+physical acceptance; issue #117 remains closed. Agree pending numeric limits before corresponding PASS decisions.
 
 ## Phase 0: Electrical, before power (T01)
 
@@ -75,7 +75,7 @@ Turns, distances and barcode widths all come from encoder travel, so these value
 | MR-22 | 90 degrees left, 90 degrees right, 180 degrees; five each | Final heading error measured and agreed (Tribunal proposal: at most 5 degrees) | Errors per turn (D07) |
 | MR-23 | Repeat MR-22 with one wheel on a hump | Error measured and compared with MR-22 (M3 requires accuracy to hold) | Errors with one wheel raised |
 | MR-24 | Press GP21 at follow speed | Robot stops; distance measured and agreed | Stopping distance (D08) |
-| MR-25 | Use an agreed/calibrated guard-enabled acceptance image, wheels raised and controlled load; stall detection is disabled in the current trial build | `Motion: motor stall` and a latched stop; cause-clear GP21 press/release returns READY without restarting | Time to detect (`MOTION_STALL_MS`, D07) |
+| MR-25 | Use the full-course image, which has the guard on, with wheels raised and controlled load | `Motion: motor stall` and a latched stop; cause-clear GP21 press/release returns READY without restarting | Time to detect (`MOTION_STALL_MS`, D07) |
 
 ## Phase 4: Each feature on a test track (T03, T04, T07, T09, T10, T11, T13)
 
@@ -123,7 +123,7 @@ progress keeps the watchdog fed; stop a producer without faking its progress and
 measure reset time, boot-inhibited outputs, GP20 re-start requirements and any
 unintended reset under WiFi/network load. No physical watchdog PASS is claimed.
 
-The complete remaining-work checklist is [issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117).
+The complete remaining-work checklist is [pending work](../pending.md).
 This file owns physical procedures, not a second completion tracker. For final
 Motion/Mission/I/O timing, agree D13 limits and a bounded capture method; old
 `s3_input`/`s3_mission` console windows are not current implementation evidence.

@@ -10,7 +10,6 @@ PROBE(Mission);
 PROBE(MotionCommand);
 PROBE(MotionHealth);
 PROBE(TerrainContext);
-PROBE(TerrainSnapshot);
 PROBE(obstacle_range_sample_t);
 PROBE(obstacle_range_group_t);
 PROBE(obstacle_profile_evidence_t);

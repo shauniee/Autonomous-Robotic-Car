@@ -23,7 +23,7 @@ int main(void)
             assert(s.sample_fresh);
             assert(s.line == (lb && rb ? IR_LINE_BROAD_BLACK : IR_LINE_VISIBLE));
             assert(s.guidance_valid == !(lb && rb));
-            assert(s.error == (lb && !rb ? -127 : (rb && !lb ? 127 : 0)));
+            assert(ir_snapshot_error(&s) == (lb && !rb ? -127 : (rb && !lb ? 127 : 0)));
             ir_snapshot_refresh(&s, 100u + IR_MAX_GAP_MS + 1u);
             assert(!s.guidance_valid && !s.sample_fresh && s.line == IR_LINE_UNKNOWN);
         }
