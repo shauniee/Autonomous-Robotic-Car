@@ -53,6 +53,43 @@ static void sweep(const obstacle_profile_config_t *config, float range, unsigned
     assert(obstacle_profile_estimate(rays, count, NULL, config, profile, &evidence));
 }
 
+/* Rays captured on the car, 2026-11-05 (testing/integration/logs/scan.log). */
+static void estimate_scan(const obstacle_profile_config_t *config, const int scan[][2],
+    unsigned count, ObstacleProfile *profile)
+{
+    ObstacleRay rays[OBSTACLE_SCAN_CAPACITY];
+    obstacle_profile_evidence_t evidence = {0};
+    for (unsigned i = 0u; i < count; ++i)
+    {
+        rays[i] = obstacle_ray_make((int16_t)scan[i][0], (uint16_t)scan[i][1], scan[i][1] != 0);
+    }
+    assert(obstacle_profile_estimate(rays, count, NULL, config, profile, &evidence));
+}
+
+static void test_ghost_echoes(const obstacle_profile_config_t *config)
+{
+    ObstacleProfile profile = {0};
+    /* Clear surroundings: 389 mm just past each edge is the box's ghost, so the
+       room comes from the 850 mm and farther echoes behind it. */
+    const int clear[][2] = {{-60, 1090}, {-50, 974}, {-40, 389}, {-35, 206}, {-30, 186},
+        {-20, 177}, {-10, 190}, {0, 190}, {10, 177}, {20, 186}, {25, 196}, {30, 389},
+        {40, 852}, {50, 866}, {60, 0}};
+    estimate_scan(config, clear, sizeof clear / sizeof clear[0], &profile);
+    assert(profile.left_clearance_mm >= MISSION_BYPASS_MIN_CLEAR_MM);
+    assert(profile.right_clearance_mm >= MISSION_BYPASS_MIN_CLEAR_MM);
+    /* The box sits right of centre, so its left edge is the nearer one. */
+    assert(profile.obstacle_left_mm < 0);
+
+    /* Ghosts with nothing real behind them prove no room. */
+    const int cluttered[][2] = {{-60, 498}, {-50, 426}, {-40, 414}, {-35, 410}, {-30, 193},
+        {-20, 183}, {-10, 173}, {0, 174}, {10, 183}, {20, 202}, {30, 221}, {35, 405},
+        {40, 482}, {50, 484}, {60, 0}};
+    estimate_scan(config, cluttered, sizeof cluttered / sizeof cluttered[0], &profile);
+    assert(profile.left_clearance_mm < MISSION_BYPASS_MIN_CLEAR_MM);
+    assert(profile.right_clearance_mm < MISSION_BYPASS_MIN_CLEAR_MM);
+    puts("Obstacle: ghost echoes past the box do not take its room PASS");
+}
+
 /* Every supplied width gets enough clearance beside an open floor, and a wall
    beside the obstacle takes that side's clearance away. */
 static void test_full_sweep_from_stop(const obstacle_profile_config_t *config)
@@ -68,6 +105,9 @@ static void test_full_sweep_from_stop(const obstacle_profile_config_t *config)
             assert(profile.right_clearance_mm >= MISSION_BYPASS_MIN_CLEAR_MM);
         }
     }
+    /* The wall 2000 mm away is past the profile limit: saturate, never wrap. */
+    assert(profile.left_clearance_mm == OBSTACLE_PROFILE_MAX_MM);
+    assert(profile.right_clearance_mm == OBSTACLE_PROFILE_MAX_MM);
     sweep(config, 130.0f, 200u, 300.0f, &profile);
     assert(profile.left_clearance_mm < MISSION_BYPASS_MIN_CLEAR_MM);
     assert(profile.right_clearance_mm >= MISSION_BYPASS_MIN_CLEAR_MM);
@@ -79,6 +119,7 @@ int main(void)
         .background_separation_mm = 50u, .range_uncertainty_mm = 2u,
         .planning_width_mm = 200u, .adjacent_rays = 2u, .maximum_gap_deg = OBSTACLE_COARSE_STEP_DEG};
     test_full_sweep_from_stop(&config);
+    test_ghost_echoes(&config);
     ObstacleRay rays[RAYS];
     ObstacleProfile profile = {0};
     obstacle_profile_evidence_t evidence = {0};

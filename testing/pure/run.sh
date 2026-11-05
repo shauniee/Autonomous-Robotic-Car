@@ -44,9 +44,9 @@ $CC $CFLAGS testing/pure/test_mission_mapping.c app_program/mission/mission_mapp
     app_program/common/robot_data.c -o "$build_dir/test_mission_mapping"
 $CC $CFLAGS testing/pure/test_echo_range.c -o "$build_dir/test_echo_range"
 $CC $CFLAGS testing/pure/test_obstacle_profile.c app_program/obstacle/obstacle_profile.c \
-    -o "$build_dir/test_obstacle_profile"
+    -lm -o "$build_dir/test_obstacle_profile"
 $CC $CFLAGS testing/pure/test_range_filter.c app_program/obstacle/obstacle_profile.c \
-    -o "$build_dir/test_range_filter"
+    -lm -o "$build_dir/test_range_filter"
 $CC $CFLAGS testing/pure/test_profile_edges.c app_program/obstacle/obstacle_profile.c -lm \
     -o "$build_dir/test_profile_edges"
 $CC $CFLAGS testing/pure/test_mqtt_frame.c app_program/comms/mqtt_frame.c \
@@ -95,3 +95,4 @@ python3 testing/pure/test_mqtt_cli.py	# rejected ACKs and burst-safe speed estim
 python3 scripts/mqtt_client.py --self-test	# laptop decoder agrees with the golden vectors
 python3 testing/pure/test_check_barr.py	# coding rule scan finds each violation, passes clean code
 python3 testing/pure/test_field_tools.py	# capture triage and recorded lap scoring
+python3 testing/pure/test_capture_imu.py

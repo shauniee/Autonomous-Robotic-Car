@@ -95,7 +95,6 @@ EXPORT INT usermain(void)
 	comms_test();
 	motion_test();
 	terrain_test();
-	obstacle_test();
 	tm_printf((UB*)"[TEST] === test run end ===\n");
 	REQUIRE(mission_start());
 #endif

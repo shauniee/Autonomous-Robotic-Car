@@ -12,9 +12,7 @@
 #define DEG_TO_RAD              0.0174532925f
 
 
-/* Filter uses the existing LPF_ALPHA=0.20 as exact 1/5 in signed
-   raw-LSB Q16 units. Keep this ratio in sync with D06 calibration if tuned. */
-#define FILTER_DIV 5
+/* Filter weight is exactly 1/FILTER_DIV, in signed raw-LSB Q16 units. */
 #define RAW_Q_ONE 65536ll
 /* Stopped roll average in 1/256 centidegree; 1/16 per 20 ms is about 0.3 s. */
 #define ROLL_BASE_ONE 256

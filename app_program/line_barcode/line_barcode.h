@@ -21,10 +21,10 @@ typedef struct
 } IrRaw;
 
 /* A raw pair and its valid flag in one word: left bit 0, right bit 1,
-   valid bit 2. Written with one aligned 32-bit store, so no reader
+   valid bit 2. Written with one byte store, so no reader
    sees a left from one sample beside a right from another. Readings above
    1 (only possible with valid clear) saturate to 1. */
-typedef uint32_t IrRawWord;
+typedef uint8_t IrRawWord;
 
 #define IR_RAW_BITS 1u
 #define IR_RAW_MASK ((1u << IR_RAW_BITS) - 1u)
@@ -34,7 +34,7 @@ static inline IrRawWord ir_raw_word(IrRaw raw, bool valid)
 {
     uint32_t left = raw.left > IR_RAW_MASK ? IR_RAW_MASK : raw.left;
     uint32_t right = raw.right > IR_RAW_MASK ? IR_RAW_MASK : raw.right;
-    return left | right << IR_RAW_BITS | (valid ? 1u : 0u) << IR_RAW_VALID_BIT;
+    return (IrRawWord)(left | right << IR_RAW_BITS | (valid ? 1u : 0u) << IR_RAW_VALID_BIT);
 }
 
 static inline IrRaw ir_raw_word_raw(IrRawWord word)
@@ -65,11 +65,10 @@ typedef struct
 
 typedef struct
 {
-    IrLine line;
-    IrReading reading;
-    IrRawWord raw;		/* latest pair; valid flag = sample valid */
-    bool have_sample;
     uint32_t sample_ms;
+    IrRawWord raw;		/* latest pair; valid flag = sample valid */
+    uint8_t line : 2;		/* IrLine */
+    uint8_t have_sample : 1;
 } IrTracker;
 
 /* Valid guidance is fresh digital VISIBLE data, never motion permission.
@@ -92,22 +91,26 @@ void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
 IrReading ir_tracking_reading(IrRaw raw);
 IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now);
 /* Portable data for Comms and future Mission consumers; no wire format implied.
-   Invalid fraction/error fields are zero; use validity flags. */
+   Invalid black flags are zero; use validity flags. */
 typedef struct
 {
     uint32_t sequence;
     uint32_t sampled_ms;
-    uint32_t sample_age_ms;
     IrRawWord raw;		/* valid flag = acquisition valid */
-    uint8_t left_fraction;	/* 0..IR_SCALE_ONE */
-    uint8_t right_fraction;
-    int8_t error;		/* right - left, see IrTrackingOutput */
-    IrLine line;
-    bool have_sample;
-    bool sample_fresh;
-    bool normalized_valid;
-    bool guidance_valid;
+    uint8_t line : 2;		/* IrLine */
+    uint8_t left_black : 1;
+    uint8_t right_black : 1;
+    uint8_t have_sample : 1;
+    uint8_t sample_fresh : 1;
+    uint8_t normalized_valid : 1;
+    uint8_t guidance_valid : 1;
 } LineIrSnapshot;
+
+/* right - left: -IR_SCALE_ONE left black, +IR_SCALE_ONE right black. */
+static inline int8_t ir_snapshot_error(const LineIrSnapshot *snapshot)
+{
+    return (int8_t)(((int)snapshot->right_black - (int)snapshot->left_black) * IR_SCALE_ONE);
+}
 
 LineIrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t sequence,
     uint32_t now);

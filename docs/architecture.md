@@ -28,7 +28,7 @@
 - [Post-Tribunal decisions](#post-tribunal-decisions)
 - [Minimum-bit data representation](#minimum-bit-data-representation)
 - [MQTT binary protocol, schema version 2](#mqtt-binary-protocol-schema-version-2)
-  - [Telemetry and snapshot reply (23 bytes)](#telemetry-and-snapshot-reply-23-bytes)
+  - [Telemetry and snapshot reply (22 bytes)](#telemetry-and-snapshot-reply-22-bytes)
   - [Wheel trace (15 bytes)](#wheel-trace-15-bytes)
   - [Terrain trace (8 bytes)](#terrain-trace-8-bytes)
   - [Line trace (17 bytes)](#line-trace-17-bytes)
@@ -39,7 +39,7 @@
 
 ## Plan status and scope
 
-[Issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns the live plan and completion status.
+[pending work](../pending.md) owns the live plan and completion status.
 The implementation creates Motion, Mission and core-0 I/O only; software
 checks do not establish physical calibration or acceptance. Requirements and
 calibrated values are owned by [project-specs](project-specs.md); wiring by
@@ -92,6 +92,8 @@ Measure network-load effects on IMU age and interrupt/control latency. Audit Com
 multi-producer events and mapping installation across cores: DI/EI protects only
 one core. The implemented event log uses a bounded cross-core mutex; its contention and
 load margins still require on-target measurements.
+
+**D14 audit (2026-11-03, source review, INT-172).** Task placement matches the table above, and `app_main.c` runs every `*_init` before starting Motion, I/O, then Mission. Fault bytes have one writing context each: Motion, Mission (Line, Obstacle, Mission), I/O (Terrain) and the kernel transport (Network). This matters because `rd_fault_set` is a load then a store. Cross-core data uses single-writer words, acquire/release SPSC rings or mapping tickets; only `comms_event` has two producing cores, and it uses the bounded mutex. `lock_misses` has one writer per core. No defect found. Not covered: contention, lock duration and load, which need the Pico.
 
 ## Mission loop
 
@@ -230,15 +232,15 @@ Target: `app_program/mission/` holds coordinator and small policy helpers;
 `app_program/common/` holds startup/shared contracts and I/O orchestration as
 appropriate. Keep `comms/` through `obstacle/` for their reusable modules.
 No separate Safety task. Move files/build/includes only with tested implementation
-stages in [plan](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#remaining-plan). `mqtt_utk.c` stays in the kernel
+stages in [pending work](../pending.md). `mqtt_utk.c` stays in the kernel
 library and only WiFi service context calls MQTT/lwIP.
 
 ## Implementation order and acceptance
 
-[Issue #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117) owns
+[pending work](../pending.md) owns
 the live work sequence and incorporates #129–#133. The Motion/Mission/I/O
 refactor is implemented; remaining calibration, feature release and integrated
-acceptance follow that issue and the physical procedures. No host/build result
+acceptance follow that file and the physical procedures. No host/build result
 is firmware execution or physical acceptance.
 
 ## Authority
@@ -333,15 +335,13 @@ are 0/89.6 mm/s, or the reverse. Actual outer speed is not guaranteed constant
 while the base and applied steering ramp independently. Straight navigation
 uses the same guidance/speed policy on visible IR. The left/right pre-turn
 approach retains zero requested steering and the tracking ceiling.
-Motion slews the common FOLLOW base speed at a provisional 250 mm/s per
-second (5 mm/s per 20 ms release), then mixes applied steering. Both ramps
+Every planned move uses one lift-style speed profile (professor's comment, 2026-11-04): FOLLOW, DISTANCE and TURN all change speed with `MOTION_ACCEL_MMPS2` limited by `MOTION_JERK_MMPS3`, both provisional at 150 mm/s per second and 1000 mm/s per second squared, so acceleration builds and fades instead of stepping. A move brakes when its remaining distance reaches the profile's stop distance, and a lagging wheel is also held to the speed it can still stop from. `motion_stop_distance_mm` gives any subsystem the travel of a planned stop. An obstacle is a planned stop at 150 mm: Mission starts slowing at 150 mm plus that distance (183 mm at 100 mm/s), counting the travel since the sonar sample, and scans once at rest. An obstacle first seen inside 150 mm still brakes at once. The bypass slows to rest at the rear of the box the same way, and a junction turn too late to stop at the crossing centre is rejected. A pivot ending on a sensor reading still brakes at once, as do all safety stops. Motion then mixes applied steering. Both ramps
 permit one period at startup, none at duplicate timestamps and at most one
 period after a late release. They use control-release time while command
 freshness retains original sensor acquisition time; cached data cannot extend
 expiry. Zero-speed FOLLOW, STOP, invalid/stale commands, reset and faults
 brake immediately and clear both histories. Shared FOLLOW smoothing/mixing
-also applies to bypass guidance. Discrete distance/turn endpoint control and
-the turn encoder-progress speed ceiling remain unchanged. Stored units/ranges
+also applies to bypass guidance. Stored units/ranges
 are owned by [project specs](project-specs.md#pending-decisions). Physical
 curve retention, acceleration and speed-loop tuning remain provisional D07.
 FOLLOW wheel targets are nonnegative. When the wheel PID reduces speed, its
@@ -454,7 +454,7 @@ not required (course update, 2026-10-27), so the historical baseline in project-
 is a record only. Evidence means a result tied to an exact commit and test ID.
 
 **Still to audit:** fields added since the last size probe, including the line trace,
-onset and bend state, Mission state encoding, Terrain freshness and scan parameters.
+onset and integral state, Mission state encoding, Terrain freshness and scan parameters.
 Each owner also reviews their test log against current code (JSON-era S1-U04..U08,
 six-byte faults, any case assuming no echo stops), appending rather than editing.
 
@@ -527,7 +527,7 @@ IR acquisition time uint32 ms. Byte 5 flags: bit 0 left black, 1 right black,
 6 junction locked, 7 raw barcode GP16 level. Byte 6: bits 0..3 Mission state, 4..6 junction phase,
 7 zero. Bytes 7..8 and 9..10 are the low 16 bits of the left/right encoder counts.
 Byte 11 is the steering law output, signed Q7. Byte 12 is the law state: the side
-last touched (-1 left, +1 right, 0 none), doubled while in a bend. Byte 13 is the FOLLOW steering sent to Motion (0 for
+last touched (-1 left, +1 right, 0 none) times the integral held at the last touch transition, signed Q7. Byte 13 is the FOLLOW steering sent to Motion (0 for
 other modes). Bytes 14..15: bits 0..8 commanded speed mm/s, 9..10 motion mode,
 11..15 running barcode edge count (wraps). Byte 16 is, while both sensors are black, the distance in mm between
 the two sensors' black onsets (254 caps it), else 255.
@@ -539,7 +539,7 @@ TX or a full ring drops records without waiting. Sample-time gaps reveal drops.
 There is no request, movement authority or live tuning input. `mqtt_client.py
 monitor` prints `LINE` JSON; the dashboard does not display it.
 
-### Telemetry and snapshot reply (23 bytes)
+### Telemetry and snapshot reply (22 bytes)
 
 | Byte | Bits | Field | Range |
 | --- | --- | --- | --- |
@@ -562,8 +562,9 @@ monitor` prints `LINE` JSON; the dashboard does not display it.
 | 16-17 | 15-14 | IMU calibration | 0 unknown (older firmware), 1 not calibrated, 2 calibrated, 3 invalid |
 | 18 | 4-0 | last decoded barcode letter | 0-25 (A-Z), 31 none |
 | 18 | 7-5 | action it maps to | 0 unmapped, 1 left, 2 right, 3 straight, 4 U-turn |
-| 19-20 | 15-0 | latest obstacle width, mm | 0 none |
-| 21-22 | 15-0 | latest obstacle depth, mm | 0 none |
+| 19-21 | 9-0 | latest obstacle width, mm | 0 none; saturates at 1023 |
+| 19-21 | 19-10 | latest obstacle depth, mm | 0 none; saturates at 1023 |
+| 21 | 7-4 | reserved | zero; a set bit is rejected |
 
 IMU calibration reports Terrain's calibration flag independently of hump results
 and current sensor faults. This uses two formerly reserved bits without changing
@@ -609,7 +610,7 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 
 | Frame | Bytes |
 | --- | --- |
-| Telemetry | `21 2A 72 45 01 02 04 08 01 03 34 12 78 56 03 F8 D0 30 61 A4 01 AA 00` |
+| Telemetry | `21 2A 72 45 01 02 04 08 01 03 34 12 78 56 03 F8 D0 30 61 A4 A9 02` |
 | Event (barcode Z, action 2) | `22 01 19 E8 03 10 00 11 00 02 00` |
 | Mapping A left, B right, C straight, D U-turn, sequence 7 | `24 07 20 88 01` |
 | Acknowledgement installed, sequence 7 | `25 07 00` |
@@ -619,10 +620,10 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 
 | Message | Baseline on `main` (JSON) | Binary |
 | --- | --- | --- |
-| Telemetry | up to 768 bytes (`COMMS_TELEMETRY_PAYLOAD_MAX`) | 23 bytes |
+| Telemetry | up to 768 bytes (`COMMS_TELEMETRY_PAYLOAD_MAX`) | 22 bytes |
 | Mapping | up to 512 bytes on `uat` | 5 bytes |
 
-Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Final message-size and RAM evidence: [SYS-11](../testing/system/TEST_LOG.md#results).
+Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Message sizes and RAM evidence, not yet final: [SYS-11](../testing/system/TEST_LOG.md#results) for October and INT-178 in the [integration log](../testing/integration/TEST_LOG.md) for the latest build. Final figures need the final image.
 
 Implementation limits: standalone recovery uses bounded stationary pivot sweeps;
 physical speed/geometry acceptance remains D07. Obstacle scans
@@ -630,7 +631,7 @@ now have bounded median groups and qualified edge/model estimation. Their
 operating settings are provisional configured proposals, and physical bypass
 release remains inhibited. Supported forward/side coverage, rear-edge/original-line
 validation and any resulting implementation corrections remain in the
-[remaining plan in #117](https://github.com/shauniee/Autonomous-Robotic-Car/issues/117#remaining-plan). These are not accepted floor
+[pending work](../pending.md). These are not accepted floor
 features. Terrain publishes original acquisition/service times under a mutex;
 impact remains asserted until a fresh non-impact sample observes serviced braking.
 Comms events use a short cross-core mutex; events stay in the ring when the TX bridge
@@ -652,15 +653,15 @@ Implemented software revision, 2026-11-01; supersedes earlier conflicting juncti
 and applied-steering policies. Measurement and numeric settings are owned by
 [specs](project-specs.md#dout-navigation-commissioning).
 
-Mission steers by distance, with no integral (proposed 2026-11-02, host-tested
-only; replaces the INT-123 PI law). Per distinct acquisition: one sensor black
-steers a fixed edge correction toward it. That side touching again within a bend
-window of encoder travel after its last touch, or one touch lasting longer than
-that window, marks a bend and steers the stronger bend correction; the other side
-touching clears the bend at once, so an S-bend's next curve starts straight away.
-White/white leans into a bend for a set travel past the last touch, otherwise
-drifts gently toward the last side so a centred robot soon touches again. Broad
-black requests none, so a crossbar cannot keep a turn going. Mission records
+Mission steers with a distance-based PI (proposed 2026-11-05, host-tested only;
+replaces the bend-state law, which replaced the time-based INT-123 PI law). Per
+distinct acquisition: one sensor black steers P plus I toward it, and I grows per
+mm of that touch up to a limit. White/white has no P; I fades per mm, never below
+a gentle drift toward the last side, so a centred robot soon touches again. The
+same side touching again resumes from the faded I. The other side touching clears
+I at once, so an S-bend's next curve starts straight away. A committed crossing or
+a state change clears I. Broad
+black requests none and freezes I, so a crossbar cannot keep a turn going. Mission records
 where each sensor last went black; at broad entry, onsets further apart than the
 skew bound mean curve skew (the inner sensor was black long before the outer), so
 the curve's steering is kept and, with no queued turn, the encounter never becomes
@@ -679,13 +680,11 @@ commitment. Straight and unqueued crossings do not require turn geometry.
 A post-exit lock requires non-broad travel before another candidate can commit.
 Distance/yaw checks cannot prove that an arbitrary black patch is a cross junction.
 
-Straight navigation steers back to the encoder heading saved when tracking last
-ran centred with no steering (if within the reference distance; otherwise the
-heading at commit), because a crossbar can turn the robot and white/white cannot
-show that skew. It resumes IR guidance on a fresh non-broad sample once that
-heading is restored, or on a one-black sample after clearing twice the crossbar
-width. Straight continuation does not require an edge excursion. Exit
-distance/deadline failure stops while broad black persists.
+A straight or unqueued crossing takes the same first step as a turn (proposed
+2026-11-04, host-tested only; replaces the heading-restore exit and the stop): the car rolls at course speed with no steering for `NAV_STRAIGHT_MM` from commit
+(Nicholas, 2026-11-04: no stop and no pause), so neither sensor can steer on the bar. It then returns to
+tracking with the last side kept for the drift, I cleared and line loss armed, so
+the first touch afterwards starts from P alone and grows only if it lasts. It needs no turn geometry and no edge excursion.
 
 Left, right and U-turn share one path (proposed 2026-11-02, host-tested only;
 replaces the smooth cubic path, removed from Motion). A ramped distance action

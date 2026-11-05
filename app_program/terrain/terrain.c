@@ -8,8 +8,6 @@
 
 /* ---- Terrain task ---- */
 static rd_word_t terrain_word, startup_outcome; /* writer: I/O */
-static ID snapshot_mutex;
-static TerrainSnapshot snapshot; /* guarded by snapshot_mutex */
 static TerrainContext context;
 
 uint32_t terrain_read_word(void)
@@ -64,40 +62,11 @@ unsigned terrain_trace_take(uint8_t *out, unsigned capacity)
     return MQTT_LEN_TERRAIN_TRACE;
 }
 
-bool terrain_copy(TerrainSnapshot *out)
+static void publish(void)
 {
-    if (out == NULL || snapshot_mutex <= 0 ||
-        tk_loc_mtx(snapshot_mutex, RD_SNAPSHOT_LOCK_MS) < E_OK)
-    {
-        return false;
-    }
-    *out = snapshot;
-    return tk_unl_mtx(snapshot_mutex) >= E_OK;
-}
-
-static void publish(uint32_t now, gy511_sample_result_t result)
-{
-    static TerrainSnapshot latest; /* only I/O writes, even if a copy is skipped */
-    latest.terrain = terrain_pack(context.last_hump_code, context.max_hump_code,
-        context.hump_count, (uint32_t)context.state, context.height_valid,
-        context.is_calibrated);
-    latest.serviced_ms = now;
-    ++latest.sequence;
-    if (result == GY511_SAMPLE_ERROR)
-    {
-        latest.acquisition_valid = 0u;
-    }
-    if (result == GY511_SAMPLE_FRESH)
-    {
-        latest.sampled_ms = now;
-        latest.acquisition_valid = 1u;
-    }
-    rd_word_publish(&terrain_word, latest.terrain);
-    if (tk_loc_mtx(snapshot_mutex, TMO_POL) >= E_OK)
-    {
-        snapshot = latest;
-        (void)tk_unl_mtx(snapshot_mutex);
-    }
+    rd_word_publish(&terrain_word, terrain_pack(context.last_hump_code,
+        context.max_hump_code, context.hump_count, (uint32_t)context.state,
+        context.height_valid, context.is_calibrated));
 }
 
 void terrain_step(uint32_t now)
@@ -105,8 +74,8 @@ void terrain_step(uint32_t now)
     static uint8_t initialized, hardware_ready;
     static uint32_t started_ms, next_sample_ms, acquired_ms;
     static uint8_t have_acquisition;
-    static uint32_t last_left, last_right;
-    static uint32_t travel_origin[2];
+    static enc_count_t last_left, last_right;
+    static enc_count_t travel_origin[2];
     static uint8_t previous_humps;
     if (!initialized)
     {
@@ -130,7 +99,7 @@ void terrain_step(uint32_t now)
             tm_printf((UB *)"[IMU] calibration started: keep wheels still; "
                 "timeout_ms=%u\n", (unsigned)TERRAIN_CALIBRATION_TIMEOUT_MS);
         }
-        publish(robot_time_ms(), GY511_SAMPLE_ERROR);
+        publish();
         return;
     }
     if ((int32_t)(now - next_sample_ms) < 0)
@@ -148,6 +117,9 @@ void terrain_step(uint32_t now)
     gy511_sample_result_t result = hardware_ready ? drv_gy511_sample(&raw) : GY511_SAMPLE_ERROR;
     now = robot_time_ms();
     bool acquired = result == GY511_SAMPLE_FRESH;
+#if TERRAIN_DIAGNOSTICS
+    bool trace_encoder_valid = false;
+#endif
     bool stale = !have_acquisition ||
         robot_time_elapsed(now, acquired_ms) > SAFETY_STALE_MS;
     if (result == GY511_SAMPLE_ERROR)
@@ -160,6 +132,11 @@ void terrain_step(uint32_t now)
         have_acquisition = 1u;
         rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMU);
     }
+#if TERRAIN_DIAGNOSTICS
+    const int32_t delta[2] = {
+        enc_travel_signed(left, travel_origin[0]),
+        enc_travel_signed(right, travel_origin[1])};
+#endif
     const uint32_t count[2] = {left, right};
     float moved = terrain_travel_take(travel_origin, count, acquired,
         calibrating || result == GY511_SAMPLE_ERROR || stale);
@@ -214,6 +191,9 @@ void terrain_step(uint32_t now)
             /* Missing travel invalidates this window; keep completed results. */
             terrain_algo_invalidate_window(&context);
         }
+#if TERRAIN_DIAGNOSTICS
+        trace_encoder_valid = encoder_valid;
+#endif
         terrain_algo_process(&context, &raw, encoder_valid && moved > 0.0f ? moved : 0.0f, stationary);
         /* Compile-time constant; retain a syntactic reference to the
            private producer for warning-free TRACE=0 builds. */
@@ -247,15 +227,30 @@ void terrain_step(uint32_t now)
     {
         terrain_algo_invalidate_window(&context);
     }
-    publish(now, result);
+    publish();
+#if TERRAIN_DIAGNOSTICS
+    /* USB queues without waiting for a host; losses remain visible in the trace. */
+    if (acquired)
+    {
+        static uint32_t trace_sequence;
+        extern volatile UW tm_usb_dropped;
+        tm_printf((UB *)"[IMU_RAW] %u,%u,%d,%d,%d,%d,%d,%d,"
+            "%u,%u,%u,%d,%u,%u,%u,%u,%u\n",
+            (unsigned)++trace_sequence, (unsigned)now,
+            (int)raw.x, (int)raw.y, (int)raw.z,
+            (int)context.pitch_cdeg, (int)delta[0], (int)delta[1],
+            (unsigned)context.is_calibrated, (unsigned)context.state,
+            (unsigned)trace_encoder_valid, (int)context.roll_cdeg,
+            (unsigned)stationary,
+            (unsigned)context.height_valid, (unsigned)context.hump_count,
+            (unsigned)context.rise_q, (unsigned)tm_usb_dropped);
+    }
+#endif
 }
 
 ER terrain_init(void)
 {
-    T_CMTX mutex = {0};
-    mutex.mtxatr = TA_INHERIT;
-    snapshot_mutex = tk_cre_mtx(&mutex);
-    return snapshot_mutex > 0 ? E_OK : E_SYS;
+    return E_OK;
 }
 
 /* ---- GY-511 driver ---- */

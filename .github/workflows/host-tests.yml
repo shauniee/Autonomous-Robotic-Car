@@ -1,0 +1,23 @@
+name: Host software regressions
+
+# Reinstates an automatic signal for kernel-free software changes.
+# Does not claim an Arm link, Pico hardware run or physical acceptance.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  host-tests:
+    name: C/Python/MQTT host tests and dashboard checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Host test suite (C and Python)
+        run: bash testing/pure/run.sh
+      - name: Dashboard regression checks (Node)
+        run: node testing/pure/test_dashboard.mjs

@@ -30,7 +30,7 @@ Mission needs WiFi and MQTT before a local start. A disconnect during a run is r
 | --- | --- |
 | Telemetry | Gathers coherent producer values; busy optional data is skipped, so work stays bounded |
 | Events | 16-entry log under a cross-core mutex; a failed post keeps the event; a full log overwrites the oldest and counts the drop |
-| Bridge | TX depth 4, RX depth 2, maximum frame 23 bytes; full or oversized frames are dropped; no waiting in WiFi context |
+| Bridge | TX depth 4, RX depth 2, maximum frame 22 bytes; full or oversized frames are dropped; no waiting in WiFi context |
 | Budgets | Two RX frames, two event posts and up to two of each trace per release |
 | Mapping | Four distinct A-Z letters, installed by Mission only in READY or STOPPED; the ACK reports that outcome, not network receipt |
 | Connection | Online after subscription succeeds; refusal, disconnect or timeout backs off; reconnect restores the subscription and never replays old actions |
@@ -45,18 +45,18 @@ Codec, report assembly, mapping path, event log and bridge are host-tested; resu
 
 - Decisions D09, D13 and D14 are in [pending decisions](../../docs/project-specs.md#pending-decisions).
 - Still to test: mapping while stopped and moving; malformed, oversized and fragmented messages; full buffers and floods; startup order; reconnect; mid-run loss. Check diagnostics never delay Motion.
-- The Comms owner has not yet agreed the type 9 line trace.
+- Type 9 LINE trace remains available when `TRACE=1`, and is suppressed with other high-rate diagnostic frames by `TRACE=0`. The software policy is implemented; No new wire format was authorised.
 
 
 ## Diagnostic trace policy
 
-`TRACE=1` (default) retains high-rate WHEEL, LINE, BARS and HUMP trace
-frames for controlled debugging. `TRACE=0` removes their production and
+`TRACE=1` (test and trial images) retains high-rate WHEEL, LINE, BARS and HUMP trace
+frames for controlled debugging; the `full_course` image is `TRACE=0`. `TRACE=0` removes their production and
 transport while preserving 500 ms TELEMETRY, snapshots, EVENT, mapping and
 acknowledgement frames. Both profiles use the same schema, safety and local
 controls. In particular, TRACE=0 must not be confused with TEST=1 motor
 inhibition. This is an explicit Comms choice: **keep debug frames available**,
-but do not require them during a production lap.
+and never in `full_course`.
 
 Record the exact source commit, TRACE flag and UF2 SHA-256, then compare the
 same number of physical laps and their actual results using

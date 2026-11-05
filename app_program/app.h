@@ -51,7 +51,6 @@ IMPORT ER motion_start(void);
 IMPORT void comms_test(void);
 IMPORT void motion_test(void);
 IMPORT void terrain_test(void);
-IMPORT void obstacle_test(void);
 #endif
 
 /* Print a readable message if a kernel call failed (negative error code) */

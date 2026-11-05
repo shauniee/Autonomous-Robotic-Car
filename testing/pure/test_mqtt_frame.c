@@ -8,7 +8,7 @@
 
 static const uint8_t golden_telemetry[MQTT_LEN_TELEMETRY] = {
     0x21, 0x2A, 0x72, 0x45, 0x01, 0x02, 0x04, 0x08, 0x01, 0x03, 0x34, 0x12, 0x78, 0x56,
-    0x03, 0xF8, 0xD0, 0x30, 0x61, 0xA4, 0x01, 0xAA, 0x00};
+    0x03, 0xF8, 0xD0, 0x30, 0x61, 0xA4, 0xA9, 0x02};
 static const uint8_t golden_event[MQTT_LEN_EVENT] = {0x22, 0x01, 0x19, 0xE8, 0x03, 0x10, 0x00, 0x11, 0x00, 0x02, 0x00};
 static const uint8_t golden_mapping[MQTT_LEN_MAPPING] = {0x24, 0x07, 0x20, 0x88, 0x01};
 static const uint8_t golden_ack[MQTT_LEN_ACK] = {0x25, 0x07, 0x00};
@@ -39,6 +39,15 @@ static void test_golden(void)
     assert(d.left_count == 0x1234 && d.right_count == 0x5678 && d.hump_count == 3 && d.hump_max == 0x78);
     assert(d.hump_valid && d.front_mm == 0x10D0 && d.front_valid && d.barcode_letter == 1 && d.barcode_action == 3);
     assert(d.line_status == 1 && d.mapped && d.obstacle_width_mm == 420 && d.obstacle_depth_mm == 170);
+
+    /* Width and depth saturate at 10 bits, and the spare bits stay reserved. */
+    t.obstacle_width_mm = 5000u;
+    t.obstacle_depth_mm = 1024u;
+    assert(mqtt_encode_telemetry(buf, sizeof buf, MQTT_TYPE_TELEMETRY, &t) == MQTT_LEN_TELEMETRY);
+    assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_OK);
+    assert(d.obstacle_width_mm == MQTT_OBSTACLE_MAX_MM && d.obstacle_depth_mm == MQTT_OBSTACLE_MAX_MM);
+    buf[21] |= 0x10u;
+    assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_RANGE);
 
     mqtt_event_t e = {.kind = MQTT_EVENT_BARCODE, .arg = 25, .time_ms = 1000, .left_count = 16, .right_count = 17, .arg2 = 2};
     assert(mqtt_encode_event(buf, sizeof buf, &e) == MQTT_LEN_EVENT && memcmp(buf, golden_event, MQTT_LEN_EVENT) == 0);

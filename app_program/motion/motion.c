@@ -508,7 +508,7 @@ static const unsigned pins[ENCODER_WHEELS][2] = {
 static const int sign[ENCODER_WHEELS] = {LEFT_ENCODER_SIGN, RIGHT_ENCODER_SIGN};
 
 /* Each storage unit has one writer: the dispatcher handler on core 1. */
-static _Atomic uint32_t counts[ENCODER_WHEELS];
+static _Atomic enc_count_t counts[ENCODER_WHEELS];
 static _Atomic uint32_t invalid_edges;
 static unsigned previous[ENCODER_WHEELS];	/* ISR-private */
 
@@ -529,7 +529,7 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
         atomic_store_explicit(&invalid_edges, n + 1u, memory_order_release);
     } else if (delta != 0) {
         uint32_t c = atomic_load_explicit(&counts[wheel], memory_order_relaxed);
-        atomic_store_explicit(&counts[wheel], enc_advance(c, delta * sign[wheel]), memory_order_release);
+        atomic_store_explicit(&counts[wheel], (enc_count_t)enc_advance(c, delta * sign[wheel]), memory_order_release);
     }
 }
 

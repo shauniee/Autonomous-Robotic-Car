@@ -62,15 +62,15 @@ static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now,
 {
     LineIrSnapshot snapshot = ir_snapshot_build(tracker, sequence, now);
     tm_printf((UB *)"[IR] seq=%u digital L=%u R=%u acquired=%d fresh=%d "
-        "fraction_of_127 L=%u R=%u valid=%d "
+        "black L=%u R=%u valid=%d "
         "line=%s age_ms=%u GP20_down=%d GP21_down=%d "
         "SENSOR_ONLY\n",
         (unsigned)sequence, (unsigned)ir_raw_word_raw(snapshot.raw).left,
         (unsigned)ir_raw_word_raw(snapshot.raw).right, ir_raw_word_valid(snapshot.raw),
-        snapshot.sample_fresh, (unsigned)snapshot.left_fraction,
-        (unsigned)snapshot.right_fraction, snapshot.normalized_valid,
+        snapshot.sample_fresh, (unsigned)snapshot.left_black,
+        (unsigned)snapshot.right_black, snapshot.normalized_valid,
         ir_tracking_line_name(snapshot.line),
-        (unsigned)snapshot.sample_age_ms, inputs.gp20_down,
+        (unsigned)(snapshot.have_sample ? now - snapshot.sampled_ms : 0u), inputs.gp20_down,
         inputs.gp21_down);
 }
 #endif

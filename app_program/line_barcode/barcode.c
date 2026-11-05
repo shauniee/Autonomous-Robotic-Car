@@ -242,13 +242,26 @@ barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
 
 #ifndef HOST_TEST
 /* ---- Edge capture ---- */
-static barcode_edge_t ring[BARCODE_EDGE_CAPACITY];
+static struct { barcode_count_t left_count, right_count; } ring[BARCODE_EDGE_CAPACITY];
+static uint8_t ring_high[BARCODE_EDGE_CAPACITY / 8u];	/* one level bit per slot */
+_Static_assert(BARCODE_EDGE_CAPACITY % 8u == 0u, "whole bytes of ring levels");
 static _Atomic unsigned head;		/* handler; task seeds with IRQ masked */
 static _Atomic unsigned tail;		/* written by the task */
 static _Atomic uint32_t overflows;	/* written by the handler */
 static _Atomic uint32_t edge_total;	/* written by the handler: every edge seen */
 static bool claimed;
 static bool capture_high;	/* level of the newest ring entry; handler, seeded with IRQ masked */
+
+/* Handler, or task with IRQ masked; the same core, so byte updates cannot tear. */
+static void ring_store(unsigned write, barcode_count_t left, barcode_count_t right, bool high)
+{
+    unsigned slot = write % BARCODE_EDGE_CAPACITY;
+    uint8_t bit = (uint8_t)(1u << (slot % 8u));
+    ring[slot].left_count = left;
+    ring[slot].right_count = right;
+    ring_high[slot / 8u] = high ? (uint8_t)(ring_high[slot / 8u] | bit) :
+        (uint8_t)(ring_high[slot / 8u] & (uint8_t)~bit);
+}
 
 static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
 {
@@ -269,9 +282,8 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
     barcode_count_t right = (barcode_count_t)drv_encoder_count(ENCODER_RIGHT);
     if (write != read)
     {
-        const barcode_edge_t *newest =
-            &ring[(write - 1u) % BARCODE_EDGE_CAPACITY];
-        if (barcode_run_is_chatter(newest->left_count, newest->right_count,
+        unsigned newest = (write - 1u) % BARCODE_EDGE_CAPACITY;
+        if (barcode_run_is_chatter(ring[newest].left_count, ring[newest].right_count,
             left, right))
         {
             /* Chatter: this edge undoes the waiting one, so neither takes a
@@ -288,8 +300,7 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
         return;
     }
     capture_high = high;
-    ring[write % BARCODE_EDGE_CAPACITY] = (barcode_edge_t){
-        .left_count = left, .right_count = right, .high = high};
+    ring_store(write, left, right, high);
     atomic_store_explicit(&head, write + 1u, memory_order_release);
 }
 
@@ -321,10 +332,8 @@ void drv_barcode_enable(bool enabled)
         (void)drv_gpio_irq_enable(BARCODE_GPIO, true);
         /* Seed the white approach; the first real edge alone loses that gap. */
         capture_high = gpio_get_val(BARCODE_GPIO) != 0;
-        ring[write % BARCODE_EDGE_CAPACITY] = (barcode_edge_t){
-            .left_count = (barcode_count_t)drv_encoder_count(ENCODER_LEFT),
-            .right_count = (barcode_count_t)drv_encoder_count(ENCODER_RIGHT),
-            .high = capture_high};
+        ring_store(write, (barcode_count_t)drv_encoder_count(ENCODER_LEFT),
+            (barcode_count_t)drv_encoder_count(ENCODER_RIGHT), capture_high);
         atomic_store_explicit(&head, write + 1u, memory_order_release);
         EI(state);
     }
@@ -340,7 +349,10 @@ bool drv_barcode_take(barcode_edge_t *out)
     bool found = read != atomic_load_explicit(&head, memory_order_acquire);
     if (found)
     {
-        *out = ring[read % BARCODE_EDGE_CAPACITY];
+        unsigned slot = read % BARCODE_EDGE_CAPACITY;
+        *out = (barcode_edge_t){.left_count = ring[slot].left_count,
+            .right_count = ring[slot].right_count,
+            .high = (ring_high[slot / 8u] >> (slot % 8u) & 1u) != 0u};
         atomic_store_explicit(&tail, read + 1u, memory_order_release);
     }
     EI(state);

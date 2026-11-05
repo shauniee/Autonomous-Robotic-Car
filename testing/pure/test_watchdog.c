@@ -16,6 +16,16 @@ int main(void)
     assert(robot_watchdog_progress_fresh(15u, UINT32_MAX - 10u, 12u, max_age));
     /* A counter moved into the future is not mistaken for fresh progress. */
     assert(!robot_watchdog_progress_fresh(100u, 101u, 90u, max_age));
+    /* Feeding requires new, nonstale progress by both core-1 tasks. */
+    assert(robot_watchdog_should_feed(1000u, 990u, 995u, 970u, 980u, max_age));
+    assert(!robot_watchdog_should_feed(1000u, 990u, 995u, 990u, 980u, max_age));
+    assert(!robot_watchdog_should_feed(1000u, 990u, 995u, 970u, 995u, max_age));
+    assert(!robot_watchdog_should_feed(1000u, 990u, 995u, 990u, 995u, max_age));
+    assert(!robot_watchdog_should_feed(1000u, 0u, 995u, 970u, 980u, max_age));
+    assert(!robot_watchdog_should_feed(1000u, 1000u - max_age - 1u,
+        995u, 970u, 980u, max_age));
+    assert(robot_watchdog_should_feed(15u, UINT32_MAX - 10u, 12u,
+        UINT32_MAX - 15u, 3u, max_age));
     puts("watchdog_progress: PASS (policy only; no hardware exercised)");
     return 0;
 }
