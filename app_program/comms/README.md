@@ -62,8 +62,7 @@ inhibition. This is an explicit Comms choice: **keep debug frames available**,
 and never in `full_course`.
 
 Record the exact source commit, TRACE flag and UF2 SHA-256, then compare the
-same number of physical laps and their actual results using
-`scripts/mission_trial_score.py`. Use `scripts/triage_mqtt_capture.py`
+same number of physical laps and their actual results. Use `scripts/triage_mqtt_capture.py`
 for saved MQTT monitor logs. High-rate diagnostics can affect scheduling,
 but no causal impact is established until real matched trials pass.
 A missing debug frame is not evidence of a missing normal EVENT.

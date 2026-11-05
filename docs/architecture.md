@@ -59,8 +59,7 @@ RTOS tasks. Smaller numeric priority means higher scheduling priority.
 | Mission | 1 (`TP_PRC2`) | Bounded line/barcode/sonar/servo steps, calibration controls, navigation, safety policy and mapping acceptance | Below Motion; bounded work then sleep |
 | `io_task` | 0 (`TP_PRC1`) | Bounded Terrain acquisition/calibration and Reporting steps | Below existing critical kernel services; numeric choice pending |
 
-Optional D15 reset watchdog (disabled unless `WATCHDOG=1` is explicitly
-built): Motion reports progress after successful motor-output service;
+D15 reset watchdog (on for `full_course`, otherwise only with `WATCHDOG=1`): Motion reports progress after successful motor-output service;
 Mission reports progress after a successful command hand-off; core-0 I/O
 checks both producer heartbeats after servicing Terrain and Reporting.
 Only I/O arms/feeds the RP2040 hardware reset watchdog, and only when

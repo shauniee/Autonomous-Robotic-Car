@@ -50,17 +50,15 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). lin
 
 ## Open issues
 
-1. **Physical run of the new law.** Check the three-curve junction and weaving at the stronger edge correction. Set `NAV_ONSET_SKEW_MM` from `onset_skew_mm` in line traces.
-2. **First line-trace capture.** Needs Comms owner agreement on the [line trace](../../docs/architecture.md#line-trace-17-bytes).
-3. **Turn commissioning.** Measure the advance landing point, pivot coast at 100 mm/s and hand-over to FOLLOW.
-4. **Loss and recovery.** Confirm no false loss at 350 mm (INT-135), and that the sweep finds the line from a real loss.
-5. **Hump detector stuck on (INT-122, INT-133).** It no longer changes speed, but a stuck encounter can still miss hump results; cause not investigated in Terrain.
-6. **Left IR clears black late (INT-192).** Not removed by the potentiometer; a module swap and a slow hand test will separate the module from its mounting.
-7. **Values to measure:** tightest curve radius, effective track width, spot spacing at the 120 mm position, left-sensor span and hysteresis.
+1. **First line-trace capture.** Needs Comms owner agreement on the [line trace](../../docs/architecture.md#line-trace-17-bytes).
+2. **Loss and recovery.** Confirm no false loss at 350 mm (INT-135), and that the sweep finds the line from a real loss.
+3. **Hump detector stuck on (INT-122, INT-133).** It no longer changes speed, but a stuck encounter can still miss hump results; cause not investigated in Terrain.
+4. **Left IR clears black late (INT-192).** Not removed by the potentiometer; a module swap and a slow hand test will separate the module from its mounting.
+5. **Values to measure:** tightest curve radius, effective track width, spot spacing at the 120 mm position, left-sensor span and hysteresis.
 
 ## Line success measure
 
-Agreed by Nicholas on 2026-11-03 for M1. The 95% target is the user's.
+Agreed by Nicholas on 2026-11-03 for M1. Nicholas self-tests the lap rate (2026-11-05), so no recorded rate is required.
 
 - **Attempt:** one lap of a written course layout, from a fresh GP20 start at 100 mm/s, on one image with no changes between laps. The lap includes barcodes, junctions and humps.
 - **Success, all of these:**
@@ -69,7 +67,6 @@ Agreed by Nicholas on 2026-11-03 for M1. The 95% target is the user's.
   - each junction takes the correct action, once
   - `humps=` equals the crossings, and each height is within the agreed limit (D10, not yet set)
 - **Failure:** anything else, including a lap stopped for safety. Only a setup fault with a written reason may be left out, and it is still recorded.
-- **Rate:** at least 20 laps per image and lighting condition, scored by `scripts/mission_trial_score.py`, with `TRACE=1` and `TRACE=0` scored apart.
 
 ## How to run a trial
 
