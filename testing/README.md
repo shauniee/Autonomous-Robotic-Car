@@ -2,6 +2,7 @@
 
 ## Contents
 
+- [Continuous integration](#continuous-integration)
 - [Run and record](#run-and-record)
 - [Qualifying lap records](#qualifying-lap-records)
 - [Preserved software evidence](#preserved-software-evidence)
@@ -16,6 +17,19 @@ Keep subsystem cases/results in `<name>/TEST_LOG.md`, cross-subsystem cases in `
 | System | `SYS-01`, …; planned `T01`–`T16` | Team; [requirements](../docs/project-specs.md) |
 
 IDs never change or get reused, including retired template cases. Test IDs keep their old prefix: S1 is comms, S2 motion, S3 line_barcode, S4 terrain and S5 obstacle. Retired definitions remain in the relevant log; placeholder template rows are not observations.
+
+## Continuous integration
+
+`.github/workflows/host-tests.yml` runs on every pull request and every push to `main`. None of it runs on the car.
+
+| Job | Command | Fails when |
+| --- | --- | --- |
+| Coding standard | `python3 scripts/check_barr.py --base origin/main` | A changed line breaks a mechanical BARR-C:2018 rule. `--summary` lists the legacy backlog without failing |
+| Deliverables | `python3 scripts/check_deliverables.py` | A subsystem's source, public function, wired-in test or report section is missing; a second motor writer appears; networking commands Motion; firmware and laptop frame lengths differ |
+| Host tests | `bash testing/pure/run.sh` and `node testing/pure/test_dashboard.mjs` | Any test of the real subsystem code fails |
+| Firmware build | `sh testing/build_pending_profiles.sh` | Any of the eight images fails to compile or link. It never flashes |
+
+Deliverables that need the car print NEEDS EVIDENCE and do not fail the check, because only a physical run can close them.
 
 ## Run and record
 

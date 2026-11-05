@@ -21,7 +21,7 @@ static mqtt_telemetry_t sample(void)
                           .faults = {1, 2, 4, 8, 1, 3}, .left_count = 0x1234, .right_count = 0x5678,
                           .hump_count = 3, .hump_max = 0x78, .hump_valid = true,
                           .front_mm = 0x10D0, .front_valid = true, .barcode_letter = 1, .barcode_action = 3,
-                          .obstacle_width_mm = 420, .obstacle_depth_mm = 170};
+                          .obstacle_width_mm = 420, .obstacle_clearance_mm = 170};
     return t;
 }
 
@@ -38,14 +38,14 @@ static void test_golden(void)
     assert(d.sequence == 0x2A && d.mission_state == 2 && d.motion_status == 3 && d.motion_action == 5);
     assert(d.left_count == 0x1234 && d.right_count == 0x5678 && d.hump_count == 3 && d.hump_max == 0x78);
     assert(d.hump_valid && d.front_mm == 0x10D0 && d.front_valid && d.barcode_letter == 1 && d.barcode_action == 3);
-    assert(d.line_status == 1 && d.mapped && d.obstacle_width_mm == 420 && d.obstacle_depth_mm == 170);
+    assert(d.line_status == 1 && d.mapped && d.obstacle_width_mm == 420 && d.obstacle_clearance_mm == 170);
 
-    /* Width and depth saturate at 10 bits, and the spare bits stay reserved. */
+    /* Width and clearance saturate at 10 bits, and the spare bits stay reserved. */
     t.obstacle_width_mm = 5000u;
-    t.obstacle_depth_mm = 1024u;
+    t.obstacle_clearance_mm = 1024u;
     assert(mqtt_encode_telemetry(buf, sizeof buf, MQTT_TYPE_TELEMETRY, &t) == MQTT_LEN_TELEMETRY);
     assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_OK);
-    assert(d.obstacle_width_mm == MQTT_OBSTACLE_MAX_MM && d.obstacle_depth_mm == MQTT_OBSTACLE_MAX_MM);
+    assert(d.obstacle_width_mm == MQTT_OBSTACLE_MAX_MM && d.obstacle_clearance_mm == MQTT_OBSTACLE_MAX_MM);
     buf[21] |= 0x10u;
     assert(mqtt_decode_telemetry(buf, MQTT_LEN_TELEMETRY, &ty, &d) == MQTT_DECODE_RANGE);
 

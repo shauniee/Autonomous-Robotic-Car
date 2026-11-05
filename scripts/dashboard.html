@@ -166,7 +166,10 @@
       <div class="flap-row"><span class="flap big" id="flap-Terrain">0 HUMPS</span></div>
       <dl class="log">
         <div><dt>Humps</dt><dd id="sensor-humps">—</dd></div>
-        <div><dt>Max hump</dt><dd id="sensor-height">—</dd></div>
+        <div><dt>Peak height</dt><dd id="sensor-height">—</dd></div>
+        <div><dt>Tilt pitch</dt><dd id="sensor-pitch">—</dd></div>
+        <div><dt>Tilt roll</dt><dd id="sensor-roll">—</dd></div>
+        <div><dt>Height now</dt><dd id="sensor-height-now">—</dd></div>
       </dl>
       <span class="fault" id="fault-Terrain"></span>
       <h2 class="sub-title">Hump log</h2>
@@ -229,7 +232,7 @@
       <dl class="log">
         <div><dt>Front range</dt><dd id="sensor-front">—</dd></div>
         <div><dt>Width</dt><dd id="sensor-width">—</dd></div>
-        <div><dt>Depth</dt><dd id="sensor-depth">—</dd></div>
+        <div><dt>Clearance</dt><dd id="sensor-clearance">—</dd></div>
       </dl>
       <span class="fault" id="fault-Obstacle"></span>
       <h2 class="sub-title">Obstacle history</h2>
@@ -237,6 +240,19 @@
       <ol class="history" id="obstacles" aria-label="Past obstacles, width by depth" tabindex="0" hidden></ol>
       </div>
       </div>
+    </section>
+  </div>
+
+  <div class="row two">
+    <!-- IMU graphs -->
+    <section class="card" aria-labelledby="xyz-title">
+      <div class="card-head"><h2 id="xyz-title">Acceleration XYZ</h2><span>last 30 s, mg</span></div>
+      <canvas id="chart-xyz" role="img" aria-label="Accelerometer X, Y and Z over the last 30 seconds"></canvas>
+      <div class="legend"><span><i style="background:var(--ink)"></i>X</span><span><i style="background:var(--steel)"></i>Y</span><span><i style="background:var(--amber)"></i>Z</span></div>
+    </section>
+    <section class="card" aria-labelledby="profile-title">
+      <div class="card-head"><h2 id="profile-title">Terrain profile</h2><span>last 2 m, height mm</span></div>
+      <canvas id="chart-profile" role="img" aria-label="Estimated height against distance over the last 2 metres"></canvas>
     </section>
   </div>
 
@@ -333,7 +349,7 @@ function showSensors(t) {
   $("sensor-mapped").className = t.mapped ? "ok" : "bad";
   value("sensor-front", t.front_mm == null ? "Unavailable" : `${t.front_mm} mm`, t.front_mm == null);
   value("sensor-width", dimension(t.obstacle_width_mm));
-  value("sensor-depth", dimension(t.obstacle_depth_mm));
+  value("sensor-clearance", dimension(t.obstacle_clearance_mm));
   value("sensor-humps", t.hump_count);
   value("sensor-height", t.hump_max_mm == null ? "No valid maximum" : `${t.hump_max_mm} mm`);
   sensorFreshness();
@@ -374,27 +390,28 @@ function renderImu(calibrated) {
   badge.className = "corner " + (calibrated === true ? "ok" : calibrated === false ? "warn" : "");
 }
 // Sonar fan: range is drawn to a display scale that always fits the latest reading.
+const SONAR_BLOCK_MM = 40;  // drawn thickness only; depth is not measured
 function drawSonar(t) {
-  const range = t.front_mm, depth = t.obstacle_depth_mm > 0 ? t.obstacle_depth_mm : 0;
-  const max = Math.max(600, (range || 0) + depth + 150), k = 205 / max;
+  const range = t.front_mm;
+  const max = Math.max(600, (range || 0) + SONAR_BLOCK_MM + 150), k = 205 / max;
   put($("sonar-scale"), `scale 0–${max} mm`);
   // SVG ignores the hidden attribute, so visibility is set through style.display.
-  // The object is drawn only while it is detected; the W × D readout only once both are measured.
+  // The object is drawn only while it is detected; the readout only once its width is measured.
   const present = range != null && (t.mission === "SCAN" || t.mission === "BYPASS");
   const block = $("sonar-block"), readout = $("sonar-readout");
   block.style.display = present ? "" : "none";
-  readout.style.display = present && obstacleWidth != null && depth ? "" : "none";
+  readout.style.display = present && obstacleWidth != null ? "" : "none";
   if (!present) return;
   const w = obstacleWidth == null ? 60 : Math.max(4, obstacleWidth * k);
-  const top = 226 - (range + depth) * k;
+  const top = 226 - (range + SONAR_BLOCK_MM) * k;
   block.setAttribute("x", 150 - w / 2);
   block.setAttribute("width", w);
   block.setAttribute("y", top);
-  block.setAttribute("height", Math.max(3, depth * k));
-  block.setAttribute("class", "obstacle" + (obstacleWidth == null || !depth ? " unknown" : ""));
+  block.setAttribute("height", Math.max(3, SONAR_BLOCK_MM * k));
+  block.setAttribute("class", "obstacle" + (obstacleWidth == null ? " unknown" : ""));
   readout.setAttribute("x", 150);
   readout.setAttribute("y", Math.max(12, top - 6));
-  put(readout, `W ${obstacleWidth} × L ${depth} mm`);
+  put(readout, `W ${obstacleWidth} mm`);
 }
 
 function showTelemetry(t) {
@@ -443,12 +460,12 @@ function showTelemetry(t) {
 }
 
 function showObstacle(m) {
-  if (!Number.isInteger(m.obstacle_depth_mm) || m.obstacle_depth_mm <= 0 ||
+  if (!Number.isInteger(m.obstacle_clearance_mm) || m.obstacle_clearance_mm < 0 ||
       obstacles.some(o => o.id === m.event_id)) return;
   const list = $("obstacles");
   const li = document.createElement("li");
   li.value = ++obstacleNumber;
-  li.textContent = `W ${obstacleWidth == null ? "unavailable" : obstacleWidth + " mm"} · D ${m.obstacle_depth_mm} mm`;
+  li.textContent = `W ${obstacleWidth == null ? "unavailable" : obstacleWidth + " mm"} · ${m.obstacle_side} · clearance ${m.obstacle_clearance_mm} mm`;
   obstacles.push({id: m.event_id, element: li});
   list.append(li);
   if (obstacles.length > 200) obstacles.shift().element.remove();
@@ -508,6 +525,45 @@ function draw() {
     history.forEach((p, i) => i ? ctx.lineTo(x(p.t), y(p[key])) : ctx.moveTo(x(p.t), y(p[key])));
     ctx.stroke();
   }
+}
+
+// One moving plot; points already span the window, oldest first.
+function plot(id, points, xOf, series, yMin, yMax, waiting) {
+  const c = $(id), ctx = c.getContext("2d"), dpr = devicePixelRatio || 1;
+  c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
+  ctx.scale(dpr, dpr);
+  const w = c.clientWidth, h = c.clientHeight, css = getComputedStyle(document.documentElement);
+  const y = v => h - 6 - (v - yMin) / (yMax - yMin) * (h - 12);
+  ctx.fillStyle = css.getPropertyValue("--ink-3"); ctx.font = "11px " + css.getPropertyValue("--mono");
+  ctx.fillText(String(yMax), 4, 11); ctx.fillText(String(yMin), 4, h - 3);
+  if (!points.length) { ctx.fillText(waiting, w / 2 - 60, h / 2); return; }
+  for (const [key, color] of series) {
+    ctx.strokeStyle = css.getPropertyValue(color); ctx.lineWidth = 2; ctx.beginPath();
+    points.forEach((p, i) => i ? ctx.lineTo(xOf(p) * w, y(p[key])) : ctx.moveTo(xOf(p) * w, y(p[key])));
+    ctx.stroke();
+  }
+}
+
+const IMU_WINDOW_MS = 30000, PROFILE_WINDOW_MM = 2000, TRAVEL_WRAP_MM = 65536;
+const imuHistory = [], profile = [];
+let lastTravel = null, profileMm = 0;
+function showTerrainTrace(m) {
+  const now = Date.now();
+  put($("sensor-pitch"), `${m.pitch_deg} deg`);
+  put($("sensor-roll"), `${m.roll_deg} deg`);
+  put($("sensor-height-now"), `${m.height_mm} mm`);
+  imuHistory.push({t: now, x: m.x_mg, y: m.y_mg, z: m.z_mg});
+  while (imuHistory[0].t < now - IMU_WINDOW_MS) imuHistory.shift();
+  // Travel wraps on the wire, and a reboot restarts it; neither is a jump in distance.
+  const moved = lastTravel == null ? 0 : (m.travel_mm - lastTravel + TRAVEL_WRAP_MM) % TRAVEL_WRAP_MM;
+  lastTravel = m.travel_mm;
+  profileMm += moved > TRAVEL_WRAP_MM / 2 ? 0 : moved;
+  profile.push({d: profileMm, h: m.height_mm});
+  while (profile[0].d < profileMm - PROFILE_WINDOW_MM) profile.shift();
+  plot("chart-xyz", imuHistory, p => 1 - (now - p.t) / IMU_WINDOW_MS,
+    [["x", "--ink"], ["y", "--steel"], ["z", "--amber"]], -2032, 2032, "Waiting for IMU");
+  plot("chart-profile", profile, p => 1 - (profileMm - p.d) / PROFILE_WINDOW_MM,
+    [["h", "--ink"]], 0, 40, "Waiting for IMU");
 }
 
 // A test request uses the same sequence/ACK channel as mapping.
@@ -648,6 +704,7 @@ source.onmessage = e => {
   if (m.type === "telemetry") showTelemetry(m);
   else if (m.type === "status") { robotOnline = m.online; renderComms(); }
   else if (m.type === "wheel_trace") showWheelTrace(m);
+  else if (m.type === "terrain_trace") showTerrainTrace(m);
   else if (m.type === "ack") showAck(m);
   else { if (m.type === "event") { showObstacle(m); showHump(m); showBarcode(m); showTurn(m); } addEvent(m.text); }
 };

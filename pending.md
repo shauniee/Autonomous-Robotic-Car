@@ -41,6 +41,8 @@ IDs: `M` requirement, `MR` readiness check, `D` pending decision, `T` integrated
 
 ## Where everything lives
 
+Every pull request runs four CI checks: BARR-C:2018 on changed lines, subsystem deliverables and alignment, host tests with dashboard checks, and firmware builds for every profile. They cannot run on the car; deliverables that need it print NEEDS EVIDENCE.
+
 This file is the one list of changes and planned changes. Everything below was merged into `main` from `chore/centralise-pending` on 2026-11-05, on Nicholas's decision. Nicholas reports two perfect full-course runs on the full-course image, with everything tested except the hump (INT-204, observed only). The saved log does not show those runs in full and has no barcode reads, so this is not a recorded physical pass. The hump is **untested on the car**. To return to the previous working image, use commit `7275347`.
 
 | Source | Purpose | State when merged |
@@ -211,9 +213,9 @@ Wheels stay off for the bench steps. Bypass has run on the car, observed only (I
 - [ ] Bypass runs with both sides open and one restricted: no collision, side nearer the line's centre chosen, 90 degree legs clear the box, swept envelope confirmed (MR-30, M8, D03).
 - [ ] Rejoin the original line and continue (MR-30, M9, A9).
 - [ ] Side too close while passing: the car steps out 40 mm and carries on. Both the 40 mm step and the 40 mm passing allowance are provisional; count step-outs on real runs, which should be none on a normal pass, and a false reading such as the car's own body would use up the room and then stop (D07).
-- [ ] Rear clearance when pivoting back: tape the gap to the box, and compare telemetry depth with the real box: well under it means the side ray left early. `BYPASS_MIN_DEPTH_MM` is provisional at 200 mm, set it to the deepest box, and the course obstacle depth is not specified (D02).
+- [ ] Rear clearance when pivoting back: tape the gap to the box, and compare the pass with the real box. `BYPASS_MIN_DEPTH_MM` is provisional at 200 mm, set it to the deepest box, and the course obstacle depth is not specified (D02).
 - [ ] Ghost echoes: a real object at about twice the box range, right beside its edge, is also ignored by the room check; only the forward check on the leg out and the side check while passing would catch it (INT-201).
-- [ ] Depth measured against a tape, and the rear edge seen while bypassing (M7).
+- [ ] Rear edge seen while bypassing (M7). Depth is no longer measured or reported (Nicholas, 2026-11-05); confirm with the instructor that the brief allows this.
 - [ ] Record the stop reason for `SCAN` then `STOPPED` if it recurs. INT-164 suggests the car was lifted, and INT-186 confirms the saved capture cannot prove it.
 - [ ] Obstacle stop on the car: against a board, the car starts slowing at 191 mm and rests at 150 mm. Measure the rest distance with a tape; sonar noise or wheel lag will move it (D16).
 - [ ] Confirm on the car that scans start only after fresh stationary feedback, with timestamped logs (T09). Host logic passes.
@@ -236,6 +238,8 @@ Flash the current image, let the car sit still on the track for a second, then p
 - [ ] Labelled traces for stationary, acceleration, turn, climb, descent and impact (T06). No turn-rate monitor exists; the GY-511 has no gyroscope.
 
 ## 7. Telemetry and mapping (M10)
+
+- [ ] Dashboard IMU graphs on the car: tilt, XYZ and terrain profile against a measured hump. HUMP frames now run on the full-course image, so check they do not disturb line tracking or other telemetry.
 
 - [ ] Pico telemetry at about 500 ms in the current binary format, saved (MR-08, S1-M01, Gap 5).
 - [ ] Start refused without a mapping (MR-09).

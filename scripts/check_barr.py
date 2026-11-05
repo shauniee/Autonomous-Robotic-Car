@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Check app_program C code against the mechanical coding rules.
+"""Check app_program C code against the mechanical rules of BARR-C:2018.
 
-The rules are docs/team.md section 5, informed by Barr-C 2018. This is a text
-scan, not a compliance certification, and it cannot judge the review checklist
-(units, ownership, synchronization, bounds).
+Rule numbers refer to that standard; docs/team.md section 5 lists what the
+project adopted. This is a text scan, not a compliance certification, and it
+cannot judge the review checklist (units, ownership, synchronization, bounds).
 
     check_barr.py             changed lines of files that differ from HEAD
+    check_barr.py --base REF  changed lines since the merge base with REF (CI)
     check_barr.py --all       every line of every tracked app_program C file
+    check_barr.py --summary   count every finding by rule; always exits 0
     check_barr.py FILE...     every line of the named files
     check_barr.py --hook-record   Claude Code hook: remember an edited file
     check_barr.py --hook-check    Claude Code hook: check the remembered files
@@ -166,6 +168,28 @@ def check_line(raw, code, is_directive):
             yield BANNED_WORDS[word]
     if re.search(r"(?<![\w.])\d+\.\d*(?:[eE][+-]?\d+)?(?![\w.])", stripped):
         yield "float literal needs an f suffix"
+    yield from check_statement(stripped)
+
+
+def check_statement(stripped):
+    """Yield BARR-C:2018 statement rules a single line can show."""
+    if re.search(r"\bwhile\s*\(\s*(1|true)\s*\)", stripped):
+        yield "8.4.c write an infinite loop as for (;;)"
+    if re.search(r"\b(abort|exit|setjmp|longjmp)\s*\(", stripped):
+        yield "8.5.b abort, exit, setjmp and longjmp are banned"
+    if re.search(r"\b(if|while)\s*\((?:[^=!<>()]|\([^()]*\))*[^=!<>]=[^=]",
+                 stripped):
+        yield "8.2.c no assignment inside a test"
+    if re.search(r"\b[a-z_]\w*(?:(?:->|\.)\w+|\[\w+\])*\s*==\s*"
+                 r"(?:\d|NULL\b|true\b|false\b|[A-Z][A-Z0-9_]+\b)", stripped):
+        yield "8.6.a put the constant on the left of =="
+    if re.match(r"(?:(?:const|static|volatile)\s+)*"
+                r"(?:u?int(?:8|16|32|64)_t|float|bool|char|unsigned|int)\s+"
+                r"\**\w+(?:\s*=[^,;]*)?\s*,\s*\**\w+[^()]*;$", stripped):
+        yield "8.1.a declare one variable per declaration"
+    if re.match(r"(?:const\s+)?int(?:8|16|32|64)_t\s+\w+\s*:\s*\d+\s*;",
+                stripped):
+        yield "5.3.a no signed bit-fields"
 
 
 def check_text(path, text):
@@ -198,14 +222,14 @@ def git(root, *args):
                           text=True, errors="replace")
 
 
-def changed_lines(root, relative):
-    """Return the set of lines differing from HEAD, or None for a new file."""
+def changed_lines(root, relative, base="HEAD"):
+    """Return the set of lines differing from base, or None for a new file."""
     if git(root, "ls-files", "--error-unmatch", "--", relative).returncode:
         return None
-    if git(root, "cat-file", "-e", f"HEAD:{relative}").returncode:
+    if git(root, "cat-file", "-e", f"{base}:{relative}").returncode:
         return None
     lines = set()
-    diff = git(root, "diff", "-U0", "HEAD", "--", relative).stdout
+    diff = git(root, "diff", "-U0", base, "--", relative).stdout
     for match in re.finditer(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", diff, re.M):
         start = int(match.group(1))
         lines.update(range(start, start + int(match.group(2) or 1)))
@@ -218,12 +242,12 @@ def in_scope(relative):
         and relative.endswith((".c", ".h"))
 
 
-def report(root, relative, only_changed):
+def report(root, relative, only_changed, base="HEAD"):
     """Return printable findings for one file."""
     path = os.path.join(root, relative)
     with open(path, encoding="utf-8", errors="replace", newline="") as source:
         findings = check_text(relative, source.read())
-    wanted = changed_lines(root, relative) if only_changed else None
+    wanted = changed_lines(root, relative, base) if only_changed else None
     return [f"{relative}:{line}: {message}" for line, message in findings
             if wanted is None or line in wanted]
 
@@ -295,6 +319,21 @@ def run_check(payload):
     return 2
 
 
+def summary(root):
+    """Print every finding counted by rule, for the legacy backlog."""
+    counts = {}
+    for relative in git(root, "ls-files", "app_program").stdout.split():
+        if in_scope(relative):
+            for line in report(root, relative, False):
+                rule = re.sub(r"\d+", "N", line.split(": ", 1)[1])
+                counts[rule] = counts.get(rule, 0) + 1
+    for rule, count in sorted(counts.items(), key=lambda item: -item[1]):
+        print(f"{count:6d}  {rule}")
+    print(f"{sum(counts.values()):6d}  total, legacy code is converted as it "
+          "is changed (BARR-C:2018 enforcement section)")
+    return 0
+
+
 def main(argv):
     if argv == ["--hook-record"]:
         return run_record(json.load(sys.stdin))
@@ -304,7 +343,20 @@ def main(argv):
     if root is None:
         print("check_barr.py: not inside a git repository", file=sys.stderr)
         return 2
-    if argv == ["--all"]:
+    base = "HEAD"
+    if argv == ["--summary"]:
+        return summary(root)
+    if len(argv) == 2 and argv[0] == "--base":
+        merge = git(root, "merge-base", argv[1], "HEAD")
+        if merge.returncode:
+            print(f"check_barr.py: no merge base with {argv[1]}",
+                  file=sys.stderr)
+            return 2
+        base = merge.stdout.strip()
+        files = git(root, "diff", "--name-only", "--diff-filter=d",
+                    base).stdout.split()
+        only_changed = True
+    elif argv == ["--all"]:
         files = git(root, "ls-files", "app_program").stdout.split()
         only_changed = False
     elif argv:
@@ -320,7 +372,7 @@ def main(argv):
     lines = []
     for relative in files:
         if in_scope(relative):
-            lines += report(root, relative, only_changed)
+            lines += report(root, relative, only_changed, base)
     if lines:
         print("\n".join(lines))
     print(f"{len(lines)} finding(s)", file=sys.stderr)

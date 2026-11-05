@@ -128,21 +128,30 @@ unsigned mqtt_encode_barcode_trace(uint8_t *out, unsigned capacity, uint8_t sequ
     return MQTT_LEN_BARCODE_TRACE;
 }
 
-unsigned mqtt_encode_terrain_trace(uint8_t *out, unsigned capacity, uint16_t time_ms,
-    int8_t pitch_q2, uint8_t state_flags, uint8_t rise_mm, uint8_t accel_10mg, int8_t roll_q2)
+unsigned mqtt_encode_terrain_trace(uint8_t *p_out, unsigned capacity,
+    const mqtt_terrain_trace_t *p_trace)
 {
-    if (out == NULL || capacity < MQTT_LEN_TERRAIN_TRACE)
+    unsigned length = 0u;
+
+    if ((NULL != p_out) && (NULL != p_trace) &&
+        (capacity >= MQTT_LEN_TERRAIN_TRACE))
     {
-        return 0u;
+        p_out[0] = HDR(MQTT_TYPE_TERRAIN_TRACE);
+        put16(&p_out[1], p_trace->time_ms);
+        /* NOTE: signed bytes keep their two's complement bits on the wire. */
+        p_out[3] = (uint8_t)p_trace->pitch_q2;
+        p_out[4] = p_trace->state_flags;
+        p_out[5] = p_trace->rise_mm;
+        p_out[6] = p_trace->accel_10mg;
+        p_out[7] = (uint8_t)p_trace->roll_q2;
+        p_out[8] = (uint8_t)p_trace->accel_16mg[0];
+        p_out[9] = (uint8_t)p_trace->accel_16mg[1];
+        p_out[10] = (uint8_t)p_trace->accel_16mg[2];
+        p_out[11] = p_trace->height_mm;
+        put16(&p_out[12], p_trace->travel_mm);
+        length = MQTT_LEN_TERRAIN_TRACE;
     }
-    out[0] = HDR(MQTT_TYPE_TERRAIN_TRACE);
-    put16(&out[1], time_ms);
-    out[3] = (uint8_t)pitch_q2;
-    out[4] = state_flags;
-    out[5] = rise_mm;
-    out[6] = accel_10mg;
-    out[7] = (uint8_t)roll_q2;
-    return MQTT_LEN_TERRAIN_TRACE;
+    return length;
 }
 
 /* ---- Telemetry -----------------------------------------------------------
@@ -150,7 +159,8 @@ unsigned mqtt_encode_terrain_trace(uint8_t *out, unsigned capacity, uint16_t tim
    3 [5:0] motion action, [6] mapped, [7] 0 | 4..9 fault bytes | 10..11 left | 12..13 right
    14 hump count | 15 [6:0] hump max, [7] hump valid
    16..17 [12:0] front mm, [13] front valid, [15:14] IMU calibration
-   18 [4:0] barcode letter, [7:5] barcode action | 19..20 obstacle width mm | 21..22 obstacle depth mm */
+   18 [4:0] barcode letter, [7:5] barcode action
+   19..21 bits 0-9 obstacle width mm, bits 10-19 obstacle clearance mm */
 
 unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type, const mqtt_telemetry_t *t)
 {
@@ -178,8 +188,9 @@ unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type
         (t->front_valid ? 0x2000u : 0u) | (t->imu_calibration << 14)));
     out[18] = (uint8_t)(t->barcode_letter | (t->barcode_action << 5));
     uint32_t width = t->obstacle_width_mm > MQTT_OBSTACLE_MAX_MM ? MQTT_OBSTACLE_MAX_MM : t->obstacle_width_mm;
-    uint32_t depth = t->obstacle_depth_mm > MQTT_OBSTACLE_MAX_MM ? MQTT_OBSTACLE_MAX_MM : t->obstacle_depth_mm;
-    uint32_t size = width | depth << 10;
+    uint32_t clearance = (t->obstacle_clearance_mm > MQTT_OBSTACLE_MAX_MM) ?
+        MQTT_OBSTACLE_MAX_MM : t->obstacle_clearance_mm;
+    uint32_t size = width | (clearance << 10);
     out[19] = (uint8_t)size;
     out[20] = (uint8_t)(size >> 8);
     out[21] = (uint8_t)(size >> 16);	/* bits 4-7 reserved, zero */
@@ -222,7 +233,7 @@ mqtt_decode_t mqtt_decode_telemetry(const uint8_t *f, unsigned length, mqtt_type
     t->barcode_action = f[18] >> 5;
     uint32_t size = (uint32_t)f[19] | (uint32_t)f[20] << 8 | (uint32_t)f[21] << 16;
     t->obstacle_width_mm = (uint16_t)(size & 0x3FFu);
-    t->obstacle_depth_mm = (uint16_t)(size >> 10 & 0x3FFu);
+    t->obstacle_clearance_mm = (uint16_t)((size >> 10) & 0x3FFu);
     return MQTT_DECODE_OK;
 }
 

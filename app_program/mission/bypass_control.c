@@ -254,8 +254,8 @@ static void step_out(bypass_control_t *control, float across)
 /* The side ray meets the box's side until past its rear. A reading beyond the
    box's centreline, or none, has to last BYPASS_EDGE_MM of travel to count as
    clear. */
-static void side_observation(bypass_control_t *control, const bypass_input_t *input,
-    bypass_output_t *output)
+static void side_observation(bypass_control_t *control,
+    const bypass_input_t *input)
 {
     float side = control->left_side ? 1.0f : -1.0f;
     float angle = SERVO_LOOK_DEG * BYPASS_RAD_PER_DEG;
@@ -310,17 +310,13 @@ static void side_observation(bypass_control_t *control, const bypass_input_t *in
         fmaxf(to_centre - control->half_width_mm, 0.0f);
     float rear = (float)control->edge_forward_q8 / BYPASS_Q8 +
         OBSTACLE_SONAR_FORWARD_MM + to_side / tanf(angle);
-    float depth = fmaxf(0.0f, rear - control->obstacle_front_mm);
     /* A flat side at this angle can return no echo, or only its front corner, so
        the ray can leave long before the rear. Trust it only when it reads deeper
-       than this; telemetry still reports what was seen. */
+       than this. This only times the pivot back; depth is not reported. */
     rear = fmaxf(rear, (float)control->obstacle_front_mm + BYPASS_MIN_DEPTH_MM);
     control->rear_clear_q8 = (int32_t)lroundf(
         (rear + facing_half_mm(control->left_side) + BYPASS_REAR_GAP_MM) * BYPASS_Q8);
     control->route = BYPASS_ROUTE_REAR;
-    control->depth_mm = (uint16_t)lroundf(fminf(depth, 65535.0f));
-    output->depth_event = true;
-    output->depth_mm = control->depth_mm;
 }
 
 void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
@@ -447,7 +443,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
                 input->side_sequence != control->sensor_sequence)
             {
                 control->sensor_sequence = input->side_sequence;
-                side_observation(control, input, output);
+                side_observation(control, input);
                 if (control->route == BYPASS_ROUTE_REAR)
                 {
                     /* Slow to rest at the point that clears the box, or as soon

@@ -153,7 +153,7 @@ The default project is an autonomous robot car on a predefined course, using onb
 | M4 | Detect humps using IMU data |
 | M5 | Estimate hump height; report hump count, each completed hump height and the highest peak of the run |
 | M6 | Detect obstacles on or near the line |
-| M7 | Profile obstacles with ultrasonic sensing (location, width, closest point, left/right clearance); keep observing while bypassing to measure depth and detect when passed |
+| M7 | Profile obstacles with ultrasonic sensing (location, width, closest point, left/right clearance); keep observing while bypassing to detect when passed. Depth is not measured or reported (Nicholas, 2026-11-05), though the wording above came from the brief, so confirm it with the instructor |
 | M8 | Stop or slow, choose a safe bypass, avoid collisions, minimise departure from the route |
 | M9 | Reacquire the original line after bypass and continue |
 | M10 | Report telemetry over WiFi with two-way MQTT (section 3) |
@@ -366,8 +366,8 @@ RAM and layout can be measured without the robot; execution cost cannot.
 | Hump count / max height | bytes 14-15 | 0-255 / 0-126 (D06 scale) | 127 invalid, bit 7 valid flag (any hump completed); count and height saturate | 8 / 7+1 | mask/shift |
 | Front range | bytes 16-17 | 0-8190 mm, nearest mm | 8191 invalid, bit 13 valid flag; saturates to invalid | 13+1 | mask/shift |
 | Last barcode letter / action | byte 18 | 0-25 or 31 none / 0-7 | 31 = no letter | 5 / 3 | mask/shift |
-| Obstacle width / depth | bytes 19-21 | 0-1023 mm each | 0 = none yet; saturates; 4 reserved bits are zero | 2 x 10 | masks and shifts |
-| Event record: kind / arg / time / position / arg2 | 11-byte schema-v2 MQTT frame, Comms | kind 1-4; arg is 0-25 letter, 0-127 height code, or 0-7 action; time low 16 bits ms; two encoder counts; arg2 0-65535 obstacle depth or action | kind 0 and 5-15 rejected; time/counts wrap; obstacle depth saturates | 4 / 8 / 16 / 2x16 / 16 on wire; kind uses four low bits of byte 1 | explicit little-endian masks/shifts; **unchanged** (#112) |
+| Obstacle width / clearance | bytes 19-21 | 0-1023 mm each | 0 = none yet; saturates; 4 reserved bits are zero | 2 x 10 | masks and shifts |
+| Event record: kind / arg / time / position / arg2 | 11-byte schema-v2 MQTT frame, Comms | kind 1-4; arg is 0-25 letter, 0-127 height code, or 0-7 action; time low 16 bits ms; two encoder counts; arg2 0-65535 obstacle clearance or action | kind 0 and 5-15 rejected; time/counts wrap; obstacle depth saturates | 4 / 8 / 16 / 2x16 / 16 on wire; kind uses four low bits of byte 1 | explicit little-endian masks/shifts; **unchanged** (#112) |
 | Comms RAM event entry: kind/arg/time/encoder counts/arg2 | `comms_packed_event_t` in event ring, Comms | kind 1-4, arg 0-127, remaining fields 0-65535 | invalid kind/arg rejected without changing ring; time/counts wrap | 3 / 7 / 16 / 2x16 / 16 = 74 logical bits; 80 stored (10 bytes incl. 6 spare bits) | 16-bit kind/arg field + 4x16-bit fields, accessor pack/unpack (#112) |
 | Comms event ring indices | `comms_event_log_t.indices`, Comms | head 0-15; count 0-16 | valid operations maintain ranges | 4 / 5 = 9 logical bits; 16 stored (7 spare bits) | masks/shifts in internal accessors (#112) |
 | Comms event ring drop count | `comms_event_log_t.dropped`, Comms | 0-4294967295 drops | saturates at max | 32 | `uint32_t`, count saturates (#112) |
@@ -471,7 +471,7 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Obstacle profile (geometry) | mutex-copied `ObstacleProfile`, Obstacle | closest angle, valid flag; 4 unsigned mm 0-1023; 2 signed mm +-1023 | saturate at the limits, which exceed `BYPASS_MAX_OFFSET_MM`; invalid profile not published | 7 + 1 + 4 x 10 + 2 x 11 = 70, in 9 bytes | packed bit-fields |
 | Obstacle profile quantization | Tribunal said profiles would be quantized | - | - | range limited, 1 mm step kept | The bypass keeps 50 mm beside the box and S5-U11 mean width error is about 18 mm with no agreed target, so a coarser step has no measured basis |
 | ObstacleRay scan entry | `ObstacleRay` array, private Obstacle task | angle; valid 0/1; range mm 0-8191 | invalid angle rejected by constructor, range saturates at `ECHO_RANGE_INVALID`, no echo = validity clear | 8 + 1 + 13 = 22, in 3 bytes | packed bit-fields |
-| Obstacle width / depth | profile width; depth from encoder travel | width 0-1023 mm; depth stored 16 bits, sent as 0-1023 mm | saturates | 10 / 16 | unsigned |
+| Obstacle width / clearance | profile width; clearance on the side chosen | width 0-1023 mm; clearance stored 16 bits, sent as 0-1023 mm | saturates | 10 / 16 | unsigned |
 | Side-watch servo angle / enabled | `side_command` atomic word, Mission writer | -60..+60 degrees / yes-no | clamped to sweep; value sign-extended on read | 8 + 1 logical; 32 stored (shared atomic word) | bits 1..8 signed angle, bit 0 enabled; accessors (#111) |
 
 ### Mission and Safety

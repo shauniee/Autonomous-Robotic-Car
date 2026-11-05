@@ -621,10 +621,12 @@ static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm, float depth
     MissionOutputs out = bstep(&m, &in, &t);
     bool left = left_mm >= MISSION_BYPASS_MIN_CLEAR_MM; /* a centred box ties: left */
     assert(m.state == MISSION_BYPASS && m.bypass.left_side == left);
+    /* Reports the side and its room, once, as it leaves the line. */
+    assert(out.event_kind == MQTT_EVENT_OBSTACLE && out.event_arg == (left ? 1u : 0u));
+    assert(out.event_arg2 == (left ? left_mm : right_mm));
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_TURN);
     assert(abs(motion_cmd_target(&out.command)) == 90);
     float facing = left ? BYPASS_BODY_RIGHT_MM : BYPASS_BODY_LEFT_MM;
-    bool depth_seen = false;
     uint32_t routes = 0u;
     unsigned drives = 0u;
     uint8_t driving = 0u;
@@ -693,14 +695,9 @@ static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm, float depth
                 m.bypass.forward_q8 / 256.0f - facing <=
                 fmaxf(box_rear, box_front + BYPASS_MIN_DEPTH_MM) + BYPASS_REAR_GAP_MM + 5.0f);
         }
-        if (out.event_kind == MQTT_EVENT_OBSTACLE)
-        {
-            /* Reads long, never short. */
-            assert((float)out.event_arg2 >= depth_mm - 2.0f);
-            depth_seen = true;
-        }
+        assert(out.event_kind != MQTT_EVENT_OBSTACLE);
     }
-    assert(depth_seen && m.state == MISSION_NAVIGATE);
+    assert(m.state == MISSION_NAVIGATE);
     assert(m.phase == JUNCTION_PHASE_ADVANCE && m.turn_length_mm == NAV_SENSOR_FORWARD_MM);
     assert(m.turn_code == (left ? 1u : 2u));
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
@@ -1002,7 +999,6 @@ static void test_bypass_short_side_reading(bool corner_echo)
     assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
     bypass_control_step(&control, &in, &action, &out);
     run_to_pass(&control, &in, &action, &out);
-    bool depth_event = false;
     int32_t step = (int32_t)lroundf(20.0f * ENC_COUNTS_PER_MM);
     for (unsigned i = 0u; i < 40u && control.route == BYPASS_ROUTE_PASS; ++i)
     {
@@ -1014,11 +1010,9 @@ static void test_bypass_short_side_reading(bool corner_echo)
         in.side_sequence++;
         in.now_ms += 60u;
         bypass_control_step(&control, &in, &action, &out);
-        depth_event = depth_event || out.depth_event;
     }
-    assert(control.route == BYPASS_ROUTE_REAR && depth_event);
-    /* Reports the little it saw, but passes the minimum depth before pivoting back. */
-    assert(control.depth_mm < BYPASS_MIN_DEPTH_MM);
+    assert(control.route == BYPASS_ROUTE_REAR);
+    /* Passes the minimum depth before pivoting back. */
     assert(control.rear_clear_q8 / 256 >= (int)(255u + BYPASS_MIN_DEPTH_MM + BYPASS_BODY_RIGHT_MM +
         BYPASS_REAR_GAP_MM) - 1);
     assert(corner_echo == (control.flank_mm != 0u));

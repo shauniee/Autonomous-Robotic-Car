@@ -7,6 +7,7 @@
 - [Contract](#contract)
 - [Wheel-speed tuning](#wheel-speed-tuning)
 - [PID tuning report (draft)](#pid-tuning-report-draft)
+- [Motion accuracy evaluation (draft)](#motion-accuracy-evaluation-draft)
 - [Status and open items](#status-and-open-items)
 
 ## Scope
@@ -78,6 +79,16 @@ Record each run separately with source SHA, UF2 hash, setup and evidence. Limits
 | MR-23 one-wheel hump turn | 5 each type | Known ramp and loading | Change in heading error | Agree D07 |
 | MR-24 GP21 stop | Repeated | Controlled speed, clear run-out | Brake-output latency; physical stopping distance | Agree D08; evaluate 50 ms proposal |
 | MR-25 motor stall | Repeated | Guard-enabled acceptance image only | Detection delay, latched fault and reset | Agree D07 |
+
+## Motion accuracy evaluation (draft)
+
+Nothing is measured yet, so this holds the method only. Tape each result on the floor and record the commit in the [test log](../../testing/integration/TEST_LOG.md).
+
+| Move | How to measure | Runs | Result |
+| --- | --- | --- | --- |
+| Straight 500 mm | Taped distance against the commanded distance | 5 | Not measured |
+| Left and right pivot 90 degrees | Heading error against a square | 5 each | Not measured |
+| Stop 150 mm from a board | Taped rest distance | 5 | Not measured |
 
 ## Status and open items
 

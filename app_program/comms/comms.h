@@ -42,7 +42,7 @@ typedef enum
 #define MQTT_LEN_LINE_TRACE 17u
 #define MQTT_LEN_BARCODE_TRACE 18u
 #define MQTT_BARCODE_TRACE_RUNS 8u
-#define MQTT_LEN_TERRAIN_TRACE 8u
+#define MQTT_LEN_TERRAIN_TRACE 14u
 #define MQTT_LEN_ACK 3u
 #define MQTT_LEN_SNAPSHOT_REQUEST 2u
 #define MQTT_FRAME_MAX 23u
@@ -87,14 +87,16 @@ typedef struct
     uint8_t barcode_letter;	/* 0..25 or MQTT_NO_LETTER */
     uint8_t barcode_action;	/* 0..7 (barcode_action_t) */
     uint16_t obstacle_width_mm;	/* latest profile; 0 none; saturates at MQTT_OBSTACLE_MAX_MM */
-    uint16_t obstacle_depth_mm;	/* latest bypass; 0 none; saturates at MQTT_OBSTACLE_MAX_MM */
+    /* Room on the side chosen; 0 none; saturates at MQTT_OBSTACLE_MAX_MM. */
+    uint16_t obstacle_clearance_mm;
 } mqtt_telemetry_t;
 
 typedef enum
 {
     MQTT_EVENT_BARCODE = 1,	/* arg: letter (0..25), arg2: action */
     MQTT_EVENT_HUMP,		/* arg: 7-bit height code */
-    MQTT_EVENT_OBSTACLE,	/* arg2: depth mm along the obstacle */
+    /* arg: 1 passing left, 0 right; arg2: clearance on that side, mm. */
+    MQTT_EVENT_OBSTACLE,
     MQTT_EVENT_TURN,		/* arg: action */
     MQTT_EVENT_COUNT
 } mqtt_event_kind_t;
@@ -174,10 +176,24 @@ typedef struct
     uint8_t barcode_edges;	/* running GP16 edge count, 0..31, wraps */
 } mqtt_line_trace_t;
 
-/* Terrain trace: bytes after the header are time ms low 16, pitch in quarter degrees,
-   state and flags, rise mm, acceleration in 10 mg units, roll in quarter degrees. */
-unsigned mqtt_encode_terrain_trace(uint8_t *out, unsigned capacity, uint16_t time_ms,
-    int8_t pitch_q2, uint8_t state_flags, uint8_t rise_mm, uint8_t accel_10mg, int8_t roll_q2);
+/* Terrain trace for the dashboard's IMU graphs. Tilt is in quarter degrees;
+   acceleration axes saturate at +/-2032 mg; height is the current estimate and
+   rise the peak this encounter; travel wraps at 65536 mm. */
+typedef struct
+{
+    uint16_t time_ms;
+    int8_t pitch_q2;
+    uint8_t state_flags;
+    uint8_t rise_mm;
+    uint8_t accel_10mg;
+    int8_t roll_q2;
+    int8_t accel_16mg[3];
+    uint8_t height_mm;
+    uint16_t travel_mm;
+} mqtt_terrain_trace_t;
+
+unsigned mqtt_encode_terrain_trace(uint8_t *p_out, unsigned capacity,
+    const mqtt_terrain_trace_t *p_trace);
 
 /* Barcode trace: 8 raw GP16 runs, each bit 15 black level, bits 14..0 width in counts. */
 unsigned mqtt_encode_barcode_trace(uint8_t *out, unsigned capacity, uint8_t sequence,
