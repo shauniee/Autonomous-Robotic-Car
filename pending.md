@@ -33,7 +33,7 @@ Most important first, in sections and within each section. The order is by impor
 
 1. What can damage the robot or make it unsafe.
 2. What every other test depends on.
-3. Course features, because the demonstration scores features working. Obstacle comes before hump because the professor's clarification calls bypass and recovery central, and bypass has never run.
+3. Course features, because the demonstration scores features working. Obstacle comes before hump because the professor's clarification calls bypass and recovery central, and bypass has only observed runs, with no measurements.
 4. Whole-mission repeatability, then required Week 13 evidence.
 5. Reports, stretch goals and housekeeping.
 
@@ -41,9 +41,9 @@ IDs: `M` requirement, `MR` readiness check, `D` pending decision, `T` integrated
 
 ## Where everything lives
 
-This file is the one list of changes and planned changes. `main` stays as it is, because it works. Everything unmerged is on `chore/centralise-pending`, which has run bypass and line tracking on the car (INT-200, INT-203, observed only) but **has not run the full course**. Do not flash it for a demonstration in place of `main`.
+This file is the one list of changes and planned changes. Everything below was merged into `main` from `chore/centralise-pending` on 2026-11-05, on Nicholas's decision. Nicholas reports two perfect full-course runs on the full-course image, with everything tested except the hump (INT-204, observed only). The saved log does not show those runs in full and has no barcode reads, so this is not a recorded physical pass. The hump is **untested on the car**. To return to the previous working image, use commit `7275347`.
 
-| Source | Purpose | State on `chore/centralise-pending` |
+| Source | Purpose | State when merged |
 | --- | --- | --- |
 | `origin/fix/imu-bugs` (`abb1f05`) | `TERRAIN_DIAGNOSTICS=1` raw IMU trace and `scripts/capture_imu.py` | Merged. Use this one: the local `fix/imu-bugs` is the older copy |
 | `origin/fix/pending-software-readiness-20261104` (PR 151) | Testable watchdog feed rule, GitHub host tests, build matrix script, report drafts | Merged. Barcode rule combined with the one below; report tables moved into the Motion and Terrain READMEs, because `docs/` holds three guides only |
@@ -78,16 +78,16 @@ Already merged or closed, so nothing is left to bring in: `test/obstacle-width-b
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| Firmware build | `main` is the working image and is unchanged. On `chore/centralise-pending`, all eight images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193 to INT-197 |
+| Firmware build | All eight images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193 to INT-197 |
 | Safety and electrical | No recorded result. Wiring is user-confirmed only. | MR-01 to MR-05 |
 | Watchdog | Code merged, off by default, never run on a Pico. No reset policy agreed. | `99fe0d8`, D15 |
 | Line tracking | Straight-crossing fix not yet run on the car in its final form (INT-191). Good laps seen, but the last run went off course and was not smooth. No measured success rate. | User observation, INT-136, INT-139b, INT-158; capture analysis found no cause (INT-163) |
 | Barcode | User reports fully functional. All letters and a flipped print not tested. | User observation, INT-156 |
 | Junctions | Some turns passed; junction failures also logged. | INT-137, INT-139b, INT-153 |
-| Obstacle | Scans ran on real boxes with a measured width error. Bench check pending, and bypass has never run. | S5-U10, S5-U11 |
+| Obstacle | Scans ran on real boxes with a measured width error. Bypass ran on the car with good runs reported, but gaps are not measured and one earlier run took the farther edge, cause unknown. | S5-U10, S5-U11, INT-198, INT-201, INT-203, INT-204 |
 | Hump | Latest fix built, never run on the car. Last run counted 5 for 1 crossing. | INT-158, host and build only |
 | Telemetry | Binary link in use on the bench. Physical subscription check pending. | S1-M01 |
-| Full mission | Never run as an acceptance check. | MR-35 to MR-40 |
+| Full mission | Two perfect runs reported without the hump (INT-204, observed only). Never run as an acceptance check. | MR-35 to MR-40 |
 | Timing and resources | Not measured on the final build. | SYS-11, SYS-12 (October builds) |
 
 ## What needs the robot
@@ -201,13 +201,13 @@ The 95% target is the user's. No success rate has been measured yet, so the firs
 
 ## 5. Obstacle and bypass (M6 to M9)
 
-Wheels stay off for the bench steps. Bypass has never run on the car.
+Wheels stay off for the bench steps. Bypass has run on the car, observed only (INT-203, INT-204).
 
 - [ ] S5-U10 with `./flash.sh test`: servo centre and limits, with +/-60 degrees unconfirmed (MR-18, D05).
 - [ ] Sonar against a board at 100, 250, 500 and 1000 mm, plus open space; MR-17 is still PENDING without a saved measurement (A5, D05).
 - [ ] Boxes of 100, 150 and 200 mm: check the `[SCAN]` rays and profile against a tape. S5-U11 used 150 and 220 mm, with mean width error of about 18 mm and no agreed target (M7).
 - [ ] Both sides blocked: the robot stops rather than bypasses (MR-31).
-- [ ] Bypass at 100 mm/s, including its blind reverse, which was 50 mm/s and has never run: start with a wheels-raised check, then the bench, and stop if the side ray misses the box edge (D07).
+- [ ] Bypass at 100 mm/s, including its blind reverse, which was 50 mm/s and has not been confirmed on the car: start with a wheels-raised check, then the bench, and stop if the side ray misses the box edge (D07).
 - [ ] Bypass runs with both sides open and one restricted: no collision, side nearer the line's centre chosen, 90 degree legs clear the box, swept envelope confirmed (MR-30, M8, D03).
 - [ ] Rejoin the original line and continue (MR-30, M9, A9).
 - [ ] Side too close while passing: the car steps out 40 mm and carries on. Both the 40 mm step and the 40 mm passing allowance are provisional; count step-outs on real runs, which should be none on a normal pass, and a false reading such as the car's own body would use up the room and then stop (D07).
@@ -258,7 +258,7 @@ Flash the current image, let the car sit still on the track for a second, then p
 
 - [ ] Agree first-cut limits for lateral, turn, height, width and recovery error before any physical PASS (D10).
 - [ ] Mission-day routine: fresh boot, broker, unfamiliar letters, local start, with no recompile (MR-35).
-- [ ] Full course with line, barcodes, junctions, humps and an obstacle (MR-36, T16).
+- [ ] Full course with line, barcodes, junctions, humps and an obstacle (MR-36, T16). Two runs reported without the hump (INT-204); still needs the hump and a saved log showing barcodes.
 - [ ] Two more runs with no code or constant changes, for three in a row (MR-37). The brief assesses repeatability directly.
 - [ ] Same junction revisited, repeated feature cycles, WiFi interrupted, GP21 ends the session (MR-40, endless operation).
 - [ ] Run time compared with the roughly five-minute expectation (MR-36).

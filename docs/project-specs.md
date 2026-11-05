@@ -111,7 +111,7 @@ physical speed accuracy. D07/D10 must define acceptable measured-speed variation
 
 The existing 95% sample target and full-course three-run repeatability checks
 remain; one successful lap does not establish either. All M1–M10 and applicable
-Tribunal safety/resource obligations remain required. Bypass drives at the same `COURSE_SPEED_MMPS`, and it has never run at that speed on the car. Standalone recovery is tested
+Tribunal safety/resource obligations remain required. Bypass drives at the same `COURSE_SPEED_MMPS`, with good runs observed on the car at that speed and no measurements (INT-203, INT-204). Standalone recovery is tested
 separately and fails the qualifying lap if entered; original-line rejoin within
 bypass remains required under M9.
 
