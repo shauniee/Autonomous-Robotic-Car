@@ -151,12 +151,24 @@ Wheels stay off for the bench steps. Bypass has run on the car, observed only (I
 
 Known limit: a real object at about twice the box range, right beside its edge, is ignored by the room check as a ghost echo; only the forward check on the leg out and the side check while passing would catch it (INT-201). If `SCAN` then `STOPPED` recurs, record the stop reason: INT-164 suggests the car was lifted, and INT-186 confirms the saved capture cannot prove it.
 
+**Issues from the 2026-11-05 runs (INT-212 to INT-215, S5-U15).** These are open and block a reliable bypass.
+
+- [ ] **Bypass nearly always goes left.** The left edge read 27.5 degrees in all 13 S5-U15 scans of a 180 mm box at 160 mm, wherever the box sat, while the right edge read -25 to -42.5 degrees, so the shorter-edge rule chooses left in 12 of 13. The cause is not established. Check in this order: sonar aim and anything near it on the left; 3 scans each of a centred, left and right box from 300 mm, counting them; 3 scans each of a round bottle ahead and at +/-30 degrees. If only the further distance works, raising `MISSION_OBSTACLE_STOP_MM` needs Nicholas's decision (D16).
+- [ ] **Too little clearance when passing left.** With the box offset left, the car planned a 204 mm leg from a left edge of about 79 mm, then stepped out 40 mm after 117 mm of the pass (INT-215). The stuck edge is the likely cause, and uneven pivots may add to it. Keeping the narrower of two sweeps also shortens the leg; decide whether to use the wider edge plus a margin.
+- [ ] **Scan position varies.** Saved S5-U11 scans of one fixed box differ by 20 to 30 mm in position, enough to flip the side when the box is nearly centred; a tie goes left.
+- [ ] **Edge ray skipped.** `obstacle_profile_fine_angles` counts any far ray with a short forward distance as the box, so that side loses its 5 degree ray (S5-U15 first scan, -60 degrees at 304 mm). Needs a contiguous walk from the centre and a host test.
+- [ ] **Both sides blocked no longer stops at the scan.** Clearance does not decide the side now, so the car starts the bypass and only fails later from the side look or the offset limit. Change the MR-31 expectation or the behaviour.
+- [ ] **Reported clearance can mislead.** It reads 0 mm when the chosen side had no echo, even if that side is open.
+- [ ] **Stop after scanning, unexplained.** One run stopped after the scan with no bypass, width 178 mm and no faults; the log was not saved and later runs bypassed (INT-212).
+- [ ] **Final image not driven.** The `terrain.c` IMU trace fix and the watchdog removal have only host tests and builds; the logged trial images have no recorded build. Check the IMU graphs on the dashboard too.
+- [ ] **Tribunal A12 wording.** It still says "watchdog recovery", which no longer exists (D15).
+
 - [ ] S5-U10 with `./flash.sh test`: servo centre and limits, with +/-60 degrees unconfirmed (MR-18, D05).
 - [ ] Sonar against a board at 100, 250, 500 and 1000 mm, plus open space; MR-17 is still PENDING without a saved measurement (A5, D05).
 - [ ] Boxes of 100, 150 and 200 mm: check the `[SCAN]` rays and profile against a tape. S5-U11 used 150 and 220 mm, with mean width error of about 18 mm and no agreed target (M7).
-- [ ] Both sides blocked: the robot stops rather than bypasses (MR-31).
+- [ ] Both sides blocked: test once the expectation above is settled (MR-31).
 - [ ] Bypass at 100 mm/s, including its reverse along the approach when too close to pivot, not yet confirmed on the car: start with a wheels-raised check, then the bench, and stop if the side ray misses the box edge (D07).
-- [ ] Bypass turns undershoot and the pivot back overshot to about 118 degrees (INT-208). The 30 degree rejoin fix is only on `fix/bypass-rejoin-sense` (`911b967`), not in this branch. Measure the first pivot with tape and compare 90 degree turns at 36 and 100 mm/s, to separate slip from the turning width (MR-22, D03). A mid-pivot stop in the same log has no recorded reason, and report which reboots were deliberate (D15).
+- [ ] Bypass turns undershoot and the pivot back overshot to about 118 degrees (INT-208). The 30 degree rejoin fix is only on `fix/bypass-rejoin-sense` (`911b967`), not on `main`, so the overshoot is still expected. Measure the first pivot with tape and compare 90 degree turns at 36 and 100 mm/s, to separate slip from the turning width (MR-22, D03). A mid-pivot stop in the same log has no recorded reason, and report which reboots were deliberate (D15).
 - [ ] Bypass runs with both sides open and one restricted: no collision, side with the shorter edge distance chosen, 90 degree legs clear the box, swept envelope confirmed, rejoins the original line and continues. Record bypass speeds, settle time and travel budgets (MR-30, M8, M9, A9, D03, D05, D07).
 - [ ] Side too close while passing: the car steps out 40 mm and carries on. Both the 40 mm step and the 40 mm passing allowance are provisional; count step-outs on real runs, which should be none on a normal pass, and a false reading such as the car's own body would use up the room and then stop (D07).
 - [ ] Rear clearance when pivoting back: tape the gap to the box, and compare the pass with the real box. `BYPASS_MIN_DEPTH_MM` is provisional at 200 mm, set it to the deepest box, and the course obstacle depth is not specified (D02).
