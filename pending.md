@@ -41,7 +41,7 @@ IDs: `M` requirement, `MR` readiness check, `D` pending decision, `T` integrated
 
 ## Where everything lives
 
-This file is the one list of changes and planned changes. `main` stays as it is, because it works. Everything unmerged is on `chore/centralise-pending`, which is built and host-tested but **has never run on the car**. Do not flash it for a demonstration in place of `main`.
+This file is the one list of changes and planned changes. `main` stays as it is, because it works. Everything unmerged is on `chore/centralise-pending`, which has run bypass and line tracking on the car (INT-200, INT-203, observed only) but **has not run the full course**. Do not flash it for a demonstration in place of `main`.
 
 | Source | Purpose | State on `chore/centralise-pending` |
 | --- | --- | --- |
@@ -208,11 +208,14 @@ Wheels stay off for the bench steps. Bypass has never run on the car.
 - [ ] Boxes of 100, 150 and 200 mm: check the `[SCAN]` rays and profile against a tape. S5-U11 used 150 and 220 mm, with mean width error of about 18 mm and no agreed target (M7).
 - [ ] Both sides blocked: the robot stops rather than bypasses (MR-31).
 - [ ] Bypass at 100 mm/s, including its blind reverse, which was 50 mm/s and has never run: start with a wheels-raised check, then the bench, and stop if the side ray misses the box edge (D07).
-- [ ] Bypass runs with both sides open and one restricted: no collision, larger-gap side chosen, swept envelope confirmed (MR-30, M8, D03).
+- [ ] Bypass runs with both sides open and one restricted: no collision, side nearer the line's centre chosen, 90 degree legs clear the box, swept envelope confirmed (MR-30, M8, D03).
 - [ ] Rejoin the original line and continue (MR-30, M9, A9).
+- [ ] Side too close while passing: the car steps out 40 mm and carries on. Both the 40 mm step and the 40 mm passing allowance are provisional; count step-outs on real runs, which should be none on a normal pass, and a false reading such as the car's own body would use up the room and then stop (D07).
+- [ ] Rear clearance when pivoting back: tape the gap to the box, and compare telemetry depth with the real box: well under it means the side ray left early. `BYPASS_MIN_DEPTH_MM` is provisional at 200 mm, set it to the deepest box, and the course obstacle depth is not specified (D02).
+- [ ] Ghost echoes: a real object at about twice the box range, right beside its edge, is also ignored by the room check; only the forward check on the leg out and the side check while passing would catch it (INT-201).
 - [ ] Depth measured against a tape, and the rear edge seen while bypassing (M7).
 - [ ] Record the stop reason for `SCAN` then `STOPPED` if it recurs. INT-164 suggests the car was lifted, and INT-186 confirms the saved capture cannot prove it.
-- [ ] Obstacle stop on the car: against a board, the car starts slowing at 183 mm and rests at 150 mm. Measure the rest distance with a tape; sonar noise or wheel lag will move it (D16).
+- [ ] Obstacle stop on the car: against a board, the car starts slowing at 191 mm and rests at 150 mm. Measure the rest distance with a tape; sonar noise or wheel lag will move it (D16).
 - [ ] Confirm on the car that scans start only after fresh stationary feedback, with timestamped logs (T09). Host logic passes.
 - [ ] Cancel a scan and restore the servo to centre on a stop, on the car, with no-echo cases (Gap 6). Mission and scan-guard host cases pass.
 - [ ] Measure bypass speeds, settle time and travel budgets (D05, D07).

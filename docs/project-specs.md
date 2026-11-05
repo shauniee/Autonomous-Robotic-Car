@@ -166,7 +166,7 @@ The default project is an autonomous robot car on a predefined course, using onb
 | Barcode | Decode in either direction; hold the command; do not turn on reading |
 | Cross junction | Execute the held straight, left, right or U-turn there |
 | Hump | Detect, estimate height, report; coordinate motion and line following while one wheel is raised |
-| Blocking obstacle | Scan left/right with the servo ultrasonic sensor, estimate width and clearance (full car width), pick a bypass side (the side with the larger gap); leave margin for the car's width |
+| Blocking obstacle | Scan left/right with the servo ultrasonic sensor, estimate width and clearance (full car width), pick a bypass side (the side with room whose edge is nearer the line's centre, Nicholas 2026-11-05); leave margin for the car's width |
 | Bypass | Leave the line, travel round without line guidance, keep observing until passed |
 | After bypass | Rejoin the original line and resume |
 | U-turn detail | At the junction, brake, pause approximately 200 ms, turn 180 degrees and track the return branch; never undo the turn (user request; pause reference pending D02/D08) |
@@ -469,10 +469,10 @@ The final build (section-4 command) and the probe-to-object cross-check are reco
 | Scan ID | scan word bits 3-6, Mission request | 0-15 | wraps | 4 | mask/shift |
 | Range, front / side | echo word, Obstacle | 0-8190 mm, nearest mm | 8191 or valid flag clear = no echo, never clear space; saturates to invalid | 13+1+16 (time low 16) | mask/shift |
 | Obstacle profile (geometry) | mutex-copied `ObstacleProfile`, Obstacle | closest angle, valid flag; 4 unsigned mm 0-1023; 2 signed mm +-1023 | saturate at the limits, which exceed `BYPASS_MAX_OFFSET_MM`; invalid profile not published | 7 + 1 + 4 x 10 + 2 x 11 = 70, in 9 bytes | packed bit-fields |
-| Obstacle profile quantization | Tribunal said profiles would be quantized | - | - | range limited, 1 mm step kept | The bypass keeps a 10 mm gap and S5-U11 mean width error is about 18 mm with no agreed target, so a coarser step has no measured basis |
+| Obstacle profile quantization | Tribunal said profiles would be quantized | - | - | range limited, 1 mm step kept | The bypass keeps 50 mm beside the box and S5-U11 mean width error is about 18 mm with no agreed target, so a coarser step has no measured basis |
 | ObstacleRay scan entry | `ObstacleRay` array, private Obstacle task | angle; valid 0/1; range mm 0-8191 | invalid angle rejected by constructor, range saturates at `ECHO_RANGE_INVALID`, no echo = validity clear | 8 + 1 + 13 = 22, in 3 bytes | packed bit-fields |
 | Obstacle width / depth | profile width; depth from encoder travel | width 0-1023 mm; depth stored 16 bits, sent as 0-1023 mm | saturates | 10 / 16 | unsigned |
-| Side-watch servo angle / enabled | `side_command` atomic word, Mission writer | -70..+70 degrees / yes-no | clamped to sweep; value sign-extended on read | 8 + 1 logical; 32 stored (shared atomic word) | bits 1..8 signed angle, bit 0 enabled; accessors (#111) |
+| Side-watch servo angle / enabled | `side_command` atomic word, Mission writer | -60..+60 degrees / yes-no | clamped to sweep; value sign-extended on read | 8 + 1 logical; 32 stored (shared atomic word) | bits 1..8 signed angle, bit 0 enabled; accessors (#111) |
 
 ### Mission and Safety
 
@@ -550,7 +550,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D13 | Numeric target priorities/periods, execution budgets, timeout slack, data-age limits, worst sensor-to-PWM latency, GPIO ISR time, stack margin and load-test criteria; user authorized existing numeric settings as provisional software defaults on 2026-10-29; physical scheduling/age acceptance remains open | Nicholas |
 | D14 | Core swap superseded. Audit core-0 I/O integration, cross-core event producers/mapping hand-off, synchronization and required initialization order; kernel WiFi/USB and capture core unchanged | Nicholas |
 | D15 | Decided by Nicholas, 2026-11-04: turn on for `full_course` once the SYS-06 bench test passes, and not before. Included: Tribunal A12 names watchdog recovery (Nicholas's rule, 2026-11-03). `WATCHDOG` stays 0 until the SYS-06 bench test passes. Watchdog reset policy/scope, enabled-state audit and physical reset/output behavior; tick initialization is not proof of watchdog protection. No new framework in this restructure | Nicholas |
-| D16 | Settled 2026-10-29: configurable 15 cm is the obstacle trigger distance (150 mm). The car stops at that distance: it starts slowing earlier by `motion_stop_distance_mm`, 183 mm at 100 mm/s (Nicholas, 2026-11-04). It does not authorize any travel without valid forward sonar | Nicholas |
+| D16 | Settled 2026-10-29: configurable 15 cm is the obstacle trigger distance (150 mm). The car stops at that distance: it starts slowing earlier by `motion_stop_distance_mm`, 191 mm at 100 mm/s (Nicholas, 2026-11-04). It does not authorize any travel without valid forward sonar | Nicholas |
 
 Implementation note (2026-10-29, #130): Mission's local reset handshake has
 three exclusive states (boot, await GP21 press, await GP21 release), encoded as
@@ -686,7 +686,7 @@ Uncalibrated software proposals for review (not course limits/module ratings):
 | Scan | Three samples, at least two valid; depth enter/exit bands 30/40 mm; two adjacent rays; model range uncertainty 10 mm | D05/D10 pending; uncertainty is a proposed model input, not sensor accuracy |
 | Servo sampling | User-stated +/-60 degree travel (2026-11-03; +/-50 from 2026-11-02 replaced +/-20, which could not see past a 100-200 mm obstacle at the stop distance); coarse rays every 10 degrees and 5 degree edge refinement; proposed 1 degree per 10 ms, 100 ms settle, 60 ms repeat | Verify endpoints/mounting before release, D05 |
 | Bypass | `COURSE_SPEED_MMPS` continuous legs of <=550 mm, 36 mm/s pivots, 90 s / 4000 mm whole budget; <=2 s for the side look to settle | D02/D03/D05/D07/D08/D13 pending |
-| Bypass geometry | User-measured outline from the axle centre (2026-11-03): nose 155 mm, barcode arm corner 183 mm forward and 85 mm left, right side 75 mm, rear 95 mm, sonar 105 mm forward and assumed on the centreline; 30 mm clearance; 10 mm gap to the measured box edge and 70 degree side look (user-chosen), least pivot solved from the scan, offset <=550 mm; conservative obstacle width >=200 mm | Tape measurements; clearance values remain proposals, swept envelope unconfirmed, D03 |
+| Bypass geometry | User-measured outline from the axle centre (2026-11-03): nose 155 mm, barcode arm corner 183 mm forward and 85 mm left, right side 75 mm, rear 95 mm, sonar 105 mm forward and assumed on the centreline; 30 mm clearance; 20 mm gap past the box rear (user-chosen 2026-11-05; at least 200 mm of box passed, provisional), 60 degree side look (the servo's measured limit), 90 degree pivots with a leg of box edge plus half the car's length (125 mm, Nicholas 2026-11-05) and at least the 10 mm too-close limit plus a provisional 40 mm allowance from the car's side, offset <=550 mm; conservative obstacle width >=200 mm | Tape measurements; clearance values remain proposals, swept envelope unconfirmed, D03 |
 | Rear-edge / return | Two distinct qualified side groups; 150/100 mm enter/release jump; <=1500 mm pass, <=250 mm baseline search; return within 25 mm lateral / 5 degrees and three distinct tracking acquisitions | D02/D05/D07/D10 pending |
 | Height quality | Raw acceleration norm 900..1100 mg, wheel speed difference <=30 mm/s, speed change <=30 mm/s per fresh sample, 200 ms steady data before a height window | D06/D07/D10 pending; suppress unqualified height results |
 | Retry / reverse | One stationary rescan; two sweeps at each position; blind reverse along the approach, 150 mm in total for one obstacle (user decision 2026-11-03), with no rear coverage | Provisional, D07 |
@@ -718,7 +718,7 @@ It is valid only while the edge confirmation streak is nonzero; a new streak
 replaces it. Pose overflow fails the bypass before capture. Confirmed rear
 position adds the sonar forward mount and baseline ray's forward projection to
 this first position, keeping depth and return clearance in the profile's frame.
-At the user-stated +/-70 degree side look, angle needs eight signed bits;
+At the +/-60 degree side look, angle needs eight signed bits;
 ray validity needs one more bit. Existing eight-bit angle storage is retained
 to preserve the current layouts; commands and constructors enforce the sweep. `ObstacleRay` becomes four packed bytes; `ObstacleProfile`
 remains 14 bytes because its previous alignment byte holds validity. Side-watch

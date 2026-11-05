@@ -133,6 +133,14 @@ static bool config_valid(const obstacle_profile_config_t *config)
         config->planning_width_mm > 0u;
 }
 
+/* Sound that bounces box, car, box reads about twice the box's range just past
+   its edge. INT-201: these went with the box, while farther echoes stayed. */
+static bool ghost_of_box(const ObstacleRay *ray, const ObstacleRay *edge)
+{
+    return ray_valid(edge) && (float)ray->range_mm >= (float)edge->range_mm * 1.75f &&
+        (float)ray->range_mm <= (float)edge->range_mm * 2.25f;
+}
+
 bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
     const ObstacleRay *background, const obstacle_profile_config_t *config,
     ObstacleProfile *out, obstacle_profile_evidence_t *evidence)
@@ -264,14 +272,16 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
     /* A free ray proves empty space out to its echo, not just to the obstacle's
        front plane, which a limited sweep could never show as a wide gap. */
     float reach_left = 65535.0f, reach_right = 65535.0f;
+    bool left_ghosts = true, right_ghosts = true;
     for (unsigned i = high + 1u; i < count && !foreground[i]; ++i)
     {
         if (rays[order[i]].angle_deg - rays[order[i - 1u]].angle_deg > config->maximum_gap_deg)
         {
             break;
         }
-        if (known[i])
+        if (known[i] && (!left_ghosts || !ghost_of_box(&rays[order[i]], &rays[order[high]])))
         {
+            left_ghosts = false;
             ++free_left;
             reach_left = fminf(reach_left, ray_left(&rays[order[i]]));
         }
@@ -282,8 +292,9 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
         {
             break;
         }
-        if (known[i - 1u])
+        if (known[i - 1u] && (!right_ghosts || !ghost_of_box(&rays[order[i - 1u]], &rays[order[low]])))
         {
+            right_ghosts = false;
             ++free_right;
             reach_right = fminf(reach_right, -ray_left(&rays[order[i - 1u]]));
         }

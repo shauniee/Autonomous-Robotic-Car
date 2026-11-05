@@ -529,17 +529,22 @@ static void enter_bypass(Mission *m, const MissionInputs *in,
     m->backed_mm = 0u;
     m->bypass_started_ms = in->now_ms;
     m->in_broad = false;
-    /* Planned stop at MISSION_OBSTACLE_STOP_MM. Already inside it (an obstacle that
-       appeared late): brake now rather than roll closer. */
-    int32_t room = front_now_mm(in) - (int32_t)MISSION_OBSTACLE_STOP_MM;
-    if (room <= 0)
+    /* Planned stop at MISSION_OBSTACLE_STOP_MM. Never ask for less than the stop
+       distance: a reading that jumps short would otherwise brake hard. It may rest
+       closer, and the scan reverses if it must. Brake at once only if the slow stop
+       would reach the barcode arm's clearance. */
+    int32_t now_mm = front_now_mm(in);
+    int32_t stop_mm = (int32_t)motion_stop_distance_mm(COURSE_SPEED_MMPS);
+    if (now_mm - stop_mm < (int32_t)(BYPASS_BODY_ARM_FORWARD_MM -
+        OBSTACLE_SONAR_FORWARD_MM + BYPASS_CLEARANCE_MM))
     {
         m->scan_stopping = 0u;
         out->command = stop_command(in->now_ms);
         return;
     }
     m->scan_stopping = 1u;
-    m->turn_length_mm = (int16_t)room;
+    m->turn_length_mm = (int16_t)(now_mm - (int32_t)MISSION_OBSTACLE_STOP_MM > stop_mm ?
+        now_mm - (int32_t)MISSION_OBSTACLE_STOP_MM : stop_mm);
     m->current_action = next_action_id(m);
     handle_scan(m, in, out);
 }

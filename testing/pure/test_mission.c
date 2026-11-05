@@ -519,7 +519,7 @@ static void test_obstacle_stops_at_the_stop_distance(void)
     out = bstep(&m, &in, &t);
     assert(m.state == MISSION_STOPPED && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
 
-    /* An obstacle first seen inside the stop distance brakes at once. */
+    /* A reading that jumps short still gets the whole slow stop. */
     Mission late;
     MissionInputs near = base(100u);
     t = to_follow(&late, &near);
@@ -527,8 +527,15 @@ static void test_obstacle_stops_at_the_stop_distance(void)
     near.front_age_ms = 0u;
     near.front_mm = MISSION_OBSTACLE_STOP_MM;
     out = bstep(&late, &near, &t);
+    assert(late.state == MISSION_SCAN && motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
+    assert(motion_cmd_target(&out.command) == (int)motion_stop_distance_mm(COURSE_SPEED_MMPS));
+
+    /* Only when the slow stop would reach the barcode arm's clearance does it brake at once. */
+    t = to_follow(&late, &near);
+    near.front_mm = 108u + motion_stop_distance_mm(COURSE_SPEED_MMPS) - 1u;
+    out = bstep(&late, &near, &t);
     assert(late.state == MISSION_SCAN && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
-    puts("obstacle: slows at stop distance + deceleration, stops at once when late PASS");
+    puts("obstacle: slows at stop distance + deceleration, short readings keep the slow stop PASS");
 }
 
 static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t,
@@ -612,11 +619,10 @@ static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm, float depth
     in.profile_width_mm = (uint16_t)lroundf(half_width * 2.0f);
     float box_front = 250.0f, box_rear = box_front + depth_mm;
     MissionOutputs out = bstep(&m, &in, &t);
-    bool left = left_mm >= right_mm;
+    bool left = left_mm >= MISSION_BYPASS_MIN_CLEAR_MM; /* a centred box ties: left */
     assert(m.state == MISSION_BYPASS && m.bypass.left_side == left);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_TURN);
-    assert(abs(motion_cmd_target(&out.command)) == m.bypass.out_deg);
-    assert(m.bypass.out_deg > 0u && m.bypass.out_deg < 90u);
+    assert(abs(motion_cmd_target(&out.command)) == 90);
     float facing = left ? BYPASS_BODY_RIGHT_MM : BYPASS_BODY_LEFT_MM;
     bool depth_seen = false;
     uint32_t routes = 0u;
@@ -666,18 +672,26 @@ static void run_bypass_sequence(uint32_t left_mm, uint32_t right_mm, float depth
         float across = (left ? 1.0f : -1.0f) * m.bypass.left_q8 / 256.0f;
         if (m.bypass.route == BYPASS_ROUTE_PASS || m.bypass.route == BYPASS_ROUTE_REAR)
         {
-            /* The measured box edge stays the safe gap off the facing side. */
-            assert(across - facing >= half_width + BYPASS_SAFE_GAP_MM - MOTION_DIST_TOL_MM);
-            assert(across - facing <= half_width + BYPASS_SAFE_GAP_MM + MOTION_DIST_TOL_MM);
+            /* The car's side runs the safe gap plus the allowance off the measured edge. */
+            float gap = BYPASS_SAFE_GAP_MM + BYPASS_PASS_ALLOWANCE_MM;
+            assert(across - facing >= half_width + gap - MOTION_DIST_TOL_MM);
+            assert(across - facing <= half_width + gap + MOTION_DIST_TOL_MM);
             assert(out.side_watch_on && out.side_watch_deg == (left ? -SERVO_LOOK_DEG : SERVO_LOOK_DEG));
+        }
+        if (m.bypass.route == BYPASS_ROUTE_REAR)
+        {
+            /* The ray reached the box first: open space short of it is no rear. */
+            assert(m.bypass.forward_q8 / 256.0f + OBSTACLE_SONAR_FORWARD_MM +
+                (across - half_width) / tanf(SERVO_LOOK_DEG * 0.0174532925f) >= box_front);
         }
         if (m.bypass.route == BYPASS_ROUTE_IN)
         {
             /* Its facing side swings no further back than this, clear of the rear. */
-            assert(m.bypass.forward_q8 / 256.0f - facing >= box_rear + BYPASS_SAFE_GAP_MM - 2.0f);
+            assert(m.bypass.forward_q8 / 256.0f - facing >= box_rear + BYPASS_REAR_GAP_MM - 2.0f);
             /* It stops as soon as that holds, unless the ray had already passed the rear. */
             assert(depth_mm <= 100.0f ||
-                m.bypass.forward_q8 / 256.0f - facing <= box_rear + BYPASS_SAFE_GAP_MM + 5.0f);
+                m.bypass.forward_q8 / 256.0f - facing <=
+                fmaxf(box_rear, box_front + BYPASS_MIN_DEPTH_MM) + BYPASS_REAR_GAP_MM + 5.0f);
         }
         if (out.event_kind == MQTT_EVENT_OBSTACLE)
         {
@@ -723,7 +737,7 @@ static void test_bypass_long_encoder_travel(void)
 static void test_bypass_full_sequence(void)
 {
     run_bypass_sequence(800u, 400u, 150.0f, 100.0f, true);
-    run_bypass_sequence(400u, 900u, 150.0f, 100.0f, true);
+    run_bypass_sequence(100u, 900u, 150.0f, 100.0f, true); /* left blocked: right */
     run_bypass_sequence(800u, 400u, 100.0f, 50.0f, true);
     run_bypass_sequence(800u, 400u, 200.0f, 75.0f, true);
     run_bypass_sequence(800u, 400u, 150.0f, 75.0f, false); /* open room: no echo past the rear */
@@ -748,19 +762,20 @@ static void test_bypass_real_outline(void)
     profile.closest_mm = 210u;
     profile.left_clearance_mm = 800u;
     assert(!bypass_control_begin(&control, &in, &profile, 200u, &action));
-    /* The passing offset uses the side that faces the box. */
+    /* The side nearer the centre, even with more room on the other. */
     profile.closest_mm = 500u;
     profile.obstacle_left_mm = 100;
     assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
-    assert(control.left_side && control.offset_mm == 285);
-    /* F sin(a) - E cos(a) = d for F 500, E 200, d 85: the least pivot, rounded up. */
-    assert(control.out_deg == 32u);
+    assert(!control.left_side && control.offset_mm == -135); /* the barcode arm side needs more */
+    profile.obstacle_left_mm = -100;
+    assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
+    assert(control.left_side && control.offset_mm == 125);
 
     /* Forward travel keeps the arm, not the sonar, clear of what is ahead. */
     in = (bypass_input_t){.now_ms = 100u, .stationary = true, .functional = true};
     profile.obstacle_left_mm = 0;
     assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
-    int32_t counts = (int32_t)lroundf((float)control.out_deg * 0.0174532925f *
+    int32_t counts = (int32_t)lroundf(90.0f * 0.0174532925f *
         TRACK_WIDTH_MM * 0.5f * ENC_COUNTS_PER_MM);
     in.count[0] = (uint32_t)-counts;
     in.count[1] = (uint32_t)counts;
@@ -770,7 +785,7 @@ static void test_bypass_real_outline(void)
     bypass_output_t out;
     bypass_control_step(&control, &in, &action, &out);
     assert(control.route == BYPASS_ROUTE_OFFSET && control.work == BYPASS_WORK_DRIVE);
-    assert(lroundf(control.action_target * sinf(control.out_deg * 0.0174532925f)) >= 185);
+    assert(control.action_target == 225);
     in.now_ms += 20u;
     in.front_valid = true;
     in.front_mm = 109u;
@@ -843,6 +858,171 @@ static void test_scan_obstacle_removed(void)
     out = front_reading(&m, &in, &t, true, MISSION_OBSTACLE_STOP_MM);
     assert(m.state == MISSION_SCAN && out.scan_request && m.front_clear == 0u);
     puts("Obstacle: obstacle removed during a scan resumes the line PASS");
+}
+
+/* Finishes the current TURN or DISTANCE action with the wheels where it asked. */
+static void finish_bypass_action(bypass_control_t *control, bypass_input_t *in,
+    uint8_t *action, bypass_output_t *out)
+{
+    int mode = motion_cmd_mode(&out->command);
+    int target = motion_cmd_target(&out->command);
+    int32_t counts = (int32_t)lroundf((mode == MOTION_MODE_TURN ?
+        target * 0.0174532925f * TRACK_WIDTH_MM * 0.5f : (float)target) * ENC_COUNTS_PER_MM);
+    in->count[0] += (uint32_t)(mode == MOTION_MODE_TURN ? -counts : counts);
+    in->count[1] += (uint32_t)counts;
+    in->now_ms += 20u;
+    in->front_ms = in->now_ms;
+    in->side_ms = in->now_ms;
+    in->motion_action = motion_cmd_action(&out->command);
+    in->motion_status = RD_MOTION_DONE;
+    bypass_control_step(control, in, action, out);
+}
+
+/* Runs the leg out and the pivot back, then starts the pass with the side look on. */
+static void run_to_pass(bypass_control_t *control, bypass_input_t *in, uint8_t *action,
+    bypass_output_t *out)
+{
+    finish_bypass_action(control, in, action, out);
+    assert(control->route == BYPASS_ROUTE_OFFSET);
+    finish_bypass_action(control, in, action, out);
+    assert(control->route == BYPASS_ROUTE_PARALLEL);
+    finish_bypass_action(control, in, action, out);
+    assert(control->route == BYPASS_ROUTE_PASS && control->work == BYPASS_WORK_LOOK);
+    in->side_sequence++;
+    in->now_ms += 20u;
+    bypass_control_step(control, in, action, out);
+    assert(control->work == BYPASS_WORK_DRIVE);
+    in->motion_status = RD_MOTION_RUNNING;
+}
+
+static void side_reads_close(bypass_control_t *control, bypass_input_t *in, uint8_t *action,
+    bypass_output_t *out, uint32_t range_mm)
+{
+    for (unsigned i = 0u; i < BYPASS_CLOSE_SAMPLES; ++i)
+    {
+        in->side_valid = true;
+        in->side_mm = range_mm;
+        in->side_sequence++;
+        in->now_ms += 60u;
+        bypass_control_step(control, in, action, out);
+    }
+}
+
+static void test_bypass_steps_out_when_too_close(void)
+{
+    bypass_control_t control;
+    bypass_input_t in = {.now_ms = 100u, .stationary = true, .functional = true};
+    uint8_t action = 1u;
+    bypass_output_t out;
+    ObstacleProfile profile = {.valid = true, .closest_mm = 255u, .width_mm = 200u,
+        .obstacle_forward_mm = 255, .left_clearance_mm = 300u, .right_clearance_mm = 300u};
+    assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
+    assert(control.left_side && control.offset_mm == 225);
+    /* Room 300, used 125 + 85 on the far side: two steps of 40 fit. */
+    assert(control.spare_mm == 90u);
+    bypass_control_step(&control, &in, &action, &out);
+    run_to_pass(&control, &in, &action, &out);
+
+    /* One bad ping is not enough; a clear reading restarts the count. */
+    in.side_valid = true;
+    in.side_mm = 80u;
+    in.side_sequence++;
+    bypass_control_step(&control, &in, &action, &out);
+    in.side_mm = 200u;
+    in.side_sequence++;
+    bypass_control_step(&control, &in, &action, &out);
+    assert(control.close_samples == 0u && control.work == BYPASS_WORK_DRIVE);
+
+    /* The planned 125 mm less the whole allowance still does not step out. */
+    side_reads_close(&control, &in, &action, &out, 85u);
+    assert(control.close_samples == 0u && control.work == BYPASS_WORK_DRIVE);
+
+    /* 80 mm is inside the 75 mm side plus the 10 mm gap: brake, no failure. */
+    side_reads_close(&control, &in, &action, &out, 80u);
+    assert(control.route == BYPASS_ROUTE_PASS && control.work == BYPASS_WORK_STOP);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
+    assert(control.offset_mm == 265 && control.spare_mm == 50u);
+
+    /* Waits for rest, turns out by a right angle, drives the step, turns back, passes again. */
+    in.stationary = false;
+    bypass_control_step(&control, &in, &action, &out);
+    assert(control.work == BYPASS_WORK_STOP);
+    in.stationary = true;
+    bypass_control_step(&control, &in, &action, &out);
+    assert(control.route == BYPASS_ROUTE_OUT && motion_cmd_mode(&out.command) == MOTION_MODE_TURN);
+    assert(motion_cmd_target(&out.command) == 90);
+    finish_bypass_action(&control, &in, &action, &out);
+    assert(control.route == BYPASS_ROUTE_OFFSET && abs(control.action_target - 40) <= 2); /* wheel-count rounding */
+    finish_bypass_action(&control, &in, &action, &out);
+    assert(control.route == BYPASS_ROUTE_PARALLEL && motion_cmd_target(&out.command) == -90);
+    finish_bypass_action(&control, &in, &action, &out);
+    in.side_sequence++;
+    in.now_ms += 20u;
+    bypass_control_step(&control, &in, &action, &out);
+    assert(control.route == BYPASS_ROUTE_PASS && control.work == BYPASS_WORK_DRIVE);
+    assert(fabsf(control.left_q8 / 256.0f - 265.0f) <= 2.0f);
+    in.motion_status = RD_MOTION_RUNNING;
+
+    /* The room runs out after the second step: stop rather than leave the measured space. */
+    side_reads_close(&control, &in, &action, &out, 80u);
+    assert(control.work == BYPASS_WORK_STOP && control.spare_mm == 10u);
+    in.stationary = true;
+    bypass_control_step(&control, &in, &action, &out);
+    finish_bypass_action(&control, &in, &action, &out);
+    finish_bypass_action(&control, &in, &action, &out);
+    finish_bypass_action(&control, &in, &action, &out);
+    in.side_sequence++;
+    in.now_ms += 20u;
+    bypass_control_step(&control, &in, &action, &out);
+    in.motion_status = RD_MOTION_RUNNING;
+    side_reads_close(&control, &in, &action, &out, 80u);
+    assert(out.route == BYPASS_ROUTE_FAILED);
+
+    /* The box is already beside the rear corner's swing: stop, do not pivot into it. */
+    in = (bypass_input_t){.now_ms = 100u, .stationary = true, .functional = true};
+    assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
+    bypass_control_step(&control, &in, &action, &out);
+    run_to_pass(&control, &in, &action, &out);
+    int32_t along = (int32_t)lroundf(250.0f * ENC_COUNTS_PER_MM);
+    in.count[0] += (uint32_t)along;
+    in.count[1] += (uint32_t)along;
+    side_reads_close(&control, &in, &action, &out, 80u);
+    assert(out.route == BYPASS_ROUTE_FAILED);
+    puts("Obstacle: bypass steps out when the side is too close PASS");
+}
+
+static void test_bypass_short_side_reading(bool corner_echo)
+{
+    bypass_control_t control;
+    bypass_input_t in = {.now_ms = 100u, .stationary = true, .functional = true};
+    uint8_t action = 1u;
+    bypass_output_t out;
+    ObstacleProfile profile = {.valid = true, .closest_mm = 255u, .width_mm = 200u,
+        .obstacle_forward_mm = 255, .left_clearance_mm = 300u, .right_clearance_mm = 300u};
+    assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
+    bypass_control_step(&control, &in, &action, &out);
+    run_to_pass(&control, &in, &action, &out);
+    bool depth_event = false;
+    int32_t step = (int32_t)lroundf(20.0f * ENC_COUNTS_PER_MM);
+    for (unsigned i = 0u; i < 40u && control.route == BYPASS_ROUTE_PASS; ++i)
+    {
+        in.count[0] += (uint32_t)step;
+        in.count[1] += (uint32_t)step;
+        /* Only the front corner answers, briefly, as the ray reaches the box. */
+        in.side_valid = corner_echo && i >= 4u && i < 6u;
+        in.side_mm = 140u;
+        in.side_sequence++;
+        in.now_ms += 60u;
+        bypass_control_step(&control, &in, &action, &out);
+        depth_event = depth_event || out.depth_event;
+    }
+    assert(control.route == BYPASS_ROUTE_REAR && depth_event);
+    /* Reports the little it saw, but passes the minimum depth before pivoting back. */
+    assert(control.depth_mm < BYPASS_MIN_DEPTH_MM);
+    assert(control.rear_clear_q8 / 256 >= (int)(255u + BYPASS_MIN_DEPTH_MM + BYPASS_BODY_RIGHT_MM +
+        BYPASS_REAR_GAP_MM) - 1);
+    assert(corner_echo == (control.flank_mm != 0u));
+    puts("Obstacle: bypass passes the minimum depth on a short side reading PASS");
 }
 
 static void test_bypass_reverses_when_too_close(void)
@@ -1128,6 +1308,9 @@ int main(void)
     test_bypass_long_encoder_travel();
     test_bypass_failures();
     test_bypass_real_outline();
+    test_bypass_steps_out_when_too_close();
+    test_bypass_short_side_reading(false);
+    test_bypass_short_side_reading(true);
     test_bypass_reverses_when_too_close();
     test_scan_obstacle_removed();
     test_missing_echo_policy();

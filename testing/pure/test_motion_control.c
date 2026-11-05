@@ -387,7 +387,7 @@ static void test_follow_target_slew(void)
         0, 1u, in.now_ms);
     motion_control_step(&c, &cmd, &in, &out);
     assert(c.follow_base_q6 > 0u && c.follow_base_q6 <= 64u);
-    for (unsigned i = 0; i < 130u; ++i)
+    for (unsigned i = 0; i < (500u * 1000u / MOTION_ACCEL_MMPS2 + MOTION_ACCEL_MMPS2 * 1000u / MOTION_JERK_MMPS3) / MOTION_PERIOD_MS + 5u; ++i)
     {
         in.now_ms += MOTION_PERIOD_MS;
         in.count[0] = enc_advance(in.count[0], 12);

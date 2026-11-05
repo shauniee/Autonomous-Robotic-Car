@@ -146,12 +146,12 @@ _Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
 /* Lift-style speed profile for every planned move: acceleration builds and fades
    at the jerk limit. PROVISIONAL D07 trial values; lower either for a gentler
    move. Safety stops ignore this and brake at once. */
-#define MOTION_ACCEL_MMPS2 250u
+#define MOTION_ACCEL_MMPS2 150u
 #define MOTION_JERK_MMPS3 1000u
 /* Travel for a profile stop from speed v, in whole mm, rounded up. */
 #define MOTION_STOP_MM(v) ((v) * (v) / (2u * MOTION_ACCEL_MMPS2) + \
     (v) * MOTION_ACCEL_MMPS2 / (2u * MOTION_JERK_MMPS3) + 1u)
-#define MOTION_FOLLOW_STEER_QPS 300u /* PROVISIONAL D07: applied steering slew; about MOTION_ACCEL_MMPS2 at each wheel at 100 mm/s */
+#define MOTION_FOLLOW_STEER_QPS 300u /* PROVISIONAL D07: applied steering slew; about 250 mm/s^2 at each wheel at 100 mm/s */
 /* The one course speed: line following, crossings, junction advances and bypass
    driving. Smoothness and accuracy come first, then speed. Below 60 mm/s the
    feedforward fit does not apply (INT-100); retune before going there. */
@@ -268,9 +268,9 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define SERVO_US_PER_DEG	10u	/* PROVISIONAL (D05): endpoints and scale */
 /* user: the servo can do +/-60 degrees (2026-11-03); calibrate D05 */
 #define SERVO_MAX_DEG 60
-/* User-chosen side look while passing (2026-11-03), beyond the scan sweep;
-   calibrate D05 */
-#define SERVO_LOOK_DEG 70
+/* Side look while passing: the servo's measured limit. 70 degrees sat beyond it,
+   which put the rear estimate short. Calibrate D05. */
+#define SERVO_LOOK_DEG SERVO_MAX_DEG
 #define SERVO_STEP_MS		10u	/* PROVISIONAL (D05): 1 degree per step, a bypass look must fit BYPASS_SENSE_TIMEOUT_MS */
 #define SERVO_SETTLE_MS		100u	/* PROVISIONAL (D05) */
 /* settled readings every 10 degrees, -60..60 */
@@ -301,6 +301,9 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define BYPASS_BODY_LEFT_MM 85u /* left, barcode arm */
 #define BYPASS_BODY_RIGHT_MM 75u
 #define BYPASS_BODY_REAR_MM 95u
+/* Nicholas 2026-11-05: added to the box edge for the leg out. Nose to rear,
+   without the barcode arm. */
+#define BYPASS_BODY_HALF_LENGTH_MM ((BYPASS_BODY_NOSE_MM + BYPASS_BODY_REAR_MM) / 2u)
 #define BYPASS_CLEARANCE_MM 30u
 /* PROVISIONAL D07: beyond a pivot's reach, for range jumps of about 10 mm
    (S5-U11) */
@@ -314,16 +317,29 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define BYPASS_MAX_OFFSET_MM 550u
 /* one drive, within MOTION_ACTION_TIMEOUT_MS at BYPASS_SPEED_MMPS */
 #define BYPASS_LEG_MAX_MM 550u
-/* User-chosen: car side to the measured box edge while passing */
+/* User-chosen: car side to the box's side while passing, the too-close limit */
 #define BYPASS_SAFE_GAP_MM 10u
+/* User-chosen 2026-11-05: car side to the box rear before pivoting back; the rear
+   wire hit at 10 mm */
+#define BYPASS_REAR_GAP_MM 20u
 /* PROVISIONAL D05: travel with the side ray off the box before it counts as
    clear */
-#define BYPASS_EDGE_MM 30u
+#define BYPASS_EDGE_MM 60u
 #define BYPASS_FRONT_MAX_AGE_MS 400u
 #define BYPASS_EDGE_SAMPLES 2u
-/* side readings in a row inside the car before stopping; one bad ping must
-   not */
+/* side readings in a row within the safe gap before stepping out; one bad
+   ping must not */
 #define BYPASS_CLOSE_SAMPLES 3u
+/* PROVISIONAL D07: extra distance out each time the side is too close while
+   passing */
+#define BYPASS_STEP_OUT_MM 40u
+/* PROVISIONAL D07: planned passing distance above the too-close limit, so normal
+   error does not trigger a step out. About 9 mm a side of width error (S5-U11)
+   plus 26 mm from a 5 degree heading error over a 300 mm pass. */
+#define BYPASS_PASS_ALLOWANCE_MM 40u
+/* PROVISIONAL D02: the bypass passes at least this much box, whatever the side
+   ray reads. Set it to the deepest box; course obstacle depth is not specified. */
+#define BYPASS_MIN_DEPTH_MM 200u
 #define BYPASS_RETURN_HEADING_DEG 5u
 #define MISSION_SCAN_RETRIES 1u
 /* forward readings in a row, after a sweep, that mean the obstacle has gone */
@@ -401,6 +417,10 @@ _Static_assert(BYPASS_BACKUP_MAX_MM <= 255u,
 _Static_assert(BYPASS_TRAVEL_MM <= 4095u && BYPASS_EDGE_SAMPLES > 0u &&
     BYPASS_EDGE_SAMPLES <= 7u,
     "bounded bypass storage must fit its fields");
+_Static_assert(MISSION_BYPASS_MIN_CLEAR_MM >= BYPASS_BODY_HALF_LENGTH_MM + BYPASS_BODY_LEFT_MM &&
+    MISSION_BYPASS_MIN_CLEAR_MM >= BYPASS_BODY_LEFT_MM + BYPASS_SAFE_GAP_MM +
+        BYPASS_PASS_ALLOWANCE_MM + BYPASS_BODY_RIGHT_MM,
+    "the leg out must fit the room checked");
 _Static_assert(BYPASS_LEG_MAX_MM * 1000u / BYPASS_SPEED_MMPS <
     MOTION_ACTION_TIMEOUT_MS && BYPASS_MAX_OFFSET_MM <= BYPASS_LEG_MAX_MM,
     "a bypass leg must finish inside one Motion action");

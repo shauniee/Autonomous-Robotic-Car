@@ -83,7 +83,7 @@ static int expected_heading(const bypass_control_t *control)
     int side = control->left_side ? 1 : -1;
     if (control->route == BYPASS_ROUTE_OFFSET || control->route == BYPASS_ROUTE_OUT)
     {
-        return side * control->out_deg;
+        return side * 90;
     }
     if (control->route == BYPASS_ROUTE_RETURN || control->route == BYPASS_ROUTE_IN)
     {
@@ -119,40 +119,33 @@ static bool has_clearance(const ObstacleProfile *profile, bool left)
         2.0f * BYPASS_CLEARANCE_MM);
 }
 
-/* Least pivot that keeps the facing side BYPASS_SAFE_GAP_MM off the measured
-   box corner along a straight leg: F sin(a) - E cos(a) = d, with the box
-   corner at (F, E). The leg ends once a straight run alongside the box would
-   hold the same gap. */
-static bool plan_side(const ObstacleProfile *profile, bool left, float *offset,
-    uint8_t *out_deg)
+/* Sideways distance from the line's centre to the box's edge on that side. */
+static float edge_mm(const ObstacleProfile *profile, bool left)
 {
-    float forward = profile->closest_mm;
-    float edge = (left ? profile->obstacle_left_mm :
-        -profile->obstacle_left_mm) + profile->width_mm * 0.5f;
-    float gap = facing_half_mm(left) + BYPASS_SAFE_GAP_MM;
-    float reach = hypotf(forward, edge);
-    *offset = edge + gap;
-    if (*offset <= 0.0f || *offset > BYPASS_MAX_OFFSET_MM || gap >= reach ||
-        *offset > BYPASS_LEG_MAX_MM)
-    {
-        return false;
-    }
-    float angle = fmaxf(atan2f(edge, forward) + asinf(gap / reach),
-        asinf(*offset / BYPASS_LEG_MAX_MM)) / BYPASS_RAD_PER_DEG;
-    if (angle > 90.0f)
-    {
-        return false;
-    }
-    *out_deg = (uint8_t)ceilf(angle);
-    return true;
+    return (left ? profile->obstacle_left_mm : -profile->obstacle_left_mm) +
+        profile->width_mm * 0.5f;
 }
 
-static bool side_usable(const ObstacleProfile *profile, bool left,
-    float *offset, uint8_t *out_deg)
+/* Axle to box edge while passing: half the car's length, or more if that would
+   leave too little above the too-close limit to absorb scan and heading error. */
+static float pass_distance_mm(bool left)
 {
+    return fmaxf(BYPASS_BODY_HALF_LENGTH_MM,
+        facing_half_mm(left) + BYPASS_SAFE_GAP_MM + BYPASS_PASS_ALLOWANCE_MM);
+}
+
+/* The leg out, at right angles to the line. */
+static float offset_mm(const ObstacleProfile *profile, bool left)
+{
+    return edge_mm(profile, left) + pass_distance_mm(left);
+}
+
+static bool side_usable(const ObstacleProfile *profile, bool left)
+{
+    float offset = offset_mm(profile, left);
     return has_clearance(profile, left) &&
         profile->closest_mm > pivot_reach_mm(left) &&
-        plan_side(profile, left, offset, out_deg);
+        offset > 0.0f && offset <= BYPASS_MAX_OFFSET_MM;
 }
 
 uint8_t bypass_control_backup_mm(const ObstacleProfile *profile,
@@ -192,13 +185,10 @@ static bool heading_held(const bypass_control_t *control)
 bool bypass_control_can_begin(const bypass_input_t *input,
     const ObstacleProfile *profile, uint16_t planning_width_mm)
 {
-    float offset = 0.0f;
-    uint8_t deg = 0u;
     return input != NULL && profile != NULL && input->stationary &&
         input->functional && profile->valid &&
         planning_width_mm >= OBSTACLE_EXPECTED_MAX_WIDTH_MM &&
-        (side_usable(profile, true, &offset, &deg) ||
-            side_usable(profile, false, &offset, &deg));
+        (side_usable(profile, true) || side_usable(profile, false));
 }
 
 bool bypass_control_begin(bypass_control_t *control,
@@ -210,14 +200,10 @@ bool bypass_control_begin(bypass_control_t *control,
     {
         return false;
     }
-    float left_offset = 0.0f, right_offset = 0.0f;
-    uint8_t left_deg = 0u, right_deg = 0u;
-    bool can_left = side_usable(profile, true, &left_offset, &left_deg);
-    bool can_right = side_usable(profile, false, &right_offset, &right_deg);
-    bool left = can_left && (!can_right ||
-        profile->left_clearance_mm >= profile->right_clearance_mm);
-    float offset = left ? left_offset : right_offset;
-    uint8_t out_deg = left ? left_deg : right_deg;
+    /* The side nearer the line's centre leaves the route least. */
+    bool left = side_usable(profile, true) && (!side_usable(profile, false) ||
+        edge_mm(profile, true) <= edge_mm(profile, false));
+    float offset = offset_mm(profile, left);
     *control = (bypass_control_t){.origin = {input->count[0], input->count[1]},
         .previous = {input->count[0], input->count[1]},
         .started_ms = input->now_ms,
@@ -225,10 +211,11 @@ bool bypass_control_begin(bypass_control_t *control,
         .offset_mm = (int16_t)lroundf(left ? offset : -offset),
         .centre_mm = profile->obstacle_left_mm,
         .half_width_mm = (uint16_t)(profile->width_mm / 2u),
-        .out_deg = out_deg,
+        .spare_mm = (uint8_t)fminf(255.0f, (left ? profile->left_clearance_mm :
+            profile->right_clearance_mm) - pass_distance_mm(left) -
+            facing_half_mm(!left)),
         .obstacle_front_mm = profile->obstacle_forward_mm};
-    turn(control, input, BYPASS_ROUTE_OUT, left ? out_deg : -(int)out_deg,
-        action_id);
+    turn(control, input, BYPASS_ROUTE_OUT, left ? 90 : -90, action_id);
     return true;
 }
 
@@ -242,6 +229,28 @@ static void drive(bypass_control_t *control, const bypass_input_t *input,
     control->action_ms = input->now_ms;
 }
 
+/* Too close while passing: brake, then step further out and pass again. The
+   room the scan measured limits this. Pivoting away swings the rear corner
+   toward the box, so if the box is already within that swing, stop instead. */
+static void step_out(bypass_control_t *control, float across)
+{
+    float box_ahead = (float)control->obstacle_front_mm - forward_mm(control);
+    int offset = abs(control->offset_mm) + (int)BYPASS_STEP_OUT_MM;
+    if (control->spare_mm < BYPASS_STEP_OUT_MM || offset > (int)BYPASS_MAX_OFFSET_MM ||
+        hypotf(box_ahead, across) <= hypotf(BYPASS_BODY_REAR_MM,
+            facing_half_mm(control->left_side)))
+    {
+        fail(control);
+        return;
+    }
+    control->spare_mm = (uint8_t)(control->spare_mm - BYPASS_STEP_OUT_MM);
+    control->offset_mm = (int16_t)(control->left_side ? offset : -offset);
+    control->close_samples = 0u;
+    control->edge_open = 0u;
+    control->flank_mm = 0u;
+    control->work = BYPASS_WORK_STOP;
+}
+
 /* The side ray meets the box's side until past its rear. A reading beyond the
    box's centreline, or none, has to last BYPASS_EDGE_MM of travel to count as
    clear. */
@@ -252,15 +261,26 @@ static void side_observation(bypass_control_t *control, const bypass_input_t *in
     float angle = SERVO_LOOK_DEG * BYPASS_RAD_PER_DEG;
     float to_centre = side * (left_mm(control) - control->centre_mm);
     float across = input->side_mm * sinf(angle);
-    if (input->side_valid && across < facing_half_mm(control->left_side))
+    /* Raw range, not the sideways part: the beam is wide, so a range this short
+       is close whichever way it points, and a normal pass does not step out. */
+    if (input->side_valid &&
+        input->side_mm < facing_half_mm(control->left_side) + BYPASS_SAFE_GAP_MM)
     {
         if (++control->close_samples >= BYPASS_CLOSE_SAMPLES)
         {
-            fail(control);
+            step_out(control, across);
         }
         return;
     }
     control->close_samples = 0u;
+    /* The right-angle leg ends level with the stop, so the ray starts short of
+       the box: nothing there yet says nothing about its rear. */
+    if (forward_mm(control) + OBSTACLE_SONAR_FORWARD_MM +
+        fmaxf(to_centre - control->half_width_mm, 0.0f) / tanf(angle) <
+        control->obstacle_front_mm)
+    {
+        return;
+    }
     if (input->side_valid && across <= to_centre)
     {
         control->edge_open = 0u;
@@ -290,11 +310,14 @@ static void side_observation(bypass_control_t *control, const bypass_input_t *in
         fmaxf(to_centre - control->half_width_mm, 0.0f);
     float rear = (float)control->edge_forward_q8 / BYPASS_Q8 +
         OBSTACLE_SONAR_FORWARD_MM + to_side / tanf(angle);
-    control->rear_clear_q8 = (int32_t)lroundf(
-        (rear + facing_half_mm(control->left_side) + BYPASS_SAFE_GAP_MM) *
-        BYPASS_Q8);
-    control->route = BYPASS_ROUTE_REAR;
     float depth = fmaxf(0.0f, rear - control->obstacle_front_mm);
+    /* A flat side at this angle can return no echo, or only its front corner, so
+       the ray can leave long before the rear. Trust it only when it reads deeper
+       than this; telemetry still reports what was seen. */
+    rear = fmaxf(rear, (float)control->obstacle_front_mm + BYPASS_MIN_DEPTH_MM);
+    control->rear_clear_q8 = (int32_t)lroundf(
+        (rear + facing_half_mm(control->left_side) + BYPASS_REAR_GAP_MM) * BYPASS_Q8);
+    control->route = BYPASS_ROUTE_REAR;
     control->depth_mm = (uint16_t)lroundf(fminf(depth, 65535.0f));
     output->depth_event = true;
     output->depth_mm = control->depth_mm;
@@ -356,13 +379,8 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
             }
             else if (control->route == BYPASS_ROUTE_OUT)
             {
-                /* The pivot's real heading sets the leg, so its error does not
-                   add up. */
-                float heading = (float)control->heading_cdeg *
-                    BYPASS_RAD_PER_CDEG;
                 drive(control, input, BYPASS_ROUTE_OFFSET,
-                    fabsf(((float)control->offset_mm - left_mm(control)) /
-                    sinf(heading)), action_id);
+                    fabsf((float)control->offset_mm - left_mm(control)), action_id);
             }
             else if (control->route == BYPASS_ROUTE_PARALLEL)
             {
@@ -402,7 +420,14 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
     {
         if (input->stationary)
         {
-            turn(control, input, BYPASS_ROUTE_IN, -side * 90, action_id);
+            if (control->route == BYPASS_ROUTE_REAR)
+            {
+                turn(control, input, BYPASS_ROUTE_IN, -side * 90, action_id);
+            }
+            else
+            {
+                turn(control, input, BYPASS_ROUTE_OUT, side * 90, action_id);
+            }
         }
     }
     else if (control->work == BYPASS_WORK_DRIVE)
@@ -437,7 +462,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
             {
                 control->work = BYPASS_WORK_STOP;
             }
-            else if (finished)
+            else if (finished && control->work == BYPASS_WORK_DRIVE)
             {
                 /* the leg ran out with the box still beside the car */
                 fail(control);
