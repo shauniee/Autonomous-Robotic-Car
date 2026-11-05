@@ -27,7 +27,8 @@ typedef struct
     int32_t edge_forward_q8 : 21;
     int16_t heading_cdeg, offset_mm, centre_mm, obstacle_front_mm;
     int16_t action_target;
-    uint16_t depth_mm, half_width_mm, flank_mm;
+    uint16_t half_width_mm;
+    uint16_t flank_mm;
     uint8_t action_id;
     uint8_t spare_mm; /* room left to step out; 255 is six steps */
     uint8_t route : 4;
@@ -52,9 +53,8 @@ typedef struct
 typedef struct
 {
     MotionCommand command;
-    bool side_watch, depth_event;
+    bool side_watch;
     int16_t side_angle_deg;
-    uint16_t depth_mm;
     bypass_route_t route;
 } bypass_output_t;
 

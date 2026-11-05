@@ -75,6 +75,8 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
 void terrain_algo_invalidate_window(TerrainContext *ctx);
 void terrain_algo_calibration_restart(TerrainContext *ctx);
 float terrain_acceleration_mg(const Gy511RawAxes *raw);
+/* Height under the raised wheel now, mm; 0 on flat ground. */
+float terrain_height_mm(const TerrainContext *p_ctx);
 
 /*
  * Terrain word (writer: Terrain, one aligned word, single store). Layout is

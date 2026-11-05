@@ -29,7 +29,7 @@ from pathlib import Path
 VERSION = 2
 TELEMETRY, EVENT, SNAPSHOT_REPLY, MAPPING, ACK, SNAPSHOT_REQUEST, JUNCTION_TEST = 1, 2, 3, 4, 5, 6, 7
 WHEEL_TRACE, LINE_TRACE, BARCODE_TRACE, TERRAIN_TRACE = 8, 9, 10, 11
-LENGTHS = {TELEMETRY: 22, EVENT: 11, SNAPSHOT_REPLY: 22, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3, WHEEL_TRACE: 15, LINE_TRACE: 17, BARCODE_TRACE: 18, TERRAIN_TRACE: 8}
+LENGTHS = {TELEMETRY: 22, EVENT: 11, SNAPSHOT_REPLY: 22, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3, WHEEL_TRACE: 15, LINE_TRACE: 17, BARCODE_TRACE: 18, TERRAIN_TRACE: 14}
 
 MISSION = ["READY", "FOLLOW_LINE", "NAVIGATE", "SCAN", "BYPASS", "REACQUIRE", "STOPPED"]
 MOTION = ["IDLE", "RUNNING", "DONE", "FAILED"]
@@ -101,7 +101,7 @@ def decode_telemetry(f):
     size = int.from_bytes(f[19:22], "little")
     if size >> 20:
         raise ValueError("reserved telemetry bits set")
-    width, depth = size & 0x3FF, size >> 10 & 0x3FF
+    width, clearance = size & 0x3FF, size >> 10 & 0x3FF
     return {
         "sequence": f[1], "mission": name(MISSION, f[2] & 0xF), "motion": name(MOTION, (f[2] >> 4) & 3),
         "line": LINE[f[2] >> 6], "action_id": f[3] & 0x3F, "mapped": bool(f[3] & 0x40),
@@ -110,7 +110,7 @@ def decode_telemetry(f):
         "imu_calibrated": None if calibration == 0 else calibration == 2,
         "front_mm": front & 0x1FFF if front & 0x2000 else None,
         "barcode": letter(f[18] & 0x1F), "barcode_action": name(ACTION, f[18] >> 5),
-        "obstacle_width_mm": width, "obstacle_depth_mm": depth,
+        "obstacle_width_mm": width, "obstacle_clearance_mm": clearance,
     }
 
 
@@ -156,12 +156,14 @@ def decode_line_trace(f):
 
 
 def decode_terrain_trace(f):
-    """Hump detector sample: time, tilt, state, peak rise, acceleration and validity flags."""
+    """IMU sample: tilt, axes, height, peak rise, travel, state and validity flags."""
     if frame_type(f) != TERRAIN_TRACE:
         raise ValueError("not a terrain trace")
-    time_ms, pitch, flags, rise, accel, roll = struct.unpack_from("<HbBBBb", f, 1)
-    return (f"t={time_ms} pitch={pitch / 4:g} roll={roll / 4:g} state={flags & 7} rise={rise}mm accel={accel * 10}mg "
-            f"encoder_ok={flags >> 6 & 1} calibrated={flags >> 7}")
+    time_ms, pitch, flags, rise, accel, roll, x, y, z, height, travel = struct.unpack_from("<HbBBBbbbbBH", f, 1)
+    return {"type": "terrain_trace", "time_ms": time_ms, "pitch_deg": pitch / 4, "roll_deg": roll / 4,
+            "state": flags & 7, "rise_mm": rise, "accel_mg": accel * 10, "x_mg": x * 16, "y_mg": y * 16,
+            "z_mg": z * 16, "height_mm": height, "travel_mm": travel,
+            "encoder_ok": bool(flags >> 6 & 1), "calibrated": bool(flags >> 7)}
 
 
 def decode_barcode_trace(f):
@@ -179,7 +181,7 @@ def decode_event(f):
         raise ValueError("invalid event kind/reserved bits")
     kind, arg, time_ms, left, right, arg2 = f[1] & 0xF, f[2], *struct.unpack_from("<HHHH", f, 3)
     detail = {1: f"letter {letter(arg)} -> {name(ACTION, arg2)}", 2: f"height {arg * HUMP_MM_PER_CODE:g} mm",
-              3: f"depth {arg2} mm", 4: f"turn {name(ACTION, arg)}"}.get(kind, f"arg {arg} arg2 {arg2}")
+              3: f"passing {'left' if arg else 'right'}, clearance {arg2} mm", 4: f"turn {name(ACTION, arg)}"}.get(kind, f"arg {arg} arg2 {arg2}")
     return f"EVENT {EVENT_KIND.get(kind, kind)}: {detail} at t={time_ms} ms, counts L={left} R={right}"
 
 
@@ -251,7 +253,11 @@ def describe(frame, motion):
     if kind == WHEEL_TRACE:
         return "WHEEL " + json.dumps(decode_wheel_trace(frame), separators=(",", ":"))
     if kind == TERRAIN_TRACE:
-        return "HUMP " + decode_terrain_trace(frame)
+        t = decode_terrain_trace(frame)
+        return (f"HUMP t={t['time_ms']} pitch={t['pitch_deg']:g} roll={t['roll_deg']:g} state={t['state']} "
+                f"rise={t['rise_mm']}mm accel={t['accel_mg']}mg x={t['x_mg']} y={t['y_mg']} z={t['z_mg']} "
+                f"height={t['height_mm']}mm travel={t['travel_mm']}mm encoder_ok={t['encoder_ok']:d} "
+                f"calibrated={t['calibrated']:d}")
     if kind == BARCODE_TRACE:
         return "BARS " + decode_barcode_trace(frame)
     if kind == LINE_TRACE:
@@ -265,7 +271,7 @@ def describe(frame, motion):
                 f"line={t['line']} mapped={'yes' if t['mapped'] else 'NO'} | counts L={t['left']} R={t['right']} "
                 f"{motion.update(t['left'], t['right'])} | humps={t['hump_count']} max={hump} | front={front} | "
                 f"barcode={t['barcode']}->{t['barcode_action']} | obstacle width={t['obstacle_width_mm']} mm "
-                f"depth={t['obstacle_depth_mm']} mm | faults: {fault_text(t['faults'])}")
+                f"clearance={t['obstacle_clearance_mm']} mm | faults: {fault_text(t['faults'])}")
     if kind == EVENT:
         return decode_event(frame)
     if kind == ACK:
@@ -275,6 +281,8 @@ def describe(frame, motion):
 
 def dashboard_message(frame, motion):
     """One decoded frame as a JSON-ready dict for the web dashboard."""
+    if frame_type(frame) == TERRAIN_TRACE:
+        return decode_terrain_trace(frame)
     kind = frame_type(frame)
     if kind == WHEEL_TRACE:
         return decode_wheel_trace(frame)
@@ -289,8 +297,8 @@ def dashboard_message(frame, motion):
     if kind == EVENT and frame[1] == 2:
         message.update(hump_height_mm=frame[2] * HUMP_MM_PER_CODE, event_id=frame.hex())
     if kind == EVENT and frame[1] == 3:
-        message.update(obstacle_depth_mm=struct.unpack_from("<H", frame, 9)[0],
-                       event_id=frame.hex())
+        message.update(obstacle_clearance_mm=struct.unpack_from("<H", frame, 9)[0],
+                       obstacle_side="left" if frame[2] else "right", event_id=frame.hex())
     if kind == ACK:
         message.update(sequence=frame[1], result=name(ACK_RESULT, frame[2]), ok=frame[2] == 0)
     return message
@@ -445,7 +453,7 @@ def self_test():
     assert line["onset_skew_mm"] == 12
     assert (line["command"], line["command_steer_q"], line["command_speed"]) == ("FOLLOW", -32, 100)
     assert describe(golden_line, Motion()).startswith("LINE ")
-    assert describe(bytes([0x2B, 5, 0, 14, 0xF9, 3, 100, 0xFA]), Motion()).startswith("HUMP t=5 pitch=3.5 roll=-1.5 state=1 rise=3mm accel=1000mg encoder_ok=1 calibrated=1")
+    assert describe(bytes([0x2B, 5, 0, 14, 0xF9, 3, 100, 0xFA, 1, 0xFF, 62, 9, 0x34, 0x12]), Motion()).startswith("HUMP t=5 pitch=3.5 roll=-1.5 state=1 rise=3mm accel=1000mg x=16 y=-16 z=992 height=9mm travel=4660mm encoder_ok=1 calibrated=1")
     assert describe(bytes([0x2A, 7, 0x22, 0x80, 0x0C, 0]) + bytes(12), Motion()) == "BARS #7 H34 L12"
     assert decode_line_trace(golden_line[:5] + bytes([0x80]) + golden_line[6:])["barcode_level"]
     assert decode_line_trace(golden_line[:15] + bytes([0x0A]) + golden_line[16:])["barcode_edges"] == 1
@@ -461,7 +469,7 @@ def self_test():
     assert t["motion"] == "FAILED" and t["line"] == "VISIBLE" and t["action_id"] == 5 and t["mapped"]
     assert t["faults"] == [1, 2, 4, 8, 1, 3] and (t["left"], t["right"]) == (0x1234, 0x5678)
     assert t["hump_count"] == 3 and t["front_mm"] == 0x10D0 and t["barcode"] == "B"
-    assert t["barcode_action"] == "STRAIGHT" and (t["obstacle_width_mm"], t["obstacle_depth_mm"]) == (420, 170)
+    assert t["barcode_action"] == "STRAIGHT" and (t["obstacle_width_mm"], t["obstacle_clearance_mm"]) == (420, 170)
     assert "BARCODE: letter Z -> RIGHT" in decode_event(GOLDEN_EVENT)
     assert mapping_frame(7, "ABCD") == GOLDEN_MAPPING
     assert direction_frame(7, 4) == bytes([0x27, 7, 4])
@@ -469,9 +477,14 @@ def self_test():
     assert not any(mapping_letters(bad) for bad in ("ABCA", "ABC", "ABCDE", "AB1D", "ABÇD", ""))
     obstacle = bytes([0x22, 3, 0]) + struct.pack("<HHHH", 10, 20, 30, 40)
     event = dashboard_message(obstacle, Motion())
-    assert event["type"] == "event" and event["obstacle_depth_mm"] == 40
+    assert event["type"] == "event" and event["obstacle_clearance_mm"] == 40
     assert event["event_id"] == obstacle.hex() and "OBSTACLE" in event["text"]
-    assert "obstacle_depth_mm" not in dashboard_message(GOLDEN_EVENT, Motion())
+    assert "obstacle_clearance_mm" not in dashboard_message(GOLDEN_EVENT, Motion())
+    trace = bytes([0x2B, 5, 0, 14, 0xF9, 3, 100, 0xFA, 1, 0xFF, 62, 9, 0x34, 0x12])
+    terrain = dashboard_message(trace, Motion())
+    assert terrain["type"] == "terrain_trace" and terrain["pitch_deg"] == 3.5 and terrain["roll_deg"] == -1.5
+    assert (terrain["x_mg"], terrain["y_mg"], terrain["z_mg"]) == (16, -16, 992)
+    assert (terrain["height_mm"], terrain["rise_mm"], terrain["travel_mm"]) == (9, 3, 0x1234)
     hump = bytes([GOLDEN_EVENT[0], 2, 0]) + GOLDEN_EVENT[3:]
     assert dashboard_message(hump, Motion())["hump_height_mm"] == 0
     ack = dashboard_message(bytes([0x25, 0x07, 0x01]), Motion())
@@ -572,7 +585,7 @@ def main():
         if dashboard:
             try:
                 frame = bytes(message.payload)
-                if frame_type(frame) not in (LINE_TRACE, BARCODE_TRACE, TERRAIN_TRACE):	# monitor captures only; no dashboard view
+                if frame_type(frame) not in (LINE_TRACE, BARCODE_TRACE):	# monitor captures only; no dashboard view
                     dashboard.push(dashboard_message(frame, motion))
             except ValueError as error:
                 dashboard.push({"type": "other", "text": f"undecodable frame ({error})"})

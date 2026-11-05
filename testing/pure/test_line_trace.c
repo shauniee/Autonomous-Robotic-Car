@@ -40,8 +40,13 @@ int main(void)
     mqtt_type_t bars_type;
     assert(mqtt_frame_type(bars, 18u, &bars_type) == MQTT_DECODE_OK && bars_type == MQTT_TYPE_BARCODE_TRACE);
     uint8_t hump[MQTT_LEN_TERRAIN_TRACE];
-    assert(mqtt_encode_terrain_trace(hump, sizeof hump, 5u, 14, 0xF9u, 3u, 100u, -6) == 8u);
+    const mqtt_terrain_trace_t terrain = {.time_ms = 5u, .pitch_q2 = 14,
+        .state_flags = 0xF9u, .rise_mm = 3u, .accel_10mg = 100u, .roll_q2 = -6,
+        .accel_16mg = {1, -1, 62}, .height_mm = 9u, .travel_mm = 0x1234u};
+    assert(14u == mqtt_encode_terrain_trace(hump, sizeof hump, &terrain));
     assert(hump[0] == 0x2Bu && hump[1] == 5u && hump[3] == 14u && hump[4] == 0xF9u && hump[6] == 100u && hump[7] == 0xFAu);
+    assert(hump[8] == 1u && hump[9] == 0xFFu && hump[10] == 62u && hump[11] == 9u && hump[12] == 0x34u && hump[13] == 0x12u);
+    assert(0u == mqtt_encode_terrain_trace(hump, 13u, &terrain));
     mqtt_line_trace_t edges = sample(0u);
     edges.barcode_edges = 31u;
     assert(mqtt_encode_line_trace(frame, 17u, &edges) == 17u && (frame[15] >> 3) == 31u);

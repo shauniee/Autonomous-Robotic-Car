@@ -94,5 +94,6 @@ $CC $CFLAGS testing/pure/test_line_trace.c app_program/mission/line_trace.c \
 python3 testing/pure/test_mqtt_cli.py	# rejected ACKs and burst-safe speed estimate
 python3 scripts/mqtt_client.py --self-test	# laptop decoder agrees with the golden vectors
 python3 testing/pure/test_check_barr.py	# coding rule scan finds each violation, passes clean code
+python3 testing/pure/test_check_deliverables.py	# each subsystem delivers and aligns; damage is caught
 python3 testing/pure/test_field_tools.py	# capture triage and recorded lap scoring
 python3 testing/pure/test_capture_imu.py

@@ -19,7 +19,8 @@ static ID event_mutex;
    diagnostic reads without a cross-core RMW or a second contended lock. */
 static rd_word_t lock_misses[2];
 static rd_word_t last_barcode;		/* writer: comms_event callers (Mission); letter | action << 5 */
-static rd_word_t last_depth_mm;		/* writer: comms_event callers (Mission); latest obstacle depth */
+/* Writer: comms_event callers (Mission). Room on the side chosen. */
+static rd_word_t last_clearance_mm;
 
 ER comms_init(void)
 {
@@ -46,7 +47,7 @@ void comms_event(mqtt_event_kind_t kind, uint8_t arg, uint16_t arg2)
     }
     else if (kind == MQTT_EVENT_OBSTACLE)
     {
-        rd_word_publish(&last_depth_mm, arg2);
+        rd_word_publish(&last_clearance_mm, arg2);
     }
     if (tk_loc_mtx(event_mutex, RD_SNAPSHOT_LOCK_MS) >= E_OK)
     {
@@ -100,7 +101,7 @@ static void gather(mqtt_telemetry_t *t, uint8_t sequence)
         .barcode_letter = (uint8_t)(barcode & 0x1Fu),
         .barcode_action = (uint8_t)((barcode >> 5) & 0x7u),
         .obstacle_width_mm = have_profile ? profile.width_mm : 0u,
-        .obstacle_depth_mm = (uint16_t)rd_word_read(&last_depth_mm)};
+        .obstacle_clearance_mm = (uint16_t)rd_word_read(&last_clearance_mm)};
     for (unsigned i = 0u; i < MQTT_FAULT_BYTES; ++i) t->faults[i] = rd_fault_get((rd_owner_t)i);
     comms_clamp(t);
 }
@@ -219,16 +220,18 @@ void comms_step(uint32_t now)
 {
     /* Normal ACK/telemetry/events get first use of the bounded TX bridge. */
     report_step(now);
-#if ROBOT_TRACE_ENABLED
-    /* Before the wheel and line traces, which keep the bridge full (INT-146). */
+    /* Always sent, for the dashboard's IMU graphs. Before the wheel and line
+       traces, which keep the bridge full (INT-146). */
     {
         uint8_t frame[MQTT_LEN_TERRAIN_TRACE];
         unsigned length = terrain_trace_take(frame, sizeof frame);
-        if (length != 0u)
+        if (0u != length)
         {
+            /* NOTE: best effort; a full bridge drops one graph sample. */
             (void)comms_bridge_post(frame, length);
         }
     }
+#if ROBOT_TRACE_ENABLED
     for (unsigned budget = 0u; budget < 2u; ++budget)
     {
         uint8_t frame[MQTT_LEN_BARCODE_TRACE];
