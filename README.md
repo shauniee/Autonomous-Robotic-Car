@@ -121,8 +121,8 @@ The pending safety/profile matrix is defined by
 `testing/build_pending_profiles.sh`. Run
 `sh testing/build_pending_profiles.sh` only on a configured machine with
 `PICO_SDK_PATH`, `arm-none-eabi-gcc` and `make`. It **builds but never
-flashes** TEST/normal and TRACE 0/1 profiles plus the TEST-only WATCHDOG
-profiles. Inspect any compiler errors before preparing a wheels-raised test
+flashes** TEST/normal and TRACE 0/1 profiles plus the two course
+images. Inspect any compiler errors before preparing a wheels-raised test
 image. See [pending.md](pending.md) for unmet measurements and decisions.
 
 Draft reports: [PID tuning](app_program/motion/README.md#pid-tuning-report-draft) and [Terrain analysis](app_program/terrain/README.md#terrain-analysis-draft). Both need real measurements, not host passes.
@@ -154,7 +154,6 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `NET=none`/`lwip`, `MQTT=0`/`1` | Offline / TCP-IP; MQTT needs lwIP + WiFi |
 | `FULL_COURSE=1` | Releases junction turns and obstacle bypass; `_course` image (`flash.sh` default) |
 | `TEST=1` | Firmware self-tests; forces Motion braking even if the controller enables motion |
-| `WATCHDOG=1` | Arms a 2-second RP2040 reset watchdog after Motion and Mission report fresh progress; `_wd` image. Default `1` with `FULL_COURSE=1`, otherwise `0` (D15). Not yet run on a Pico |
 | `TRACE=0` | Skip high-rate diagnostic frame production (types 9/10/11, plus Terrain trace), retaining telemetry, events, ACKs and all safety; `_notrace` image. Default `TRACE=0` with `FULL_COURSE=1`, otherwise `TRACE=1` |
 | `CRASH_REPORT=1` | Crash/console copy on UART0; project uses `0` (GP0/GP1 conflict, [pins](docs/team.md#2-pins)) |
 
@@ -164,17 +163,6 @@ Each build has a distinct profile name/hash; capture the same number of laps
 and compare success rates and latency, not just how smooth the dashboard
 looks. With `TRACE=0`, the dashboard still receives ordinary state/event
 telemetry but not high-rate wheel/line/barcode/terrain graphs.
-
-Watchdog policy (D15): `ROBOT_WATCHDOG_ENABLED=0` is the default; the
-1 MHz timer tick alone does **not** enable reset protection. For a controlled
-**wheels-raised** trial, build explicitly with `WATCHDOG=1 TEST=1` and
-`FULL_COURSE=0 NOGUARDS=0`, then flash that distinct `_wd` image using
-USB as the sole power source. Only the I/O task feeds it after both Motion
-and Mission have reported new successful iterations, with a 250 ms
-producer-freshness check. A hung producer or I/O task stops feeding; a
-2-second hardware reset is intended. Validate actual reset timing, PWM/driver
-pin behaviour during reset, boot braking, and lack of autonomous restart
-before considering a driving build. This has **not** been physically accepted.
 
 No active CMake target. The local checkpoint includes an optional dashboard; it is not the verified remote-main baseline. Offline profiles remain build/test tools; the target normal mission requires WiFi and MQTT before start.
 
@@ -309,7 +297,7 @@ Messages on the wire are separate from these totals:
 | Wheel trace record | see frame above | 8 | 120 | 120 |
 | Motion fault byte | stall, encoder | 1 | 2 | 8 |
 
-Not counted: `MotionController`, 384 stored, including `WheelPid` (2 x 32). `WATCHDOG=1` builds, including `full_course`, add 128 bits for two heartbeats and two last-fed copies.
+Not counted: `MotionController`, 384 stored, including `WheelPid` (2 x 32).
 
 **Line and barcode**
 

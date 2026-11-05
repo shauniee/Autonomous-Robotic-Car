@@ -23,6 +23,7 @@ Owner: Jia Jing / obstacle. Template S5-U01 and S5-U02 are retired, not reused. 
 | S5-U11 | Reported width against box width | TEST image, GP20 scan | None set before the run |
 | S5-U13 | S5-U11 rays through the estimator, before and after the edge change | Host replay | None set |
 | S5-U14 | S5-U11 rays against edge thresholds | Host replay | None set |
+| S5-U15 | Reported box position against box offset | TEST image, GP20 scan | None set before the run |
 
 ## Results
 
@@ -41,6 +42,7 @@ Owner: Jia Jing / obstacle. Template S5-U01 and S5-U02 are retired, not reused. 
 | 2026-11-03 | S5-U11 | `e576760`+ | Nicholas, Claude | MEASURED, no target set | [+/-50](logs/2026-11-03_S5-U11-serial-sweep50.txt.gz), [+/-60](logs/2026-11-03_S5-U11-serial-sweep60.txt.gz), [course stop](logs/2026-11-03_S5-U11-course-stop-scan-mqtt.txt.gz) | 19 of 23 scans gave a width, see Measurements. MR-17, MR-18, MR-30, MR-31 stay open |
 | 2026-11-03 | S5-U13 | `e576760`+ | Claude | MEASURED (host replay) | Same 23 scans as S5-U11 | Width from 19 of 23 scans before the edge change, 22 of 23 after; the 19 widths are unchanged |
 | 2026-11-03 | S5-U14 | `e576760`+ | Claude | MEASURED (host replay), no pass or fail | Same 23 scans as S5-U11 | Edge thresholds, see Measurements. Servo settle, empty-scene reference and two-distance scans not tested |
+| 2026-11-05 | S5-U15 | `56f7656` plus uncommitted changes, test image `2ca51858` | Nicholas, Claude | MEASURED, no target set | [serial log](logs/2026-11-05_S5-U15-serial.txt.gz) | 180 mm box, 160 mm away by Nicholas's tape, moved centre, then right, then left; offsets and per-position counts not recorded, so scans cannot be split by position. 13 scans completed from 15 presses. +25 degrees hit in all 13, +30 in none, so the left edge read 27.5 degrees every time; the right edge read -25 to -42.5 degrees. Calculated box centre was left of centre in 1 scan and 8 to 28 mm right in 12, so the shorter-edge rule would choose left in 12 of 13. Cause of the fixed left edge not established |
 
 ## Measurements
 

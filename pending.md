@@ -50,9 +50,8 @@ Working rules: change one value per trial and record each as a new INT row, and 
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| Firmware build | All eight images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193 to INT-197, INT-205 |
-| Safety and electrical | Sonar level, wiring and brownout closed by Nicholas, not measured. Power polarity, GP21 stop, reset, stall guard, watchdog and impact have no recorded result. | MR-04, MR-06, MR-07, MR-16, MR-24, MR-25 |
-| Watchdog | On for `full_course` (Nicholas, 2026-11-05), never run on a Pico. | D15, SYS-06 |
+| Firmware build | All six images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193 to INT-197, INT-205 |
+| Safety and electrical | Sonar level, wiring and brownout closed by Nicholas, not measured. Power polarity, GP21 stop, reset, stall guard and impact have no recorded result. | MR-04, MR-06, MR-07, MR-16, MR-24, MR-25 |
 | Line tracking | PI steering and the straight-crossing fix were reported good in two full runs, observed only. Nicholas self-tests the lap rate. | INT-200, INT-204 |
 | Barcode | User reports fully functional. All letters and a flipped print not tested. | User observation, INT-156 |
 | Junctions | Left, right, straight and U-turn all work (Nicholas, 2026-11-05), observed only. | INT-204 |
@@ -70,7 +69,7 @@ They cannot close these physical items:
 
 | Blocked acceptance | Why the robot or actual environment is needed | Checklist coverage |
 | --- | --- | --- |
-| Electrical and stopping safety | Output waveforms, impact, held-button/reset and watchdog behavior need hardware measurements. The loose-battery restart cause is already explained. | Section 1; MR-01–07, MR-16, MR-24/25, SYS-06 |
+| Electrical and stopping safety | Output waveforms, impact and held-button/reset behavior need hardware measurements. The loose-battery restart cause is already explained. | Section 1; MR-01–07, MR-16, MR-24/25 |
 | Motion and encoder calibration | Actual wheel travel/sign, edge errors/rates, geometry, floor PID, slip and turn accuracy cannot be inferred from raised-wheel or host tests. | Section 2; MR-14/15, MR-19–23 |
 | Robust line/barcode/junction behavior | Mounted sensor levels, lighting, issued prints, and physical overflow rate require the course. | Sections 3–4, 8; MR-12/13, MR-26–28/32 |
 | Hump accuracy and reliability | Current fix needs actual crossings; height scale/error, reverse/curve/pivot effects, minimum detectable hump, stuck detection and disconnected-IMU behavior require measured references. | Section 6; MR-11/16/23/29 |
@@ -113,7 +112,6 @@ Open decisions sit with their items, and all go to Nicholas: print framing (D01,
 - [ ] Reset cannot start the robot: held buttons, persistent fault, expired and old commands, inhibited boot (MR-07, A12, Gap 4).
 - [ ] TEST image on the current build: `[TEST]` lines print and motors stay braked (MR-06).
 - [ ] Stall guard is on for the full-course image (INT-176), as required. Confirm that a held wheel stops the run (MR-25, D07); no false stop was reported in the two full runs (INT-204).
-- [ ] Watchdog is on for `full_course` (Nicholas, 2026-11-05, D15) but has never run on a Pico. Test with wheels raised before driving: reset on a stopped task, motor outputs through reset, no restart without GP20, and no false reset under WiFi load (SYS-06). A reset ends the run and clears the mapping.
 - [ ] Impact: tap test gives `Terrain: impact` and a latched stop (MR-16, D06).
 
 ## 2. Motion calibration
@@ -158,7 +156,8 @@ Known limit: a real object at about twice the box range, right beside its edge, 
 - [ ] Boxes of 100, 150 and 200 mm: check the `[SCAN]` rays and profile against a tape. S5-U11 used 150 and 220 mm, with mean width error of about 18 mm and no agreed target (M7).
 - [ ] Both sides blocked: the robot stops rather than bypasses (MR-31).
 - [ ] Bypass at 100 mm/s, including its reverse along the approach when too close to pivot, not yet confirmed on the car: start with a wheels-raised check, then the bench, and stop if the side ray misses the box edge (D07).
-- [ ] Bypass runs with both sides open and one restricted: no collision, side nearer the line's centre chosen, 90 degree legs clear the box, swept envelope confirmed, rejoins the original line and continues. Record bypass speeds, settle time and travel budgets (MR-30, M8, M9, A9, D03, D05, D07).
+- [ ] Bypass turns undershoot and the pivot back overshot to about 118 degrees (INT-208). The 30 degree rejoin fix is only on `fix/bypass-rejoin-sense` (`911b967`), not in this branch. Measure the first pivot with tape and compare 90 degree turns at 36 and 100 mm/s, to separate slip from the turning width (MR-22, D03). A mid-pivot stop in the same log has no recorded reason, and report which reboots were deliberate (D15).
+- [ ] Bypass runs with both sides open and one restricted: no collision, side with the shorter edge distance chosen, 90 degree legs clear the box, swept envelope confirmed, rejoins the original line and continues. Record bypass speeds, settle time and travel budgets (MR-30, M8, M9, A9, D03, D05, D07).
 - [ ] Side too close while passing: the car steps out 40 mm and carries on. Both the 40 mm step and the 40 mm passing allowance are provisional; count step-outs on real runs, which should be none on a normal pass, and a false reading such as the car's own body would use up the room and then stop (D07).
 - [ ] Rear clearance when pivoting back: tape the gap to the box, and compare the pass with the real box. `BYPASS_MIN_DEPTH_MM` is provisional at 200 mm, set it to the deepest box, and the course obstacle depth is not specified (D02).
 - [ ] Obstacle stop on the car: against a board, the car starts slowing at 191 mm and rests at 150 mm. Measure the rest distance with a tape; sonar noise or wheel lag will move it (D16).
@@ -279,14 +278,13 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] `scripts/dashboard.html` and its test: the local edits were committed in #150.
 - [x] PR 149 merged at `99fe0d8`, with its conflicts and three test-tool bugs fixed (INT-160, host only).
 - [x] Merge commit `e576760` recorded for INT-132 to INT-159 (INT-161).
-- [x] Watchdog code written, off by default; physical test is in section 1.
 - [x] `TRACE=0` build and `scripts/triage_mqtt_capture.py` added, with a host test for the script.
 - [x] Laptop speed estimate ignores bursty packet timing, with a host test.
 - [x] Integration range probe corrected to 20 bytes.
 - [x] Readiness procedures updated for the digital IR sensors and reset flow, keeping MR-29 at 100 mm/s on humps.
 - [x] PR 147 closed.
 - [x] Overlapping logs trimmed; INT-135 and INT-136 are now 340 KB and 532 KB.
-- [x] Arm builds with `WATCHDOG=0/1` and `TRACE=0/1` (INT-162, INT-174); build only.
+- [x] Arm builds with `TRACE=0/1` (INT-162, INT-174); build only.
 - [x] Off-course capture analysed; no cause found, so the laps need video (INT-163).
 - [x] `SCAN` then `STOPPED` analysed: likely the car being lifted, not proven (INT-164).
 - [x] No echo never stops a run, in host tests (INT-169).
@@ -298,7 +296,6 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] PR 149 is merged; no branch action needed.
 - [x] Network: the instructor's, by Nicholas (D09); only `config/wifi_secrets.h` changes.
 - [x] One barcode event rule with an A-Z bound and host tests, replacing two versions (INT-193); real run is in section 8.
-- [x] Watchdog feed rule needs both tasks fresh and advancing, host tested (PR 151); bench test is in section 1.
 - [x] Host tests run on GitHub for PRs and `main` (PR 151).
 - [x] Triage keeps state transitions (INT-185).
 - [x] Saved captures reviewed; no steering cause can be proven from them (INT-186).
@@ -306,7 +303,7 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] Straight crossings roll through without stopping, by Nicholas (INT-197, host and build only).
 - [x] Lift-style profile for every planned move, with obstacle stops slowing on it; safety stops stay immediate (INT-195, host and build only).
 - [x] `motion_stop_distance_mm` tells other subsystems the travel of a planned stop. Obstacle slowing starts at 191 mm on the current profile to rest at 150 mm, the bypass rests at the rear of the box, and late junction turns are rejected (INT-196, host and build only).
-- [x] Watchdog policy: on for `full_course`, by Nicholas (2026-11-05, replaces waiting for the bench test, D15).
+- [x] Watchdog removed entirely, by Nicholas (2026-11-05, D15); it had never run through a bench test.
 - [x] Diagnostics only in test images: `full_course` is `TRACE=0`, `./flash.sh trial` drives with them, by Nicholas (INT-194).
 - [x] Accuracy limits of 10 mm lateral and 5 degrees heading, by Nicholas (D10).
 - [x] Colour-inverted prints out of scope; 180-degree flip required and already in the decoder, by Nicholas.
@@ -314,7 +311,7 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] Week 10 issue set aside by Nicholas; a demonstration is on 2026-11-04.
 - [x] Fault bytes stay at 48 bits, by Nicholas.
 - [x] Core-0 audit by source review, no defect found (INT-172); load is section 10.
-- [x] Data table: watchdog, float and digital IR rows; fault bytes and obstacle profile justified as proposed (INT-173).
+- [x] Data table: float and digital IR rows; fault bytes and obstacle profile justified as proposed (INT-173).
 - [x] Instructor network is no longer tracked as pending work, by Nicholas (2026-11-05).
 - [x] Obstacle depth is left out; the car only needs clearance to bypass, by Nicholas (2026-11-05). The rear-clearance check is in section 5.
 - [x] Lapping test and two-lighting repeat dropped, and `scripts/mission_trial_score.py` removed; Nicholas self-tests (2026-11-05).

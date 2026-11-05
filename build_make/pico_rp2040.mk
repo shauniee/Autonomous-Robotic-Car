@@ -119,8 +119,6 @@ endif
 ifeq ($(FULL_COURSE),1)
 COURSE_SUFFIX := _course
 endif
-# RP2040 task-progress watchdog: on for a course image (D15), otherwise opt-in.
-# Physical reset/output validation is still pending. WATCHDOG=1 builds are marked _wd.
 # TRACE=0 removes high-rate wheel/line/barcode/terrain diagnostics, keeping
 # normal telemetry, ACKs and events. Test images default to TRACE=1; a course
 # image defaults to TRACE=0 for the least memory (flash.sh trial overrides it).
@@ -134,13 +132,6 @@ $(error TRACE must be 0 or 1)
 endif
 ifeq ($(TRACE),0)
 TRACE_SUFFIX := _notrace
-endif
-WATCHDOG ?= $(FULL_COURSE)
-ifneq ($(filter $(WATCHDOG),0 1),$(WATCHDOG))
-$(error WATCHDOG must be 0 or 1)
-endif
-ifeq ($(WATCHDOG),1)
-WATCHDOG_SUFFIX := _wd
 endif
 NOGUARDS ?= 0
 ifneq ($(filter $(NOGUARDS),0 1),$(NOGUARDS))
@@ -175,7 +166,7 @@ endif
 # a live hazard: an SMP=1 build was once flashed in place of an SMP=0 one and
 # only the banner in the log revealed it.
 #
-EXE_FILE := mtk3pico_smp$(SMP)_$(CONSOLE)$(WIFI_SUFFIX)$(NET_SUFFIX)$(MQTT_SUFFIX)$(CRASH_SUFFIX)$(TEST_SUFFIX)$(COURSE_SUFFIX)$(NOGUARDS_SUFFIX)$(WATCHDOG_SUFFIX)$(TRACE_SUFFIX)$(TERRAIN_SUFFIX)
+EXE_FILE := mtk3pico_smp$(SMP)_$(CONSOLE)$(WIFI_SUFFIX)$(NET_SUFFIX)$(MQTT_SUFFIX)$(CRASH_SUFFIX)$(TEST_SUFFIX)$(COURSE_SUFFIX)$(NOGUARDS_SUFFIX)$(TRACE_SUFFIX)$(TERRAIN_SUFFIX)
 
 GCC := arm-none-eabi-gcc
 AS := arm-none-eabi-gcc
@@ -246,7 +237,7 @@ ifeq ($(SMP),1)
 CFLAGS  += -DCNF_SMP=1
 ASFLAGS += -DCNF_SMP=1
 endif
-CFLAGS  += -DAPP_TEST=$(TEST) -DROBOT_WATCHDOG_ENABLED=$(WATCHDOG) -DROBOT_TRACE_ENABLED=$(TRACE)
+CFLAGS  += -DAPP_TEST=$(TEST) -DROBOT_TRACE_ENABLED=$(TRACE)
 CFLAGS  += -DTERRAIN_DIAGNOSTICS=$(TERRAIN_DIAGNOSTICS)
 CFLAGS  += -DAPP_NO_GUARDS=$(NOGUARDS) -DBARCODE_DIAGNOSTICS=$(BARCODE_DIAGNOSTICS)
 CFLAGS  += -DNAV_GEOMETRY_RELEASED=$(FULL_COURSE) -DMISSION_BYPASS_RELEASED=$(FULL_COURSE)
@@ -285,7 +276,7 @@ endif
 
 # The compiler version is part of the profile, so objects from different
 # toolchains are never linked together.
-PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-noguards$(NOGUARDS)-bcdiag$(BARCODE_DIAGNOSTICS)-course$(FULL_COURSE)-watchdog$(WATCHDOG)-trace$(TRACE)-imudiag$(TERRAIN_DIAGNOSTICS)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
+PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-noguards$(NOGUARDS)-bcdiag$(BARCODE_DIAGNOSTICS)-course$(FULL_COURSE)-trace$(TRACE)-imudiag$(TERRAIN_DIAGNOSTICS)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
 PROFILE_FILE := .build_profile
 
 ifneq ($(strip $(shell cat $(PROFILE_FILE) 2>/dev/null)),$(PROFILE_ID))

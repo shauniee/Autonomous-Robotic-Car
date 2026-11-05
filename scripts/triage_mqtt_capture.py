@@ -45,8 +45,6 @@ def analyse(lines, limit=WHEEL_LIMIT_MMPS):
             totals["barcode_overflow_lines"] += 1
         if "IMU calibration failed" in line:
             totals["imu_calibration_failure_lines"] += 1
-        if "reset by watchdog" in line.lower():
-            totals["watchdog_reset_messages"] += 1
         if line.startswith("WHEEL "):
             totals["wheel_trace_frames"] += 1
             try:
