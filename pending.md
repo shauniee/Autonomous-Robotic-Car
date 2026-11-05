@@ -51,11 +51,11 @@ Working rules: change one value per trial and record each as a new INT row, and 
 | Area | State | Evidence |
 | --- | --- | --- |
 | Firmware build | All eight images and the IMU diagnostic image build and the host suite passes. Not a firmware or physical pass. | INT-193 to INT-197, INT-205 |
-| Safety and electrical | No recorded result. Wiring is user-confirmed only. | MR-01 to MR-05 |
-| Watchdog | Code merged, off by default, never run on a Pico. No reset policy agreed. | `99fe0d8`, D15 |
+| Safety and electrical | Sonar level, wiring and brownout closed by Nicholas, not measured. Power polarity, GP21 stop, reset, stall guard, watchdog and impact have no recorded result. | MR-04, MR-06, MR-07, MR-16, MR-24, MR-25 |
+| Watchdog | On for `full_course` (Nicholas, 2026-11-05), never run on a Pico. | D15, SYS-06 |
 | Line tracking | PI steering and the straight-crossing fix were reported good in two full runs, observed only. Nicholas self-tests the lap rate. | INT-200, INT-204 |
 | Barcode | User reports fully functional. All letters and a flipped print not tested. | User observation, INT-156 |
-| Junctions | Some turns passed; junction failures also logged. | INT-137, INT-139b, INT-153 |
+| Junctions | Left, right, straight and U-turn all work (Nicholas, 2026-11-05), observed only. | INT-204 |
 | Obstacle | Scans ran on real boxes with a measured width error. Bypass ran on the car with good runs reported, but gaps are not measured and one earlier run took the farther edge, cause unknown. | S5-U10, S5-U11, INT-198, INT-201, INT-203, INT-204 |
 | Hump | Latest fix built, never run on the car. Last run counted 5 for 1 crossing. | INT-158, host and build only |
 | Telemetry | Binary link in use on the bench. Physical subscription check pending. | S1-M01 |
@@ -70,9 +70,9 @@ They cannot close these physical items:
 
 | Blocked acceptance | Why the robot or actual environment is needed | Checklist coverage |
 | --- | --- | --- |
-| Electrical and stopping safety | Continuity, Echo voltage, power rails under load, braking distance/output waveforms, impact, held-button/reset and watchdog behavior need hardware measurements. The loose-battery restart cause is already explained. | Section 1; MR-01–07, MR-16, MR-24/25, SYS-06 |
+| Electrical and stopping safety | Output waveforms, impact, held-button/reset and watchdog behavior need hardware measurements. The loose-battery restart cause is already explained. | Section 1; MR-01–07, MR-16, MR-24/25, SYS-06 |
 | Motion and encoder calibration | Actual wheel travel/sign, edge errors/rates, geometry, floor PID, slip and turn accuracy cannot be inferred from raised-wheel or host tests. | Section 2; MR-14/15, MR-19–23 |
-| Robust line/barcode/junction behavior | Mounted sensor levels, lighting, issued prints, physical overflow rate, three curves, action hand-over and TRACE effect require the course. | Sections 3–4, 8; MR-12/13, MR-26–28/32 |
+| Robust line/barcode/junction behavior | Mounted sensor levels, lighting, issued prints, and physical overflow rate require the course. | Sections 3–4, 8; MR-12/13, MR-26–28/32 |
 | Hump accuracy and reliability | Current fix needs actual crossings; height scale/error, reverse/curve/pivot effects, minimum detectable hump, stuck detection and disconnected-IMU behavior require measured references. | Section 6; MR-11/16/23/29 |
 | Obstacle and full bypass | Servo endpoints, sonar error, swept envelope, width, blocked sides and original-line rejoin have no accepted integrated physical evidence. | Section 5; MR-17/18/30/31 |
 | End-to-end telemetry | Laptop fixtures can prove codec behavior, not Pico radio timing, reconnect, real mapping/fault injection. | Section 7; MR-08–10/33/38 |
@@ -107,17 +107,13 @@ Open decisions sit with their items, and all go to Nicholas: print framing (D01,
 
 ## 1. Safety and electrical
 
-- [ ] Sonar Echo high level measured at 3.3 V or below (MR-03, R5, D05). A higher level can damage the GPIO.
-- [ ] Every wire checked by continuity, with a photo (MR-01, A7).
-- [ ] GP26 Grove contact disconnected and GP28 jumper open (MR-02, A7).
 - [ ] Power bank polarity, and one power source at a time (MR-04).
-- [ ] 3V3 and VSYS measured with both motors and the servo running; no brownout (MR-05, A6).
-- [ ] GP21 at follow speed: robot stops, and the stopping distance is recorded (MR-24, D08).
+- [ ] GP21 at follow speed: the robot stops. No distance needs recording (Nicholas, 2026-11-05) (MR-24).
 - [ ] Measure output-brake latency against the 50 ms target, separately from physical stopping (A11, T02).
 - [ ] Reset cannot start the robot: held buttons, persistent fault, expired and old commands, inhibited boot (MR-07, A12, Gap 4).
 - [ ] TEST image on the current build: `[TEST]` lines print and motors stay braked (MR-06).
-- [ ] Stall guard: on for the full-course image (INT-176). Confirm on the car that it causes no false stop, and that a held wheel stops the run (MR-25, D07).
-- [ ] Watchdog (D15, decided): test a `WATCHDOG=1 TEST=1` image with wheels raised: reset on a stopped task, motor outputs through reset, no restart without GP20, and no false reset under WiFi load (SYS-06). Then turn it on for `full_course`. Do not enable it on a driving car until this passes.
+- [ ] Stall guard is on for the full-course image (INT-176), as required. Confirm that a held wheel stops the run (MR-25, D07); no false stop was reported in the two full runs (INT-204).
+- [ ] Watchdog is on for `full_course` (Nicholas, 2026-11-05, D15) but has never run on a Pico. Test with wheels raised before driving: reset on a stopped task, motor outputs through reset, no restart without GP20, and no false reset under WiFi load (SYS-06). A reset ends the run and clears the mapping.
 - [ ] Impact: tap test gives `Terrain: impact` and a latched stop (MR-16, D06).
 
 ## 2. Motion calibration
@@ -141,17 +137,12 @@ Nicholas self-tests the lap rate (2026-11-05), so no recorded success rate is re
 - [ ] Real line loss: the sweep finds the line, an exhausted search stops, and stale data does not start a blind search (MR-32, T11).
 - [ ] Decide wider IR spacing (Nicholas): measure spot spacing and line width after any move, then re-measure `NAV_ONSET_SKEW_MM` and `LINE_LOST_MM`. At the INT-98 33 mm, 23 mm line, geometry allows a curve to read both black from 46 degrees; 60 mm raises that to 68 degrees and the white/white band from 10 to 37 mm.
 - [ ] Mounted IR levels, dead zone and left-sensor span at course lighting (MR-12 as revised for DOUT, D04, A3).
-- [ ] Straight crossings roll through at course speed with no stop or pause: holds straight across the bar, regains the line, no veer afterwards, and no false crossing on a curve from the 6 mm candidate, which saved captures cannot rule out (MR-28, INT-189, INT-191). Heading drift was the reason for the earlier stop, so film it; lengthen or shorten `NAV_STRAIGHT_MM` one trial at a time if needed.
-- [ ] Junction advance on a turn: the car rests where the distance says, with the axle over the crossing centre, now that it slows on the profile. A turn too late to stop there is rejected (`nav_rejected=2`).
 - [ ] Smoothness on film and `WHEEL` traces at 100 mm/s, on the merged PI steering (reported good, INT-200, no evidence saved). Moving off and slowing down like a lift, with no wheels sitting still then jumping (tune `MOTION_ACCEL_MMPS2`, `MOTION_JERK_MMPS3`, `MOTION_KS`); no straight-line jolt at the lowered 300 and 600 Q/s steering rates; tightest curve and S-bend hold (`LINE_KP_Q`, `LINE_KI_QPMM`, `LINE_I_MAX_Q`, `LINE_I_FADE_QPMM` are provisional); pivot ends not abrupt, or try a slower final part and recheck the landing point. If not very smooth, lower `COURSE_SPEED_MMPS`; speed is the second priority. Below 60 mm/s needs a new feedforward fit.
 
 ## 4. Barcode and junctions (M2, M3)
 
-- [ ] Action once at the junction for each of left, right, straight and U-turn at variable spacing, never undone (MR-28, D02). INT-153 stopped with a queued turn.
 - [ ] Print all 26 letters and run each at course speed, in both directions (MR-27, M2). Host tests cover the patterns only.
 - [ ] Flipped print on the car, turned 180 degrees and read from either end (Nicholas: must read). All 26 letters decode in both directions on the host. C and P can complete with an unknown orientation, but Mission does not use orientation.
-- [ ] U-turn: confirm the stationary pause and return-line tracking. The pause is now 200 ms in code, unmeasured (D02).
-- [ ] No queued turn: crosses straight and resumes tracking (MR-28).
 - [ ] Record reads against passes as a rate, with one `EVENT BARCODE` per read (INT-167). A corrupted last guard still loses the read (INT-155, third pass).
 - [ ] Barcode sensor level over black and white on the mounted robot (MR-13, D04).
 - [ ] Issued print framing, quiet zones and tolerances (D01, A8).
@@ -289,7 +280,7 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] PR 149 merged at `99fe0d8`, with its conflicts and three test-tool bugs fixed (INT-160, host only).
 - [x] Merge commit `e576760` recorded for INT-132 to INT-159 (INT-161).
 - [x] Watchdog code written, off by default; physical test is in section 1.
-- [x] `TRACE=0` build, `scripts/mission_trial_score.py` and `scripts/triage_mqtt_capture.py` added, with host tests for the two scripts only; Nicholas self-tests the laps.
+- [x] `TRACE=0` build and `scripts/triage_mqtt_capture.py` added, with a host test for the script.
 - [x] Laptop speed estimate ignores bursty packet timing, with a host test.
 - [x] Integration range probe corrected to 20 bytes.
 - [x] Readiness procedures updated for the digital IR sensors and reset flow, keeping MR-29 at 100 mm/s on humps.
@@ -309,13 +300,13 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] One barcode event rule with an A-Z bound and host tests, replacing two versions (INT-193); real run is in section 8.
 - [x] Watchdog feed rule needs both tasks fresh and advancing, host tested (PR 151); bench test is in section 1.
 - [x] Host tests run on GitHub for PRs and `main` (PR 151).
-- [x] Lap scorer rejects incomplete PASS rows and needs 19 of 20; triage keeps state transitions (INT-185).
+- [x] Triage keeps state transitions (INT-185).
 - [x] Saved captures reviewed; no steering cause can be proven from them (INT-186).
 - [x] Dead terrain snapshot, unused settings and old plan checker removed (INT-193).
 - [x] Straight crossings roll through without stopping, by Nicholas (INT-197, host and build only).
 - [x] Lift-style profile for every planned move, with obstacle stops slowing on it; safety stops stay immediate (INT-195, host and build only).
 - [x] `motion_stop_distance_mm` tells other subsystems the travel of a planned stop. Obstacle slowing starts at 191 mm on the current profile to rest at 150 mm, the bypass rests at the rear of the box, and late junction turns are rejected (INT-196, host and build only).
-- [x] Watchdog policy: on for `full_course` after the SYS-06 bench test passes, by Nicholas (D15).
+- [x] Watchdog policy: on for `full_course`, by Nicholas (2026-11-05, replaces waiting for the bench test, D15).
 - [x] Diagnostics only in test images: `full_course` is `TRACE=0`, `./flash.sh trial` drives with them, by Nicholas (INT-194).
 - [x] Accuracy limits of 10 mm lateral and 5 degrees heading, by Nicholas (D10).
 - [x] Colour-inverted prints out of scope; 180-degree flip required and already in the decoder, by Nicholas.
@@ -326,7 +317,11 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] Data table: watchdog, float and digital IR rows; fault bytes and obstacle profile justified as proposed (INT-173).
 - [x] Instructor network is no longer tracked as pending work, by Nicholas (2026-11-05).
 - [x] Obstacle depth is left out; the car only needs clearance to bypass, by Nicholas (2026-11-05). The rear-clearance check is in section 5.
-- [x] Lapping test dropped; Nicholas self-tests. The scorer stays as a tool (2026-11-05).
+- [x] Lapping test and two-lighting repeat dropped, and `scripts/mission_trial_score.py` removed; Nicholas self-tests (2026-11-05).
+- [x] Sonar Echo high is always 3.3 V, by Nicholas (2026-11-05); not measured.
+- [x] Wiring checked and unchanged, with all three IR AOUT pins unconnected, by Nicholas (2026-11-05); [team](docs/team.md#2-pins) updated.
+- [x] No brownout, by Nicholas (2026-11-05); rail voltages not measured.
+- [x] Junction navigation: left, right, straight and U-turn all work, by Nicholas (2026-11-05); related items removed.
 - [x] Professor's buffer wording was never seen, by Nicholas (2026-11-05), so bounded rings stay.
 
 ## Superseded

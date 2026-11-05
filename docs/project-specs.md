@@ -122,8 +122,8 @@ The permitted height-measurement error remains undecided under D10.
 
 **Profiles:** `MOTION_STALL_GUARD_ENABLED=0` for the demo; enabled and physically
 verified for full-course acceptance. Other stop/freshness/deadline guards stay
-active. The optional reset watchdog remains disabled for driving until D15 bench
-validation; no approval to enable it is inferred from the merged implementation.
+active. The reset watchdog is on for full-course images (Nicholas, 2026-11-05, D15); its
+bench validation is still to run.
 Record the exact settings with each image and result.
 
 **Network:** the instructor's network and broker (Nicholas, 2026-11-04). Only the ignored `config/wifi_secrets.h` changes, which creates a distinct image to identify. Do not put secrets in evidence or version control.
@@ -537,20 +537,20 @@ Single register. Record answers and measured values here once, then link from ot
 | ID | Decision / missing evidence | Owner |
 | --- | --- | --- |
 | D01 | Verify issued Code 39 framing/print scales, quiet zones, polarity, width tolerances and encounter rearm; both orientations must yield the same letter | Nicholas |
-| D02 | Mounted junction confirmation/turn centre, barcode-to-junction offsets, multiple pending characters, no-command crossing qualification, U-turn pause 200 ms in code, to be measured, bypass/reverse boundaries and failed-scan retry policy; endless/no undo is settled | Nicholas |
+| D02 | Junction actions reported working on the car (Nicholas, 2026-11-05), so their measurements are no longer tracked. Mounted junction confirmation/turn centre, barcode-to-junction offsets, multiple pending characters, no-command crossing qualification, U-turn pause 200 ms in code, to be measured, bypass/reverse boundaries and failed-scan retry policy; endless/no undo is settled | Nicholas |
 | D03 | Verify motor and encoder polarity, counts/revolution, ratings/levels, geometry, full car/turning envelope and maximum edge rate. Remote signs +1/+1 versus local -1/+1 are not a calibration decision; preserve barcode half-range bound | Nicholas |
 | D04 | Mounted IR position/spacing/height, contrast/noise/lighting range and barcode black polarity; wiring user-confirmed, measured sensing margins still pending | Nicholas |
 | D05 | Sonar electrical behavior user-confirmed; retain recorded Echo-voltage evidence when available. Calibrate repeat interval/range/servo centre/endpoints/settling, sample groups/median/edge hysteresis, coverage and width-estimation uncertainty | Nicholas |
 | D06 | Stationary boot IMU calibration (IR is digital, without software calibration): bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Validate 100 mm/s course-speed completion and the accepted results-retained-through-starts/stops-until-reboot lifecycle | Nicholas |
 | D07 | Demo stall guard off, full-course guard on (confirmed above); wheel/line gains, speed/duty/distance/turn/stall limits; repeated stationary +/-70 degree sweeps, pivot speed, wheel excursion budget and usable-line handoff; bypass/depth/clearance budgets ; course and bypass driving share `COURSE_SPEED_MMPS`, 100 mm/s today, smoothness first | Nicholas |
-| D08 | Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | Nicholas |
+| D08 | Stopping distance need not be recorded (Nicholas, 2026-11-05). Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | Nicholas |
 | D09 | Closed by Nicholas, 2026-11-04: the instructor's WiFi and broker, changing only `config/wifi_secrets.h`. No longer tracked as pending work (Nicholas, 2026-11-05). A normal mission requires both before starting; loss mid-run is report-only. Bounded TX/RX rings stay; the professor's buffer wording was not seen (Nicholas, 2026-11-05) | Nicholas |
 | D10 | Qualifying lap agreed above; minimum hump height is 10 mm, not an error tolerance. Lateral (10 mm) and turn (5 degrees) limits agreed above. Agree remaining height/width/speed error and recovery travel limits before corresponding physical PASS; label proposals separately from course thresholds | Nicholas |
 | D11 | Settled 2026-10-29: barcode left, hump right. Validate sensing after reverse/U-turn traversal without inventing mirrored lane placement | Nicholas |
 | D12 | Closed by Nicholas, 2026-11-03: obstacles sit on straights, and this is the operating assumption. Curved-course bypass is not supported or claimed; options are in the [Obstacle guide](../app_program/obstacle/README.md#curves-near-an-obstacle) | Nicholas |
 | D13 | Numeric target priorities/periods, execution budgets, timeout slack, data-age limits, worst sensor-to-PWM latency, GPIO ISR time, stack margin and load-test criteria; user authorized existing numeric settings as provisional software defaults on 2026-10-29; physical scheduling/age acceptance remains open | Nicholas |
 | D14 | Core swap superseded. Audit core-0 I/O integration, cross-core event producers/mapping hand-off, synchronization and required initialization order; kernel WiFi/USB and capture core unchanged | Nicholas |
-| D15 | Decided by Nicholas, 2026-11-04: turn on for `full_course` once the SYS-06 bench test passes, and not before. Included: Tribunal A12 names watchdog recovery (Nicholas's rule, 2026-11-03). `WATCHDOG` stays 0 until the SYS-06 bench test passes. Watchdog reset policy/scope, enabled-state audit and physical reset/output behavior; tick initialization is not proof of watchdog protection. No new framework in this restructure | Nicholas |
+| D15 | Decided by Nicholas, 2026-11-04: on for `full_course`, changed by Nicholas on 2026-11-05 not to wait for the SYS-06 bench test, which is still to run. Included: Tribunal A12 names watchdog recovery (Nicholas's rule, 2026-11-03). Other images default to `WATCHDOG=0`. Watchdog reset policy/scope, enabled-state audit and physical reset/output behavior; tick initialization is not proof of watchdog protection. No new framework in this restructure | Nicholas |
 | D16 | Settled 2026-10-29: configurable 15 cm is the obstacle trigger distance (150 mm). The car stops at that distance: it starts slowing earlier by `motion_stop_distance_mm`, 191 mm at 100 mm/s (Nicholas, 2026-11-04). It does not authorize any travel without valid forward sonar | Nicholas |
 
 Implementation note (2026-10-29, #130): Mission's local reset handshake has
