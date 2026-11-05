@@ -237,7 +237,7 @@
       <span class="fault" id="fault-Obstacle"></span>
       <h2 class="sub-title">Obstacle history</h2>
       <p class="empty" id="obstacle-empty">No obstacle measurements yet.</p>
-      <ol class="history" id="obstacles" aria-label="Past obstacles, width by depth" tabindex="0" hidden></ol>
+      <ol class="history" id="obstacles" aria-label="Past obstacles: width, side and clearance" tabindex="0" hidden></ol>
       </div>
       </div>
     </section>
@@ -291,7 +291,7 @@ function showHump(m) {
   $("humps").hidden = false;
   $("hump-empty").hidden = true;
 }
-let obstacleWidth = null, obstacleNumber = 0;
+let obstacleWidth = null, obstacleNumber = 0, obstacleAwaitingWidth = null;
 const seen = {}, cleared = {}; // owner -> faults active last frame / faults cleared this run
 let lastFrame = 0, robotOnline = null, linked = null, mission = null, pending = null, encoderDirection = null;
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -390,7 +390,7 @@ function renderImu(calibrated) {
   badge.className = "corner " + (calibrated === true ? "ok" : calibrated === false ? "warn" : "");
 }
 // Sonar fan: range is drawn to a display scale that always fits the latest reading.
-const SONAR_BLOCK_MM = 40;  // drawn thickness only; depth is not measured
+const SONAR_BLOCK_MM = 40;  // drawn thickness only, not a measurement
 function drawSonar(t) {
   const range = t.front_mm;
   const max = Math.max(600, (range || 0) + SONAR_BLOCK_MM + 150), k = 205 / max;
@@ -418,6 +418,7 @@ function showTelemetry(t) {
   lastFrame = Date.now();
   // A new scan must not reuse the previous obstacle's width.
   obstacleWidth = t.mission === "SCAN" ? null : t.obstacle_width_mm > 0 ? t.obstacle_width_mm : null;
+  if (obstacleAwaitingWidth && obstacleWidth != null) { obstacleAwaitingWidth(obstacleWidth); obstacleAwaitingWidth = null; }
   if (t.mission === "FOLLOW_LINE" && ["READY", "STOPPED"].includes(mission)) for (const o in cleared) cleared[o].clear();
   mission = t.mission;
   put($("mission-current"), mission.replace("_", " "));
@@ -465,7 +466,10 @@ function showObstacle(m) {
   const list = $("obstacles");
   const li = document.createElement("li");
   li.value = ++obstacleNumber;
-  li.textContent = `W ${obstacleWidth == null ? "unavailable" : obstacleWidth + " mm"} · ${m.obstacle_side} · clearance ${m.obstacle_clearance_mm} mm`;
+  const fill = width => { li.textContent = `W ${width == null ? "unavailable" : width + " mm"} · ${m.obstacle_side} · clearance ${m.obstacle_clearance_mm} mm`; };
+  fill(obstacleWidth);
+  // The event precedes the first BYPASS frame, so the last frame seen is SCAN and the width comes next.
+  obstacleAwaitingWidth = obstacleWidth == null ? fill : null;
   obstacles.push({id: m.event_id, element: li});
   list.append(li);
   if (obstacles.length > 200) obstacles.shift().element.remove();

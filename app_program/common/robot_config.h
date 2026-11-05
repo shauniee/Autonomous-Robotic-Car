@@ -104,21 +104,6 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 #define MOTION_ACTION_TIMEOUT_MS 12000u /* D07 trial: corrected turn distances */
 #define MOTION_PERIOD_MS	20u
 
-/* Optional reset watchdog (D15). Off until electrically validated on the
- * mounted robot. Enable explicitly in a controlled bench build, then test
- * full reset, motor pin states and startup inhibition before deployment.
- * RP2040-E1: hardware load needs two watchdog counts per microsecond. */
-#ifndef ROBOT_WATCHDOG_ENABLED
-#define ROBOT_WATCHDOG_ENABLED 0
-#endif
-#define ROBOT_WATCHDOG_TIMEOUT_MS 2000u
-#define ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS 250u
-_Static_assert(ROBOT_WATCHDOG_ENABLED == 0 || ROBOT_WATCHDOG_ENABLED == 1,
-    "watchdog enable is boolean");
-_Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
-    ROBOT_WATCHDOG_TIMEOUT_MS <= 8388u,
-    "RP2040 watchdog timeout must fit the 24-bit load");
-
 
 /* --- line ------------------------------------------------------- */
 #define IR_SAMPLE_MS		10u	/* INT-115: 10 ms reads were the first change that helped at 100 mm/s */
@@ -171,8 +156,7 @@ _Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
 /* Start slowing this far out, so the planned stop ends at MISSION_OBSTACLE_STOP_MM. */
 #define MISSION_OBSTACLE_SLOW_MM (MISSION_OBSTACLE_STOP_MM + MOTION_STOP_MM(COURSE_SPEED_MMPS))
 #define MISSION_STATIONARY_MS		150u	/* encoders unchanged this long before a scan */
-/* User-chosen 2026-11-03: 160 mm measured body + 30 mm each side; unaccepted
-   on the car */
+/* Reference for reported clearance only; the bypass side ignores it. */
 #define MISSION_BYPASS_MIN_CLEAR_MM 220u
 #define MISSION_BYPASS_TIMEOUT_MS	90000u	/* whole bypass must finish by then */
 #define BYPASS_TURN_SPEED_MMPS 36u /* PROVISIONAL D07: recovery pivot speed; 7 mm/s overran the action timeout */
@@ -420,10 +404,6 @@ _Static_assert(BYPASS_BACKUP_MAX_MM <= 255u,
 _Static_assert(BYPASS_TRAVEL_MM <= 4095u && BYPASS_EDGE_SAMPLES > 0u &&
     BYPASS_EDGE_SAMPLES <= 7u,
     "bounded bypass storage must fit its fields");
-_Static_assert(MISSION_BYPASS_MIN_CLEAR_MM >= BYPASS_BODY_HALF_LENGTH_MM + BYPASS_BODY_LEFT_MM &&
-    MISSION_BYPASS_MIN_CLEAR_MM >= BYPASS_BODY_LEFT_MM + BYPASS_SAFE_GAP_MM +
-        BYPASS_PASS_ALLOWANCE_MM + BYPASS_BODY_RIGHT_MM,
-    "the leg out must fit the room checked");
 _Static_assert(BYPASS_LEG_MAX_MM * 1000u / BYPASS_SPEED_MMPS <
     MOTION_ACTION_TIMEOUT_MS && BYPASS_MAX_OFFSET_MM <= BYPASS_LEG_MAX_MM,
     "a bypass leg must finish inside one Motion action");

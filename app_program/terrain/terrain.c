@@ -28,18 +28,23 @@ static bool trace_pending;
 static uint32_t trace_last_ms;
 static float trace_travel_mm;
 
+/* Plain C: <math.h> clashes with the kernel's size_t in this file. */
 static int8_t trace_clamp(float value)
 {
-    float limited = fmaxf(-127.0f, fminf(127.0f, value));
+    float limited = (value > 127.0f) ? 127.0f :
+        ((value < -127.0f) ? -127.0f : value);
 
     /* NOTE: limited above, so the cast cannot overflow. */
-    return (int8_t)lroundf(limited);
+    return (int8_t)(limited + ((limited >= 0.0f) ? 0.5f : -0.5f));
 }
 
 static uint8_t trace_byte(float value)
 {
+    float limited = (value > 255.0f) ? 255.0f :
+        ((value < 0.0f) ? 0.0f : value);
+
     /* NOTE: limited to 0..255, so the cast cannot overflow. */
-    return (uint8_t)lroundf(fmaxf(0.0f, fminf(255.0f, value)));
+    return (uint8_t)(limited + 0.5f);
 }
 
 static void terrain_trace_note(uint32_t now, const Gy511RawAxes *p_raw,

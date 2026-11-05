@@ -50,7 +50,7 @@ Deliverables that need the car print NEEDS EVIDENCE and do not fail the check, b
 
 Host-only tests for kernel-free modules run with `testing/pure/run.sh` (no fake kernel). `run.sh` passes `-DHOST_TEST`, which hides the kernel and driver parts of merged files such as `line.c`, `barcode.c` and `motion.c`. The older 2026-10-08 fake-kernel/hardware/network and laptop-loopback results remain historical software evidence; their recorded methods are not current run instructions. They do not establish GPIO performance, physical motion or an actual Pico connection.
 
-Firmware self-tests remain: S1-U09 (binary codec; replaces retired S1-U04), S2-U03 (Motion policy), S3-U02 (normalization/progress) and S3-U06 (P guidance). S3-U03 remains the retired line-PID case; later P/capture/recovery cases retain their IDs. Network snapshots never count as sensor/watchdog progress.
+Firmware self-tests remain: S1-U09 (binary codec; replaces retired S1-U04), S2-U03 (Motion policy), S3-U02 (normalization/progress) and S3-U06 (P guidance). S3-U03 remains the retired line-PID case; later P/capture/recovery cases retain their IDs. Network snapshots never count as sensor progress.
 
 Actual wireless checks are SYS-09/10 through [wireless setup](../README.md#getting-started). Save Pico-originated subscriber output separately from synthetic/laptop transport evidence. A slow telemetry stream cannot prove short stop/recovery deadlines; use camera/scope measurements.
 
@@ -62,8 +62,8 @@ such as GP20 reset, JSON output or a dedicated Safety task describe their record
 source, not target acceptance. Append a new procedure revision/result, never reuse
 retired IDs. MR-34 remains retired; MR-40 covers endless operation. S3-M02 remains
 physical timing evidence, with final-loop coverage extended through MR-39 rather
-than assuming obsolete two-task timing names/limits. SYS-06 watchdog checks are
-still to run (D15); the watchdog is on for `full_course` but unvalidated.
+than assuming obsolete two-task timing names/limits. SYS-06 is retired with the
+watchdog (D15).
 
 All remain pending until actual measurements/results are recorded. This retains the integrated design's IDs without treating proposed checks as passes.
 

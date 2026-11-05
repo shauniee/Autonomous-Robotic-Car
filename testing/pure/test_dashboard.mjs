@@ -160,7 +160,7 @@ for (const hump_max_mm of [null, 0, 24]) {
 console.log('flippers: PASS (direction word and R/L/S/U letter, barcode letter and action, hump count, IMU corner badge, faults)');
 
 // Only completion events add history; telemetry repeats and scans cannot
-// pair a new width with the retained depth of an earlier obstacle.
+// pair a new width with the retained clearance of an earlier obstacle.
 const obstacleList = get('obstacles');
 obstacleList.append = li => {
   obstacleList.children.push(li);
@@ -186,6 +186,13 @@ sample.mission = 'SCAN';
 vm.runInContext('showTelemetry(sample)', context);
 obstacleEvent('missing-width', 55);
 assert.equal(obstacleList.children[2].textContent, 'W unavailable · left · clearance 55 mm');
+// The firmware sends the event before its first BYPASS frame; that frame supplies the width.
+Object.assign(sample, {mission:'BYPASS', obstacle_width_mm:30});
+vm.runInContext('showTelemetry(sample)', context);
+assert.equal(obstacleList.children[2].textContent, 'W 30 mm · left · clearance 55 mm');
+Object.assign(sample, {obstacle_width_mm:35});
+vm.runInContext('showTelemetry(sample)', context);
+assert.equal(obstacleList.children[2].textContent, 'W 30 mm · left · clearance 55 mm');
 for (const clearance of [null, -1]) obstacleEvent('invalid', clearance);
 assert.equal(obstacleList.children.length, 3);
 for (let i = 0; i < 200; i++) obstacleEvent('extra-' + i, 40);
@@ -246,7 +253,7 @@ barcodeList.append = li => barcodeList.children.push(li);
 const barcodeEvent = text => vm.runInContext(`showBarcode({type: 'event', text: ${JSON.stringify(text)}})`, context);
 barcodeEvent('EVENT BARCODE: letter Z -> RIGHT at t=12 ms, counts L=1 R=2');
 barcodeEvent('EVENT BARCODE: letter Z -> RIGHT at t=12 ms, counts L=1 R=2');
-barcodeEvent('EVENT OBSTACLE: depth 40 mm at t=20 ms');
+barcodeEvent('EVENT OBSTACLE: passing left, clearance 40 mm at t=20 ms');
 barcodeEvent('EVENT BARCODE: letter Q -> U_TURN at t=30 ms, counts L=2 R=3');
 assert.equal(barcodeList.children.length, 2);
 assert.match(barcodeList.children[0].textContent, /^Z · RIGHT · /);

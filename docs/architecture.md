@@ -46,7 +46,7 @@ calibrated values are owned by [project-specs](project-specs.md); wiring by
 [team](team.md).
 
 Keep micro T-Kernel, C/Pico SDK, five subsystem modules and binary MQTT schema v2.
-No core-number migration, generic event bus, new scheduler or separate watchdog task.
+No core-number migration, generic event bus or new scheduler.
 
 ## Tasks
 
@@ -58,18 +58,6 @@ RTOS tasks. Smaller numeric priority means higher scheduling priority.
 | Motion | 1 (`TP_PRC2`) | Motor outputs, wheel-speed loop, encoder actions, independent GP21/stop/expiry checks | Higher priority than Mission |
 | Mission | 1 (`TP_PRC2`) | Bounded line/barcode/sonar/servo steps, calibration controls, navigation, safety policy and mapping acceptance | Below Motion; bounded work then sleep |
 | `io_task` | 0 (`TP_PRC1`) | Bounded Terrain acquisition/calibration and Reporting steps | Below existing critical kernel services; numeric choice pending |
-
-D15 reset watchdog (on for `full_course`, otherwise only with `WATCHDOG=1`): Motion reports progress after successful motor-output service;
-Mission reports progress after a successful command hand-off; core-0 I/O
-checks both producer heartbeats after servicing Terrain and Reporting.
-Only I/O arms/feeds the RP2040 hardware reset watchdog, and only when
-both have progressed freshly since the previous feed. A producer or I/O
-hang therefore intentionally stops feeding. The timeout is 2000 ms and
-heartbeat maximum age is 250 ms, both **unverified on the physical robot**.
-Hardware reset is not an electronic brake: actual motor-driver safe levels
-through reset, reset cause reporting, reboot start inhibition and network-load
-timing must pass the D15/SYS-06 bench acceptance before enabling it for driving.
-Software tests validate only heartbeat freshness arithmetic.
 
 WiFi/lwIP/MQTT service and USB stay on core 0 in their existing execution contexts.
 Existing numeric periods/priorities/ages are retained as explicitly provisional
@@ -217,7 +205,7 @@ measurements/events. Completed results persist across accepted starts/stops unti
 reboot, as recorded in [project specs](project-specs.md#pending-decisions).
 
 For a blocking obstacle, brake and confirm stationarity before profiling. Bypass
-selects supported measured clearance, departs the line, follows the side, confirms
+selects the side with the shorter distance to a box edge, departs the line, follows the side, confirms
 rear-edge and full-car clearance and returns toward the original line. The first
 black sensor on that leg ends it; Mission then advances and pivots as at a junction.
 One servo sensor cannot look forward and sideways simultaneously: schedule fresh
@@ -366,7 +354,7 @@ Motion/Mission observe it. Motion checks GP21 independently every release.
 Reset invalidates old commands and never enables output itself. Brake service
 acknowledgement is software progress; stationarity uses encoder evidence.
 Checks require Motion to execute and do not protect against a hung Motion/kernel.
-A watchdog tick setup alone is not a reset watchdog; further policy remains D15.
+`WATCHDOG.TICK` only drives the 1 us timer; no reset watchdog exists (D15).
 
 The wheel-speed controller bounds duty to the requested wheel direction:
 overspeed produces braking, not opposite drive. The position controller may
@@ -693,7 +681,8 @@ offset), then Mission holds stationary for the pause. A ramped encoder pivot tow
 a bound angle (left +, right and U-turn -) is the turn; it ends on the line, not on
 the angle: past a sense angle, the leading sensor (left for a left turn, right
 otherwise) black then not black stops it, which leaves the new branch between the
-sensors. Mission then commands STOP, confirms stationary, holds the pause and
+sensors. The pivot back to the line after a bypass looks from a lower angle,
+because the car can meet the line off square (INT-208). Mission then commands STOP, confirms stationary, holds the pause and
 follows. Reaching the bound without that evidence stops. Stationarity loss restarts
 pause qualification. Discrete mode/target/style are immutable for an action ID.
 STOP, stale data and faults override all profiles.

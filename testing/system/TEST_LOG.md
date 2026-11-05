@@ -5,7 +5,7 @@
 - [Test cases](#test-cases)
 - [Results](#results)
 
-Template SYS-01 and SYS-02 are retired, not reused. Mission report trials T01-T16 are pending. Do not connect USB while the power bank is connected. One row per run. Write-ups from before 2026-11-03, and build and host output, are at git tag `test-logs-full-2026-11-03`: `git show test-logs-full-2026-11-03:testing/system/TEST_LOG.md`. `+` after a commit means it also had uncommitted changes.
+Template SYS-01 and SYS-02 are retired, not reused. SYS-06 is retired, not reused: the watchdog was removed (Nicholas, 2026-11-05, D15). Mission report trials T01-T16 are pending. Do not connect USB while the power bank is connected. One row per run. Write-ups from before 2026-11-03, and build and host output, are at git tag `test-logs-full-2026-11-03`: `git show test-logs-full-2026-11-03:testing/system/TEST_LOG.md`. `+` after a commit means it also had uncommitted changes.
 
 ## Test cases
 
