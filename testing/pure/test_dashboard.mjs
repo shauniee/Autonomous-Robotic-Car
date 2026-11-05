@@ -63,7 +63,7 @@ const sample = {
   line: 'VISIBLE', faults: [], mapped: true, left: 65535, right: 0,
   speed_left: 0, speed_right: -12, direction: 'reverse',
   barcode: 'A', barcode_action: 'LEFT', front_mm: 0,
-  obstacle_width_mm: 120, obstacle_depth_mm: 0,
+  obstacle_width_mm: 120, obstacle_clearance_mm: 0,
   hump_count: 0, hump_max_mm: 0
 };
 context.sample = sample;
@@ -74,7 +74,7 @@ assert.equal(get('sensor-front').textContent, '0 mm');
 assert.equal(get('flap-Obstacle').textContent, 'CLEAR');
 assert.equal(String(get('sensor-count-left').textContent), '65535');
 assert.equal(get('sensor-width').textContent, '120 mm');
-assert.equal(get('sensor-depth').textContent, 'No result');
+assert.equal(get('sensor-clearance').textContent, 'No result');
 assert.equal(get('sensor-height').textContent, '0 mm');
 Object.assign(sample, {speed_left: null, speed_right: null, front_mm: null,
   hump_max_mm: null, barcode: '-', mapped: false});
@@ -166,18 +166,18 @@ obstacleList.append = li => {
   obstacleList.children.push(li);
   li.remove = () => obstacleList.children.splice(obstacleList.children.indexOf(li), 1);
 };
-const obstacleEvent = (id, depth) => {
-  context.obstacleEvent = {event_id: id, obstacle_depth_mm: depth};
+const obstacleEvent = (id, clearance) => {
+  context.obstacleEvent = {event_id: id, obstacle_clearance_mm: clearance, obstacle_side: 'left'};
   vm.runInContext('showObstacle(obstacleEvent)', context);
 };
-Object.assign(sample, {mission:'BYPASS', obstacle_width_mm:25, obstacle_depth_mm:170});
+Object.assign(sample, {mission:'BYPASS', obstacle_width_mm:25, obstacle_clearance_mm:170});
 vm.runInContext('showTelemetry(sample); showTelemetry(sample)', context);
 assert.equal(obstacleList.children.length, 0);
 obstacleEvent('first', 40);
 obstacleEvent('first', 40);
 assert.equal(obstacleList.children.length, 1);
 assert.equal(obstacleList.children[0].value, 1);
-assert.equal(obstacleList.children[0].textContent, 'W 25 mm · D 40 mm');
+assert.equal(obstacleList.children[0].textContent, 'W 25 mm · left · clearance 40 mm');
 assert.equal(get('obstacle-empty').hidden, true);
 assert.equal(obstacleList.hidden, false);
 obstacleEvent('second', 40);
@@ -185,8 +185,8 @@ assert.equal(obstacleList.children.length, 2); // Separate, equally sized obstac
 sample.mission = 'SCAN';
 vm.runInContext('showTelemetry(sample)', context);
 obstacleEvent('missing-width', 55);
-assert.equal(obstacleList.children[2].textContent, 'W unavailable · D 55 mm');
-for (const depth of [0, null, -1]) obstacleEvent('invalid', depth);
+assert.equal(obstacleList.children[2].textContent, 'W unavailable · left · clearance 55 mm');
+for (const clearance of [null, -1]) obstacleEvent('invalid', clearance);
 assert.equal(obstacleList.children.length, 3);
 for (let i = 0; i < 200; i++) obstacleEvent('extra-' + i, 40);
 assert.equal(obstacleList.children.length, 200);
@@ -195,11 +195,11 @@ assert.equal(obstacleList.children.at(-1).value, 203);
 console.log('obstacle history: PASS (completion-only, duplicates, equal sizes, missing width, numbering, 200-entry bound)');
 
 // Sonar: the obstacle block is shown only with a valid echo, at its measured range.
-Object.assign(sample, {mission:'BYPASS', obstacle_width_mm:420, obstacle_depth_mm:170, front_mm:300});
+Object.assign(sample, {mission:'BYPASS', obstacle_width_mm:420, obstacle_clearance_mm:170, front_mm:300});
 vm.runInContext('showTelemetry(sample)', context); // width 420 from telemetry
 assert.equal(get('sonar-block').style.display, '');
 assert.equal(get('sonar-readout').style.display, '');
-assert.equal(get('sonar-readout').textContent, 'W 420 × L 170 mm');
+assert.equal(get('sonar-readout').textContent, 'W 420 mm');
 assert.equal(get('sonar-block').attributes.class, 'obstacle');
 sample.front_mm = null;
 vm.runInContext('showTelemetry(sample)', context);
@@ -270,3 +270,21 @@ vm.runInContext('showTelemetry(sample)', context);
 assert.equal(get('sensor-mapped').textContent, 'No');
 assert.equal(get('sensor-mapped').className, 'bad');
 console.log('barcode history: PASS (letter and action per event, duplicates ignored, non-barcode events ignored, mapped colour)');
+
+// IMU: tilt and height read out, and both graphs keep to their windows across a travel wrap.
+const terrainSample = (travel, height) => {
+  context.terrainTrace = {type: 'terrain_trace', pitch_deg: 3.5, roll_deg: -1.5, x_mg: 16, y_mg: -16,
+    z_mg: 992, height_mm: height, rise_mm: 9, travel_mm: travel};
+  vm.runInContext('showTerrainTrace(terrainTrace)', context);
+};
+terrainSample(65000, 0);
+terrainSample(100, 12);
+assert.equal(get('sensor-pitch').textContent, '3.5 deg');
+assert.equal(get('sensor-roll').textContent, '-1.5 deg');
+assert.equal(get('sensor-height-now').textContent, '12 mm');
+assert.equal(vm.runInContext('profile.at(-1).d - profile[0].d', context), 636);
+terrainSample(3000, 0);
+assert.equal(vm.runInContext('profile.length', context), 1); // older than 2 m drops off
+terrainSample(10, 0); // a reboot restarts travel: no jump in distance
+assert.equal(vm.runInContext('profile.at(-1).d - profile.at(-2).d', context), 0);
+console.log('imu graphs: PASS (tilt, height, travel wrap, 2 m window, reboot)');

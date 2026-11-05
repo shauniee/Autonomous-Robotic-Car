@@ -1,7 +1,7 @@
-name: Host software regressions
+name: Checks
 
-# Reinstates an automatic signal for kernel-free software changes.
-# Does not claim an Arm link, Pico hardware run or physical acceptance.
+# What runs without the car. A pass here does not claim a Pico run or physical
+# acceptance; subsystem results that need the car stay NEEDS EVIDENCE.
 on:
   pull_request:
   push:
@@ -11,6 +11,28 @@ permissions:
   contents: read
 
 jobs:
+  coding-standard:
+    name: BARR-C:2018 coding standard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Lines this pull request changed must comply
+        if: github.event_name == 'pull_request'
+        run: python3 scripts/check_barr.py --base "origin/${{ github.base_ref }}"
+      - name: Legacy backlog, for information
+        run: python3 scripts/check_barr.py --summary
+
+  deliverables:
+    name: Subsystem deliverables and alignment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/check_deliverables.py
+
   host-tests:
     name: C/Python/MQTT host tests and dashboard checks
     runs-on: ubuntu-24.04
@@ -21,3 +43,25 @@ jobs:
         run: bash testing/pure/run.sh
       - name: Dashboard regression checks (Node)
         run: node testing/pure/test_dashboard.mjs
+
+  firmware-build:
+    name: Firmware builds for every profile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the Arm compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi
+      - name: Fetch Pico SDK 2.2.0
+        run: >
+          git clone --depth 1 --branch 2.2.0 --recurse-submodules
+          --shallow-submodules https://github.com/raspberrypi/pico-sdk.git
+          "$RUNNER_TEMP/pico-sdk"
+      - name: Use the example network settings
+        run: cp config/wifi_secrets.example.h config/wifi_secrets.h
+      - name: Build all profiles, never flashes
+        env:
+          JOBS: 4
+        run: PICO_SDK_PATH="$RUNNER_TEMP/pico-sdk" sh testing/build_pending_profiles.sh

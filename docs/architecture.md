@@ -30,7 +30,7 @@
 - [MQTT binary protocol, schema version 2](#mqtt-binary-protocol-schema-version-2)
   - [Telemetry and snapshot reply (22 bytes)](#telemetry-and-snapshot-reply-22-bytes)
   - [Wheel trace (15 bytes)](#wheel-trace-15-bytes)
-  - [Terrain trace (8 bytes)](#terrain-trace-8-bytes)
+  - [Terrain trace (14 bytes)](#terrain-trace-14-bytes)
   - [Line trace (17 bytes)](#line-trace-17-bytes)
   - [Event (11 bytes)](#event-11-bytes)
   - [Mapping, acknowledgement, snapshot request](#mapping-acknowledgement-snapshot-request)
@@ -484,7 +484,7 @@ Rules for every frame:
 | Wheel trace | 8 | robot to PC, best effort per Motion release | 15 |
 | Line trace | 9 | robot to PC, best effort per fresh IR acquisition while moving | 17 |
 | Barcode trace | 10 | robot to PC, best effort, raw GP16 run widths |
-| Terrain trace | 11 | robot to PC, best effort, hump detector state |
+| Terrain trace | 11 | robot to PC, best effort, IMU sample for the dashboard |
 
 ### Wheel trace (15 bytes)
 
@@ -512,11 +512,11 @@ Type 10 is outbound diagnostics only, added for INT-146 and filtered since INT-1
 hex, byte 1 a wrapping sequence, bytes 2..17 eight little-endian runs: bit 15 black level, bits
 14..0 width in encoder counts after chatter is merged, zero for an unused slot. A full ring drops frames.
 
-### Terrain trace (8 bytes)
+### Terrain trace (14 bytes)
 
-Type 11 is outbound diagnostics only, added for INT-154; Comms owner agreement pending. Byte 0 is `2B` hex, bytes
+Type 11 is outbound and best effort, sent on every image for the dashboard's IMU graphs: 10 per second on flat ground, 20 on a hump. Byte 0 is `2B` hex, bytes
 1..2 time ms low 16, byte 3 signed pitch in quarter degrees, byte 4 bits 0..2 state, 6 encoder valid, 7 calibrated,
-byte 5 peak rise mm, byte 6 acceleration in 10 mg units, byte 7 signed roll in quarter degrees.
+byte 5 peak rise mm, byte 6 acceleration in 10 mg units, byte 7 signed roll in quarter degrees, bytes 8..10 signed X, Y and Z acceleration in 16 mg units (saturate at +/-2032 mg), byte 11 current height estimate mm, bytes 12..13 travel mm (wraps at 65536).
 
 ### Line trace (17 bytes)
 
@@ -563,7 +563,7 @@ monitor` prints `LINE` JSON; the dashboard does not display it.
 | 18 | 4-0 | last decoded barcode letter | 0-25 (A-Z), 31 none |
 | 18 | 7-5 | action it maps to | 0 unmapped, 1 left, 2 right, 3 straight, 4 U-turn |
 | 19-21 | 9-0 | latest obstacle width, mm | 0 none; saturates at 1023 |
-| 19-21 | 19-10 | latest obstacle depth, mm | 0 none; saturates at 1023 |
+| 19-21 | 19-10 | clearance on the side chosen for the latest bypass, mm | 0 none; saturates at 1023 |
 | 21 | 7-4 | reserved | zero; a set bit is rejected |
 
 IMU calibration reports Terrain's calibration flag independently of hump results
@@ -581,11 +581,11 @@ calibration bits. Older firmware remains readable with calibration unknown.
 | 3-4 | time, low 16 bits of kernel milliseconds |
 | 5-6 | left encoder count at the event |
 | 7-8 | right encoder count at the event |
-| 9-10 | arg2: action (barcode), depth mm (obstacle) |
+| 9-10 | arg2: action (barcode), clearance mm (obstacle); arg 1 passing left, 0 right |
 
 **Event RAM packing (issue #112).** The 11-byte event wire format and MQTT schema v2
 remain unchanged. Byte 1 already reserves four bits for kind. `arg2` cannot be
-reduced to three bits: barcode actions are small, but obstacle depth needs its
+reduced to three bits: barcode actions are small, but obstacle clearance uses its
 full 16-bit range (0-65535 mm). The Reporting ring uses 16 entries of
 `comms_packed_event_t` (10 bytes each): kind uses three bits and arg seven bits
 in a shared 16-bit field; time, encoder positions and arg2 stay 16-bit.

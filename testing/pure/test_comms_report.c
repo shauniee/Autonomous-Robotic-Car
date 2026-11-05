@@ -38,7 +38,7 @@ static void assert_event_equal(const mqtt_event_t *expected, const mqtt_event_t 
 static void test_event_packing(void)
 {
     /* All event kinds retain the complete time, encoder counts and arg2.
-       The 16-bit obstacle depth must survive, even though barcode action
+       The 16-bit obstacle clearance must survive, even though barcode action
        values only require three bits. */
     const mqtt_event_t samples[] = {
         {.kind = MQTT_EVENT_BARCODE, .arg = 25, .arg2 = 7,

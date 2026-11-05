@@ -25,27 +25,65 @@ bool terrain_startup_complete(void)
    one per second on flat ground. */
 static uint8_t trace_frame[MQTT_LEN_TERRAIN_TRACE];
 static bool trace_pending;
-static uint32_t trace_flat_ms;
+static uint32_t trace_last_ms;
+static float trace_travel_mm;
 
-static void terrain_trace_note(uint32_t now, const Gy511RawAxes *raw, bool encoder_valid)
+static int8_t trace_clamp(float value)
 {
-    if (context.state == TERRAIN_STATE_FLAT &&
-        robot_time_elapsed(now, trace_flat_ms) < 1000u)
+    float limited = fmaxf(-127.0f, fminf(127.0f, value));
+
+    /* NOTE: limited above, so the cast cannot overflow. */
+    return (int8_t)lroundf(limited);
+}
+
+static uint8_t trace_byte(float value)
+{
+    /* NOTE: limited to 0..255, so the cast cannot overflow. */
+    return (uint8_t)lroundf(fmaxf(0.0f, fminf(255.0f, value)));
+}
+
+static void terrain_trace_note(uint32_t now, const Gy511RawAxes *p_raw,
+    bool b_encoder_valid, float moved_counts)
+{
+    const float mg_per_lsb = ACCEL_MG_PER_LSB * 1000.0f;
+    uint32_t period_ms = (TERRAIN_STATE_FLAT == context.state) ?
+        TERRAIN_TRACE_FLAT_MS : TERRAIN_TRACE_HUMP_MS;
+
+    trace_travel_mm += moved_counts / ENC_COUNTS_PER_MM;
+    if (trace_travel_mm >= 65536.0f)
     {
-        return;
+        trace_travel_mm -= 65536.0f;
     }
-    trace_flat_ms = now;
-    float mg = terrain_acceleration_mg(raw);
-    int pitch = context.pitch_cdeg / 25;
-    int roll = context.roll_cdeg / 25;
-    uint32_t rise = context.rise_q / 10u;
-    uint8_t flags = (uint8_t)(context.state | (encoder_valid ? 0x40u : 0u) |
-        (context.is_calibrated ? 0x80u : 0u));
-    (void)mqtt_encode_terrain_trace(trace_frame, sizeof trace_frame, (uint16_t)now,
-        (int8_t)(pitch > 127 ? 127 : pitch < -127 ? -127 : pitch), flags,
-        (uint8_t)(rise > 255u ? 255u : rise), (uint8_t)(mg >= 2550.0f ? 255u : (unsigned)(mg / 10.0f)),
-        (int8_t)(roll > 127 ? 127 : roll < -127 ? -127 : roll));
-    trace_pending = true;
+    if (robot_time_elapsed(now, trace_last_ms) >= period_ms)
+    {
+        mqtt_terrain_trace_t trace =
+        {
+            /* NOTE: the low 16 bits are the wire format's rolling time. */
+            .time_ms = (uint16_t)now,
+            .pitch_q2 = trace_clamp((float)context.pitch_cdeg / 25.0f),
+            /* NOTE: state is 3 bits, so the flags stay within a byte. */
+            .state_flags = (uint8_t)(context.state |
+                (b_encoder_valid ? 0x40u : 0u) |
+                (context.is_calibrated ? 0x80u : 0u)),
+            .rise_mm = trace_byte((float)context.rise_q / 10.0f),
+            .accel_10mg = trace_byte(terrain_acceleration_mg(p_raw) / 10.0f),
+            .roll_q2 = trace_clamp((float)context.roll_cdeg / 25.0f),
+            .accel_16mg =
+            {
+                trace_clamp((float)p_raw->x * mg_per_lsb / 16.0f),
+                trace_clamp((float)p_raw->y * mg_per_lsb / 16.0f),
+                trace_clamp((float)p_raw->z * mg_per_lsb / 16.0f)
+            },
+            .height_mm = trace_byte(terrain_height_mm(&context)),
+            /* NOTE: kept below 65536 above, so the cast cannot overflow. */
+            .travel_mm = (uint16_t)trace_travel_mm
+        };
+
+        trace_last_ms = now;
+        (void)mqtt_encode_terrain_trace(trace_frame, sizeof trace_frame,
+            &trace);
+        trace_pending = true;
+    }
 }
 
 unsigned terrain_trace_take(uint8_t *out, unsigned capacity)
@@ -195,12 +233,8 @@ void terrain_step(uint32_t now)
         trace_encoder_valid = encoder_valid;
 #endif
         terrain_algo_process(&context, &raw, encoder_valid && moved > 0.0f ? moved : 0.0f, stationary);
-        /* Compile-time constant; retain a syntactic reference to the
-           private producer for warning-free TRACE=0 builds. */
-        if (ROBOT_TRACE_ENABLED)
-        {
-            terrain_trace_note(now, &raw, encoder_valid);
-        }
+        terrain_trace_note(now, &raw, encoder_valid,
+            (encoder_valid && (moved > 0.0f)) ? moved : 0.0f);
         if (!encoder_valid)
         {
             terrain_algo_invalidate_window(&context);

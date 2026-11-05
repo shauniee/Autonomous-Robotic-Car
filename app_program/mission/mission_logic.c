@@ -478,11 +478,6 @@ static void run_bypass(Mission *m, const MissionInputs *in,
     out->command = result.command;
     out->side_watch_on = result.side_watch;
     out->side_watch_deg = result.side_angle_deg;
-    if (result.depth_event)
-    {
-        out->event_kind = MQTT_EVENT_OBSTACLE;
-        out->event_arg2 = result.depth_mm;
-    }
     if (result.route == BYPASS_ROUTE_FAILED)
     {
         to_stop(m, in, out, true);
@@ -699,6 +694,10 @@ static void handle_scan(Mission *m, const MissionInputs *in,
             {
                 enter(m, MISSION_BYPASS, in->now_ms);
                 run_bypass(m, in, out);
+                out->event_kind = MQTT_EVENT_OBSTACLE;
+                out->event_arg = m->bypass.left_side ? 1u : 0u;
+                out->event_arg2 = m->bypass.left_side ?
+                    profile.left_clearance_mm : profile.right_clearance_mm;
             }
             else
             {

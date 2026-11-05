@@ -100,6 +100,21 @@ assert any("snake_case" in m for m in messages("int a;\n", "BadName.c"))
 assert barr.check_text("sample.c", "/* one\ntwo */\ngoto x;\n") == [
     (3, barr.BANNED_WORDS["goto"])]
 
+# BARR-C:2018 statement rules, each with a compliant neighbour.
+STATEMENT_RULES = (
+    ("while (1)\n{\n}\n", "for (;;)\n{\n}\n", "8.4.c"),
+    ("exit(1);\n", "report_exit(1);\n", "8.5.b"),
+    ("if (a = b)\n{\n}\n", "if (a == b)\n{\n}\n", "8.2.c"),
+    ("if (count == 3u)\n{\n}\n", "if (3u == count)\n{\n}\n", "8.6.a"),
+    ("if (ptr->state == STATE_IDLE)\n{\n}\n",
+     "if (STATE_IDLE == ptr->state)\n{\n}\n", "8.6.a"),
+    ("uint8_t first, second;\n", "uint8_t first;\n", "8.1.a"),
+    ("int32_t value : 21;\n", "uint32_t value : 21;\n", "5.3.a"),
+)
+for bad, good, rule in STATEMENT_RULES:
+    assert any(m.startswith(rule) for m in messages(bad)), (rule, bad)
+    assert not any(m.startswith(rule) for m in messages(good)), (rule, good)
+
 assert barr.in_scope("app_program/motion/motion.c")
 assert not barr.in_scope("kernel/tkernel/timer.c")
 assert not barr.in_scope("app_program/motion/README.md")

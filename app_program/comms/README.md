@@ -50,8 +50,11 @@ Codec, report assembly, mapping path, event log and bridge are host-tested; resu
 
 ## Diagnostic trace policy
 
-`TRACE=1` (test and trial images) retains high-rate WHEEL, LINE, BARS and HUMP trace
-frames for controlled debugging; the `full_course` image is `TRACE=0`. `TRACE=0` removes their production and
+`TRACE=1` (test and trial images) retains high-rate WHEEL, LINE and BARS trace
+frames for controlled debugging; the `full_course` image is `TRACE=0`. HUMP frames
+are always sent, because the dashboard's tilt, XYZ and terrain graphs need them
+on the full-course image: 10 per second on flat ground, 20 on a hump, dropped if
+the bridge is full. `TRACE=0` removes their production and
 transport while preserving 500 ms TELEMETRY, snapshots, EVENT, mapping and
 acknowledgement frames. Both profiles use the same schema, safety and local
 controls. In particular, TRACE=0 must not be confused with TEST=1 motor

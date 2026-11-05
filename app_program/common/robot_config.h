@@ -249,6 +249,9 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define IMPACT_THRESHOLD_G	2.5f	/* PROVISIONAL (D06); must stay below the +/- 4 g range */
 #define HUMP_RESULT_BITS	7u	/* reported height: 7 bits, all-ones is the invalid code */
 #define HUMP_MM_PER_COUNT	1u	/* PROVISIONAL (D06): scale of the reported 7-bit result */
+/* Dashboard IMU graph rate; the climb is the part worth seeing. */
+#define TERRAIN_TRACE_FLAT_MS 100u
+#define TERRAIN_TRACE_HUMP_MS 50u
 #define HUMP_MIN_HEIGHT_MM	5u	/* PROVISIONAL (D06): smaller rises are not humps */
 #define HUMP_MAX_HEIGHT_MM	40u	/* PROVISIONAL (D06): course limit 30 mm plus margin; above it the car was lifted */
 #define HUMP_MIN_TRAVEL_MM	50u	/* PROVISIONAL (D06): travel over the exit level; INT-157 humps 76 and 156, curves 26 or less */

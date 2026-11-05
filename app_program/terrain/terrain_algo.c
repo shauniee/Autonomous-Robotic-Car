@@ -72,6 +72,22 @@ void terrain_algo_calibration_restart(TerrainContext *ctx)
     ctx->is_calibrated = false;
 }
 
+float terrain_height_mm(const TerrainContext *p_ctx)
+{
+    float height_mm = 0.0f;
+
+    if (TERRAIN_STATE_FLAT != p_ctx->state)
+    {
+        float roll_deg = (float)p_ctx->roll_cdeg / 100.0f;
+        float tilt_deg = fabsf(roll_deg - ((float)p_ctx->roll_base_q8 /
+            (100.0f * ROLL_BASE_ONE)));
+
+        height_mm = TRACK_WIDTH_MM * sinf(tilt_deg * DEG_TO_RAD) *
+            HUMP_CALIB_FACTOR;
+    }
+    return height_mm;
+}
+
 float terrain_acceleration_mg(const Gy511RawAxes *raw)
 {
     return sqrtf((float)raw->x * raw->x +
