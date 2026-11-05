@@ -60,7 +60,7 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). lin
 
 ## Line success measure
 
-Agreed by Nicholas on 2026-11-03 for M1. The 95% target is the user's.
+Agreed by Nicholas on 2026-11-03 for M1. Nicholas self-tests the lap rate (2026-11-05), so no recorded rate is required.
 
 - **Attempt:** one lap of a written course layout, from a fresh GP20 start at 100 mm/s, on one image with no changes between laps. The lap includes barcodes, junctions and humps.
 - **Success, all of these:**
@@ -69,7 +69,7 @@ Agreed by Nicholas on 2026-11-03 for M1. The 95% target is the user's.
   - each junction takes the correct action, once
   - `humps=` equals the crossings, and each height is within the agreed limit (D10, not yet set)
 - **Failure:** anything else, including a lap stopped for safety. Only a setup fault with a written reason may be left out, and it is still recorded.
-- **Rate:** at least 20 laps per image and lighting condition, scored by `scripts/mission_trial_score.py`, with `TRACE=1` and `TRACE=0` scored apart.
+- **Rate, if scored:** `scripts/mission_trial_score.py` needs 20 laps per image and lighting condition, with `TRACE=1` and `TRACE=0` scored apart.
 
 ## How to run a trial
 

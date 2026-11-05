@@ -38,7 +38,7 @@ DELIVERABLES = {
         {"name": "Telemetry demonstration",
          "files": ["scripts/mqtt_client.py", "scripts/dashboard.html"],
          "tests": ["test_mqtt_cli.py", "test_dashboard.mjs"],
-         "evidence": "demonstration recorded on the instructor network"},
+         "evidence": "telemetry demonstration recorded"},
     ],
     "motion": [
         {"name": "Motion-control library",
@@ -58,8 +58,7 @@ DELIVERABLES = {
         {"name": "Line-following module",
          "files": [f"{LINE}/line.c"],
          "functions": [(f"{LINE}/line_barcode.h", "ir_tracking_sample")],
-         "tests": ["test_ir_tracking.c", "test_line_replay.c"],
-         "evidence": "measured line-following success rate"},
+         "tests": ["test_ir_tracking.c", "test_line_replay.c"]},
         {"name": "Barcode decoder",
          "files": [f"{LINE}/barcode.c"],
          "functions": [(f"{LINE}/line_barcode.h", "barcode_pop")],
