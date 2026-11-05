@@ -173,6 +173,9 @@ The 95% target is the user's. No success rate has been measured yet, so the firs
 - [ ] Run 20 laps with one image and no changes, and calculate the rate with `scripts/mission_trial_score.py` (MR-26). Film them: INT-163 found telemetry cannot show where the car left the line.
 - [ ] Repeat under two lighting conditions (MR-26, M1).
 - [ ] Real line loss: the sweep finds the line, an exhausted search stops, and stale data does not start a blind search (MR-32, T11).
+- [ ] Distance-based PI on `feat/line-pi` (host and build only): trial `LINE_KP_Q`, `LINE_KI_QPMM`, `LINE_I_MAX_Q` and `LINE_I_FADE_QPMM` against the bend-state law on straights, three curves and an S-bend. Starting values are not measured.
+- [ ] Straight-line jolt (Nicholas, 2026-11-05, on the PI image): steering build lowered from 900 to 300 Q/s and reversal from 1800 to 600 Q/s. Confirm on the car that the jolt is gone and that the tightest curve and S-bend still hold.
+- [ ] Decide wider IR spacing (Nicholas): measure spot spacing and line width after any move, then re-measure `NAV_ONSET_SKEW_MM` and `LINE_LOST_MM`. At the INT-98 33 mm, 23 mm line, geometry allows a curve to read both black from 46 degrees; 60 mm raises that to 68 degrees and the white/white band from 10 to 37 mm.
 - [ ] Work through the [open issues](app_program/line_barcode/README.md#open-issues): junction on three curves, `NAV_ONSET_SKEW_MM`, pivot hand-over.
 - [ ] Mounted IR levels, dead zone and left-sensor span at course lighting (MR-12 as revised for DOUT, D04, A3).
 - [ ] Check that diagnostics do not change driving: compare the same number of laps on `./flash.sh trial` and `./flash.sh`.

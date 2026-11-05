@@ -325,10 +325,10 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
             (void)profile_step(c, (float)motion_cmd_speed(cmd), ramp_ms * .001f);
         }
         unsigned rate =
-            motion_cmd_steering(cmd) == 0 ||
+            motion_cmd_steering(cmd) == 0 ? LINE_RELEASE_QPS :
             (c->follow_steer_q != 0 &&
              (motion_cmd_steering(cmd) < 0) != (c->follow_steer_q < 0))
-        ? LINE_RELEASE_QPS
+        ? LINE_REVERSE_QPS
         : MOTION_FOLLOW_STEER_QPS;
         int steer_step = (int)(rate * ramp_ms / 1000u);
         int requested_steer = requested == 0u ? 0 : motion_cmd_steering(cmd);

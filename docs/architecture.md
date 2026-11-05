@@ -454,7 +454,7 @@ not required (course update, 2026-10-27), so the historical baseline in project-
 is a record only. Evidence means a result tied to an exact commit and test ID.
 
 **Still to audit:** fields added since the last size probe, including the line trace,
-onset and bend state, Mission state encoding, Terrain freshness and scan parameters.
+onset and integral state, Mission state encoding, Terrain freshness and scan parameters.
 Each owner also reviews their test log against current code (JSON-era S1-U04..U08,
 six-byte faults, any case assuming no echo stops), appending rather than editing.
 
@@ -527,7 +527,7 @@ IR acquisition time uint32 ms. Byte 5 flags: bit 0 left black, 1 right black,
 6 junction locked, 7 raw barcode GP16 level. Byte 6: bits 0..3 Mission state, 4..6 junction phase,
 7 zero. Bytes 7..8 and 9..10 are the low 16 bits of the left/right encoder counts.
 Byte 11 is the steering law output, signed Q7. Byte 12 is the law state: the side
-last touched (-1 left, +1 right, 0 none), doubled while in a bend. Byte 13 is the FOLLOW steering sent to Motion (0 for
+last touched (-1 left, +1 right, 0 none) times the integral held at the last touch transition, signed Q7. Byte 13 is the FOLLOW steering sent to Motion (0 for
 other modes). Bytes 14..15: bits 0..8 commanded speed mm/s, 9..10 motion mode,
 11..15 running barcode edge count (wraps). Byte 16 is, while both sensors are black, the distance in mm between
 the two sensors' black onsets (254 caps it), else 255.
@@ -653,15 +653,15 @@ Implemented software revision, 2026-11-01; supersedes earlier conflicting juncti
 and applied-steering policies. Measurement and numeric settings are owned by
 [specs](project-specs.md#dout-navigation-commissioning).
 
-Mission steers by distance, with no integral (proposed 2026-11-02, host-tested
-only; replaces the INT-123 PI law). Per distinct acquisition: one sensor black
-steers a fixed edge correction toward it. That side touching again within a bend
-window of encoder travel after its last touch, or one touch lasting longer than
-that window, marks a bend and steers the stronger bend correction; the other side
-touching clears the bend at once, so an S-bend's next curve starts straight away.
-White/white leans into a bend for a set travel past the last touch, otherwise
-drifts gently toward the last side so a centred robot soon touches again. Broad
-black requests none, so a crossbar cannot keep a turn going. Mission records
+Mission steers with a distance-based PI (proposed 2026-11-05, host-tested only;
+replaces the bend-state law, which replaced the time-based INT-123 PI law). Per
+distinct acquisition: one sensor black steers P plus I toward it, and I grows per
+mm of that touch up to a limit. White/white has no P; I fades per mm, never below
+a gentle drift toward the last side, so a centred robot soon touches again. The
+same side touching again resumes from the faded I. The other side touching clears
+I at once, so an S-bend's next curve starts straight away. A committed crossing or
+a state change clears I. Broad
+black requests none and freezes I, so a crossbar cannot keep a turn going. Mission records
 where each sensor last went black; at broad entry, onsets further apart than the
 skew bound mean curve skew (the inner sensor was black long before the outer), so
 the curve's steering is kept and, with no queued turn, the encounter never becomes
@@ -683,9 +683,8 @@ Distance/yaw checks cannot prove that an arbitrary black patch is a cross juncti
 A straight or unqueued crossing takes the same first step as a turn (proposed
 2026-11-04, host-tested only; replaces the heading-restore exit and the stop): the car rolls at course speed with no steering for `NAV_STRAIGHT_MM` from commit
 (Nicholas, 2026-11-04: no stop and no pause), so neither sensor can steer on the bar. It then returns to
-tracking with the last side kept for the drift and line loss armed; the first touch
-afterwards marks a bend only past the bend lean distance, since regaining the line
-takes longer than a straight touch. It needs no turn geometry and no edge excursion.
+tracking with the last side kept for the drift, I cleared and line loss armed, so
+the first touch afterwards starts from P alone and grows only if it lasts. It needs no turn geometry and no edge excursion.
 
 Left, right and U-turn share one path (proposed 2026-11-02, host-tested only;
 replaces the smooth cubic path, removed from Motion). A ramped distance action

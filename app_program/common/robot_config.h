@@ -151,7 +151,7 @@ _Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
 /* Travel for a profile stop from speed v, in whole mm, rounded up. */
 #define MOTION_STOP_MM(v) ((v) * (v) / (2u * MOTION_ACCEL_MMPS2) + \
     (v) * MOTION_ACCEL_MMPS2 / (2u * MOTION_JERK_MMPS3) + 1u)
-#define MOTION_FOLLOW_STEER_QPS 900u /* PROVISIONAL D07: applied steering slew */
+#define MOTION_FOLLOW_STEER_QPS 300u /* PROVISIONAL D07: applied steering slew; about MOTION_ACCEL_MMPS2 at each wheel at 100 mm/s */
 /* The one course speed: line following, crossings, junction advances and bypass
    driving. Smoothness and accuracy come first, then speed. Below 60 mm/s the
    feedforward fit does not apply (INT-100); retune before going there. */
@@ -182,17 +182,19 @@ _Static_assert(ROBOT_WATCHDOG_TIMEOUT_MS > ROBOT_WATCHDOG_PROGRESS_MAX_AGE_MS &&
 /* Distance-based digital steering (reference-style): a strong fixed correction
    while one sensor is black, bend memory from repeated same-side touches, and a
    gentle drift toward the last side on white/white. Trial values, not calibrated. */
-#define LINE_EDGE_Q 60 /* PROVISIONAL D07 trial INT-132: one sensor black; 115 overshot at 100 mm/s */
-#define LINE_BEND_EDGE_Q 90 /* PROVISIONAL D07 trial INT-132: touch in a bend */
-#define LINE_BEND_LEAN_Q 30 /* PROVISIONAL D07 trial INT-132: white/white in a bend */
+#define LINE_KP_Q 45 /* PROVISIONAL D07 trial: one sensor black; 115 overshot at 100 mm/s (INT-132) */
+#define LINE_KI_QPMM 1.0f /* PROVISIONAL D07 trial: integral growth per mm of one touch */
+#define LINE_I_MAX_Q 45 /* PROVISIONAL D07 trial: with LINE_KP_Q gives the 90 used in bends (INT-132) */
+#define LINE_I_FADE_QPMM 0.5f /* PROVISIONAL D07 trial: integral fade per mm of white/white */
+#define LINE_TURN_LEAN_Q 30 /* PROVISIONAL D07 trial INT-132: starting integral after a pivot */
 #define LINE_DRIFT_Q 8 /* PROVISIONAL D07 trial: white/white drift toward the last side */
-#define LINE_BEND_TOUCH_MM 50u /* PROVISIONAL D07 trial: same-side re-touch or touch this long is a bend */
 #define LINE_LOST_MM 350u /* PROVISIONAL D07 trial: white/white this far past the last touch is loss; INT-135: the drift arc can stay between the sensors for about 270 mm */
-#define LINE_BEND_LEAN_MM 100u /* PROVISIONAL D07 trial: bend lean lasts this far past the last touch */
-#define LINE_RELEASE_QPS 1800u
-_Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_BEND_LEAN_Q && LINE_BEND_LEAN_Q < LINE_EDGE_Q &&
-    LINE_EDGE_Q <= LINE_BEND_EDGE_Q && LINE_BEND_EDGE_Q <= 127 && LINE_BEND_TOUCH_MM > 0u &&
-    LINE_BEND_LEAN_MM >= LINE_BEND_TOUCH_MM && LINE_LOST_MM > LINE_BEND_LEAN_MM, "line steering ordering");
+#define LINE_RELEASE_QPS 1800u /* steering to zero: a crossbar needs it off at once */
+#define LINE_REVERSE_QPS 600u /* PROVISIONAL D07 trial: back to zero when the other side touches */
+_Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < LINE_TURN_LEAN_Q &&
+    LINE_TURN_LEAN_Q <= LINE_I_MAX_Q && LINE_KP_Q + LINE_I_MAX_Q <= 127 &&
+    LINE_KI_QPMM > 0.0f && LINE_I_FADE_QPMM > 0.0f &&
+    (float)LINE_I_MAX_Q / LINE_I_FADE_QPMM < (float)LINE_LOST_MM, "line steering ordering");
 #ifndef NAV_GEOMETRY_RELEASED
 #define NAV_GEOMETRY_RELEASED 0
 #endif

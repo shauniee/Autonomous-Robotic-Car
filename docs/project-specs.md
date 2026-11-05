@@ -582,12 +582,12 @@ not a physical tuning or accuracy claim; one Mission writer):
 | --- | --- | --- | --- |
 | Steering target | -127..127, signed Q7 (`line_steer_q`) | -128 unused; fixed correction values, checked by `_Static_assert` | 8 / 8 |
 | Last and previous touch | -1 left, 0 none, +1 right (`line_side`, `line_prev`) | only these codes are written | 2 each / 8 each |
-| In a bend | no/yes (`line_bend`) | reset false | 1 / 1 in a private byte |
-| Left a crossing, no touch yet | no/yes (`line_crossed`) | reset false | 1 / 1 in a private byte |
+| Steering integral | 0..`LINE_I_MAX_Q`, Q7 magnitude, held at the last touch transition (`line_i_q`); side from `line_side`; nearest integer | clamped to the limit, reset 0 | 6 / 8 |
 | Junction turn | 0 none, 1 left (+90 degrees), 2 right (-90), 3 U-turn (+180) | none yields zero target (Motion rejects a zero turn); only coordinator sets codes | 2 / 2 in private byte |
 
-Steering keeps no filter or integral history: it stores the Q7 target above and
-wheel counts where touches began. Float remains only in local geometry computation.
+Steering keeps no filter history: it stores the Q7 target and integral above and
+wheel counts where touches began. The integral between transitions comes from
+those counts, so no rounding accumulates. Float remains only in local geometry computation.
 Current working-tree target ABI, static RAM and inter-task copy sizes are
 recorded in [SYS-12](../testing/system/TEST_LOG.md#results).
 The accepted-commit minimum-bit/resource audit remains Stage 9 work.
@@ -1158,13 +1158,11 @@ lateral offset cannot be corrected by an in-place 180-degree pivot alone.
 Provisional commissioning settings, not measured limits: tracking at 100 mm/s
 with IR read every 10 ms. Steering (proposed trial values; 115/127/57 veered off
 in INT-132, and the INT-123 PI defaults are in git history): one sensor black
-60/127, in a bend 90/127, bend lean on white/white 30/127 for 100 mm
-past the last touch, otherwise a 8/127 drift toward the last side; a same-side
-touch within 50 mm of the last, or one touch longer than 50 mm, is a bend. These
-copy the reference repo's wheel ratios under this Motion mix. Broad black requests
+P 45/127 plus I growing 1/127 per mm of that touch up to 45/127; on white/white I
+fades 0.5/127 per mm, never below a 8/127 drift toward the last side. Broad black requests
 none; at broad entry, black onsets more than 15 mm apart mark curve skew (trial
-value, to be set from type 9 line traces). Motion releases at
-1800 Q/s and builds at 900 Q/s; steering is mixed centre-preserving, left
+value, to be set from type 9 line traces). Motion releases to zero at
+1800 Q/s, reverses at 600 Q/s until zero and builds at 300 Q/s (about the 250 mm/s2 course limit at each wheel at 100 mm/s; lowered 2026-11-05 for the jolt on straight-line touches); steering is mixed centre-preserving, left
 v(1+q/127) and right v(1-q/127), so the robot centre keeps the commanded speed
 (the outer wheel reaches 200 mm/s at full steering; INT-129). Wheel feedforward KF 0.0001, KS 0.05, KP 0.0001
 (INT-100 to INT-102). Candidate travel is 6 mm (INT-189; 9 mm in INT-98 missed real crossings, INT-188). A straight crossing rolls 36 mm at course speed with no steering, without stopping, then tracks (INT-189). Curved turn entry then stops rather than assuming pose.

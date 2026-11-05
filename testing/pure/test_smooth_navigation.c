@@ -62,52 +62,46 @@ static void tracking(void)
     follow(&m, &in);
     in.line_error = -127;
     MissionOutputs out = tick(&m, &in);
-    assert(motion_cmd_steering(&out.command) == -LINE_EDGE_Q && !m.line_bend);
+    assert(motion_cmd_steering(&out.command) == -LINE_KP_Q);
     move(&in, 5, 5);
     mission_step(&m, &in, &out); /* a repeated sample changes nothing */
-    assert(m.line_steer_q == -LINE_EDGE_Q);
+    assert(m.line_steer_q == -LINE_KP_Q);
     /* Both black requests no steering: a crossbar must not keep a turn going. */
     in.line = IR_LINE_BROAD_BLACK;
     in.guidance_valid = false;
     out = tick(&m, &in);
     assert(motion_cmd_steering(&out.command) == 0);
+    assert(m.line_i_q == (int)lroundf(5.0f * LINE_KI_QPMM)); /* I froze at 5 mm */
     in.line = IR_LINE_VISIBLE;
     in.guidance_valid = true;
     /* White/white drifts gently toward the side last touched. */
     in.line_error = 0;
     tick(&m, &in);
     assert(m.line_steer_q == -LINE_DRIFT_Q);
-    /* The same side again within LINE_BEND_TOUCH_MM is a bend: steer harder,
-       and lean into it on white/white until LINE_BEND_LEAN_MM past the touch. */
-    move(&in, LINE_BEND_TOUCH_MM - 10, LINE_BEND_TOUCH_MM - 10);
+    /* A long touch grows I by distance, up to its limit. */
     in.line_error = -127;
     tick(&m, &in);
-    assert(m.line_bend && m.line_steer_q == -LINE_BEND_EDGE_Q);
-    in.line_error = 0;
-    move(&in, LINE_BEND_LEAN_MM - 10, LINE_BEND_LEAN_MM - 10);
-    tick(&m, &in);
-    assert(m.line_steer_q == -LINE_BEND_LEAN_Q);
     move(&in, 20, 20);
     tick(&m, &in);
-    assert(m.line_steer_q == -LINE_DRIFT_Q);
-    /* The other side touching ends the bend at once (S-bend). */
-    in.line_error = 127;
+    assert(m.line_steer_q == -(int)lroundf(LINE_KP_Q + m.line_i_q + 20.0f * LINE_KI_QPMM));
+    move(&in, 2.0f * LINE_I_MAX_Q, 2.0f * LINE_I_MAX_Q);
     tick(&m, &in);
-    assert(!m.line_bend && m.line_steer_q == LINE_EDGE_Q);
-    /* A touch held longer than LINE_BEND_TOUCH_MM is a bend too. */
-    for (int i = 0; i < 6; i++)
-    {
-        move(&in, 10, 10);
-        tick(&m, &in);
-    }
-    assert(m.line_bend && m.line_steer_q == LINE_BEND_EDGE_Q);
-    /* A same-side touch long after the last one is a straight correction. */
+    assert(m.line_steer_q == -(LINE_KP_Q + LINE_I_MAX_Q));
+    /* White/white fades I by distance, down to the drift. */
     in.line_error = 0;
-    move(&in, LINE_BEND_LEAN_MM + 50, LINE_BEND_LEAN_MM + 50);
     tick(&m, &in);
+    assert(m.line_steer_q == -LINE_I_MAX_Q && m.line_i_q == LINE_I_MAX_Q);
+    move(&in, 20, 20);
+    tick(&m, &in);
+    assert(m.line_steer_q == -(int)lroundf(LINE_I_MAX_Q - 20.0f * LINE_I_FADE_QPMM));
+    /* The same side resumes from the faded I, and does not jump to the limit. */
+    in.line_error = -127;
+    tick(&m, &in);
+    assert(m.line_steer_q == -(int)lroundf(LINE_KP_Q + LINE_I_MAX_Q - 20.0f * LINE_I_FADE_QPMM));
+    /* The other side touching clears I at once (S-bend). */
     in.line_error = 127;
     tick(&m, &in);
-    assert(!m.line_bend && m.line_steer_q == LINE_EDGE_Q);
+    assert(m.line_i_q == 0 && m.line_steer_q == LINE_KP_Q);
     for (int i = 0; i < 100; i++)
         tick(&m, &in);
     assert(m.state == MISSION_FOLLOW_LINE);
@@ -319,7 +313,7 @@ static void pivot_turns(void)
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
         /* INT-136: both sensors white after the pivot: lean back toward the line. */
         assert(motion_cmd_steering(&out.command) ==
-            (action == BARCODE_LEFT ? LINE_BEND_LEAN_Q : -LINE_BEND_LEAN_Q));
+            (action == BARCODE_LEFT ? LINE_TURN_LEAN_Q : -LINE_TURN_LEAN_Q));
     }
 }
 #endif

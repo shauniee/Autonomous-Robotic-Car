@@ -53,8 +53,7 @@ static void enter(Mission *m, MissionState next, uint32_t now_ms)
     m->line_steer_q = 0;
     m->line_side = 0;
     m->line_prev = 0;
-    m->line_bend = 0u;
-    m->line_crossed = 0u;
+    m->line_i_q = 0;
     m->line_steer_sampled_ms = now_ms - IR_MAX_GAP_MS - 1u;
 }
 
@@ -69,50 +68,54 @@ static void mark(enc_count_t origin[2], const MissionInputs *in)
     origin[1] = in->wheel_count[1];
 }
 
+/* I held at the last transition, grown over the current touch. */
+static float line_i_grown(const Mission *m, const MissionInputs *in)
+{
+    return fminf(m->line_i_q + LINE_KI_QPMM * travel_mm(in, m->touch_origin),
+        (float)LINE_I_MAX_Q);
+}
+
+/* I held at the last transition, faded since the last touch. */
+static float line_i_faded(const Mission *m, const MissionInputs *in)
+{
+    return fmaxf(m->line_i_q - LINE_I_FADE_QPMM * travel_mm(in, m->dark_origin), 0.0f);
+}
+
 /* Steering sign follows the mounted robot's observed turn direction.
-   Distance-based P: no integral, so nothing carries into the next curve or
-   crossing. A touch steers hard at once; a bend is the same side touching again
-   soon or staying black long, and the other side touching ends it (S-bends);
-   white/white drifts toward the last side so a centred robot soon touches again. */
+   Distance-based PI on one-bit sensors. A touch steers P plus I, and I grows per
+   mm of that touch, so a curve builds correction and a brief touch does not.
+   White/white fades I per mm, never below a drift toward the last side, so a
+   centred robot soon touches again. The other side touching clears I (S-bends);
+   a junction or new state clears it too, so nothing carries past a crossing. */
 static int line_digital_steering(Mission *m, const MissionInputs *in)
 {
     if (in->usable_line && in->guidance_valid &&
         in->line_sampled_ms != m->line_steer_sampled_ms)
     {
         int sign = in->line_error < 0 ? -1 : in->line_error > 0 ? 1 : 0;
-        int steer;
+        float steer;
         if (sign != 0)
         {
             if (sign != m->line_prev)
             {
-                float window = m->line_bend ? LINE_BEND_LEAN_MM : LINE_BEND_TOUCH_MM;
-                m->line_bend = !m->line_crossed && sign == m->line_side &&
-                    travel_mm(in, m->dark_origin) <= window;
+                m->line_i_q = sign == m->line_side ?
+                    (int8_t)lroundf(line_i_faded(m, in)) : 0;
                 mark(m->touch_origin, in);
-            }
-            /* INT-190: the first touch after a crossing is regaining the line, which
-               takes longer than a straight touch; only a very long one is a bend. */
-            else if (travel_mm(in, m->touch_origin) >
-                (m->line_crossed ? LINE_BEND_LEAN_MM : LINE_BEND_TOUCH_MM))
-            {
-                m->line_bend = 1u; /* black longer than a straight touch */
             }
             m->line_side = (int8_t)sign;
             mark(m->dark_origin, in);
-            steer = sign * (m->line_bend ? LINE_BEND_EDGE_Q : LINE_EDGE_Q);
+            steer = (float)sign * ((float)LINE_KP_Q + line_i_grown(m, in));
         }
         else
         {
             if (m->line_prev != 0)
             {
-                m->line_crossed = 0u; /* that touch has ended */
+                m->line_i_q = (int8_t)lroundf(line_i_grown(m, in));
             }
-            bool lean = m->line_bend &&
-                travel_mm(in, m->dark_origin) <= LINE_BEND_LEAN_MM;
-            steer = m->line_side * (lean ? LINE_BEND_LEAN_Q : LINE_DRIFT_Q);
+            steer = (float)m->line_side * fmaxf(line_i_faded(m, in), (float)LINE_DRIFT_Q);
         }
         m->line_prev = (int8_t)sign;
-        m->line_steer_q = (int8_t)steer;
+        m->line_steer_q = (int8_t)lroundf(steer);
         m->line_steer_sampled_ms = in->line_sampled_ms;
     }
     return m->line_steer_q;
@@ -365,6 +368,12 @@ static void handle_follow(Mission *m, const MissionInputs *in,
     {
         /* Crossbar: no steering. Curve skew: keep the held correction, unless a
            queued turn may commit here and needs the heading steady (INT-153). */
+        /* Freeze I: the same side afterwards resumes from here. */
+        if (m->line_prev != 0)
+        {
+            m->line_i_q = (int8_t)lroundf(line_i_grown(m, in));
+            m->line_prev = 0;
+        }
         mark(m->dark_origin, in); /* the line is under both sensors */
         out->command = follow_command(in,
             m->in_broad && m->entry_curved && !held_turn ? m->line_steer_q : 0, 1u);
@@ -753,7 +762,6 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
         /* INT-139: keep the last side, so a white exit drifts back toward the line
            with line loss armed instead of driving on blind. */
         m->line_side = m->cross_side;
-        m->line_crossed = 1u; /* the mark below is not a touch: no bend from it */
         mark(m->dark_origin, in);
         handle_follow(m, in, out);
         return;
@@ -799,7 +807,7 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
                sensors white with the line behind the trailing sensor. Lean back
                toward it, with line loss armed, instead of driving on blind. */
             m->line_side = m->turn_code == 1u ? 1 : -1;
-            m->line_bend = 1u;
+            m->line_i_q = LINE_TURN_LEAN_Q;
             mark(m->dark_origin, in);
             handle_follow(m, in, out);
             return;
@@ -968,7 +976,7 @@ mqtt_line_trace_t mission_line_trace(const Mission *m, const MissionInputs *in,
         .phase = m->phase,
         .wheel_count = {(uint16_t)in->wheel_count[0], (uint16_t)in->wheel_count[1]},
         .steer_q = m->line_steer_q,
-        .law_q = (int8_t)(m->line_side * (m->line_bend ? 2 : 1)),
+        .law_q = (int8_t)(m->line_side * m->line_i_q),
         .onset_skew_mm = in->left_black && in->right_black ?
             (uint8_t)fminf(onset_skew_mm(m), 254.0f) : 255u,
         .command_steer_q = follow ? motion_cmd_steering(&out->command) : 0,

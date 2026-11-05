@@ -166,7 +166,7 @@ typedef struct
     uint8_t phase;		/* junction phase, 0..7 */
     uint16_t wheel_count[2];	/* low 16 bits of the shared encoder counts */
     int8_t steer_q;		/* steering law output, Q7 */
-    int8_t law_q;		/* law state: last side -1/+1, doubled in a bend, 0 none */
+    int8_t law_q;		/* last side times the integral held at the last touch transition, Q7 */
     int8_t command_steer_q;	/* FOLLOW steering sent to Motion, else 0 */
     uint8_t command_mode;	/* motion_mode_t, 0..3 */
     uint16_t command_speed;	/* mm/s sent to Motion, 0..511 */

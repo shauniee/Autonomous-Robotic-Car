@@ -124,8 +124,7 @@ typedef struct
     int8_t line_side; /* side last touched: -1 left, +1 right, 0 none */
     int8_t line_prev; /* previous acquisition's touch: -1, 0, +1 */
     int8_t cross_side; /* side the line was last touched, kept across a straight crossing */
-    uint8_t line_bend : 1; /* same-side touches close together: in a bend */
-    uint8_t line_crossed : 1; /* left a crossing, first touch not ended: it is no bend */
+    int8_t line_i_q; /* integral magnitude at the last touch transition, Q7, 0..LINE_I_MAX_Q */
     enc_count_t touch_origin[2]; /* counts where the current touch began */
     enc_count_t dark_origin[2]; /* counts at the latest touching acquisition */
     enc_count_t onset[2][2]; /* counts where the left/right sensor last went black */

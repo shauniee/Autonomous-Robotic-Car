@@ -44,7 +44,7 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). lin
 ## Where it stands
 
 - **Last physical result (INT-123, the older PI law):** straights, three 90 degree curves and the plain crossing held at 100 mm/s; the junction after the three curves failed.
-- **Source now, host and build only (INT-124 to INT-129):** distance-based steering, junction versus curve by black-onset distance, line loss past the last touch (`LINE_LOST_MM`), black evidence required for recovery and bypass return, pivot turns that end on the line, and a fixed 100 mm/s course speed. None of this has run on the car.
+- **Source now, host and build only (INT-124 to INT-129; PI 2026-11-05):** distance-based PI steering, junction versus curve by black-onset distance, line loss past the last touch (`LINE_LOST_MM`), black evidence required for recovery and bypass return, pivot turns that end on the line, and a fixed 100 mm/s course speed. None of this has run on the car.
 - **Hardware:** two DOUT modules 30 mm apart, outside both line edges, pair centre 120 mm ahead of the axle; barcode sensor about 185 mm forward, 55 mm left. Effective spot spacing 33 mm and line width 23 mm were measured before the last move (INT-98).
 - `./flash.sh` releases turns and bypass. No physical pass exists for barcode turns, obstacle bypass or repeat runs across battery levels.
 

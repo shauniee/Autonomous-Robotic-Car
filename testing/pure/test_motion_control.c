@@ -503,7 +503,10 @@ static void test_follow_steering_slew(void)
     MotionOutput out;
     /* Entry, full reversal through zero, and return to straight. */
     const int targets[] = {127, -127, 0};
-    const unsigned releases[] = {8u, 16u, 8u};
+    const unsigned build = 127u * 1000u / (MOTION_FOLLOW_STEER_QPS * MOTION_PERIOD_MS) + 1u;
+    const unsigned reverse = 127u * 1000u / (LINE_REVERSE_QPS * MOTION_PERIOD_MS) + 1u;
+    const unsigned release = 127u * 1000u / (LINE_RELEASE_QPS * MOTION_PERIOD_MS) + 1u;
+    const unsigned releases[] = {build, reverse + build, release};
     for (unsigned phase = 0; phase < 3u; ++phase)
     {
         for (unsigned i = 0; i < releases[phase]; ++i)
@@ -514,7 +517,11 @@ static void test_follow_steering_slew(void)
             motion_control_step(&c, &cmd, &in, &out);
             assert(out.status == RD_MOTION_RUNNING);
             int delta = c.follow_steer_q - previous;
-            assert(delta >= -(int)(LINE_RELEASE_QPS*MOTION_PERIOD_MS/1000u) && delta <= (int)(LINE_RELEASE_QPS*MOTION_PERIOD_MS/1000u));
+            /* Each direction keeps its own rate: build, reversal, then release. */
+            int limit = (int)((phase == 2u ? LINE_RELEASE_QPS :
+                previous != 0 && (previous < 0) != (targets[phase] < 0) ? LINE_REVERSE_QPS :
+                MOTION_FOLLOW_STEER_QPS) * MOTION_PERIOD_MS / 1000u);
+            assert(delta >= -limit && delta <= limit);
             assert(c.follow_steer_q >= -127 && c.follow_steer_q <= 127);
             int held = c.follow_steer_q;
             motion_control_step(&c, &cmd, &in, &out);

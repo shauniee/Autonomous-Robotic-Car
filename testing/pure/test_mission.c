@@ -52,7 +52,7 @@ static MissionOutputs step(Mission *m, MissionInputs *in, uint32_t now)
 
 static int ref_initial_steer(int error_q)
 {
-    int correction = LINE_EDGE_Q; /* first touch, no bend */
+    int correction = LINE_KP_Q; /* first touch, no integral yet */
     return error_q < 0 ? -correction : (error_q > 0 ? correction : 0);
 }
 

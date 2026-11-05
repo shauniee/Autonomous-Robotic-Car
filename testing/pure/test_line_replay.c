@@ -205,7 +205,7 @@ static void test_short_both_black_decides_the_crossing(void)
         tick(&r, 1u, 1u);
     }
     tick(&r, 1u, 0u);
-    assert(following(&r) && steering(&r) == -LINE_EDGE_Q);
+    assert(following(&r) && steering(&r) == -LINE_KP_Q);
 }
 
 /* INT-154: the left sensor stayed black about 12 mm past the right on most
@@ -229,25 +229,29 @@ static void test_crossing_exit_ignores_trailing_sensor(void)
     assert(following(&r) && r.m.line_side == 1 && steering(&r) == LINE_DRIFT_Q);
 }
 
-/* The exit resets the last-touch origin, which must not make the first real
-   touch afterwards look like a same-side re-touch. */
-static void test_first_touch_after_crossing_is_not_a_bend(void)
+/* The crossing clears the integral: the first touch after it starts at P alone. */
+static void test_first_touch_after_crossing_has_no_integral(void)
 {
     Rig r;
     start(&r);
-    tick(&r, 0u, 1u);
+    for (unsigned i = 0u; i < 20u; ++i)
+    {
+        tick(&r, 0u, 1u);
+    }
+    assert(r.m.line_i_q == 0 && steering(&r) > LINE_KP_Q);
     tick(&r, 0u, 0u);
+    assert(r.m.line_i_q > 0);
     cross_bar(&r);
     finish_advance(&r, 0u, 0u);
-    assert(following(&r));
+    assert(following(&r) && r.m.line_i_q == 0 && steering(&r) == LINE_DRIFT_Q);
     tick(&r, 0u, 1u);
-    assert(following(&r) && !r.m.line_bend && steering(&r) == LINE_EDGE_Q);
+    assert(following(&r) && steering(&r) == LINE_KP_Q);
 }
 
 /* INT-190: regaining the line after a crossing can take over 50 mm of one touch.
-   That is no bend: no harder steering and no lean once it clears. The next
-   touch is ordinary again, and a very long first touch is still a bend. */
-static void test_long_first_touch_after_crossing_does_not_lean(void)
+   Correction grows from P with distance instead of jumping, stops at its limit,
+   and fades on white/white rather than holding a lean. */
+static void test_long_first_touch_after_crossing_grows_then_fades(void)
 {
     Rig r;
     start(&r);
@@ -255,26 +259,55 @@ static void test_long_first_touch_after_crossing_does_not_lean(void)
     tick(&r, 0u, 0u);
     cross_bar(&r);
     finish_advance(&r, 0u, 0u);
-    for (unsigned i = 0u; i < LINE_BEND_TOUCH_MM + 10u; ++i)
+    int previous = 0;
+    for (unsigned i = 0u; i < 2u * LINE_I_MAX_Q; ++i)
     {
         tick(&r, 1u, 0u);
-        assert(following(&r) && steering(&r) == -LINE_EDGE_Q);
+        assert(following(&r) && -steering(&r) >= previous &&
+            -steering(&r) <= LINE_KP_Q + LINE_I_MAX_Q);
+        previous = -steering(&r);
     }
+    assert(previous == LINE_KP_Q + LINE_I_MAX_Q);
     tick(&r, 0u, 0u);
-    assert(following(&r) && !r.m.line_crossed && steering(&r) == -LINE_DRIFT_Q);
-    tick(&r, 1u, 0u); /* same side, close by: the usual bend rule is back */
-    assert(following(&r) && r.m.line_bend && steering(&r) == -LINE_BEND_EDGE_Q);
+    assert(following(&r) && -steering(&r) < LINE_I_MAX_Q + 1 && -steering(&r) > LINE_DRIFT_Q);
+    for (unsigned i = 0u; i < 2u * LINE_I_MAX_Q; ++i)
+    {
+        tick(&r, 0u, 0u);
+    }
+    assert(following(&r) && steering(&r) == -LINE_DRIFT_Q);
+}
 
+/* Both black holds the integral; the same side afterwards resumes from it. */
+static void test_both_black_freezes_integral(void)
+{
+    Rig r;
     start(&r);
-    tick(&r, 0u, 1u);
-    tick(&r, 0u, 0u);
-    cross_bar(&r);
-    finish_advance(&r, 0u, 0u);
-    for (unsigned i = 0u; i < LINE_BEND_LEAN_MM + 2u; ++i)
+    for (unsigned i = 0u; i < 10u; ++i)
     {
         tick(&r, 1u, 0u);
     }
-    assert(following(&r) && r.m.line_bend && steering(&r) == -LINE_BEND_EDGE_Q);
+    int before = -steering(&r);
+    assert(before > LINE_KP_Q);
+    for (unsigned i = 0u; i + 1u < NAV_CONFIRM_MM; ++i)
+    {
+        tick(&r, 1u, 1u); /* below the crossing distance */
+    }
+    tick(&r, 1u, 0u);
+    assert(following(&r) && -steering(&r) >= before && -steering(&r) <= before + 2);
+}
+
+/* The other side touching clears the integral at once (S-bend). */
+static void test_other_side_clears_integral(void)
+{
+    Rig r;
+    start(&r);
+    for (unsigned i = 0u; i < 2u * LINE_I_MAX_Q; ++i)
+    {
+        tick(&r, 1u, 0u);
+    }
+    assert(steering(&r) == -(LINE_KP_Q + LINE_I_MAX_Q));
+    tick(&r, 0u, 1u);
+    assert(following(&r) && steering(&r) == LINE_KP_Q);
 }
 
 /* A lone black still there when the advance ends is the line: track it. */
@@ -284,7 +317,7 @@ static void test_touch_past_the_bar_is_tracked(void)
     start(&r);
     cross_bar(&r);
     finish_advance(&r, 1u, 0u);
-    assert(following(&r) && !r.m.line_bend && steering(&r) == -LINE_EDGE_Q);
+    assert(following(&r) && steering(&r) == -LINE_KP_Q);
 }
 
 /* S-bend: one sensor, then the other. Keep driving and follow the new side
@@ -349,16 +382,16 @@ static void test_recovery_blank_floor_is_not_reacquired(void)
 }
 
 /* A cached acquisition replayed by later releases is not new evidence: it
-   neither turns a touch into a bend nor advances junction qualification. */
+   neither grows the integral nor advances junction qualification. */
 static void test_cached_samples_do_not_advance(void)
 {
     Rig r;
     start(&r);
     tick(&r, 1u, 0u);
-    for (unsigned i = 0u; i < 5u; ++i) /* within IR_MAX_GAP_MS, past LINE_BEND_TOUCH_MM */
+    for (unsigned i = 0u; i < 5u; ++i) /* within IR_MAX_GAP_MS */
     {
         tick_mm(&r, 1u, 0u, false, 12.0f);
-        assert(following(&r) && !r.m.line_bend && steering(&r) == -LINE_EDGE_Q);
+        assert(following(&r) && steering(&r) == -LINE_KP_Q);
     }
 
     start(&r);
@@ -379,8 +412,10 @@ int main(void)
     test_junction_after_curve_is_a_crossing();
     test_short_both_black_decides_the_crossing();
     test_crossing_exit_ignores_trailing_sensor();
-    test_first_touch_after_crossing_is_not_a_bend();
-    test_long_first_touch_after_crossing_does_not_lean();
+    test_first_touch_after_crossing_has_no_integral();
+    test_both_black_freezes_integral();
+    test_other_side_clears_integral();
+    test_long_first_touch_after_crossing_grows_then_fades();
     test_touch_past_the_bar_is_tracked();
     test_s_bend_follows_new_side();
     test_recovery_blank_floor_is_not_reacquired();
