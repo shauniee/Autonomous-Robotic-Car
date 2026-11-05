@@ -154,7 +154,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `NET=none`/`lwip`, `MQTT=0`/`1` | Offline / TCP-IP; MQTT needs lwIP + WiFi |
 | `FULL_COURSE=1` | Releases junction turns and obstacle bypass; `_course` image (`flash.sh` default) |
 | `TEST=1` | Firmware self-tests; forces Motion braking even if the controller enables motion |
-| `WATCHDOG=1` | **Opt-in bench validation only:** arms a 2-second RP2040 reset watchdog after Motion and Mission report fresh progress; `_wd` image. Default `0` until hardware validation (D15) |
+| `WATCHDOG=1` | Arms a 2-second RP2040 reset watchdog after Motion and Mission report fresh progress; `_wd` image. Default `1` with `FULL_COURSE=1`, otherwise `0` (D15). Not yet run on a Pico |
 | `TRACE=0` | Skip high-rate diagnostic frame production (types 9/10/11, plus Terrain trace), retaining telemetry, events, ACKs and all safety; `_notrace` image. Default `TRACE=0` with `FULL_COURSE=1`, otherwise `TRACE=1` |
 | `CRASH_REPORT=1` | Crash/console copy on UART0; project uses `0` (GP0/GP1 conflict, [pins](docs/team.md#2-pins)) |
 
@@ -309,7 +309,7 @@ Messages on the wire are separate from these totals:
 | Wheel trace record | see frame above | 8 | 120 | 120 |
 | Motion fault byte | stall, encoder | 1 | 2 | 8 |
 
-Not counted: `MotionController`, 384 stored, including `WheelPid` (2 x 32). `WATCHDOG=1` builds add 128 bits for two heartbeats and two last-fed copies.
+Not counted: `MotionController`, 384 stored, including `WheelPid` (2 x 32). `WATCHDOG=1` builds, including `full_course`, add 128 bits for two heartbeats and two last-fed copies.
 
 **Line and barcode**
 

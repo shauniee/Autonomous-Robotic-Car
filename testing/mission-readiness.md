@@ -30,11 +30,11 @@ Wrong wiring can damage the Pico or a sensor, so nothing is powered until this p
 
 | ID | Check | Pass when | Record |
 | --- | --- | --- | --- |
-| MR-01 | Every wire against the pin table in [team](../docs/team.md#2-pins), by continuity | All match; no unclaimed pin is connected | Photo of the wiring |
-| MR-02 | Grove 6 GP26 contact disconnected; GP28 battery-sense jumper open | No continuity on either | - |
-| MR-03 | Sonar Echo HIGH level, measured before connecting to GP3 | At most 3.3 V | Measured volts (D05) |
+| MR-01 | Every wire against the pin table in [team](../docs/team.md#2-pins), by continuity | All match; no unclaimed pin is connected | Closed by Nicholas, 2026-11-05: checked and unchanged |
+| MR-02 | Grove 6 GP26 contact disconnected; GP28 battery-sense jumper open | No continuity on either | Closed by Nicholas, 2026-11-05: checked and unchanged |
+| MR-03 | Sonar Echo HIGH level, measured before connecting to GP3 | At most 3.3 V | Closed by Nicholas, 2026-11-05: always 3.3 V, not measured |
 | MR-04 | Power bank polarity at VIN+/VIN-; one power source at a time | Correct polarity; USB disconnected during battery runs | - |
-| MR-05 | 3V3 and VSYS while both motors and the servo run | Measured and agreed; no brownout reset | Minimum volts on each rail (Tribunal A6) |
+| MR-05 | 3V3 and VSYS while both motors and the servo run | Measured and agreed; no brownout reset | Closed by Nicholas, 2026-11-05: no brownout, volts not measured |
 
 ## Phase 1: Boot, safety and MQTT (TEST firmware, wheels raised) (T02, T12)
 
@@ -74,7 +74,7 @@ Turns, distances and barcode widths all come from encoder travel, so these value
 | MR-21 | Drive 1 m straight five times at follow speed | Distance and lateral error measured and agreed (Tribunal proposal: lateral error at most 10 mm) | Errors; PID gains `MOTION_KP/KI/KD` (D07) |
 | MR-22 | 90 degrees left, 90 degrees right, 180 degrees; five each | Final heading error measured and agreed (Tribunal proposal: at most 5 degrees) | Errors per turn (D07) |
 | MR-23 | Repeat MR-22 with one wheel on a hump | Error measured and compared with MR-22 (M3 requires accuracy to hold) | Errors with one wheel raised |
-| MR-24 | Press GP21 at follow speed | Robot stops; distance measured and agreed | Stopping distance (D08) |
+| MR-24 | Press GP21 at follow speed | Robot stops | No distance required (Nicholas, 2026-11-05) |
 | MR-25 | Use the full-course image, which has the guard on, with wheels raised and controlled load | `Motion: motor stall` and a latched stop; cause-clear GP21 press/release returns READY without restarting | Time to detect (`MOTION_STALL_MS`, D07) |
 
 ## Phase 4: Each feature on a test track (T03, T04, T07, T09, T10, T11, T13)
@@ -83,9 +83,9 @@ Each feature is tested alone before the full course.
 
 | ID | Check | Pass when | Record |
 | --- | --- | --- | --- |
-| MR-26 | Follow a loop with straights and curves, three laps, under two lighting conditions (M1) | Stays on the line every lap | Laps completed; speed used |
+| MR-26 | Follow a loop with straights and curves, three laps (M1) | Stays on the line every lap | Self-tested by Nicholas (2026-11-05); no recorded rate required |
 | MR-27 | Printed course barcodes in both directions at operating speed; verify incomplete capture rejects rather than invents a character (M2) | Same correct character/action in both directions; one pending action per encounter; no two-second blind delay or guessed character | Reads, misses and misreads per letter (D01) |
-| MR-28 | Barcode before a cross junction for each of left, right, straight and U-turn (M3), with measured `NAV_SENSOR_FORWARD_MM`, `NAV_CROSSBAR_MM`, encoder scale and signed geometry | One queued action executes at the qualified junction at variable barcode distances. For turns: measured approach to axle-centre, stationary pause, line-confirmed pivot and outgoing tracking; U-turn pause/limits validated. Do not accept a turn from an unqualified broad-black curve or an uncalibrated geometry release | Measured entry/skew, advance distance, pivot stop/overshoot and outgoing-line success (D02/D03) |
+| MR-28 | Barcode before a cross junction for each of left, right, straight and U-turn (M3), with measured `NAV_SENSOR_FORWARD_MM`, `NAV_CROSSBAR_MM`, encoder scale and signed geometry | One queued action executes at the qualified junction at variable barcode distances. For turns: measured approach to axle-centre, stationary pause, line-confirmed pivot and outgoing tracking; U-turn pause/limits validated. Do not accept a turn from an unqualified broad-black curve or an uncalibrated geometry release | Measured entry/skew, advance distance, pivot stop/overshoot and outgoing-line success (D02/D03). All four actions work (Nicholas, 2026-11-05), observed only |
 | MR-29 | Reference humps of known heights up to 30 mm ([hump requirement](../docs/project-specs.md#course-rules)): the lower practice ramp, one slightly below and one at or near 30 mm; three passes each (M4, M5), including a single-wheel case. First confirm on the robot that a 30 mm-or-lower single-wheel ramp crosses the climb-entry threshold | 100 mm/s held through the encounter; count/height/max/events correct; reference error and valid-completion behavior measured and agreed | Reported vs actual per hump (D06) |
 | MR-30 | Reference obstacles across 100-200 mm width, with both sides open then one restricted; vary position/background/material (M6-M9) | Stops, scans, bypasses on the side with more space, reports width and depth, rejoins the original line | Width/depth error, repeatability/uncertainty, chosen gap, clearance, bypass time and reacquisition success (D02, D05, D10) |
 | MR-31 | Boxes blocking both sides | Robot stops instead of bypassing | - |
@@ -115,10 +115,9 @@ MR-40 is a newly allocated endless-operation check, not reuse of retired MR-34.
 | MR-40 | Revisit the same loop junction with/without pending actions; run repeated feature cycles, then GP21; interrupt WiFi/MQTT mid-run | No automatic finish or undo; healthy local run survives network loss; new start requires WiFi/MQTT; GP21 stops, eligible release returns READY, fresh GP20 starts | Session encounters, stop reasons, action/event order, reference video and unchanged image/constants |
 
 Watchdog fault injection remains a separate pending D15/SYS-06 procedure. The
-optional three-task watchdog code is **disabled by default** (`ROBOT_WATCHDOG_ENABLED=0`),
-so tick setup and host/compile checks are not acceptance. Enable it only in a
-controlled bench image once the reset/output electrical behavior has been
-verified. With wheels raised and one power source, confirm normal Motion/Mission/I-O
+watchdog is **on for `full_course`** (Nicholas, 2026-11-05) and off otherwise,
+so tick setup and host/compile checks are not acceptance. Before driving that image,
+build the bench image with `WATCHDOG=1 TEST=1`. With wheels raised and one power source, confirm normal Motion/Mission/I-O
 progress keeps the watchdog fed; stop a producer without faking its progress and
 measure reset time, boot-inhibited outputs, GP20 re-start requirements and any
 unintended reset under WiFi/network load. No physical watchdog PASS is claimed.

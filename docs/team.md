@@ -50,23 +50,23 @@ Nicholas is the sole contact for pending decisions and approvals; historical sub
 | GP8 / GP9 | Mahesha | Left motor M1A (black) / M1B (yellow); exclusive motor writer |
 | GP10 / GP11 | Mahesha | Right motor M2A (black) / M2B (yellow); exclusive motor writer |
 | GP12 | Jia Jing | SG90 Servo 1 signal S, orange; bench holds signal low |
-| GP16 | Nicholas | Barcode IR DOUT, Grove 4; AOUT disconnected |
-| GP17 | Unclaimed | Grove 4 second signal unused |
+| GP16 | Nicholas | Barcode IR DOUT, Grove 4 / digital input; AOUT not connected |
+| GP17 | Unclaimed | Grove 4 second signal; not connected |
 | GP18 | Unclaimed | Onboard RGB LEDs; no firmware owner |
 | GP20 | Nicholas | Onboard active-low calibration/start; target fresh start only after eligible reset |
 | GP21 | Nicholas | Onboard active-low stop/cancel; target eligible release-to-ready handshake |
 | GP22 | Nicholas | Onboard buzzer; not used by the firmware |
-| GP26 | Nicholas | Left line IR DOUT, Grove 5 / digital input; disconnect Grove 6 shared GP26 contact |
-| GP27 | Nicholas | Right line IR DOUT, Grove 6 / digital input |
+| GP26 | Nicholas | Left line IR DOUT, Grove 5 / digital input, ADC not used; AOUT not connected; Grove 6 shared GP26 contact disconnected |
+| GP27 | Nicholas | Right line IR DOUT, Grove 6 / digital input, ADC not used; AOUT not connected |
 | GP28 | Mahesha | Left encoder A, Grove 7, red; ADC2-capable but used digitally; open battery jumper |
 
-User confirmation 2026-10-29: physical wiring matches this allocation and sonar electrical behavior is confirmed; motor/encoder polarity is not confirmed. This does not append a measured test result.
+User confirmation 2026-10-29: physical wiring matches this allocation and sonar electrical behavior is confirmed; motor/encoder polarity is not confirmed. Nicholas, 2026-11-05: wiring checked and unchanged, and no AOUT wire is connected on any of the three IR sensors. This does not append a measured test result.
 
 ### Supply and wires
 
 - Power bank: red to green terminal VIN+, black to VIN-. Verify polarity.
-- Encoders: white to 3V3, blue to GND. Line/barcode IR: VCC to 3V3, GND to GND; connect line DOUT to GP26/GP27; both line AOUT wires stay disconnected.
-- GY-511: Vin to 3V3, GND to GND; separate `3.3`, INT1, INT2, DRDY disconnected. Reported HC-SR04P: VCC to 3V3, GND to GND, Trig to GP2, Echo to GP3; verify variant and Echo HIGH (at most 3.3 V) before connection.
+- Encoders: white to 3V3, blue to GND. Line/barcode IR: VCC to 3V3, GND to GND; connect left and right DOUT to GP26/GP27 and barcode DOUT to GP16; all three AOUT pins stay unconnected.
+- GY-511: Vin to 3V3, GND to GND; separate `3.3`, INT1, INT2, DRDY disconnected. Reported HC-SR04P: VCC to 3V3, GND to GND, Trig to GP2, Echo to GP3; Echo HIGH is 3.3 V (Nicholas, 2026-11-05, not measured).
 - SG90: red to +, brown to -; verify carrier silkscreen and supply rail.
 
 ### Wiring conflicts
@@ -76,7 +76,7 @@ User confirmation 2026-10-29: physical wiring matches this allocation and sonar 
 - UART0 console/crash reporting claim GP0/GP1: use `CONSOLE=usb_cdc CRASH_REPORT=0` with encoders attached.
 - Grove 2 and the Maker port share GP2/GP3; do not attach independent devices to both.
 - Disconnect GY-511 wires reused elsewhere before restoring I2C; its separate `3.3` pin is not established as an extra supply input.
-- Line sensing and digital-encoder GP28 consume the external ADC-capable pins; barcode AOUT needs a reviewed allocation change or extra hardware.
+- All three IR sensors are read digitally on DOUT, so no ADC is used for sensing. GP26, GP27 and GP28 are taken as digital inputs, so connecting any AOUT needs a reviewed allocation change or extra hardware.
 
 ### Physical header map (W/WH; header numbers differ from GPIO numbers)
 
