@@ -121,7 +121,7 @@ static inline bool terrain_code_to_mm(uint32_t code, uint32_t *mm)
 
 /* Pending acquisition retains travel; failure discards its entire window. */
 static inline float terrain_travel_take(enc_count_t origin[2],
-    const uint32_t count[2], bool acquired, bool discard)
+    const enc_count_t count[2], bool acquired, bool discard)
 {
     float travel = acquired && !discard ? enc_mean_travel(count, origin) : 0.0f;
     if (acquired || discard)

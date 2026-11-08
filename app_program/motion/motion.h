@@ -76,7 +76,7 @@ static inline int32_t enc_travel_signed(uint32_t now, uint32_t origin)
 
 /* Average displacements, never lifetime counts: wheels may diverge through
    repeated turns. Each wheel's displacement must stay below its half range. */
-static inline float enc_mean_travel(const uint32_t count[2],
+static inline float enc_mean_travel(const enc_count_t count[2],
     const enc_count_t origin[2])
 {
     int64_t total = (int64_t)enc_travel_signed(count[0], origin[0]) +

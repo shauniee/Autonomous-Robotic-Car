@@ -59,9 +59,16 @@ PROBE(bypass_output_t);
 _Static_assert(sizeof(obstacle_range_group_t) == 12u, "range group ABI");
 _Static_assert(sizeof(obstacle_profile_evidence_t) == 6u, "profile evidence ABI");
 _Static_assert(sizeof(obstacle_range_sample_t) == 20u, "range acquisition ABI");
-/* Target-only probe: these layouts retain natural member alignment. */
-_Static_assert(sizeof(MotionController) == 44u, "Motion padding regressed");
-_Static_assert(sizeof(Mission) == 144u, "Mission padding regressed");
-_Static_assert(sizeof(MissionInputs) == 96u, "Mission input padding regressed");
-_Static_assert(sizeof(bypass_control_t) == 60u, "bypass padding regressed");
-_Static_assert(sizeof(bypass_output_t) == 16u, "bypass output padding regressed");
+/* Target-only probe: upper bounds after the minimum-bit narrowing; a
+   larger size means a field was widened or padding came back. */
+_Static_assert(sizeof(MotionController) <= 44u, "Motion size regressed");
+_Static_assert(sizeof(Mission) <= 140u, "Mission size regressed");
+_Static_assert(sizeof(MissionInputs) <= 64u, "Mission input size regressed");
+_Static_assert(sizeof(MissionOutputs) <= 20u, "Mission output size regressed");
+_Static_assert(sizeof(bypass_control_t) <= 56u, "bypass size regressed");
+_Static_assert(sizeof(bypass_input_t) <= 40u, "bypass input size regressed");
+_Static_assert(sizeof(bypass_output_t) <= 16u, "bypass output size regressed");
+_Static_assert(sizeof(recovery_input_t) <= 16u, "recovery input size regressed");
+_Static_assert(sizeof(recovery_output_t) <= 6u, "recovery output size regressed");
+_Static_assert(sizeof(SafetyInputs) <= 16u, "safety input size regressed");
+_Static_assert(sizeof(ButtonInputs) <= 1u, "button input size regressed");

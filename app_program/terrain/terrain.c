@@ -180,7 +180,7 @@ void terrain_step(uint32_t now)
         enc_travel_signed(left, travel_origin[0]),
         enc_travel_signed(right, travel_origin[1])};
 #endif
-    const uint32_t count[2] = {left, right};
+    const enc_count_t count[2] = {(enc_count_t)left, (enc_count_t)right};
     float moved = terrain_travel_take(travel_origin, count, acquired,
         calibrating || result == GY511_SAMPLE_ERROR || stale);
     if (stale)
