@@ -22,8 +22,11 @@ static ID command_mutex, stop_flag, motion_tid;
 static MotionCommand latest;
 static rd_word_t feedback;		/* single writer: Motion */
 static MotionHealth progress;		/* guarded by command_mutex */
-static uint32_t stop_requests;		/* incremented by core-1 stop callers inside DI */
-static uint32_t serviced_stops;		/* written by Motion after braking */
+/* Core-1 writers only, inside DI. Core 0 (Terrain's health read) loads
+   serviced_stops before stop_requests: serviced only follows requests, so
+   equal loads mean every stop seen so far was braked. */
+static _Atomic uint32_t stop_requests;  /* stop callers on core 1 */
+static _Atomic uint32_t serviced_stops; /* Motion after braking */
 
 #define STOP_BIT 1u
 #define INHIBIT_BIT 2u
@@ -43,7 +46,9 @@ static void control_leave(UW state)
 /* Nonwaiting flag operation only; callers wake Motion after restoring IRQs. */
 static ER latch_stop(void)
 {
-    ++stop_requests;
+    atomic_store_explicit(&stop_requests,
+        atomic_load_explicit(&stop_requests, memory_order_relaxed) + 1u,
+        memory_order_release);
     return tk_set_flg(stop_flag, STOP_BIT);
 }
 
@@ -108,7 +113,8 @@ ER motion_reset_stop(void)
         if (!motion_stop_reset_allowed(
                 (flag.flgptn & INHIBIT_BIT) != 0u,
                 (flag.flgptn & STOP_BIT) != 0u,
-                stop_requests, serviced_stops,
+                atomic_load_explicit(&stop_requests, memory_order_acquire),
+                atomic_load_explicit(&serviced_stops, memory_order_acquire),
                 drv_buttons_read().gp21_down ||
                 rd_fault_stop_pending()))
         {
@@ -140,7 +146,10 @@ static ER health_copy(MotionHealth *h, TMO wait)
     T_RFLG f;
     er = tk_ref_flg(stop_flag, &f);
     bool stopped = er < E_OK || (f.flgptn & STOP_BIT) != 0;
-    bool braked = er >= E_OK && stopped && serviced_stops == stop_requests;
+    uint32_t serviced = atomic_load_explicit(&serviced_stops,
+        memory_order_acquire);
+    bool braked = er >= E_OK && stopped &&
+        serviced == atomic_load_explicit(&stop_requests, memory_order_acquire);
     h->flags = (uint8_t)((stopped ? MOTION_HEALTH_STOPPED_BIT : 0u) |
                          (braked ? MOTION_HEALTH_BRAKED_BIT : 0u));
     control_leave(state);
@@ -245,7 +254,8 @@ static void motion_task(INT stacd, void *exinf)
             (void)latch_stop();
             stopped = true;
         }
-        uint32_t observed_stops = stop_requests;
+        uint32_t observed_stops = atomic_load_explicit(&stop_requests,
+            memory_order_acquire);
         if (stopped)
         {
             motion_control_reset(&controller);
@@ -271,7 +281,9 @@ static void motion_task(INT stacd, void *exinf)
         }
         else if (stopped)
         {
-            serviced_stops = observed_stops; /* Brake serviced for every stop seen. */
+            /* Brake serviced for every stop seen. */
+            atomic_store_explicit(&serviced_stops, observed_stops,
+                memory_order_release);
         }
         control_leave(irq);
 
@@ -334,8 +346,9 @@ ER motion_init(void)
     m.mtxatr = TA_INHERIT;
     command_mutex = tk_cre_mtx(&m);
     if (command_mutex < E_OK) return command_mutex;
-    stop_requests = 1u; /* Boot STOP is not acknowledged until Motion brakes. */
-    serviced_stops = 0u;
+    /* Boot STOP is not acknowledged until Motion brakes. */
+    atomic_store_explicit(&stop_requests, 1u, memory_order_relaxed);
+    atomic_store_explicit(&serviced_stops, 0u, memory_order_relaxed);
     T_CFLG f = {0};
     f.iflgptn = STOP_BIT | (APP_TEST ? INHIBIT_BIT : 0u);
     stop_flag = tk_cre_flg(&f);
