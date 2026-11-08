@@ -25,12 +25,12 @@ class Client:
 
     def publish(self, topic, payload, **kwargs):
         if cli.frame_type(payload) == cli.SNAPSHOT_REQUEST:
-            reply = bytes([0x23]) + cli.GOLDEN_TELEMETRY[1:]
+            reply = bytes([0x33]) + cli.GOLDEN_TELEMETRY[1:]
         else:
             # An unrelated OK ACK must not override our rejected request.
             self.on_message(self, None, SimpleNamespace(topic="robot/s3/telemetry",
-                payload=bytes([0x25, (payload[1] + 1) & 255, 0])))
-            reply = bytes([0x25, payload[1], self.ack_result])
+                payload=bytes([0x35, (payload[1] + 1) & 255, 0])))
+            reply = bytes([0x35, payload[1], self.ack_result])
         self.on_message(self, None, SimpleNamespace(topic="robot/s3/telemetry",
             payload=reply))
         return SimpleNamespace(wait_for_publish=lambda **kwargs: None)

@@ -18,7 +18,8 @@
 | S1-U10 | Reporting/events/mapping | `test_comms_report.c`, `test_mission_mapping.c` | Packed events round-trip; bounded overflow/drop saturation; backpressure retains oldest; stopped install precedes ACK; busy/invalid mapping rejected; 100000 concurrent request/reply exchanges |
 | S1-U11 | Kernel bridge stress | `test_comms_stress.c` | 300000 frames without corruption/reordering; 5000000 word reads without tearing; no networking or motor authority added |
 | S1-U12 | Binary laptop helper | `scripts/mqtt_client.py --self-test` | Same schema-v2 vectors and seven-state labels; no claim of broker/Pico transport from self-test |
-| S1-U13 | Six owner fault bytes | `test_mqtt_frame.c`, `test_robot_data.c`, `test_safety.c` | All 48 walking bits round-trip in bytes 4..9; per-owner start/stop masks tested independently; report-only bits remain report-only |
+| S1-U13 | Six owner fault bytes (retired by schema v3; see S1-U14) | `test_mqtt_frame.c`, `test_robot_data.c`, `test_safety.c` | All 48 walking bits round-trip in bytes 4..9; per-owner start/stop masks tested independently; report-only bits remain report-only |
+| S1-U14 | 12-bit fault word, schema v3 | `test_mqtt_frame.c`, `mqtt_client.py --self-test` | Each defined fault bit travels alone in its own word bit and returns in its owner byte; undefined owner bits are not sent; reserved bits 12-15 are rejected; all 12 together round-trip |
 | S1-M01 | Pending physical binary subscription | T12/T13 | Current Pico-originated telemetry and mapping ACK, all six fault bytes under controlled fault injection, reconnect with no stale replay; record flashed image and raw subscriber capture |
 
 ## Results

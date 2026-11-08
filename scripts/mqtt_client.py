@@ -26,10 +26,10 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-VERSION = 2
+VERSION = 3
 TELEMETRY, EVENT, SNAPSHOT_REPLY, MAPPING, ACK, SNAPSHOT_REQUEST, JUNCTION_TEST = 1, 2, 3, 4, 5, 6, 7
 WHEEL_TRACE, LINE_TRACE, BARCODE_TRACE, TERRAIN_TRACE = 8, 9, 10, 11
-LENGTHS = {TELEMETRY: 22, EVENT: 11, SNAPSHOT_REPLY: 22, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3, WHEEL_TRACE: 15, LINE_TRACE: 17, BARCODE_TRACE: 18, TERRAIN_TRACE: 14}
+LENGTHS = {TELEMETRY: 18, EVENT: 11, SNAPSHOT_REPLY: 18, MAPPING: 5, ACK: 3, SNAPSHOT_REQUEST: 2, JUNCTION_TEST: 3, WHEEL_TRACE: 15, LINE_TRACE: 17, BARCODE_TRACE: 18, TERRAIN_TRACE: 14}
 
 MISSION = ["READY", "FOLLOW_LINE", "NAVIGATE", "SCAN", "BYPASS", "REACQUIRE", "STOPPED"]
 MOTION = ["IDLE", "RUNNING", "DONE", "FAILED"]
@@ -37,7 +37,8 @@ LINE = ["UNKNOWN", "VISIBLE", "LOST", "BROAD_BLACK"]
 ACTION = ["UNMAPPED", "LEFT", "RIGHT", "STRAIGHT", "U_TURN"]
 EVENT_KIND = {1: "BARCODE", 2: "HUMP", 3: "OBSTACLE", 4: "TURN"}
 ACK_RESULT = ["OK", "BUSY", "INVALID request", "MALFORMED"]
-# One byte per owner, rd_owner_t order; bit names follow app_program/common/robot_data.h.
+# Owners in rd_owner_t order; bit names follow app_program/common/robot_data.h.
+# Telemetry packs them in this order into one 12-bit word, bits 12-15 reserved.
 FAULTS = [
     ("Motion", ["motor stall", "encoder"]),
     ("Line", ["IR invalid", "barcode capture overflow", "barcode event overflow"]),
@@ -47,10 +48,10 @@ FAULTS = [
     ("Network", ["WiFi lost", "broker lost"]),
 ]
 
-GOLDEN_TELEMETRY = bytes([0x21, 0x2A, 0x72, 0x45, 0x01, 0x02, 0x04, 0x08, 0x01, 0x03, 0x34, 0x12, 0x78, 0x56,
+GOLDEN_TELEMETRY = bytes([0x31, 0x2A, 0x72, 0x45, 0x89, 0x0F, 0x34, 0x12, 0x78, 0x56,
                           0x03, 0xF8, 0xD0, 0x30, 0x61, 0xA4, 0xA9, 0x02])
-GOLDEN_EVENT = bytes([0x22, 0x01, 0x19, 0xE8, 0x03, 0x10, 0x00, 0x11, 0x00, 0x02, 0x00])
-GOLDEN_MAPPING = bytes([0x24, 0x07, 0x20, 0x88, 0x01])
+GOLDEN_EVENT = bytes([0x32, 0x01, 0x19, 0xE8, 0x03, 0x10, 0x00, 0x11, 0x00, 0x02, 0x00])
+GOLDEN_MAPPING = bytes([0x34, 0x07, 0x20, 0x88, 0x01])
 
 
 def config_value(name, default):
@@ -81,35 +82,44 @@ def frame_type(frame):
     return kind
 
 
+def unpack_faults(word):
+    """The 12-bit fault word as one value per owner, rd_owner_t order."""
+    faults, shift = [], 0
+    for _, bits in FAULTS:
+        faults.append(word >> shift & ((1 << len(bits)) - 1))
+        shift += len(bits)
+    return faults
+
+
 def decode_telemetry(f):
     if frame_type(f) not in (TELEMETRY, SNAPSHOT_REPLY):
         raise ValueError("not a telemetry frame")
-    left, right = struct.unpack_from("<HH", f, 10)
-    (front,) = struct.unpack_from("<H", f, 16)
-    if f[3] & 0x80:
+    fault_word, left, right = struct.unpack_from("<HHH", f, 4)
+    (front,) = struct.unpack_from("<H", f, 12)
+    if f[3] & 0x80 or fault_word >> 12:
         raise ValueError("telemetry reserved bits set")
     calibration = front >> 14
     if calibration == 3:
         raise ValueError("invalid IMU calibration status")
-    code = f[18] & 0x1F
-    if (code > 25 and code != 31) or f[18] >> 5 > 4:
+    code = f[14] & 0x1F
+    if (code > 25 and code != 31) or f[14] >> 5 > 4:
         raise ValueError("invalid barcode letter/action")
     if front & 0x2000 and front & 0x1FFF == 0x1FFF:
         raise ValueError("invalid range marked valid")
-    if f[15] == 0xFF:
+    if f[11] == 0xFF:
         raise ValueError("invalid hump height marked valid")
-    size = int.from_bytes(f[19:22], "little")
+    size = int.from_bytes(f[15:18], "little")
     if size >> 20:
         raise ValueError("reserved telemetry bits set")
     width, clearance = size & 0x3FF, size >> 10 & 0x3FF
     return {
         "sequence": f[1], "mission": name(MISSION, f[2] & 0xF), "motion": name(MOTION, (f[2] >> 4) & 3),
         "line": LINE[f[2] >> 6], "action_id": f[3] & 0x3F, "mapped": bool(f[3] & 0x40),
-        "faults": list(f[4:10]), "left": left, "right": right, "hump_count": f[14],
-        "hump_max_mm": (f[15] & 0x7F) * HUMP_MM_PER_CODE if f[15] & 0x80 else None,
+        "faults": unpack_faults(fault_word), "left": left, "right": right, "hump_count": f[10],
+        "hump_max_mm": (f[11] & 0x7F) * HUMP_MM_PER_CODE if f[11] & 0x80 else None,
         "imu_calibrated": None if calibration == 0 else calibration == 2,
         "front_mm": front & 0x1FFF if front & 0x2000 else None,
-        "barcode": letter(f[18] & 0x1F), "barcode_action": name(ACTION, f[18] >> 5),
+        "barcode": letter(f[14] & 0x1F), "barcode_action": name(ACTION, f[14] >> 5),
         "obstacle_width_mm": width, "obstacle_clearance_mm": clearance,
     }
 
@@ -424,7 +434,7 @@ def direction_frame(sequence, action):
 def self_test():
     # INT-66 measured rolling distance must agree with the firmware scale.
     assert abs((5833 + 5816) * 0.5 / COUNTS_PER_MM - 500.0) < 0.01
-    golden_trace = bytes.fromhex("28 78 56 34 12 e8 03 0c be e3 03 1d fc 50 b0")
+    golden_trace = bytes.fromhex("38 78 56 34 12 e8 03 0c be e3 03 1d fc 50 b0")
     trace = decode_wheel_trace(golden_trace)
     assert trace["sampled_ms"] == 0x12345678 and trace["output_ok"]
     assert trace["target_left"] == round(1000 / COUNTS_PER_MM, 2)
@@ -433,7 +443,7 @@ def self_test():
     assert (trace["duty_left"], trace["duty_right"]) == (80, -80)
     assert dashboard_message(golden_trace, Motion()) == trace
     assert describe(golden_trace, Motion()).startswith("WHEEL ")
-    invalid_trace = bytes.fromhex("28 00 00 00 00 00 40 00 60 00 80 00 80 80 80")
+    invalid_trace = bytes.fromhex("38 00 00 00 00 00 40 00 60 00 80 00 80 80 80")
     trace = decode_wheel_trace(invalid_trace)
     assert trace["inhibited"] and not trace["output_ok"]
     assert all(trace[k] is None for k in ("target_left", "target_right", "measured_left", "measured_right", "duty_left", "duty_right"))
@@ -445,7 +455,7 @@ def self_test():
             pass
         else:
             raise AssertionError("accepted malformed wheel trace")
-    golden_line = bytes.fromhex("29 78 56 34 12 13 22 34 12 78 56 e0 fe e0 64 02 0c")
+    golden_line = bytes.fromhex("39 78 56 34 12 13 22 34 12 78 56 e0 fe e0 64 02 0c")
     line = decode_line_trace(golden_line)
     assert line["sampled_ms"] == 0x12345678 and line["mission"] == "NAVIGATE" and line["phase"] == 2
     assert line["left_black"] and line["right_black"] and line["junction_qualified"] and not line["in_broad"]
@@ -453,8 +463,8 @@ def self_test():
     assert line["onset_skew_mm"] == 12
     assert (line["command"], line["command_steer_q"], line["command_speed"]) == ("FOLLOW", -32, 100)
     assert describe(golden_line, Motion()).startswith("LINE ")
-    assert describe(bytes([0x2B, 5, 0, 14, 0xF9, 3, 100, 0xFA, 1, 0xFF, 62, 9, 0x34, 0x12]), Motion()).startswith("HUMP t=5 pitch=3.5 roll=-1.5 state=1 rise=3mm accel=1000mg x=16 y=-16 z=992 height=9mm travel=4660mm encoder_ok=1 calibrated=1")
-    assert describe(bytes([0x2A, 7, 0x22, 0x80, 0x0C, 0]) + bytes(12), Motion()) == "BARS #7 H34 L12"
+    assert describe(bytes([0x3B, 5, 0, 14, 0xF9, 3, 100, 0xFA, 1, 0xFF, 62, 9, 0x34, 0x12]), Motion()).startswith("HUMP t=5 pitch=3.5 roll=-1.5 state=1 rise=3mm accel=1000mg x=16 y=-16 z=992 height=9mm travel=4660mm encoder_ok=1 calibrated=1")
+    assert describe(bytes([0x3A, 7, 0x22, 0x80, 0x0C, 0]) + bytes(12), Motion()) == "BARS #7 H34 L12"
     assert decode_line_trace(golden_line[:5] + bytes([0x80]) + golden_line[6:])["barcode_level"]
     assert decode_line_trace(golden_line[:15] + bytes([0x0A]) + golden_line[16:])["barcode_edges"] == 1
     for frame in (golden_line[:-1], golden_line[:6] + bytes([0x07]) + golden_line[7:]):
@@ -467,40 +477,48 @@ def self_test():
     t = decode_telemetry(GOLDEN_TELEMETRY)
     assert frame_type(GOLDEN_TELEMETRY) == TELEMETRY and t["sequence"] == 0x2A and t["mission"] == "NAVIGATE"
     assert t["motion"] == "FAILED" and t["line"] == "VISIBLE" and t["action_id"] == 5 and t["mapped"]
-    assert t["faults"] == [1, 2, 4, 8, 1, 3] and (t["left"], t["right"]) == (0x1234, 0x5678)
+    assert t["faults"] == [1, 2, 4, 1, 1, 3] and (t["left"], t["right"]) == (0x1234, 0x5678)
     assert t["hump_count"] == 3 and t["front_mm"] == 0x10D0 and t["barcode"] == "B"
     assert t["barcode_action"] == "STRAIGHT" and (t["obstacle_width_mm"], t["obstacle_clearance_mm"]) == (420, 170)
     assert "BARCODE: letter Z -> RIGHT" in decode_event(GOLDEN_EVENT)
     assert mapping_frame(7, "ABCD") == GOLDEN_MAPPING
-    assert direction_frame(7, 4) == bytes([0x27, 7, 4])
+    assert direction_frame(7, 4) == bytes([0x37, 7, 4])
     assert mapping_letters("abcd") == "ABCD" and mapping_letters(["W", "F", "a", "Z"]) == "WFAZ"
     assert not any(mapping_letters(bad) for bad in ("ABCA", "ABC", "ABCDE", "AB1D", "ABÇD", ""))
-    obstacle = bytes([0x22, 3, 0]) + struct.pack("<HHHH", 10, 20, 30, 40)
+    obstacle = bytes([0x32, 3, 0]) + struct.pack("<HHHH", 10, 20, 30, 40)
     event = dashboard_message(obstacle, Motion())
     assert event["type"] == "event" and event["obstacle_clearance_mm"] == 40
     assert event["event_id"] == obstacle.hex() and "OBSTACLE" in event["text"]
     assert "obstacle_clearance_mm" not in dashboard_message(GOLDEN_EVENT, Motion())
-    trace = bytes([0x2B, 5, 0, 14, 0xF9, 3, 100, 0xFA, 1, 0xFF, 62, 9, 0x34, 0x12])
+    trace = bytes([0x3B, 5, 0, 14, 0xF9, 3, 100, 0xFA, 1, 0xFF, 62, 9, 0x34, 0x12])
     terrain = dashboard_message(trace, Motion())
     assert terrain["type"] == "terrain_trace" and terrain["pitch_deg"] == 3.5 and terrain["roll_deg"] == -1.5
     assert (terrain["x_mg"], terrain["y_mg"], terrain["z_mg"]) == (16, -16, 992)
     assert (terrain["height_mm"], terrain["rise_mm"], terrain["travel_mm"]) == (9, 3, 0x1234)
     hump = bytes([GOLDEN_EVENT[0], 2, 0]) + GOLDEN_EVENT[3:]
     assert dashboard_message(hump, Motion())["hump_height_mm"] == 0
-    ack = dashboard_message(bytes([0x25, 0x07, 0x01]), Motion())
+    ack = dashboard_message(bytes([0x35, 0x07, 0x01]), Motion())
     assert ack["type"] == "ack" and ack["sequence"] == 7 and not ack["ok"] and ack["result"].startswith("BUSY")
     assert [len(bits) for _, bits in FAULTS] == header_fault_widths(), "FAULTS disagrees with robot_data.h"
+    position = 0
+    for owner, (_, bits) in enumerate(FAULTS):
+        for bit in range(len(bits)):
+            expected = [0] * len(FAULTS)
+            expected[owner] = 1 << bit
+            assert unpack_faults(1 << position) == expected
+            position += 1
+    assert position == 12 and unpack_faults(0xFFF) == [3, 7, 7, 1, 1, 3]
     bad_telemetry = []
-    for index, value in ((3, GOLDEN_TELEMETRY[3] | 0x80),
-                         (17, GOLDEN_TELEMETRY[17] | 0xC0),
-                         (18, 26), (18, 5 << 5), (15, 0xFF)):
+    for index, value in ((3, GOLDEN_TELEMETRY[3] | 0x80), (5, GOLDEN_TELEMETRY[5] | 0x10),
+                         (13, GOLDEN_TELEMETRY[13] | 0xC0),
+                         (14, 26), (14, 5 << 5), (11, 0xFF)):
         frame = bytearray(GOLDEN_TELEMETRY)
         frame[index] = value
         bad_telemetry.append(frame)
     frame = bytearray(GOLDEN_TELEMETRY)
-    frame[16:18] = (0x3FFF).to_bytes(2, "little")
+    frame[12:14] = (0x3FFF).to_bytes(2, "little")
     bad_telemetry.append(frame)
-    bad_events = [bytes([0x22, kind]) + GOLDEN_EVENT[2:] for kind in (0, 5, 0x11)]
+    bad_events = [bytes([0x32, kind]) + GOLDEN_EVENT[2:] for kind in (0, 5, 0x11)]
     for frame in bad_telemetry + bad_events:
         history = Motion()
         try:
@@ -512,21 +530,21 @@ def self_test():
         assert history.last is None
     # Valid zero is a measurement; the invalid sentinel without validity is absent.
     frame = bytearray(GOLDEN_TELEMETRY)
-    frame[16:18] = (0x2000).to_bytes(2, "little")
+    frame[12:14] = (0x2000).to_bytes(2, "little")
     assert decode_telemetry(frame)["front_mm"] == 0
-    frame[16:18] = (0x1FFF).to_bytes(2, "little")
+    frame[12:14] = (0x1FFF).to_bytes(2, "little")
     assert decode_telemetry(frame)["front_mm"] is None
     assert decode_telemetry(GOLDEN_TELEMETRY)["imu_calibrated"] is None
     for kind in (TELEMETRY, SNAPSHOT_REPLY):
         for status, expected in ((0, None), (1, False), (2, True)):
             frame = bytearray(GOLDEN_TELEMETRY)
             frame[0] = VERSION << 4 | kind
-            frame[14:16] = bytes([0, 0x7F])  # No completed hump.
-            frame[16:18] = (status << 14 | 0x2000).to_bytes(2, "little")
+            frame[10:12] = bytes([0, 0x7F])  # No completed hump.
+            frame[12:14] = (status << 14 | 0x2000).to_bytes(2, "little")
             decoded = decode_telemetry(frame)
             assert decoded["imu_calibrated"] is expected
             assert decoded["hump_max_mm"] is None and decoded["front_mm"] == 0
-            frame[16:18] = (status << 14 | 0x3FFF).to_bytes(2, "little")
+            frame[12:14] = (status << 14 | 0x3FFF).to_bytes(2, "little")
             try:
                 decode_telemetry(frame)
             except ValueError:

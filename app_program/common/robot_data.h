@@ -181,6 +181,16 @@ enum {
     RD_FAULT_BROKER_LOST = 1u << 1	/* report only */
 };
 
+/* Defined bits per owner byte, rd_owner_t order. Telemetry packs exactly
+   these into one 12-bit fault word (MQTT schema v3). */
+#define RD_FAULT_WIDTHS { 2u, 3u, 3u, 1u, 1u, 2u }
+#define RD_FAULT_BITS 12u
+_Static_assert((RD_FAULT_ENCODER < (1u << 2)) &&
+    (RD_FAULT_BARCODE_EVENT_OVERFLOW < (1u << 3)) &&
+    (RD_FAULT_IMPACT < (1u << 3)) && (RD_FAULT_NO_ECHO < (1u << 1)) &&
+    (RD_FAULT_LINE_LOST < (1u << 1)) && (RD_FAULT_BROKER_LOST < (1u << 2)),
+    "every fault bit fits its owner's width");
+
 /* Only the owner calls set/clear for its own byte (single writer, so the
    load-modify-store cannot race). Any task may read. */
 void rd_fault_set(rd_owner_t owner, uint8_t bits);
