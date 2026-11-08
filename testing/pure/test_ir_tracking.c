@@ -17,7 +17,7 @@ int main(void)
         for (unsigned right = 0; right <= 1; ++right)
         {
             ir_tracking_sample(&tracker, (IrRaw){left, right}, true, 100u);
-            LineIrSnapshot s = ir_snapshot_build(&tracker, 1u, 100u);
+            LineIrSnapshot s = ir_snapshot_build(&tracker, 100u);
             bool lb = left == IR_BLACK_LEVEL;
             bool rb = right == IR_BLACK_LEVEL;
             assert(s.sample_fresh);

@@ -422,8 +422,31 @@ static void test_chatter_filter(void)
     puts("barcode chatter filter PASS");
 }
 
+/* Packed 9-bit widths: the window keeps the newest 25 exactly, including
+   the minimum and maximum stored widths, as it shifts. */
+static void test_packed_widths(void)
+{
+    uint32_t fed[40];
+    char s; barcode_orientation_t o;
+    start(0u);
+    for (unsigned i = 0u; i < 40u; ++i)
+    {
+        fed[i] = i == 7u ? BARCODE_MIN_ELEMENT_COUNTS :
+            (i % 5u == 0u ? BARCODE_MAX_ELEMENT_COUNTS :
+            BARCODE_MIN_ELEMENT_COUNTS + (i * 97u) % 380u);
+        (void)step(fed[i], &s, &o);
+        unsigned stored = i + 1u < BARCODE_ELEMENTS ? i + 1u : BARCODE_ELEMENTS;
+        assert(frame.count == stored);
+        for (unsigned k = 0u; k < stored; ++k)
+        {
+            assert(barcode_frame_width(&frame, k) == fed[i + 1u - stored + k]);
+        }
+    }
+}
+
 int main(void)
 {
+    test_packed_widths();
     test_chatter_filter();
     test_samples();
     test_alphabet_vectors();

@@ -56,7 +56,7 @@ IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
     output.sampled_ms = tracker->sample_ms;
     bool usable = tracker->have_sample && ir_raw_word_valid(tracker->raw) &&
         (uint32_t)(now - tracker->sample_ms) <= IR_MAX_GAP_MS;
-    output.line = usable ? (IrLine)tracker->line : IR_LINE_UNKNOWN;
+    output.line = usable ? tracker->line : (uint8_t)IR_LINE_UNKNOWN;
     output.valid = usable && output.line == IR_LINE_VISIBLE;
     output.error = output.valid ?
         ir_tracking_reading(ir_raw_word_raw(tracker->raw)).error : 0;
@@ -82,15 +82,13 @@ void ir_snapshot_refresh(LineIrSnapshot *snapshot, uint32_t now)
     }
 }
 
-LineIrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t sequence,
-    uint32_t now)
+LineIrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t now)
 {
     LineIrSnapshot snapshot = {0};
     if (tracker == NULL)
     {
         return snapshot;
     }
-    snapshot.sequence = sequence;
     snapshot.sampled_ms = tracker->sample_ms;
     snapshot.raw = ir_raw_word(ir_raw_word_raw(tracker->raw),
         tracker->have_sample && ir_raw_word_valid(tracker->raw));
@@ -149,8 +147,8 @@ bool drv_ir_tracking_read(IrRaw *raw)
     }
     /* One GPIO snapshot keeps both sensor states from the same instant. */
     uint32_t levels = in_w(GPIO_IN);
-    raw->left = (uint16_t)((levels >> IR_LEFT_PIN) & 1u);
-    raw->right = (uint16_t)((levels >> IR_RIGHT_PIN) & 1u);
+    raw->left = (uint8_t)((levels >> IR_LEFT_PIN) & 1u);
+    raw->right = (uint8_t)((levels >> IR_RIGHT_PIN) & 1u);
     return true;
 }
 #endif /* !HOST_TEST */

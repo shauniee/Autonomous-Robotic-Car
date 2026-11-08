@@ -13,7 +13,7 @@
 typedef struct
 {
     IrTracker ir;
-    uint32_t sequence, now;
+    uint32_t now;
     float counts;
     Mission m;
     MissionInputs in;
@@ -23,7 +23,7 @@ typedef struct
 /* The snapshot-to-input mapping mission.c uses for the line fields. */
 static void read_line(Rig *r)
 {
-    LineIrSnapshot s = ir_snapshot_build(&r->ir, r->sequence, r->now);
+    LineIrSnapshot s = ir_snapshot_build(&r->ir, r->now);
     r->in.now_ms = r->now;
     r->in.guidance_valid = s.guidance_valid;
     r->in.usable_line = s.normalized_valid;
@@ -43,8 +43,7 @@ static void tick_mm(Rig *r, unsigned left, unsigned right, bool fresh, float mm)
     r->counts += mm * ENC_COUNTS_PER_MM;
     if (fresh)
     {
-        ir_tracking_sample(&r->ir, (IrRaw){(uint16_t)left, (uint16_t)right}, true, r->now);
-        ++r->sequence;
+        ir_tracking_sample(&r->ir, (IrRaw){(uint8_t)left, (uint8_t)right}, true, r->now);
     }
     read_line(r);
     mission_step(&r->m, &r->in, &r->out);

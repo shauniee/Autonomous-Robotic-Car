@@ -12,5 +12,4 @@ FIELD(MotionCommand, speed_action);
 FIELD(MotionCommand, mode_steering);
 SIZE(MotionHealth);
 FIELD(MotionHealth, serviced_ms);
-FIELD(MotionHealth, sequence);
 FIELD(MotionHealth, flags);
