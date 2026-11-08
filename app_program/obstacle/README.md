@@ -42,7 +42,7 @@ Suggested, not mandatory (record any omission and why): servo settling, repeated
 - No echo is unknown and report-only: neither infinite clearance nor a universal stop. A manoeuvre starts only from a supported profile.
 - Sonar age uses full 32-bit acquisition times; the 16-bit packed time is display-only.
 
-Widths: [data table](../../docs/project-specs.md#5-data-representation-table-week-13). Stop and start policy: [fault bitmask](../../docs/architecture.md#fault-bitmask).
+Widths: [data table](../../docs/team.md#6-data-representation). Stop and start policy: [fault bitmask](../../docs/architecture.md#fault-bitmask).
 
 ## Scan and bypass
 

@@ -155,7 +155,7 @@ and alignment guarantees; this audit does not apply one.
 
 The owning [README bit tables](../../README.md#bits-per-subsystem) list every
 currently budgeted persistent item, instance counts and subsystem subtotals.
-The [data representation table](../../docs/project-specs.md#5-data-representation-table-week-13)
+The [data representation table](../../docs/team.md#6-data-representation)
 owns valid ranges and logical widths. Those logical tables are partial RAM
 budgets; the struct inventory above adds temporary/private types without
 pretending they all have approved minimum-width contracts.

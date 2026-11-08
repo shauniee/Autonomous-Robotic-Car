@@ -36,7 +36,7 @@ Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement a
 - Publish impact evidence for Motion and Mission through shared data; never call a core-1 stop API across cores. A short impact must not disappear before it is seen.
 - Bound I2C and each processing step, and never hold shared locks through I2C.
 
-Widths: [data table](../../docs/project-specs.md#5-data-representation-table-week-13). Fault policy: [fault bitmask](../../docs/architecture.md#fault-bitmask). The 1 mm/count reported scale stays unless measurements justify a change.
+Widths: [data table](../../docs/team.md#6-data-representation). Fault policy: [fault bitmask](../../docs/architecture.md#fault-bitmask). The 1 mm/count reported scale stays unless measurements justify a change.
 
 ## Raw USB capture
 
