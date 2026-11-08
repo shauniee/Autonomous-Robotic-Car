@@ -309,7 +309,8 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
         .obstacle_forward_mm = coordinate_code(front + OBSTACLE_SONAR_FORWARD_MM),
         .obstacle_left_mm = coordinate_code(centre_left), .valid = true};
     *evidence = (obstacle_profile_evidence_t){
-        .width_model_uncertainty_mm = uncertainty_known ? distance_code(uncertainty) : UINT16_MAX,
+        .width_model_uncertainty_mm = uncertainty_known ?
+            distance_code(uncertainty) : OBSTACLE_UNCERTAINTY_UNKNOWN,
         .planning_width_mm = distance_code(planning),
         .foreground_rays = (uint16_t)(high - low + 1u),
         .free_left_rays = (uint16_t)free_left,
@@ -319,7 +320,7 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
 }
 
 unsigned obstacle_profile_fine_angles(const ObstacleRay *coarse, unsigned count,
-    const obstacle_profile_config_t *config, int16_t *out, unsigned capacity)
+    const obstacle_profile_config_t *config, int8_t *out, unsigned capacity)
 {
     if (coarse == NULL || out == NULL || !config_valid(config) ||
         count < 3u || count > OBSTACLE_SCAN_CAPACITY)
@@ -382,7 +383,8 @@ unsigned obstacle_profile_fine_angles(const ObstacleRay *coarse, unsigned count,
             {
                 break;
             }
-            out[written++] = (int16_t)(side * angle);
+            /* |angle| <= SERVO_MAX_DEG, asserted to fit int8_t */
+            out[written++] = (int8_t)(side * angle);
         }
     }
     return written;

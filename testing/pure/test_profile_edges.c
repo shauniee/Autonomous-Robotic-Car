@@ -35,7 +35,7 @@ static void sweep(const obstacle_profile_config_t *config, float range, unsigned
     float left_wall, ObstacleProfile *profile)
 {
     ObstacleRay rays[OBSTACLE_SCAN_CAPACITY];
-    int16_t fine[OBSTACLE_SCAN_CAPACITY];
+    int8_t fine[OBSTACLE_SCAN_CAPACITY];
     obstacle_profile_evidence_t evidence = {0};
     unsigned count = 0u;
     for (int angle = -SERVO_MAX_DEG; angle <= SERVO_MAX_DEG; angle += OBSTACLE_COARSE_STEP_DEG)
@@ -148,7 +148,7 @@ int main(void)
     obstacle_profile_config_t unknown = config;
     unknown.range_uncertainty_mm = UINT16_MAX;
     assert(obstacle_profile_estimate(rays, RAYS, NULL, &unknown, &profile, &evidence));
-    assert(evidence.width_model_uncertainty_mm == UINT16_MAX);
+    assert(evidence.width_model_uncertainty_mm == OBSTACLE_UNCERTAINTY_UNKNOWN);
     assert(profile.left_clearance_mm == 0u && profile.right_clearance_mm == 0u);
     /* No echo past the box marks an edge but proves no clearance; with the box still
        on its far side it does not cut the box short. The centre ray must have an echo. */
@@ -188,7 +188,7 @@ int main(void)
     {
         ObstacleRay lost[5] = {obstacle_ray_make(-30, 0u, false), obstacle_ray_make(-20, 110u, true),
             obstacle_ray_make(0, 100u, true), obstacle_ray_make(20, 110u, true), obstacle_ray_make(30, 2000u, true)};
-        int16_t extra[4];
+        int8_t extra[4];
         unsigned added = obstacle_profile_fine_angles(lost, 5u, &config, extra, 4u);
         assert(added == 2u && extra[0] == -25 && extra[1] == 25);
     }
@@ -217,7 +217,7 @@ int main(void)
     ObstacleRay coarse[5] = {obstacle_ray_make(-20, 2000u, true),
         obstacle_ray_make(-10, 406u, true), obstacle_ray_make(0, 400u, true),
         obstacle_ray_make(10, 406u, true), obstacle_ray_make(20, 2000u, true)};
-    int16_t fine[4];
+    int8_t fine[4];
     unsigned count = obstacle_profile_fine_angles(coarse, 5u, &config, fine, 4u);
     assert(count == 2u);
     assert(fine[0] == -15 && fine[1] == 15);
