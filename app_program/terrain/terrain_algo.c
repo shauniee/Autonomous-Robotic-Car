@@ -153,12 +153,15 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
     }
     float rise_q = TRACK_WIDTH_MM * sinf(tilt_deg * DEG_TO_RAD) * 10.0f;
     if (rise_q > (float)ctx->rise_q) {
-        ctx->rise_q = rise_q >= 65535.0f ? 65535u : (uint16_t)(rise_q + 0.5f);
+        float top = (float)rd_mask(TERRAIN_RISE_BITS);
+        ctx->rise_q = rise_q >= top ? (uint16_t)top : (uint16_t)(rise_q + 0.5f);
     }
     if (tilt_deg >= HUMP_ROLL_EXIT_DEG) {
         if (delta_counts > 0.0f) {
             float travel = (float)ctx->travel_counts + delta_counts;
-            ctx->travel_counts = travel >= 65535.0f ? 65535u : (uint16_t)(travel + 0.5f);
+            float top = (float)rd_mask(TERRAIN_TRAVEL_BITS);
+            ctx->travel_counts = travel >= top ? (uint16_t)top :
+                (uint16_t)(travel + 0.5f);
         }
         ctx->flat_run = 0u;
         if ((float)ctx->travel_counts >= (float)HUMP_MAX_TRAVEL_MM * ENC_COUNTS_PER_MM) {

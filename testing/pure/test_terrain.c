@@ -194,12 +194,13 @@ static void test_word_boundaries(void)
     const uint32_t inv = rd_invalid_code(HUMP_RESULT_BITS);
     uint32_t w = terrain_pack(0u, 0u, 0u, 0u, false, false);
     assert(w == 0u && !terrain_height_valid(w) && !terrain_calibrated(w));
-    w = terrain_pack(inv - 1u, inv - 1u, 255u, 4u, true, true);			/* maxima */
+    w = terrain_pack(inv - 1u, inv - 1u, 255u, TERRAIN_STATE_IMPACT, true, true);	/* maxima */
     assert(terrain_last_code(w) == inv - 1u && terrain_max_code(w) == inv - 1u && terrain_hump_count(w) == 255u);
-    assert(terrain_state_code(w) == 4u && terrain_height_valid(w) && terrain_calibrated(w));
+    assert(terrain_state_code(w) == TERRAIN_STATE_IMPACT && terrain_height_valid(w) && terrain_calibrated(w));
     w = terrain_pack(1000u, 1000u, 1000u, 15u, false, true);			/* beyond range: clamps, never spills */
     assert(terrain_last_code(w) == inv && terrain_max_code(w) == inv && terrain_hump_count(w) == 255u);
-    assert(terrain_state_code(w) == 7u && (w >> 27) == 0u);
+    /* 2-bit state: 15 masks to 3; spare bit 24 and bits 27..31 stay zero. */
+    assert(terrain_state_code(w) == 3u && ((w >> 24) & 1u) == 0u && (w >> 27) == 0u);
     uint32_t mm;
     assert(!terrain_code_to_mm(inv, &mm));						/* invalid code has no height */
     assert(terrain_code_to_mm(0u, &mm) && mm == 0u);

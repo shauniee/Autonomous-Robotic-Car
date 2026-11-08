@@ -43,17 +43,27 @@ typedef struct __attribute__((packed)) {
 
 _Static_assert(sizeof(TerrainCalibSum) == 9u, "TerrainCalibSum must use 69 bits in 9 bytes");
 
+#define TERRAIN_RISE_BITS 11u
+#define TERRAIN_TRAVEL_BITS 13u
+_Static_assert(TRACK_WIDTH_MM * 10.0f < (float)(1u << TERRAIN_RISE_BITS),
+    "rise_q fits its field");
+_Static_assert((float)HUMP_MAX_TRAVEL_MM * ENC_COUNTS_PER_MM <
+    (float)(1u << TERRAIN_TRAVEL_BITS), "hump travel fits its field");
+
 /* This is private persistent state of the one Terrain task, not a cross-core
    snapshot. Public telemetry uses terrain_pack(), an atomic 32-bit word.
    0..100 calibration samples: 7 bits; 0..10 flat-run: 4 bits;
-   state 0..2: 3 bits; height/calibrated flags: 1 bit each.
+   state 0..2: 2 bits; height/calibrated flags: 1 bit each.
    Last/max codes are 7 bits each. */
 typedef struct {
     TerrainFilterQ16 filtered_accel_q16;
     int32_t roll_base_q8;              /* roll average while stopped, 1/256 centidegree */
     TerrainCalibSum calib_sum;
-    uint16_t rise_q;                   /* peak height this encounter, 0.1 mm, saturates at 65535 */
-    uint16_t travel_counts;            /* encoder travel while tilted, saturates at 65535 */
+    /* Peak height this encounter, 0.1 mm: TRACK_WIDTH_MM x sin <= 1200. */
+    uint16_t rise_q : TERRAIN_RISE_BITS;
+    /* Encoder travel while tilted; the encounter ends past
+       HUMP_MAX_TRAVEL_MM, so it saturates at TERRAIN_TRAVEL_BITS. */
+    uint16_t travel_counts : TERRAIN_TRAVEL_BITS;
     int16_t pitch_cdeg;                /* -9000..9000 centidegrees */
     int16_t roll_cdeg;                 /* -9000..9000 centidegrees */
     uint16_t last_hump_code : 7;
@@ -61,7 +71,7 @@ typedef struct {
     uint8_t hump_count;
     uint8_t flat_run : 4;
     uint8_t calib_count : 7;
-    uint8_t state : 3;
+    uint8_t state : 2;                 /* TerrainState */
     uint8_t height_valid : 1;
     uint8_t is_calibrated : 1;
 } TerrainContext;
@@ -84,14 +94,16 @@ float terrain_height_mm(const TerrainContext *p_ctx);
  *   bits  0-6   last hump height result (7 bits)
  *   bits  7-13  maximum hump height result (7 bits)
  *   bits 14-21  hump count (8 bits, saturating)
- *   bits 22-24  terrain state (3 bits)
+ *   bits 22-23  terrain state (2 bits); bit 24 spare, zero
  *   bit  25     height valid (the last encounter produced a valid height)
  *   bit  26     calibrated
  * A result code equal to rd_invalid_code(HUMP_RESULT_BITS) means no valid
  * height; the reported height is code * HUMP_MM_PER_COUNT millimetres.
  */
 
-#define TERRAIN_STATE_BITS 3u
+#define TERRAIN_STATE_BITS 2u
+_Static_assert(TERRAIN_STATE_IMPACT < (1u << TERRAIN_STATE_BITS),
+    "terrain state fits its field");
 
 static inline uint32_t terrain_pack(uint32_t last_code, uint32_t max_code, uint32_t count, uint32_t state,
                                     bool height_valid, bool calibrated)
