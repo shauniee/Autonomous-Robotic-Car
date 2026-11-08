@@ -1,6 +1,0 @@
-Base HEAD: 79c13f184c51dfec9f0ff03f0c8647371f6cc8e9
-Working tree, uncommitted changes
-065e996afaa53a0db57517962d1c3ac5ace4fcd53ed15bbaaad894f40d21abd8  scripts/dashboard.html
-af64b4484ae68368e4f86a6a9634cece941e9c607fb21827b0d537228692338a  scripts/mqtt_client.py
-12a7c94c79143f6f58fa1f7538f1976719c918de6a0f7413dcc0b6141e1b19e3  testing/pure/test_dashboard.mjs
-a8f22a217a19980879307cb761bb760379dc8bc501f070b0bcee6f21e4dd6511  testing/pure/test_dashboard_http.py

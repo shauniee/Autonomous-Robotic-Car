@@ -1,2 +1,0 @@
-INT-11 incomplete checker attempt: ValueError: substring not found.
-Cause: checker assumed numbered Test cases headings. No validation pass.

@@ -37,7 +37,7 @@ wifi: link status -> joined AP, waiting for IP (1)
 [IR] seq=101 ADC L=169 R=166 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
 [IR] seq=126 ADC L=166 R=159 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
 [IR] seq=151 ADC L=171 R=161 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
-[IR] seq=176 ADC L=171 R=161 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] repeated x1
 [IR] seq=201 ADC L=165 R=159 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
 [IR] seq=226 ADC L=176 R=163 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
 wifi: link status -> joined AP, no IP yet (2)

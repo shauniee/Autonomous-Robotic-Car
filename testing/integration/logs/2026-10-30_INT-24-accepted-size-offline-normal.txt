@@ -1,2 +1,0 @@
-   text	   data	    bss	    dec	    hex	filename
- 321756	    384	  26448	 348588	  551ac	build_make/mtk3pico_smp1_usb_cdc_wifi.elf

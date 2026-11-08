@@ -1,2 +1,0 @@
-clang --target=arm-none-eabi -mcpu=cortex-m0plus -mthumb -ffreestanding -std=gnu11 -Wall -Wextra -Werror -Wno-unused-parameter -DCNF_SMP=1 -DAPP_TEST=1 -D_PICO_RP2040_ -Iinclude -Iconfig -fsyntax-only app_program/subsystem3/drv_ir_tracking.c
-exit: 0

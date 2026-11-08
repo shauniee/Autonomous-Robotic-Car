@@ -1,7 +1,0 @@
-INT-11: documentation/static validation only
-Markdown files: 25
-Local links and anchors checked: 487
-Historical TEST_LOG bodies preserved: 7
-Contents: checked against actual headings
-git diff --check: PASS
-Result: PASS

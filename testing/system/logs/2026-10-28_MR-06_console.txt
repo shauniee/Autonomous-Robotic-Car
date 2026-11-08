@@ -100,7 +100,7 @@ wifi: link up, ip=172.20.10.4
 [IR] seq=1901 ADC L=158 R=152 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
 [IR] seq=1926 ADC L=157 R=152 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
 [IR] seq=1951 ADC L=158 R=152 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
-[IR] seq=1976 ADC L=158 R=152 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
+[IR] repeated x1
 [IR] seq=2001 ADC L=154 R=151 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
 [IR] seq=2026 ADC L=162 R=153 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY
 [IR] seq=2051 ADC L=153 R=156 acquired=1 fresh=1 fraction_of_127 L=0 R=0 valid=0 calibrated=0 line=unknown capture=waiting age_ms=0 GP20_down=0 GP21_down=0 SENSOR_ONLY

@@ -1,3 +1,0 @@
-Mission adapter: all 42 input fields explicitly supplied; scan ID/request and encoder wiring checked.
-Removed APIs, storage and duplicate validator absent from active code/docs/tests; unused build script absent.
-Example topic names match transport configuration.
