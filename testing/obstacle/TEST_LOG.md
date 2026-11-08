@@ -6,12 +6,10 @@
 - [Results](#results)
 - [Measurements](#measurements)
 
-Owner: Jia Jing / obstacle. Template S5-U01 and S5-U02 are retired, not reused. One row per run. Write-ups from before 2026-11-03, and build and host output, are at git tag `test-logs-full-2026-11-03`: `git show test-logs-full-2026-11-03:testing/obstacle/TEST_LOG.md`. `+` after a commit means it also had uncommitted changes. Write-ups up to S5-U14 are also in [the saved copy](logs/2026-11-03_TEST_LOG-before-clean.md.gz).
-
 ## Test cases
 
 | ID | Test | Method | Expected |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | S5-U03 | Range groups: no echo, outliers, minimum-valid count, boundaries | Host | Unknown groups never become clearance |
 | S5-U04 | Stationary profiles on 100/150/200 mm synthetic faces | Host | Model-consistent width; invalid rays refused |
 | S5-U05 | +/-20 degree servo limit | Host | Ray bounds and clamping hold; superseded by S5-U09 |
@@ -28,21 +26,21 @@ Owner: Jia Jing / obstacle. Template S5-U01 and S5-U02 are retired, not reused. 
 ## Results
 
 | Date | Test ID | Commit | Tester | Result | Log / evidence | Notes |
-|---|---|---|---|---|---|---|
-| 2026-10-27 | Obstacle CR-111 ray/profile/side-watch host regression + 4 profile builds | `b438bcc` | GitHub Actions | PASS | [Workflow run 40518950503](https://github.com/shauniee/Autonomous-Robotic-Car/actions/runs/40518950503) | Packed fields round-trip signed angles -60..60 and full 16-bit range; simulated obstacle geometry; NOT physical servo/echo tests |
-| 2026-10-27 | Obstacle CR-111 Cortex-M0+ sizeof probe | `b438bcc` | arm-none-eabi-gcc | PASS | Same workflow, Obstacle sizeof step | `ObstacleRay` 3 bytes, `ObstacleProfile` 14 bytes; side-watch holds 8 meaningful bits in one 32-bit atomic word |
-| 2026-10-29 | S5-U03 / S5-U04 | `0448890`+, [working-source manifest](../integration/logs/2026-10-29_INT-16-manifest.json) | Not recorded | PASS (host only) | Host output; Bounded median/edge/model helpers and invalid/no-echo cases; synthetic fixture settings, not enabled production calibration | — |
-| 2026-10-30 | S5-U03/U04 | `62ee522`+, [INT-25 manifest](../integration/logs/2026-10-30_INT-25-accepted-manifest.json) | Codex | PASS (host, build) | At tag | INT-25: unused `s5_profile_build` and `s5_fine_angles` removed; helpers re-checked |
-| 2026-10-30 | S5-U05 | `cc3edb3`+, [working-source manifest](logs/2026-10-30_S5-U05-manifest.json) | Not recorded | PASS (host only) | Host suite output; no physical servo/echo or bypass acceptance | — |
-| 2026-10-30 | S5-U06 | `8be851b`+, [working-source manifest](logs/2026-10-30_S5-U06-manifest.json) | Codex | PASS (build / host regressions only) | Build, host output; image checksum in manifest, not flashed; slew timing and Echo not physically tested | — |
-| 2026-10-30 | S5-U07 | `8be851b`+, [failed source manifest](logs/2026-10-30_S5-U07-manifest.json) | Codex | FAIL (build / host compile) | Strict coarse/fine spacing assertion; output preserved above | — |
-| 2026-10-30 | S5-U08 | `8be851b`+, [working-source manifest](logs/2026-10-30_S5-U08-manifest.json) | Codex | PASS (build / existing host regressions only) | Build, host output; image checksum in manifest, not flashed; no physical scan/Echo acceptance | — |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-27 | Obstacle CR-111 ray/profile/side-watch host regression + 4 profile builds | `b438bcc` | CI | PASS (host, build) | [Workflow run 40518950503](https://github.com/shauniee/Autonomous-Robotic-Car/actions/runs/40518950503) | Packed fields round-trip signed angles -60..60 and full 16-bit range; simulated obstacle geometry; NOT physical servo/echo tests |
+| 2026-10-27 | Obstacle CR-111 Cortex-M0+ sizeof probe | `b438bcc` | Not recorded | PASS (build) | Same workflow, Obstacle sizeof step | `ObstacleRay` 3 bytes, `ObstacleProfile` 14 bytes; side-watch holds 8 meaningful bits in one 32-bit atomic word |
+| 2026-10-29 | S5-U03 / S5-U04 | `0448890`+ | Not recorded | PASS (host) | — | PASS (host only). Host output; Bounded median/edge/model helpers and invalid/no-echo cases; synthetic fixture settings, not enabled production calibration |
+| 2026-10-30 | S5-U03/U04 | `62ee522`+ | Codex | PASS (host, build) | At tag | INT-25: unused `s5_profile_build` and `s5_fine_angles` removed; helpers re-checked |
+| 2026-10-30 | S5-U05 | `cc3edb3`+ | Not recorded | PASS (host) | — | PASS (host only). Host suite output; no physical servo/echo or bypass acceptance |
+| 2026-10-30 | S5-U06 | `8be851b`+ | Codex | PASS (host, build) | — | PASS (build / host regressions only). Build, host output; image checksum in manifest, not flashed; slew timing and Echo not physically tested |
+| 2026-10-30 | S5-U07 | `8be851b`+ | Codex | FAIL (host, build) | — | FAIL (build / host compile). Strict coarse/fine spacing assertion; output preserved above |
+| 2026-10-30 | S5-U08 | `8be851b`+ | Codex | PASS (host, build) | — | PASS (build / existing host regressions only). Build, host output; image checksum in manifest, not flashed; no physical scan/Echo acceptance |
 | 2026-11-02 | S5-U09 | `79c13f1`+ | Claude | PASS (host, build) | At tag | Ideal rays gave at most 136 mm clearance against 300 mm, so limit +/-50 and clearance from each free ray; not physical |
-| 2026-11-02 | S5-U10 | Not run | Pending | PENDING | None | Motors inhibited with `./flash.sh test`; covers MR-17 and MR-18 |
-| 2026-11-03 | S5-U11 | `e576760`+ | Nicholas, Claude | MEASURED, no target set | [+/-50](logs/2026-11-03_S5-U11-serial-sweep50.txt.gz), [+/-60](logs/2026-11-03_S5-U11-serial-sweep60.txt.gz), [course stop](logs/2026-11-03_S5-U11-course-stop-scan-mqtt.txt.gz) | 19 of 23 scans gave a width, see Measurements. MR-17, MR-18, MR-30, MR-31 stay open |
-| 2026-11-03 | S5-U13 | `e576760`+ | Claude | MEASURED (host replay) | Same 23 scans as S5-U11 | Width from 19 of 23 scans before the edge change, 22 of 23 after; the 19 widths are unchanged |
-| 2026-11-03 | S5-U14 | `e576760`+ | Claude | MEASURED (host replay), no pass or fail | Same 23 scans as S5-U11 | Edge thresholds, see Measurements. Servo settle, empty-scene reference and two-distance scans not tested |
-| 2026-11-05 | S5-U15 | `56f7656` plus uncommitted changes, test image `2ca51858` | Nicholas, Claude | MEASURED, no target set | [serial log](logs/2026-11-05_S5-U15-serial.txt.gz) | 180 mm box, 160 mm away by Nicholas's tape, moved centre, then right, then left; offsets and per-position counts not recorded, so scans cannot be split by position. 13 scans completed from 15 presses. +25 degrees hit in all 13, +30 in none, so the left edge read 27.5 degrees every time; the right edge read -25 to -42.5 degrees. Calculated box centre was left of centre in 1 scan and 8 to 28 mm right in 12, so the shorter-edge rule would choose left in 12 of 13. Cause of the fixed left edge not established |
+| 2026-11-02 | S5-U10 | Not run | — | PENDING | None | Motors inhibited with `./flash.sh test`; covers MR-17 and MR-18 |
+| 2026-11-03 | S5-U11 | `e576760`+ | Nicholas, Claude | OBSERVED (car) | [+/-50](logs/2026-11-03_S5-U11-serial-sweep50.txt.gz), [+/-60](logs/2026-11-03_S5-U11-serial-sweep60.txt.gz), [course stop](logs/2026-11-03_S5-U11-course-stop-scan-mqtt.txt.gz) | MEASURED, no target set. 19 of 23 scans gave a width, see Measurements. MR-17, MR-18, MR-30, MR-31 stay open |
+| 2026-11-03 | S5-U13 | `e576760`+ | Claude | OBSERVED (host) | Same 23 scans as S5-U11 | MEASURED (host replay). Width from 19 of 23 scans before the edge change, 22 of 23 after; the 19 widths are unchanged |
+| 2026-11-03 | S5-U14 | `e576760`+ | Claude | OBSERVED (host) | Same 23 scans as S5-U11 | MEASURED (host replay), no pass or fail. Edge thresholds, see Measurements. Servo settle, empty-scene reference and two-distance scans not tested |
+| 2026-11-05 | S5-U15 | `56f7656`+ | Nicholas, Claude | OBSERVED (car) | [serial log](logs/2026-11-05_S5-U15-serial.txt.gz) | 180 mm box at 160 mm, centre/right/left. 13 scans: +25 deg hit in 13, +30 in none, so left edge always 27.5 deg; right -25 to -42.5. Rule would choose left in 12 of 13 |
 
 ## Measurements
 

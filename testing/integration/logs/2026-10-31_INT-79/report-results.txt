@@ -1,2 +1,0 @@
-s1_event storage: 10-byte entry, 168-byte ring (host layout)
-s1_report: PASS

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Summarise an INF2004 Pico MQTT monitor capture (plain text or .gz).
 
-This is diagnostic evidence, not proof of physical motion or a PASS/FAIL.
-Use only captures made from an actual robot at a recorded firmware revision.
+Reads the compact form from compact_log.py or a raw --raw capture.
+Diagnostic evidence only: telemetry speed comes from MQTT arrival times, a
+no-echo report is not a stop cause, and missing frames do not prove the robot
+failed to send them.
 """
 import argparse
 from collections import Counter
@@ -12,6 +14,8 @@ import math
 from pathlib import Path
 import re
 
+REPEATED = re.compile(r"^(?P<kind>\S+) repeated x(?P<count>\d+)")
+WHEEL_KV = re.compile(r"^WHEEL t=(?P<t>\d+) .*?speed=(?P<left>[^/ ]+)/(?P<right>\S+)")
 TELEMETRY = re.compile(r"^TELEMETRY #(?P<seq>\d+) state=(?P<state>[^ ]+).*?\bhumps=(?P<humps>\d+).*?\bfront=(?P<front>no echo|[\d.]+ mm).*?\bbarcode=(?P<barcode>[^ ]+)")
 SPEED = re.compile(r"\bspeed L=(-?\d+(?:\.\d+)?) R=(-?\d+(?:\.\d+)?) mm/s")
 WHEEL_LIMIT_MMPS = 500.0
@@ -19,6 +23,34 @@ WHEEL_LIMIT_MMPS = 500.0
 
 def open_capture(path):
     return gzip.open(path, "rt", encoding="utf-8", errors="replace") if str(path).endswith(".gz") else open(path, "r", encoding="utf-8", errors="replace")
+
+
+def wheel_speeds(line):
+    """(sampled_ms, {field: speed}) from a JSON or compact WHEEL line."""
+    body = line[6:]
+    if body.startswith("{"):
+        trace = json.loads(body)
+        if not isinstance(trace, dict):
+            raise ValueError("wheel record must be an object")
+        return trace.get("sampled_ms"), {k: trace.get(k) for k in ("measured_left", "measured_right")}
+    match = WHEEL_KV.match(line)
+    if not match:
+        raise ValueError("wheel record not recognised")
+    def value(text):
+        return None if text == "-" else float(text)
+    return int(match["t"]), {"measured_left": value(match["left"]), "measured_right": value(match["right"])}
+
+
+def flag_counts(line, totals, count):
+    """Per-telemetry-line counters; a folded repeat counts as `count` lines."""
+    if "barcode capture overflow" in line.lower():
+        totals["barcode_overflow_lines"] += count
+    if "IMU calibration failed" in line:
+        totals["imu_calibration_failure_lines"] += count
+    if "front=no echo" in line:
+        totals["telemetry_no_echo"] += count
+    if not SPEED.search(line):
+        totals["telemetry_speed_unavailable"] += count
 
 
 def analyse(lines, limit=WHEEL_LIMIT_MMPS):
@@ -33,32 +65,39 @@ def analyse(lines, limit=WHEEL_LIMIT_MMPS):
     observed_speeds = []
     wheel_peak = None
     transitions = []
+    last_telemetry = ""
     for number, original in enumerate(lines, 1):
         line = original.strip()
         record = re.search(r"\b(?:TELEMETRY #|EVENT |WHEEL |LINE )", line)
         if record:
             line = line[record.start():]
+        repeated = REPEATED.match(line)
+        if repeated:
+            count = int(repeated["count"])
+            kind = repeated["kind"]
+            if kind == "WHEEL":
+                totals["wheel_trace_frames"] += count
+            elif kind == "LINE":
+                totals["line_trace_frames"] += count
+            elif kind == "TELEMETRY" and last_state is not None:
+                totals["telemetry_frames"] += count
+                states[last_state] += count
+                flag_counts(last_telemetry, totals, count)
+            continue
         if line.startswith("EVENT "):
             name = line.split(":", 1)[0].partition(" ")[2]
             events[name] += 1
-        if "barcode capture overflow" in line.lower():
-            totals["barcode_overflow_lines"] += 1
-        if "IMU calibration failed" in line:
-            totals["imu_calibration_failure_lines"] += 1
         if line.startswith("WHEEL "):
             totals["wheel_trace_frames"] += 1
             try:
-                trace = json.loads(line[6:])
-                if not isinstance(trace, dict):
-                    raise ValueError("wheel record must be an object")
-                for key in ("measured_left", "measured_right"):
-                    value = trace.get(key)
+                sampled_ms, speeds = wheel_speeds(line)
+                for key, value in speeds.items():
                     if value is None:
                         continue
                     if type(value) not in (int, float) or not math.isfinite(value):
                         raise ValueError("invalid wheel speed")
                     if wheel_peak is None or abs(value) > abs(wheel_peak["value"]):
-                        wheel_peak = {"line": number, "sampled_ms": trace.get("sampled_ms"), "field": key, "value": value}
+                        wheel_peak = {"line": number, "sampled_ms": sampled_ms, "field": key, "value": value}
                     if abs(value) > limit:
                         anomalies.append({"line": number, "reason": "wheel_trace_speed_over_limit", "field": key, "value": value})
             except (ValueError, TypeError):
@@ -69,6 +108,8 @@ def analyse(lines, limit=WHEEL_LIMIT_MMPS):
         if not match:
             continue
         totals["telemetry_frames"] += 1
+        flag_counts(line, totals, 1)
+        last_telemetry = line
         d = match.groupdict()
         states[d["state"]] += 1
         if last_state is not None and d["state"] != last_state:
@@ -77,16 +118,12 @@ def analyse(lines, limit=WHEEL_LIMIT_MMPS):
             if d["state"] in ("STOPPED", "FAULT", "REACQUIRE"):
                 anomalies.append({"line": number, "reason": "entered_" + d["state"], "from": last_state})
         last_state = d["state"]
-        if d["front"] == "no echo":
-            totals["telemetry_no_echo"] += 1
         speed = SPEED.search(line)
         if speed:
             speed_left, speed_right = map(float, speed.groups())
             observed_speeds.append((speed_left, speed_right))
             if abs(speed_left) > limit or abs(speed_right) > limit:
                 anomalies.append({"line": number, "reason": "averaged_speed_over_limit", "left": speed_left, "right": speed_right})
-        else:
-            totals["telemetry_speed_unavailable"] += 1
         last_humps = int(d["humps"])
         if first_humps is None:
             first_humps = last_humps
@@ -105,14 +142,6 @@ def analyse(lines, limit=WHEEL_LIMIT_MMPS):
         "first_and_last_telemetry_sequence": [first_seq, last_seq],
         "max_abs_telemetry_speed_mmps": max((abs(x) for pair in observed_speeds for x in pair), default=None),
         "anomalies": anomalies,
-        "limitations": [
-            "A no-echo telemetry report alone is not a stop cause.",
-            "A speed spike may reflect encoder noise, wrap, missing telemetry intervals or actual motion; inspect WHEEL frames and video.",
-            "Terminal/dashboard speed is estimated from MQTT arrival times, not sensor timestamps; burst or delayed delivery makes it unreliable. Use WHEEL sampled_ms and video for confirmation.",
-            "A telemetry barcode display may persist without being a new read; it is not a per-pass event count.",
-            "Missing frames/events in this capture do not prove the robot failed to produce them.",
-            "Reset cause and safety/stopping distance require independent physical evidence.",
-        ],
     }
 
 

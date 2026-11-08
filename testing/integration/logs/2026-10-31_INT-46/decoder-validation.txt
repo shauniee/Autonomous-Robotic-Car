@@ -1,1 +1,0 @@
-Malformed telemetry accepted: reserved bit set, front_valid+invalid sentinel displayed as 8191 mm

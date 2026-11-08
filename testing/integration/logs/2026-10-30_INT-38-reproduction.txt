@@ -1,9 +1,0 @@
-robot_time: PASS
-encoder_math: PASS
-stress: 5000000 reads checked, 0 torn
-robot_data: PASS
-tracking -> recovery slowdown: left duty=0.000000 right duty=0.128173
-INT-37: discrete overspeed direction clamp and position correction PASS
-INT-38 endpoint: direction=-1 drift=-12 left_duty=0.340960
-Assertion failed: (out.duty[0] == 0.0f), function test_turn_endpoint_does_not_reactivate, file test_motion_control.c, line 313.
-testing/pure/run.sh: line 56: 69332 Abort trap: 6           "$build_dir/test_motion_control"

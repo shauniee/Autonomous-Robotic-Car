@@ -1,5 +1,0 @@
-Compile exit: 0
-Recovery sweep: TURN -> Motion RUNNING
-Line detected: ALIGN requests STOP -> Motion FAILED (bug reproduced)
-Motion stop latch -> Mission STOPPED; alignment cannot continue
-Reproduction exit: 0

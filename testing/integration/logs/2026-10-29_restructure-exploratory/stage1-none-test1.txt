@@ -1,5 +1,0 @@
-Building host tool: tools/elf2uf2-Darwin-arm64
-c++ -O2 -std=c++14 -I../tools/elf2uf2 -o tools/elf2uf2-Darwin-arm64 ../tools/elf2uf2/main.cpp
-ld: open() failed, errno=2 (No such file or directory) for 'tools/elf2uf2-Darwin-arm64'
-clang++: error: linker command failed with exit code 1 (use -v to see invocation)
-make: *** [tools/elf2uf2-Darwin-arm64] Error 1

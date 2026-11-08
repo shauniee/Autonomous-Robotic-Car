@@ -1,9 +1,0 @@
-{
-  "base_commit": "8981d04620d5537e4f5b68980528b452b752abb1",
-  "sha256": {
-    "app_program/common/robot_config.h": "054f7728b6b792172572f666a7d4f816aa03aff1c8f5e810528f10473f77339b",
-    "app_program/subsystem2/encoder_math.h": "e94743f62d3ceff0438e112f17dbf54a69e2cf26d37af7015cd99f91195c9b7d",
-    "app_program/subsystem2/motion_control.c": "800f82014eefb17eb79fefbbe600a82e6e611e59ff59814b42c40f8b31a26944",
-    "scripts/mqtt_client.py": "c8e917d88e991789e2949c1aea058ecd6df81f911097e19625e4b8d0d8fc5a93"
-  }
-}
