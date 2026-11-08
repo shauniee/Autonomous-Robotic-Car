@@ -43,4 +43,8 @@ for trace_mode in 0 1; do
     WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 \
     TEST=0 FULL_COURSE=1 NOGUARDS=0 TRACE="$trace_mode"
 done
+# Target struct sizes; the probe's static asserts fail if a narrowed type grows.
+printf '\n=== Target struct sizes ===\n'
+sh "$root/testing/sizeof_probe.sh" >/dev/null
+echo "Struct size bounds hold."
 echo "All requested *compilation* profiles finished; physical tests are still pending."

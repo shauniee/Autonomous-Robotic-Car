@@ -87,9 +87,6 @@ static void test_event_packing(void)
     assert(comms_log_count(&log) == COMMS_EVENT_CAPACITY);
     mqtt_event_t popped;
     assert(comms_log_pop(&log, &popped) && popped.arg == 1u);
-
-    printf("comms_event storage: %zu-byte entry, %zu-byte ring (host layout)\n",
-           sizeof(comms_packed_event_t), sizeof(comms_event_log_t));
 }
 
 static void test_assemble(void)

@@ -1,6 +1,7 @@
 #!/bin/sh
-# Host-only tests for kernel-free modules. Run from anywhere: testing/pure/run.sh
-set -eu
+# Host-only tests for kernel-free modules. Prints one line per test and the
+# full output of any test that fails. Run from anywhere: testing/pure/run.sh
+set -u
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 repo_root=$(CDPATH= cd -- "$script_dir/../.." && pwd)
@@ -10,88 +11,87 @@ cd "$repo_root"
 
 CC=${CC:-cc}
 CFLAGS="-std=c11 -O2 -Wall -Wextra -Werror -pthread -DHOST_TEST"
+T=testing/pure
+DATA=app_program/common/robot_data.c
+FRAME="app_program/comms/mqtt_frame.c $DATA"
+MISSION="app_program/mission/mission_logic.c app_program/mission/recovery_control.c
+    app_program/mission/bypass_control.c app_program/motion/motion_control.c $DATA"
+PROFILE=app_program/obstacle/obstacle_profile.c
+passed=0
+failed=0
 
-$CC $CFLAGS testing/pure/test_robot_time.c -o "$build_dir/test_robot_time"
-for geometry in 0 1; do
-    $CC $CFLAGS -DNAV_GEOMETRY_RELEASED=$geometry -DNAV_SENSOR_FORWARD_MM=$((geometry * 150)) -DNAV_CROSSBAR_MM=$((geometry * 18)) \
-        testing/pure/test_smooth_navigation.c app_program/mission/mission_logic.c \
-        app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
-        app_program/motion/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_smooth_$geometry"
-    "$build_dir/test_smooth_$geometry"
-done
-$CC $CFLAGS testing/pure/test_encoder_math.c -o "$build_dir/test_encoder_math"
-$CC $CFLAGS testing/pure/test_motion_control.c app_program/motion/motion_control.c \
-    app_program/common/robot_data.c -lm -o "$build_dir/test_motion_control"
-$CC $CFLAGS -DMOTION_STALL_GUARD_ENABLED=1 testing/pure/test_motion_control.c app_program/motion/motion_control.c \
-    app_program/common/robot_data.c -lm -o "$build_dir/test_motion_control_guarded"
-$CC $CFLAGS testing/pure/test_barcode.c app_program/line_barcode/barcode.c \
-    app_program/common/robot_data.c -o "$build_dir/test_barcode"
-$CC $CFLAGS testing/pure/test_ir_tracking.c app_program/line_barcode/line.c -lm \
-    -o "$build_dir/test_ir_tracking"
-$CC $CFLAGS testing/pure/test_line_replay.c app_program/line_barcode/line.c app_program/mission/mission_logic.c \
-    app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
-    app_program/motion/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_line_replay"
-$CC $CFLAGS testing/pure/test_safety.c app_program/common/robot_data.c -o "$build_dir/test_safety"
-$CC $CFLAGS -DMISSION_BYPASS_RELEASED=1 -DMISSION_RECOVERY_RELEASED=1 testing/pure/test_mission.c app_program/mission/mission_logic.c \
-    app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
-    app_program/motion/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_mission"
-$CC $CFLAGS -DMISSION_BYPASS_RELEASED=0 -DMISSION_RECOVERY_RELEASED=0 testing/pure/test_mission_pending.c app_program/mission/mission_logic.c \
-    app_program/mission/recovery_control.c app_program/mission/bypass_control.c \
-    app_program/motion/motion_control.c app_program/common/robot_data.c -lm -o "$build_dir/test_mission_pending"
-$CC $CFLAGS testing/pure/test_mission_mapping.c app_program/mission/mission_mapping.c \
-    app_program/common/robot_data.c -o "$build_dir/test_mission_mapping"
-$CC $CFLAGS testing/pure/test_echo_range.c -o "$build_dir/test_echo_range"
-$CC $CFLAGS testing/pure/test_obstacle_profile.c app_program/obstacle/obstacle_profile.c \
-    -lm -o "$build_dir/test_obstacle_profile"
-$CC $CFLAGS testing/pure/test_range_filter.c app_program/obstacle/obstacle_profile.c \
-    -lm -o "$build_dir/test_range_filter"
-$CC $CFLAGS testing/pure/test_profile_edges.c app_program/obstacle/obstacle_profile.c -lm \
-    -o "$build_dir/test_profile_edges"
-$CC $CFLAGS testing/pure/test_mqtt_frame.c app_program/comms/mqtt_frame.c \
-    app_program/common/robot_data.c -o "$build_dir/test_mqtt_frame"
-$CC $CFLAGS testing/pure/test_terrain.c \
-    app_program/terrain/terrain_algo.c app_program/common/robot_data.c -lm \
-    -o "$build_dir/test_terrain"
-$CC $CFLAGS testing/pure/test_comms_report.c app_program/comms/report.c \
-    app_program/comms/mqtt_frame.c app_program/common/robot_data.c \
-    -o "$build_dir/test_comms_report"
-$CC $CFLAGS testing/pure/test_comms_stress.c app_program/comms/report.c \
-    app_program/comms/mqtt_frame.c app_program/common/robot_data.c \
-    -o "$build_dir/test_comms_stress"
-$CC $CFLAGS testing/pure/test_robot_data.c app_program/common/robot_data.c \
-    -o "$build_dir/test_robot_data"
+report() {
+    if [ "$2" -eq 0 ]; then
+        echo "PASS $1"
+        passed=$((passed + 1))
+    else
+        echo "FAIL $1"
+        sed 's/^/    /' "$build_dir/$1.log"
+        failed=$((failed + 1))
+    fi
+}
 
-"$build_dir/test_robot_time"
-"$build_dir/test_encoder_math"
-"$build_dir/test_robot_data"
-"$build_dir/test_motion_control"
-"$build_dir/test_motion_control_guarded"
-$CC $CFLAGS testing/pure/test_motion_trace.c app_program/motion/motion.c \
-    app_program/comms/mqtt_frame.c app_program/common/robot_data.c \
-    -o "$build_dir/test_motion_trace"
-"$build_dir/test_motion_trace"
-$CC $CFLAGS testing/pure/test_line_trace.c app_program/mission/line_trace.c \
-    app_program/comms/mqtt_frame.c app_program/common/robot_data.c \
-    -o "$build_dir/test_line_trace"
-"$build_dir/test_line_trace"
-"$build_dir/test_barcode"
-"$build_dir/test_ir_tracking"
-"$build_dir/test_line_replay"
-"$build_dir/test_safety"
-"$build_dir/test_mission"
-"$build_dir/test_mission_pending"
-"$build_dir/test_mission_mapping"
-"$build_dir/test_echo_range"
-"$build_dir/test_obstacle_profile"
-"$build_dir/test_range_filter"
-"$build_dir/test_profile_edges"
-"$build_dir/test_mqtt_frame"
-"$build_dir/test_terrain"
-"$build_dir/test_comms_report"
-"$build_dir/test_comms_stress"
-python3 testing/pure/test_mqtt_cli.py	# rejected ACKs and burst-safe speed estimate
-python3 scripts/mqtt_client.py --self-test	# laptop decoder agrees with the golden vectors
-python3 testing/pure/test_check_barr.py	# coding rule scan finds each violation, passes clean code
-python3 testing/pure/test_check_deliverables.py	# each subsystem delivers and aligns; damage is caught
-python3 testing/pure/test_field_tools.py	# capture triage and recorded lap scoring
-python3 testing/pure/test_capture_imu.py
+# c_test NAME [-DFLAG...] SOURCE...: compile and run one C test binary.
+c_test() {
+    name=$1
+    shift
+    # shellcheck disable=SC2086 # CFLAGS is several words
+    if $CC $CFLAGS "$@" -lm -o "$build_dir/$name" >"$build_dir/$name.log" 2>&1; then
+        "$build_dir/$name" >>"$build_dir/$name.log" 2>&1
+        report "$name" $?
+    else
+        report "$name" 1
+    fi
+}
+
+# py_test NAME COMMAND...: run one Python check.
+py_test() {
+    name=$1
+    shift
+    python3 "$@" >"$build_dir/$name.log" 2>&1
+    report "$name" $?
+}
+
+# shellcheck disable=SC2086 # the source lists are several words
+{
+c_test robot_time $T/test_robot_time.c
+c_test encoder_math $T/test_encoder_math.c
+c_test robot_data $T/test_robot_data.c $DATA
+c_test motion_control $T/test_motion_control.c app_program/motion/motion_control.c $DATA
+c_test motion_control_stall_guard -DMOTION_STALL_GUARD_ENABLED=1 \
+    $T/test_motion_control.c app_program/motion/motion_control.c $DATA
+c_test motion_trace $T/test_motion_trace.c app_program/motion/motion.c $FRAME
+c_test line_trace $T/test_line_trace.c app_program/mission/line_trace.c $FRAME
+c_test barcode $T/test_barcode.c app_program/line_barcode/barcode.c $DATA
+c_test ir_tracking $T/test_ir_tracking.c app_program/line_barcode/line.c
+c_test line_replay $T/test_line_replay.c app_program/line_barcode/line.c $MISSION
+c_test safety $T/test_safety.c $DATA
+c_test mission -DMISSION_BYPASS_RELEASED=1 -DMISSION_RECOVERY_RELEASED=1 \
+    $T/test_mission.c $MISSION
+c_test mission_unreleased -DMISSION_BYPASS_RELEASED=0 -DMISSION_RECOVERY_RELEASED=0 \
+    $T/test_mission_pending.c $MISSION
+c_test smooth_navigation -DNAV_GEOMETRY_RELEASED=0 -DNAV_SENSOR_FORWARD_MM=0 \
+    -DNAV_CROSSBAR_MM=0 $T/test_smooth_navigation.c $MISSION
+c_test smooth_navigation_geometry -DNAV_GEOMETRY_RELEASED=1 -DNAV_SENSOR_FORWARD_MM=150 \
+    -DNAV_CROSSBAR_MM=18 $T/test_smooth_navigation.c $MISSION
+c_test mission_mapping $T/test_mission_mapping.c app_program/mission/mission_mapping.c $DATA
+c_test echo_range $T/test_echo_range.c
+c_test obstacle_profile $T/test_obstacle_profile.c $PROFILE
+c_test range_filter $T/test_range_filter.c $PROFILE
+c_test profile_edges $T/test_profile_edges.c $PROFILE
+c_test mqtt_frame $T/test_mqtt_frame.c $FRAME
+c_test terrain $T/test_terrain.c app_program/terrain/terrain_algo.c $DATA
+c_test comms_report $T/test_comms_report.c app_program/comms/report.c $FRAME
+c_test comms_stress $T/test_comms_stress.c app_program/comms/report.c $FRAME
+}
+
+py_test mqtt_cli $T/test_mqtt_cli.py
+py_test dashboard_http $T/test_dashboard_http.py
+py_test mqtt_decoder scripts/mqtt_client.py --self-test
+py_test check_barr $T/test_check_barr.py
+py_test check_deliverables $T/test_check_deliverables.py
+py_test field_tools $T/test_field_tools.py
+py_test capture_imu $T/test_capture_imu.py
+
+echo "host tests: $passed passed, $failed failed"
+[ "$failed" -eq 0 ]

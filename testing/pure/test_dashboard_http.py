@@ -1,13 +1,12 @@
 """Host-only dashboard HTTP validation; no MQTT broker or robot connected."""
-import importlib.util
+import sys
 import json
 from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
-spec = importlib.util.spec_from_file_location('mqtt_client', Path(__file__).resolve().parents[2] / 'scripts/mqtt_client.py')
-client = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(client)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+import mqtt_client as client
 dashboard = client.Dashboard(0)
 port = dashboard.server.server_port
 origin = f'http://127.0.0.1:{port}'

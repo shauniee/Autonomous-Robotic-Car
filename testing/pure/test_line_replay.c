@@ -346,7 +346,6 @@ static void test_s_bend_follows_new_side(void)
         }
     }
     assert(flipped == 1u); /* no integral to drain: the first touch steers */
-    printf("s-bend: steering followed the new side after %u samples\n", flipped);
 }
 
 /* Blank floor during the recovery sweep is not the line; a sensor crossing it

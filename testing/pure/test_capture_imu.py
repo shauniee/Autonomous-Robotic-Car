@@ -1,16 +1,14 @@
 """Host checks for IMU console capture; no sensor measurements."""
 
-import importlib.util
+import sys
 import io
 from pathlib import Path
 import unittest
 from unittest.mock import patch
 
 
-spec = importlib.util.spec_from_file_location(
-    "capture_imu", Path(__file__).resolve().parents[2] / "scripts/capture_imu.py")
-imu = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(imu)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+import capture_imu as imu
 
 
 def row(sequence=1, dropped=0):

@@ -57,21 +57,36 @@ static void line_barcode_publish(const LineIrSnapshot *snapshot)
 }
 
 #if APP_TEST
-static void report(const IrTracker *tracker, uint32_t now,
-    ButtonInputs inputs)
+/* Prints when a reported value changes, or every IR_REPORT_HEARTBEAT_MS so
+   a quiet bench capture still shows the sensor is alive. Button changes have
+   their own line. */
+#define IR_REPORT_HEARTBEAT_MS 5000u
+static void report(const IrTracker *tracker, uint32_t now)
 {
+    static uint16_t last_key = UINT16_MAX;
+    static uint32_t heartbeat_due;
     LineIrSnapshot snapshot = ir_snapshot_build(tracker, now);
-    tm_printf((UB *)"[IR] digital L=%u R=%u acquired=%d fresh=%d "
-        "black L=%u R=%u valid=%d "
-        "line=%s age_ms=%u GP20_down=%d GP21_down=%d "
-        "SENSOR_ONLY\n",
-        (unsigned)ir_raw_word_raw(snapshot.raw).left,
-        (unsigned)ir_raw_word_raw(snapshot.raw).right, ir_raw_word_valid(snapshot.raw),
-        snapshot.sample_fresh, (unsigned)snapshot.left_black,
-        (unsigned)snapshot.right_black, snapshot.normalized_valid,
-        ir_tracking_line_name(snapshot.line),
-        (unsigned)(snapshot.have_sample ? now - snapshot.sampled_ms : 0u), inputs.gp20_down,
-        inputs.gp21_down);
+    IrRaw raw = ir_raw_word_raw(snapshot.raw);
+    uint16_t key = (uint16_t)(raw.left | (raw.right << 2u) |
+        ((unsigned)ir_raw_word_valid(snapshot.raw) << 4u) |
+        ((unsigned)snapshot.sample_fresh << 5u) |
+        ((unsigned)snapshot.left_black << 6u) |
+        ((unsigned)snapshot.right_black << 7u) |
+        ((unsigned)snapshot.normalized_valid << 8u) |
+        ((unsigned)snapshot.line << 9u));
+    if ((key == last_key) && ((int32_t)(now - heartbeat_due) < 0))
+    {
+        return;
+    }
+    last_key = key;
+    heartbeat_due = now + IR_REPORT_HEARTBEAT_MS;
+    tm_printf((UB *)"[IR] raw=%u/%u valid=%d fresh=%d black=%u/%u "
+        "normalized=%d line=%s age=%ums\n",
+        (unsigned)raw.left, (unsigned)raw.right,
+        ir_raw_word_valid(snapshot.raw), snapshot.sample_fresh,
+        (unsigned)snapshot.left_black, (unsigned)snapshot.right_black,
+        snapshot.normalized_valid, ir_tracking_line_name(snapshot.line),
+        (unsigned)(snapshot.have_sample ? now - snapshot.sampled_ms : 0u));
 }
 #endif
 
@@ -149,7 +164,7 @@ void line_barcode_step(uint32_t now)
 #if APP_TEST
     if ((int32_t)(now - report_due) >= 0)
     {
-        report(&tracker, now, inputs);
+        report(&tracker, now);
         report_due = now + REPORT_PERIOD_MS;
     }
 #endif
