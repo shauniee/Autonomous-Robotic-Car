@@ -424,7 +424,7 @@ owner. Simultaneous faults stay independent.
 ### Memory
 
 Target `sizeof`, Arm GNU C, RP2040, measured with
-`sh testing/line_barcode/sizeof_probe.sh testing/integration/sizeof_probe.c`
+`sh testing/sizeof_probe.sh`
 on `main` (`c26bca4`) and on this change (INT-223).
 
 | Type | Before (bytes) | After (bytes) |
