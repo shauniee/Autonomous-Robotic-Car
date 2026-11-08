@@ -1,10 +1,10 @@
-/* Compile-only target ABI evidence for the current three-task software. */
-#include "../../app_program/mission/mission_logic.h"
-#include "../../app_program/motion/motion.h"
-#include "../../app_program/terrain/terrain.h"
-#include "../../app_program/obstacle/obstacle.h"
-#include "../../app_program/comms/comms.h"
-#include "../../app_program/mission/safety_logic.h"
+/* Target size of every application struct; run testing/sizeof_probe.sh. */
+#include "../app_program/mission/mission_logic.h"
+#include "../app_program/motion/motion.h"
+#include "../app_program/terrain/terrain.h"
+#include "../app_program/obstacle/obstacle.h"
+#include "../app_program/comms/comms.h"
+#include "../app_program/mission/safety_logic.h"
 
 #define PROBE(type) char probe_sizeof_##type[sizeof(type)]
 PROBE(Button);

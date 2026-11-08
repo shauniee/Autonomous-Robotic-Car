@@ -190,7 +190,7 @@ That deliberate exception is owned by the data representation table.
 To repeat all public type sizes with the Arm compiler on PATH:
 
 ```sh
-sh testing/line_barcode/sizeof_probe.sh testing/integration/sizeof_probe.c
+sh testing/sizeof_probe.sh
 ```
 
 Detailed field offsets and widths were inspected in GNU DWARF 4 debug records

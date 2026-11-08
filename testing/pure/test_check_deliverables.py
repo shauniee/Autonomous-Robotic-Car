@@ -1,14 +1,12 @@
 """Deliverables check against this repository and damaged copies of it."""
-import importlib.util
+import sys
 import shutil
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-spec = importlib.util.spec_from_file_location(
-    "check_deliverables", ROOT / "scripts/check_deliverables.py")
-check = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(check)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+import check_deliverables as check
 
 assert check.main([str(ROOT)]) == 0
 

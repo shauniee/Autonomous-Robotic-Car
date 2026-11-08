@@ -1,14 +1,11 @@
 """CLI exit status against in-process MQTT replies; no network or robot."""
-import importlib.util
 from pathlib import Path
 import sys
 from types import ModuleType, SimpleNamespace
 from unittest.mock import patch
 
-spec = importlib.util.spec_from_file_location("mqtt_client",
-    Path(__file__).resolve().parents[2] / "scripts/mqtt_client.py")
-cli = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(cli)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+import mqtt_client as cli
 
 
 class Client:

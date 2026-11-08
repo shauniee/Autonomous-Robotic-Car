@@ -588,9 +588,6 @@ static void test_follow_slowdown_never_reverses(void)
     cmd = motion_command_make(MOTION_MODE_FOLLOW, 37.0f,
         0.0f, -96, 1u, in.now_ms);
     motion_control_step(&control, &cmd, &in, &out);
-    printf("tracking -> recovery slowdown: left duty=%f right duty=%f\n",
-        (double)out.duty[0], (double)out.duty[1]);
-    fflush(stdout);
     assert(out.status == RD_MOTION_RUNNING && !out.stall);
     assert(out.duty[0] >= 0.0f && out.duty[1] >= 0.0f);
     /* The saturated controller must recover rather than winding below zero. */
@@ -684,9 +681,6 @@ static void test_turn_endpoint_does_not_reactivate(void)
             in.now_ms += MOTION_PERIOD_MS;
             cmd.sampled_ms = in.now_ms;
             motion_control_step(&control, &cmd, &in, &out);
-            printf("INT-38 endpoint: direction=%d drift=%d left_duty=%f\n",
-                direction, drift, (double)out.duty[0]);
-            fflush(stdout);
             assert(out.duty[0] == 0.0f);
         }
         /* Partner arrival must not hide drift outside twice the tolerance. */
