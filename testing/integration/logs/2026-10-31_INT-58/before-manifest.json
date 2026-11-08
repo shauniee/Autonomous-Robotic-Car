@@ -1,8 +1,0 @@
-{
-  "base_commit": "8981d04620d5537e4f5b68980528b452b752abb1",
-  "sha256": {
-    "app_program/mission/recovery_control.c": "0acbc0df061f52169776bd5c20e2c946ee971bbb86ec20e30d873b7205efa89e",
-    "app_program/common/robot_config.h": "f557dad46284f98080e2a14008cb9aaea53b465f2904ed51dbd444fbef76aae1",
-    "testing/pure/test_mission.c": "631d64a610ff986ae6dce1311993b52062ca5ea019be9be9d9f70073ea51c20e"
-  }
-}

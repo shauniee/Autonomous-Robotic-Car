@@ -117,7 +117,7 @@ HUMP t=21840 pitch=2 roll=0.75 state=2 rise=0mm accel=1070mg accel_ok=1 travel_o
 HUMP t=21860 pitch=2 roll=0.25 state=2 rise=0mm accel=980mg accel_ok=1 travel_ok=0 window_ok=0 encoder_ok=1 calibrated=1
 HUMP t=21900 pitch=1.5 roll=0.75 state=2 rise=0mm accel=1030mg accel_ok=1 travel_ok=0 window_ok=0 encoder_ok=1 calibrated=1
 HUMP t=21920 pitch=0.75 roll=0 state=2 rise=0mm accel=1060mg accel_ok=1 travel_ok=0 window_ok=0 encoder_ok=1 calibrated=1
-HUMP t=21940 pitch=0.75 roll=0 state=2 rise=0mm accel=1060mg accel_ok=1 travel_ok=0 window_ok=0 encoder_ok=1 calibrated=1
+HUMP repeated x1 to t=21940
 HUMP t=21960 pitch=1.5 roll=0 state=2 rise=0mm accel=1070mg accel_ok=1 travel_ok=0 window_ok=0 encoder_ok=1 calibrated=1
 HUMP t=21980 pitch=1.25 roll=-0.25 state=2 rise=0mm accel=1060mg accel_ok=1 travel_ok=0 window_ok=0 encoder_ok=1 calibrated=1
 HUMP t=22000 pitch=0.5 roll=0 state=2 rise=0mm accel=1050mg accel_ok=1 travel_ok=0 window_ok=0 encoder_ok=1 calibrated=1

@@ -1,8 +1,0 @@
-robot_time: PASS
-encoder_math: PASS
-stress: 5000000 reads checked, 0 torn
-robot_data: PASS
-tracking -> recovery slowdown: left duty=0.000000 right duty=0.128173
-INT-37 reproduction: mode=2 target=-28 travel=16 duty=0.016708/0.016708
-Assertion failed: (out.duty[0] * left_sign >= 0.0f), function test_discrete_overspeed_does_not_reverse, file test_motion_control.c, line 263.
-testing/pure/run.sh: line 56: 65125 Abort trap: 6           "$build_dir/test_motion_control"

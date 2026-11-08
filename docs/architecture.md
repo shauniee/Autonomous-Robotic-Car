@@ -509,7 +509,7 @@ moving (so the stopping decision is included) and puts it in an eight-record SPS
 ring; I/O drains at most two per release after the wheel trace, and offline/full
 TX or a full ring drops records without waiting. Sample-time gaps reveal drops.
 There is no request, movement authority or live tuning input. `mqtt_client.py
-monitor` prints `LINE` JSON; the dashboard does not display it.
+monitor` prints it as a short `LINE` line (`--raw` for JSON); the dashboard does not display it.
 
 ### Telemetry and snapshot reply (22 bytes)
 

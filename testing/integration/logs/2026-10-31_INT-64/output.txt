@@ -1,5 +1,0 @@
-Command: cc -std=c11 -O2 -Wall -Wextra -Werror -I. testing/integration/logs/2026-10-31_INT-64/angle.c app_program/mission/recovery_control.c -lm -o /tmp/arc-int64
-left=-20 right=20: estimated 10.00 deg; held turn=70; no reversal
-left=-130 right=130: estimated 65.00 deg; brake then reverse
-next relative target=-135 deg (toward -70 absolute)
-INT-64 estimated-angle assertions PASS; no physical calibration claim

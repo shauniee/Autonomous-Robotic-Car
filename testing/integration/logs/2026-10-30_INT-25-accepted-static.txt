@@ -1,7 +1,0 @@
-PASS: removed APIs absent from application and host-test source.
-PASS: event insertion uses RD_SNAPSHOT_LOCK_MS (2 ms); I/O remains nonwaiting.
-PASS: two single-writer atomic-word lock-miss counters, saturation guard at UINT32_MAX.
-PASS: target subsystem1 object has lock_misses, no __atomic_ RMW/helper dependency.
-PASS: BUSY label is neutral.
-PASS: all recorded tested-source hashes remain current.
-Scope: source/object inspection, not executed lock-timeout or scheduler evidence.
