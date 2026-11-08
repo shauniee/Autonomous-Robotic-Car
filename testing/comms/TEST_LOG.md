@@ -33,3 +33,4 @@
 | 2026-10-30 | S1-M01 | Current-image trial to record | — | PENDING | — | No Pico subscription, controlled physical fault injection or timing capture executed |
 | 2026-10-30 | S1-U09..U13 | `62ee522`+ | Codex | PASS (host) | — | PASS (host only). Full suite; codec, reporting, mapping, bridge, helper and fault masks. Firmware startup subset compiled in both TEST profiles; execution pending |
 | 2026-10-30 | S1-U10 | `62ee522`+ | Codex | PASS (host, build) | At tag | INT-25: removed unused `s1_handle_command` tests; kernel-bound `s1_step` not run |
+| 2026-11-08 | S1-U14 | `2e254ff` | Nicholas, Claude | PASS (host, build) | — | Each of the 12 fault bits round-trips alone and together; undefined bits not sent; reserved bits rejected; v2 frames rejected by version. Course bss 83700 B. Not run on a real link (S1-M01) |
