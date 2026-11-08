@@ -10,6 +10,7 @@
 #include "../comms/comms.h"
 #include "../common/buttons.h"
 #include "../common/robot_time.h"
+#include "../common/task_timing.h"
 
 static _Atomic uint8_t published_state;	/* writer: Mission task; 7 states, 3 logical bits */
 
@@ -37,9 +38,11 @@ static void mission_task(INT stacd, void *exinf)
 #if ROBOT_TRACE_ENABLED
     uint32_t traced_ms = 0u;
 #endif
+    task_timing_t timing = {.window_start_ms = now};
 
     for (;;)
     {
+        uint32_t started_us = task_timing_begin();
         now = robot_time_ms();
         line_barcode_step(now);
         mqtt_mapping_t mapping;
@@ -306,7 +309,10 @@ static void mission_task(INT stacd, void *exinf)
                     (unsigned)in.motion_status);
             }
         }
-        tk_dly_tsk(robot_time_next_delay(&release, FOLLOW_PERIOD_MS, robot_time_ms()));
+        uint32_t end_ms = robot_time_ms();
+        task_timing_end(&timing, TASK_TIMING_MISSION, started_us, release,
+            FOLLOW_PERIOD_MS, end_ms);
+        tk_dly_tsk(robot_time_next_delay(&release, FOLLOW_PERIOD_MS, end_ms));
     }
 }
 

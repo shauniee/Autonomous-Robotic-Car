@@ -13,6 +13,7 @@
 #include "../common/drv_gpio_irq.h"
 #include "../common/robot_data.h"
 #include "../common/robot_time.h"
+#include "../common/task_timing.h"
 #endif
 
 #ifndef HOST_TEST
@@ -159,8 +160,10 @@ static void motion_task(INT stacd, void *exinf)
     uint32_t good_counts = 0u;
     uint32_t invalid_score = 0u;
     uint32_t last_left = drv_encoder_count(ENCODER_LEFT), last_right = drv_encoder_count(ENCODER_RIGHT);
+    task_timing_t timing = {.window_start_ms = release};
     for (;;)
     {
+        uint32_t started_us = task_timing_begin();
         /* Motion is the sole writer of its fault byte: the ISR only counts. */
         uint32_t invalid_edges = drv_encoder_invalid_edges();
         uint32_t left = drv_encoder_count(ENCODER_LEFT), right = drv_encoder_count(ENCODER_RIGHT);
@@ -315,7 +318,10 @@ static void motion_task(INT stacd, void *exinf)
                 (unsigned)in.count[0], (unsigned)in.count[1]);
         }
         /* Fixed-rate release; a stop wake-up services immediately without shifting it. */
-        tk_slp_tsk(robot_time_next_delay(&release, MOTION_PERIOD_MS, robot_time_ms()));
+        uint32_t end_ms = robot_time_ms();
+        task_timing_end(&timing, TASK_TIMING_MOTION, started_us, release,
+            MOTION_PERIOD_MS, end_ms);
+        tk_slp_tsk(robot_time_next_delay(&release, MOTION_PERIOD_MS, end_ms));
         tk_can_wup(TSK_SELF);
     }
 }
