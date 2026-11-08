@@ -8,9 +8,7 @@
 SIZE(TerrainCalibSum);
 SIZE(TerrainFilterQ16);
 SIZE(TerrainContext);
-SIZE(TerrainTravelQuality);
 FIELD(TerrainContext, filtered_accel_q16);
 FIELD(TerrainContext, calib_sum);
-FIELD(TerrainContext, rise_q);
 FIELD(TerrainContext, pitch_cdeg);
 FIELD(TerrainContext, hump_count);

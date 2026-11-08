@@ -15,17 +15,17 @@ _Static_assert(COMMS_FRAME_MAX >= MQTT_FRAME_MAX, "bridge slots must hold the la
 
 static comms_event_log_t event_log; /* guarded by event_mutex across cores */
 static ID event_mutex;
-/* Each core is its own counter's sole writer. Atomic load/store permits
-   diagnostic reads without a cross-core RMW or a second contended lock. */
-static rd_word_t lock_misses[2];
-static rd_word_t last_barcode;		/* writer: comms_event callers (Mission); letter | action << 5 */
-/* Writer: comms_event callers (Mission). Room on the side chosen. */
-static rd_word_t last_clearance_mm;
+/* Writer: comms_event callers (Mission). Letter bits 0..4 (31 none),
+   action bits 5..7: one byte store. */
+static _Atomic uint8_t last_barcode;
+/* Writer: comms_event callers (Mission). Room on the side chosen, mm,
+   0..1023 (10 of 16 bits). */
+static _Atomic uint16_t last_clearance_mm;
 
 ER comms_init(void)
 {
     comms_log_init(&event_log);
-    rd_word_publish(&last_barcode, MQTT_NO_LETTER);
+    atomic_store_explicit(&last_barcode, MQTT_NO_LETTER, memory_order_release);
     T_CMTX mutex = {0};
     mutex.mtxatr = TA_INHERIT;
     event_mutex = tk_cre_mtx(&mutex);
@@ -43,29 +43,20 @@ void comms_event(mqtt_event_kind_t kind, uint8_t arg, uint16_t arg2)
         .arg2 = arg2};
     if (kind == MQTT_EVENT_BARCODE)
     {
-        rd_word_publish(&last_barcode, (uint32_t)(arg & 0x1Fu) | ((uint32_t)(arg2 & 0x7u) << 5));
+        atomic_store_explicit(&last_barcode,
+            (uint8_t)((arg & 0x1Fu) | ((arg2 & 0x7u) << 5)),
+            memory_order_release);
     }
     else if (kind == MQTT_EVENT_OBSTACLE)
     {
-        rd_word_publish(&last_clearance_mm, arg2);
+        atomic_store_explicit(&last_clearance_mm,
+            (uint16_t)(arg2 > 1023u ? 1023u : arg2), memory_order_release);
     }
+    /* A lock that cannot be taken within the bound drops this event. */
     if (tk_loc_mtx(event_mutex, RD_SNAPSHOT_LOCK_MS) >= E_OK)
     {
         (void)comms_log_push(&event_log, &event);
         (void)tk_unl_mtx(event_mutex);
-    }
-    else
-    {
-        /* tk_get_prc is 1-based; callers are pinned to cores 0 and 1. */
-        unsigned core = (unsigned)tk_get_prc() - 1u;
-        if (core < 2u)
-        {
-            uint32_t misses = rd_word_read(&lock_misses[core]);
-            if (misses != UINT32_MAX)
-            {
-                rd_word_publish(&lock_misses[core], misses + 1u);
-            }
-        }
     }
 }
 
@@ -75,7 +66,8 @@ static void gather(mqtt_telemetry_t *t, uint8_t sequence)
     obstacle_range_sample_t front_sample = {0}, side_sample = {0};
     bool have_range = obstacle_range_try_copy(&front_sample, &side_sample) >= E_OK;
     uint32_t front = front_sample.word;
-    uint32_t barcode = rd_word_read(&last_barcode);
+    uint32_t barcode = atomic_load_explicit(&last_barcode,
+        memory_order_acquire);
     LineIrSnapshot line = {0};
     ObstacleProfile profile = {0};
     bool have_line = line_ir_try_copy(&line);
@@ -101,7 +93,8 @@ static void gather(mqtt_telemetry_t *t, uint8_t sequence)
         .barcode_letter = (uint8_t)(barcode & 0x1Fu),
         .barcode_action = (uint8_t)((barcode >> 5) & 0x7u),
         .obstacle_width_mm = have_profile ? profile.width_mm : 0u,
-        .obstacle_clearance_mm = (uint16_t)rd_word_read(&last_clearance_mm)};
+        .obstacle_clearance_mm = atomic_load_explicit(&last_clearance_mm,
+            memory_order_acquire)};
     for (unsigned i = 0u; i < MQTT_FAULT_BYTES; ++i) t->faults[i] = rd_fault_get((rd_owner_t)i);
     comms_clamp(t);
 }

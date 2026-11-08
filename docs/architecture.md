@@ -426,28 +426,13 @@ four-letter runtime mapping, per-consumer encoder origins and word snapshots.
 
 **Change requirement.** Adopted at Tribunal 1. Each application field uses only the
 bits its valid range needs. [Project-specs section 4](project-specs.md#4-change-in-requirement-minimum-bit-data-representation)
-owns the requirement and the [data table](project-specs.md#5-data-representation-table-week-13)
-owns every width.
-
-- **Bits:** `ceil(log2(valid values + invalid codes))`, justified by documented bounds, units, signedness, scale, rounding and invalid codes.
-- **Storage:** in-RAM packed state uses bit-fields behind accessors; the wire uses explicit masks and shifts (binary schema v2, replacing JSON). Combine fields only when they share one writer, never merely because widths fit.
-- **Faults:** one bit per condition in a shared [bitmask](#fault-bitmask), so simultaneous faults stay independent.
-- **Scaled values:** a 0..1 fraction is `uint8_t` 0..127 (`IR_SCALE_ONE`) and a -1..+1 value `int8_t` -127..+127. Float tunables fold to integers at compile time; base-10 display happens only on the laptop. Round to nearest; readers divide by `IR_SCALE_ONE` only at a float boundary. A finer step needs a test showing 1/127 (about 0.8 percent) is not enough.
-- **Exempt:** loop counters and short-lived temporaries.
-
-**Evidence, final implementation only:** the data table, RAM usage, message sizes and
-no lost functionality or unacceptable timing (T15). Comparison with the old build is
-not required (course update, 2026-10-27), so the historical baseline in project-specs
-is a record only. Evidence means a result tied to an exact commit and test ID.
-
-**Still to audit:** fields added since the last size probe, including the line trace,
-onset and integral state, Mission state encoding, Terrain freshness and scan parameters.
-Each owner also reviews their test log against current code (JSON-era S1-U04..U08,
-six-byte faults, any case assuming no echo stops), appending rather than editing.
+owns the requirement. [Team section 6](team.md#6-data-representation) owns every
+width and the representation rules, and [section 7](team.md#7-correctness-and-performance-evidence)
+the evidence: no lost function, memory, message sizes and timing.
 
 ## MQTT binary protocol, schema version 2
 
-Implemented by `app_program/comms/comms.h` and `mqtt_frame.c`, tested by `testing/pure/test_mqtt_frame.c`; the laptop decoder `scripts/mqtt_client.py` checks the same golden vectors (`--self-test`). Field widths follow the data table in [project-specs](project-specs.md); rows pending there carry provisional widths here and change only through the data-contract review (#28). Version 2 added line status, the mapped flag, the Mission fault byte and obstacle width/depth; a version 1 frame is rejected.
+Implemented by `app_program/comms/comms.h` and `mqtt_frame.c`, tested by `testing/pure/test_mqtt_frame.c`; the laptop decoder `scripts/mqtt_client.py` checks the same golden vectors (`--self-test`). Field widths follow the [data table](team.md#6-data-representation). Version 2 added line status, the mapped flag, the Mission fault byte and obstacle width/depth; a version 1 frame is rejected.
 
 Topics (root `robot/s3`, set in `config/wifi_secrets.h`): `<root>/telemetry` carries every robot-to-PC frame, `<root>/request` carries mapping and snapshot requests, `<root>/status` is the retained online/offline text.
 
@@ -462,16 +447,16 @@ Rules for every frame:
 
 | Type | Value | Direction | Length (bytes) |
 | --- | --- | --- | --- |
-| Telemetry | 1 | robot to PC, every 500 ms | 23 |
+| Telemetry | 1 | robot to PC, every 500 ms | 22 |
 | Event | 2 | robot to PC | 11 |
-| Snapshot reply | 3 | robot to PC, answers a request; body as telemetry | 23 |
+| Snapshot reply | 3 | robot to PC, answers a request; body as telemetry | 22 |
 | Mapping | 4 | PC to robot | 5 |
 | Acknowledgement | 5 | robot to PC | 3 |
 | Snapshot request | 6 | PC to robot | 2 |
 | Wheel trace | 8 | robot to PC, best effort per Motion release | 15 |
 | Line trace | 9 | robot to PC, best effort per fresh IR acquisition while moving | 17 |
-| Barcode trace | 10 | robot to PC, best effort, raw GP16 run widths |
-| Terrain trace | 11 | robot to PC, best effort, IMU sample for the dashboard |
+| Barcode trace | 10 | robot to PC, best effort, raw GP16 run widths | 18 |
+| Terrain trace | 11 | robot to PC, best effort, IMU sample for the dashboard | 14 |
 
 ### Wheel trace (15 bytes)
 
@@ -481,7 +466,7 @@ contain left target in bits 0..14 and right target in bits 15..29 (signed
 15-bit counts/s), TEST inhibition in bit 30 and motor-output service success
 in bit 31. Bytes 9..10 and 11..12 are signed 16-bit measured left/right counts/s.
 Bytes 13 and 14 are signed left/right duty percentages. Invalid encodings and
-rounding are owned by the [data table](project-specs.md#motion-encoder-width-provisional-until-d03-one-constant-enc_count_bits-in-robot_configh-branches-29-31).
+rounding are owned by the [data table](team.md#motion-and-encoder).
 Output failure marks both duty fields invalid. TEST reports zero duty with
 inhibition set. Targets represent computed wheel demands; serviced braking may
 override them. This is software output evidence, not electrical measurement.
@@ -570,20 +555,13 @@ calibration bits. Older firmware remains readable with calibration unknown.
 | 7-8 | right encoder count at the event |
 | 9-10 | arg2: action (barcode), clearance mm (obstacle); arg 1 passing left, 0 right |
 
-**Event RAM packing (issue #112).** The 11-byte event wire format and MQTT schema v2
-remain unchanged. Byte 1 already reserves four bits for kind. `arg2` cannot be
-reduced to three bits: barcode actions are small, but obstacle clearance uses its
-full 16-bit range (0-65535 mm). The Reporting ring uses 16 entries of
-`comms_packed_event_t` (10 bytes each): kind uses three bits and arg seven bits
-in a shared 16-bit field; time, encoder positions and arg2 stay 16-bit.
-Invalid kinds and arguments above 127 are rejected rather than truncated.
-Ring head (0-15) and count (0-16) share a 16-bit packed word, with
-32-bit saturating `dropped`. Accessors isolate the bit operations; the
-existing same-core interrupt-masked push/pop boundaries remain in the current implementation. During I/O consolidation, audit producer/consumer placement: local interrupt masking does not protect a cross-core ring.
-Expected target ring storage is 168 bytes, including padding; confirm with
-`testing/line_barcode/sizeof_probe.sh testing/comms/sizeof_probe.c`.
-This is a RAM layout change only: `mqtt_encode_event`, the laptop decoder
-and schema-v2 golden vectors remain compatible.
+**Event RAM packing.** The 11-byte event wire format is unchanged. The
+Reporting ring holds 16 `comms_packed_event_t` entries of 10 bytes: kind (3 bits)
+and arg (7 bits) share a 16-bit field; time, encoder positions and arg2 stay
+16-bit. Ring head (0-15) and count (0-16) share one 16-bit word, 162 bytes in
+all. Invalid kinds and arguments above 127 are rejected rather than truncated.
+A full ring overwrites the oldest event, and a lock that cannot be taken within
+its bound drops the new one; neither drop is counted.
 
 ### Mapping, acknowledgement, snapshot request
 

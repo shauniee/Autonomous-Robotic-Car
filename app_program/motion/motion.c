@@ -13,6 +13,7 @@
 #include "../common/drv_gpio_irq.h"
 #include "../common/robot_data.h"
 #include "../common/robot_time.h"
+#include "../common/task_timing.h"
 #endif
 
 #ifndef HOST_TEST
@@ -21,8 +22,11 @@ static ID command_mutex, stop_flag, motion_tid;
 static MotionCommand latest;
 static rd_word_t feedback;		/* single writer: Motion */
 static MotionHealth progress;		/* guarded by command_mutex */
-static uint32_t stop_requests;		/* incremented by core-1 stop callers inside DI */
-static uint32_t serviced_stops;		/* written by Motion after braking */
+/* Core-1 writers only, inside DI. Core 0 (Terrain's health read) loads
+   serviced_stops before stop_requests: serviced only follows requests, so
+   equal loads mean every stop seen so far was braked. */
+static _Atomic uint32_t stop_requests;  /* stop callers on core 1 */
+static _Atomic uint32_t serviced_stops; /* Motion after braking */
 
 #define STOP_BIT 1u
 #define INHIBIT_BIT 2u
@@ -42,7 +46,9 @@ static void control_leave(UW state)
 /* Nonwaiting flag operation only; callers wake Motion after restoring IRQs. */
 static ER latch_stop(void)
 {
-    ++stop_requests;
+    atomic_store_explicit(&stop_requests,
+        atomic_load_explicit(&stop_requests, memory_order_relaxed) + 1u,
+        memory_order_release);
     return tk_set_flg(stop_flag, STOP_BIT);
 }
 
@@ -107,7 +113,8 @@ ER motion_reset_stop(void)
         if (!motion_stop_reset_allowed(
                 (flag.flgptn & INHIBIT_BIT) != 0u,
                 (flag.flgptn & STOP_BIT) != 0u,
-                stop_requests, serviced_stops,
+                atomic_load_explicit(&stop_requests, memory_order_acquire),
+                atomic_load_explicit(&serviced_stops, memory_order_acquire),
                 drv_buttons_read().gp21_down ||
                 rd_fault_stop_pending()))
         {
@@ -139,8 +146,12 @@ static ER health_copy(MotionHealth *h, TMO wait)
     T_RFLG f;
     er = tk_ref_flg(stop_flag, &f);
     bool stopped = er < E_OK || (f.flgptn & STOP_BIT) != 0;
-    bool braked = er >= E_OK && stopped && serviced_stops == stop_requests;
-    h->flags = (uint8_t)((stopped ? MOTION_HEALTH_STOPPED_BIT : 0u) |
+    uint32_t serviced = atomic_load_explicit(&serviced_stops,
+        memory_order_acquire);
+    bool braked = er >= E_OK && stopped &&
+        serviced == atomic_load_explicit(&stop_requests, memory_order_acquire);
+    h->flags = (uint8_t)((h->flags & MOTION_HEALTH_SERVICED_BIT) |
+                         (stopped ? MOTION_HEALTH_STOPPED_BIT : 0u) |
                          (braked ? MOTION_HEALTH_BRAKED_BIT : 0u));
     control_leave(state);
     return er;
@@ -159,8 +170,10 @@ static void motion_task(INT stacd, void *exinf)
     uint32_t good_counts = 0u;
     uint32_t invalid_score = 0u;
     uint32_t last_left = drv_encoder_count(ENCODER_LEFT), last_right = drv_encoder_count(ENCODER_RIGHT);
+    task_timing_t timing = {.window_start_ms = release};
     for (;;)
     {
+        uint32_t started_us = task_timing_begin();
         /* Motion is the sole writer of its fault byte: the ISR only counts. */
         uint32_t invalid_edges = drv_encoder_invalid_edges();
         uint32_t left = drv_encoder_count(ENCODER_LEFT), right = drv_encoder_count(ENCODER_RIGHT);
@@ -201,8 +214,8 @@ static void motion_task(INT stacd, void *exinf)
 
         uint32_t now = robot_time_ms();
         MotionInput in = {.now_ms = now,
-            .count = {drv_encoder_count(ENCODER_LEFT),
-                      drv_encoder_count(ENCODER_RIGHT)}};
+            .count = {(enc_count_t)drv_encoder_count(ENCODER_LEFT),
+                      (enc_count_t)drv_encoder_count(ENCODER_RIGHT)}};
         /* Out-of-range trace speed encodes unavailable, never measured zero. */
         MotionOutput out = {.status = RD_MOTION_IDLE,
             .measured_cps = {-32768.0f, -32768.0f}};
@@ -242,7 +255,8 @@ static void motion_task(INT stacd, void *exinf)
             (void)latch_stop();
             stopped = true;
         }
-        uint32_t observed_stops = stop_requests;
+        uint32_t observed_stops = atomic_load_explicit(&stop_requests,
+            memory_order_acquire);
         if (stopped)
         {
             motion_control_reset(&controller);
@@ -268,7 +282,9 @@ static void motion_task(INT stacd, void *exinf)
         }
         else if (stopped)
         {
-            serviced_stops = observed_stops; /* Brake serviced for every stop seen. */
+            /* Brake serviced for every stop seen. */
+            atomic_store_explicit(&serviced_stops, observed_stops,
+                memory_order_release);
         }
         control_leave(irq);
 
@@ -294,7 +310,7 @@ static void motion_task(INT stacd, void *exinf)
             if (tk_loc_mtx(command_mutex, 2) >= E_OK)
             {
                 progress.serviced_ms = serviced_ms;
-                ++progress.sequence;
+                progress.flags = MOTION_HEALTH_SERVICED_BIT;
                 tk_unl_mtx(command_mutex);
             }
             else
@@ -315,7 +331,10 @@ static void motion_task(INT stacd, void *exinf)
                 (unsigned)in.count[0], (unsigned)in.count[1]);
         }
         /* Fixed-rate release; a stop wake-up services immediately without shifting it. */
-        tk_slp_tsk(robot_time_next_delay(&release, MOTION_PERIOD_MS, robot_time_ms()));
+        uint32_t end_ms = robot_time_ms();
+        task_timing_end(&timing, TASK_TIMING_MOTION, started_us, release,
+            MOTION_PERIOD_MS, end_ms);
+        tk_slp_tsk(robot_time_next_delay(&release, MOTION_PERIOD_MS, end_ms));
         tk_can_wup(TSK_SELF);
     }
 }
@@ -328,8 +347,9 @@ ER motion_init(void)
     m.mtxatr = TA_INHERIT;
     command_mutex = tk_cre_mtx(&m);
     if (command_mutex < E_OK) return command_mutex;
-    stop_requests = 1u; /* Boot STOP is not acknowledged until Motion brakes. */
-    serviced_stops = 0u;
+    /* Boot STOP is not acknowledged until Motion brakes. */
+    atomic_store_explicit(&stop_requests, 1u, memory_order_relaxed);
+    atomic_store_explicit(&serviced_stops, 0u, memory_order_relaxed);
     T_CFLG f = {0};
     f.iflgptn = STOP_BIT | (APP_TEST ? INHIBIT_BIT : 0u);
     stop_flag = tk_cre_flg(&f);
@@ -508,7 +528,9 @@ static const int sign[ENCODER_WHEELS] = {LEFT_ENCODER_SIGN, RIGHT_ENCODER_SIGN};
 /* Each storage unit has one writer: the dispatcher handler on core 1. */
 static _Atomic enc_count_t counts[ENCODER_WHEELS];
 static _Atomic uint32_t invalid_edges;
-static unsigned previous[ENCODER_WHEELS];	/* ISR-private */
+/* ISR-private: 2-bit quadrature level per wheel, wheel n at bits 2n..2n+1. */
+static uint8_t previous_levels;
+#define ENC_LEVEL_BITS 2u
 
 static unsigned level(unsigned wheel)
 {
@@ -520,8 +542,11 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
     (void)sampled_us;
     unsigned wheel = (pin == ENC_LEFT_A_PIN || pin == ENC_LEFT_B_PIN) ? ENCODER_LEFT : ENCODER_RIGHT;
     unsigned current = level(wheel);
-    int delta = enc_quad_step(previous[wheel], current);
-    previous[wheel] = current;
+    unsigned shift = wheel * ENC_LEVEL_BITS;
+    int delta = enc_quad_step(rd_field_get(previous_levels, shift,
+        ENC_LEVEL_BITS), current);
+    previous_levels = (uint8_t)rd_field_set(previous_levels, shift,
+        ENC_LEVEL_BITS, current, RD_NULL);
     if (delta == ENC_QUAD_INVALID || edges == (GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE)) {
         uint32_t n = atomic_load_explicit(&invalid_edges, memory_order_relaxed);
         atomic_store_explicit(&invalid_edges, n + 1u, memory_order_release);
@@ -543,7 +568,8 @@ bool drv_encoder_init(void)
                 return false;
             }
         }
-        previous[wheel] = level(wheel);
+        previous_levels = (uint8_t)rd_field_set(previous_levels,
+            wheel * ENC_LEVEL_BITS, ENC_LEVEL_BITS, level(wheel), RD_NULL);
     }
     for (unsigned wheel = 0u; wheel < ENCODER_WHEELS; ++wheel) {
         for (unsigned channel = 0u; channel < 2u; ++channel) {

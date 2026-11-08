@@ -18,4 +18,3 @@ FIELD(comms_packed_event_t, arg2);
 SIZE(comms_event_log_t);
 FIELD(comms_event_log_t, events);
 FIELD(comms_event_log_t, indices);
-FIELD(comms_event_log_t, dropped);

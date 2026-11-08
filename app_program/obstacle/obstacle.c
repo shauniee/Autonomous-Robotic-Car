@@ -9,8 +9,11 @@
 /* Echo capture state. The handler is the only writer once the task arms the
    measurement with the Echo IRQ disabled, so no field has two writers at once. */
 enum { ECHO_IDLE, ECHO_ARMED, ECHO_HIGH, ECHO_DONE };
-static _Atomic unsigned echo_state;
-static _Atomic uint32_t pulse_us;
+/* Smallest lock-free atomics on Cortex-M0+: state uses 2 of 8 bits, pulse
+   width saturates at 16 bits, past SONAR_TIMEOUT_US so it reads invalid. */
+static _Atomic uint8_t echo_state;
+static _Atomic uint16_t pulse_us;
+_Static_assert(SONAR_TIMEOUT_US < UINT16_MAX, "pulse width fits 16 bits");
 static uint32_t rise_us;			/* handler-private */
 static rd_word_t scan_word;			/* writer: the obstacle task */
 static ID profile_mutex;
@@ -82,7 +85,10 @@ static void echo_edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
     }
     else if (edges == GPIO_IRQ_EDGE_FALL && state == ECHO_HIGH)
     {
-        atomic_store_explicit(&pulse_us, robot_time_elapsed(sampled_us, rise_us), memory_order_relaxed);
+        uint32_t width = robot_time_elapsed(sampled_us, rise_us);
+        atomic_store_explicit(&pulse_us,
+            (uint16_t)(width > UINT16_MAX ? UINT16_MAX : width),
+            memory_order_relaxed);
         atomic_store_explicit(&echo_state, ECHO_DONE, memory_order_release);
     }
     /* Any other combination (both flags, stray edge) leaves the measurement to time out. */
@@ -156,25 +162,27 @@ typedef enum { OBSTACLE_ACQUIRE_IDLE, OBSTACLE_ACQUIRE_SETTLE, OBSTACLE_ACQUIRE_
 
 typedef struct
 {
-    obstacle_range_group_t group;
-    ObstacleRay rays[OBSTACLE_SCAN_CAPACITY];
-    int16_t angles[OBSTACLE_SCAN_CAPACITY];
     uint32_t scan_started_ms, sent_us, settle_since_ms, next_ping_ms;
+    uint8_t misses : ECHO_MISS_BITS;
+    obstacle_range_group_t group;
     enc_count_t left_origin, right_origin;
-    uint32_t misses;
+    int8_t angles[OBSTACLE_SCAN_CAPACITY]; /* +/-SERVO_MAX_DEG */
+    ObstacleRay rays[OBSTACLE_SCAN_CAPACITY];
     uint16_t group_retried : 1;
     uint16_t keep_narrower : 1;
     uint16_t count : 4;
     uint16_t planned : 4;
     uint16_t coarse : 4;
-    uint16_t id : 4;
     uint8_t phase : 2;
+    uint16_t id : 4;
     uint8_t initialized : 1;
     uint8_t ready : 1;
     uint8_t scanning : 1;
     int8_t angle;
     int8_t target_angle;
 } obstacle_acquisition_t;
+_Static_assert(sizeof(obstacle_acquisition_t) <= 116u,
+    "obstacle acquisition padding regressed");
 _Static_assert(SERVO_LOOK_DEG <= INT8_MAX,
     "commanded servo angle must fit its field");
 
@@ -275,20 +283,22 @@ static void publish_range(uint32_t range, uint32_t now)
 {
     if (acquisition.angle != 0)
     {
-        uint32_t word = echo_pack(range, now);
-        range_samples[1].word = word;
+        range_samples[1].word = echo_pack(range);
         range_samples[1].sampled_ms = now;
         ++range_samples[1].sequence;
     }
     else
     {
-        uint32_t word = echo_pack(range, now);
-        range_samples[0].word = word;
+        range_samples[0].word = echo_pack(range);
         range_samples[0].sampled_ms = now;
-        range_samples[0].wheel_count[0] = drv_encoder_count(ENCODER_LEFT);
-        range_samples[0].wheel_count[1] = drv_encoder_count(ENCODER_RIGHT);
+        range_samples[0].wheel_count[0] =
+            (uint16_t)drv_encoder_count(ENCODER_LEFT);
+        range_samples[0].wheel_count[1] =
+            (uint16_t)drv_encoder_count(ENCODER_RIGHT);
         ++range_samples[0].sequence;
-        if (echo_note(&acquisition.misses, range != ECHO_RANGE_INVALID))
+        acquisition.misses = echo_misses_next(acquisition.misses,
+            range != ECHO_RANGE_INVALID);
+        if (echo_no_echo_fault(acquisition.misses))
         {
             rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
         }
@@ -429,8 +439,8 @@ void obstacle_step(uint32_t now)
         acquisition.id = atomic_load_explicit(&requested_scan_id, memory_order_relaxed);
         acquisition.keep_narrower = atomic_load_explicit(
             &requested_keep_narrower, memory_order_relaxed);
-        acquisition.left_origin = (enc_count_t)drv_encoder_count(ENCODER_LEFT);
-        acquisition.right_origin = (enc_count_t)drv_encoder_count(ENCODER_RIGHT);
+        acquisition.left_origin = (uint16_t)drv_encoder_count(ENCODER_LEFT);
+        acquisition.right_origin = (uint16_t)drv_encoder_count(ENCODER_RIGHT);
         cancel_echo();
         acquisition.phase = OBSTACLE_ACQUIRE_IDLE;
         acquisition.scan_started_ms = now;
@@ -450,7 +460,7 @@ void obstacle_step(uint32_t now)
         for (int angle = -SERVO_MAX_DEG; angle <= SERVO_MAX_DEG;
             angle += OBSTACLE_COARSE_STEP_DEG)
         {
-            acquisition.angles[acquisition.planned++] = (int16_t)angle;
+            acquisition.angles[acquisition.planned++] = (int8_t)angle;
         }
         acquisition.coarse = acquisition.planned;
         acquisition.scanning = true;

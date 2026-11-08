@@ -72,7 +72,6 @@ bool comms_log_push(comms_event_log_t *log, const mqtt_event_t *event)
     unsigned count = comms_log_count(log);
     if (count == COMMS_EVENT_CAPACITY)
     {
-        if (log->dropped != 0xFFFFFFFFu) ++log->dropped;
         /* head is also the oldest slot when full: overwrite it. */
     }
     else
@@ -135,9 +134,10 @@ void comms_clamp(mqtt_telemetry_t *t)
 /* ---- Frame bridge to the MQTT transport ---- */
 typedef struct
 {
-    uint8_t length;
+    uint8_t length : 5; /* 1..COMMS_FRAME_MAX */
     uint8_t bytes[COMMS_FRAME_MAX];
 } slot_t;
+_Static_assert(COMMS_FRAME_MAX < 32u, "frame length fits 5 bits");
 
 typedef struct
 {
@@ -151,7 +151,8 @@ typedef struct
     _Atomic unsigned head, tail;
 } in_ring_t;
 
-static rd_word_t link_state; /* sole writer: kernel transport */
+/* Sole writer: kernel transport. Bit 0 Wi-Fi up, bit 1 broker up. */
+static _Atomic uint8_t link_state;
 
 static out_ring_t outgoing;
 static in_ring_t incoming;
@@ -228,7 +229,7 @@ unsigned comms_bridge_receive(uint8_t *out, unsigned capacity)
 
 bool comms_bridge_ready(void)
 {
-    return rd_word_read(&link_state) == 3u;
+    return atomic_load_explicit(&link_state, memory_order_acquire) == 3u;
 }
 
 void comms_bridge_link(bool wifi_up, bool broker_up)
@@ -243,7 +244,9 @@ void comms_bridge_link(bool wifi_up, bool broker_up)
             memory_order_acquire);
         atomic_store_explicit(&incoming_floor, received, memory_order_release);
     }
-    rd_word_publish(&link_state, (wifi_up ? 1u : 0u) | (broker_up ? 2u : 0u));
+    atomic_store_explicit(&link_state,
+        (uint8_t)((wifi_up ? 1u : 0u) | (broker_up ? 2u : 0u)),
+        memory_order_release);
     /* The transport (core 0) is the only writer of the Network byte. */
     if (wifi_up) rd_fault_clear(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST);
     else rd_fault_set(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST);

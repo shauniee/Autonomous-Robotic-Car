@@ -57,15 +57,15 @@ static void line_barcode_publish(const LineIrSnapshot *snapshot)
 }
 
 #if APP_TEST
-static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now,
+static void report(const IrTracker *tracker, uint32_t now,
     ButtonInputs inputs)
 {
-    LineIrSnapshot snapshot = ir_snapshot_build(tracker, sequence, now);
-    tm_printf((UB *)"[IR] seq=%u digital L=%u R=%u acquired=%d fresh=%d "
+    LineIrSnapshot snapshot = ir_snapshot_build(tracker, now);
+    tm_printf((UB *)"[IR] digital L=%u R=%u acquired=%d fresh=%d "
         "black L=%u R=%u valid=%d "
         "line=%s age_ms=%u GP20_down=%d GP21_down=%d "
         "SENSOR_ONLY\n",
-        (unsigned)sequence, (unsigned)ir_raw_word_raw(snapshot.raw).left,
+        (unsigned)ir_raw_word_raw(snapshot.raw).left,
         (unsigned)ir_raw_word_raw(snapshot.raw).right, ir_raw_word_valid(snapshot.raw),
         snapshot.sample_fresh, (unsigned)snapshot.left_black,
         (unsigned)snapshot.right_black, snapshot.normalized_valid,
@@ -78,45 +78,42 @@ static void report(const IrTracker *tracker, uint32_t sequence, uint32_t now,
 void line_barcode_step(uint32_t now)
 {
     static IrTracker tracker;
-    static bool initialized;
-    static bool ir_ready;
+    static struct
+    {
+        uint8_t initialized : 1;
+        uint8_t ir_ready : 1;
+        uint8_t have_inputs : 1; /* APP_TEST button report */
+    } flags;
     static uint32_t sample_due;
-    static uint32_t sequence;
 #if APP_TEST
     static uint32_t report_due;
 #endif
-    if (!initialized)
+    if (!flags.initialized)
     {
         ir_tracking_init(&tracker);
-        ir_ready = drv_ir_tracking_init();
+        flags.ir_ready = drv_ir_tracking_init();
         (void)barcode_init();
         sample_due = now;
-        initialized = true;
+        flags.initialized = 1u;
     }
     ButtonInputs inputs = drv_buttons_read();
 #if APP_TEST
-    static bool have_inputs;
     static ButtonInputs previous_inputs;
-    if (!have_inputs || inputs.gp20_down != previous_inputs.gp20_down ||
+    if (!flags.have_inputs || inputs.gp20_down != previous_inputs.gp20_down ||
         inputs.gp21_down != previous_inputs.gp21_down)
     {
         tm_printf((UB *)"[IR] buttons GP20_down=%d GP21_down=%d\n",
             inputs.gp20_down, inputs.gp21_down);
         previous_inputs = inputs;
-        have_inputs = true;
+        flags.have_inputs = 1u;
     }
 #endif
     if ((int32_t)(now - sample_due) >= 0)
     {
         IrRaw raw = {0};
-        bool acquired = ir_ready && drv_ir_tracking_read(&raw);
+        bool acquired = flags.ir_ready && drv_ir_tracking_read(&raw);
         now = robot_time_ms();
-        bool advancing = !tracker.have_sample || (now != tracker.sample_ms);
         ir_tracking_sample(&tracker, raw, acquired, now);
-        if (advancing)
-        {
-            ++sequence; /* Acquisition attempts, including invalid ones. */
-        }
         sample_due += IR_SAMPLE_MS;
         if ((int32_t)(now - sample_due) >= 0)
         {
@@ -138,7 +135,7 @@ void line_barcode_step(uint32_t now)
         diagnostic_due=now+IO_PERIOD_MS;
     }
 #endif
-    LineIrSnapshot snapshot = ir_snapshot_build(&tracker, sequence, now);
+    LineIrSnapshot snapshot = ir_snapshot_build(&tracker, now);
     /* Invalid digital acquisition blocks startup. */
     if (!ir_raw_word_valid(snapshot.raw) || !snapshot.normalized_valid)
     {
@@ -152,7 +149,7 @@ void line_barcode_step(uint32_t now)
 #if APP_TEST
     if ((int32_t)(now - report_due) >= 0)
     {
-        report(&tracker, sequence, now, inputs);
+        report(&tracker, now, inputs);
         report_due = now + REPORT_PERIOD_MS;
     }
 #endif

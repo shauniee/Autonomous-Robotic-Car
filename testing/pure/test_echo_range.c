@@ -5,7 +5,7 @@
 
 int main(void)
 {
-    obstacle_range_sample_t sample = {.word = echo_pack(150u, 100u),
+    obstacle_range_sample_t sample = {.word = echo_pack(150u),
         .sampled_ms = 100u, .sequence = 1u};
     assert(obstacle_range_sample_fresh(&sample, 160u, 60u));
     assert(!obstacle_range_sample_fresh(&sample, 161u, 60u));
@@ -22,20 +22,28 @@ int main(void)
     assert(echo_range_mm(5830u) >= 995u && echo_range_mm(5830u) <= 1005u);	/* about 1 m */
     assert(echo_range_mm(SONAR_TIMEOUT_US - 1u) < ECHO_RANGE_INVALID);
 
-    uint32_t w = echo_pack(1000u, 0x12345u);
-    assert(echo_valid(w) && echo_range(w) == 1000u && echo_time16(w) == 0x2345u);
-    w = echo_pack(ECHO_RANGE_INVALID, 7u);					/* no echo is not clear space */
+    uint32_t w = echo_pack(1000u);
+    assert(echo_valid(w) && echo_range(w) == 1000u && (w >> 14) == 0u);	/* spare bits zero */
+    w = echo_pack(ECHO_RANGE_INVALID);					/* no echo is not clear space */
     assert(!echo_valid(w) && echo_range(w) == ECHO_RANGE_INVALID);
-    w = echo_pack(0u, 1u);							/* minimum */
+    w = echo_pack(0u);							/* minimum */
     assert(echo_valid(w) && echo_range(w) == 0u);
-    w = echo_pack(ECHO_RANGE_INVALID - 1u, 1u);				/* maximum valid */
+    w = echo_pack(ECHO_RANGE_INVALID - 1u);				/* maximum valid */
     assert(echo_valid(w) && echo_range(w) == ECHO_RANGE_INVALID - 1u);
     assert(!echo_valid(0u));							/* before the first reading */
 
-    uint32_t misses = 0u;
-    for (unsigned i = 1u; i < SONAR_NO_ECHO_LIMIT; ++i) assert(!echo_note(&misses, false));
-    assert(echo_note(&misses, false));						/* limit reached: fault */
-    assert(!echo_note(&misses, true) && misses == 0u);				/* an echo clears it */
+    uint8_t misses = 0u;
+    for (unsigned i = 1u; i < SONAR_NO_ECHO_LIMIT; ++i)
+    {
+        misses = echo_misses_next(misses, false);
+        assert(!echo_no_echo_fault(misses));
+    }
+    misses = echo_misses_next(misses, false);
+    assert(echo_no_echo_fault(misses));					/* limit reached: fault */
+    misses = echo_misses_next(misses, false);
+    assert(misses == SONAR_NO_ECHO_LIMIT && misses < (1u << ECHO_MISS_BITS));	/* saturates */
+    misses = echo_misses_next(misses, true);
+    assert(!echo_no_echo_fault(misses) && misses == 0u);			/* an echo clears it */
 
     puts("echo_range: PASS");
     return 0;

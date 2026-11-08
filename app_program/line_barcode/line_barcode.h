@@ -14,10 +14,11 @@
    command). */
 #define IR_SCALE_ONE 127
 
+/* Digital level 0/1 per sensor; 2..3 are driver errors read as invalid. */
 typedef struct
 {
-    uint16_t left;
-    uint16_t right;
+    uint8_t left : 2;
+    uint8_t right : 2;
 } IrRaw;
 
 /* A raw pair and its valid flag in one word: left bit 0, right bit 1,
@@ -39,7 +40,8 @@ static inline IrRawWord ir_raw_word(IrRaw raw, bool valid)
 
 static inline IrRaw ir_raw_word_raw(IrRawWord word)
 {
-    return (IrRaw){(uint16_t)(word & IR_RAW_MASK), (uint16_t)(word >> IR_RAW_BITS & IR_RAW_MASK)};
+    return (IrRaw){(uint8_t)(word & IR_RAW_MASK),
+        (uint8_t)(word >> IR_RAW_BITS & IR_RAW_MASK)};
 }
 
 static inline bool ir_raw_word_valid(IrRawWord word)
@@ -57,11 +59,13 @@ typedef enum
 
 typedef struct
 {
-    bool valid;
-    uint8_t left_fraction;	/* digital: 0 white, IR_SCALE_ONE black */
-    uint8_t right_fraction;
-    int8_t error;		/* right - left, -IR_SCALE_ONE..+IR_SCALE_ONE */
+    int8_t error; /* right - left, -IR_SCALE_ONE..+IR_SCALE_ONE */
+    uint8_t left_fraction : 7; /* digital: 0 white, IR_SCALE_ONE black */
+    uint8_t right_fraction : 7;
+    bool valid : 1;
 } IrReading;
+
+_Static_assert(IR_SCALE_ONE < 128, "IR fractions fit 7 bits");
 
 typedef struct
 {
@@ -78,10 +82,10 @@ typedef struct
    matching the mounted robot's observed direction. */
 typedef struct
 {
-    bool valid;
-    IrLine line;
-    int8_t error;	/* -IR_SCALE_ONE..+IR_SCALE_ONE */
     uint32_t sampled_ms;
+    int8_t error; /* -IR_SCALE_ONE..+IR_SCALE_ONE */
+    uint8_t line : 2; /* IrLine */
+    bool valid : 1;
 } IrTrackingOutput;
 
 void ir_tracking_init(IrTracker *tracker);
@@ -94,7 +98,6 @@ IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now);
    Invalid black flags are zero; use validity flags. */
 typedef struct
 {
-    uint32_t sequence;
     uint32_t sampled_ms;
     IrRawWord raw;		/* valid flag = acquisition valid */
     uint8_t line : 2;		/* IrLine */
@@ -112,8 +115,7 @@ static inline int8_t ir_snapshot_error(const LineIrSnapshot *snapshot)
     return (int8_t)(((int)snapshot->right_black - (int)snapshot->left_black) * IR_SCALE_ONE);
 }
 
-LineIrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t sequence,
-    uint32_t now);
+LineIrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t now);
 /* Recompute age at read time without changing sequence or acquisition time. */
 void ir_snapshot_refresh(LineIrSnapshot *snapshot, uint32_t now);
 
@@ -219,18 +221,29 @@ barcode_result_t barcode_decode(const uint16_t widths[BARCODE_ELEMENTS],
 /* Widths are encoder counts of sensor travel (the most recent runs, oldest
    first); every black run tries the last 25 as a symbol, so no quiet
    zone is needed and any false start clears itself. */
+/* Stored widths never exceed BARCODE_MAX_ELEMENT_COUNTS, so 9 bits each;
+   carry is at most one stored width plus one chatter run. */
+#define BARCODE_WIDTH_BITS 9u
+#define BARCODE_WIDTH_BYTES \
+    ((BARCODE_ELEMENTS * BARCODE_WIDTH_BITS + 7u) / 8u)
+_Static_assert(BARCODE_MAX_ELEMENT_COUNTS + BARCODE_MIN_ELEMENT_COUNTS <=
+    (1u << BARCODE_WIDTH_BITS), "barcode widths and carry fit 9 bits");
+
 typedef struct
 {
-    uint16_t widths[BARCODE_ELEMENTS];
-    uint16_t carry;	/* chatter travel owed to the run after it */
-    uint16_t last_width;	/* element this edge completed, 0 none; diagnostics */
-    uint8_t count;
+    /* 25 x 9-bit widths, LSB first; use barcode_frame_width(). */
+    uint8_t widths[BARCODE_WIDTH_BYTES];
     barcode_count_t prev_left, prev_right;
-    bool have_edge;
-    bool prev_black;
+    uint16_t carry : 9; /* chatter travel owed to the run after it */
+    uint16_t count : 5; /* 0..BARCODE_ELEMENTS */
+    uint16_t have_edge : 1;
+    uint16_t prev_black : 1;
+    uint16_t last_width : 15; /* element this edge completed, 0 none */
 } barcode_frame_t;
 
 void barcode_frame_reset(barcode_frame_t *f);
+/* Stored width at index, oldest first; index < f->count. */
+uint16_t barcode_frame_width(const barcode_frame_t *f, unsigned index);
 /* True if the sensor travelled too little between two edges for a real
    element. */
 bool barcode_run_is_chatter(barcode_count_t from_left,
@@ -257,7 +270,7 @@ barcode_action_t barcode_action_for(uint32_t mapping_word, char symbol);
 typedef struct
 {
     barcode_count_t left_count, right_count;	/* wrapped at ENC_COUNT_BITS */
-    bool high;	/* GP16 level after the edge, or at enable-time reference */
+    bool high : 1; /* GP16 level after the edge, or enable-time reference */
 } barcode_edge_t;
 
 /* Core-1 task only: configure GP16 and claim it on the GPIO dispatcher. The

@@ -21,7 +21,7 @@ static uint32_t frames_checked, frames_dropped, frames_bad;
 static uint32_t make_word(uint32_t i)
 {
     uint32_t count = i & 0xFFu, last = i & 0x7Eu, max = (i + 1u) & 0x7Eu;
-    return terrain_pack(last, max, count, i & 0x7u, (i & 1u) != 0u, true);
+    return terrain_pack(last, max, count, i & rd_mask(TERRAIN_STATE_BITS), (i & 1u) != 0u, true);
 }
 
 static void *terrain_writer(void *arg)
@@ -114,7 +114,7 @@ int main(void)
         /* Reconstruct the counter from the count field and check every other field against it. */
         uint32_t i = terrain_hump_count(w);
         if (terrain_last_code(w) != (i & 0x7Eu) || terrain_max_code(w) != ((i + 1u) & 0x7Eu) ||
-            terrain_state_code(w) != (i & 0x7u) || terrain_height_valid(w) != ((i & 1u) != 0u)) ++torn;
+            terrain_state_code(w) != (i & rd_mask(TERRAIN_STATE_BITS)) || terrain_height_valid(w) != ((i & 1u) != 0u)) ++torn;
         ++reads;
 
         unsigned n = comms_bridge_take(f, sizeof f);
