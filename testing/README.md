@@ -26,7 +26,7 @@ IDs never change or get reused, including retired template cases. Test IDs keep 
 | Coding standard | `python3 scripts/check_barr.py --base origin/main` | A changed line breaks a mechanical BARR-C:2018 rule. `--summary` lists the legacy backlog without failing |
 | Deliverables | `python3 scripts/check_deliverables.py` | A subsystem's source, public function, wired-in test or report section is missing; a second motor writer appears; networking commands Motion; firmware and laptop frame lengths differ |
 | Host tests | `bash testing/pure/run.sh` and `node testing/pure/test_dashboard.mjs` | Any test of the real subsystem code fails |
-| Firmware build | `sh testing/build_pending_profiles.sh` | Any of the six images fails to compile or link. It never flashes |
+| Firmware build | `sh testing/build_pending_profiles.sh` | Any of the six images fails to compile or link, or a struct outgrows its bound in `testing/sizeof_probe.c`. It never flashes |
 
 Deliverables that need the car print NEEDS EVIDENCE and do not fail the check, because only a physical run can close them.
 

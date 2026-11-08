@@ -1,12 +1,10 @@
 """Coding rule scan against small C snippets; no git, build or robot."""
-import importlib.util
+import sys
 import os
 from pathlib import Path
 
-spec = importlib.util.spec_from_file_location("check_barr",
-    Path(__file__).resolve().parents[2] / "scripts/check_barr.py")
-barr = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(barr)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+import check_barr as barr
 
 
 def messages(text, name="sample.c"):
