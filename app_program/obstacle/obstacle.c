@@ -156,25 +156,27 @@ typedef enum { OBSTACLE_ACQUIRE_IDLE, OBSTACLE_ACQUIRE_SETTLE, OBSTACLE_ACQUIRE_
 
 typedef struct
 {
-    obstacle_range_group_t group;
-    ObstacleRay rays[OBSTACLE_SCAN_CAPACITY];
-    int16_t angles[OBSTACLE_SCAN_CAPACITY];
     uint32_t scan_started_ms, sent_us, settle_since_ms, next_ping_ms;
-    enc_count_t left_origin, right_origin;
     uint32_t misses;
+    obstacle_range_group_t group;
+    enc_count_t left_origin, right_origin;
+    int16_t angles[OBSTACLE_SCAN_CAPACITY];
+    ObstacleRay rays[OBSTACLE_SCAN_CAPACITY];
+    int8_t angle; /* fills the odd byte after the packed ray array */
     uint16_t group_retried : 1;
     uint16_t keep_narrower : 1;
     uint16_t count : 4;
     uint16_t planned : 4;
     uint16_t coarse : 4;
-    uint16_t id : 4;
     uint8_t phase : 2;
+    uint16_t id : 4;
     uint8_t initialized : 1;
     uint8_t ready : 1;
     uint8_t scanning : 1;
-    int8_t angle;
     int8_t target_angle;
 } obstacle_acquisition_t;
+_Static_assert(sizeof(obstacle_acquisition_t) <= 116u,
+    "obstacle acquisition padding regressed");
 _Static_assert(SERVO_LOOK_DEG <= INT8_MAX,
     "commanded servo angle must fit its field");
 

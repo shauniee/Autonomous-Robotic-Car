@@ -322,6 +322,11 @@ Rules for every row:
 - Loop counters and short-lived temporaries are exempt.
 - **pending** = the value has not been supplied (nothing assumed). **proposed** = not yet approved by Nicholas. Earlier named-owner/issue sign-off labels below are historical and do not require another person; Nicholas reviews the layout before conversion. This file records no approval that has not been given.
 
+Current target struct sizes and padding are measured in the
+[2026-11-07 layout audit](../testing/integration/struct-layout.md), INT-222.
+Earlier source-pinned size observations below remain historical; they are not
+updated final-image or physical evidence.
+
 All rows are unsigned and rounding "none" unless stated. Columns: field | storage / writer | range (unit) | scale, rounding | invalid code, overflow | bits | representation.
 
 ### Minimum-bit audit, 2026-11-03

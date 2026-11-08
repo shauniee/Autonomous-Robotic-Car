@@ -250,6 +250,11 @@ remain in [project-specs](docs/project-specs.md#pending-decisions).
 
 Target sizes from `sizeof` with `arm-none-eabi-gcc` for the RP2040. **Used** is the bits the valid range needs; **stored** is what the data occupies, so the gap is padding or a whole word kept for a single atomic store. Ranges and reasons for each width: [data table](docs/project-specs.md#5-data-representation-table-week-13).
 
+The [current struct inventory](testing/integration/struct-layout.md) lists all
+51 application struct types, their declared member bits, compiler padding and
+stored bits. These differ from logical range budgets: a byte holding a flag
+has eight declared member bits but only one logical bit.
+
 | Subsystem | Used bits | Stored bits |
 | --- | ---: | ---: |
 | [Comms](app_program/comms/README.md) | 1227 | 1352 |
@@ -257,7 +262,7 @@ Target sizes from `sizeof` with `arm-none-eabi-gcc` for the RP2040. **Used** is 
 | [Line and barcode](app_program/line_barcode/README.md) | 2470 | 2552 |
 | [Terrain](app_program/terrain/README.md) | 327 | 360 |
 | [Obstacle](app_program/obstacle/README.md) | 585 | 712 |
-| Mission | 1000 | 1136 |
+| Mission | 1088 | 1136 |
 
 Tables count `TRACE=1` images; `full_course` is `TRACE=0` and leaves out the trace records. These partial totals need a final-image refresh under the [data audit](docs/project-specs.md#minimum-bit-audit-2026-11-03); they do not establish minimum total RAM. Totals cover the rows below, multiplied by their instances. Private working structs are listed under the tables and not counted, because they mix packed fields with full-width times.
 
@@ -278,9 +283,9 @@ Messages on the wire are separate from these totals:
 | Telemetry and snapshot reply | 171 | 176 |
 | Event | 83 | 88 |
 | Wheel trace | 120 | 120 |
-| Line trace | 124 | 136 |
+| Line trace | 135 | 136 |
 | Barcode trace | 144 | 144 |
-| Terrain trace | 61 | 64 |
+| Terrain trace | 109 | 112 |
 | Mapping | 36 | 40 |
 | Junction test | 19 | 24 |
 | Acknowledgement | 18 | 24 |
@@ -297,7 +302,7 @@ Messages on the wire are separate from these totals:
 | Wheel trace record | see frame above | 8 | 120 | 120 |
 | Motion fault byte | stall, encoder | 1 | 2 | 8 |
 
-Not counted: `MotionController`, 384 stored, including `WheelPid` (2 x 32).
+Not counted: `MotionController`, 352 stored, including `WheelPid` (2 x 32).
 
 **Line and barcode**
 
@@ -338,10 +343,10 @@ Not counted: `IrTracker`, 64 stored; `LineIrSnapshot`, 96 stored; `barcode_frame
 | --- | --- | ---: | ---: | ---: |
 | Published state | state 3 | 1 | 3 | 8 |
 | Safety latched cause | causes 4 | 1 | 4 | 32 |
-| Line trace record | see frame above | 8 | 124 | 136 |
+| Line trace record | see frame above | 8 | 135 | 136 |
 | Mission fault byte | line lost | 1 | 1 | 8 |
 
-Not counted: `Mission`, 1280 stored, including `recovery_control_t` (96) and `bypass_control_t` (512).
+Not counted: `Mission`, 1152 stored, including `recovery_control_t` (96) and `bypass_control_t` (480).
 
 ## Manual build and flash
 

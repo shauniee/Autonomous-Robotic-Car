@@ -21,21 +21,22 @@ typedef struct
     enc_count_t origin[2], previous[2];
     uint32_t started_ms, phase_ms, action_ms;
     uint32_t sensor_sequence, edge_counts;
+    /* Fill spare bits in the Q8 storage words without unaligned accesses. */
     int32_t forward_q8 : 21;
+    uint8_t route : 4;
+    uint8_t work : 3;
+    uint8_t left_side : 1;
+    uint8_t edge_open : 1;
+    uint8_t close_samples : 2;
     int32_t left_q8 : 21;
+    uint8_t edge_samples : 3;
+    uint8_t action_id;
     int32_t rear_clear_q8 : 21;
     int32_t edge_forward_q8 : 21;
     int16_t heading_cdeg, offset_mm, centre_mm, obstacle_front_mm;
     int16_t action_target;
     uint16_t half_width_mm;
     uint16_t flank_mm;
-    uint8_t action_id;
-    uint8_t route : 4;
-    uint8_t work : 3;
-    uint8_t left_side : 1;
-    uint8_t edge_open : 1;
-    uint8_t edge_samples : 3;
-    uint8_t close_samples : 2;
 } bypass_control_t;
 typedef struct
 {
@@ -52,9 +53,9 @@ typedef struct
 typedef struct
 {
     MotionCommand command;
-    bool side_watch;
     int16_t side_angle_deg;
     bypass_route_t route;
+    bool side_watch;
 } bypass_output_t;
 
 /* A supported measured profile and stationary input are prerequisites.

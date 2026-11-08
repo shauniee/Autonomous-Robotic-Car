@@ -243,6 +243,7 @@ Merged with host tests and builds only (INT-178). Each needs a car run.
 | Done | `IrTracker`, `LineIrSnapshot` | 160 to 64 bits; 192 to 96 bits | Line following and junctions |
 | Done | Telemetry width, with clearance in place of depth | 23 to 22 bytes | Dashboard shows width and clearance on a real link |
 | Done | `TRACE=0` in `full_course` | 464 bytes less RAM, 2304 bytes less flash (INT-194) | Trial and course images drive alike |
+| Done | Struct field order | Six types reduced without changing field widths; [layout inventory](testing/integration/struct-layout.md), INT-222 | Loaded timing and peak stack remain unmeasured |
 | Not done | 16-bit timestamps | Would save about 250 bits | Not recommended: a short timer can alias, and bypass allows 90 s (Gap 4) |
 
 Flash grew by 1056 bytes, because packed fields take more code to read.

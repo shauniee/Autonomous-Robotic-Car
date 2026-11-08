@@ -1,0 +1,431 @@
+{
+  "base_commit": "84e5bf5d00c3d4dea70fb78091d21f3a72f8d262",
+  "date": "2026-11-07",
+  "compiler": "Arm GNU 13.3.1",
+  "target_flags": [
+    "-mcpu=cortex-m0plus",
+    "-mthumb",
+    "-ffreestanding",
+    "-std=gnu11",
+    "-mfloat-abi=soft",
+    "-D_PICO_RP2040_",
+    "-DCNF_SMP=1"
+  ],
+  "source_sha256": {
+    "app_program/app.h": "fd5d0aabde21118272db91a6837869f44f56cf393882dfcdf73f1577065ec89d",
+    "app_program/app_main.c": "61fde865b8fa1ccacb3f17dfbee81202ed48e258d662cd387fc321248b659530",
+    "app_program/common/buttons.c": "6d4f123755905fc7a6ccfe2e2a2247f3c545cda6af4f87b270486fff04276af6",
+    "app_program/common/buttons.h": "2044b5ef5540c5ac3dcaf9aef789af2d049fbb505c230c403201dad0120dbbe9",
+    "app_program/common/drv_gpio_irq.c": "22dc307ee0ace56de0282a6777e399b8c28286f424b14a87d99d5efeff458720",
+    "app_program/common/drv_gpio_irq.h": "6de7be8ebb2e6ecdbeb175f2af1a6bf2bec01b8031341aef17c18e540f05b413",
+    "app_program/common/io_task.c": "3a99f8daf3405a7d53adff720a0785370d0ae6a4d0d4ce0ee5cfac2720fdf67a",
+    "app_program/common/io_task.h": "31cbe8ffb583a8a16c8b500c48bef1c03b52c27ff54125aa9d3920949685f518",
+    "app_program/common/robot_config.h": "ee8dc6f05445aa40ddb54e2c1458dfcb3e5ea4cc9b03b1e7dbf20730f1db4d79",
+    "app_program/common/robot_data.c": "9c2449a8ef5897a17580253b0038b6257e6d9a42a8edef982306fb45cf5a695b",
+    "app_program/common/robot_data.h": "d70e4863f7fb7f059c728953ddbf49d83c6449b2c096b8aaafe0b96f9fbf7d7b",
+    "app_program/common/robot_time.h": "ad906ccfa84d8170aee8f6793dd6ac9bddb7565377661254276e068db3751ef8",
+    "app_program/common/robot_time_math.h": "df1260870e1a8c0ed2083a3a8a8e350e7678dc8ece5cf3fa2219f0d67453764e",
+    "app_program/comms/README.md": "5d4e402889bdb0bfbefa334e2947f93366e2bbae148ad94a07d68ba8f9157b24",
+    "app_program/comms/comms.c": "bb1fcfa0270bcd65683a6fe1cc4e937c708839c7a465e61e11795fb538f1a749",
+    "app_program/comms/comms.h": "3826417264c402d18f62ca0564fe9139794811b4655cfc0389a4916cb221a57d",
+    "app_program/comms/comms_test.c": "6cc1f0ee7410b312e68399c8356ef3308cbf77531c6f547f0125f6eb87b7a336",
+    "app_program/comms/mqtt_frame.c": "cdb54515eeb001f502e36de6a6b31633afdf1b4d8e344935ca80f10ef2740a57",
+    "app_program/comms/report.c": "b41fd82990a8b0031bbf67e70fe1e11a2cdb3f2ea7c2bdd3b44be073f0d62199",
+    "app_program/line_barcode/README.md": "746d7f8fa75104382d9db94a14005749d49ff680d5f372ea7359aec0c2dbddda",
+    "app_program/line_barcode/barcode.c": "4c61526d68ec3ca62276dedfca69a76d675ae9f0f97c2171276f5cb3f338ad90",
+    "app_program/line_barcode/line.c": "890f8b487e73e625ef94c862b2744dba3f31b048b71e883ce8055ba97952fbf9",
+    "app_program/line_barcode/line_barcode.c": "9fa65131c08f746569de214bfe141c7b636dc7de067692fd7058411189d11d12",
+    "app_program/line_barcode/line_barcode.h": "3942b9a3d031ff397d1b6e4c5792f519b3dc45e9d867042877edfff43ebe2709",
+    "app_program/mission/bypass_control.c": "4081ff35cb1629e2551f0eaa86f1d822940b63bf058b7cc4204297d1ef5d7b9e",
+    "app_program/mission/bypass_control.h": "0802f612b00c56aa6c8cce2acb141c208aad5c664b9733863ebbe34be41a899f",
+    "app_program/mission/line_trace.c": "0a62d33fd911db4cbbc341becd328d81525f4839d72d2bbde03bcffe702ff850",
+    "app_program/mission/line_trace.h": "d33d9962cffb76f9a75ea4e88d61e7bd9f49392657dea96c77f2acd78e5e975e",
+    "app_program/mission/mission.c": "03e8665b53dea351162ae413b494997dc19b526c9ce197872d8401aef41ccb6c",
+    "app_program/mission/mission.h": "836a4a168f8fe8552d2d57b33d0d595b0d93303973457b64ac40ca26570071c7",
+    "app_program/mission/mission_logic.c": "ef7ae9dbf1d7c80e25dc2b06ce92d9c7c192d3f7adee590bf2146a9c3855e805",
+    "app_program/mission/mission_logic.h": "0167328844c4a25b94a050ebe83c87882370e35278d5a9ace2664c7182175de3",
+    "app_program/mission/mission_mapping.c": "dbdfbaeea4b4e258e32e54a32596642f14d8f9b420b9e14a02f084f6deaaa692",
+    "app_program/mission/mission_mapping.h": "8793116d15b477e0cda02e668747587a57b6b1d870924c722a2f019267ff5386",
+    "app_program/mission/recovery_control.c": "e32be7de9d057b0b20f942a58eb654c1a681747ec706d119d5e28bde0acc4a4e",
+    "app_program/mission/recovery_control.h": "b0afc252c457cedb595e8943dc8392b6444841301c7f9e0ad1f3950f2a29bfc9",
+    "app_program/mission/safety.c": "d66036768df5a68e1aef5262a034f868f62a2417c28bfc23e4c13f3831ffe9f5",
+    "app_program/mission/safety.h": "99246881eaebf596cceae60dbe1e9236b6d3804426d4d5df561fe62ebf67624e",
+    "app_program/mission/safety_logic.h": "e3eb692a8b6c043ac7523f94a02b6fd683c09b0429face914df8df86f9df6d62",
+    "app_program/motion/README.md": "e815e5d4079b7881934eefacec12652e38a7bbf51913e61524ad7fa6ed45ee80",
+    "app_program/motion/motion.c": "01d4d89d4208a3880bc82080c685331ddde4cd98dbb120d20de98df30edbe1db",
+    "app_program/motion/motion.h": "8681f7b680e98ea716b9c06235bc7107736f8bd2c03d48b02d1eeb75979a201e",
+    "app_program/motion/motion_control.c": "21f8cc3109c66588618ee068c5d2b6052849406d6789518e86b3c2e69ea3dfb2",
+    "app_program/motion/motion_test.c": "e7e802dd7ac46489f6ea10c8d7f37e174c5a8db0f1f33e75015060dfb61bd809",
+    "app_program/obstacle/README.md": "49a1f21e7191bfd35558394c552a366fda42168d3974571985db357c5fe5d75a",
+    "app_program/obstacle/obstacle.c": "d1b351cccf0805a1a4dbf2e9a33a0056c47711af4038ae96f4c782646fe3f8a9",
+    "app_program/obstacle/obstacle.h": "2532de34d6167ab056fb20e44de9f545ad66f1955519da01fe82daedf20124fe",
+    "app_program/obstacle/obstacle_profile.c": "ef1dadef1b099121614e19a8bf50a8f93b9b6572f71b64914ad9182dc7bb101b",
+    "app_program/terrain/README.md": "f19221b98f7fd17c96cd42ff9cee1e896c9769053534f4cb8849d6b4fda311c5",
+    "app_program/terrain/terrain.c": "0170658635dfbd4b95009256dbb15a66775343b8524027206ef825d794be82ad",
+    "app_program/terrain/terrain.h": "b95a51df5511d89d164a44a7bd9a6e84a4b9f00a929b40b7979f00c41ff03d40",
+    "app_program/terrain/terrain_algo.c": "912212c36682ea17f39901794e5a3b6dff704242f30f6d0ee112232ecd23dab9",
+    "app_program/terrain/terrain_test.c": "5cc30307cd60664b9d7d992119f10f6cdbcfdcfebd87f87634653f4961772fd2",
+    "app_program/test_report.h": "4779f93b0ace5b9709a7065e63d5fe120ba5a233e2a8579bf736723135267e22",
+    "testing/integration/sizeof_probe.c": "468c12c71c04920d9ae09b076eb5bcd56cb2446edb1dbb3b4d03fbee91b612eb",
+    "testing/line_barcode/sizeof_probe.sh": "f5b67ff85393998bba0a8c0e045eb5f817a4ffa64b0a4ec22af90ef5ef2434df",
+    "testing/obstacle/sizeof_probe.c": "028d9bb9c19ede56274f926276d51cff8f1594f242270cb924f4eff4178768d3",
+    "testing/pure/run.sh": "9a1fa51b1b508d7a18f5447fdec1f9f0ad3e7be9b4fa3c60afef9fdc2c4a0027",
+    "testing/pure/test_barcode.c": "00be8561b26f6467b3091ba2dc7b0923ce5ccc90f0020020b6eb1df30de6d071",
+    "testing/pure/test_capture_imu.py": "c27742ace352005b4fcf5e497cfff32037cd0af8f9d1a65c580e86f3efac2a8a",
+    "testing/pure/test_check_barr.py": "d2d39e5e50b681fb8339e79003778052b06340fd6b49b9943d15f0b38857d252",
+    "testing/pure/test_check_deliverables.py": "b0a224b5aff034a9acbcd1e20c790b7af9be63ef05ca5a7768bd3d6e319d617a",
+    "testing/pure/test_comms_report.c": "3eea14e070997607c41cdeaabdd5eac6c30d5a445b4f45d8af4ac8111a23ed1c",
+    "testing/pure/test_comms_stress.c": "05015bf2781d8c20963ac3193401fcf89dc1263c774b70a37e18f427daaaac04",
+    "testing/pure/test_dashboard.mjs": "b6d4baf67f673bd4f99f883b233d5c46ba1cf4f582de9946cb91e30a365fae53",
+    "testing/pure/test_dashboard_http.py": "a8f22a217a19980879307cb761bb760379dc8bc501f070b0bcee6f21e4dd6511",
+    "testing/pure/test_echo_range.c": "93fbec70dd8013d80be09a579605ea5467fb0ec4fb4deb0fd6b9740d84048888",
+    "testing/pure/test_encoder_math.c": "b88d163c434317f3ce81c3a7a50dec502724b3ed8c5fab9128d1dec3ed6ce737",
+    "testing/pure/test_field_tools.py": "2b99b45e25b719053638baf81e5b1b61a3a24ad7fd5851bb3e97d3c43af8bd54",
+    "testing/pure/test_ir_tracking.c": "83af6726e057e4568fe7e043beccbbd374b0c28528427df2ed2ec4ee10aeadfb",
+    "testing/pure/test_line_replay.c": "315419cca4b72f98f0d51d151fe495443852ac74da2213026afe1629367fc1c8",
+    "testing/pure/test_line_trace.c": "7a772d1c8171bef3df072de146e085967df64518dbcd4760f35228d31f0ed06e",
+    "testing/pure/test_mission.c": "38924f43fd593cd92fc1632fc79eae850d0bb3ca0dc98c7d6cb33ab938d036e3",
+    "testing/pure/test_mission_mapping.c": "abd35ab7c0b14f5e67e7aedb345e8568fa40d1264e1f10fe4430fd12d66c1e44",
+    "testing/pure/test_mission_pending.c": "08523a99cc3a555d4bc44546a3b60b0fbb03b7652b2e698230566592671404fa",
+    "testing/pure/test_motion_control.c": "ee93910b0c004a77614dc027d50fe23314a974f566db5b7236f80aa943b6862b",
+    "testing/pure/test_motion_trace.c": "2d8cf6930b0a36fc00d199fdeb7dd23d3756456f81dce41c106385bb07221dc6",
+    "testing/pure/test_mqtt_cli.py": "46fd26383942221a7eab3850be7cfa0323659bfd6809b92001df20bfb99562cc",
+    "testing/pure/test_mqtt_frame.c": "a63690fc56caff0b43b08fd0a9c0b89701db1af8bd70860ed9836754ef9c319c",
+    "testing/pure/test_obstacle_profile.c": "899d499b04d0fcbab06ecab1fe4cf457bffe7368471220ab324efb994ef259e0",
+    "testing/pure/test_profile_edges.c": "fcfcf85a374a51188bb70b7661ae83eeee004991bcdd9244869928edee642396",
+    "testing/pure/test_range_filter.c": "cfeea3930cac685e342e091876a8cbf5ce9f5fb6a379ee7206074795b66178c6",
+    "testing/pure/test_robot_data.c": "4e95edbf381a4d545f852c0e6e583fb9ec40e96177e91ef5a5d9bc3db13193f3",
+    "testing/pure/test_robot_time.c": "86e173555ccfe371597de66631bdf4cd4e3da29d50c579559a3176a2e703ed74",
+    "testing/pure/test_safety.c": "fc788d902f80f99428d5dd8b7868d92175ad2d0c521f5a071736193982bc3264",
+    "testing/pure/test_smooth_navigation.c": "6e5a4d4cf410e8f14afabcae7b1a817e00ec489355d4d44c863d080d3667c341",
+    "testing/pure/test_terrain.c": "6bb11c4fe26c29821e53de0b017fb2a650cd547a873b3855194872d114ed9dbb",
+    "testing/terrain/sizeof_probe.c": "6737f6c21a17337b1fd91f280c4d7ec43f79e8bdfb16d7d741f0b520bda7819d"
+  },
+  "structs": {
+    "Button": {
+      "member_bits": 56,
+      "stored_bits": 64,
+      "c_padding_bits": 8,
+      "baseline_stored_bits": 64
+    },
+    "ButtonInputs": {
+      "member_bits": 16,
+      "stored_bits": 16,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 16
+    },
+    "Gy511RawAxes": {
+      "member_bits": 48,
+      "stored_bits": 48,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 48
+    },
+    "IrRaw": {
+      "member_bits": 32,
+      "stored_bits": 32,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 32
+    },
+    "IrReading": {
+      "member_bits": 32,
+      "stored_bits": 32,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 32
+    },
+    "IrTracker": {
+      "member_bits": 43,
+      "stored_bits": 64,
+      "c_padding_bits": 21,
+      "baseline_stored_bits": 64
+    },
+    "IrTrackingOutput": {
+      "member_bits": 56,
+      "stored_bits": 64,
+      "c_padding_bits": 8,
+      "baseline_stored_bits": 64
+    },
+    "LineIrSnapshot": {
+      "member_bits": 80,
+      "stored_bits": 96,
+      "c_padding_bits": 16,
+      "baseline_stored_bits": 96
+    },
+    "Mission": {
+      "member_bits": 1098,
+      "stored_bits": 1152,
+      "c_padding_bits": 54,
+      "baseline_stored_bits": 1280
+    },
+    "MissionInputs": {
+      "member_bits": 768,
+      "stored_bits": 768,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 832
+    },
+    "MissionOutputs": {
+      "member_bits": 210,
+      "stored_bits": 256,
+      "c_padding_bits": 46,
+      "baseline_stored_bits": 256
+    },
+    "MotionCommand": {
+      "member_bits": 80,
+      "stored_bits": 96,
+      "c_padding_bits": 16,
+      "baseline_stored_bits": 96
+    },
+    "MotionController": {
+      "member_bits": 338,
+      "stored_bits": 352,
+      "c_padding_bits": 14,
+      "baseline_stored_bits": 384
+    },
+    "MotionHealth": {
+      "member_bits": 72,
+      "stored_bits": 96,
+      "c_padding_bits": 24,
+      "baseline_stored_bits": 96
+    },
+    "MotionInput": {
+      "member_bits": 96,
+      "stored_bits": 96,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 96
+    },
+    "MotionOutput": {
+      "member_bits": 216,
+      "stored_bits": 224,
+      "c_padding_bits": 8,
+      "baseline_stored_bits": 224
+    },
+    "ObstacleProfile": {
+      "member_bits": 70,
+      "stored_bits": 72,
+      "c_padding_bits": 2,
+      "baseline_stored_bits": 72
+    },
+    "ObstacleRay": {
+      "member_bits": 22,
+      "stored_bits": 24,
+      "c_padding_bits": 2,
+      "baseline_stored_bits": 24
+    },
+    "SafetyInputs": {
+      "member_bits": 136,
+      "stored_bits": 160,
+      "c_padding_bits": 24,
+      "baseline_stored_bits": 160
+    },
+    "TerrainCalibSum": {
+      "member_bits": 69,
+      "stored_bits": 72,
+      "c_padding_bits": 3,
+      "baseline_stored_bits": 72
+    },
+    "TerrainContext": {
+      "member_bits": 299,
+      "stored_bits": 320,
+      "c_padding_bits": 21,
+      "baseline_stored_bits": 320
+    },
+    "TerrainFilterQ16": {
+      "member_bits": 96,
+      "stored_bits": 96,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 96
+    },
+    "WheelPid": {
+      "member_bits": 32,
+      "stored_bits": 32,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 32
+    },
+    "barcode_diagnostic_t": {
+      "member_bits": 60,
+      "stored_bits": 64,
+      "c_padding_bits": 4,
+      "baseline_stored_bits": 64
+    },
+    "barcode_edge_t": {
+      "member_bits": 40,
+      "stored_bits": 48,
+      "c_padding_bits": 8,
+      "baseline_stored_bits": 48
+    },
+    "barcode_event_t": {
+      "member_bits": 48,
+      "stored_bits": 48,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 48
+    },
+    "barcode_frame_t": {
+      "member_bits": 488,
+      "stored_bits": 496,
+      "c_padding_bits": 8,
+      "baseline_stored_bits": 496
+    },
+    "bypass_control_t": {
+      "member_bits": 442,
+      "stored_bits": 480,
+      "c_padding_bits": 38,
+      "baseline_stored_bits": 512
+    },
+    "bypass_input_t": {
+      "member_bits": 456,
+      "stored_bits": 480,
+      "c_padding_bits": 24,
+      "baseline_stored_bits": 480
+    },
+    "bypass_output_t": {
+      "member_bits": 112,
+      "stored_bits": 128,
+      "c_padding_bits": 16,
+      "baseline_stored_bits": 160
+    },
+    "comms_event_log_t": {
+      "member_bits": 1328,
+      "stored_bits": 1344,
+      "c_padding_bits": 16,
+      "baseline_stored_bits": 1344
+    },
+    "comms_packed_event_t": {
+      "member_bits": 80,
+      "stored_bits": 80,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 80
+    },
+    "in_ring_t": {
+      "member_bits": 448,
+      "stored_bits": 448,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 448
+    },
+    "mqtt_ack_t": {
+      "member_bits": 16,
+      "stored_bits": 16,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 16
+    },
+    "mqtt_event_t": {
+      "member_bits": 80,
+      "stored_bits": 80,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 80
+    },
+    "mqtt_line_trace_t": {
+      "member_bits": 152,
+      "stored_bits": 160,
+      "c_padding_bits": 8,
+      "baseline_stored_bits": 160
+    },
+    "mqtt_mapping_t": {
+      "member_bits": 40,
+      "stored_bits": 40,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 40
+    },
+    "mqtt_telemetry_t": {
+      "member_bits": 226,
+      "stored_bits": 240,
+      "c_padding_bits": 14,
+      "baseline_stored_bits": 240
+    },
+    "mqtt_terrain_trace_t": {
+      "member_bits": 104,
+      "stored_bits": 112,
+      "c_padding_bits": 8,
+      "baseline_stored_bits": 112
+    },
+    "mqtt_wheel_trace_t": {
+      "member_bits": 240,
+      "stored_bits": 256,
+      "c_padding_bits": 16,
+      "baseline_stored_bits": 256
+    },
+    "obstacle_acquisition_t": {
+      "member_bits": 893,
+      "stored_bits": 928,
+      "c_padding_bits": 35,
+      "baseline_stored_bits": 960
+    },
+    "obstacle_profile_config_t": {
+      "member_bits": 96,
+      "stored_bits": 96,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 96
+    },
+    "obstacle_profile_evidence_t": {
+      "member_bits": 46,
+      "stored_bits": 48,
+      "c_padding_bits": 2,
+      "baseline_stored_bits": 48
+    },
+    "obstacle_profile_snapshot_t": {
+      "member_bits": 148,
+      "stored_bits": 160,
+      "c_padding_bits": 12,
+      "baseline_stored_bits": 160
+    },
+    "obstacle_range_group_t": {
+      "member_bits": 92,
+      "stored_bits": 96,
+      "c_padding_bits": 4,
+      "baseline_stored_bits": 96
+    },
+    "obstacle_range_sample_t": {
+      "member_bits": 160,
+      "stored_bits": 160,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 160
+    },
+    "out_ring_t": {
+      "member_bits": 832,
+      "stored_bits": 832,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 832
+    },
+    "recovery_control_t": {
+      "member_bits": 80,
+      "stored_bits": 96,
+      "c_padding_bits": 16,
+      "baseline_stored_bits": 96
+    },
+    "recovery_input_t": {
+      "member_bits": 192,
+      "stored_bits": 192,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 192
+    },
+    "recovery_output_t": {
+      "member_bits": 56,
+      "stored_bits": 64,
+      "c_padding_bits": 8,
+      "baseline_stored_bits": 64
+    },
+    "slot_t": {
+      "member_bits": 192,
+      "stored_bits": 192,
+      "c_padding_bits": 0,
+      "baseline_stored_bits": 192
+    }
+  },
+  "course_trace_0": {
+    "before": {
+      "text": 387912,
+      "data": 424,
+      "bss": 83836
+    },
+    "after": {
+      "text": 388140,
+      "data": 424,
+      "bss": 83832
+    }
+  },
+  "course_trace_1": {
+    "after": {
+      "text": 389980,
+      "data": 424,
+      "bss": 84280
+    }
+  }
+}

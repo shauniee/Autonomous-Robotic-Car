@@ -43,6 +43,23 @@ typedef enum
 typedef struct
 {
     uint32_t now_ms;
+    uint32_t line_sampled_ms;
+    uint32_t wheel_count[2];
+    uint32_t front_age_ms;
+    uint32_t front_sampled_ms;
+    uint32_t front_sequence;
+    uint32_t front_wheel_count[2];
+    uint32_t front_mm; /* meaningful only if front_valid */
+    uint32_t side_mm;
+    uint32_t side_sampled_ms;
+    uint32_t side_sequence;
+    uint32_t left_clearance_mm;
+    uint32_t right_clearance_mm;
+    uint16_t profile_closest_mm;
+    uint16_t profile_planning_mm;
+    uint16_t profile_width_mm;
+    int16_t profile_forward_mm;
+    int16_t profile_left_mm;
     bool start_pressed;		/* one debounced GP20 press this release */
     bool mapped;		/* four barcode letters installed */
     bool start_blocked;		/* a start-blocking fault bit is set */
@@ -56,23 +73,14 @@ typedef struct
     bool right_black; /* normalized right IR; requires usable fresh sample */
     /* line_barcode right - left, Q7; + right black, steer left */
     int8_t line_error;
-    uint32_t line_sampled_ms;
-    uint32_t wheel_count[2];
     rd_motion_status_t motion_status;
     uint8_t motion_action;
     bool stationary;		/* encoders unchanged for MISSION_STATIONARY_MS */
     bool front_valid;
-    uint32_t front_age_ms;
-    uint32_t front_sampled_ms, front_sequence, front_wheel_count[2];
-    uint32_t front_mm;		/* front range; meaningful only if front_valid */
     bool side_valid;
-    uint32_t side_mm, side_sampled_ms, side_sequence;
     obstacle_scan_state_t scan_state;
     uint8_t scan_id;
     bool profile_valid;
-    uint32_t left_clearance_mm, right_clearance_mm;
-    uint16_t profile_closest_mm, profile_planning_mm, profile_width_mm;
-    int16_t profile_forward_mm, profile_left_mm;
     uint8_t barcode_letter;	/* 0..25, 31 none */
     bool barcode_level;		/* raw GP16 level, diagnostics only */
     uint8_t barcode_edges;	/* running GP16 edge count, low 5 bits, diagnostics only */
@@ -102,53 +110,53 @@ typedef struct
 
 typedef struct
 {
-    uint8_t state : 3;
-    uint8_t phase : 3;
-    barcode_action_t held;	/* barcode command held for the next cross junction */
+    /* Keep aligned state first and collect small fields at the end. */
     recovery_control_t recovery;
+    bypass_control_t bypass;
     uint32_t state_since_ms;
-    enc_count_t broad_origin[2]; /* broad entry or active navigation phase origin */
     uint32_t broad_since_ms; /* start of this broad-black encounter, wraps */
+    uint32_t junction_sampled_ms;
+    uint32_t onset_sampled_ms; /* last acquisition used for onsets */
+    uint32_t line_steer_sampled_ms; /* last acquisition used for steering */
+    uint32_t turn_sampled_ms; /* last acquisition used by the turn sequence */
+    uint32_t pause_since_ms;
+    uint32_t bypass_started_ms;
+    enc_count_t broad_origin[2]; /* broad entry or navigation phase origin */
+    enc_count_t entry_origin[2];
+    enc_count_t touch_origin[2]; /* counts where the current touch began */
+    enc_count_t dark_origin[2]; /* counts at the latest touching acquisition */
+    enc_count_t onset[2][2]; /* counts where each sensor last went black */
     uint8_t junction_locked : 1;
     uint8_t entry_curved : 1;
     uint8_t exit_seen : 1;
+    uint8_t manual_held : 1; /* test direction protects the held command */
     int16_t turn_length_mm : 12; /* signed whole mm, +/-2000 */
-    enc_count_t entry_origin[2];
-    uint8_t manual_held : 1; /* test direction protects held from barcode replacement */
+    uint8_t state : 3;
+    uint8_t phase : 3;
+    uint8_t turn_code : 2; /* 0 none, 1 left, 2 right, 3 U-turn */
+    uint8_t onset_black : 2; /* black bits at the last fresh acquisition */
+    uint8_t front_clear : 2;
     uint8_t in_broad : 1;
     uint8_t junction_open : 1;
     uint8_t junction_qualified : 1;
-    uint32_t junction_sampled_ms;
-    uint8_t turn_code : 2; /* 0 none, 1 left, 2 right, 3 U-turn */
-    int8_t line_steer_q; /* latest digital correction target, signed Q7 */
-    int8_t line_side; /* side last touched: -1 left, +1 right, 0 none */
-    int8_t line_prev; /* previous acquisition's touch: -1, 0, +1 */
-    int8_t cross_side; /* side the line was last touched, kept across a straight crossing */
-    int8_t line_i_q; /* integral magnitude at the last touch transition, Q7, 0..LINE_I_MAX_Q */
-    enc_count_t touch_origin[2]; /* counts where the current touch began */
-    enc_count_t dark_origin[2]; /* counts at the latest touching acquisition */
-    enc_count_t onset[2][2]; /* counts where the left/right sensor last went black */
-    uint8_t onset_black : 2; /* black bits (left 1, right 2) at the last fresh acquisition */
-    uint32_t onset_sampled_ms; /* last acquisition used for onsets */
-    uint32_t line_steer_sampled_ms; /* last acquisition used for steering */
-    uint32_t turn_sampled_ms; /* last acquisition used by the turn edge sequence */
-    uint32_t pause_since_ms;
-    uint8_t action_id;
-    uint8_t current_action;	/* ID of the Motion action in progress */
-    bypass_control_t bypass;
-    uint32_t bypass_started_ms;
+    uint8_t scan_stopping : 1; /* slowing to a profile stop before the scan */
     uint8_t scan_phase : 1;
     uint8_t scan_retries : 1;
     uint8_t scan_backing : 1;
-    uint8_t scan_second : 1; /* the second sweep at this position is running */
-    uint8_t front_clear : 2;
+    uint8_t scan_second : 1; /* second sweep at this position is running */
+    uint8_t scan_id : 4;
+    barcode_action_t held; /* barcode command held for the next junction */
+    int8_t line_steer_q; /* latest digital correction target, signed Q7 */
+    int8_t line_side; /* side last touched: -1 left, +1 right, 0 none */
+    int8_t line_prev; /* previous acquisition's touch: -1, 0, +1 */
+    int8_t cross_side; /* side last touched, kept across a straight crossing */
+    int8_t line_i_q; /* integral held at last touch transition, Q7 */
+    uint8_t action_id;
+    uint8_t current_action;	/* ID of the Motion action in progress */
     /* low bits of the last forward reading counted after a sweep */
     uint8_t front_seen;
     uint8_t backup_mm;
     uint8_t backed_mm; /* total reversed for this obstacle */
-    uint8_t scan_id : 4;
-    uint8_t scan_stopping : 1; /* slowing to a profile stop before the scan */
-
 } Mission;
 
 bool mission_queue_direction(Mission *mission, uint8_t action);

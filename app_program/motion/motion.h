@@ -155,12 +155,11 @@ typedef struct {
     int16_t previous_cps;
 } WheelPid;
 
+/* Fill the target word's spare bits and keep byte fields together. */
 typedef struct {
-    bool active;
-    uint8_t turn_arrived : 2; /* wheels already braked inside turn tolerance */
-    uint8_t action_id;
     int16_t action_target : 12; /* immutable discrete target +/-2000 */
     uint8_t turn_style : 2; /* immutable TURN/DISTANCE style 0..3 */
+    uint8_t turn_arrived : 2; /* wheels already braked inside turn tolerance */
     motion_mode_t mode;
     rd_motion_status_t status;
     uint32_t start_ms, previous_ms;
@@ -169,8 +168,10 @@ typedef struct {
     uint32_t stalled_since_ms[2];
     uint16_t follow_base_q6 : 15; /* private unsigned Q6 mm/s, see specs */
     int16_t profile_accel : 11; /* applied acceleration, signed whole mm/s^2 */
-    int8_t follow_steer_q; /* private applied Q7 steering, see specs */
     WheelPid pid[2];
+    bool active;
+    uint8_t action_id;
+    int8_t follow_steer_q; /* private applied Q7 steering, see specs */
 } MotionController;
 
 typedef struct {
