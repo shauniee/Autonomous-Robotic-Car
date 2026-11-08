@@ -220,14 +220,14 @@ Flash the current image, let the car sit still on the track for a second, then p
 
 ## 10. Week 13 evidence (minimum-bit, timing, resources)
 
-- [ ] Timing on the final image under combined load: WCET, jitter, missed deadlines and sensor-to-motor latency (MR-39, T15, A11, D13). This is the evidence that timing has not degraded.
+- [ ] Timing on the final image under combined load: WCET, jitter, missed deadlines and sensor-to-motor latency (MR-39, T15, A11, D13). This is the evidence that timing has not degraded. Trace images now print a `[TIMING]` line (task max time, overruns, stack use); run INT-224 on `017f5ed` and INT-225 on the final commit, as described in [team section 7](docs/team.md#timing).
 - [ ] No lost functionality: rerun the applicable set on the final commit (T15, T16).
-- [ ] RAM usage of the final image. Latest build is in INT-174; SYS-11 and SYS-12 are October builds.
-- [ ] Stack use and peak RAM measured (R3, D13). Never measured.
-- [ ] Nicholas reviews the data table; most sections still say "proposed", and each [bit reduction](#bit-reduction-candidates) group needs sign-off after its car check (Gap 1, R2).
+- [ ] RAM usage of the final image. Latest build is INT-223 ([team section 7](docs/team.md#memory)); refresh it on the final commit.
+- [ ] Stack use and peak RAM measured (R3, D13). The `[TIMING]` line reports each task stack high-water mark; needs the INT-224/225 runs.
+- [ ] Nicholas reviews the [data table](docs/team.md#6-data-representation), and each [bit reduction](#bit-reduction-candidates) group needs sign-off after its car check (Gap 1, R2).
 - [ ] Nicholas confirms fault meanings and simultaneous-fault coverage (former #113).
 - [ ] Packed-data race checks on the Pico under load, including lock duration (R1, R4, Gap 2). Host stress only so far.
-- [ ] Measure CPU cost of packing and unpacking (Tribunal resource review).
+- [ ] Measure CPU cost of packing and unpacking (Tribunal resource review): compare the INT-224 and INT-225 task times.
 - [ ] Stale and frozen producers, expired commands and full buffers on the Pico (T14). Host cases exist in `test_safety`, `test_motion_control` and `test_comms_report`.
 
 ### Bit reduction candidates
@@ -244,6 +244,7 @@ Merged with host tests and builds only (INT-178). Each needs a car run.
 | Done | Telemetry width, with clearance in place of depth | 23 to 22 bytes | Dashboard shows width and clearance on a real link |
 | Done | `TRACE=0` in `full_course` | 464 bytes less RAM, 2304 bytes less flash (INT-194) | Trial and course images drive alike |
 | Done | Struct field order | Six types reduced without changing field widths; [layout inventory](testing/integration/struct-layout.md), INT-222 | Loaded timing and peak stack remain unmeasured |
+| Done | Minimum-bit narrowing of every remaining field | Course bss 83836 to 83728 B, text +2444 B; MissionInputs 104 to 64 B (INT-223) | Full course run plus INT-224/225 timing |
 | Not done | 16-bit timestamps | Would save about 250 bits | Not recommended: a short timer can alias, and bypass allows 90 s (Gap 4) |
 
 Flash grew by 1056 bytes, because packed fields take more code to read.
