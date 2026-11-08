@@ -24,8 +24,8 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 | --- | --- |
 | All open work, planned changes and where each branch went | [pending work](pending.md) |
 | Build, flash, calibrate, MQTT laptop tool, bring-up order | [README](README.md) |
-| Requirements, minimum-bit change requirement, data table, pending decisions | [project-specs](docs/project-specs.md) |
-| Bits used by each subsystem | [README](README.md#bits-per-subsystem) |
+| Requirements, minimum-bit change requirement, pending decisions | [project-specs](docs/project-specs.md) |
+| Bits used by each field, and the evidence for them | [team](docs/team.md#6-data-representation) |
 | Tasks, authority, shared data, fault policy, MQTT frame layouts | [architecture](docs/architecture.md) |
 | Members, pins, wiring, task budget, interfaces, coding rules | [team](docs/team.md) |
 | One subsystem: comms, motion, line_barcode, terrain, obstacle | `app_program/<name>/README.md` (`comms`, `motion`, `line_barcode`, `terrain`, `obstacle`) |

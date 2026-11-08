@@ -7,7 +7,9 @@
 #include "../../device/i2c/sysdepend/rp2040/i2c_sysdep.h"
 
 /* ---- Terrain task ---- */
-static rd_word_t terrain_word, startup_outcome; /* writer: I/O */
+static rd_word_t terrain_word; /* writer: I/O */
+/* Writer: I/O. 0 pending, 1 complete, 2 failed: 2 of 8 bits, one byte store. */
+static _Atomic uint8_t startup_outcome;
 static TerrainContext context;
 
 uint32_t terrain_read_word(void)
@@ -17,7 +19,7 @@ uint32_t terrain_read_word(void)
 
 bool terrain_startup_complete(void)
 {
-    return rd_word_read(&startup_outcome) != 0u;
+    return atomic_load_explicit(&startup_outcome, memory_order_acquire) != 0u;
 }
 
 /* INT-154 diagnostics: why an encounter did or did not count. Same task as the
@@ -26,7 +28,8 @@ bool terrain_startup_complete(void)
 static uint8_t trace_frame[MQTT_LEN_TERRAIN_TRACE];
 static bool trace_pending;
 static uint32_t trace_last_ms;
-static float trace_travel_mm;
+/* Q8 mm; the wire's 16-bit travel is bits 8..23, so wrap is harmless. */
+static uint32_t trace_travel_q8;
 
 /* Plain C: <math.h> clashes with the kernel's size_t in this file. */
 static int8_t trace_clamp(float value)
@@ -54,11 +57,9 @@ static void terrain_trace_note(uint32_t now, const Gy511RawAxes *p_raw,
     uint32_t period_ms = (TERRAIN_STATE_FLAT == context.state) ?
         TERRAIN_TRACE_FLAT_MS : TERRAIN_TRACE_HUMP_MS;
 
-    trace_travel_mm += moved_counts / ENC_COUNTS_PER_MM;
-    if (trace_travel_mm >= 65536.0f)
-    {
-        trace_travel_mm -= 65536.0f;
-    }
+    float moved_q8 = moved_counts * 256.0f / ENC_COUNTS_PER_MM;
+    trace_travel_q8 += (uint32_t)(int32_t)(moved_q8 +
+        ((moved_q8 >= 0.0f) ? 0.5f : -0.5f));
     if (robot_time_elapsed(now, trace_last_ms) >= period_ms)
     {
         mqtt_terrain_trace_t trace =
@@ -80,8 +81,7 @@ static void terrain_trace_note(uint32_t now, const Gy511RawAxes *p_raw,
                 trace_clamp((float)p_raw->z * mg_per_lsb / 16.0f)
             },
             .height_mm = trace_byte(terrain_height_mm(&context)),
-            /* NOTE: kept below 65536 above, so the cast cannot overflow. */
-            .travel_mm = (uint16_t)trace_travel_mm
+            .travel_mm = (uint16_t)(trace_travel_q8 >> 8u)
         };
 
         trace_last_ms = now;
@@ -134,7 +134,7 @@ void terrain_step(uint32_t now)
         if (!hardware_ready)
         {
             rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU | RD_FAULT_CALIBRATION_FAILED);
-            rd_word_publish(&startup_outcome, 2u);
+            atomic_store_explicit(&startup_outcome, 2u, memory_order_release);
             tm_printf((UB *)"[IMU] calibration failed: I2C init failed\n");
         }
         else
@@ -180,7 +180,7 @@ void terrain_step(uint32_t now)
         enc_travel_signed(left, travel_origin[0]),
         enc_travel_signed(right, travel_origin[1])};
 #endif
-    const uint32_t count[2] = {left, right};
+    const enc_count_t count[2] = {(enc_count_t)left, (enc_count_t)right};
     float moved = terrain_travel_take(travel_origin, count, acquired,
         calibrating || result == GY511_SAMPLE_ERROR || stale);
     if (stale)
@@ -203,7 +203,7 @@ void terrain_step(uint32_t now)
         }
         if (context.is_calibrated)
         {
-            rd_word_publish(&startup_outcome, 1u);
+            atomic_store_explicit(&startup_outcome, 1u, memory_order_release);
             tm_printf((UB *)"[IMU] calibration passed: samples=%u elapsed_ms=%u\n",
                 (unsigned)context.calib_count,
                 (unsigned)robot_time_elapsed(now, started_ms));
@@ -211,7 +211,7 @@ void terrain_step(uint32_t now)
         else if (robot_time_elapsed(now, started_ms) >= TERRAIN_CALIBRATION_TIMEOUT_MS)
         {
             rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_CALIBRATION_FAILED);
-            rd_word_publish(&startup_outcome, 2u);
+            atomic_store_explicit(&startup_outcome, 2u, memory_order_release);
             tm_printf((UB *)"[IMU] calibration failed: timeout samples=%u/100 "
                 "elapsed_ms=%u stationary=%u sample=%s\n",
                 (unsigned)context.calib_count,
@@ -226,7 +226,8 @@ void terrain_step(uint32_t now)
         MotionHealth health = {0};
         bool health_copied = motion_health_try(&health) >= E_OK;
         /* A lock this poll lost says nothing about the encoders (INT-157). */
-        bool encoder_valid = (!health_copied || (health.sequence != 0u &&
+        bool encoder_valid = (!health_copied ||
+            (motion_health_serviced(&health) &&
             robot_time_elapsed(now, health.serviced_ms) <= SAFETY_STALE_MS)) &&
             (rd_fault_get(RD_OWNER_MOTION) & RD_FAULT_ENCODER) == 0u;
         if (!encoder_valid)

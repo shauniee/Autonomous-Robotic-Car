@@ -144,8 +144,7 @@ static void note_onsets(Mission *m, const MissionInputs *in)
    together; curve skew darkens the inner sensor long before the outer. */
 static float onset_skew_mm(const Mission *m)
 {
-    const uint32_t first[2] = {m->onset[0][0], m->onset[0][1]};
-    return fabsf(enc_mean_travel(first, m->onset[1])) / ENC_COUNTS_PER_MM;
+    return fabsf(enc_mean_travel(m->onset[0], m->onset[1])) / ENC_COUNTS_PER_MM;
 }
 
 static uint8_t next_action_id(Mission *m)
@@ -155,6 +154,17 @@ static uint8_t next_action_id(Mission *m)
         ? 2u
         : m->action_id + 1u);
     return m->action_id;
+}
+
+/* Mission.action_id is a bit-field, so bypass gets a local copy. */
+static bool begin_bypass(Mission *m, const bypass_input_t *input,
+    const ObstacleProfile *profile, uint16_t planning_width_mm)
+{
+    uint8_t action_id = m->action_id;
+    bool begun = bypass_control_begin(&m->bypass, input, profile,
+        planning_width_mm, &action_id);
+    m->action_id = action_id;
+    return begun;
 }
 
 static MotionCommand stop_command(uint32_t now_ms)
@@ -474,7 +484,9 @@ static void run_bypass(Mission *m, const MissionInputs *in,
     }
     bypass_input_t input = bypass_input(in);
     bypass_output_t result;
-    bypass_control_step(&m->bypass, &input, &m->action_id, &result);
+    uint8_t action_id = m->action_id; /* the bit-field has no address */
+    bypass_control_step(&m->bypass, &input, &action_id, &result);
+    m->action_id = action_id;
     out->command = result.command;
     out->side_watch_on = result.side_watch;
     out->side_watch_deg = result.side_angle_deg;
@@ -689,8 +701,8 @@ static void handle_scan(Mission *m, const MissionInputs *in,
             {
                 request_scan(m, in, out, true);
             }
-            else if (bypass_control_begin(&m->bypass, &input, &profile,
-                in->profile_planning_mm, &m->action_id))
+            else if (begin_bypass(m, &input, &profile,
+                in->profile_planning_mm))
             {
                 enter(m, MISSION_BYPASS, in->now_ms);
                 run_bypass(m, in, out);

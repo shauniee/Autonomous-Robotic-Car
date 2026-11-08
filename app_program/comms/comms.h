@@ -45,7 +45,7 @@ typedef enum
 #define MQTT_LEN_TERRAIN_TRACE 14u
 #define MQTT_LEN_ACK 3u
 #define MQTT_LEN_SNAPSHOT_REQUEST 2u
-#define MQTT_FRAME_MAX 23u
+#define MQTT_FRAME_MAX 22u
 
 typedef enum
 {
@@ -223,7 +223,8 @@ mqtt_decode_t mqtt_decode_snapshot_request(const uint8_t *frame, unsigned length
  *	Wi-Fi or broker loss sets only the Network fault byte; it never stops motion.
  */
 
-#define COMMS_FRAME_MAX 23u		/* largest frame, MQTT_FRAME_MAX (telemetry/snapshot) */
+/* Largest frame, MQTT_FRAME_MAX (telemetry/snapshot). */
+#define COMMS_FRAME_MAX 22u
 #define COMMS_OUTGOING_DEPTH 4u
 #define COMMS_INCOMING_DEPTH 2u
 
@@ -273,19 +274,19 @@ typedef struct
 
 /* Capacity 16: head 0..15 uses 4 bits; count 0..16 uses 5 bits.
    The combined 9 bits reside in one 16-bit storage unit. A push into a
-   full ring overwrites the oldest event and saturates dropped; the newest
-   events are retained. The ring is externally synchronised by its caller
-   (comms.c uses a bounded cross-core mutex). */
+   full ring overwrites the oldest event; the newest events are retained.
+   The ring is externally synchronised by its caller (comms.c uses a
+   bounded cross-core mutex). */
 typedef struct
 {
     comms_packed_event_t events[COMMS_EVENT_CAPACITY];
     uint16_t indices;       /* bits 0..3 head, 4..8 count; bits 9..15 zero */
-    uint32_t dropped;
 } comms_event_log_t;
 
 _Static_assert(COMMS_EVENT_CAPACITY == 16u, "event-log index packing assumes 16 slots");
 _Static_assert(sizeof(comms_packed_event_t) == 10u, "event packing must occupy 10 bytes");
-_Static_assert(sizeof(comms_event_log_t) == 168u, "event ring layout changed unexpectedly");
+_Static_assert(sizeof(comms_event_log_t) == 162u,
+    "event ring layout changed unexpectedly");
 
 void comms_log_init(comms_event_log_t *log);
 bool comms_log_push(comms_event_log_t *log, const mqtt_event_t *event);
@@ -304,8 +305,8 @@ ER comms_init(void);
 void comms_step(uint32_t now_ms);
 
 /* Log one event with the current time and encoder position. Mission (core 1) or Terrain (core 0);
-   insertion waits at most RD_SNAPSHOT_LOCK_MS (2 ms); failed locks are
-   counted in per-core saturating lock_misses words; a full ring overwrites the oldest event (counted, see comms.h).
+   insertion waits at most RD_SNAPSHOT_LOCK_MS (2 ms) and a failed lock drops
+   the event; a full ring overwrites the oldest event (see comms.h).
    kind: mqtt_event_kind_t; arg and arg2 as documented in MQTT_PROTOCOL.md. */
 void comms_event(mqtt_event_kind_t kind, uint8_t arg, uint16_t arg2);
 

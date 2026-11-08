@@ -10,7 +10,6 @@
 SIZE(barcode_edge_t);
 FIELD(barcode_edge_t, left_count);
 FIELD(barcode_edge_t, right_count);
-FIELD(barcode_edge_t, high);
 
 SIZE(barcode_event_t);
 FIELD(barcode_event_t, left_count);
@@ -23,9 +22,6 @@ FIELD(barcode_frame_t, prev_right);
 
 SIZE(IrRaw);
 SIZE(IrReading);
-FIELD(IrReading, valid);
-FIELD(IrReading, left_fraction);
-FIELD(IrReading, right_fraction);
 FIELD(IrReading, error);
 
 SIZE(IrTrackingOutput);

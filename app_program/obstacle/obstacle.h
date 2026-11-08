@@ -15,7 +15,7 @@
  * rows of DATA_REPRESENTATION are signed off (#28, #54):
  *   bits  0-12  range in mm, 0..8190; 8191 is the invalid code
  *   bit  13     valid (range is a real echo)
- *   bits 16-31  low 16 bits of the sample time in kernel ms
+ *   bits 14-15  spare, zero. The sample time is the 32-bit sampled_ms.
  * No echo is unknown, never clear space: valid is 0 and range is invalid.
  */
 
@@ -32,30 +32,41 @@ static inline uint32_t echo_range_mm(uint32_t pulse_us)
     return mm >= ECHO_RANGE_INVALID ? ECHO_RANGE_INVALID : mm;
 }
 
-static inline uint32_t echo_pack(uint32_t range_mm, uint32_t sampled_ms)
+static inline uint16_t echo_pack(uint32_t range_mm)
 {
     bool valid = range_mm < ECHO_RANGE_INVALID;
-    return (valid ? range_mm : ECHO_RANGE_INVALID) | ((valid ? 1u : 0u) << 13) | ((sampled_ms & 0xFFFFu) << 16);
+    return (uint16_t)((valid ? range_mm : ECHO_RANGE_INVALID) |
+        ((valid ? 1u : 0u) << 13));
 }
 
 static inline bool echo_valid(uint32_t word) { return rd_field_get(word, 13u, 1u) != 0u; }
 static inline uint32_t echo_range(uint32_t word) { return rd_field_get(word, 0u, ECHO_RANGE_BITS); }
-static inline uint32_t echo_time16(uint32_t word) { return rd_field_get(word, 16u, 16u); }
-
-/* Counts consecutive misses; true while the no-echo fault should be set. */
-static inline bool echo_note(uint32_t *misses, bool got_echo)
+/* Consecutive misses, saturating at SONAR_NO_ECHO_LIMIT (2 bits). */
+#define ECHO_MISS_BITS 2u
+_Static_assert(SONAR_NO_ECHO_LIMIT <= 3u, "miss count fits 2 bits");
+static inline uint8_t echo_misses_next(uint8_t misses, bool got_echo)
 {
-    *misses = got_echo ? 0u : (*misses < 0xFFFFu ? *misses + 1u : *misses);
-    return *misses >= SONAR_NO_ECHO_LIMIT;
+    return got_echo ? 0u :
+        (misses < SONAR_NO_ECHO_LIMIT ? (uint8_t)(misses + 1u) : misses);
 }
 
-/* Coherent acquisition evidence; packed low time bits remain display-only. */
+/* True while the no-echo fault should be set. */
+static inline bool echo_no_echo_fault(uint8_t misses)
+{
+    return misses >= SONAR_NO_ECHO_LIMIT;
+}
+
+/* Coherent acquisition evidence. */
 typedef struct
 {
-    uint32_t word, sampled_ms, sequence;
-    uint32_t wheel_count[2]; /* each wheel at range completion */
+    uint32_t sampled_ms;
+    uint32_t sequence; /* 0 before the first reading; change counter */
+    uint16_t wheel_count[2]; /* enc_count_t at range completion */
+    uint16_t word; /* front-range word, 14 bits used */
 } obstacle_range_sample_t;
-_Static_assert(sizeof(obstacle_range_sample_t) == 20u, "range evidence ABI");
+_Static_assert(sizeof(obstacle_range_sample_t) == 16u, "range evidence ABI");
+_Static_assert(ENC_COUNT_BITS <= 16u, "wheel counts fit 16 bits");
+_Static_assert(SERVO_MAX_DEG <= INT8_MAX, "scan angles fit int8_t");
 
 static inline bool obstacle_range_sample_fresh(const obstacle_range_sample_t *sample,
     uint32_t now, uint32_t maximum_age_ms)
@@ -221,10 +232,15 @@ typedef struct
     uint8_t maximum_gap_deg;
 } obstacle_profile_config_t;
 
+#define OBSTACLE_UNCERTAINTY_UNKNOWN 2047u
+_Static_assert(OBSTACLE_PROFILE_MAX_MM < OBSTACLE_UNCERTAINTY_UNKNOWN,
+    "unknown uncertainty is outside the measured range");
+
 typedef struct
 {
-    uint16_t width_model_uncertainty_mm;
-    uint16_t planning_width_mm;
+    /* 0..OBSTACLE_PROFILE_MAX_MM; OBSTACLE_UNCERTAINTY_UNKNOWN = unknown */
+    uint16_t width_model_uncertainty_mm : 11;
+    uint16_t planning_width_mm : 10; /* 0..OBSTACLE_PROFILE_MAX_MM */
     uint16_t foreground_rays : 4;
     uint16_t free_left_rays : 4;
     uint16_t free_right_rays : 4;
@@ -243,7 +259,7 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
 
 /* Up to two bounded refinements per supported object/background edge. */
 unsigned obstacle_profile_fine_angles(const ObstacleRay *coarse, unsigned count,
-    const obstacle_profile_config_t *config, int16_t *out, unsigned capacity);
+    const obstacle_profile_config_t *config, int8_t *out, unsigned capacity);
 
 /* Jia Jing: obstacle. Front ultrasonic range on the GPIO dispatcher; servo scan follows in #49. */
 

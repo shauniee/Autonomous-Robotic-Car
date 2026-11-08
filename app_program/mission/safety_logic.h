@@ -22,14 +22,14 @@
 
 typedef struct
 {
-    bool line_required;
-    bool stop_button;		/* GP21 down */
-    bool fault_pending;		/* rd_fault_stop_pending() */
-    bool line_seen;		/* the IR producer has published at least once */
     uint32_t line_age_ms;	/* age of the newest IR acquisition */
-    bool motion_seen;		/* Motion has serviced at least once */
     uint32_t motion_age_ms;	/* age of Motion's last serviced release */
     uint32_t uptime_ms;
+    bool line_required : 1;
+    bool stop_button : 1; /* GP21 down */
+    bool fault_pending : 1; /* rd_fault_stop_pending() */
+    bool line_seen : 1; /* the IR producer has published at least once */
+    bool motion_seen : 1; /* Motion has serviced at least once */
 } SafetyInputs;
 
 /* Causes present right now. A producer that has never published is excused

@@ -5,8 +5,9 @@
 
 static float mean(const uint32_t count[2], const uint32_t origin[2])
 {
+    const enc_count_t now[2] = {(enc_count_t)count[0], (enc_count_t)count[1]};
     const enc_count_t stored[2] = {(enc_count_t)origin[0], (enc_count_t)origin[1]};
-    return enc_mean_travel(count, stored);
+    return enc_mean_travel(now, stored);
 }
 
 int main(void)

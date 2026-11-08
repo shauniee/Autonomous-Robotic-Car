@@ -12,10 +12,10 @@ static void test_event_log(void)
     comms_log_init(&log);
     assert(!comms_log_pop(&log, &e));
     for (uint8_t i = 0; i < COMMS_EVENT_CAPACITY; ++i) { mqtt_event_t x = ev(i); comms_log_push(&log, &x); }
-    assert(comms_log_count(&log) == COMMS_EVENT_CAPACITY && log.dropped == 0u);
-    /* Overflow: the oldest events go, the newest are kept, drops are counted. */
+    assert(comms_log_count(&log) == COMMS_EVENT_CAPACITY);
+    /* Overflow: the oldest events go, the newest are kept. */
     for (uint8_t i = 0; i < 5u; ++i) { mqtt_event_t x = ev((uint8_t)(100u + i)); comms_log_push(&log, &x); }
-    assert(comms_log_count(&log) == COMMS_EVENT_CAPACITY && log.dropped == 5u);
+    assert(comms_log_count(&log) == COMMS_EVENT_CAPACITY);
     assert(comms_log_pop(&log, &e) && e.arg == 5u);		/* events 0-4 were overwritten */
     unsigned n = 1u; uint8_t last = e.arg;
     while (comms_log_pop(&log, &e)) { ++n; last = e.arg; }
@@ -74,18 +74,17 @@ static void test_event_packing(void)
     assert(!comms_log_push(&log, &bad));
     bad.kind = MQTT_EVENT_COUNT;
     assert(!comms_log_push(&log, &bad));
-    assert(comms_log_count(&log) == 0u && log.dropped == 0u);
+    assert(comms_log_count(&log) == 0u);
 
-    /* Full-ring overwrite and the drop counter's saturation remain intact. */
+    /* Full-ring overwrite keeps the newest event. */
     for (unsigned i = 0; i < COMMS_EVENT_CAPACITY; ++i)
     {
         mqtt_event_t x = ev((uint8_t)i);
         assert(comms_log_push(&log, &x));
     }
-    log.dropped = 0xFFFFFFFFu;
     mqtt_event_t newest = ev(42);
     assert(comms_log_push(&log, &newest));
-    assert(log.dropped == 0xFFFFFFFFu && comms_log_count(&log) == COMMS_EVENT_CAPACITY);
+    assert(comms_log_count(&log) == COMMS_EVENT_CAPACITY);
     mqtt_event_t popped;
     assert(comms_log_pop(&log, &popped) && popped.arg == 1u);
 
@@ -133,7 +132,7 @@ static void test_event_backpressure(void)
     for (unsigned i = 0u; i < 20u; ++i)
     {
         assert(!comms_log_post_oldest(&log, post_event));
-        assert(comms_log_count(&log) == 2u && log.dropped == 0u);
+        assert(comms_log_count(&log) == 2u);
     }
     tx_blocked = false;
     assert(comms_log_post_oldest(&log, post_event));

@@ -2,6 +2,7 @@
 #include "motion/motion.h"
 #include "mission/mission.h"
 #include "common/io_task.h"
+#include "common/task_timing.h"
 
 /*
  * Create and start one task (declared in app.h for every subsystem).
@@ -18,6 +19,18 @@ EXPORT ID app_start_task(FP entry, PRI pri, UW prc, const char *name)
 	ctsk.stksz   = TASK_STACK_SIZE;	/* kernel allocates the stack */
 	ctsk.tskatr  = TA_HLNG		/* written in a high-level language (C) */
 		     | TA_RNG3;		/* runs at user protection level */
+    /* Trace images use painted static stacks so [TIMING] can report use.
+       task_timing_id_t follows the creation order in usermain(). */
+    static unsigned created;
+    if (created < TASK_TIMING_COUNT)
+    {
+        ctsk.bufptr = task_timing_stack((task_timing_id_t)created++,
+            &ctsk.stksz);
+        if (ctsk.bufptr != NULL)
+        {
+            ctsk.tskatr |= TA_USERBUF;
+        }
+    }
 #if TK_SUPPORT_SMP
 	if (prc != 0) {
 		ctsk.tskatr |= TA_ASSPRC;	/* honour the affinity below */

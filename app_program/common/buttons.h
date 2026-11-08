@@ -14,16 +14,16 @@ typedef enum
 
 typedef struct
 {
-    bool last_raw_down;
-    bool debounced_down;
-    bool press_allowed;
     uint32_t raw_changed_ms;
+    bool last_raw_down : 1;
+    bool debounced_down : 1;
+    bool press_allowed : 1;
 } Button;
 
 typedef struct
 {
-    bool gp20_down;
-    bool gp21_down;
+    bool gp20_down : 1;
+    bool gp21_down : 1;
 } ButtonInputs;
 
 bool drv_buttons_init(void);

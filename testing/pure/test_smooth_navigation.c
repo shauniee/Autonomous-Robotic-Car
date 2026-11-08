@@ -278,6 +278,15 @@ static void to_pivot(Mission *m, MissionInputs *in, int action)
 }
 /* The pivot ends on the new branch: leading sensor black, then not black,
    only past the sense angle; then it brakes, pauses and follows. */
+/* Bit-fields have no address: set the leading sensor through this. */
+static void set_leading(MissionInputs *in, bool left, bool black)
+{
+    if (left)
+        in->left_black = black;
+    else
+        in->right_black = black;
+}
+
 static void pivot_turns(void)
 {
     for (int action = BARCODE_LEFT; action <= BARCODE_U_TURN; action++)
@@ -290,19 +299,19 @@ static void pivot_turns(void)
         to_pivot(&m, &in, action);
         float sign = action == BARCODE_LEFT ? 1.0f : -1.0f;
         float sense = action == BARCODE_U_TURN ? NAV_UTURN_SENSE_DEG : NAV_TURN_SENSE_DEG;
-        bool *leading = action == BARCODE_LEFT ? &in.left_black : &in.right_black;
+        bool left_leads = action == BARCODE_LEFT;
         /* The branch being left crosses the sensor early: it never counts. */
         pivot(&in, sign * 20.0f);
-        *leading = true;
+        set_leading(&in, left_leads, true);
         tick(&m, &in);
-        *leading = false;
+        set_leading(&in, left_leads, false);
         MissionOutputs out = tick(&m, &in);
         assert(m.phase == JUNCTION_PHASE_TURN && motion_cmd_mode(&out.command) == MOTION_MODE_TURN);
         pivot(&in, sign * (sense - 10.0f));
-        *leading = true;
+        set_leading(&in, left_leads, true);
         out = tick(&m, &in);
         assert(m.phase == JUNCTION_PHASE_TURN && motion_cmd_mode(&out.command) == MOTION_MODE_TURN);
-        *leading = false;
+        set_leading(&in, left_leads, false);
         out = tick(&m, &in);
         assert(m.phase == JUNCTION_PHASE_BRAKE && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
         assert(m.state == MISSION_NAVIGATE && !out.stop_now);

@@ -147,6 +147,38 @@ void barcode_frame_reset(barcode_frame_t *f)
     *f = (barcode_frame_t){0};
 }
 
+/* A 9-bit width spans at most two bytes of the packed array. */
+uint16_t barcode_frame_width(const barcode_frame_t *f, unsigned index)
+{
+    unsigned bit = index * BARCODE_WIDTH_BITS;
+    unsigned byte = bit / 8u;
+    uint32_t pair = f->widths[byte];
+    if (byte + 1u < BARCODE_WIDTH_BYTES)
+    {
+        pair |= (uint32_t)f->widths[byte + 1u] << 8u;
+    }
+    return (uint16_t)rd_field_get(pair, bit % 8u, BARCODE_WIDTH_BITS);
+}
+
+/* Caller guarantees width <= BARCODE_MAX_ELEMENT_COUNTS (9 bits). */
+static void frame_width_set(barcode_frame_t *f, unsigned index,
+    uint32_t width)
+{
+    unsigned bit = index * BARCODE_WIDTH_BITS;
+    unsigned byte = bit / 8u;
+    uint32_t pair = f->widths[byte];
+    if (byte + 1u < BARCODE_WIDTH_BYTES)
+    {
+        pair |= (uint32_t)f->widths[byte + 1u] << 8u;
+    }
+    pair = rd_field_set(pair, bit % 8u, BARCODE_WIDTH_BITS, width, RD_NULL);
+    f->widths[byte] = (uint8_t)pair;
+    if (byte + 1u < BARCODE_WIDTH_BYTES)
+    {
+        f->widths[byte + 1u] = (uint8_t)(pair >> 8u);
+    }
+}
+
 /* Travel of the sensor itself: it sits left of the axle centre, so while the
    robot steers it moves almost with the left wheel, not at the mean speed. */
 static uint32_t sensor_travel(uint32_t left, uint32_t right)
@@ -173,19 +205,19 @@ barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
 {
     if (!f->have_edge)
     {
-        f->have_edge = true;
+        f->have_edge = 1u;
         f->prev_left = left_count;
         f->prev_right = right_count;
-        f->prev_black = black;
+        f->prev_black = black ? 1u : 0u;
         return BARCODE_NO_RESULT;
     }
     f->last_width = 0u;
     int32_t left = enc_travel_signed(left_count, f->prev_left);
     int32_t right = enc_travel_signed(right_count, f->prev_right);
-    bool run_was_black = f->prev_black;
+    bool run_was_black = f->prev_black != 0u;
     f->prev_left = left_count;
     f->prev_right = right_count;
-    f->prev_black = black;
+    f->prev_black = black ? 1u : 0u;
     if (black == run_was_black)
     {
         /* Two edges of one polarity: an edge was missed. Resynchronise. */
@@ -207,7 +239,8 @@ barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
         /* Sensor chatter: this run and the next belong to the previous element. */
         if (f->count > 0u)
         {
-            f->carry = (uint16_t)(f->widths[--f->count] + width);
+            f->count--;
+            f->carry = (uint16_t)(barcode_frame_width(f, f->count) + width);
         }
         return BARCODE_NO_RESULT;
     }
@@ -221,18 +254,24 @@ barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
     {
         for (unsigned i = 1u; i < BARCODE_ELEMENTS; ++i)
         {
-            f->widths[i - 1u] = f->widths[i];
+            frame_width_set(f, i - 1u, barcode_frame_width(f, i));
         }
-        --f->count;
+        f->count--;
     }
-    f->widths[f->count++] = (uint16_t)width;
+    frame_width_set(f, f->count, width);
+    f->count++;
     /* A print ends in a bar, and one guard alone would match when misaligned by
        a run. INT-155 confirmed the polarity on real passes. */
     if (f->count < BARCODE_ELEMENTS || !run_was_black)
     {
         return BARCODE_NO_RESULT;
     }
-    barcode_result_t result = barcode_decode(f->widths, symbol, orientation);
+    uint16_t widths[BARCODE_ELEMENTS];
+    for (unsigned i = 0u; i < BARCODE_ELEMENTS; ++i)
+    {
+        widths[i] = barcode_frame_width(f, i);
+    }
+    barcode_result_t result = barcode_decode(widths, symbol, orientation);
     if (result == BARCODE_DECODED)
     {
         f->count = 0u; /* one event per print */
@@ -249,7 +288,12 @@ static _Atomic unsigned head;		/* handler; task seeds with IRQ masked */
 static _Atomic unsigned tail;		/* written by the task */
 static _Atomic uint32_t overflows;	/* written by the handler */
 static _Atomic uint32_t edge_total;	/* written by the handler: every edge seen */
-static bool claimed;
+/* line_barcode task only: GP16 claimed on the dispatcher, scanner running. */
+static struct
+{
+    uint8_t claimed : 1;
+    uint8_t running : 1;
+} scanner;
 static bool capture_high;	/* level of the newest ring entry; handler, seeded with IRQ masked */
 
 /* Handler, or task with IRQ masked; the same core, so byte updates cannot tear. */
@@ -312,13 +356,13 @@ bool drv_barcode_init(void)
     }
     /* The mounted comparator must supply a verified safe level: no pulls. */
     clr_w(GPIO(BARCODE_GPIO), GPIO_PUE | GPIO_PDE);
-    claimed = drv_gpio_irq_claim(BARCODE_GPIO, edge);
-    return claimed;
+    scanner.claimed = drv_gpio_irq_claim(BARCODE_GPIO, edge) ? 1u : 0u;
+    return scanner.claimed != 0u;
 }
 
 void drv_barcode_enable(bool enabled)
 {
-    if (!claimed)
+    if (0u == scanner.claimed)
     {
         return;
     }
@@ -378,7 +422,6 @@ static _Atomic unsigned event_head,
     event_tail; /* head: line_barcode task, tail: Mission */
 static uint32_t seen_overflows; /* line_barcode task only */
 static _Atomic bool initialised; /* writer: line_barcode task, once */
-static bool running; /* line_barcode task only */
 
 #if BARCODE_DIAGNOSTICS
 static barcode_diagnostic_t diagnostics[32];
@@ -468,7 +511,8 @@ enum { RUN_TRACE_DEPTH = 8u };
 static uint8_t run_records[RUN_TRACE_DEPTH][MQTT_LEN_BARCODE_TRACE];
 static _Atomic uint32_t run_head, run_tail;
 static uint16_t run_pending[MQTT_BARCODE_TRACE_RUNS];
-static unsigned run_count;
+static uint8_t run_count; /* 0..MQTT_BARCODE_TRACE_RUNS */
+_Static_assert(MQTT_BARCODE_TRACE_RUNS <= UINT8_MAX, "run count fits");
 static uint8_t run_sequence;
 
 static void run_trace_flush(void)
@@ -528,7 +572,7 @@ void barcode_service(bool cancel)
 {
     bool wanted =
         !cancel && atomic_load_explicit(&run_wanted, memory_order_acquire);
-    if (wanted != running)
+    if (wanted != (scanner.running != 0u))
     {
         /* Only this task touches the scanner state and the Line fault byte. */
         drv_barcode_enable(false);
@@ -537,9 +581,9 @@ void barcode_service(bool cancel)
         rd_fault_clear(RD_OWNER_LINE, RD_FAULT_BARCODE_CAPTURE_OVERFLOW |
             RD_FAULT_BARCODE_EVENT_OVERFLOW);
         drv_barcode_enable(wanted);
-        running = wanted;
+        scanner.running = wanted ? 1u : 0u;
     }
-    if (!running)
+    if (0u == scanner.running)
     {
         return;
     }
