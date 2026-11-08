@@ -160,8 +160,10 @@ typedef struct {
     int16_t action_target : 12; /* immutable discrete target +/-2000 */
     uint8_t turn_style : 2; /* immutable TURN/DISTANCE style 0..3 */
     uint8_t turn_arrived : 2; /* wheels already braked inside turn tolerance */
-    motion_mode_t mode;
-    rd_motion_status_t status;
+    uint8_t mode : 2; /* motion_mode_t */
+    uint8_t status : 2; /* rd_motion_status_t */
+    uint8_t active : 1;
+    uint8_t action_id : 6; /* RD_MOTION_ACTION_BITS */
     uint32_t start_ms, previous_ms;
     enc_count_t origin[2];
     enc_count_t previous_count[2];
@@ -169,23 +171,25 @@ typedef struct {
     uint16_t follow_base_q6 : 15; /* private unsigned Q6 mm/s, see specs */
     int16_t profile_accel : 11; /* applied acceleration, signed whole mm/s^2 */
     WheelPid pid[2];
-    bool active;
-    uint8_t action_id;
     int8_t follow_steer_q; /* private applied Q7 steering, see specs */
 } MotionController;
 
 typedef struct {
     uint32_t now_ms;
-    uint32_t count[2];	/* wrapped encoder counts: left, right */
+    enc_count_t count[2]; /* wrapped encoder counts: left, right */
 } MotionInput;
 
 typedef struct {
     float duty[2];	/* signed, within +-MOTION_MAX_DUTY; 0 = brake */
     float target_cps[2], measured_cps[2]; /* local tuning diagnostics */
-    rd_motion_status_t status;
-    uint8_t action_id;
-    bool stall;		/* stall fault condition this release */
+    uint8_t status : 2; /* rd_motion_status_t */
+    uint8_t action_id : 6;
+    bool stall : 1; /* stall fault condition this release */
 } MotionOutput;
+
+_Static_assert(MOTION_MODE_COUNT <= 4 && RD_MOTION_FAILED < 4,
+    "Motion mode and status fit 2 bits");
+_Static_assert(RD_MOTION_ACTION_BITS == 6u, "action IDs fit 6 bits");
 
 /* Forget any action: next valid command starts fresh. */
 /* Travel, whole mm, of a planned stop from speed_mmps. Any subsystem that plans
@@ -211,16 +215,27 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
 
 typedef struct
 {
-    uint32_t serviced_ms, sequence;
-    uint8_t flags; /* bit 0 stop latched, bit 1 brake acknowledged */
+    uint32_t serviced_ms;
+    /* bit 0 stop latched, bit 1 brake acknowledged, bit 2 serviced once */
+    uint8_t flags;
 } MotionHealth;
 
-enum { MOTION_HEALTH_STOPPED_BIT = 1u, MOTION_HEALTH_BRAKED_BIT = 2u };
+enum
+{
+    MOTION_HEALTH_STOPPED_BIT = 1u,
+    MOTION_HEALTH_BRAKED_BIT = 2u,
+    MOTION_HEALTH_SERVICED_BIT = 4u
+};
+/* False until Motion has serviced its first release after boot. */
+static inline bool motion_health_serviced(const MotionHealth *h)
+{
+    return (h->flags & MOTION_HEALTH_SERVICED_BIT) != 0u;
+}
 static inline bool motion_health_stopped(const MotionHealth *h)
 { return (h->flags & MOTION_HEALTH_STOPPED_BIT) != 0u; }
 static inline bool motion_health_brake_acknowledged(const MotionHealth *h)
 { return (h->flags & MOTION_HEALTH_BRAKED_BIT) != 0u; }
-_Static_assert(sizeof(MotionHealth) == 12u, "unexpected MotionHealth layout");
+_Static_assert(sizeof(MotionHealth) == 8u, "unexpected MotionHealth layout");
 
 /* Kernel-free stop/reset decision shared with the real Motion service. */
 

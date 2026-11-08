@@ -62,6 +62,7 @@ _Static_assert(sizeof(obstacle_range_sample_t) == 20u, "range acquisition ABI");
 /* Target-only probe: upper bounds after the minimum-bit narrowing; a
    larger size means a field was widened or padding came back. */
 _Static_assert(sizeof(MotionController) <= 44u, "Motion size regressed");
+_Static_assert(sizeof(MotionInput) <= 8u, "Motion input size regressed");
 _Static_assert(sizeof(Mission) <= 140u, "Mission size regressed");
 _Static_assert(sizeof(MissionInputs) <= 64u, "Mission input size regressed");
 _Static_assert(sizeof(MissionOutputs) <= 20u, "Mission output size regressed");

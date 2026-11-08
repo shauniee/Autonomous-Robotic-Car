@@ -37,7 +37,7 @@ void safety_step(bool line_required)
         .line_seen = line_copied && snapshot.sampled_ms != 0u,
         .line_age_ms = line_copied ?
             robot_time_elapsed(now, snapshot.sampled_ms) : 0u,
-        .motion_seen = health_read && health.sequence != 0u,
+        .motion_seen = health_read && motion_health_serviced(&health),
         .motion_age_ms = health_read ?
             robot_time_elapsed(now, health.serviced_ms) : 0u,
         .uptime_ms = now};

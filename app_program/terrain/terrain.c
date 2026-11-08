@@ -226,7 +226,8 @@ void terrain_step(uint32_t now)
         MotionHealth health = {0};
         bool health_copied = motion_health_try(&health) >= E_OK;
         /* A lock this poll lost says nothing about the encoders (INT-157). */
-        bool encoder_valid = (!health_copied || (health.sequence != 0u &&
+        bool encoder_valid = (!health_copied ||
+            (motion_health_serviced(&health) &&
             robot_time_elapsed(now, health.serviced_ms) <= SAFETY_STALE_MS)) &&
             (rd_fault_get(RD_OWNER_MOTION) & RD_FAULT_ENCODER) == 0u;
         if (!encoder_valid)

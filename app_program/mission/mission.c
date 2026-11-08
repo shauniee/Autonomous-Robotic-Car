@@ -132,7 +132,7 @@ static void mission_task(INT stacd, void *exinf)
             .mapped = barcode_mapped(),
             .start_blocked = rd_fault_start_blocked() || !comms_bridge_ready() ||
                 !terrain_startup_complete() || !copied || !snapshot.sample_fresh ||
-                !healthy || health.sequence == 0u ||
+                !healthy || !motion_health_serviced(&health) ||
                 robot_time_elapsed(now, health.serviced_ms) > SAFETY_STALE_MS,
             .stop_down = buttons.gp21_down,
             .safety_latched = safety_latched_causes() != 0u,
@@ -227,7 +227,7 @@ static void mission_task(INT stacd, void *exinf)
                 (int)in.guidance_valid, (unsigned)in.line,
                 (int)(copied && snapshot.sample_fresh),
                 (int)comms_bridge_ready(), (int)terrain_startup_complete(),
-                (int)(healthy && health.sequence != 0u &&
+                (int)(healthy && motion_health_serviced(&health) &&
                     robot_time_elapsed(now, health.serviced_ms) <=
                         SAFETY_STALE_MS), APP_TEST);
             tm_printf((UB *)"[MISSION] start faults: motion=%u line=%u "

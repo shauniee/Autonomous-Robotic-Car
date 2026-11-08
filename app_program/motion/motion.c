@@ -150,7 +150,8 @@ static ER health_copy(MotionHealth *h, TMO wait)
         memory_order_acquire);
     bool braked = er >= E_OK && stopped &&
         serviced == atomic_load_explicit(&stop_requests, memory_order_acquire);
-    h->flags = (uint8_t)((stopped ? MOTION_HEALTH_STOPPED_BIT : 0u) |
+    h->flags = (uint8_t)((h->flags & MOTION_HEALTH_SERVICED_BIT) |
+                         (stopped ? MOTION_HEALTH_STOPPED_BIT : 0u) |
                          (braked ? MOTION_HEALTH_BRAKED_BIT : 0u));
     control_leave(state);
     return er;
@@ -213,8 +214,8 @@ static void motion_task(INT stacd, void *exinf)
 
         uint32_t now = robot_time_ms();
         MotionInput in = {.now_ms = now,
-            .count = {drv_encoder_count(ENCODER_LEFT),
-                      drv_encoder_count(ENCODER_RIGHT)}};
+            .count = {(enc_count_t)drv_encoder_count(ENCODER_LEFT),
+                      (enc_count_t)drv_encoder_count(ENCODER_RIGHT)}};
         /* Out-of-range trace speed encodes unavailable, never measured zero. */
         MotionOutput out = {.status = RD_MOTION_IDLE,
             .measured_cps = {-32768.0f, -32768.0f}};
@@ -309,7 +310,7 @@ static void motion_task(INT stacd, void *exinf)
             if (tk_loc_mtx(command_mutex, 2) >= E_OK)
             {
                 progress.serviced_ms = serviced_ms;
-                ++progress.sequence;
+                progress.flags = MOTION_HEALTH_SERVICED_BIT;
                 tk_unl_mtx(command_mutex);
             }
             else
@@ -527,7 +528,9 @@ static const int sign[ENCODER_WHEELS] = {LEFT_ENCODER_SIGN, RIGHT_ENCODER_SIGN};
 /* Each storage unit has one writer: the dispatcher handler on core 1. */
 static _Atomic enc_count_t counts[ENCODER_WHEELS];
 static _Atomic uint32_t invalid_edges;
-static unsigned previous[ENCODER_WHEELS];	/* ISR-private */
+/* ISR-private: 2-bit quadrature level per wheel, wheel n at bits 2n..2n+1. */
+static uint8_t previous_levels;
+#define ENC_LEVEL_BITS 2u
 
 static unsigned level(unsigned wheel)
 {
@@ -539,8 +542,11 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
     (void)sampled_us;
     unsigned wheel = (pin == ENC_LEFT_A_PIN || pin == ENC_LEFT_B_PIN) ? ENCODER_LEFT : ENCODER_RIGHT;
     unsigned current = level(wheel);
-    int delta = enc_quad_step(previous[wheel], current);
-    previous[wheel] = current;
+    unsigned shift = wheel * ENC_LEVEL_BITS;
+    int delta = enc_quad_step(rd_field_get(previous_levels, shift,
+        ENC_LEVEL_BITS), current);
+    previous_levels = (uint8_t)rd_field_set(previous_levels, shift,
+        ENC_LEVEL_BITS, current, RD_NULL);
     if (delta == ENC_QUAD_INVALID || edges == (GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE)) {
         uint32_t n = atomic_load_explicit(&invalid_edges, memory_order_relaxed);
         atomic_store_explicit(&invalid_edges, n + 1u, memory_order_release);
@@ -562,7 +568,8 @@ bool drv_encoder_init(void)
                 return false;
             }
         }
-        previous[wheel] = level(wheel);
+        previous_levels = (uint8_t)rd_field_set(previous_levels,
+            wheel * ENC_LEVEL_BITS, ENC_LEVEL_BITS, level(wheel), RD_NULL);
     }
     for (unsigned wheel = 0u; wheel < ENCODER_WHEELS; ++wheel) {
         for (unsigned channel = 0u; channel < 2u; ++channel) {
