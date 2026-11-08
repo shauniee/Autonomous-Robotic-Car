@@ -1,4 +1,0 @@
- Container autonomous-robotic-car-firmware-run-5ca41ba02cb3 Creating 
- Container autonomous-robotic-car-firmware-run-5ca41ba02cb3 Created 
-ARM compile: binary steering mode, existing wireless normal compiler flags
-PASS: binary steering ARM object compiled

@@ -122,7 +122,7 @@ HUMP t=17444 pitch=0.5 roll=-0.5 state=1 rise=7mm accel=1080mg encoder_ok=1 cali
 HUMP t=17464 pitch=0.5 roll=0 state=1 rise=7mm accel=1100mg encoder_ok=1 calibrated=1
 HUMP t=17524 pitch=0 roll=0.25 state=1 rise=7mm accel=1120mg encoder_ok=1 calibrated=1
 HUMP t=17544 pitch=-0.25 roll=0.25 state=1 rise=7mm accel=1050mg encoder_ok=1 calibrated=1
-HUMP t=17564 pitch=-0.25 roll=0.25 state=1 rise=7mm accel=1050mg encoder_ok=1 calibrated=1
+HUMP repeated x1 to t=17564
 HUMP t=17604 pitch=0 roll=0.25 state=1 rise=7mm accel=1020mg encoder_ok=1 calibrated=1
 HUMP t=17624 pitch=0 roll=0.5 state=1 rise=7mm accel=1060mg encoder_ok=1 calibrated=1
 EVENT HUMP: height 8 mm at t=17644 ms, counts L=60364 R=61658
@@ -178,7 +178,7 @@ HUMP t=22124 pitch=0 roll=-0.75 state=1 rise=8mm accel=1050mg encoder_ok=1 calib
 HUMP t=22144 pitch=0 roll=-1 state=1 rise=8mm accel=1050mg encoder_ok=1 calibrated=1
 HUMP t=22164 pitch=0 roll=-0.25 state=1 rise=8mm accel=1070mg encoder_ok=1 calibrated=1
 HUMP t=22264 pitch=-0.75 roll=-1 state=1 rise=8mm accel=1040mg encoder_ok=1 calibrated=1
-HUMP t=22284 pitch=-0.75 roll=-1 state=1 rise=8mm accel=1040mg encoder_ok=1 calibrated=1
+HUMP repeated x1 to t=22284
 HUMP t=22304 pitch=-1.75 roll=-1.25 state=1 rise=8mm accel=1060mg encoder_ok=1 calibrated=1
 HUMP t=22324 pitch=-1.5 roll=-0.75 state=1 rise=8mm accel=1080mg encoder_ok=1 calibrated=1
 HUMP t=22384 pitch=-1.75 roll=-0.25 state=1 rise=8mm accel=1060mg encoder_ok=1 calibrated=1

@@ -1,6 +1,0 @@
-Command: cc -std=c11 -O2 -Wall -Wextra -Werror -pthread -DMISSION_RECOVERY_RELEASED=1 -DMISSION_BYPASS_RELEASED=1 testing/integration/logs/2026-10-31_INT-57/repro.c app_program/mission/mission_logic.c app_program/mission/recovery_control.c app_program/mission/bypass_control.c app_program/subsystem2/motion_control.c app_program/common/robot_data.c -lm -o /tmp/arc-int57-pid
-INT-57 audit profile: LINE_BINARY_RAMP=0
-wide handoff: heading=80.00 deg error=100 speed=431 mm/s steering=8/127 status=1
-immediate re-loss: same speed=431 steering=8 retained through 1000 ms of white/white
-short loss return: current error=-64 steering=68/127 integral before=13107 after=13107 primed=1
-INT-57: software behavior assertions PASS; no physical acceptance

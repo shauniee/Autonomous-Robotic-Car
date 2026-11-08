@@ -5,12 +5,10 @@
 - [Test cases](#test-cases)
 - [Results](#results)
 
-Template SYS-01 and SYS-02 are retired, not reused. SYS-06 is retired, not reused: the watchdog was removed (Nicholas, 2026-11-05, D15). Mission report trials T01-T16 are pending. Do not connect USB while the power bank is connected. One row per run. Write-ups from before 2026-11-03, and build and host output, are at git tag `test-logs-full-2026-11-03`: `git show test-logs-full-2026-11-03:testing/system/TEST_LOG.md`. `+` after a commit means it also had uncommitted changes.
-
 ## Test cases
 
 | ID | Requirement | Steps | Expected / measurements |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | SYS-03 | Inhibited USB-only checks | USB sole source; flash TEST image by BOOTSEL; capture startup/self-tests/BENCH console; exercise GP20 black/white/start and GP21 | No motor movement; actual test lines, ADC readings, capture stage/cues logged |
 | SYS-04 | Battery calibration and polarity | Flash normal; unplug USB, connect power bank only; wheels raised; capture black then white; start on visible line; GP21 stop | Correct chirps, contrast, forward polarity; reset requires separate start; measured motor-output stop <=50 ms target |
 | SYS-05 | Straight/curve, loss and reboot | Normal firmware, USB disconnected; low-speed runs, controlled loss; fresh reboot | Repeated tracking; bounded <=100 ms commanded loss policy; physical stop separately measured; reboot inhibits and clears refs |
@@ -25,11 +23,11 @@ Template SYS-01 and SYS-02 are retired, not reused. SYS-06 is retired, not reuse
 ## Results
 
 | Date | Test ID | Commit | Tester | Result | Log / evidence | Notes |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-08 | SYS-03/04/05/06 | To record before trial | Not recorded | PENDING | — | No connected Pico; physical calibration/tracking/stop/reset cannot be performed in this session |
 | 2026-10-08 | SYS-07/08 | To record before trial | Not recorded | PENDING | — | Proportional refactor software checks only; barcode deferred, no physical trial performed |
-| 2026-10-08 | SYS-09/10 | To record before trial | Not recorded | PENDING | — | MQTT profiles built and host/local broker checks passed; no Pico flash, radio connection or physical trial performed for this addition |
-| 2026-10-27 | SYS-11 | `caa7f8c` | Not recorded | MEASURED (build) | — | Offline normal: text 72272, data 552, bss 23716; sizes match linked objects; frames 23/11/5/3/2 bytes. Before the restructure |
-| 2026-10-30 | SYS-12 | `62ee522`+, [manifest](../integration/logs/2026-10-30_INT-24-accepted-manifest.json) | Codex | PASS (host, build, static) | [Sizes and objects](../integration/logs/2026-10-30_INT-24-accepted-resources.json) | Wireless normal: text 376608, data 392, bss 84120. Stacks, peak RAM, T15 not measured |
-| 2026-10-30 | SYS-12 | `62ee522`+, [manifest](../integration/logs/2026-10-30_INT-25-accepted-manifest.json) | Codex | PASS (host, build, static) | [Sizes and objects](../integration/logs/2026-10-30_INT-25-accepted-resources.json) | INT-25 refresh. Wireless normal: text 376648, data 392, bss 84128 |
-| 2026-10-30 | MR-17 | `8be851b` | Not recorded | PENDING | — | User reports dashboard readings matched the board at 100/250/500/1000 mm and showed no echo in open space. Exact tape/dashboard readings and flashed-image checksum were not recorded; repeat or retrieve values before marking PASS. |
+| 2026-10-08 | SYS-09/10 | To record before trial | Not recorded | PENDING (host, build) | — | MQTT profiles built and host/local broker checks passed; no Pico flash, radio connection or physical trial performed for this addition |
+| 2026-10-27 | SYS-11 | `caa7f8c` | Not recorded | OBSERVED (build) | — | MEASURED (build). Offline normal: text 72272, data 552, bss 23716; sizes match linked objects; frames 23/11/5/3/2 bytes. Before the restructure |
+| 2026-10-30 | SYS-12 | `62ee522`+ | Codex | PASS (host, build) | — | PASS (host, build, static). Wireless normal: text 376608, data 392, bss 84120. Stacks, peak RAM, T15 not measured |
+| 2026-10-30 | SYS-12 | `62ee522`+ | Codex | PASS (host, build) | — | PASS (host, build, static). INT-25 refresh. Wireless normal: text 376648, data 392, bss 84128 |
+| 2026-10-30 | MR-17 | `8be851b` | Not recorded | PENDING (car) | — | User reports readings matched at 100/250/500/1000 mm and no echo in open space; values and image checksum not recorded. Repeat before PASS |

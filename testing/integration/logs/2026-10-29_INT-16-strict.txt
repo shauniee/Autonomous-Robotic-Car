@@ -1,1 +1,0 @@
-35 application translation units passed -Werror -fsyntax-only.

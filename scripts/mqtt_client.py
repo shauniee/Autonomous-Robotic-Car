@@ -1,6 +1,6 @@
 """Laptop side of the robot's binary MQTT protocol (schema v2). Python 3.10+.
 
-  monitor          print telemetry, events, acknowledgements and timestamped WHEEL/LINE JSON
+  monitor          print telemetry, events and WHEEL/LINE traces, folding exact repeats (--raw: every frame as JSON)
   map L R S U      send the four mission-day letters (left, right, straight, U-turn)
   snapshot         request one telemetry snapshot
   serve            live web dashboard at http://127.0.0.1:8080 (scripts/dashboard.html);
@@ -547,6 +547,8 @@ def main():
     parser.add_argument("--http-port", type=int, default=8080, help="serve: dashboard port")
     parser.add_argument("--http-host", default="127.0.0.1", help="serve: bind address")
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--raw", action="store_true",
+                        help="monitor: print every frame as JSON, without folding repeats")
     args = parser.parse_args()
     if args.self_test:
         return self_test()
@@ -577,6 +579,11 @@ def main():
         client.subscribe([(args.root + "/telemetry", 0), (args.root + "/status", 1)])
         ready.set()
 
+    folder = None
+    if args.action == "monitor" and not args.raw:
+        from compact_log import Folder  # same folder as this script
+        folder = Folder()
+
     def on_message(client, userdata, message):
         nonlocal exit_code
         if dashboard and message.topic.endswith("/status"):
@@ -599,7 +606,8 @@ def main():
             print(f"undecodable frame ({error}): {message.payload.hex()}", flush=True)
             return
         if args.action == "monitor":
-            print(line, flush=True)
+            for text in ([line] if folder is None else folder.feed(line)):
+                print(text, flush=True)
         elif args.action == "map" and frame_type(message.payload) == ACK and message.payload[1] == sequence:
             print(line, flush=True)
             exit_code = 0 if message.payload[2] == 0 else 1

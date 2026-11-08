@@ -26,7 +26,7 @@ IDs never change or get reused, including retired template cases. Test IDs keep 
 | Coding standard | `python3 scripts/check_barr.py --base origin/main` | A changed line breaks a mechanical BARR-C:2018 rule. `--summary` lists the legacy backlog without failing |
 | Deliverables | `python3 scripts/check_deliverables.py` | A subsystem's source, public function, wired-in test or report section is missing; a second motor writer appears; networking commands Motion; firmware and laptop frame lengths differ |
 | Host tests | `bash testing/pure/run.sh` and `node testing/pure/test_dashboard.mjs` | Any test of the real subsystem code fails |
-| Firmware build | `sh testing/build_pending_profiles.sh` | Any of the eight images fails to compile or link. It never flashes |
+| Firmware build | `sh testing/build_pending_profiles.sh` | Any of the six images fails to compile or link. It never flashes |
 
 Deliverables that need the car print NEEDS EVIDENCE and do not fail the check, because only a physical run can close them.
 
@@ -43,8 +43,12 @@ Deliverables that need the car print NEEDS EVIDENCE and do not fail the check, b
    ```
 
    Windows PuTTY supports Session → Logging → All session output. Observe the [power policy](../README.md#getting-started) during physical trials.
-5. Append a result row: date, ID, exact committed revision, tester, PASS/FAIL, measurements and evidence. Record the flashed-image checksum. Commit records and evidence together. Existing precommit checks instead identify the tested working tree through their source manifests plus base HEAD; base HEAD alone is insufficient.
-6. Record a failure and its reason; after a fix, append a new result. Keep old rows and never overwrite a capture, photo or measurement. Do not save build or host output: the result row and commit are enough. Gzip captures over 1 MB. Write-ups and output from before 2026-11-03 are at git tag `test-logs-full-2026-11-03`. Rerun affected subsystem/integration cases before merging, and the applicable full set before a demonstration.
+5. Append a result row with seven columns: `Date | ID | Commit | Tester | Result | Evidence | Notes`.
+   - **Commit:** the 7-character commit; add `+` for uncommitted changes on top of it. Record the flashed-image checksum in Notes.
+   - **Result:** `PASS`, `FAIL`, `PARTIAL`, `OBSERVED` or `PENDING`, then the scope in brackets: `host`, `build`, `static` or `car`. A host or build PASS is not a car PASS.
+   - **Notes:** one or two short sentences with the measurements; no repeat of the Result column.
+   - Commit the row and its evidence together.
+6. Record a failure and its reason; after a fix, append a new result. Keep old rows and measurements. Captures are stored in the compact form `scripts/compact_log.py` writes; gzip any over 1 MB. Do not save build or host output: the result row and commit are enough. Raw captures and build output removed on 2026-11-08 are at git tag `test-logs-raw-2026-11-08`; output from before 2026-11-03 is at `test-logs-full-2026-11-03`. Rerun affected subsystem/integration cases before merging, and the applicable full set before a demonstration.
 
 ## Preserved software evidence
 

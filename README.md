@@ -221,6 +221,12 @@ Laptop tool (binary protocol, schema v2):
 ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py snapshot --broker 127.0.0.1
 ```
 
+`monitor` prints WHEEL and LINE traces as short `key=value` lines and folds exact
+repeats into one `... repeated xN to t=...` line; events, scans and barcode runs
+are never folded. Add `--raw` for every frame as JSON. `scripts/compact_log.py IN
+[OUT]` applies the same folding to a saved capture, and
+`scripts/triage_mqtt_capture.py` reads either form.
+
 Linux/WSL: install `mosquitto` and `mosquitto-clients`, allow Pico access through
 firewall/WSL boundaries, and install `scripts/requirements-mqtt.txt` in a Python virtual environment.
 
