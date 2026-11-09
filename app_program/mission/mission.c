@@ -21,6 +21,9 @@ MissionState mission_state(void)
 
 static const char *const state_names[MISSION_STATE_COUNT] = {
     "READY", "FOLLOW_LINE", "NAVIGATE", "SCAN", "BYPASS", "REACQUIRE", "STOPPED"};
+static const char *const bypass_route_names[BYPASS_ROUTE_FAILED + 1] = {
+    "OUT", "OFFSET", "PARALLEL", "PASS", "REAR", "IN", "RETURN", "DONE",
+    "FAILED"};
 
 static void mission_task(INT stacd, void *exinf)
 {
@@ -32,6 +35,7 @@ static void mission_task(INT stacd, void *exinf)
     Button start_button;
     button_init(&start_button, now);
     MissionState reported = MISSION_STATE_COUNT;
+    uint8_t bypass_route = UINT8_MAX; /* last bypass leg printed */
     uint32_t last_left = drv_encoder_count(ENCODER_LEFT), last_right = drv_encoder_count(ENCODER_RIGHT);
     uint32_t still_since = now;
     bool side_watching = false;
@@ -296,6 +300,27 @@ static void mission_task(INT stacd, void *exinf)
                 (unsigned)in.front_mm);
         }
         atomic_store_explicit(&published_state, (uint8_t)mission.state, memory_order_release);
+        /* One line per bypass leg: where the side ray placed the box's rear
+           and where the pivot back began. Q8 values print as whole mm. */
+        if (mission.state != MISSION_BYPASS)
+        {
+            bypass_route = UINT8_MAX;
+        }
+        else if (mission.bypass.route != bypass_route)
+        {
+            const bypass_control_t *b = &mission.bypass;
+            bypass_route = b->route;
+            tm_printf((UB *)"[BYPASS] route=%s fwd=%d left=%d hdg_cdeg=%d "
+                "edge_at=%d flank=%u rear=%d box_front=%d half_w=%u "
+                "centre=%d side=%u side_valid=%d\n",
+                bypass_route <= BYPASS_ROUTE_FAILED ?
+                    bypass_route_names[bypass_route] : "?",
+                (int)(b->forward_q8 / 256), (int)(b->left_q8 / 256),
+                (int)b->heading_cdeg, (int)(b->edge_forward_q8 / 256),
+                (unsigned)b->flank_mm, (int)(b->rear_clear_q8 / 256),
+                (int)b->obstacle_front_mm, (unsigned)b->half_width_mm,
+                (int)b->centre_mm, (unsigned)in.side_mm, (int)in.side_valid);
+        }
         if (mission.state != reported)
         {
             reported = mission.state;
