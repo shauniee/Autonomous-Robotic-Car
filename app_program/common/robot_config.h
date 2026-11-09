@@ -195,7 +195,10 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define NAV_CROSSBAR_MM 18 /* User-reported stripe thickness; specs D02 */
 #endif
 #define NAV_ENTRY_MAX_DEG 5.0f
-#define NAV_CONFIRM_MM 6u /* PROVISIONAL D02 trial INT-189: both black this far is a crossing; shorter reads were not, and real ones can read under 9 mm */
+/* PROVISIONAL D02 trial INT-189: both black this far is a crossing; shorter
+   reads were not, and real ones can read under 9 mm. With a turn queued,
+   two samples in a row are enough */
+#define NAV_CONFIRM_MM 6u
 #define NAV_ONSET_SKEW_MM 15u /* PROVISIONAL D02 trial: both sensors went black within this = crossing; set from line traces */
 #define NAV_REARM_MM 10u
 #define NAV_STRAIGHT_MM 36u /* PROVISIONAL D02 trial INT-189: straight roll at course speed from commit, no steering, twice the crossbar */
