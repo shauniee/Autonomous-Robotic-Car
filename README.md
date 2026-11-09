@@ -213,7 +213,7 @@ Use a reachable private 2.4 GHz LAN; the lab broker allows anonymous access with
 3. Open <http://127.0.0.1:8080> or run the optional terminal monitor below.
 4. Flash wireless TEST on USB alone and confirm messages originate from the Pico. After physical readiness, use normal firmware on battery alone and recalibrate.
 
-Laptop tool (binary protocol, schema v2):
+Laptop tool (binary protocol, schema v3; firmware and laptop tool must match):
 
 ```sh
 ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py monitor --broker 127.0.0.1
@@ -241,7 +241,7 @@ firewall/WSL boundaries, and install `scripts/requirements-mqtt.txt` in a Python
   GP21 cancels it. See [test policy](docs/project-specs.md#mission-day-barcode-rule).
 - `python3 scripts/mqtt_client.py serve --broker <broker-lan-ip>` opens the live dashboard at `http://127.0.0.1:8080`. Its barcode-mapping strip sends the same mapping frame as `map` and shows the robot's acknowledgement; Send is enabled only while live telemetry reports READY or STOPPED. Open it at `127.0.0.1`, not `localhost`: the server refuses mapping requests from any other origin.
 
-Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--port` for other configs. Networking never starts, stops or drives the robot. Frame layouts: [architecture](docs/architecture.md#mqtt-binary-protocol-schema-version-2). The 500 ms stream cannot prove brief stop or recovery timing; broker loss does not change healthy local control.
+Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--port` for other configs. Networking never starts, stops or drives the robot. Frame layouts: [architecture](docs/architecture.md#mqtt-binary-protocol-schema-version-3). The 500 ms stream cannot prove brief stop or recovery timing; broker loss does not change healthy local control.
 
 ### Bring-up order and project tasks
 

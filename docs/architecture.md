@@ -27,8 +27,8 @@
 - [Time](#time)
 - [Post-Tribunal decisions](#post-tribunal-decisions)
 - [Minimum-bit data representation](#minimum-bit-data-representation)
-- [MQTT binary protocol, schema version 2](#mqtt-binary-protocol-schema-version-2)
-  - [Telemetry and snapshot reply (22 bytes)](#telemetry-and-snapshot-reply-22-bytes)
+- [MQTT binary protocol, schema version 3](#mqtt-binary-protocol-schema-version-3)
+  - [Telemetry and snapshot reply (18 bytes)](#telemetry-and-snapshot-reply-18-bytes)
   - [Wheel trace (15 bytes)](#wheel-trace-15-bytes)
   - [Terrain trace (14 bytes)](#terrain-trace-14-bytes)
   - [Line trace (17 bytes)](#line-trace-17-bytes)
@@ -45,7 +45,7 @@ checks do not establish physical calibration or acceptance. Requirements and
 calibrated values are owned by [project-specs](project-specs.md); wiring by
 [team](team.md).
 
-Keep micro T-Kernel, C/Pico SDK, five subsystem modules and binary MQTT schema v2.
+Keep micro T-Kernel, C/Pico SDK, five subsystem modules and binary MQTT schema v3.
 No core-number migration, generic event bus or new scheduler.
 
 ## Tasks
@@ -430,16 +430,16 @@ owns the requirement. [Team section 6](team.md#6-data-representation) owns every
 width and the representation rules, and [section 7](team.md#7-correctness-and-performance-evidence)
 the evidence: no lost function, memory, message sizes and timing.
 
-## MQTT binary protocol, schema version 2
+## MQTT binary protocol, schema version 3
 
-Implemented by `app_program/comms/comms.h` and `mqtt_frame.c`, tested by `testing/pure/test_mqtt_frame.c`; the laptop decoder `scripts/mqtt_client.py` checks the same golden vectors (`--self-test`). Field widths follow the [data table](team.md#6-data-representation). Version 2 added line status, the mapped flag, the Mission fault byte and obstacle width/depth; a version 1 frame is rejected.
+Implemented by `app_program/comms/comms.h` and `mqtt_frame.c`, tested by `testing/pure/test_mqtt_frame.c`; the laptop decoder `scripts/mqtt_client.py` checks the same golden vectors (`--self-test`). Field widths follow the [data table](team.md#6-data-representation). Version 3 packs the six owner fault bytes into one 12-bit fault word, so telemetry shrinks from 22 to 18 bytes; version 1 and 2 frames are rejected. A laptop decoder and firmware must be on the same version.
 
 Topics (root `robot/s3`, set in `config/wifi_secrets.h`): `<root>/telemetry` carries every robot-to-PC frame, `<root>/request` carries mapping and snapshot requests, `<root>/status` is the retained online/offline text.
 
 Rules for every frame:
 
 - Little-endian multi-byte fields, written with explicit masks and shifts, never by copying a struct.
-- Byte 0: bits 7-4 version (2), bits 3-0 type.
+- Byte 0: bits 7-4 version (3), bits 3-0 type.
 - Length is exact for the type. A receiver rejects a wrong length, version or type, any set reserved bit and any out-of-range field. Nothing is partially accepted.
 - Networking never drives, starts or stops the robot. The only command that changes robot state is the mapping, and only while stopped.
 - Normal telemetry omits speed/direction: the laptop derives averages from
@@ -447,9 +447,9 @@ Rules for every frame:
 
 | Type | Value | Direction | Length (bytes) |
 | --- | --- | --- | --- |
-| Telemetry | 1 | robot to PC, every 500 ms | 22 |
+| Telemetry | 1 | robot to PC, every 500 ms | 18 |
 | Event | 2 | robot to PC | 11 |
-| Snapshot reply | 3 | robot to PC, answers a request; body as telemetry | 22 |
+| Snapshot reply | 3 | robot to PC, answers a request; body as telemetry | 18 |
 | Mapping | 4 | PC to robot | 5 |
 | Acknowledgement | 5 | robot to PC | 3 |
 | Snapshot request | 6 | PC to robot | 2 |
@@ -461,7 +461,7 @@ Rules for every frame:
 ### Wheel trace (15 bytes)
 
 Type 8 is outbound diagnostics only; existing frame layouts/lengths remain.
-Byte 0 is `28` hex; bytes 1..4 are robot release time uint32 ms. Bytes 5..8
+Byte 0 is `38` hex; bytes 1..4 are robot release time uint32 ms. Bytes 5..8
 contain left target in bits 0..14 and right target in bits 15..29 (signed
 15-bit counts/s), TEST inhibition in bit 30 and motor-output service success
 in bit 31. Bytes 9..10 and 11..12 are signed 16-bit measured left/right counts/s.
@@ -480,20 +480,20 @@ Older laptop decoders reject this new type; use the matching decoder for traces.
 
 ### Barcode trace (18 bytes)
 
-Type 10 is outbound diagnostics only, added for INT-146 and filtered since INT-148; Comms owner agreement pending. Byte 0 is `2A`
+Type 10 is outbound diagnostics only, added for INT-146 and filtered since INT-148; Comms owner agreement pending. Byte 0 is `3A`
 hex, byte 1 a wrapping sequence, bytes 2..17 eight little-endian runs: bit 15 black level, bits
 14..0 width in encoder counts after chatter is merged, zero for an unused slot. A full ring drops frames.
 
 ### Terrain trace (14 bytes)
 
-Type 11 is outbound and best effort, sent on every image for the dashboard's IMU graphs: 10 per second on flat ground, 20 on a hump. Byte 0 is `2B` hex, bytes
+Type 11 is outbound and best effort, sent on every image for the dashboard's IMU graphs: 10 per second on flat ground, 20 on a hump. Byte 0 is `3B` hex, bytes
 1..2 time ms low 16, byte 3 signed pitch in quarter degrees, byte 4 bits 0..2 state, 6 encoder valid, 7 calibrated,
 byte 5 peak rise mm, byte 6 acceleration in 10 mg units, byte 7 signed roll in quarter degrees, bytes 8..10 signed X, Y and Z acceleration in 16 mg units (saturate at +/-2032 mg), byte 11 current height estimate mm, bytes 12..13 travel mm (wraps at 65536).
 
 ### Line trace (17 bytes)
 
 Type 9 is outbound diagnostics only, kept separate so the wheel trace is unchanged;
-Comms owner agreement pending. Byte 0 is `29` hex; bytes 1..4 are the
+Comms owner agreement pending. Byte 0 is `39` hex; bytes 1..4 are the
 IR acquisition time uint32 ms. Byte 5 flags: bit 0 left black, 1 right black,
 2 in broad black, 3 junction candidate open, 4 junction qualified, 5 curved entry,
 6 junction locked, 7 raw barcode GP16 level. Byte 6: bits 0..3 Mission state, 4..6 junction phase,
@@ -511,11 +511,11 @@ TX or a full ring drops records without waiting. Sample-time gaps reveal drops.
 There is no request, movement authority or live tuning input. `mqtt_client.py
 monitor` prints it as a short `LINE` line (`--raw` for JSON); the dashboard does not display it.
 
-### Telemetry and snapshot reply (22 bytes)
+### Telemetry and snapshot reply (18 bytes)
 
 | Byte | Bits | Field | Range |
 | --- | --- | --- | --- |
-| 0 | 7-0 | version and type | `0x21` telemetry, `0x23` reply |
+| 0 | 7-0 | version and type | `0x31` telemetry, `0x33` reply |
 | 1 | 7-0 | sequence | 0-255, wraps |
 | 2 | 3-0 | mission state | 0-15 |
 | 2 | 5-4 | motion status | 0 IDLE, 1 RUNNING, 2 DONE, 3 FAILED |
@@ -523,31 +523,40 @@ monitor` prints it as a short `LINE` line (`--raw` for JSON); the dashboard does
 | 3 | 5-0 | motion action ID | 0-63 |
 | 3 | 6 | mapped | four letters installed |
 | 3 | 7 | reserved | 0 |
-| 4-9 | 7-0 each | fault bytes: Motion, Line, Terrain, Obstacle, Mission, Network | [fault bitmask](#fault-bitmask) |
-| 10-11 | 15-0 | left encoder count | wrapped, `ENC_COUNT_BITS` wide |
-| 12-13 | 15-0 | right encoder count | wrapped |
-| 14 | 7-0 | hump count | 0-255 saturating |
-| 15 | 6-0 | maximum hump height code | 7-bit result, scale D06 |
-| 15 | 7 | maximum valid | set once any hump completed |
-| 16-17 | 12-0 | front range, mm | 0-8190; 8191 invalid |
-| 16-17 | 13 | front range valid | no echo is not clear space |
-| 16-17 | 15-14 | IMU calibration | 0 unknown (older firmware), 1 not calibrated, 2 calibrated, 3 invalid |
-| 18 | 4-0 | last decoded barcode letter | 0-25 (A-Z), 31 none |
-| 18 | 7-5 | action it maps to | 0 unmapped, 1 left, 2 right, 3 straight, 4 U-turn |
-| 19-21 | 9-0 | latest obstacle width, mm | 0 none; saturates at 1023 |
-| 19-21 | 19-10 | clearance on the side chosen for the latest bypass, mm | 0 none; saturates at 1023 |
-| 21 | 7-4 | reserved | zero; a set bit is rejected |
+| 4-5 | 1-0 | Motion faults: stall, encoder | [fault bitmask](#fault-bitmask) |
+| 4-5 | 4-2 | Line faults: IR invalid, capture overflow, event overflow | |
+| 4-5 | 7-5 | Terrain faults: IMU, calibration failed, impact | |
+| 4-5 | 8 | Obstacle fault: no echo | |
+| 4-5 | 9 | Mission fault: line lost | |
+| 4-5 | 11-10 | Network faults: Wi-Fi lost, broker lost | |
+| 4-5 | 15-12 | reserved | zero; a set bit is rejected |
+| 6-7 | 15-0 | left encoder count | wrapped, `ENC_COUNT_BITS` wide |
+| 8-9 | 15-0 | right encoder count | wrapped |
+| 10 | 7-0 | hump count | 0-255 saturating |
+| 11 | 6-0 | maximum hump height code | 7-bit result, scale D06 |
+| 11 | 7 | maximum valid | set once any hump completed |
+| 12-13 | 12-0 | front range, mm | 0-8190; 8191 invalid |
+| 12-13 | 13 | front range valid | no echo is not clear space |
+| 12-13 | 15-14 | IMU calibration | 0 unknown, 1 not calibrated, 2 calibrated, 3 invalid |
+| 14 | 4-0 | last decoded barcode letter | 0-25 (A-Z), 31 none |
+| 14 | 7-5 | action it maps to | 0 unmapped, 1 left, 2 right, 3 straight, 4 U-turn |
+| 15-17 | 9-0 | latest obstacle width, mm | 0 none; saturates at 1023 |
+| 15-17 | 19-10 | clearance on the side chosen for the latest bypass, mm | 0 none; saturates at 1023 |
+| 17 | 7-4 | reserved | zero; a set bit is rejected |
+
+The fault word packs each owner's defined bits in owner order. The firmware
+keeps one atomic byte per owner, because each owner is that byte's only
+writer; the encoder only reads the six bytes, so packing them on the wire
+needs no lock. Undefined owner bits are never sent.
 
 IMU calibration reports Terrain's calibration flag independently of hump results
-and current sensor faults. This uses two formerly reserved bits without changing
-frame length. Update the decoder before firmware: older decoders reject nonzero
-calibration bits. Older firmware remains readable with calibration unknown.
+and current sensor faults.
 
 ### Event (11 bytes)
 
 | Byte | Field |
 | --- | --- |
-| 0 | version and type, `0x22` |
+| 0 | version and type, `0x32` |
 | 1 | bits 3-0 kind: 1 barcode, 2 hump, 3 obstacle, 4 turn; bits 7-4 reserved 0 |
 | 2 | arg: letter (barcode), height code (hump), action (turn) |
 | 3-4 | time, low 16 bits of kernel milliseconds |
@@ -565,9 +574,9 @@ its bound drops the new one; neither drop is counted.
 
 ### Mapping, acknowledgement, snapshot request
 
-- **Mapping (5 bytes):** byte 0 `0x24`, byte 1 sequence, bytes 2-4 a 24-bit little-endian value; bits 4-0, 9-5, 14-10 and 19-15 are the letters for left, right, straight and U-turn (A=0 .. Z=25); bits 23-20 reserved 0. The four letters are distinct.
-- **Acknowledgement (3 bytes):** byte 0 `0x25`, byte 1 the sequence answered, byte 2 the result: 0 installed, 1 busy (robot not stopped), 2 invalid letters, 3 malformed frame. The acknowledgement follows installation by Mission.
-- **Snapshot request (2 bytes):** byte 0 `0x26`, byte 1 sequence.
+- **Mapping (5 bytes):** byte 0 `0x34`, byte 1 sequence, bytes 2-4 a 24-bit little-endian value; bits 4-0, 9-5, 14-10 and 19-15 are the letters for left, right, straight and U-turn (A=0 .. Z=25); bits 23-20 reserved 0. The four letters are distinct.
+- **Acknowledgement (3 bytes):** byte 0 `0x35`, byte 1 the sequence answered, byte 2 the result: 0 installed, 1 busy (robot not stopped), 2 invalid letters, 3 malformed frame. The acknowledgement follows installation by Mission.
+- **Snapshot request (2 bytes):** byte 0 `0x36`, byte 1 sequence.
 
 ### Golden vectors
 
@@ -575,17 +584,17 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 
 | Frame | Bytes |
 | --- | --- |
-| Telemetry | `21 2A 72 45 01 02 04 08 01 03 34 12 78 56 03 F8 D0 30 61 A4 A9 02` |
-| Event (barcode Z, action 2) | `22 01 19 E8 03 10 00 11 00 02 00` |
-| Mapping A left, B right, C straight, D U-turn, sequence 7 | `24 07 20 88 01` |
-| Acknowledgement installed, sequence 7 | `25 07 00` |
-| Snapshot request, sequence 9 | `26 09` |
+| Telemetry (faults: Motion stall, Line capture overflow, Terrain impact, no echo, line lost, both Network) | `31 2A 72 45 89 0F 34 12 78 56 03 F8 D0 30 61 A4 A9 02` |
+| Event (barcode Z, action 2) | `32 01 19 E8 03 10 00 11 00 02 00` |
+| Mapping A left, B right, C straight, D U-turn, sequence 7 | `34 07 20 88 01` |
+| Acknowledgement installed, sequence 7 | `35 07 00` |
+| Snapshot request, sequence 9 | `36 09` |
 
 ### Binary frame sizes
 
 | Message | Baseline on `main` (JSON) | Binary |
 | --- | --- | --- |
-| Telemetry | up to 768 bytes (`COMMS_TELEMETRY_PAYLOAD_MAX`) | 22 bytes |
+| Telemetry | up to 768 bytes (`COMMS_TELEMETRY_PAYLOAD_MAX`) | 18 bytes |
 | Mapping | up to 512 bytes on `uat` | 5 bytes |
 
 Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Message sizes and RAM evidence, not yet final: [SYS-11](../testing/system/TEST_LOG.md#results) for October and INT-178 in the [integration log](../testing/integration/TEST_LOG.md) for the latest build. Final figures need the final image.
@@ -604,7 +613,7 @@ is full. Overflow overwrites oldest entries; lock misses drop the new event.
 Neither kind of drop is exposed in telemetry. Mapping uses a single
 outstanding word hand-off; only Mission installs/rejects before I/O ACKs.
 
-Junction-test extension (schema v2, type 7): three bytes `27 sequence action`,
+Junction-test extension (schema v3, type 7): three bytes `37 sequence action`,
 with action codes 1 left, 2 right, 3 straight, 4 U-turn, upper five bits zero.
 Sent to `/request`, non-retained. Uses the existing type-5 ACK: OK means Mission
 queued the instruction, not that the physical turn succeeded. BUSY includes

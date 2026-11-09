@@ -4,7 +4,7 @@
 #include "../../app_program/mission/line_trace.h"
 
 /* Same bytes as golden_line in scripts/mqtt_client.py --self-test. */
-static const uint8_t golden[] = {0x29, 0x78, 0x56, 0x34, 0x12, 0x13, 0x22,
+static const uint8_t golden[] = {0x39, 0x78, 0x56, 0x34, 0x12, 0x13, 0x22,
     0x34, 0x12, 0x78, 0x56, 0xE0, 0xFE, 0xE0, 0x64, 0x02, 0x0C};
 
 static mqtt_line_trace_t sample(uint32_t time)
@@ -36,7 +36,7 @@ int main(void)
     assert(mqtt_encode_barcode_trace(frame, 17u, 7u, runs) == 0u);
     uint8_t bars[MQTT_LEN_BARCODE_TRACE];
     assert(mqtt_encode_barcode_trace(bars, sizeof bars, 7u, runs) == 18u);
-    assert(bars[0] == 0x2Au && bars[1] == 7u && bars[2] == 0x22u && bars[3] == 0x80u && bars[4] == 12u);
+    assert(bars[0] == 0x3Au && bars[1] == 7u && bars[2] == 0x22u && bars[3] == 0x80u && bars[4] == 12u);
     mqtt_type_t bars_type;
     assert(mqtt_frame_type(bars, 18u, &bars_type) == MQTT_DECODE_OK && bars_type == MQTT_TYPE_BARCODE_TRACE);
     uint8_t hump[MQTT_LEN_TERRAIN_TRACE];
@@ -44,7 +44,7 @@ int main(void)
         .state_flags = 0xF9u, .rise_mm = 3u, .accel_10mg = 100u, .roll_q2 = -6,
         .accel_16mg = {1, -1, 62}, .height_mm = 9u, .travel_mm = 0x1234u};
     assert(14u == mqtt_encode_terrain_trace(hump, sizeof hump, &terrain));
-    assert(hump[0] == 0x2Bu && hump[1] == 5u && hump[3] == 14u && hump[4] == 0xF9u && hump[6] == 100u && hump[7] == 0xFAu);
+    assert(hump[0] == 0x3Bu && hump[1] == 5u && hump[3] == 14u && hump[4] == 0xF9u && hump[6] == 100u && hump[7] == 0xFAu);
     assert(hump[8] == 1u && hump[9] == 0xFFu && hump[10] == 62u && hump[11] == 9u && hump[12] == 0x34u && hump[13] == 0x12u);
     assert(0u == mqtt_encode_terrain_trace(hump, 13u, &terrain));
     mqtt_line_trace_t edges = sample(0u);

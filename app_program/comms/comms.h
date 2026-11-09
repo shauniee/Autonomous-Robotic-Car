@@ -7,7 +7,7 @@
 #include "../common/robot_config.h"
 
 /*
- *	Binary MQTT frames, schema version 2 (docs/architecture.md, MQTT binary
+ *  Binary MQTT frames, schema version 3 (docs/architecture.md, MQTT binary
  *	protocol). Little-endian,
  *	explicit masks and shifts, never a struct copy. Kernel-free: encode and
  *	decode are pure functions over byte buffers.
@@ -15,7 +15,7 @@
  *	byte 0 of every frame: bits 7-4 version, bits 3-0 type.
  */
 
-#define MQTT_FRAME_VERSION 2u
+#define MQTT_FRAME_VERSION 3u
 
 typedef enum
 {
@@ -34,7 +34,7 @@ typedef enum
 
 /* Frame lengths in bytes (exact). */
 #define MQTT_OBSTACLE_MAX_MM 1023u	/* 10 bits each on the wire */
-#define MQTT_LEN_TELEMETRY 22u
+#define MQTT_LEN_TELEMETRY 18u
 #define MQTT_LEN_EVENT 11u
 #define MQTT_LEN_MAPPING 5u
 #define MQTT_LEN_JUNCTION_TEST 3u
@@ -45,7 +45,7 @@ typedef enum
 #define MQTT_LEN_TERRAIN_TRACE 14u
 #define MQTT_LEN_ACK 3u
 #define MQTT_LEN_SNAPSHOT_REQUEST 2u
-#define MQTT_FRAME_MAX 22u
+#define MQTT_FRAME_MAX 18u
 
 typedef enum
 {
@@ -58,7 +58,9 @@ typedef enum
     MQTT_DECODE_RANGE	/* a field is outside its range (letter, state, code) */
 } mqtt_decode_t;
 
-#define MQTT_FAULT_BYTES 6u	/* rd_owner_t order: Motion, Line, Terrain, Obstacle, Mission, Network */
+/* In-RAM copy, one byte per owner in rd_owner_t order: Motion, Line, Terrain,
+   Obstacle, Mission, Network. The wire carries them as one 12-bit word. */
+#define MQTT_FAULT_BYTES 6u
 #define MQTT_NO_LETTER 31u	/* barcode letter field when nothing decoded yet */
 
 typedef enum
@@ -224,7 +226,7 @@ mqtt_decode_t mqtt_decode_snapshot_request(const uint8_t *frame, unsigned length
  */
 
 /* Largest frame, MQTT_FRAME_MAX (telemetry/snapshot). */
-#define COMMS_FRAME_MAX 22u
+#define COMMS_FRAME_MAX 18u
 #define COMMS_OUTGOING_DEPTH 4u
 #define COMMS_INCOMING_DEPTH 2u
 

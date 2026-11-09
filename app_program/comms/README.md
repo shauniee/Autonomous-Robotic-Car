@@ -30,12 +30,12 @@ Mission needs WiFi and MQTT before a local start. A disconnect during a run is r
 | --- | --- |
 | Telemetry | Gathers coherent producer values; busy optional data is skipped, so work stays bounded |
 | Events | 16-entry log under a cross-core mutex; a failed post keeps the event; a full log overwrites the oldest and counts the drop |
-| Bridge | TX depth 4, RX depth 2, maximum frame 22 bytes; full or oversized frames are dropped; no waiting in WiFi context |
+| Bridge | TX depth 4, RX depth 2, maximum frame 18 bytes; full or oversized frames are dropped; no waiting in WiFi context |
 | Budgets | Two RX frames, two event posts and up to two of each trace per release |
 | Mapping | Four distinct A-Z letters, installed by Mission only in READY or STOPPED; the ACK reports that outcome, not network receipt |
 | Connection | Online after subscription succeeds; refusal, disconnect or timeout backs off; reconnect restores the subscription and never replays old actions |
 
-Frames, topics, reserved bits and golden vectors: [MQTT protocol](../../docs/architecture.md#mqtt-binary-protocol-schema-version-2). Fault policy: [fault bitmask](../../docs/architecture.md#fault-bitmask). Credentials stay in ignored `config/wifi_secrets.h`.
+Frames, topics, reserved bits and golden vectors: [MQTT protocol](../../docs/architecture.md#mqtt-binary-protocol-schema-version-3). Fault policy: [fault bitmask](../../docs/architecture.md#fault-bitmask). Credentials stay in ignored `config/wifi_secrets.h`.
 
 Slow telemetry and broker acknowledgements do not prove live sensor progress, short transitions or brake timing. Retained online status can be stale.
 

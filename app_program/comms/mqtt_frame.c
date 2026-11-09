@@ -156,11 +156,38 @@ unsigned mqtt_encode_terrain_trace(uint8_t *p_out, unsigned capacity,
 
 /* ---- Telemetry -----------------------------------------------------------
    0 header | 1 sequence | 2 [3:0] mission state, [5:4] motion status, [7:6] line status
-   3 [5:0] motion action, [6] mapped, [7] 0 | 4..9 fault bytes | 10..11 left | 12..13 right
-   14 hump count | 15 [6:0] hump max, [7] hump valid
-   16..17 [12:0] front mm, [13] front valid, [15:14] IMU calibration
-   18 [4:0] barcode letter, [7:5] barcode action
-   19..21 bits 0-9 obstacle width mm, bits 10-19 obstacle clearance mm */
+   3 [5:0] motion action, [6] mapped, [7] 0
+   4..5 fault word: Motion 0-1, Line 2-4, Terrain 5-7, Obstacle 8, Mission 9,
+        Network 10-11, 12-15 reserved | 6..7 left | 8..9 right
+   10 hump count | 11 [6:0] hump max, [7] hump valid
+   12..13 [12:0] front mm, [13] front valid, [15:14] IMU calibration
+   14 [4:0] barcode letter, [7:5] barcode action
+   15..17 bits 0-9 obstacle width mm, bits 10-19 obstacle clearance mm */
+
+static const uint8_t fault_widths[MQTT_FAULT_BYTES] = RD_FAULT_WIDTHS;
+
+/* Undefined bits in an owner byte are not sent. */
+static uint16_t fault_word(const uint8_t faults[MQTT_FAULT_BYTES])
+{
+    uint32_t word = 0u;
+    unsigned shift = 0u;
+    for (unsigned i = 0u; i < MQTT_FAULT_BYTES; ++i)
+    {
+        word |= (faults[i] & rd_mask(fault_widths[i])) << shift;
+        shift += fault_widths[i];
+    }
+    return (uint16_t)word;
+}
+
+static void fault_bytes(uint16_t word, uint8_t faults[MQTT_FAULT_BYTES])
+{
+    unsigned shift = 0u;
+    for (unsigned i = 0u; i < MQTT_FAULT_BYTES; ++i)
+    {
+        faults[i] = (uint8_t)rd_field_get(word, shift, fault_widths[i]);
+        shift += fault_widths[i];
+    }
+}
 
 unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type, const mqtt_telemetry_t *t)
 {
@@ -179,21 +206,21 @@ unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type
     out[1] = t->sequence;
     out[2] = (uint8_t)(t->mission_state | (t->motion_status << 4) | (t->line_status << 6));
     out[3] = (uint8_t)(t->motion_action | (t->mapped ? 0x40u : 0u));
-    for (unsigned i = 0u; i < MQTT_FAULT_BYTES; ++i) out[4u + i] = t->faults[i];
-    put16(&out[10], t->left_count);
-    put16(&out[12], t->right_count);
-    out[14] = t->hump_count;
-    out[15] = (uint8_t)(t->hump_max | (t->hump_valid ? 0x80u : 0u));
-    put16(&out[16], (uint16_t)(t->front_mm |
+    put16(&out[4], fault_word(t->faults));
+    put16(&out[6], t->left_count);
+    put16(&out[8], t->right_count);
+    out[10] = t->hump_count;
+    out[11] = (uint8_t)(t->hump_max | (t->hump_valid ? 0x80u : 0u));
+    put16(&out[12], (uint16_t)(t->front_mm |
         (t->front_valid ? 0x2000u : 0u) | (t->imu_calibration << 14)));
-    out[18] = (uint8_t)(t->barcode_letter | (t->barcode_action << 5));
+    out[14] = (uint8_t)(t->barcode_letter | (t->barcode_action << 5));
     uint32_t width = t->obstacle_width_mm > MQTT_OBSTACLE_MAX_MM ? MQTT_OBSTACLE_MAX_MM : t->obstacle_width_mm;
     uint32_t clearance = (t->obstacle_clearance_mm > MQTT_OBSTACLE_MAX_MM) ?
         MQTT_OBSTACLE_MAX_MM : t->obstacle_clearance_mm;
     uint32_t size = width | (clearance << 10);
-    out[19] = (uint8_t)size;
-    out[20] = (uint8_t)(size >> 8);
-    out[21] = (uint8_t)(size >> 16);	/* bits 4-7 reserved, zero */
+    out[15] = (uint8_t)size;
+    out[16] = (uint8_t)(size >> 8);
+    out[17] = (uint8_t)(size >> 16); /* bits 4-7 reserved, zero */
     return MQTT_LEN_TELEMETRY;
 }
 
@@ -204,12 +231,16 @@ mqtt_decode_t mqtt_decode_telemetry(const uint8_t *f, unsigned length, mqtt_type
     if (r != MQTT_DECODE_OK) return r;
     if (t == 0 || type == 0) return MQTT_DECODE_NULL;
     if (ty != MQTT_TYPE_TELEMETRY && ty != MQTT_TYPE_SNAPSHOT_REPLY) return MQTT_DECODE_TYPE;
-    if ((f[3] & 0x80u) != 0u) return MQTT_DECODE_RESERVED;
-    uint8_t letter = f[18] & 0x1Fu;
-    uint16_t front = get16(&f[16]);
-    if ((letter > 25u && letter != MQTT_NO_LETTER) || (f[18] >> 5) > 4u ||
-        f[15] == 0xFFu || (front & 0x3FFFu) == 0x3FFFu || (f[21] & 0xF0u) != 0u ||
-        (front >> 14) > MQTT_IMU_CALIBRATED)
+    uint16_t faults = get16(&f[4]);
+    if (((f[3] & 0x80u) != 0u) || ((faults >> RD_FAULT_BITS) != 0u))
+    {
+        return MQTT_DECODE_RESERVED;
+    }
+    uint8_t letter = f[14] & 0x1Fu;
+    uint16_t front = get16(&f[12]);
+    if (((letter > 25u) && (letter != MQTT_NO_LETTER)) || ((f[14] >> 5) > 4u) ||
+        (0xFFu == f[11]) || (0x3FFFu == (front & 0x3FFFu)) ||
+        ((f[17] & 0xF0u) != 0u) || ((front >> 14) > MQTT_IMU_CALIBRATED))
     {
         return MQTT_DECODE_RANGE;
     }
@@ -220,18 +251,19 @@ mqtt_decode_t mqtt_decode_telemetry(const uint8_t *f, unsigned length, mqtt_type
     t->line_status = f[2] >> 6;
     t->motion_action = f[3] & 0x3Fu;
     t->mapped = (f[3] & 0x40u) != 0u;
-    for (unsigned i = 0u; i < MQTT_FAULT_BYTES; ++i) t->faults[i] = f[4u + i];
-    t->left_count = get16(&f[10]);
-    t->right_count = get16(&f[12]);
-    t->hump_count = f[14];
-    t->hump_max = f[15] & 0x7Fu;
-    t->hump_valid = (f[15] & 0x80u) != 0u;
+    fault_bytes(faults, t->faults);
+    t->left_count = get16(&f[6]);
+    t->right_count = get16(&f[8]);
+    t->hump_count = f[10];
+    t->hump_max = f[11] & 0x7Fu;
+    t->hump_valid = (f[11] & 0x80u) != 0u;
     t->imu_calibration = (uint8_t)(front >> 14);
     t->front_mm = front & 0x1FFFu;
     t->front_valid = (front & 0x2000u) != 0u;
     t->barcode_letter = letter;
-    t->barcode_action = f[18] >> 5;
-    uint32_t size = (uint32_t)f[19] | (uint32_t)f[20] << 8 | (uint32_t)f[21] << 16;
+    t->barcode_action = f[14] >> 5;
+    uint32_t size = (uint32_t)f[15] | ((uint32_t)f[16] << 8) |
+        ((uint32_t)f[17] << 16);
     t->obstacle_width_mm = (uint16_t)(size & 0x3FFu);
     t->obstacle_clearance_mm = (uint16_t)((size >> 10) & 0x3FFu);
     return MQTT_DECODE_OK;
