@@ -4,262 +4,252 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Robot Control Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* Pit wall: dark timing-screen panels; sector colours carry state (green ok, yellow check, red fault), purple marks the live mission state. */
   :root {
-    --panel: #0d0f11; --card: #15181b; --card-hi: #1d2226; --bezel: #2b3136;
-    --ink: #eef1f3; --ink-2: #b4bcc2; --ink-3: #8c959c;
-    --amber: #ffb000; --green: #5fd38a; --red: #ff5a4e; --steel: #8fb3d0; --cyan: #5ad1e6;
-    --flap: #0a0a0a; --flap-ink: #ffb000;
-    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --ground: #101318; --panel: #171b21; --panel-2: #1e232b; --bezel: #2a313b;
+    --ink: #eef1f5; --ink-2: #b9c1cc; --ink-3: #8b95a3;
+    --live: #b48cff; --green: #3ddc84; --amber: #ffcf3f; --red: #ff5a4f; --steel: #4cc9f0;
+    --mono: "Saira Semi Condensed", system-ui, sans-serif;
   }
   * { box-sizing: border-box; }
-  html { background: var(--panel); color-scheme: dark; height: 100%; }
-  body { margin: 0; height: 100%; overflow: hidden; color: var(--ink); font: 13px/1.3 var(--sans); font-variant-numeric: tabular-nums; }
-  :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  html { height: 100%; background: var(--ground); color-scheme: dark; }
+  body { margin: 0; height: 100%; overflow: hidden; color: var(--ink); background: var(--ground); font: 500 14px/1.3 var(--mono); font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--live); color: #0b0d10; }
+  :focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
   [hidden] { display: none !important; }
-  h2 { margin: 0; font: 700 12px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
-  p { margin: 0; color: var(--ink-3); font-size: 12px; }
+  h1, h2, h3 { margin: 0; font: 600 13px/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+  p { margin: 0; }
+  ol { margin: 0; padding: 0; list-style: none; }
+  .k { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
 
-  /* Split-flap tiles: one character cell per flap, flipped on change by put(). */
-  .flap { display: inline-block; position: relative; padding: .3em .5em .32em; border-radius: 4px; background: var(--flap);
-    color: var(--flap-ink); font: 700 24px/1.1 var(--mono); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 1px #000; transform-origin: 50% 50%; }
-  .flap::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #000; }
-  .flap.big { font-size: 30px; }
-  .flap.dim { color: var(--ink-3); }
-  .flap.bad { color: var(--red); } .flap.warn { color: var(--amber); } .flap.ok { color: var(--green); }
-  .flap-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  main { height: 100%; display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 8px; padding: 8px; }
+  .col { display: flex; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; }
+  .panel { background: var(--panel); border-radius: 6px; min-height: 0; }
 
-  /* Layout: fixed-height rows that fit one 16-inch screen. */
-  main { height: 100%; padding: 10px 14px; display: grid; gap: 10px; grid-template-rows: auto minmax(0, 1.1fr) minmax(0, 1.2fr) minmax(0, .55fr); }
-  .row { display: grid; gap: 10px; min-height: 0; }
-  .row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .row.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .mission { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; background: var(--card); border: 2px solid var(--bezel); border-radius: 6px; }
-  .mission-now { display: flex; align-items: center; gap: 14px; }
+  /* Timing tower: every Mission state with its time this run; the live one is lit. */
+  .tower { padding: 10px 0 6px; }
+  .tower .head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 14px 6px; }
+  #mission-time { color: var(--ink); font-weight: 600; }
+  #mission-current { display: block; padding: 0 14px 4px; font: 700 30px/1.05 var(--mono); text-transform: uppercase; color: var(--live); }
   #mission-current.bad { color: var(--red); }
-  .fault { display: block; font: 12px/1.4 var(--mono); color: var(--ink-3); overflow-wrap: anywhere; }
-  .fault .on { color: var(--red); } .fault .gone { color: var(--ink-3); }
-  #clock { font: 700 22px var(--mono); color: var(--amber); letter-spacing: .06em; }
+  #fault-Mission { padding: 0 14px 8px; }
+  .tower li { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 8px; padding: 4px 14px; color: var(--ink-3); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; transition: background .2s, color .2s; }
+  .tower li span:first-child { font-weight: 500; }
+  .tower li.on { background: var(--panel-2); color: var(--ink); }
+  .tower li span:last-child { text-transform: none; }
+  .tower li.on span:last-child { color: var(--live); }
 
-  /* Subsystem cards: a flipper on top, a short log below. */
-  .card { position: relative; min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; background: var(--card); border: 2px solid var(--bezel); border-radius: 6px; }
-  .card.ok { border-color: #2e5a41; } .card.warn { border-color: #6b5314; } .card.bad { border-color: #7a2c26; background: #1b1212; }
-  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  .card-head span { font: 12px var(--mono); color: var(--ink-3); }
-  .log { margin: 0; display: grid; font: 13px/1.35 var(--mono); }
-  .log > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; padding: 4px 0; border-bottom: 1px solid #22272b; }
-  .log dt { color: var(--ink-3); } .log dd { margin: 0; overflow-wrap: anywhere; color: var(--ink); }
-  .log dd.warn { color: var(--amber); }
-  body.stale .log dd { color: var(--ink-3); }
-  .motion-body { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 14px; align-items: start; min-height: 0; flex: 1; }
-  .motion-visual { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-  .barcode-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; min-height: 0; flex: 1; }
-  .log dd.ok { color: var(--green); } .log dd.bad { color: var(--red); }
-  .wheel-grid { display: grid; grid-template-columns: 76px minmax(0, 1fr) minmax(0, 1fr); font: 13px/1.35 var(--mono); font-variant-numeric: tabular-nums; }
-  .wheel-grid > span { padding: 5px 0; border-bottom: 1px solid #22272b; overflow-wrap: anywhere; }
-  .wheel-grid .wh { color: var(--ink-3); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
-  .wheel-grid .wk { color: var(--ink-3); }
-  .wheel-grid .warn { color: var(--amber); }
-  body.stale .wheel-grid > span:not(.wh):not(.wk) { color: var(--ink-3); }
-  .corner { position: absolute; top: 10px; right: 10px; font: 700 12px/1 var(--mono); letter-spacing: .06em; padding: 8px 10px; border-radius: 3px; background: #0b0c0d; color: var(--ink-3); border: 1px solid #000; }
-  .corner.ok { color: var(--green); } .corner.warn { color: var(--amber); } .corner.bad { color: var(--red); }
-  canvas { width: 100%; height: 150px; display: block; background: #0a0c0d; border-radius: 3px; }
-  .legend { display: flex; gap: 14px; color: var(--ink-2); font: 12px var(--mono); }
-  .legend i { display: inline-block; width: 14px; height: 2px; margin-right: 6px; vertical-align: middle; }
-  .obstacle-body { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 14px; align-items: start; min-height: 0; flex: 1; }
-  .obstacle-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; }
-  .sonar { width: 100%; height: 232px; display: block; background: #07100b; border: 1px solid #1d3326; border-radius: 3px; }
-  .sonar text { fill: #7fb095; font: 12px var(--mono); }
-  .sonar .ring { fill: none; stroke: #1f4a33; stroke-width: 1; }
-  .sonar .beam { fill: rgba(95,211,138,.08); stroke: #2f7a52; stroke-width: 1; stroke-dasharray: 3 3; }
-  .sonar .sweep { stroke: var(--green); stroke-width: 1.5; opacity: .7; }
-  .sonar .obstacle { fill: rgba(255,176,0,.35); stroke: var(--amber); stroke-width: 1.5; }
+  /* Subsystem rows: the bar is the sector colour; board() sets ok / warn / bad on the row. */
+  .subs { flex: 1; display: flex; flex-direction: column; padding: 2px 0; }
+  .card { flex: 1; display: grid; grid-template-columns: 8px auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; gap: 3px 10px; padding: 6px 14px; border-top: 1px solid var(--bezel); transition: background .2s; }
+  .card:first-child { border-top: 0; }
+  .card::before { content: ""; grid-row: 1 / 3; align-self: stretch; max-height: 40px; border-radius: 2px; background: var(--bezel); }
+  .card.ok::before { background: var(--green); } .card.warn::before { background: var(--amber); } .card.bad::before { background: var(--red); }
+  .card.bad { background: rgba(255,90,79,.1); }
+  .card h2 { white-space: nowrap; }
+  .card .words { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; justify-content: flex-end; min-width: 0; }
+  .card .fault { grid-column: 2 / 4; }
+  .flap { font: 600 17px/1.1 var(--mono); text-transform: uppercase; white-space: nowrap; }
+  .flap.bad { color: var(--red); } .flap.warn { color: var(--amber); }
+  .frame { font-size: 13px; color: var(--ink-3); } .frame b { color: var(--ink-2); font-weight: 600; }
+  .mapping, .corner { padding: 2px 7px; border-radius: 3px; font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); background: var(--panel-2); }
+  .mapping.ok, .corner.ok { color: var(--green); background: rgba(61,220,132,.12); }
+  .corner.warn { color: var(--amber); background: rgba(255,207,63,.12); }
+  .mapping.bad, .corner.bad { color: var(--red); background: rgba(255,90,79,.14); }
+  #flap-Barcode-letter { color: var(--steel); font-size: 22px; }
+  .fault { display: block; font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fault .on { color: var(--red); } .fault .gone { color: var(--ink-3); }
+
+  /* Graphs. */
+  .grid { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); gap: 8px; min-height: 0; }
+  .chart { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; min-width: 0; }
+  .chart h2 { white-space: nowrap; }
+  .chart header { display: grid; gap: 6px; }
+  .readouts { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 4px 12px; }
+  .readouts div { display: flex; flex-direction: column; min-width: 0; }
+  .readouts b { font: 600 16px/1.15 var(--mono); overflow-wrap: anywhere; }
+  .readouts b.warn { color: var(--amber); }
+  .readouts .k i { display: inline-block; width: 10px; height: 3px; margin-right: 5px; vertical-align: middle; border-radius: 1px; }
+  .readouts .small b { font-size: 14px; color: var(--ink-2); }
+  body.stale .readouts b, body.stale .flap, body.stale .frame b { color: var(--ink-3); }
+  canvas { flex: 1; min-height: 0; width: 100%; display: block; }
+  #trace-status { font-size: 12.5px; color: var(--amber); }
+  .sonar { flex: 1; min-height: 0; width: 100%; display: block; overflow: hidden; }
+  .sonar text { fill: var(--ink-3); font: 11px var(--mono); }
+  .sonar .ring { fill: none; stroke: var(--bezel); }
+  .sonar .beam { fill: rgba(76,201,240,.06); stroke: var(--bezel); stroke-dasharray: 3 3; }
+  .sonar .sweep { stroke: var(--steel); stroke-width: 1.5; opacity: .6; }
+  .sonar .obstacle { fill: rgba(255,207,63,.25); stroke: var(--amber); stroke-width: 1.5; }
   .sonar .obstacle.unknown { fill: none; stroke-dasharray: 4 3; }
-  .history, #humps, #events { margin: 0; padding: 0; list-style: none; overflow-y: auto; font: 12px/1.4 var(--mono); min-height: 0; }
-  .history { padding-left: 20px; list-style: decimal; }
-  .history li, #humps li { padding: 2px 0; border-bottom: 1px solid #22272b; }
-  #events { flex: 1; }
-  #events li { display: grid; grid-template-columns: 66px 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px solid #22272b; overflow-wrap: anywhere; }
-  #events li time { color: var(--ink-3); } #events li.ok span { color: var(--green); } #events li.refused span { color: var(--red); }
-  #events li.none { display: block; color: var(--ink-3); }
-  .empty { color: var(--ink-3); font: 12px var(--mono); }
-  .sub-title { font: 700 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+  #sonar-readout { fill: var(--ink); font-weight: 600; }
+
+  /* Logs: newest hump on top; barcodes and obstacles numbered in order passed. */
+  .logs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .log { display: flex; flex-direction: column; min-width: 0; }
+  .log header { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 12px 6px; }
+  /* Ten 24px rows show at once; older entries scroll. */
+  .log .empty { height: 248px; padding: 0 12px; font-size: 13px; color: var(--ink-3); }
+  .history, #humps { height: 248px; overflow-y: auto; padding: 0 8px 8px; font-size: 13px; scrollbar-width: thin; scrollbar-color: var(--bezel) transparent; }
+  .history { list-style: decimal inside; }
+  .history li, #humps li { padding: 4px 6px; line-height: 16px; border-radius: 3px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history li:nth-child(odd), #humps li:nth-child(odd) { background: var(--panel-2); }
+  .history li::marker { color: var(--ink-3); }
 
   /* Mapping and junction controls. */
-  form { margin: 0; display: grid; gap: 8px; }
-  .letters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-  .letters label { display: grid; gap: 4px; justify-items: center; font: 12px var(--mono); color: var(--ink-2); }
-  .letters input { width: 100%; height: 42px; border: 1px solid #000; border-radius: 3px; background: var(--flap); color: var(--flap-ink); font: 700 24px/1 var(--mono); text-align: center; text-transform: uppercase; caret-color: var(--amber); }
-  .letters input[aria-invalid="true"] { color: var(--red); }
-  .code { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 3px; background: #0a0a0a; color: var(--cyan); font: 700 13px/1 var(--mono); }
-  .ack { display: grid; gap: 2px; font: 12px/1.35 var(--mono); }
-  .ack b { font-weight: 700; } .ack span { color: var(--ink-2); }
+  .ctl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .controls { padding: 10px 12px; display: grid; align-content: start; gap: 8px; min-width: 0; }
+  form { margin: 0; display: grid; gap: 6px; }
+  .letters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 6px; align-items: end; }
+  .letters label { display: grid; gap: 3px; justify-items: center; font-size: 12px; color: var(--ink-3); }
+  .letters input { width: 100%; height: 38px; border: 1px solid var(--bezel); border-radius: 4px; background: var(--ground); color: var(--ink); font: 600 20px/1 var(--mono); text-align: center; text-transform: uppercase; caret-color: var(--live); }
+  .letters input:hover { border-color: #3a4350; }
+  .letters input::placeholder { color: var(--ink-3); }
+  .letters input[aria-invalid="true"] { color: var(--red); border-color: var(--red); }
+  .ack { display: grid; gap: 1px; font-size: 12.5px; line-height: 1.35; min-height: 34px; }
+  .ack b { font-weight: 600; } .ack span { color: var(--ink-3); }
   .ack.ok b { color: var(--green); } .ack.wait b { color: var(--amber); } .ack.bad b { color: var(--red); }
-  button { min-height: 36px; padding: 6px 12px; border: 1px solid #000; border-radius: 3px; background: var(--amber); color: #0a0a0a; cursor: pointer; font: 700 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
-  button:hover:not(:disabled) { background: #ffc340; } button:active:not(:disabled) { background: #e99f00; }
-  button:disabled { background: #2a2f34; color: var(--ink-3); cursor: not-allowed; }
-  #send { width: 100%; }
-  #directions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-  #directions button { min-height: 50px; font: 700 24px/1 var(--mono); }
-  #direction-status { font: 12px/1.35 var(--mono); color: var(--ink-2); }
+  button { min-height: 38px; padding: 6px 14px; border: 0; border-radius: 4px; background: var(--live); color: #0b0d10; cursor: pointer; font: 700 13px var(--mono); letter-spacing: .06em; text-transform: uppercase; transition: background .15s; }
+  button:hover:not(:disabled) { background: #c5a6ff; } button:active:not(:disabled) { background: #9f70f5; }
+  button:disabled { background: var(--panel-2); color: var(--ink-3); cursor: not-allowed; }
+  #directions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  #directions button { font-size: 18px; }
+  #direction-status { font-size: 12.5px; color: var(--ink-3); }
 
-  @media (max-width: 900px) {
+  /* Event log: folded by default. */
+  details.events { min-height: 0; }
+  details.events summary { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; cursor: pointer; list-style: none; }
+  details.events summary::-webkit-details-marker { display: none; }
+  details.events summary::after { content: "Show"; font-size: 13px; color: var(--live); }
+  details.events[open] summary::after { content: "Hide"; }
+  #events { height: 30vh; overflow-y: auto; padding: 0 12px 8px; font-size: 12.5px; }
+  #events li { display: grid; grid-template-columns: 62px 1fr; gap: 8px; padding: 3px 0; border-top: 1px solid var(--bezel); color: var(--ink-2); overflow-wrap: anywhere; }
+  #events li time { color: var(--ink-3); }
+  #events li.ok span { color: var(--green); } #events li.refused span { color: var(--red); }
+  #events li.none { display: block; border: 0; color: var(--ink-3); }
+
+  @media (max-width: 1100px) {
     body { overflow: auto; height: auto; }
-    main { height: auto; grid-template-rows: none; }
-    .row.three, .row.two { grid-template-columns: 1fr; }
-    .card { overflow: visible; }
+    main { height: auto; grid-template-columns: 1fr; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, 260px); }
+    /* Half a laptop screen: mission states and subsystem states side by side. */
+    main > .col:first-child { flex-direction: row; }
+    main > .col:first-child > .panel { flex: 1 1 0; min-width: 0; }
   }
+  @media (max-width: 560px) {
+    main > .col:first-child { flex-direction: column; }
+    .grid { grid-template-columns: 1fr; grid-template-rows: repeat(4, 240px); }
+    .logs, .ctl { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body class="stale">
 <main>
-  <section class="mission" aria-label="Mission state">
-    <div class="mission-now">
-      <h2>Mission</h2>
-      <span id="mission-current" class="flap big" role="status">WAIT</span>
+  <div class="col">
+    <section class="panel tower" aria-label="Mission state">
+      <div class="head"><h1>Mission</h1><span class="k">In state <span id="mission-time">0:00</span></span></div>
+      <span id="mission-current" role="status">WAIT</span>
       <span id="fault-Mission" class="fault"></span>
-    </div>
-    <span id="clock" aria-label="Local time">--:--:--</span>
-  </section>
-
-  <div class="row three">
-    <!-- comms -->
-    <section class="card" id="card-Comms" aria-labelledby="title-Comms">
-      <div class="card-head"><h2 id="title-Comms">Comms</h2></div>
-      <div class="flap-row"><span class="flap big" id="flap-Comms">UNKNOWN</span></div>
-      <dl class="log">
-        <div><dt>Frame</dt><dd id="sensor-sequence">—</dd></div>
-        <div><dt>Robot</dt><dd id="sensor-online">Unknown</dd></div>
-        <div><dt>Stream</dt><dd id="sensor-stream">Waiting for telemetry</dd></div>
-      </dl>
-      <span class="fault" id="fault-Comms"></span>
+      <ol aria-label="Seconds in each Mission state this run">
+        <li id="state-READY"><span>0</span>Ready<span id="time-READY">0.0 s</span></li>
+        <li id="state-FOLLOW_LINE"><span>1</span>Follow line<span id="time-FOLLOW_LINE">0.0 s</span></li>
+        <li id="state-NAVIGATE"><span>2</span>Navigate<span id="time-NAVIGATE">0.0 s</span></li>
+        <li id="state-SCAN"><span>3</span>Scan<span id="time-SCAN">0.0 s</span></li>
+        <li id="state-BYPASS"><span>4</span>Bypass<span id="time-BYPASS">0.0 s</span></li>
+        <li id="state-REACQUIRE"><span>5</span>Reacquire<span id="time-REACQUIRE">0.0 s</span></li>
+        <li id="state-STOPPED"><span>6</span>Stopped<span id="time-STOPPED">0.0 s</span></li>
+      </ol>
     </section>
 
-    <!-- motion -->
-    <section class="card" id="card-Motion" aria-labelledby="title-Motion">
-      <div class="card-head"><h2 id="title-Motion">Motion</h2></div>
-      <div class="flap-row"><span class="flap big" id="flap-Motion">IDLE</span></div>
-      <div class="motion-body">
-        <div class="motion-visual">
-          <canvas id="chart" role="img" aria-label="Left and right average wheel speed over the last 60 seconds"></canvas>
-          <div class="legend"><span><i style="background:var(--ink)"></i>Left</span><span><i style="background:var(--steel)"></i>Right</span></div>
-        </div>
-        <div class="obstacle-side">
-          <div class="wheel-grid" role="table" aria-label="Wheel details">
-            <span class="wh" role="columnheader"></span><span class="wh" role="columnheader">Left</span><span class="wh" role="columnheader">Right</span>
-            <span class="wk" role="rowheader">Speed</span><span id="sensor-speed-left" role="cell">—</span><span id="sensor-speed-right" role="cell">—</span>
-            <span class="wk" role="rowheader">Duty</span><span id="trace-duty-left" role="cell">—</span><span id="trace-duty-right" role="cell">—</span>
-            <span class="wk" role="rowheader">Count</span><span id="sensor-count-left" role="cell">—</span><span id="sensor-count-right" role="cell">—</span>
-          </div>
-          <p id="trace-status" hidden></p>
-          <span class="fault" id="fault-Motion"></span>
-        </div>
-      </div>
-    </section>
-
-    <!-- terrain -->
-    <section class="card" id="card-Terrain" aria-labelledby="title-Terrain">
-      <span class="corner" id="imu-badge" role="status">IMU UNKNOWN</span>
-      <div class="card-head"><h2 id="title-Terrain">Terrain</h2></div>
-      <div class="flap-row"><span class="flap big" id="flap-Terrain">0 HUMPS</span></div>
-      <dl class="log">
-        <div><dt>Humps</dt><dd id="sensor-humps">—</dd></div>
-        <div><dt>Peak height</dt><dd id="sensor-height">—</dd></div>
-        <div><dt>Tilt pitch</dt><dd id="sensor-pitch">—</dd></div>
-        <div><dt>Tilt roll</dt><dd id="sensor-roll">—</dd></div>
-        <div><dt>Height now</dt><dd id="sensor-height-now">—</dd></div>
-      </dl>
-      <span class="fault" id="fault-Terrain"></span>
-      <h2 class="sub-title">Hump log</h2>
-      <p class="empty" id="hump-empty">No hump measurements yet.</p>
-      <ol id="humps" hidden tabindex="0" aria-label="Past hump heights"></ol>
+    <section class="panel subs" aria-label="Subsystems">
+      <div class="card" id="card-Comms"><h2>Comms</h2><span class="words"><span class="frame">Frame <b id="sensor-sequence">—</b></span><span class="flap" id="flap-Comms">UNKNOWN</span></span><span class="fault" id="fault-Comms"></span></div>
+      <div class="card" id="card-Motion"><h2>Motion</h2><span class="words"><span class="flap" id="flap-Motion">IDLE</span></span><span class="fault" id="fault-Motion"></span></div>
+      <div class="card" id="card-Barcode"><h2>Line &amp; barcode</h2><span class="words"><span class="mapping" id="sensor-mapped">—</span><span class="flap" id="flap-Line" aria-label="Line status">—</span><span class="flap" id="flap-Barcode-letter" aria-label="Letter queued">–</span></span><span class="fault" id="fault-Line"></span></div>
+      <div class="card" id="card-Terrain"><h2>Terrain</h2><span class="words"><span class="corner" id="imu-badge" role="status">IMU UNKNOWN</span><span class="flap" id="flap-Terrain">0 HUMPS</span></span><span class="fault" id="fault-Terrain"></span></div>
+      <div class="card" id="card-Obstacle"><h2>Obstacle</h2><span class="words"><span class="flap" id="flap-Obstacle">NO ECHO</span></span><span class="fault" id="fault-Obstacle"></span></div>
     </section>
   </div>
 
-  <div class="row two">
-    <!-- line_barcode + mapping -->
-    <section class="card" id="card-Barcode" aria-labelledby="title-Barcode">
-      <div class="card-head"><h2 id="title-Barcode">Line &amp; barcode</h2></div>
-      <div class="flap-row">
-        <span class="flap big" id="flap-Line" aria-label="Line status">—</span>
-        <span class="flap big" id="flap-Barcode-letter" aria-label="Letter detected">–</span>
-      </div>
-      <div class="barcode-body">
-      <div class="obstacle-side">
-      <dl class="log">
-        <div><dt>Mapping</dt><dd id="sensor-mapped">—</dd></div>
-      </dl>
-      <span class="fault" id="fault-Line"></span>
-      <h2 class="sub-title">Barcode log</h2>
+  <div class="col">
+    <div class="grid">
+      <section class="panel chart" aria-labelledby="speed-title">
+        <header><h2 id="speed-title">Motor speed</h2><div class="readouts">
+          <div><span class="k"><i style="background:var(--ink)"></i>Left</span><b id="sensor-speed-left">—</b></div>
+          <div><span class="k"><i style="background:var(--steel)"></i>Right</span><b id="sensor-speed-right">—</b></div>
+          <div class="small"><span class="k">Duty L / R</span><b><span id="trace-duty-left">—</span> / <span id="trace-duty-right">—</span></b></div>
+          <div class="small"><span class="k">Count L / R</span><b><span id="sensor-count-left">—</span> / <span id="sensor-count-right">—</span></b></div>
+        </div></header>
+        <canvas id="chart" role="img" aria-label="Left and right average wheel speed over the last 60 seconds"></canvas>
+        <p id="trace-status" hidden></p>
+      </section>
+      <section class="panel chart" aria-labelledby="xyz-title">
+        <header><h2 id="xyz-title">Acceleration <span class="k">mg · 30 s</span></h2><div class="readouts">
+          <div><span class="k"><i style="background:var(--ink)"></i>X <i style="background:var(--steel)"></i>Y <i style="background:var(--live)"></i>Z</span></div>
+          <div><span class="k">Pitch</span><b id="sensor-pitch">—</b></div>
+          <div><span class="k">Roll</span><b id="sensor-roll">—</b></div>
+        </div></header>
+        <canvas id="chart-xyz" role="img" aria-label="Accelerometer X, Y and Z over the last 30 seconds"></canvas>
+      </section>
+      <section class="panel chart" aria-labelledby="profile-title">
+        <header><h2 id="profile-title">Terrain profile <span class="k">mm · 2 m</span></h2><div class="readouts">
+          <div><span class="k">Humps</span><b id="sensor-humps">—</b></div>
+          <div><span class="k">Peak</span><b id="sensor-height">—</b></div>
+          <div><span class="k">Now</span><b id="sensor-height-now">—</b></div>
+        </div></header>
+        <canvas id="chart-profile" role="img" aria-label="Estimated height against distance over the last 2 metres"></canvas>
+      </section>
+      <section class="panel chart" aria-labelledby="sonar-title">
+        <header><h2 id="sonar-title">Sonar</h2><div class="readouts">
+          <div><span class="k">Front</span><b id="sensor-front">—</b></div>
+          <div><span class="k">Width</span><b id="sensor-width">—</b></div>
+          <div><span class="k">Clearance</span><b id="sensor-clearance">—</b></div>
+        </div></header>
+        <svg class="sonar" viewBox="-56 0 412 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ultrasonic fan with the latest obstacle at its measured range">
+          <!-- Cone edges at SERVO_LOOK_DEG (70) either side of forward, reaching the outer ring. -->
+          <path class="beam" d="M150,226 L-42.6,155.9 A205,205 0 0 1 342.6,155.9 Z"></path>
+          <circle class="ring" id="sonar-ring-1" cx="150" cy="226" r="68"></circle>
+          <circle class="ring" id="sonar-ring-2" cx="150" cy="226" r="137"></circle>
+          <circle class="ring" id="sonar-ring-3" cx="150" cy="226" r="205"></circle>
+          <rect class="obstacle" id="sonar-block" x="130" y="20" width="40" height="10" style="display:none"></rect>
+          <text id="sonar-readout" text-anchor="middle" style="display:none"></text>
+          <line class="sweep" x1="150" y1="226" x2="-42.6" y2="155.9"></line>
+          <line class="sweep" x1="150" y1="226" x2="342.6" y2="155.9"></line>
+          <text x="-50" y="14" id="sonar-scale">scale —</text>
+          <text x="150" y="238" text-anchor="middle">0°</text>
+        </svg>
+      </section>
+    </div>
+    <div class="logs" aria-label="Logs">
+    <section class="panel log" aria-labelledby="hump-title"><header><h2 id="hump-title">Hump log</h2></header>
+      <p class="empty" id="hump-empty">No hump measurements yet.</p>
+      <ol id="humps" hidden tabindex="0" aria-label="Past hump heights"></ol></section>
+    <section class="panel log" aria-labelledby="barcode-title"><header><h2 id="barcode-title">Barcode log</h2></header>
       <p class="empty" id="barcode-empty">No barcodes passed yet.</p>
-      <ol class="history" id="barcodes" aria-label="Barcodes passed" tabindex="0" hidden></ol>
-      </div>
+      <ol class="history" id="barcodes" aria-label="Barcodes passed" tabindex="0" hidden></ol></section>
+    <section class="panel log" aria-labelledby="obstacle-title"><header><h2 id="obstacle-title">Obstacle log</h2></header>
+      <p class="empty" id="obstacle-empty">No obstacle measurements yet.</p>
+      <ol class="history" id="obstacles" aria-label="Past obstacles: width, side and clearance" tabindex="0" hidden></ol></section>
+    </div>
+
+    <div class="ctl">
+    <section class="panel controls" aria-label="Barcode mapping">
       <form id="map" novalidate>
-        <h2 class="sub-title">Barcode mapping</h2>
+        <h2>Barcode mapping</h2>
         <div class="letters">
-          <label title="Left"><span class="code">L</span><input aria-label="Left" name="l" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
-          <label title="Right"><span class="code">R</span><input aria-label="Right" name="r" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
-          <label title="Straight"><span class="code">S</span><input aria-label="Straight" name="s" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
-          <label title="U-turn"><span class="code">U</span><input aria-label="U-turn" name="u" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
+          <label title="Left">L<input aria-label="Left" name="l" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
+          <label title="Right">R<input aria-label="Right" name="r" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
+          <label title="Straight">S<input aria-label="Straight" name="s" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
+          <label title="U-turn">U<input aria-label="U-turn" name="u" maxlength="1" placeholder="—" pattern="[A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ackmsg"></label>
+          <button id="send" type="submit" disabled>Send</button>
         </div>
         <div id="ack" class="ack" aria-live="polite"><b id="ackhead">Not sent</b><span id="ackmsg">Enter the four letters announced on mission day.</span></div>
-        <button id="send" type="submit" disabled>Send mapping</button>
       </form>
-      </div>
     </section>
-
-    <!-- obstacle + sonar -->
-    <section class="card" id="card-Obstacle" aria-labelledby="title-Obstacle">
-      <div class="card-head"><h2 id="title-Obstacle">Obstacle</h2><span>ultrasonic</span></div>
-      <div class="flap-row"><span class="flap big" id="flap-Obstacle">NO ECHO</span></div>
-      <div class="obstacle-body">
-      <svg class="sonar" viewBox="0 0 300 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ultrasonic fan with the latest obstacle at its measured range">
-        <!-- Cone edges at SERVO_LOOK_DEG (70) either side of forward, reaching the outer ring. -->
-        <path class="beam" d="M150,226 L-42.6,155.9 A205,205 0 0 1 342.6,155.9 Z"></path>
-        <circle class="ring" id="sonar-ring-1" cx="150" cy="226" r="68"></circle>
-        <circle class="ring" id="sonar-ring-2" cx="150" cy="226" r="137"></circle>
-        <circle class="ring" id="sonar-ring-3" cx="150" cy="226" r="205"></circle>
-        <rect class="obstacle" id="sonar-block" x="130" y="20" width="40" height="10" style="display:none"></rect>
-        <text id="sonar-readout" text-anchor="middle" style="display:none"></text>
-        <line class="sweep" x1="150" y1="226" x2="-42.6" y2="155.9"></line>
-        <line class="sweep" x1="150" y1="226" x2="342.6" y2="155.9"></line>
-        <text x="8" y="14" id="sonar-scale">scale —</text>
-        <text x="150" y="238" text-anchor="middle">0°</text>
-      </svg>
-      <div class="obstacle-side">
-      <dl class="log">
-        <div><dt>Front range</dt><dd id="sensor-front">—</dd></div>
-        <div><dt>Width</dt><dd id="sensor-width">—</dd></div>
-        <div><dt>Clearance</dt><dd id="sensor-clearance">—</dd></div>
-      </dl>
-      <span class="fault" id="fault-Obstacle"></span>
-      <h2 class="sub-title">Obstacle history</h2>
-      <p class="empty" id="obstacle-empty">No obstacle measurements yet.</p>
-      <ol class="history" id="obstacles" aria-label="Past obstacles: width, side and clearance" tabindex="0" hidden></ol>
-      </div>
-      </div>
-    </section>
-  </div>
-
-  <div class="row two">
-    <!-- IMU graphs -->
-    <section class="card" aria-labelledby="xyz-title">
-      <div class="card-head"><h2 id="xyz-title">Acceleration XYZ</h2><span>last 30 s, mg</span></div>
-      <canvas id="chart-xyz" role="img" aria-label="Accelerometer X, Y and Z over the last 30 seconds"></canvas>
-      <div class="legend"><span><i style="background:var(--ink)"></i>X</span><span><i style="background:var(--steel)"></i>Y</span><span><i style="background:var(--amber)"></i>Z</span></div>
-    </section>
-    <section class="card" aria-labelledby="profile-title">
-      <div class="card-head"><h2 id="profile-title">Terrain profile</h2><span>last 2 m, height mm</span></div>
-      <canvas id="chart-profile" role="img" aria-label="Estimated height against distance over the last 2 metres"></canvas>
-    </section>
-  </div>
-
-  <div class="row two">
-    <!-- Junction testing -->
-    <section class="card" aria-labelledby="junction-title">
-      <div class="card-head"><h2 id="junction-title">Junction testing</h2><span>GP21 cancels</span></div>
+    <section class="panel controls" aria-label="Junction test">
+      <h2>Junction test <span class="k">GP21 cancels</span></h2>
       <div id="directions">
         <button type="button" data-action="1" aria-label="Left" title="Left" disabled>L</button>
         <button type="button" data-action="2" aria-label="Right" title="Right" disabled>R</button>
@@ -268,12 +258,10 @@
       </div>
       <p id="direction-status" role="status">Waiting for live line following.</p>
     </section>
+    </div>
 
-    <!-- Event log -->
-    <section class="card" aria-labelledby="events-title">
-      <div class="card-head"><h2 id="events-title">Event log</h2><span>this session</span></div>
-      <ol id="events" aria-label="Events and acknowledgements"><li class="none">No events yet.</li></ol>
-    </section>
+    <details class="panel events"><summary><h2>Event log</h2></summary>
+      <ol id="events" aria-label="Events and acknowledgements"><li class="none">No events yet.</li></ol></details>
   </div>
 </main>
 <script>
@@ -296,13 +284,13 @@ const seen = {}, cleared = {}; // owner -> faults active last frame / faults cle
 let lastFrame = 0, robotOnline = null, linked = null, mission = null, pending = null, encoderDirection = null;
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// Keep each reading atomic; a changed flap turns over once, like a departure board.
+// Keep each reading atomic; a changed status word brightens once so the change is noticed.
 function put(el, text) {
   text = String(text);
   if (el.textContent === text) return;
   el.textContent = text;
   if (el.classList.contains("flap") && el.animate && !reducedMotion())
-    el.animate([{transform: "rotateX(-90deg)", opacity: .4}, {transform: "rotateX(0)", opacity: 1}], {duration: 280, easing: "ease-out"});
+    el.animate([{opacity: .3}, {opacity: 1}], {duration: 240, easing: "ease-out"});
 }
 // Each card: one flipper, one tone (ok / warn / bad), no hidden states.
 function board(owner, word, kind) {
@@ -345,8 +333,8 @@ function showSensors(t) {
   value("sensor-count-left", t.left);
   value("sensor-count-right", t.right);
   encoderDirection = ["straight", "reverse", "left", "right", "stopped", "uturn"].includes(t.direction) ? t.direction : null;
-  put($("sensor-mapped"), t.mapped ? "Yes" : "No");
-  $("sensor-mapped").className = t.mapped ? "ok" : "bad";
+  put($("sensor-mapped"), t.mapped ? "Mapped" : "Not mapped");
+  $("sensor-mapped").className = "mapping " + (t.mapped ? "ok" : "bad");
   value("sensor-front", t.front_mm == null ? "Unavailable" : `${t.front_mm} mm`, t.front_mm == null);
   value("sensor-width", dimension(t.obstacle_width_mm));
   value("sensor-clearance", dimension(t.obstacle_clearance_mm));
@@ -374,9 +362,6 @@ function traceFreshness() {
 }
 function sensorFreshness() {
   traceFreshness();
-  const live = lastFrame && Date.now() - lastFrame < 2000 && robotOnline !== false;
-  $("sensor-online").textContent = robotOnline === null ? "Unknown" : robotOnline ? "Online" : "Offline";
-  $("sensor-stream").textContent = live ? "Live" : lastFrame ? "Stale / last received" : "Waiting for telemetry";
   renderComms();
 }
 function renderComms() {
@@ -414,19 +399,37 @@ function drawSonar(t) {
   put(readout, `W ${obstacleWidth} mm`);
 }
 
+// Timing tower: time spent in each Mission state this run; only live frame gaps count.
+const MISSIONS = ["READY", "FOLLOW_LINE", "NAVIGATE", "SCAN", "BYPASS", "REACQUIRE", "STOPPED"];
+const spent = {};
+let missionSince = 0;
+function showTower(previous) {
+  if (mission && previous && lastFrame - previous < 2000) spent[mission] = (spent[mission] || 0) + lastFrame - previous;
+  for (const s of MISSIONS) {
+    $("state-" + s).classList.toggle("on", s === mission);
+    put($("time-" + s), ((spent[s] || 0) / 1000).toFixed(1) + " s");
+  }
+}
+
 function showTelemetry(t) {
+  const previous = lastFrame;
   lastFrame = Date.now();
   // A new scan must not reuse the previous obstacle's width.
   obstacleWidth = t.mission === "SCAN" ? null : t.obstacle_width_mm > 0 ? t.obstacle_width_mm : null;
   if (obstacleAwaitingWidth && obstacleWidth != null) { obstacleAwaitingWidth(obstacleWidth); obstacleAwaitingWidth = null; }
-  if (t.mission === "FOLLOW_LINE" && ["READY", "STOPPED"].includes(mission)) for (const o in cleared) cleared[o].clear();
+  showTower(previous);
+  if (t.mission === "FOLLOW_LINE" && ["READY", "STOPPED"].includes(mission)) {
+    for (const o in cleared) cleared[o].clear();
+    for (const s in spent) delete spent[s];
+  }
+  if (t.mission !== mission) missionSince = lastFrame;
   mission = t.mission;
   put($("mission-current"), mission.replace("_", " "));
   showSensors(t);
   document.body.classList.remove("stale");
   const byOwner = o => t.faults.filter(f => f.startsWith(o + ": ")).map(f => f.slice(o.length + 2));
   const mf = faults("Mission", byOwner("Mission"));
-  $("mission-current").className = "flap big " + (mf || t.mission === "STOPPED" ? "bad" : "");
+  $("mission-current").className = mf || t.mission === "STOPPED" ? "bad" : "";
 
   // barcode: letter and its navigation action are the flippers.
   const lf = faults("Line", byOwner("Line"));
@@ -565,9 +568,9 @@ function showTerrainTrace(m) {
   profile.push({d: profileMm, h: m.height_mm});
   while (profile[0].d < profileMm - PROFILE_WINDOW_MM) profile.shift();
   plot("chart-xyz", imuHistory, p => 1 - (now - p.t) / IMU_WINDOW_MS,
-    [["x", "--ink"], ["y", "--steel"], ["z", "--amber"]], -2032, 2032, "Waiting for IMU");
+    [["x", "--ink"], ["y", "--steel"], ["z", "--live"]], -2032, 2032, "Waiting for IMU");
   plot("chart-profile", profile, p => 1 - (profileMm - p.d) / PROFILE_WINDOW_MM,
-    [["h", "--ink"]], 0, 40, "Waiting for IMU");
+    [["h", "--live"]], 0, 40, "Waiting for IMU");
 }
 
 // A test request uses the same sequence/ACK channel as mapping.
@@ -691,7 +694,7 @@ function showMappingAck(m) {
 }
 
 setInterval(() => {
-  put($("clock"), new Date().toLocaleTimeString([], {hour12: false}));
+  if (missionSince) { const s = Math.floor((Date.now() - missionSince) / 1000); put($("mission-time"), `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`); }
   sensorFreshness();
   if (!lastFrame) return;
   const live = Date.now() - lastFrame < 2000;

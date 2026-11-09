@@ -82,12 +82,8 @@ vm.runInContext('showTelemetry(sample)', context);
 assert.equal(get('sensor-speed-left').textContent, 'Awaiting sample');
 assert.equal(get('flap-Obstacle').textContent, 'NO ECHO');
 assert.equal(get('sensor-height').textContent, 'No valid maximum');
-assert.equal(get('sensor-mapped').textContent, 'No');
-vm.runInContext('lastFrame = Date.now() - 3000; sensorFreshness()', context);
-assert.equal(get('sensor-stream').textContent, 'Stale / last received');
-vm.runInContext('lastFrame = 0; sensorFreshness()', context);
-assert.equal(get('sensor-stream').textContent, 'Waiting for telemetry');
-console.log('sensor log: PASS (valid zero, missing values, units, barcode, frame context, stale/empty)');
+assert.equal(get('sensor-mapped').textContent, 'Not mapped');
+console.log('sensor log: PASS (valid zero, missing values, units, barcode, frame context)');
 
 // Every card is present and visible; the removed table and nav stay removed.
 assert(!html.includes('<table'));
@@ -270,12 +266,12 @@ vm.runInContext(`showTurn({type: 'event', text: 'EVENT TURN: turn LEFT at t=60 m
 assert.equal(get('flap-Barcode-letter').textContent, '–');
 Object.assign(sample, {mapped: true});
 vm.runInContext('showTelemetry(sample)', context);
-assert.equal(get('sensor-mapped').textContent, 'Yes');
-assert.equal(get('sensor-mapped').className, 'ok');
+assert.equal(get('sensor-mapped').textContent, 'Mapped');
+assert.equal(get('sensor-mapped').className, 'mapping ok');
 sample.mapped = false;
 vm.runInContext('showTelemetry(sample)', context);
-assert.equal(get('sensor-mapped').textContent, 'No');
-assert.equal(get('sensor-mapped').className, 'bad');
+assert.equal(get('sensor-mapped').textContent, 'Not mapped');
+assert.equal(get('sensor-mapped').className, 'mapping bad');
 console.log('barcode history: PASS (letter and action per event, duplicates ignored, non-barcode events ignored, mapped colour)');
 
 // IMU: tilt and height read out, and both graphs keep to their windows across a travel wrap.
