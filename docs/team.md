@@ -173,7 +173,7 @@ Apply to new or changed application code (imported kernel need not be reformatte
 
 This table owns the width of every application data field. The requirement it
 answers is in [project-specs section 4](project-specs.md#4-change-in-requirement-minimum-bit-data-representation);
-MQTT byte layouts are in [architecture](architecture.md#mqtt-binary-protocol-schema-version-2).
+MQTT byte layouts are in [architecture](architecture.md#mqtt-binary-protocol-schema-version-3).
 Bits are written as **logical / stored** when they differ: logical is what the
 range needs, stored is what the field occupies.
 
@@ -345,7 +345,7 @@ range needs, stored is what the field occupies.
 | Link state | `report.c` | Wi-Fi up, broker up | 2 / 8 | `_Atomic uint8_t` | transport → I/O (core 0) |
 | Event entry | `comms_packed_event_t` | kind 1..4, arg 0..127, time, counts, arg2 0..1023 | 3+7 / 16, 16, 16+16, 10 / 16 | masks behind accessors | Mission, Terrain → Comms; cross-core mutex |
 | Event ring indices | `comms_event_log_t.indices` | head 0..15, count 0..16 | 4+5 / 16 | masks | same |
-| Bridge slot | `slot_t` | length 1..22, frame bytes | 5, 22 x 8 | bit-field, byte array | I/O ↔ transport (core 0); SPSC atomics |
+| Bridge slot | `slot_t` | length 1..18, frame bytes | 5, 18 x 8 | bit-field, byte array | I/O ↔ transport (core 0); SPSC atomics |
 
 ### Queues, rings and messages
 
@@ -358,19 +358,19 @@ fixed rings and copies.
 | Barcode event queue | 8 | `barcode_event_t`, 6 bytes | Mission task only |
 | Barcode, wheel, line trace rings | 8 each | encoded 18, 15 and 17-byte frames | producer → I/O, SPSC atomics (trace images only) |
 | Comms event ring | 16 | 10 bytes; 162 bytes in all | cross-core mutex, bounded wait |
-| Bridge out / in | 4 / 2 | 23-byte slot | SPSC atomics, core 0 |
+| Bridge out / in | 4 / 2 | 19-byte slot | SPSC atomics, core 0 |
 | Snapshots | 1 each | `MotionCommand` 12, `MotionHealth` 8, `LineIrSnapshot` 8, profile 20, range samples 2 x 16 bytes | mutex copy |
 
 ### MQTT frames
 
 Every frame is compact binary with explicit masks and shifts; no value is sent
-as text. Byte layouts are in [architecture](architecture.md#mqtt-binary-protocol-schema-version-2).
+as text. Byte layouts are in [architecture](architecture.md#mqtt-binary-protocol-schema-version-3).
 The only text is the retained status topic `"1"`/`"0"`, set by the kernel's
 MQTT last-will, outside the application payloads.
 
 | Frame | Bytes | Used / stored bits |
 | --- | ---: | --- |
-| Telemetry and snapshot reply | 22 | 171 / 176 |
+| Telemetry and snapshot reply | 18 | 135 / 144 |
 | Event | 11 | 83 / 88 |
 | Mapping | 5 | 36 / 40 |
 | Acknowledgement | 3 | 18 / 24 |
@@ -381,14 +381,17 @@ MQTT last-will, outside the application payloads.
 | Barcode trace | 18 | 144 / 144 |
 | Terrain trace | 14 | 109 / 112 |
 
-Telemetry carries the six fault bytes as 48 wire bits for 12 defined fault bits.
-Nicholas accepted this on 2026-11-03: one single-writer byte per owner, read
-without masks; packing it would change the wire format and need a link retest.
+Telemetry carries the twelve defined fault bits as one 12-bit fault word
+(schema v3; 4 bits reserved). In RAM each owner keeps its own atomic byte,
+because each owner is the only writer of its byte and Cortex-M0+ has no atomic
+read-modify-write for a word shared by writers on both cores.
 
 ### Fault bitmask
 
 One bit per condition, one `_Atomic uint8_t` per owner, written only by that
-owner. Simultaneous faults stay independent.
+owner. Simultaneous faults stay independent. On the wire the defined bits go
+into the 12-bit fault word in this order: Motion bits 0-1, Line 2-4, Terrain
+5-7, Obstacle 8, Mission 9, Network 10-11.
 
 | Owner (writer) | Bit 0 | Bit 1 | Bit 2 |
 | --- | --- | --- | --- |
@@ -415,8 +418,11 @@ owner. Simultaneous faults stay independent.
   word spare bits, miss count saturating at its 2-bit limit), `test_terrain.c`
   (2-bit state masking, spare bit zero) and `test_comms_stress.c` (terrain word
   under two-thread load).
-- **Wire compatibility.** No MQTT frame layout changed: the golden vectors in
-  `test_mqtt_frame.c` and `scripts/mqtt_client.py --self-test` pass unchanged.
+- **Wire format.** Schema v3 changes only the fault field (six bytes to one
+  12-bit word) and the version nibble; every other field keeps its width and
+  meaning. The C codec and `scripts/mqtt_client.py --self-test` decode the same
+  new golden vectors, and S1-U14 walks each of the 12 fault bits alone and all
+  together.
 - **Builds.** All six profiles in `testing/build_pending_profiles.sh` compile
   with `-Wall -Wextra`, and the Arm size probes pass their size bounds.
 - **Physical.** A course trial on the final image is still to be run (INT-225).
@@ -448,7 +454,7 @@ on `main` (`c26bca4`) and on this change (INT-223).
 | Course (`TRACE=0`) | 387,912 → 390,356 B (+2,444) | 83,836 → 83,728 B (-108) |
 | Trial (`TRACE=1`) | 389,712 → 393,208 B (+3,496) | 84,284 → 90,724 B (+6,440) |
 
-Course static RAM falls by 108 bytes. Most of the saving is on the Mission and
+Course static RAM falls by 108 bytes, and by 28 more with the schema v3 fault word (bridge slots and the receive buffer shrink from 22 to 18 bytes: course bss 83,700 B, text 390,420 B). Most of the saving is on the Mission and
 Motion stacks, which hold the per-release input and output copies. Flash grows
 by about 2.4 KB, the cost of reading and writing bit-fields: 0.6 percent of the
 image and well inside the 2 MB part. The trial image's extra RAM is the timing

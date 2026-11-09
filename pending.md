@@ -242,6 +242,7 @@ Merged with host tests and builds only (INT-178). Each needs a car run.
 | Done | `ObstacleRay`, `ObstacleProfile` | 32 to 24 bits; 112 to 72 bits; capped at 1023 mm | Scan rays, profile and side choice |
 | Done | `IrTracker`, `LineIrSnapshot` | 160 to 64 bits; 192 to 96 bits | Line following and junctions |
 | Done | Telemetry width, with clearance in place of depth | 23 to 22 bytes | Dashboard shows width and clearance on a real link |
+| Done | Fault bits packed on the wire (schema v3) | 48 to 12 bits; telemetry 22 to 18 bytes | Monitor shows each fault name on a real link (MR-08, MR-15, MR-16, MR-33) |
 | Done | `TRACE=0` in `full_course` | 464 bytes less RAM, 2304 bytes less flash (INT-194) | Trial and course images drive alike |
 | Done | Struct field order | Six types reduced without changing field widths; [layout inventory](testing/integration/struct-layout.md), INT-222 | Loaded timing and peak stack remain unmeasured |
 | Done | Minimum-bit narrowing of every remaining field | Course bss 83836 to 83728 B, text +2444 B; MissionInputs 104 to 64 B (INT-223) | Full course run plus INT-224/225 timing |
@@ -323,7 +324,7 @@ Software items are complete only as software; physical acceptance is listed abov
 - [x] Colour-inverted prints out of scope; 180-degree flip required and already in the decoder, by Nicholas.
 - [x] Priorities: smoothness and accuracy first, then speed, by Nicholas.
 - [x] Week 10 issue set aside by Nicholas; a demonstration is on 2026-11-04.
-- [x] Fault bytes stay at 48 bits, by Nicholas.
+- [x] Fault bytes packed into a 12-bit wire word (schema v3), 2026-11-08.
 - [x] Core-0 audit by source review, no defect found (INT-172); load is section 10.
 - [x] Data table: float and digital IR rows; fault bytes and obstacle profile justified as proposed (INT-173).
 - [x] Instructor network is no longer tracked as pending work, by Nicholas (2026-11-05).
