@@ -404,7 +404,7 @@ static void test_recovery_reverses_through_motion(void)
     }
     out = step(&m, &in, m.recovery.started_ms + RECOVERY_MS);
     assert(m.state == MISSION_STOPPED && out.line_lost);
-    puts("INT-62: eight alternating sweep legs and bounded deadline PASS");
+    puts("eight alternating sweep legs and bounded deadline PASS");
 }
 
 static void test_recovery_sweep_targets(void)
@@ -732,7 +732,7 @@ static void test_bypass_long_encoder_travel(void)
         assert(out.route == BYPASS_ROUTE_OUT);
         assert(control.heading_cdeg > 0 && control.heading_cdeg < 100);
     }
-    puts("S2-U09: differential heading survives long common wheel travel PASS");
+    puts("differential heading survives long common wheel travel PASS");
 }
 
 static void test_bypass_full_sequence(void)
@@ -1130,7 +1130,7 @@ static void test_bypass_reverses_when_too_close(void)
     puts("Obstacle: too close or no room reverses within the limit, two sweeps PASS");
 }
 
-/* INT-228: a sensor already black as the return leg starts is not the line. */
+/* 2026-11-09: a sensor already black as the return leg starts is not the line. */
 static void test_bypass_return_needs_white_first(void)
 {
     bypass_control_t control;
@@ -1171,7 +1171,7 @@ static void test_bypass_return_needs_white_first(void)
         bypass_control_step(&control, &in, &action, &out);
         assert(out.route == want[i]);
     }
-    puts("INT-228: return leg ignores black until the sensors see white PASS");
+    puts("return leg ignores black until the sensors see white PASS");
 }
 
 static void test_bypass_failures(void)
@@ -1267,11 +1267,11 @@ static void test_missing_echo_policy(void)
     out = bstep(&m, &in, &t);
     assert(m.state == MISSION_BYPASS);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
-    puts("INT-24 no echo: PASS (report-only while tracking and on a bounded bypass leg)");
+    puts("no echo: PASS (report-only while tracking and on a bounded bypass leg)");
 }
 
 /* Each read gives one route event: Mission's own while following, otherwise the
-   task's fallback, including when another event replaces Mission's (INT-154). */
+   task's fallback, including when another event replaces Mission's (2026-11-02). */
 static void test_one_barcode_event_per_read(void)
 {
     Mission m;

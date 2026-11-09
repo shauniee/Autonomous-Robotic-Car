@@ -134,7 +134,8 @@ static bool config_valid(const obstacle_profile_config_t *config)
 }
 
 /* Sound that bounces box, car, box reads about twice the box's range just past
-   its edge. S5-U16: these went with the box, while farther echoes stayed. */
+   its edge. 2026-11-05: these went with the box, while farther echoes
+   stayed. */
 static bool ghost_of_box(const ObstacleRay *ray, const ObstacleRay *edge)
 {
     return ray_valid(edge) && (float)ray->range_mm >= (float)edge->range_mm * 1.75f &&

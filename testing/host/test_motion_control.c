@@ -191,7 +191,7 @@ static void test_pid_state_saturates(void)
     assert(s.ctl.pid[0].previous_cps == 32767);
 }
 
-/* INT-156: the end of an approach asks for 3 mm/s, too little to turn a wheel.
+/* 2026-11-02: the end of an approach asks for 3 mm/s, too little to turn a wheel.
    That wait is not a stall. */
 static void test_crawl_is_not_a_stall(void)
 {
@@ -291,7 +291,7 @@ static void test_follow_steering(void)
         }
         assert(s.ctl.follow_base_q6 == motion_cmd_speed(&cmd) * 64u);
     }
-    puts("INT-85: FOLLOW base ramp preserves gentle/tight wheel ratios from rest PASS");
+    puts("FOLLOW base ramp preserves gentle/tight wheel ratios from rest PASS");
     /* Zero commanded speed brakes but the status is not a stationarity proof. */
     cmd = motion_command_make(MOTION_MODE_FOLLOW, 0.0f, 0.0f, 0, 4u, cmd.sampled_ms);
     out = sim_step(&s, &cmd, false, 0);
@@ -404,7 +404,7 @@ static void test_follow_target_slew(void)
     assert(out.status == RD_MOTION_FAILED);
     assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);
     assert(c.follow_base_q6 == 0u);
-    puts("INT-85: common base slew, reversal, wrap, duplicates, bounds and immediate brakes PASS");
+    puts("common base slew, reversal, wrap, duplicates, bounds and immediate brakes PASS");
 }
 
 /* Lift-style profile: no jump in speed or acceleration moving off or slowing down,
@@ -567,7 +567,7 @@ static void test_follow_steering_slew(void)
         assert(c.follow_steer_q == 0 && c.follow_base_q6 == 0u);
         assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);
     }
-    puts("INT-92: applied steering slew, pivot, chatter, reversal, wrap and immediate brakes PASS");
+    puts("applied steering slew, pivot, chatter, reversal, wrap and immediate brakes PASS");
 }
 
 static void test_follow_slowdown_never_reverses(void)
@@ -628,7 +628,7 @@ static void test_discrete_overspeed_does_not_reverse(void)
                 motion_control_step(&control, &cmd, &in, &out);
                 if (out.duty[0] * left_sign < 0.0f || out.duty[1] * right_sign < 0.0f)
                 {
-                    printf("INT-37 reproduction: mode=%u target=%g travel=%u duty=%f/%f\n",
+                    printf("reproduction: mode=%u target=%g travel=%u duty=%f/%f\n",
                         mode, (double)target, travel, (double)out.duty[0], (double)out.duty[1]);
                     fflush(stdout);
                 }
@@ -652,7 +652,7 @@ static void test_discrete_overspeed_does_not_reverse(void)
     motion_control_step(&control, &cmd, &in, &out);
     assert(out.status == RD_MOTION_RUNNING);
     assert(out.duty[0] < 0.0f && out.duty[1] < 0.0f);
-    puts("INT-37: discrete overspeed direction clamp and position correction PASS");
+    puts("discrete overspeed direction clamp and position correction PASS");
 }
 
 static void test_turn_endpoint_does_not_reactivate(void)
@@ -702,7 +702,7 @@ static void test_turn_endpoint_does_not_reactivate(void)
     }
 }
 
-/* S5-U12: the left wheel arrived, braked and rolled back just past tolerance, and
+/* The left wheel arrived, braked and rolled back just past tolerance, and
    the turn then waited out the action timeout on the car. */
 static void test_turn_rollback_completes(void)
 {
@@ -728,7 +728,7 @@ static void test_turn_rollback_completes(void)
     cmd.sampled_ms = in.now_ms;
     motion_control_step(&control, &cmd, &in, &out);
     assert(out.status == RD_MOTION_DONE);
-    puts("S5-U12: arrived turn wheel rolling back still completes PASS");
+    puts("arrived turn wheel rolling back still completes PASS");
 }
 
 static void test_swing_turn(void)
@@ -771,7 +771,7 @@ static void test_swing_turn(void)
         MOTION_TURN_PIVOT, 2u, 100u);
     cmd.mode_steering |= 4u << 2u;
     assert(!motion_command_fresh(&cmd, 100u));
-    puts("INT-84: forward single-wheel swing, geometry, braked-wheel drift and invalid style PASS");
+    puts("forward single-wheel swing, geometry, braked-wheel drift and invalid style PASS");
 }
 
 static void test_wheel_trace_inputs(void)

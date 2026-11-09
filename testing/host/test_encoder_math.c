@@ -12,7 +12,7 @@ static float mean(const uint32_t count[2], const uint32_t origin[2])
 
 int main(void)
 {
-    /* S2-U08: independently recorded wheel deltas over the measured 500 mm. */
+    /* 2026-10-31: independently recorded wheel deltas over the measured 500 mm. */
     const uint32_t measured_before[2] = {2210u, 9u};
     const uint32_t measured_after[2] = {8043u, 5825u};
     float measured_mm = mean(measured_after, measured_before) /
@@ -25,7 +25,7 @@ int main(void)
     /* Current tracking trial and recovery speeds in measured encoder units. */
     float follow_cps = 100.0f * ENC_COUNTS_PER_MM;
     float recovery_cps = RECOVERY_SPEED_MMPS * ENC_COUNTS_PER_MM;
-    assert(follow_cps > 1164.0f && follow_cps < 1166.0f); /* 100 mm/s, INT-123 */
+    assert(follow_cps > 1164.0f && follow_cps < 1166.0f); /* 100 mm/s, 2026-11-01 */
     assert(recovery_cps > 410.0f && recovery_cps < 435.0f);
     /* Lifetime wheel separation must not affect local displacement. */
     const uint32_t before[2] = {1000u, 33767u};
@@ -49,7 +49,7 @@ int main(void)
     }
     assert(enc_quad_step(4u, 0u) == ENC_QUAD_INVALID && enc_quad_step(0u, 4u) == ENC_QUAD_INVALID);
 
-    /* INT-138: lone invalid edges decay; a burst or sustained noise is a fault. */
+    /* 2026-11-02: lone invalid edges decay; a burst or sustained noise is a fault. */
     uint32_t score = 0u;
     for (unsigned i = 0u; i < 200u; ++i)
     {
@@ -93,6 +93,6 @@ int main(void)
     assert(enc_travel(origin_b, origin_b) == 0u);
 
     puts("encoder_math: PASS");
-    puts("INT-82: measured rolling scale and tracking/recovery count-speed targets PASS");
+    puts("measured rolling scale and tracking/recovery count-speed targets PASS");
     return 0;
 }

@@ -37,7 +37,7 @@ static uint16_t reverse_pattern(uint16_t pattern)
 
 /* True when the widest `wide` of `count` widths are clearly wider than the rest,
    and the smallest wide width is returned. Bars and spaces are judged apart
-   because the threshold makes one thinner and the other wider (S3-U37). */
+   because the threshold makes one thinner and the other wider (2026-11-02). */
 static bool wide_cut(const uint16_t *widths, unsigned count, unsigned wide, uint16_t *cut)
 {
     uint16_t sorted[5];
@@ -82,7 +82,7 @@ barcode_result_t barcode_decode(const uint16_t widths[BARCODE_ELEMENTS],
     /* Elements 5 and 15 are the gaps. A one-wheel hump just before a print
        corrupts the start of the first guard, so only its last 5 elements are
        needed; they stop a run lost inside the letter reading as another letter
-       (INT-155). P and C can complete early: the letter is right, the
+       (2026-11-02). P and C can complete early: the letter is right, the
        orientation is not known. */
     for (unsigned group = 0u; group < 2u; ++group)
     {
@@ -261,7 +261,7 @@ barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
     frame_width_set(f, f->count, width);
     f->count++;
     /* A print ends in a bar, and one guard alone would match when misaligned by
-       a run. INT-155 confirmed the polarity on real passes. */
+       a run. Car passes on 2026-11-02 confirmed the polarity on real passes. */
     if (f->count < BARCODE_ELEMENTS || !run_was_black)
     {
         return BARCODE_NO_RESULT;
@@ -313,7 +313,7 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
     (void)sampled_us;	/* edge positions are encoder counts; time is not needed */
     atomic_store_explicit(&edge_total, atomic_load_explicit(&edge_total, memory_order_relaxed) +
         (edges == (GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE) ? 2u : 1u), memory_order_release);
-    /* S3-U32: the edge flags cannot order sensor chatter, and trusting them
+    /* 2026-11-02: the edge flags cannot order sensor chatter, and trusting them
        produced runs of one polarity. The pin says where the level really is. */
     bool high = gpio_get_val(BARCODE_GPIO) != 0;
     if (high == capture_high)
@@ -505,8 +505,8 @@ static void push_event(const barcode_event_t *event)
     atomic_store_explicit(&event_head, head + 1u, memory_order_release);
 }
 
-/* S3-U31 diagnostics: raw run widths for the laptop, before any filtering. A
-   full ring drops them; the sequence number shows the loss. */
+/* 2026-11-02 diagnostics: raw run widths for the laptop, before any filtering.
+   A full ring drops them; the sequence number shows the loss. */
 enum { RUN_TRACE_DEPTH = 8u };
 static uint8_t run_records[RUN_TRACE_DEPTH][MQTT_LEN_BARCODE_TRACE];
 static _Atomic uint32_t run_head, run_tail;
@@ -591,7 +591,7 @@ void barcode_service(bool cancel)
     if (overflows != seen_overflows)
     {
         /* The handler keeps level order, so a drop only merges chatter into the
-           current run: report it, but keep the print (INT-155). */
+           current run: report it, but keep the print (2026-11-02). */
         seen_overflows = overflows;
         rd_fault_set(RD_OWNER_LINE, RD_FAULT_BARCODE_CAPTURE_OVERFLOW);
     }

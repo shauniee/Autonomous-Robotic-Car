@@ -22,9 +22,9 @@ bool terrain_startup_complete(void)
     return atomic_load_explicit(&startup_outcome, memory_order_acquire) != 0u;
 }
 
-/* INT-154 diagnostics: why an encounter did or did not count. Same task as the
-   reader, so one pending frame is enough: every sample during an encounter, and
-   one per second on flat ground. */
+/* 2026-11-02 diagnostics: why an encounter did or did not count. Same task as
+   the reader, so one pending frame is enough: every sample during an encounter,
+   and one per second on flat ground. */
 static uint8_t trace_frame[MQTT_LEN_TERRAIN_TRACE];
 static bool trace_pending;
 static uint32_t trace_last_ms;
@@ -225,7 +225,8 @@ void terrain_step(uint32_t now)
     {
         MotionHealth health = {0};
         bool health_copied = motion_health_try(&health) >= E_OK;
-        /* A lock this poll lost says nothing about the encoders (S4-U10). */
+        /* A lock this poll lost says nothing about the encoders
+           (2026-11-02). */
         bool encoder_valid = (!health_copied ||
             (motion_health_serviced(&health) &&
             robot_time_elapsed(now, health.serviced_ms) <= SAFETY_STALE_MS)) &&

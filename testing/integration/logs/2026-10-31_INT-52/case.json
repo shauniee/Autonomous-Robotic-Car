@@ -1,9 +1,0 @@
-{
-  "id": "INT-52",
-  "date": "2026-10-31",
-  "kind": "host-only audit reproduction",
-  "procedure": "Feed a recovery TURN through the real Motion controller, then present visible IR and feed the Mission braking STOP through Motion. Check returned status and model the subsystem2 stop latch in Mission health.",
-  "acceptance": "Intentional fresh STOP brakes without a failure latch, allowing alignment to continue.",
-  "profile": "Host C11, default robot_config.h, no firmware execution",
-  "hardware": "No wiring, power, calibration or physical robot involved"
-}

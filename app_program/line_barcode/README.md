@@ -36,24 +36,24 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). lin
 ## Barcode
 
 - All A-Z decode as the same letter in either direction. Four distinct action letters arrive over MQTT; a missing mapping blocks start.
-- Widths come from encoder displacement, not time. Widths use the sensor's own travel, weighted for its position left of the axle. After every black run the last 25 are tried as the last 5 elements of the first guard, a gap, the letter, a gap and the last guard, so no quiet zone is needed and a hump that corrupts the start of the first guard does not lose the read (INT-155). In each character the two widest bars and the widest space are wide. Runs under `BARCODE_MIN_ELEMENT_COUNTS` are chatter and merge into their neighbours. Backward wheel travel clears the runs, and each print yields one event.
+- Widths come from encoder displacement, not time. Widths use the sensor's own travel, weighted for its position left of the axle. After every black run the last 25 are tried as the last 5 elements of the first guard, a gap, the letter, a gap and the last guard, so no quiet zone is needed and a hump that corrupts the start of the first guard does not lose the read (2026-11-02). In each character the two widest bars and the widest space are wide. Runs under `BARCODE_MIN_ELEMENT_COUNTS` are chatter and merge into their neighbours. Backward wheel travel clears the runs, and each print yields one event.
 - The ISR captures level and wheel counts through the shared core-1 GPIO dispatcher and returns; decoding is budgeted per release. An edge less than the shortest element (`BARCODE_MIN_ELEMENT_COUNTS`, about 0.9 mm of sensor travel) after one still waiting in the ring cancels it, so chatter takes no ring slots. Capacities: 64 edges, 8 events. Overflow is explicit and never replays an older action.
 - `make ... BARCODE_DIAGNOSTICS=1` stores a 32-entry ring of edge positions, widths, result, orientation, letter and action, printed at most one per I/O period. Results: 0 none, 1 decoded, 2 bad config, 3 bad width, 4 bad frame, 5 bad symbol, 6 reversed travel. Logging can perturb timing.
-- Polarity, element limits and sensor position are provisional (D01, D03, D04), with no physical read yet (INT-137).
+- Polarity, element limits and sensor position are provisional (D01, D03, D04), with no physical read yet (2026-11-02).
 
 ## Where it stands
 
-- **Last physical result (INT-123, the older PI law):** straights, three 90 degree curves and the plain crossing held at 100 mm/s; the junction after the three curves failed.
-- **Source now, host and build only (INT-124 to INT-129; PI 2026-11-05):** distance-based PI steering, junction versus curve by black-onset distance, line loss past the last touch (`LINE_LOST_MM`), black evidence required for recovery and bypass return, pivot turns that end on the line, and a fixed 100 mm/s course speed. None of this has run on the car.
-- **Hardware:** two DOUT modules 30 mm apart, outside both line edges, pair centre 120 mm ahead of the axle; barcode sensor about 185 mm forward, 55 mm left. Effective spot spacing 33 mm and line width 23 mm were measured before the last move (INT-98).
+- **Last physical result (2026-11-01, the older PI law):** straights, three 90 degree curves and the plain crossing held at 100 mm/s; the junction after the three curves failed.
+- **Source now, host and build only (2026-11-01 to 2026-11-02; PI 2026-11-05):** distance-based PI steering, junction versus curve by black-onset distance, line loss past the last touch (`LINE_LOST_MM`), black evidence required for recovery and bypass return, pivot turns that end on the line, and a fixed 100 mm/s course speed. None of this has run on the car.
+- **Hardware:** two DOUT modules 30 mm apart, outside both line edges, pair centre 120 mm ahead of the axle; barcode sensor about 185 mm forward, 55 mm left. Effective spot spacing 33 mm and line width 23 mm were measured before the last move (2026-11-01).
 - `./flash.sh` releases turns and bypass. No physical pass exists for barcode turns, obstacle bypass or repeat runs across battery levels.
 
 ## Open issues
 
 1. **First line-trace capture.** Needs Comms owner agreement on the [line trace](../../docs/architecture.md#line-trace-17-bytes).
-2. **Loss and recovery.** Confirm no false loss at 350 mm (INT-135), and that the sweep finds the line from a real loss.
-3. **Hump detector stuck on (INT-122, INT-133).** It no longer changes speed, but a stuck encounter can still miss hump results; cause not investigated in Terrain.
-4. **Left IR clears black late (S3-U39).** Not removed by the potentiometer; a module swap and a slow hand test will separate the module from its mounting.
+2. **Loss and recovery.** Confirm no false loss at 350 mm (2026-11-02), and that the sweep finds the line from a real loss.
+3. **Hump detector stuck on (2026-11-01 and 2026-11-02 runs).** It no longer changes speed, but a stuck encounter can still miss hump results; cause not investigated in Terrain.
+4. **Left IR clears black late (2026-11-04).** Not removed by the potentiometer; a module swap and a slow hand test will separate the module from its mounting.
 5. **Values to measure:** tightest curve radius, effective track width, spot spacing at the 120 mm position, left-sensor span and hysteresis.
 
 ## Line success measure
@@ -78,6 +78,6 @@ Agreed by Nicholas on 2026-11-03 for M1. Nicholas self-tests the lap rate (2026-
 
 ## Lessons from the trials
 
-- Fix the wheels before tuning steering: oversized feedforward looked like "steering too strong" (S2-U10).
-- Reducing delay (10 ms IR) and moving the sensors closer to the axle helped at 100 mm/s (INT-115, INT-117).
-- Time-based exit rules fixed one case and moved the problem (INT-119 to INT-122).
+- Fix the wheels before tuning steering: oversized feedforward looked like "steering too strong" (2026-11-01).
+- Reducing delay (10 ms IR) and moving the sensors closer to the axle helped at 100 mm/s (2026-11-01).
+- Time-based exit rules fixed one case and moved the problem (2026-11-01).

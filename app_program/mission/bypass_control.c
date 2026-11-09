@@ -332,7 +332,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
             /* The line itself ends the return, so wheel drift over the bypass
                does not matter. Mission crosses it like a junction turn. Black
                under a sensor as the leg starts is not the line: the leg starts
-               further out than the sensors reach (INT-228). */
+               further out than the sensors reach (2026-11-09). */
             control->route = BYPASS_ROUTE_DONE;
         }
     }

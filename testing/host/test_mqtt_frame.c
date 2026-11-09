@@ -152,7 +152,7 @@ static void test_boundaries_and_rejections(void)
     assert(mqtt_decode_ack(buf, MQTT_LEN_ACK, &da) == MQTT_DECODE_RANGE);
 }
 
-/* S1-U13: every defined fault bit travels alone in its own bit of the fault
+/* Every defined fault bit travels alone in its own bit of the fault
    word and comes back in its owner byte; undefined bits are not sent. */
 static void test_fault_bytes(void)
 {

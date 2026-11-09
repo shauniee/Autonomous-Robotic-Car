@@ -97,7 +97,7 @@ static void mission_task(INT stacd, void *exinf)
         }
 #if APP_TEST
         /* TEST never leaves its boot stop, so GP20 scans in place for
-           S5-U10. */
+           2026-11-02. */
         if (event == BUTTON_EVENT_PRESSED && mission.state == MISSION_READY)
         {
             static uint8_t bench_scan_id;
