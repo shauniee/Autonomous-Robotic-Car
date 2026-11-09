@@ -55,7 +55,6 @@ mqtt: ready
 [TIMING] t=175000 | motion max=268us ovr=0 stack=520/2176B | io max=1975us ovr=8494 stack=448/2176B | mission max=1660us ovr=8750 stack=864/2176B
 [TIMING] t=180000 | motion max=271us ovr=0 stack=520/2176B | io max=1897us ovr=8744 stack=448/2176B | mission max=1669us ovr=9000 stack=864/2176B
 [TIMING] t=185000 | motion max=268us ovr=0 stack=520/2176B | io max=1719us ovr=8994 stack=448/2176B | mission max=1672us ovr=9250 stack=864/2176B
-^C
 [TIMING] t=190000 | motion max=265us ovr=0 stack=520/2176B | io max=1760us ovr=9244 stack=544/2176B | mission max=1657us ovr=9500 stack=864/2176B
 [TIMING] t=195000 | motion max=268us ovr=0 stack=520/2176B | io max=1931us ovr=9494 stack=544/2176B | mission max=1725us ovr=9750 stack=864/2176B
 [TIMING] t=200000 | motion max=388us ovr=0 stack=520/2176B | io max=1912us ovr=9744 stack=544/2176B | mission max=1620us ovr=10000 stack=864/2176B
@@ -140,3 +139,50 @@ mqtt: ready
 [TIMING] t=490000 | motion max=373us ovr=0 stack=632/2176B | io max=1839us ovr=24244 stack=544/2176B | mission max=1836us ovr=24500 stack=1256/2176B
 [TIMING] t=495000 | motion max=389us ovr=0 stack=632/2176B | io max=1598us ovr=24494 stack=544/2176B | mission max=1811us ovr=24750 stack=1256/2176B
 [TIMING] t=500000 | motion max=384us ovr=0 stack=632/2176B | io max=1755us ovr=24744 stack=544/2176B | mission max=1779us ovr=25000 stack=1256/2176B
+[TIMING] t=505000 | motion max=378us ovr=0 stack=632/2176B | io max=1941us ovr=24994 stack=544/2176B | mission max=1798us ovr=25250 stack=1256/2176B
+[TIMING] t=510000 | motion max=390us ovr=0 stack=632/2176B | io max=1826us ovr=25244 stack=544/2176B | mission max=1824us ovr=25500 stack=1256/2176B
+[TIMING] t=515000 | motion max=371us ovr=0 stack=632/2176B | io max=1746us ovr=25494 stack=544/2176B | mission max=1797us ovr=25750 stack=1256/2176B
+[TIMING] t=520000 | motion max=380us ovr=0 stack=632/2176B | io max=1916us ovr=25744 stack=544/2176B | mission max=1788us ovr=26000 stack=1256/2176B
+[TIMING] t=525000 | motion max=376us ovr=0 stack=632/2176B | io max=2002us ovr=25994 stack=544/2176B | mission max=1814us ovr=26250 stack=1256/2176B
+[TIMING] t=530000 | motion max=369us ovr=0 stack=632/2176B | io max=1831us ovr=26244 stack=544/2176B | mission max=1794us ovr=26500 stack=1256/2176B
+[TIMING] t=535000 | motion max=372us ovr=0 stack=632/2176B | io max=1833us ovr=26494 stack=544/2176B | mission max=1826us ovr=26750 stack=1256/2176B
+[TIMING] t=540000 | motion max=384us ovr=0 stack=632/2176B | io max=1804us ovr=26744 stack=544/2176B | mission max=1785us ovr=27000 stack=1256/2176B
+[TIMING] t=545000 | motion max=370us ovr=0 stack=632/2176B | io max=1769us ovr=26994 stack=544/2176B | mission max=1819us ovr=27250 stack=1256/2176B
+[TIMING] t=550000 | motion max=372us ovr=0 stack=632/2176B | io max=1899us ovr=27244 stack=544/2176B | mission max=1810us ovr=27500 stack=1256/2176B
+[TIMING] t=555000 | motion max=372us ovr=0 stack=632/2176B | io max=1831us ovr=27494 stack=544/2176B | mission max=1792us ovr=27750 stack=1256/2176B
+[TIMING] t=560000 | motion max=377us ovr=0 stack=632/2176B | io max=1738us ovr=27744 stack=544/2176B | mission max=1794us ovr=28000 stack=1256/2176B
+[TIMING] t=565000 | motion max=370us ovr=0 stack=632/2176B | io max=2301us ovr=27994 stack=544/2176B | mission max=1805us ovr=28250 stack=1256/2176B
+[TIMING] t=570000 | motion max=374us ovr=0 stack=632/2176B | io max=1774us ovr=28244 stack=544/2176B | mission max=1802us ovr=28500 stack=1256/2176B
+[TIMING] t=575000 | motion max=373us ovr=0 stack=632/2176B | io max=1768us ovr=28494 stack=544/2176B | mission max=1780us ovr=28750 stack=1256/2176B
+[TIMING] t=580000 | motion max=378us ovr=0 stack=632/2176B | io max=1960us ovr=28744 stack=544/2176B | mission max=1773us ovr=29000 stack=1256/2176B
+[TIMING] t=585000 | motion max=369us ovr=0 stack=632/2176B | io max=1768us ovr=28994 stack=544/2176B | mission max=1796us ovr=29250 stack=1256/2176B
+[TIMING] t=590000 | motion max=394us ovr=0 stack=632/2176B | io max=1782us ovr=29244 stack=544/2176B | mission max=1793us ovr=29500 stack=1256/2176B
+[TIMING] t=595000 | motion max=379us ovr=0 stack=632/2176B | io max=1800us ovr=29494 stack=544/2176B | mission max=1799us ovr=29750 stack=1256/2176B
+[TIMING] t=600000 | motion max=386us ovr=0 stack=632/2176B | io max=1779us ovr=29744 stack=544/2176B | mission max=1785us ovr=30000 stack=1256/2176B
+[TIMING] t=605000 | motion max=378us ovr=0 stack=632/2176B | io max=2058us ovr=29994 stack=544/2176B | mission max=1789us ovr=30250 stack=1256/2176B
+[TIMING] t=610000 | motion max=372us ovr=0 stack=632/2176B | io max=2081us ovr=30244 stack=544/2176B | mission max=1697us ovr=30500 stack=1256/2176B
+[TIMING] t=615000 | motion max=246us ovr=0 stack=632/2176B | io max=1569us ovr=30494 stack=544/2176B | mission max=1715us ovr=30750 stack=1256/2176B
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=READY
+[TIMING] t=620000 | motion max=248us ovr=0 stack=632/2176B | io max=1772us ovr=30744 stack=544/2176B | mission max=2901us ovr=31000 stack=1256/2176B
+[TIMING] t=625000 | motion max=262us ovr=0 stack=632/2176B | io max=1856us ovr=30994 stack=544/2176B | mission max=1702us ovr=31250 stack=1256/2176B
+[TIMING] t=630000 | motion max=270us ovr=0 stack=632/2176B | io max=1763us ovr=31244 stack=544/2176B | mission max=1697us ovr=31500 stack=1256/2176B
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[MISSION] state=SCAN
+[TIMING] t=635000 | motion max=272us ovr=0 stack=632/2176B | io max=1702us ovr=31494 stack=544/2176B | mission max=2772us ovr=31750 stack=1256/2176B
+[TIMING] t=640000 | motion max=864us ovr=0 stack=632/2176B | io max=1811us ovr=31744 stack=544/2176B | mission max=1864us ovr=32000 stack=1256/2176B
+[TIMING] t=645000 | motion max=275us ovr=0 stack=632/2176B | io max=1800us ovr=31994 stack=544/2176B | mission max=5229us ovr=32250 stack=1256/2176B
+[TIMING] t=650000 | motion max=271us ovr=0 stack=632/2176B | io max=2061us ovr=32244 stack=544/2176B | mission max=1930us ovr=32500 stack=1256/2176B
+[TIMING] t=655000 | motion max=272us ovr=0 stack=632/2176B | io max=1848us ovr=32494 stack=544/2176B | mission max=3557us ovr=32750 stack=1256/2176B
+[MISSION] state=BYPASS
+[TIMING] t=660000 | motion max=274us ovr=0 stack=632/2176B | io max=1871us ovr=32744 stack=544/2176B | mission max=5209us ovr=33000 stack=1256/2176B
+[TIMING] t=665000 | motion max=862us ovr=0 stack=632/2176B | io max=2230us ovr=32994 stack=544/2176B | mission max=3212us ovr=33250 stack=1256/2176B
+[TIMING] t=670000 | motion max=879us ovr=0 stack=664/2176B | io max=2400us ovr=33244 stack=544/2176B | mission max=3513us ovr=33500 stack=1256/2176B
+[MISSION] state=NAVIGATE
+[TIMING] t=675000 | motion max=857us ovr=0 stack=664/2176B | io max=2206us ovr=33494 stack=544/2176B | mission max=3337us ovr=33750 stack=1256/2176B
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=0 latched=0 inputs_ok=1 motion_stopped=0 motion_status=2
+[TIMING] t=680000 | motion max=861us ovr=0 stack=664/2176B | io max=1940us ovr=33744 stack=544/2176B | mission max=2490us ovr=34000 stack=1256/2176B
+[TIMING] t=685000 | motion max=873us ovr=0 stack=664/2176B | io max=1855us ovr=33994 stack=544/2176B | mission max=1740us ovr=34250 stack=1256/2176B
