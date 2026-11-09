@@ -1130,6 +1130,50 @@ static void test_bypass_reverses_when_too_close(void)
     puts("Obstacle: too close or no room reverses within the limit, two sweeps PASS");
 }
 
+/* INT-228: a sensor already black as the return leg starts is not the line. */
+static void test_bypass_return_needs_white_first(void)
+{
+    bypass_control_t control;
+    bypass_input_t in = {.now_ms = 100u, .stationary = true, .functional = true,
+        .line_functional = true};
+    ObstacleProfile profile = {.valid = true, .closest_mm = 500u, .width_mm = 200u,
+        .left_clearance_mm = 800u, .right_clearance_mm = 800u};
+    uint8_t action = 1u;
+    assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
+    /* Facing back toward the line, as the return leg starts. */
+    int16_t back = (int16_t)lroundf((control.left_side ? -90.0f : 90.0f) /
+        57.2957795f * TRACK_WIDTH_MM * ENC_COUNTS_PER_MM);
+    in.count[0] = 0u;
+    in.count[1] = (enc_count_t)back;
+    control.origin[0] = control.origin[1] = 0u;
+    control.previous[0] = in.count[0];
+    control.previous[1] = in.count[1];
+    control.heading_cdeg = control.left_side ? -9000 : 9000;
+    control.left_q8 = control.left_side ? 200 * 256 : -200 * 256;
+    control.route = BYPASS_ROUTE_IN;
+    control.work = BYPASS_WORK_TURN;
+    control.return_white = 1u; /* left over from an earlier return */
+    in.motion_action = control.action_id;
+    in.motion_status = RD_MOTION_DONE;
+    bypass_output_t out;
+    bypass_control_step(&control, &in, &action, &out);
+    assert(out.route == BYPASS_ROUTE_RETURN);
+    in.motion_status = RD_MOTION_RUNNING;
+    in.stationary = false;
+    const bool black[] = {true, true, false, true};
+    const bypass_route_t want[] = {BYPASS_ROUTE_RETURN, BYPASS_ROUTE_RETURN,
+        BYPASS_ROUTE_RETURN, BYPASS_ROUTE_DONE};
+    for (unsigned i = 0u; i < 4u; ++i)
+    {
+        in.now_ms += 20u;
+        in.line_ms = in.front_ms = in.now_ms;
+        in.line_black = black[i];
+        bypass_control_step(&control, &in, &action, &out);
+        assert(out.route == want[i]);
+    }
+    puts("INT-228: return leg ignores black until the sensors see white PASS");
+}
+
 static void test_bypass_failures(void)
 {
     Mission m;
@@ -1304,6 +1348,7 @@ int main(void)
     test_bypass_full_sequence();
     test_bypass_long_encoder_travel();
     test_bypass_failures();
+    test_bypass_return_needs_white_first();
     test_bypass_real_outline();
     test_bypass_steps_out_when_too_close();
     test_bypass_short_side_reading(false);

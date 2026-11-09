@@ -1,0 +1,58 @@
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+all subsystems started
+
+wifi: cyw43_utk_task starting (proc 1)
+[MISSION] state=READY
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+[IMU] calibration started: keep wheels still; timeout_ms=5000
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IMU] calibration passed: samples=100 elapsed_ms=2120
+wifi: link status -> joined AP, no IP yet (2)
+wifi: link up, ip=172.20.10.4
+[TIMING] t=5000 | motion max=0us ovr=0 stack=520/2176B | io max=0us ovr=0 stack=448/2176B | mission max=1652us ovr=250 stack=912/2176B
+mqtt: ready
+[TIMING] t=10000 | motion max=459us ovr=0 stack=520/2176B | io max=1646us ovr=244 stack=448/2176B | mission max=1718us ovr=500 stack=912/2176B
+[TIMING] t=15000 | motion max=254us ovr=0 stack=520/2176B | io max=1681us ovr=494 stack=448/2176B | mission max=1697us ovr=750 stack=912/2176B
+[TIMING] t=20000 | motion max=390us ovr=0 stack=520/2176B | io max=1687us ovr=744 stack=448/2176B | mission max=1715us ovr=1000 stack=912/2176B
+[TIMING] t=25000 | motion max=379us ovr=0 stack=520/2176B | io max=2128us ovr=994 stack=448/2176B | mission max=1755us ovr=1250 stack=912/2176B
+[TIMING] t=30000 | motion max=401us ovr=0 stack=520/2176B | io max=1752us ovr=1244 stack=448/2176B | mission max=1679us ovr=1500 stack=912/2176B
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[TIMING] t=35000 | motion max=384us ovr=0 stack=536/2176B | io max=1624us ovr=1494 stack=448/2176B | mission max=1707us ovr=1750 stack=944/2176B
+[MISSION] state=SCAN
+[TIMING] t=40000 | motion max=1069us ovr=0 stack=632/2176B | io max=2075us ovr=1744 stack=448/2176B | mission max=2148us ovr=2000 stack=1144/2176B
+[TIMING] t=45000 | motion max=1211us ovr=0 stack=632/2176B | io max=1864us ovr=1994 stack=448/2176B | mission max=3556us ovr=2250 stack=1144/2176B
+[TIMING] t=50000 | motion max=411us ovr=0 stack=632/2176B | io max=1810us ovr=2244 stack=448/2176B | mission max=3412us ovr=2500 stack=1144/2176B
+[TIMING] t=55000 | motion max=387us ovr=0 stack=632/2176B | io max=1790us ovr=2494 stack=448/2176B | mission max=2046us ovr=2750 stack=1144/2176B
+[BYPASS] t=59400 route=OUT fwd=0 left=0 hdg_cdeg=0 edge_at=0 flank=0 rear=0 box_front=256 half_w=93 centre=-45 side=157 side_valid=0 ir=00
+[MISSION] state=BYPASS
+[TIMING] t=60000 | motion max=410us ovr=0 stack=632/2176B | io max=1940us ovr=2744 stack=448/2176B | mission max=3573us ovr=3000 stack=1304/2176B
+[BYPASS] t=62480 route=OFFSET fwd=0 left=0 hdg_cdeg=8931 edge_at=0 flank=0 rear=0 box_front=256 half_w=93 centre=-45 side=157 side_valid=0 ir=00
+[BYPASS] t=65000 route=PARALLEL fwd=4 left=172 hdg_cdeg=8886 edge_at=0 flank=0 rear=0 box_front=256 half_w=93 centre=-45 side=157 side_valid=0 ir=11
+[TIMING] t=65000 | motion max=1130us ovr=0 stack=632/2176B | io max=2065us ovr=2994 stack=448/2176B | mission max=4154us ovr=3250 stack=1304/2176B
+[BYPASS] t=67860 route=PASS fwd=3 left=173 hdg_cdeg=70 edge_at=0 flank=0 rear=0 box_front=256 half_w=93 centre=-45 side=3096 side_valid=1 ir=10
+[BYPASS] t=69700 route=REAR fwd=144 left=174 hdg_cdeg=-16 edge_at=80 flank=0 rear=551 box_front=256 half_w=93 centre=-45 side=995 side_valid=1 ir=01
+[TIMING] t=70000 | motion max=1150us ovr=0 stack=632/2176B | io max=2003us ovr=3244 stack=448/2176B | mission max=3599us ovr=3500 stack=1304/2176B
+[BYPASS] t=74240 route=IN fwd=552 left=173 hdg_cdeg=-29 edge_at=80 flank=0 rear=551 box_front=256 half_w=93 centre=-45 side=648 side_valid=1 ir=00
+[TIMING] t=75000 | motion max=1116us ovr=0 stack=632/2176B | io max=2137us ovr=3494 stack=448/2176B | mission max=3002us ovr=3750 stack=1304/2176B
+[BYPASS] t=77140 route=RETURN fwd=553 left=174 hdg_cdeg=-8952 edge_at=80 flank=0 rear=551 box_front=256 half_w=93 centre=-45 side=648 side_valid=0 ir=10
+[BYPASS] t=78320 route=DONE fwd=553 left=94 hdg_cdeg=-9071 edge_at=80 flank=0 rear=551 box_front=256 half_w=93 centre=-45 side=648 side_valid=0 ir=01
+[NAV] t=78320 phase=4 turn=1 ir=01 front_valid=1 front_mm=1167
+[MISSION] state=NAVIGATE
+[NAV] t=79920 phase=0 turn=1 ir=01 front_valid=1 front_mm=1008
+[TIMING] t=80000 | motion max=1151us ovr=0 stack=640/2176B | io max=2165us ovr=3744 stack=448/2176B | mission max=4713us ovr=4000 stack=1304/2176B
+[NAV] t=80200 phase=2 turn=1 ir=01 front_valid=1 front_mm=1004
+[NAV] t=81360 phase=3 turn=1 ir=00 front_valid=1 front_mm=605
+[MISSION] state=FOLLOW_LINE
+[NAV] t=83940 phase=4 turn=0 ir=11 front_valid=1 front_mm=4214
+[MISSION] state=NAVIGATE
+[MISSION] state=FOLLOW_LINE
