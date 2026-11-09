@@ -168,7 +168,7 @@ The default project is an autonomous robot car on a predefined course, using onb
 
 | Topic | Rule |
 | --- | --- |
-| Line sensing | Two analogue IR sensors follow the line (GP26/GP27); a third digital IR sensor reads barcodes (GP16). Three IR sensors is the maximum. Mounting is the team's choice. |
+| Line sensing | Two analogue IR sensors follow the line (GP26 left, GP17 right); a third digital IR sensor reads barcodes (GP27). Three IR sensors is the maximum. Mounting is the team's choice. |
 | Barcode placement | A barcode always precedes a junction; act at the next cross junction |
 | Sides | Barcodes always on the left; humps always on the right (Nicholas confirmation 2026-10-29). Sensor placement on a reverse traversal still needs testing. |
 | Humps | Single-wheel humps (no double humps). Final ramp is about the lower practice ramp's height, slightly lower or higher, and no more than 30 mm; the higher practice ramp is disregarded (course update 2026-10-27; 30 mm limit confirmed by Nicholas). The task is estimating height through IMU sensing and processing, not mechanical clearance. Measuring while moving scores better than stopping. Height is estimated from tilt/IMU data mapped to known heights by practical calibration, then tuned; the speed may be reduced after detection to allow measurement |

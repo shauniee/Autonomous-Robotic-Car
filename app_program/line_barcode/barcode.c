@@ -288,7 +288,7 @@ static _Atomic unsigned head;		/* handler; task seeds with IRQ masked */
 static _Atomic unsigned tail;		/* written by the task */
 static _Atomic uint32_t overflows;	/* written by the handler */
 static _Atomic uint32_t edge_total;	/* written by the handler: every edge seen */
-/* line_barcode task only: GP16 claimed on the dispatcher, scanner running. */
+/* line_barcode task only: GP27 claimed on the dispatcher, scanner running. */
 static struct
 {
     uint8_t claimed : 1;

@@ -262,7 +262,7 @@ barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
 barcode_action_t barcode_action_for(uint32_t mapping_word, char symbol);
 
 /*
- *	GP16 edge capture. The dispatcher (core 1) calls the edge handler, which
+ *  GP27 edge capture. The dispatcher (core 1) calls the edge handler, which
  *	pushes {both encoder counts, level} into a single-producer /
  *	single-consumer ring and returns. The task drains the ring.
  */
@@ -270,10 +270,10 @@ barcode_action_t barcode_action_for(uint32_t mapping_word, char symbol);
 typedef struct
 {
     barcode_count_t left_count, right_count;	/* wrapped at ENC_COUNT_BITS */
-    bool high : 1; /* GP16 level after the edge, or enable-time reference */
+    bool high : 1; /* GP27 level after the edge, or enable-time reference */
 } barcode_edge_t;
 
-/* Core-1 task only: configure GP16 and claim it on the GPIO dispatcher. The
+/* Core-1 task only: configure GP27 and claim it on the GPIO dispatcher. The
    edge IRQ stays disabled until drv_barcode_enable(true). */
 bool drv_barcode_init(void);
 /* Core-1 task only. Enabling clears old edges and queues the current level
@@ -295,7 +295,7 @@ uint32_t drv_barcode_edge_count(void);
  * distinct letters (left, right, straight, U-turn) is installed.
  */
 
-/* Core-1 task only: claim GP16 on the dispatcher. False on failure. */
+/* Core-1 task only: claim GP27 on the dispatcher. False on failure. */
 bool barcode_init(void);
 
 /* Install four distinct letters A..Z, indexed by rd_map_action_t. Refused

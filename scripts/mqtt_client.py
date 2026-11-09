@@ -177,7 +177,7 @@ def decode_terrain_trace(f):
 
 
 def decode_barcode_trace(f):
-    """Sequence, then raw GP16 runs: H black or L white, width in encoder counts."""
+    """Sequence, then raw GP27 runs: H black or L white, width in encoder counts."""
     if frame_type(f) != BARCODE_TRACE:
         raise ValueError("not a barcode trace")
     runs = struct.unpack_from("<8H", f, 2)
