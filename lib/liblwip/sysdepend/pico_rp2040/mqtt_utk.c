@@ -89,19 +89,26 @@ static void publish_status(const char *payload)
 
 static void drain_outgoing(void)
 {
-    uint8_t frame[COMMS_FRAME_MAX];
+    /* A frame the send buffer refused is kept and sent first next poll:
+       dropping it lost barcode events behind trace traffic (INT-234). */
+    static uint8_t frame[COMMS_FRAME_MAX];
+    static unsigned held;
     for (unsigned i = 0u; i < MQTT_FRAMES_PER_POLL && online; ++i)
     {
-        unsigned n = comms_bridge_take(frame, sizeof frame);
-        if (n == 0u)
+        if (0u == held)
+        {
+            held = comms_bridge_take(frame, sizeof frame);
+        }
+        if (0u == held)
         {
             return;
         }
-        /* QoS 0, not retained: telemetry is replaced by the next one, never replayed. */
-        if (mqtt_publish(client, MQTT_TOPIC, frame, (u16_t)n, 0u, 0u, NULL, NULL) != ERR_OK)
+        /* QoS 0, not retained. */
+        if (mqtt_publish(client, MQTT_TOPIC, frame, (u16_t)held, 0u, 0u, NULL, NULL) != ERR_OK)
         {
-            return;	/* send buffer full: the frame is dropped, the next one follows */
+            return;	/* send buffer full: retry this frame next poll */
         }
+        held = 0u;
     }
 }
 
