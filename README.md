@@ -14,7 +14,7 @@
 - [Bits per subsystem](#bits-per-subsystem)
 - [Manual build and flash](#manual-build-and-flash)
 
-Start with the [pending work](pending.md). The core software is implemented; physical calibration, timing and full mission acceptance remain incomplete. Unresolved limits live in [pending decisions](docs/project-specs.md#pending-decisions).
+Start with the [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues). The core software is implemented; physical calibration, timing and full mission acceptance remain incomplete. Unresolved limits live in [pending decisions](docs/project-specs.md#pending-decisions).
 
 An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, hump measurement, obstacle avoidance and WiFi telemetry. Firmware uses micro T-Kernel 3.0 on the RP2040. See [project specifications](docs/project-specs.md) for required outcomes and [Getting started](#getting-started) for what runs today.
 
@@ -66,7 +66,7 @@ Terminal monitor and host tests:
 ```
 
 ```sh
-testing/pure/run.sh
+testing/host/run.sh
 ```
 
 The Pico connects to your Mac's LAN IP, never `127.0.0.1` or `0.0.0.0`. If port 1883 is
@@ -81,12 +81,12 @@ the Homebrew packages the installer added (`--dry-run` lists them first).
 
 | Guide | Use it for |
 | --- | --- |
-| [pending work](pending.md) | Single live plan and remaining acceptance |
+| [GitHub issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) | Open work and remaining acceptance, one issue per area |
 | [Project specifications](docs/project-specs.md) | Requirements, change requirement (minimum-bit), data table, assessment, pending decisions |
 | [Team](docs/team.md) | Owners, pins and wiring, task and kernel-object budget, interfaces, coding rules |
 | [Architecture](docs/architecture.md) | Target three-task contracts, looping Mission, stop/freshness rules, shared data and MQTT protocol |
 | Subsystem READMEs | [comms](app_program/comms/README.md), [motion](app_program/motion/README.md), [line_barcode](app_program/line_barcode/README.md), [terrain](app_program/terrain/README.md), [obstacle](app_program/obstacle/README.md) |
-| [Mission readiness checklist](testing/mission-readiness.md) | Ordered physical checks before a full run |
+| [Mission readiness checklist](testing/system/mission-readiness.md) | Ordered physical checks before a full run |
 | [Videos](video/README.md) | Recording and sharing instructions, video index |
 
 Each fact has one owning guide; other guides link to it. Assignment requirements, proposed design, implemented behavior and recorded results are distinct.
@@ -111,9 +111,9 @@ Requirements are in [project-specs](docs/project-specs.md). Full-robot bring-up 
 ### Software regression and firmware profile checks
 
 For kernel-free C/Python/MQTT checks, run
-`bash testing/pure/run.sh`. The new GitHub Actions workflow
+`bash testing/host/run.sh`. The new GitHub Actions workflow
 `.github/workflows/host-tests.yml` runs that suite and
-`node testing/pure/test_dashboard.mjs` on pull requests and main pushes.
+`node testing/host/test_dashboard.mjs` on pull requests and main pushes.
 A green host check does not mean the Pico firmware built or that the robot
 has passed physical tests.
 
@@ -123,7 +123,7 @@ The pending safety/profile matrix is defined by
 `PICO_SDK_PATH`, `arm-none-eabi-gcc` and `make`. It **builds but never
 flashes** TEST/normal and TRACE 0/1 profiles plus the two course
 images. Inspect any compiler errors before preparing a wheels-raised test
-image. See [pending.md](pending.md) for unmet measurements and decisions.
+image. See [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) for unmet measurements and decisions.
 
 Draft reports: [PID tuning](app_program/motion/README.md#pid-tuning-report-draft) and [Terrain analysis](app_program/terrain/README.md#terrain-analysis-draft). Both need real measurements, not host passes.
 
@@ -245,8 +245,8 @@ Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--p
 
 ### Bring-up order and project tasks
 
-Follow the [pending work](pending.md) and the
-[mission-readiness checklist](testing/mission-readiness.md). The three-task
+Follow the [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) and the
+[mission-readiness checklist](testing/system/mission-readiness.md). The three-task
 Motion/Mission/I/O refactor is implemented; remaining work is calibration,
 feature release, measured timing/load and mixed looping-mission acceptance.
 No core swap or separate Safety task is introduced. Pending numeric values
@@ -297,5 +297,5 @@ are configured as provisional software proposals, and physical bypass release
 remains inhibited; encountering the trigger brakes and unsupported evidence stops
 the manoeuvre. Do not interpret the passing synthetic
 profile fixtures as an enabled full bypass. The user confirmed that physical
-trials are unavailable; [pending work](pending.md)
+trials are unavailable; [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues)
 remains BLOCKED.

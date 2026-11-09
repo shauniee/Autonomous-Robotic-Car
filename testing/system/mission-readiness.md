@@ -14,14 +14,14 @@
 
 Ordered physical checks that decide whether the robot is ready for a full run. Code and host tests cover only part of the project; these checks establish acceptance only for the recorded image, setup and limits. Work top to bottom: each phase assumes the earlier phases passed.
 
-- Record every result as a row in [system/TEST_LOG.md](system/TEST_LOG.md) with the `MR-nn` ID, date, commit, tester, PASS/FAIL and the measured value, following [Run and record](README.md#run-and-record).
-- **Record** names the value to write down and, where it replaces a placeholder, the constant in `app_program/common/robot_config.h` and the pending decision (Dnn) in [project-specs](../docs/project-specs.md#pending-decisions). After changing a constant, rebuild and repeat the checks that depend on it.
+- Record every result as a row in [system/TEST_LOG.md](TEST_LOG.md) with the `MR-nn` ID, date, commit, tester, PASS/FAIL and the measured value, following [Run and record](../README.md#run-and-record).
+- **Record** names the value to write down and, where it replaces a placeholder, the constant in `app_program/common/robot_config.h` and the pending decision (Dnn) in [project-specs](../../docs/project-specs.md#pending-decisions). After changing a constant, rebuild and repeat the checks that depend on it.
 - Where no accepted target exists, the pass condition is "measured and agreed": Nicholas records the value and agrees the limit in the pending-decisions register. Never pass a check on a build or a host test alone.
-- The `T` column links each check to the planned integrated trials in [testing](README.md#planned-integrated-trials).
+- The `T` column links each check to the planned integrated trials in [testing](../README.md#planned-integrated-trials).
 
-Current procedure revision: 2026-11-03, aligned to the [pending work](../pending.md).
+Current procedure revision: 2026-11-03, aligned to the [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues).
 Existing results retain their historical procedure/source meaning; this page does
-not convert old observations into target passes. The linked pending work tracks
+not convert old observations into target passes. The open issues track
 physical acceptance; issue #117 remains closed. Agree pending numeric limits before corresponding PASS decisions.
 
 ## Phase 0: Electrical, before power (T01)
@@ -30,7 +30,7 @@ Wrong wiring can damage the Pico or a sensor, so nothing is powered until this p
 
 | ID | Check | Pass when | Record |
 | --- | --- | --- | --- |
-| MR-01 | Every wire against the pin table in [team](../docs/team.md#2-pins), by continuity | All match; no unclaimed pin is connected | Closed by Nicholas, 2026-11-05: checked and unchanged |
+| MR-01 | Every wire against the pin table in [team](../../docs/team.md#2-pins), by continuity | All match; no unclaimed pin is connected | Closed by Nicholas, 2026-11-05: checked and unchanged |
 | MR-02 | Grove 6 GP26 contact disconnected; GP28 battery-sense jumper open | No continuity on either | Closed by Nicholas, 2026-11-05: checked and unchanged |
 | MR-03 | Sonar Echo HIGH level, measured before connecting to GP3 | At most 3.3 V | Closed by Nicholas, 2026-11-05: always 3.3 V, not measured |
 | MR-04 | Power bank polarity at VIN+/VIN-; one power source at a time | Correct polarity; USB disconnected during battery runs | - |
@@ -86,7 +86,7 @@ Each feature is tested alone before the full course.
 | MR-26 | Follow a loop with straights and curves, three laps (M1) | Stays on the line every lap | Self-tested by Nicholas (2026-11-05); no recorded rate required |
 | MR-27 | Printed course barcodes in both directions at operating speed; verify incomplete capture rejects rather than invents a character (M2) | Same correct character/action in both directions; one pending action per encounter; no two-second blind delay or guessed character | Reads, misses and misreads per letter (D01) |
 | MR-28 | Barcode before a cross junction for each of left, right, straight and U-turn (M3), with measured `NAV_SENSOR_FORWARD_MM`, `NAV_CROSSBAR_MM`, encoder scale and signed geometry | One queued action executes at the qualified junction at variable barcode distances. For turns: measured approach to axle-centre, stationary pause, line-confirmed pivot and outgoing tracking; U-turn pause/limits validated. Do not accept a turn from an unqualified broad-black curve or an uncalibrated geometry release | Measured entry/skew, advance distance, pivot stop/overshoot and outgoing-line success (D02/D03). All four actions work (Nicholas, 2026-11-05), observed only |
-| MR-29 | Reference humps of known heights up to 30 mm ([hump requirement](../docs/project-specs.md#course-rules)): the lower practice ramp, one slightly below and one at or near 30 mm; three passes each (M4, M5), including a single-wheel case. First confirm on the robot that a 30 mm-or-lower single-wheel ramp crosses the climb-entry threshold | 100 mm/s held through the encounter; count/height/max/events correct; reference error and valid-completion behavior measured and agreed | Reported vs actual per hump (D06) |
+| MR-29 | Reference humps of known heights up to 30 mm ([hump requirement](../../docs/project-specs.md#course-rules)): the lower practice ramp, one slightly below and one at or near 30 mm; three passes each (M4, M5), including a single-wheel case. First confirm on the robot that a 30 mm-or-lower single-wheel ramp crosses the climb-entry threshold | 100 mm/s held through the encounter; count/height/max/events correct; reference error and valid-completion behavior measured and agreed | Reported vs actual per hump (D06) |
 | MR-30 | Reference obstacles across 100-200 mm width, offset left and right of the line; vary position/background/material (M6-M9) | Stops, scans, bypasses on the side with the shorter distance to the box edge, reports width and depth, rejoins the original line | Width/depth error, repeatability/uncertainty, chosen gap, clearance, bypass time and reacquisition success (D02, D05, D10) |
 | MR-31 | Boxes blocking both sides | Robot stops instead of bypassing | - |
 | MR-32 | Induce healthy-sensor line loss while following; separately freeze/fail acquisition | Brake and confirm stationarity, then the current bounded wider left/right pivot sweep with braking before reversals; either sensor initiates alignment, stable intended-line tracking resumes; exhausted search stops; stale acquisition does not enter blind search | Sweep sequence, travel, time and false-line acceptance (D07) |
@@ -114,7 +114,7 @@ MR-40 is a newly allocated endless-operation check, not reuse of retired MR-34.
 | MR-39 | Final-image concurrent load: line acquisition, Mission/Motion, IMU timeout, barcode/Echo IRQ, servo, telemetry and reconnect; separate TEST and normal loads | Agreed D13 periods/budgets/margins met; no required stale-data replay; local stop independent of queue load | Exact image/profile, line-to-output latency, WCET/release jitter, missed deadlines, IRQ edge rate/time, stack/RAM and ring high-water marks; host/TEST is not full motor-load acceptance |
 | MR-40 | Revisit the same loop junction with/without pending actions; run repeated feature cycles, then GP21; interrupt WiFi/MQTT mid-run | No automatic finish or undo; healthy local run survives network loss; new start requires WiFi/MQTT; GP21 stops, eligible release returns READY, fresh GP20 starts | Session encounters, stop reasons, action/event order, reference video and unchanged image/constants |
 
-The complete remaining-work checklist is [pending work](../pending.md).
+Remaining work is tracked in the [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues).
 This file owns physical procedures, not a second completion tracker. For final
 Motion/Mission/I/O timing, agree D13 limits and a bounded capture method; old
 `s3_input`/`s3_mission` console windows are not current implementation evidence.
@@ -124,7 +124,7 @@ Motion/Mission/I/O timing, agree D13 limits and a bounded capture method; old
 This supersedes earlier MR-12 analogue calibration and MR-28 fixed/instant turn
 procedures; do not overwrite historical results. Define new test IDs before running.
 Measurements and release prerequisites are listed in
-[specs](../docs/project-specs.md#dout-navigation-commissioning).
+[specs](../../docs/project-specs.md#dout-navigation-commissioning).
 
 1. Record DOUT levels/dead zone while sliding across the actual line at mounted
    height; record each wheel rolling scale/sign, equal-target drift and speed response.
@@ -145,4 +145,4 @@ Measurements and release prerequisites are listed in
    limits from actual clearance and barcode capture margins before release.
 
 No physical trial can be completed without the robot; current software evidence
-is [INT-95](integration/TEST_LOG.md#results).
+is [INT-95](../integration/TEST_LOG.md#results).

@@ -86,12 +86,18 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
    initially. Saturated duty needs diagnosis before increasing gains/cap.
    Keep IR classification and steering settings fixed during these trials.
    Procedure: app_program/motion/README.md, Wheel-speed tuning. */
-#define ENC_COUNTS_PER_MM 11.649f /* INT-66: mean of both wheels over 500 mm */
+#define ENC_COUNTS_PER_MM 11.649f /* S2-U08: mean of both wheels over 500 mm */
 #define TRACK_WIDTH_MM		120.0f	/* User-measured wheel centres; specs D03; effective turning calibration pending */
 #define MOTION_SPEED_MAX_MMPS	500.0f	/* PROVISIONAL (D07): speed limit; the 9-bit command field holds 511 */
-#define MOTION_KS		0.05f	/* PROVISIONAL (D07): INT-100 raised fit ~0 plus ~5 points measured floor load at 200 mm/s */
-#define MOTION_KF		0.0001f	/* PROVISIONAL (D07): INT-100 raised-wheel fit 60-200 mm/s, left 1.05e-4, right 0.95e-4 */
-#define MOTION_KP		0.0001f	/* PROVISIONAL (D07): duty per count/s; INT-101 0.0003 oscillated below 60 mm/s */
+/* PROVISIONAL (D07): S2-U11 raised fit ~0 plus ~5 points measured floor load
+   at 200 mm/s */
+#define MOTION_KS 0.05f
+/* PROVISIONAL (D07): S2-U11 raised-wheel fit 60-200 mm/s, left 1.05e-4,
+   right 0.95e-4 */
+#define MOTION_KF 0.0001f
+/* PROVISIONAL (D07): duty per count/s; S2-U12 0.0003 oscillated below
+   60 mm/s */
+#define MOTION_KP 0.0001f
 #define MOTION_KI		0.0010f	/* PROVISIONAL (D07) */
 #define MOTION_KD		0.0000f	/* PROVISIONAL (D07) */
 #define MOTION_DIST_TOL_MM	3.0f	/* PROVISIONAL (D07) */
@@ -139,7 +145,7 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 #define MOTION_FOLLOW_STEER_QPS 300u /* PROVISIONAL D07: applied steering slew; about 250 mm/s^2 at each wheel at 100 mm/s */
 /* The one course speed: line following, crossings, junction advances and bypass
    driving. Smoothness and accuracy come first, then speed. Below 60 mm/s the
-   feedforward fit does not apply (INT-100); retune before going there. */
+   feedforward fit does not apply (S2-U11); retune before going there. */
 #define COURSE_SPEED_MMPS 100u
 #define MISSION_TRACK_SPEED_MMPS ((float)COURSE_SPEED_MMPS)
 /* White reported as black with LOW polarity; use HIGH for black. */
@@ -212,7 +218,7 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define BARCODE_BLACK_HIGH	1	/* PROVISIONAL (D04): as the line modules (IR_BLACK_LEVEL); INT-137 */
 #define BARCODE_SENSOR_LEFT_MM	55u	/* User-reported position left of the axle centre; specs D01 */
 /* PROVISIONAL (D01): about 0.9 mm; half-size narrow bars read 16 to 21
-   (INT-235), shorter runs are chatter */
+   (S3-U44), shorter runs are chatter */
 #define BARCODE_MIN_ELEMENT_COUNTS 10u
 #define BARCODE_MAX_ELEMENT_COUNTS 400u	/* PROVISIONAL (D01): longer runs are open floor; a 2x print's wide bar is about 210 */
 #define BARCODE_EVENT_CAPACITY	8u
@@ -240,10 +246,14 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define TERRAIN_TRACE_HUMP_MS 50u
 #define HUMP_MIN_HEIGHT_MM	5u	/* PROVISIONAL (D06): smaller rises are not humps */
 #define HUMP_MAX_HEIGHT_MM	40u	/* PROVISIONAL (D06): course limit 30 mm plus margin; above it the car was lifted */
-#define HUMP_MIN_TRAVEL_MM	50u	/* PROVISIONAL (D06): travel over the exit level; INT-157 humps 76 and 156, curves 26 or less */
+/* PROVISIONAL (D06): travel over the exit level; S4-U10 humps 76 and 156,
+   curves 26 or less */
+#define HUMP_MIN_TRAVEL_MM 50u
 #define HUMP_MAX_TRAVEL_MM	400u	/* PROVISIONAL (D06): tilted further than this is new ground */
 #define HUMP_FLAT_SAMPLES	10u	/* PROVISIONAL (D06): releases below the exit level that end an encounter */
-#define HUMP_CALIB_FACTOR	0.8f	/* PROVISIONAL (D06): one 10 mm hump read about 12.5 uncorrected, INT-157 and INT-158 */
+/* PROVISIONAL (D06): one 10 mm hump read about 12.5 uncorrected, S4-U10 and
+   S4-U11 */
+#define HUMP_CALIB_FACTOR 0.8f
 
 /* --- obstacle --------------------------------------------------- */
 #define SONAR_REPEAT_MS		60u	/* PROVISIONAL (D05): trigger-to-trigger */

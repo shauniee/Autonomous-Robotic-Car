@@ -40,9 +40,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Host test suite (C and Python)
-        run: bash testing/pure/run.sh
+        run: bash testing/host/run.sh
       - name: Dashboard regression checks (Node)
-        run: node testing/pure/test_dashboard.mjs
+        run: node testing/host/test_dashboard.mjs
 
   firmware-build:
     name: Firmware builds for every profile

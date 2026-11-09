@@ -133,11 +133,11 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
     /* 5. Hump under one wheel: the course has no double humps, so the wheel lifts
        the chassis sideways, and pitch does not show a climb and descent (INT-156).
        Roll is judged against its average while stopped, as the boot pose offsets
-       it; averaging while moving would follow a hump's slow ramp (INT-157). A
+       it; averaging while moving would follow a hump's slow ramp (S4-U10). A
        short dip below the exit level does not end the encounter. */
     float tilt_deg = fabsf(roll_deg - (float)ctx->roll_base_q8 / (100.0f * ROLL_BASE_ONE));
     if (ctx->state == TERRAIN_STATE_FLAT) {
-        /* Not zero mean travel: a pivot has that too, and tilts (INT-158). */
+        /* Not zero mean travel: a pivot has that too, and tilts (S4-U11). */
         if (stationary) {
             ctx->roll_base_q8 += ((int32_t)ctx->roll_cdeg * ROLL_BASE_ONE - ctx->roll_base_q8) / ROLL_BASE_DIV;
             return;

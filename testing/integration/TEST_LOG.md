@@ -15,9 +15,7 @@
 | INT-05 | Real line_barcode task and unchanged Motion API contract | Host task_ir with fake GPIO/ADC/Motion, normal and TEST profiles | Recovery remains enabled; acquisition time preserved; GP21/reset/start, failed init/acquisition/health/publish/reset, inhibition and missed release fail closed |
 | INT-06 | Read-only MQTT service | Actual mqtt_utk.c with fake lwIP/kernel/clock; 25 reconnect cycles | QoS0/nonretained; 500 ms stream; 3 s refusal/immediate-failure/alloc retry; skip unavailable/oversized/failed publication; latest reconnect; no timer accumulation |
 | INT-07 | Telemetry isolation from line_barcode and Motion | Actual line_barcode loop with fake hardware/Motion/kernel, MQTT enabled, normal and TEST; snapshot available or always busy | GP21 dominates; reset/start/recovery/watchdog and timestamps unchanged; failed telemetry never authorizes motion |
-| INT-08 | Mac broker and terminal transport | Historical retired host runner, isolated loopback broker and CLI subscriber, actual JSON encoder fixture | Valid bounded JSON arrives; refusal/restart/reconnect; new subscriber gets no retained history; no Pico claim |
 | INT-09 | Wireless/offline build and preservation | Normal/TEST MQTT and offline normal builds, source/Word/ownership audit | All UF2s compile; Motion/control policy, kernel and historical sources preserved; credentials excluded |
-| INT-10 | Restored Comms kernel reporting transport | Wireless TEST Pico run with broker/operator fault injection; pending | Status subscription before Online; 1 s heartbeat, retained online/offline will, authenticated broker; latest line_barcode schema unchanged; malformed/drive/start/stop/calibration requests rejected; status response rate bounded; 15 s attempt deadline and 1..30 s retry; link loss clears fragments, no stale replay or control calls; measure timer/stack budget |
 
 Later cases are named in their result rows.
 
@@ -30,12 +28,9 @@ Later cases are named in their result rows.
 | 2026-10-08 | INT-03/05/06/07 | Not recorded | Codex | PASS (host) | — | Fake kernel/hardware/network; unchanged Motion actual service also rerun in both profiles |
 | 2026-10-08 | INT-04 | Same manifest; base HEAD in JSON | Codex | PASS (build) | logs/2026-10-08_migration-evidence.json; at tag | Both profiles compiled; no firmware flashing |
 | 2026-10-08 | INT-04 | Same manifest; base HEAD in JSON | Codex | PASS (build) | normal build; TEST build | Both UF2s; 564 protected files unchanged; no firmware flashing |
-| 2026-10-08 | INT-08 | Initial pre-PTY host harness | Codex | FAIL | — | Timed out waiting for pipe-buffered CLI debug output; fixed harness with terminal-style PTY; robot code unaffected |
-| 2026-10-08 | INT-08 | Same manifest as final host run | Codex | PASS (host) | — | Real Mosquitto loopback, synthetic C-encoded fixture; not firmware/Pico transport |
 | 2026-10-08 | INT-09 | Same manifest and base HEAD | Codex | PASS (build) | normal MQTT build; TEST MQTT build; offline build | Built without flashing; private config content excluded; unrelated line_barcode formatting/comment edits left uncommitted |
 | 2026-10-08 | INT-09 | `57f3b95`+ | Codex | PASS (static) | — | Integrated concurrent documentation update; 160 local links valid; runtime unchanged. Later user driver formatting is token-equivalent to the tested source; no new hardware claim |
 | 2026-10-09 | INT-09 | Not recorded | Codex | PASS | wireless TEST, wireless normal, offline TEST, offline normal, strict compile | Comms reporting/service restored; Motion–Obstacle, app startup/shared header, kernel and Make source unchanged; example credentials only; no flashing |
-| 2026-10-09 | INT-10 | Same manifest | — | PENDING (build) | No Pico service log | Build and laptop-fixture checks do not execute kernel transport/retry/subscription on hardware |
 | 2026-10-29 | INT-12 | `fe39e3a` | Codex | PASS (host, build) | — | Restructure stage #130: stop, expiry and reset policy |
 | 2026-10-29 | INT-13 | `b862817` | Codex | PASS (host, build) | — | Stage #131: seven states, action IDs, recovery |
 | 2026-10-29 | INT-14 | `ab54479` | Codex | PASS (host, build) | — | Stage #132: mapping exchanges, event retry, Terrain faults |
@@ -55,22 +50,13 @@ Later cases are named in their result rows.
 | 2026-10-30 | INT-30 | `cc3edb3` | Codex | PASS (host, build) | — | Bug reproduced, then PASS (host, build). Forward FOLLOW slowdown. Physical run pending |
 | 2026-10-30 | INT-31 | `cc3edb3` | Codex | PASS (host, build) | — | Recovery wheel-speed range. Physical sweep pending |
 | 2026-10-30 | INT-32 | `cc3edb3` | Nicholas | PASS (host, build) | — | Stall configuration integration. Nicholas confirmed the default-disabled stall guard |
-| 2026-10-30 | INT-33 | `8be851b`+ | Codex | PASS (build) | — | Wi-Fi startup diagnostic build. Motor-inhibited TEST image |
-| 2026-10-30 | INT-34 | `8be851b`+ | Codex | OBSERVED (car) | [INT-34-console.txt](logs/2026-10-30_INT-34-console.txt) | Diagnostic image startup observation. Wi-Fi join reached link state -3, authentication rejected; cause not proven |
 | 2026-10-30 | INT-35 | `8be851b`+ | Codex | PASS (host, build) | — | Stationary wider recovery. No physical reacquisition |
-| 2026-10-30 | INT-36 | `8be851b`+ | Codex | PASS (host) | — | PASS (host, dashboard). Dashboard next-junction direction. No physical turn check |
 | 2026-10-30 | INT-37 | `8be851b` | Codex | PASS (host, build) | — | Bug reproduced, then PASS (host, build). Junction speed-controller reversal. Software reversal found; not shown to be the physical vibration |
 | 2026-10-30 | INT-38 | `8be851b` | Codex | PASS (host, build) | — | Bug reproduced, then PASS (host, build). Turn endpoint reactivation. Cause of physical mid-turn jitter not established |
-| 2026-10-30 | INT-39 | Not recorded | Not recorded | PENDING | — | Case only. Sensor dashboard ledger. Results recorded under INT-40 |
-| 2026-10-30 | INT-39b | In manifest | Nicholas | PASS (host, build) | — | Remove fixed junction advance. Result recorded under INT-40; no physical junction check |
-| 2026-10-30 | INT-40 | `8be851b` | Codex | PASS (host, build) | — | PASS (host, dashboard, build). Sensor dashboard ledger. Dashboard seen at port 8080; no physical sensor check |
-| 2026-10-31 | INT-41 | Not recorded | Not recorded | PASS (host) | — | PASS (host, dashboard). One-screen dashboard |
+| 2026-10-30 | INT-39b | In manifest | Nicholas | PASS (host, build) | — | Remove fixed junction advance. Result recorded under S1-U21; no physical junction check |
 | 2026-10-31 | INT-42 | `9bcab80`+ | Codex | PASS (host, build) | — | Toggleable binary steering buildup. No physical steering check |
-| 2026-10-31 | INT-43 | In manifest | Codex | PASS (host) | — | PASS (host, dashboard). Subsystem health table revision |
-| 2026-10-31 | INT-48 | `5e63fe0` | Codex | PASS (host, build) | — | Terrain header build compatibility |
 | 2026-10-31 | INT-49 | `545a6a3`+ | Codex | PASS (host, build) | [2026-10-31_INT-49/](logs/2026-10-31_INT-49/) | PASS (host, dashboard, build). Barcode branch integration. At `545a6a3`; no physical barcode check |
 | 2026-10-31 | INT-52 | `fc9fa5d` | Codex | FAIL (host) | [2026-10-31_INT-52/](logs/2026-10-31_INT-52/) | Recovery brake audit. Recovery handoff bug reproduced on host |
-| 2026-10-31 | INT-53 | `8981d04`+ | Codex | PASS (host) | [2026-10-31_INT-53/](logs/2026-10-31_INT-53/) | PASS (host, dashboard). Obstacle history |
 | 2026-10-31 | INT-54 | `8981d04`+ | Codex | PASS (host) | [2026-10-31_INT-54/](logs/2026-10-31_INT-54/) | Recovery brake handoff fix |
 | 2026-10-31 | INT-55 | `8981d04`+ | Codex | PASS (host, build) | [2026-10-31_INT-55/](logs/2026-10-31_INT-55/) | Stable visible recovery handoff |
 | 2026-10-31 | INT-56 | `8981d04`+ | Codex | PASS (host) | [2026-10-31_INT-56/](logs/2026-10-31_INT-56/) | NAVIGATE jitter audit. Audit assertions; physical jitter not proven |
@@ -82,12 +68,7 @@ Later cases are named in their result rows.
 | 2026-10-31 | INT-62 | `8981d04`+ | Codex | PASS (host, build) | [2026-10-31_INT-62/](logs/2026-10-31_INT-62/) | Immediate simple 70 degree recovery |
 | 2026-10-31 | INT-63 | `8981d04`+ | Codex | PASS (host, build) | [2026-10-31_INT-63/](logs/2026-10-31_INT-63/) | 500 ms recovery takeover qualification |
 | 2026-10-31 | INT-64 | In manifest | Codex | PASS (host) | [2026-10-31_INT-64/](logs/2026-10-31_INT-64/) | Short physical sweep angle investigation. Estimated angle only |
-| 2026-10-31 | INT-65 | `8981d04` | Nicholas, Codex | OBSERVED (car) | [2026-10-31_INT-65/](logs/2026-10-31_INT-65/) | User-reported encoder revolution count. User-reported: 2513 counts for one wheel revolution, 6.981 times the configured 360 |
-| 2026-10-31 | INT-66 | In manifest | Nicholas, Codex | OBSERVED (car) | [2026-10-31_INT-66/](logs/2026-10-31_INT-66/) | MEASURED. Operator-assisted encoder calibration. Manual 500 mm roll: left 11.666, right 11.632, mean 11.649 counts/mm; distance not independently measured |
-| 2026-10-31 | INT-67 | `8981d04`+ | Codex | PASS (host, build) | [2026-10-31_INT-67/](logs/2026-10-31_INT-67/) | Measured rolling-scale application. Applies INT-66 |
 | 2026-10-31 | INT-69 | `4365e10`+ | Codex | PASS (host) | — | Digital IR tracking and half-speed navigation |
-| 2026-10-31 | INT-70 | `4365e10`+ | Codex | PASS (host) | — | Remove digital IR software calibration |
-| 2026-10-31 | INT-71 | `4365e10`+ | Codex | PASS (host) | — | Correct digital IR polarity |
 | 2026-10-31 | INT-72 | `4365e10`+ | Codex | PASS (host) | — | Stronger digital steering and junction speed ramp |
 | 2026-10-31 | INT-73 | `4365e10`+ | Codex | PASS (host) | — | Reverse digital tracking correction |
 | 2026-10-31 | INT-74 | `4365e10`+ | Codex | PASS (host) | — | Diagnose GP20 start while Mission displays READY. Firmware diagnosis pending |
@@ -109,16 +90,11 @@ Later cases are named in their result rows.
 | 2026-10-31 | INT-90 | `86ce2d8`+ | Not recorded | PASS (host) | — | Gentler entry and tighter sustained curves |
 | 2026-10-31 | INT-91 | `86ce2d8`+ | Not recorded | PASS (host) | — | Curve authority and guided straight exits |
 | 2026-10-31 | INT-92 | `86ce2d8` | Not recorded | PASS (host, build) | — | Smooth applied steering and pivot curves |
-| 2026-10-31 | INT-93 | `86ce2d8` | Not recorded | PASS (build) | — | IR calibration diagnostic preparation. No GPIO or physical check |
 | 2026-10-31 | INT-94 | `86ce2d8`+ | Not recorded | PASS (host) | [2026-10-31_INT-94/](logs/2026-10-31_INT-94/) | PASS (host, dashboard). Encoder PID diagnostics and digital IR setup |
 | 2026-11-01 | INT-95 | `b0c3d1b`+ | Codex | PASS (host, build) | [2026-11-01_INT-95/](logs/2026-11-01_INT-95/) | DOUT smooth navigation. Physical commissioning pending |
 | 2026-11-01 | INT-96 | `b0c3d1b`+ | Codex | PASS (host, build) | [2026-11-01_INT-96/](logs/2026-11-01_INT-96/) | Failed before fix, then PASS (host, build). Straight junction continuation. Physical retest pending |
 | 2026-11-01 | INT-97 | In manifest | Nicholas | PASS (host) | — | Wheel separation and crossbar measurements |
 | 2026-11-01 | INT-98 | `b0c3d1b`+ | Nicholas, Claude | PASS (host) | [2026-11-01_INT-98/](logs/2026-11-01_INT-98/) | IR spot measurements and curve steering hold. Not flashed |
-| 2026-11-01 | INT-99 | `b0c3d1b`+ | Nicholas, Claude | OBSERVED (car) | [2026-11-01_INT-99/](logs/2026-11-01_INT-99/) | MEASURED. Wheel speed at a 200 mm/s request. Raised wheels 200 mm/s at 22-24% duty; floor 203-206 mm/s at 28-30% |
-| 2026-11-01 | INT-100 | image `5e2a7ed` | Nicholas, Claude | OBSERVED (car) | [2026-11-01_INT-100/](logs/2026-11-01_INT-100/) | MEASURED; PASS (host). Wheel feedforward fit. Raised wheels at 60, 100, 140 mm/s; feedforward fitted |
-| 2026-11-01 | INT-101 | image `bedea7c` | Nicholas, Claude | OBSERVED (car) | [2026-11-01_INT-101/](logs/2026-11-01_INT-101/) | MEASURED. 100 mm/s step with fitted feedforward. Raised 100 mm/s step, peak 112 mm/s; wheels alternate below 60 mm/s |
-| 2026-11-01 | INT-102 | image `16c6ae0` | Nicholas, Claude | OBSERVED (car) | [2026-11-01_INT-102/](logs/2026-11-01_INT-102/) | MEASURED; PASS (host). Lower wheel KP. KP 0.0001 removes the alternation; raised wheels only |
 | 2026-11-01 | INT-103 | image `b4dd145` | Nicholas, Claude | OBSERVED (car) | [2026-11-01_INT-103/](logs/2026-11-01_INT-103/) | First floor tracking with tuned wheels. 55 mm/s floor, two runs; run 1 lost the line at the crossing |
 | 2026-11-01 | INT-104 | `b0c3d1b`+ | Nicholas, Claude | PASS (host) | At tag | Crossing heading restore. Not run |
 | 2026-11-01 | INT-105 | image `23808db` | Nicholas, Claude | PASS (car) | [2026-11-01_INT-105/](logs/2026-11-01_INT-105/) | PASS at 55 mm/s. Floor run with crossing heading restore. This course section only |
@@ -155,29 +131,11 @@ Later cases are named in their result rows.
 | 2026-11-02 | INT-136 | INT-135 image | Nicholas, Claude | PARTIAL (car) | [2026-11-02_INT-136/](logs/2026-11-02_INT-136/) | PASS on straights and curves; FAIL at junctions. Pivot ends blind past the branch. Robot did not turn to the next branch |
 | 2026-11-02 | INT-137 | INT-136 image | Nicholas, Claude | PARTIAL (car) | — | PASS on those turns; FAIL on barcodes. Barcode decoder rework. Barcodes not read at all |
 | 2026-11-02 | INT-138 | INT-137 image | Nicholas, Claude | FAIL (car) | — | Encoder stops and barcode visibility. Barcodes not read; robot sometimes stops |
-| 2026-11-02 | INT-139 | `79c13f1`+ | Codex | PASS (host) | [2026-11-02_INT-139/](logs/2026-11-02_INT-139/) | PASS (host, dashboard). Subsystem sensor dashboards |
-| 2026-11-02 | INT-139b | image `27953ce` | Nicholas, Claude | PARTIAL (car) | [2026-11-02_INT-139/](logs/2026-11-02_INT-139/) | PASS one loop; FAIL at junction. Blind exit from a straight crossing |
-| 2026-11-02 | INT-140 | `79c13f1`+ | Codex | PASS (host) | [2026-11-02_INT-140/](logs/2026-11-02_INT-140/) | PASS (host, dashboard). Compact simultaneous subsystem overview |
-| 2026-11-02 | INT-140b | Not recorded | Nicholas, Claude | FAIL (car) | [2026-11-02_INT-140/](logs/2026-11-02_INT-140/) | Barcode module misses narrow gaps. Passes the barcode with no read |
-| 2026-11-02 | INT-141 | Not recorded | Nicholas | OBSERVED (car) | — | Printed barcode black reads weakly. Hand check: many gaps missed; printed black reads weaker than line black |
-| 2026-11-02 | INT-141b | image `2c51c24` | Nicholas, Claude | FAIL (car) | [2026-11-02_INT-141/](logs/2026-11-02_INT-141/) | Barcode after recalibration. Barcode not sensed; tracking and crossings ran |
-| 2026-11-02 | INT-142 | Not recorded | Nicholas, Claude | OBSERVED (host, build) | — | Host and build only. Barcode edge count in the trace. Trace gains a running count of GP16 edges |
-| 2026-11-02 | INT-143 | image `45f1aca` | Nicholas, Claude | FAIL (car) | [2026-11-02_INT-143/](logs/2026-11-02_INT-143/) | Barcode module output stays solid |
-| 2026-11-02 | INT-144 | Not recorded | Nicholas | OBSERVED (car) | — | Barcode module LED responds slowly. Module LED slow by hand; not timed |
-| 2026-11-02 | INT-145 | image `45f1aca` | Nicholas, Claude | FAIL (car) | [2026-11-02_INT-145/](logs/2026-11-02_INT-145/) | New barcode module, chatter. Barcode A not scanned; module works |
-| 2026-11-02 | INT-146 | image `719a01b` | Nicholas, Claude | FAIL (car) | — | Raw barcode widths. Barcode still not read |
-| 2026-11-02 | INT-147 | image `24b25fb` | Nicholas, Claude | FAIL (car) | [2026-11-02_INT-147/](logs/2026-11-02_INT-147/) | Barcode capture polarity bug. No read; the capture handler has no host test |
-| 2026-11-02 | INT-148 | image `84f8e2c` | Nicholas, Claude | FAIL (car) | [2026-11-02_INT-148/](logs/2026-11-02_INT-148/) | Filtered barcode widths. No read |
-| 2026-11-02 | INT-149 | image `84f8e2c` | Nicholas, Claude | OBSERVED (car) | [2026-11-02_INT-149/](logs/2026-11-02_INT-149/) | Barcode threshold moved toward white. No barcode event; pass looks like A with wide bars only (inferred) |
-| 2026-11-02 | INT-150 | Not recorded | Nicholas, Claude | OBSERVED (car) | — | Narrow bars are seen. Narrow bar about 5 mm and seen by the LED; `BARCODE_MIN_ELEMENT_COUNTS` 23 |
-| 2026-11-02 | INT-151 | image `c9cdb44` | Nicholas, Claude | PASS (car) | [2026-11-02_INT-151/](logs/2026-11-02_INT-151/) | PASS, one read. First barcode read. One print, one direction |
-| 2026-11-02 | INT-152 | Not recorded | Nicholas, Claude | OBSERVED (car) | — | Barcode misses after the first read. One read in three tries; `BARCODE_MIN_ELEMENT_COUNTS` 16 |
+| 2026-11-02 | INT-139b | image `27953ce` | Nicholas, Claude | PARTIAL (car) | [2026-11-02_INT-139b/](logs/2026-11-02_INT-139b/) | PASS one loop; FAIL at junction. Blind exit from a straight crossing |
 | 2026-11-02 | INT-153 | image `0e93c6a` | Nicholas, Claude | PARTIAL (car) | — | PASS two barcode reads; FAIL at junction. Queued turn stopped on onset skew. Stopped with a queued turn |
 | 2026-11-02 | INT-154 | `d97e3d9` | Nicholas, Claude | PARTIAL (car) | — | PASS course run; FAIL on hump. Hump not reported |
 | 2026-11-02 | INT-155 | `d97e3d9`+ | Nicholas, Claude | FAIL (car) | [2026-11-02_INT-155/](logs/2026-11-02_INT-155/) | Barcode lost after a hump, hump not counted |
 | 2026-11-02 | INT-156 | `d97e3d9`+ | Nicholas, Claude | PARTIAL (car) | [2026-11-02_INT-156/](logs/2026-11-02_INT-156/) | PASS barcode; FAIL on hump. Hump detector replaced with roll. All letters and a flipped print not tested |
-| 2026-11-02 | INT-157 | `d97e3d9`+ | Nicholas, Claude | FAIL (car) | [2026-11-02_INT-157/](logs/2026-11-02_INT-157/) | Humps counted on the wrong encounters. Hump count wrong |
-| 2026-11-02 | INT-158 | `d97e3d9`+ | Nicholas, Claude | FAIL (car) | [2026-11-02_INT-158/](logs/2026-11-02_INT-158/) | Hump baseline moved by pivots. Tracking off course, not analysed; `humps=5` against 1 crossed |
 | 2026-11-03 | INT-160 | `a7593b0` | Claude | PASS (host) | At commit | PR 149 host suite after fixing test order, a commented-out self-test and a triage script syntax error. No Arm build or Pico run; watchdog policy only |
 
 ## Audits, not tests
@@ -194,22 +152,17 @@ Later cases are named in their result rows.
 | 2026-10-31 | INT-50 | `30ec622` | Codex | PASS (static) | [2026-10-31_INT-50/](logs/2026-10-31_INT-50/) | PASS (links); plan BLOCKED. Consolidated completion tracking |
 | 2026-10-31 | INT-51 | `fc9fa5d` | Codex | PASS (static) | [2026-10-31_INT-51/](logs/2026-10-31_INT-51/) | PASS (links); plan BLOCKED. Retire the duplicate plan |
 | 2026-11-02 | INT-159 | Not recorded | Claude | PENDING | [2026-11-02_raw-captures/](logs/2026-11-02_raw-captures/) | No run. Raw captures moved. Gzipped; `int-158-run.txt` deleted, it held no run |
-| 2026-11-03 | INT-161 | `e576760` | Claude | PENDING | — | No run. Merge lineage. PR 148 merged INT-132 to INT-159 as `e576760`; each row keeps its original source and result, including INT-158 FAIL |
+| 2026-11-03 | INT-161 | `e576760` | Claude | PENDING | — | No run. Merge lineage. PR 148 merged INT-132 to INT-159 (numbering before 2026-11-09) as `e576760`; each row keeps its original source and result, including S4-U11 FAIL |
 | 2026-11-03 | INT-162 | `7275347` | Claude | PASS (build) | — | Arm builds. Full course and test images with `WATCHDOG=0/1`; full course also with `TRACE=0/1`. Six images, one warning from the SDK's `mqtt.c`. Not a firmware or physical pass |
-| 2026-11-03 | INT-163 | `7275347` | Claude | OBSERVED (static) | — | Cause not found. INT-157 line 12673: LEFT event, pivot at 97.11 s, targets zero at 97.79 s, then a fresh boot; no REACQUIRE or STOPPED. Needs video or a repeat run |
+| 2026-11-03 | INT-163 | `7275347` | Claude | OBSERVED (static) | — | Cause not found. S4-U10 line 12673: LEFT event, pivot at 97.11 s, targets zero at 97.79 s, then a fresh boot; no REACQUIRE or STOPPED. Needs video or a repeat run |
 | 2026-11-03 | INT-164 | `7275347` | Claude | OBSERVED (static) | — | Likely the car was lifted, not a scan fault (INT-156 lines 7806-8178: 330 mm/s against 76/124 targets, pitch -28 to +32 deg). Stop cause not telemetered |
-| 2026-11-03 | INT-165 | `7275347` | Claude | OBSERVED (static) | — | Count spikes follow capture gaps, not encoder faults (INT-157 line 11667, INT-154 line 28918). WHEEL peak 210 mm/s or less. HUMP `encoder_ok=0` counts unexplained |
-| 2026-11-03 | INT-166 | `7275347` | Claude | OBSERVED (static) | — | IMU calibration failed because the car moved during it (INT-154 lines 22501-26351, counts 5 and 157 backward); firmware restarts sampling, times out at 5 s |
 | 2026-11-03 | INT-167 | `909bfc2` | Claude | PASS (host) | — | INT-154 showed `A->U_TURN` with no barcode event. Rule moved to `mission_barcode_event_needed` with a host test that fails when broken. Needs a car run |
-| 2026-11-03 | INT-168 | `7275347` | Claude | OBSERVED (static) | — | 10 Pico restarts across INT-154 to 157 (8 from READY, 1 STOPPED, 1 NAVIGATE). Captures cannot show whether they were manual. Open |
+| 2026-11-03 | INT-168 | `7275347` | Claude | OBSERVED (static) | — | 10 Pico restarts across INT-154 to INT-156 and S4-U10 (8 from READY, 1 STOPPED, 1 NAVIGATE). Captures cannot show whether they were manual. Open |
 | 2026-11-03 | INT-169 | `7275347` | Claude | OBSERVED (static) | — | No echo never stops a run (host tests). INT-154 stops at lines 21775 and 26121 share a both-black pattern; cause of the first still unknown |
-| 2026-11-03 | INT-170 | `7275347` | Claude | OBSERVED (static) | — | Capture overflow shown in 429/1033, 37/618, 127/572, 64/639 telemetry rows (INT-154 to 157), nearly all while driving. Read loss not shown; ring stays 64 |
-| 2026-11-03 | INT-171 | `7275347` | Claude | OBSERVED (host) | — | Hump state held up to 9.9 s on older images (INT-156, 157). Current code ends an encounter at `HUMP_MAX_TRAVEL_MM` (host cases). Needs a car run |
 | 2026-11-03 | INT-172 | `4037b48` | Claude | OBSERVED (static) | — | Audit; no defect (source only). D14 core-0 audit, recorded in `docs/architecture.md`. Contention, lock duration and load not measured; they need the Pico |
 | 2026-11-03 | INT-173 | `4037b48` | Claude | OBSERVED (build) | — | MEASURED (target compiler). `sizeof_probe.sh`: `IrTracker` 20 bytes, `LineIrSnapshot` 24 bytes; `IrRawWord` uses 3 bits. Data table updated |
 | 2026-11-03 | INT-174 | `4037b48` | Claude | PASS (host, build) | — | Six Arm images. Full course `2fd47223`: text 387800, data 424, bss 84496. Host, dashboard, CLI, HTTP and field-tool tests pass |
 | 2026-11-03 | INT-175 | `02d30fa` | Nicholas, Claude | OBSERVED (car) | — | User report. INT-168 restarts: Nicholas reports the battery was not connected properly, a hardware fix. Closed; no firmware cause investigated |
-| 2026-11-03 | INT-176 | `ebb3a2c` | Claude | PASS (host, build) | — | Stall guard on for `FULL_COURSE=1`. Replay found one false stop at a 3 mm/s target (INT-156 line 1614), so targets under 10 mm/s no longer count; floor provisional |
 | 2026-11-03 | INT-177 | `ebb3a2c` | Claude | OBSERVED (build) | — | Static app data 2076 B; `Mission` 212, `bypass_control_t` 72, `MotionController` 60 B. `TRACE=0` saves 464 B bss |
 | 2026-11-03 | INT-178 | `c2b0915` | Claude | PASS (host, build) | — | Bit cuts. Full course `dbf8acdf`: text 388856, bss 84316 (was 387800, 84496). `Mission` 212 to 164 B, `MotionController` 60 to 44, telemetry 23 to 22 B |
 | 2026-11-03 | INT-179 | `3c10232` | Codex | PASS (host) | — | Full suite, stall guard on and off, 5 M snapshot reads, 300000 frame stress, 100000 mapping exchanges |
@@ -225,16 +178,13 @@ Later cases are named in their result rows.
 | 2026-11-04 | INT-189 | `7275347`+ | Claude | PASS (host, build) | At commit | Straight crossing uses the 36 mm ramped advance, candidate travel 6 mm. Image `770123ac`. A false commit on a curve is not ruled out |
 | 2026-11-04 | INT-190 | `770123a` | Nicholas, Claude | PARTIAL (car) | [2026-11-04_INT-190/](logs/2026-11-04_INT-190/) | Two crossings committed, then veered left: first touch about 40 mm past the bend limit, heading -11 to -36 deg. Left IR stayed black 27-29 mm |
 | 2026-11-04 | INT-191 | `7275347`+ | Claude | PASS (host, build) | At commit | First touch after a crossing is a bend only past 100 mm. Image not flashed; no physical run |
-| 2026-11-04 | INT-192 | Saved captures, no new run | Nicholas, Claude | OBSERVED (car) | [2026-11-04_INT-190/](logs/2026-11-04_INT-190/), [raw captures](logs/2026-11-02_raw-captures/) | Left IR clears crossbars after the right on 99 of 100 crossings, median 14 mm. Potentiometer does not remove it. Cause not isolated |
 | 2026-11-04 | INT-193 | `cf1a3c2` | Claude | PASS (host, build) | — | All unmerged branches together. Seven Arm images plus `TERRAIN_DIAGNOSTICS=1`. Full course `76e62048`: text 388412, bss 84272; `Mission` 160 B |
 | 2026-11-04 | INT-194 | `6839d26` | Claude | PASS (host, build) | — | Course speed 100 mm/s, `full_course` at `TRACE=0`, 200 ms U-turn pause. Host passes at 100, 80, 60 mm/s. `TRACE=0` saves 464 B RAM (bss 83808 vs 84272) |
-| 2026-11-04 | INT-195 | `d87c6f9` | Claude | PASS (host, build) | — | Jerk-limited planned moves; GP21 still immediate. Host passes at 100, 80, 60 mm/s (test plant). Full course `4c67d85e`: text 386824, bss 83808 |
 | 2026-11-04 | INT-196 | `2ee4dc2` | Claude | PASS (host, build) | — | Slowing starts 183 mm out to rest at 150 mm; inside 150 mm brakes at once. Host passes at 100, 80, 60 mm/s. Full course `f0376ee7`: text 386996 |
 | 2026-11-04 | INT-197 | `9207d79` | Claude | PASS (host, build) | — | Straight crossings roll through at course speed, 36 mm without steering. Host passes at 100, 80, 60 mm/s. Full course `30c7ecfd`: text 387092 |
 | 2026-11-05 | INT-199 | `3fd95ba` | Claude | PASS (host, build) | — | Distance-based PI steering, lower rates. Four deliberate law faults each failed the host tests |
 | 2026-11-05 | INT-200 | `3fd95ba` image | Nicholas | OBSERVED (car) | — | Nicholas reports line tracking very successful. Monitor log empty: no telemetry or lap count |
 | 2026-11-05 | INT-198 | `3fd95ba`+ | Nicholas | OBSERVED (car) | Capture not kept | Bypass trials. Rested 139-148 mm from the box after slowing from 193 mm. Depth read 126, 131, 230 mm; side look losing the box suspected |
-| 2026-11-05 | INT-201 | `3fd95ba`+ | Nicholas | OBSERVED (car) | [scan.log](logs/2026-11-05_INT-201/scan.log) | Stationary scans, motors inhibited. Echoes at twice the edge range (389 mm vs 196/206 mm) appear only with the box: ghost echo. Clear scan: left 31, right 40 mm |
 | 2026-11-05 | INT-202 | `a3d6741` | Claude | PASS (host, build) | — | Right-angle bypass, step-out, 20 mm rear gap, slow stop, ghost filter. Host at 100 mm/s; 60 mm/s last run before the final edits |
 | 2026-11-05 | INT-203 | `a3d6741` image | Nicholas | OBSERVED (car) | — | Nicholas reports four good bypass runs in a row; no log. An earlier run took the farther-edge side, cause unknown |
 | 2026-11-05 | INT-204 | `b24356b` | Nicholas | OBSERVED (car) | Capture not kept | Nicholas reports two full-course runs good except the hump. Log shows four bypasses, five crossings, no barcode reads, no humps |
@@ -252,7 +202,7 @@ Later cases are named in their result rows.
 | 2026-11-07 | INT-219 | `84e5bf5`+ | Codex | PASS (static) | — | PASS (style). Kept existing signed bit-field declarations and type names, split moved multi-variable declarations; changed-line BARR has zero findings. Rechecked in INT-222 |
 | 2026-11-07 | INT-220 | `84e5bf5`+ | Codex | FAIL (build) | — | Terrain probe failed on the deleted `TerrainTravelQuality`; obsolete probe line removed |
 | 2026-11-07 | INT-221 | `84e5bf5`+ | Codex | PASS (build) | [sizes and source hashes](logs/2026-11-07_INT-222/layout.json) | All six Arm sizeof probes pass after removing the obsolete Terrain type and `sizeof` on bit-fields |
-| 2026-11-07 | INT-222 | `84e5bf5`+ | Codex | PASS (host, build) | [51-type inventory](struct-layout.md) | Field reordering. Course TRACE=0: text 388140, bss 83832 (4 B saved). `Mission` 160 to 144, `MissionInputs` 104 to 96 B |
+| 2026-11-07 | INT-222 | `84e5bf5`+ | Codex | PASS (host, build) | [51-type inventory](logs/2026-11-07_INT-222/struct-layout.md) | Field reordering. Course TRACE=0: text 388140, bss 83832 (4 B saved). `Mission` 160 to 144, `MissionInputs` 104 to 96 B |
 | 2026-11-08 | INT-223 | `87f4eb8` | Nicholas, Claude | PASS (host, build) | [evidence](../../docs/team.md#7-correctness-and-performance-evidence) | Minimum-bit narrowing, against `84e5bf5`. Course TRACE=0: text 387912 to 390356 B, bss 83836 to 83728 B; `MissionInputs` 104 to 64 B. Timing is INT-224/225 |
 | 2026-11-09 | INT-224 | `017f5ed` trial | Nicholas, Claude | OBSERVED (car) | [usb.log](logs/2026-11-09_INT-224/usb.log), [monitor](logs/2026-11-09_INT-224/monitor.log.gz) | Timing before narrowing. Max body: Motion 889 us, Mission 3716 us (bypass), I/O 2302 us. Stack peak 672/1400/480 of 2176 B. Motion ovr 0; Mission and I/O ovr +50/s in every segment, idle included. Monitor is from a first attempt without USB capture |
 | 2026-11-09 | INT-225 | `0727821` trial | Nicholas, Claude | PARTIAL (car) | [usb.log](logs/2026-11-09_INT-225/usb.log) | Timing after narrowing, one boot, two bypasses. Max body: Motion 1275 us, Mission 5229 us (scan, bypass start), I/O 2400 us; stack peak 664/1256/544 of 2176 B; ovr as INT-224. Bypass 1: stall guard stopped the first 36 mm/s pivot. Bypass 2: no stall, pivot back came early (observed by Nicholas). Console from terminal scrollback; no monitor capture |
@@ -260,12 +210,5 @@ Later cases are named in their result rows.
 | 2026-11-09 | INT-227 | `b0847bd` trace format | Nicholas, Claude | OBSERVED (car) | [usb.log](logs/2026-11-09_INT-227/usb.log) | Bypass on the 210 x 70 mm test object. Line seen at the end of RETURN, then NAVIGATE and STOPPED with no fault, before the 120 mm advance (Nicholas). Trace lacks the `8429d8c` lines, so the image that ran is unclear; side ray saw the box (flank 93) |
 | 2026-11-09 | INT-228 | `8429d8c` trial | Nicholas, Claude | FAIL (car) | [usb.log](logs/2026-11-09_INT-228/usb.log) | Bypass on the test object. Left IR read black (ir=10) as the IN pivot ended, 223 mm left of the line, so RETURN ended after 20 ms; the 120 mm advance ran (front 1533 to 1414 mm), the left pivot found no line and Mission stopped (phase 2, motion DONE) |
 | 2026-11-09 | INT-229 | `be17ef6` trial | Nicholas, Claude | PASS (car) | [usb.log](logs/2026-11-09_INT-229/usb.log) | Bypass rejoin on the test object. RETURN began on black again (ir=10) and was ignored; DONE on black after white at left 94 mm, then advance, left pivot, brake and FOLLOW_LINE. IR also read black beside the line during PARALLEL to REAR |
-| 2026-11-09 | INT-230 | `7da3c66` BARCODE_DIAGNOSTICS=1 | Nicholas, Claude | FAIL (car) | [2026-11-09_INT-230/](logs/2026-11-09_INT-230/usb.log) | Letter A, three passes, no read. Each run logs only the enable seed: no GP16 edge reached the capture. Module LED misses narrow gaps |
-| 2026-11-09 | INT-231 | `7da3c66`+ `[BCPIN]` diag, BARCODE_DIAGNOSTICS=1 | Nicholas, Claude | FAIL (car) | [2026-11-09_INT-231/](logs/2026-11-09_INT-231/usb.log) | Black strip slid under the barcode sensor, idle and after GP20. GP16 read level=0 with edges=0 for the whole capture: the pin never moved. Cause: barcode DOUT was on the wrong Pico pin; moved to GP16 by Nicholas |
-| 2026-11-09 | INT-232 | `7da3c66`+ `[BCPIN]` diag, BARCODE_DIAGNOSTICS=1 | Nicholas | FAIL (car) | — | DOUT on GP16. Half-size print: module LED does not switch on every edge, so narrow bars and gaps never reach the pin. Capture not kept |
-| 2026-11-09 | INT-233 | `7da3c66`+ `[BCPIN]` diag, BARCODE_DIAGNOSTICS=1 | Nicholas, Claude | PARTIAL (car) | [2026-11-09_INT-233/](logs/2026-11-09_INT-233/usb.log) | Full A driven: decoded A. Half Z (wheels at about 106 mm/s): no read; narrow black bars read 9 to 16 counts (under 1.4 mm) or vanish under the 16-count chatter cut, merging spaces to 136 to 196; a log replay with the cut at 6 still fails. Driven half Z stopped on GP21 after 38 mm of solid black, inconclusive |
 | 2026-11-09 | INT-234 | `7da3c66`+ `[BCPIN]` diag, BARCODE_DIAGNOSTICS=1 | Nicholas, Claude | PARTIAL (car) | [monitor.log.gz](logs/2026-11-09_INT-234/monitor.log.gz) | Half Z and full A read, full F did not. Only the A EVENT BARCODE arrived; Z read (telemetry Z->RIGHT) but telemetry #64 to #68 and its event were lost in a 3 s gap: mqtt_utk.c dropped any frame the send buffer refused. BARS traces also have gaps, so F widths are not recoverable |
-| 2026-11-09 | INT-235 | `7da3c66`+ diag, MQTT frame retry, BARCODE_DIAGNOSTICS=1 | Nicholas, Claude | PARTIAL (car) | [usb.log](logs/2026-11-09_INT-235/usb.log) | Full F 3/3 and full A 3/3 decoded. Half Z not read: narrow black bars 16 to 21 counts, at the 16-count chatter cut; one run of 442 (over the 400 limit) where a bar was dropped. Cut lowered to 10 for the next run |
-| 2026-11-09 | INT-236 | `7da3c66`+ diag, MQTT frame retry, cut 10, BARCODE_DIAGNOSTICS=1 | Nicholas, Claude | PARTIAL (car) | [usb.log](logs/2026-11-09_INT-236/usb.log) | Full A and F read (reported). Half Z 0 of 6: polarity balance flipped since INT-235, narrow black now 42 to 49 counts and narrow white 18 to 30; the decoded guard and Z match, but a narrow white in the closing guard is lost (black run of 277) |
-| 2026-11-09 | INT-237 | `7da3c66`+ diag, MQTT frame retry, cut 10, BARCODE_DIAGNOSTICS=1 | Nicholas, Claude | PASS (car) | [usb.log](logs/2026-11-09_INT-237/usb.log) | Half Z after a pot adjustment: 4 of 4 decoded as Z, reverse orientation. Narrow runs 17 to 28 and 37 to 53 counts, all above the 10-count cut |
 | 2026-11-09 | INT-238 | `7da3c66`+ diag, MQTT frame retry, cut 10, barcode clear after navigation, BARCODE_DIAGNOSTICS=1 | Nicholas | PASS (car) | Capture not kept | Nicholas reports a successful run: barcodes read, dashboard card shows the letter and clears it after the barcode turn |

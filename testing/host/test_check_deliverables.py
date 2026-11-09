@@ -12,7 +12,7 @@ assert check.main([str(ROOT)]) == 0
 
 with tempfile.TemporaryDirectory() as temporary:
     copy = Path(temporary) / "repo"
-    for part in ("app_program", "docs", "scripts", "testing/pure",
+    for part in ("app_program", "docs", "scripts", "testing/host",
                  ".github/workflows"):
         shutil.copytree(ROOT / part, copy / part,
                         ignore=shutil.ignore_patterns("*.o", "*.d"))
@@ -27,7 +27,7 @@ with tempfile.TemporaryDirectory() as temporary:
         assert check.main([str(copy)]) == 1, expected
         path.write_text(original)
 
-    damaged("testing/pure/run.sh", "test_barcode", "test_other", "unwired")
+    damaged("testing/host/run.sh", "test_barcode", "test_other", "unwired")
     damaged("app_program/motion/README.md", "## Motion accuracy evaluation",
             "## Other", "report")
     damaged("app_program/obstacle/obstacle.h", "obstacle_scan_request",

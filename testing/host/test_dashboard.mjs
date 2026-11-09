@@ -158,8 +158,8 @@ console.log('flippers: PASS (direction word and R/L/S/U letter, barcode letter a
 // Only completion events add history; telemetry repeats and scans cannot
 // pair a new width with the retained clearance of an earlier obstacle.
 const obstacleList = get('obstacles');
-obstacleList.append = li => {
-  obstacleList.children.push(li);
+obstacleList.prepend = li => {
+  obstacleList.children.unshift(li);
   li.remove = () => obstacleList.children.splice(obstacleList.children.indexOf(li), 1);
 };
 const obstacleEvent = (id, clearance) => {
@@ -172,7 +172,6 @@ assert.equal(obstacleList.children.length, 0);
 obstacleEvent('first', 40);
 obstacleEvent('first', 40);
 assert.equal(obstacleList.children.length, 1);
-assert.equal(obstacleList.children[0].value, 1);
 assert.equal(obstacleList.children[0].textContent, 'W 25 mm · left · clearance 40 mm');
 assert.equal(get('obstacle-empty').hidden, true);
 assert.equal(obstacleList.hidden, false);
@@ -181,21 +180,21 @@ assert.equal(obstacleList.children.length, 2); // Separate, equally sized obstac
 sample.mission = 'SCAN';
 vm.runInContext('showTelemetry(sample)', context);
 obstacleEvent('missing-width', 55);
-assert.equal(obstacleList.children[2].textContent, 'W unavailable · left · clearance 55 mm');
+assert.equal(obstacleList.children[0].textContent, 'W unavailable · left · clearance 55 mm');
 // The firmware sends the event before its first BYPASS frame; that frame supplies the width.
 Object.assign(sample, {mission:'BYPASS', obstacle_width_mm:30});
 vm.runInContext('showTelemetry(sample)', context);
-assert.equal(obstacleList.children[2].textContent, 'W 30 mm · left · clearance 55 mm');
+assert.equal(obstacleList.children[0].textContent, 'W 30 mm · left · clearance 55 mm');
 Object.assign(sample, {obstacle_width_mm:35});
 vm.runInContext('showTelemetry(sample)', context);
-assert.equal(obstacleList.children[2].textContent, 'W 30 mm · left · clearance 55 mm');
+assert.equal(obstacleList.children[0].textContent, 'W 30 mm · left · clearance 55 mm');
 for (const clearance of [null, -1]) obstacleEvent('invalid', clearance);
 assert.equal(obstacleList.children.length, 3);
 for (let i = 0; i < 200; i++) obstacleEvent('extra-' + i, 40);
 assert.equal(obstacleList.children.length, 200);
-assert.equal(obstacleList.children[0].value, 4);
-assert.equal(obstacleList.children.at(-1).value, 203);
-console.log('obstacle history: PASS (completion-only, duplicates, equal sizes, missing width, numbering, 200-entry bound)');
+assert.match(obstacleList.children[0].textContent, /clearance 40 mm$/); // newest first
+assert(!obstacleList.children.some(li => li.textContent.includes('55 mm'))); // oldest dropped
+console.log('obstacle history: PASS (completion-only, duplicates, equal sizes, missing width, newest first, 200-entry bound)');
 
 // Sonar: the obstacle block is shown only with a valid echo, at its measured range.
 Object.assign(sample, {mission:'BYPASS', obstacle_width_mm:420, obstacle_clearance_mm:170, front_mm:300});
@@ -245,24 +244,23 @@ console.log('wheel trace: PASS (valid zero, missing data, inhibit/failure, wrap,
 
 // Barcode history records each passed barcode once; Mapping colour follows the robot's mapping state.
 const barcodeList = get('barcodes');
-barcodeList.append = li => barcodeList.children.push(li);
+barcodeList.prepend = li => barcodeList.children.unshift(li);
 const barcodeEvent = text => vm.runInContext(`showBarcode({type: 'event', text: ${JSON.stringify(text)}})`, context);
 barcodeEvent('EVENT BARCODE: letter Z -> RIGHT at t=12 ms, counts L=1 R=2');
 barcodeEvent('EVENT BARCODE: letter Z -> RIGHT at t=12 ms, counts L=1 R=2');
 barcodeEvent('EVENT OBSTACLE: passing left, clearance 40 mm at t=20 ms');
 barcodeEvent('EVENT BARCODE: letter Q -> U_TURN at t=30 ms, counts L=2 R=3');
 assert.equal(barcodeList.children.length, 2);
-assert.match(barcodeList.children[0].textContent, /^Z · RIGHT · /);
-assert.match(barcodeList.children[1].textContent, /^Q · U-TURN · /);
+assert.match(barcodeList.children[0].textContent, /^Q · U-TURN · /); // newest first
+assert.match(barcodeList.children[1].textContent, /^Z · RIGHT · /);
 assert.equal(get('barcode-empty').hidden, true);
-// The letter flipper is a queue: newest scanned letter, cleared when its navigation action (TURN) is taken.
-barcodeEvent('EVENT BARCODE: letter Z -> RIGHT at t=40 ms, counts L=3 R=4');
-assert.equal(get('flap-Barcode-letter').textContent, 'Z');
+// The letter card shows a new event at once, then follows telemetry, which the
+// firmware clears once the barcode's turn is done.
 barcodeEvent('EVENT BARCODE: letter K -> LEFT at t=50 ms, counts L=4 R=5');
 assert.equal(get('flap-Barcode-letter').textContent, 'K');
-vm.runInContext(`showTurn({type: 'event', text: 'EVENT TURN: turn UNMAPPED at t=55 ms, counts L=5 R=6'})`, context);
-assert.equal(get('flap-Barcode-letter').textContent, 'K'); // junction without an action keeps the letter
-vm.runInContext(`showTurn({type: 'event', text: 'EVENT TURN: turn LEFT at t=60 ms, counts L=5 R=6'})`, context);
+vm.runInContext('showTelemetry(Object.assign({}, sample, {barcode: "K"}))', context);
+assert.equal(get('flap-Barcode-letter').textContent, 'K');
+vm.runInContext('showTelemetry(Object.assign({}, sample, {barcode: "-"}))', context);
 assert.equal(get('flap-Barcode-letter').textContent, '–');
 Object.assign(sample, {mapped: true});
 vm.runInContext('showTelemetry(sample)', context);

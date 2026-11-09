@@ -53,7 +53,7 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). lin
 1. **First line-trace capture.** Needs Comms owner agreement on the [line trace](../../docs/architecture.md#line-trace-17-bytes).
 2. **Loss and recovery.** Confirm no false loss at 350 mm (INT-135), and that the sweep finds the line from a real loss.
 3. **Hump detector stuck on (INT-122, INT-133).** It no longer changes speed, but a stuck encounter can still miss hump results; cause not investigated in Terrain.
-4. **Left IR clears black late (INT-192).** Not removed by the potentiometer; a module swap and a slow hand test will separate the module from its mounting.
+4. **Left IR clears black late (S3-U39).** Not removed by the potentiometer; a module swap and a slow hand test will separate the module from its mounting.
 5. **Values to measure:** tightest curve radius, effective track width, spot spacing at the 120 mm position, left-sensor span and hysteresis.
 
 ## Line success measure
@@ -74,10 +74,10 @@ Agreed by Nicholas on 2026-11-03 for M1. Nicholas self-tests the lap rate (2026-
 2. Build and flash: `./flash.sh trial`.
 3. Copy `build_make/trial.uf2` to a named file, restore the source, and record the hash the script prints.
 4. Run on battery with `mqtt_client.py monitor` saving to a file; analyse `WHEEL` and `LINE` records.
-5. Run `testing/pure/run.sh` before changing any default; append a new INT entry.
+5. Run `testing/host/run.sh` before changing any default; append a new result row to `testing/line_barcode/TEST_LOG.md`.
 
 ## Lessons from the trials
 
-- Fix the wheels before tuning steering: oversized feedforward looked like "steering too strong" (INT-99).
+- Fix the wheels before tuning steering: oversized feedforward looked like "steering too strong" (S2-U10).
 - Reducing delay (10 ms IR) and moving the sensors closer to the axle helped at 100 mm/s (INT-115, INT-117).
 - Time-based exit rules fixed one case and moved the problem (INT-119 to INT-122).
