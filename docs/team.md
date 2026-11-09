@@ -480,8 +480,17 @@ stays below the stack size.
 
 | Run | Image | Motion max | Mission max | I/O max | Overruns | Stack use |
 | --- | --- | --- | --- | --- | --- | --- |
-| INT-224 before narrowing | `017f5ed` trial | not yet run | | | | |
+| INT-224 before narrowing | `017f5ed` trial | 889 us | 3,716 us | 2,302 us | Motion 0; Mission and I/O +50/s | 672 / 1,400 / 480 B of 2,176 B |
 | INT-225 after narrowing | final trial | not yet run | | | | |
+
+INT-224 maxima are over the whole run: idle, bench, one line lap and one bypass;
+Mission's 3,716 us came during the bypass. Stack use is Motion / Mission / I/O.
+Mission and I/O overruns grow at exactly 50 a second in every segment,
+idle included, while their longest body stays under 4 ms of a 10 ms period. The
+rate does not follow load, so the likely cause is the 10 ms kernel tick
+(`CNF_TIMER_PERIOD` in `config/config.h`) making a 10 ms task release every 20 ms;
+this is not confirmed. INT-225 compares like for like, so a change in that rate
+would still show.
 
 To fill this table: flash `017f5ed` (timing added, no narrowing) with
 `./flash.sh trial`, capture the USB console during a bench run, one line lap
