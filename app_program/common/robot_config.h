@@ -109,7 +109,7 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 #define IR_SAMPLE_MS		10u	/* INT-115: 10 ms reads were the first change that helped at 100 mm/s */
 #define IR_MAX_GAP_MS		60u
 #define IR_LEFT_PIN		26u
-#define IR_RIGHT_PIN		27u
+#define IR_RIGHT_PIN 17u /* Nicholas, 2026-11-09 rewire */
 
 
 #define SAFETY_STALE_MS		60u	/* PROVISIONAL (D07): required-producer age limit */
@@ -206,7 +206,7 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #endif
 
 /* --- barcode ---------------------------------------------------- */
-#define BARCODE_GPIO		16u
+#define BARCODE_GPIO 27u /* Nicholas, 2026-11-09 rewire */
 /* Widths are encoder counts of sensor travel. UNMEASURED PLACEHOLDERS until
    #59 measures print scale and polarity (D01, D04). */
 #define BARCODE_BLACK_HIGH	1	/* PROVISIONAL (D04): as the line modules (IR_BLACK_LEVEL); INT-137 */

@@ -14,7 +14,7 @@
 
 ## Scope
 
-Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). line_barcode reads the two line sensors (GP26, GP27) and the barcode sensor (GP16), and publishes what they saw. There is no line_barcode task and line_barcode never writes motors. Mission owns steering, junctions, recovery and the [DOUT navigation contract](../../docs/architecture.md#dout-navigation-contract). Values live in [commissioning](../../docs/project-specs.md#dout-navigation-commissioning); wiring in [team](../../docs/team.md#2-pins).
+Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). line_barcode reads the two line sensors (GP26 left, GP17 right) and the barcode sensor (GP27), and publishes what they saw. There is no line_barcode task and line_barcode never writes motors. Mission owns steering, junctions, recovery and the [DOUT navigation contract](../../docs/architecture.md#dout-navigation-contract). Values live in [commissioning](../../docs/project-specs.md#dout-navigation-commissioning); wiring in [team](../../docs/team.md#2-pins).
 
 ## Files
 

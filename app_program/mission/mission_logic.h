@@ -81,7 +81,7 @@ typedef struct
     bool front_valid : 1;
     bool side_valid : 1;
     bool profile_valid : 1;
-    bool barcode_level : 1; /* raw GP16 level, diagnostics only */
+    bool barcode_level : 1; /* raw GP27 level, diagnostics only */
     bool have_barcode : 1; /* a decoded barcode this release */
     uint8_t line : 2; /* IrLine */
     uint8_t motion_status : 2; /* rd_motion_status_t */
@@ -89,7 +89,7 @@ typedef struct
     uint8_t scan_state : 3; /* obstacle_scan_state_t */
     uint8_t scan_id : 4;
     uint8_t barcode_letter : 5; /* 0..25, 31 none */
-    uint8_t barcode_edges : 5; /* running GP16 edge count, diagnostics only */
+    uint8_t barcode_edges : 5; /* running GP27 edge count, diagnostics only */
     uint8_t barcode_action : 3; /* barcode_action_t */
 } MissionInputs;
 
