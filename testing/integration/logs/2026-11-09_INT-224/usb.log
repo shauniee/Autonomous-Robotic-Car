@@ -1,0 +1,186 @@
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+all subsystems started
+
+wifi: cyw43_utk_task starting (proc 1)
+[MISSION] state=READY
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+[IMU] calibration started: keep wheels still; timeout_ms=5000
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IMU] calibration passed: samples=100 elapsed_ms=2140
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=5000 | motion max=0us ovr=0 stack=528/2176B | io max=0us ovr=0 stack=480/2176B | mission max=1234us ovr=250 stack=944/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=10000 | motion max=576us ovr=0 stack=528/2176B | io max=1568us ovr=244 stack=480/2176B | mission max=1035us ovr=500 stack=944/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=15000 | motion max=304us ovr=0 stack=528/2176B | io max=1570us ovr=494 stack=480/2176B | mission max=1028us ovr=750 stack=944/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[TIMING] t=20000 | motion max=296us ovr=0 stack=528/2176B | io max=1572us ovr=744 stack=480/2176B | mission max=1020us ovr=1000 stack=944/2176B
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=25000 | motion max=301us ovr=0 stack=528/2176B | io max=1708us ovr=994 stack=480/2176B | mission max=797us ovr=1250 stack=944/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=30000 | motion max=298us ovr=0 stack=528/2176B | io max=1586us ovr=1244 stack=480/2176B | mission max=1039us ovr=1500 stack=944/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=35000 | motion max=293us ovr=0 stack=528/2176B | io max=1585us ovr=1494 stack=480/2176B | mission max=1100us ovr=1750 stack=944/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[TIMING] t=40000 | motion max=217us ovr=0 stack=528/2176B | io max=1635us ovr=1744 stack=480/2176B | mission max=1124us ovr=2000 stack=944/2176B
+wifi: link status -> joined AP, no IP yet (2)
+wifi: link up, ip=172.20.10.4
+[TIMING] t=45000 | motion max=220us ovr=0 stack=528/2176B | io max=1603us ovr=1994 stack=480/2176B | mission max=1245us ovr=2250 stack=944/2176B
+[TIMING] t=50000 | motion max=248us ovr=0 stack=528/2176B | io max=1596us ovr=2244 stack=480/2176B | mission max=1524us ovr=2500 stack=944/2176B
+[TIMING] t=55000 | motion max=201us ovr=0 stack=528/2176B | io max=1644us ovr=2494 stack=480/2176B | mission max=1515us ovr=2750 stack=944/2176B
+mqtt: connection/subscription deadline; retry scheduled
+mqtt: connection/subscription deadline; retry scheduled
+[TIMING] t=60000 | motion max=220us ovr=0 stack=528/2176B | io max=1601us ovr=2744 stack=480/2176B | mission max=1558us ovr=3000 stack=944/2176B
+mqtt: ready
+[TIMING] t=65000 | motion max=237us ovr=0 stack=528/2176B | io max=1741us ovr=2994 stack=480/2176B | mission max=1557us ovr=3250 stack=944/2176B
+[TIMING] t=70000 | motion max=240us ovr=0 stack=528/2176B | io max=1975us ovr=3244 stack=480/2176B | mission max=1574us ovr=3500 stack=944/2176B
+[TIMING] t=75000 | motion max=242us ovr=0 stack=528/2176B | io max=1872us ovr=3494 stack=480/2176B | mission max=1578us ovr=3750 stack=944/2176B
+[TIMING] t=80000 | motion max=269us ovr=0 stack=528/2176B | io max=2037us ovr=3744 stack=480/2176B | mission max=1569us ovr=4000 stack=944/2176B
+[TIMING] t=85000 | motion max=250us ovr=0 stack=528/2176B | io max=1661us ovr=3994 stack=480/2176B | mission max=1404us ovr=4250 stack=944/2176B
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[MOTION] motor stall: mode=1 action=1 speed_mmps=100 steering_q=-46 left=147 right=114
+[SAFETY] causes=2 gp21=0 fault=1 line_stale=0 motion_stale=0 motion_faults=1 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=0 latched=2 inputs_ok=1 motion_stopped=1 motion_status=0
+[TIMING] t=90000 | motion max=224us ovr=0 stack=584/2176B | io max=1603us ovr=4244 stack=480/2176B | mission max=2359us ovr=4500 stack=1088/2176B
+[MISSION] GP20 ignored: release GP20 then press again state=STOPPED GP21_down=0
+[MISSION] GP20 released state=STOPPED GP21_down=0
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=READY
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[TIMING] t=95000 | motion max=889us ovr=0 stack=672/2176B | io max=1741us ovr=4494 stack=480/2176B | mission max=3010us ovr=4750 stack=1088/2176B
+[MOTION] motor stall: mode=1 action=1 speed_mmps=100 steering_q=-47 left=264 right=112
+[SAFETY] causes=2 gp21=0 fault=1 line_stale=0 motion_stale=0 motion_faults=1 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=0 latched=2 inputs_ok=1 motion_stopped=1 motion_status=0
+[TIMING] t=100000 | motion max=661us ovr=0 stack=672/2176B | io max=1791us ovr=4744 stack=480/2176B | mission max=2309us ovr=5000 stack=1096/2176B
+[TIMING] t=105000 | motion max=889us ovr=0 stack=672/2176B | io max=1839us ovr=4994 stack=480/2176B | mission max=1601us ovr=5250 stack=1096/2176B
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=READY
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[TIMING] t=110000 | motion max=239us ovr=0 stack=672/2176B | io max=1613us ovr=5244 stack=480/2176B | mission max=1615us ovr=5500 stack=1096/2176B
+[MOTION] motor stall: mode=1 action=1 speed_mmps=100 steering_q=-48 left=246 right=27
+[SAFETY] causes=2 gp21=0 fault=1 line_stale=0 motion_stale=0 motion_faults=1 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=0 latched=2 inputs_ok=1 motion_stopped=1 motion_status=0
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=READY
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[MOTION] motor stall: mode=1 action=1 speed_mmps=100 steering_q=0 left=403 right=27
+[SAFETY] causes=2 gp21=0 fault=1 line_stale=0 motion_stale=0 motion_faults=1 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=0 latched=2 inputs_ok=1 motion_stopped=1 motion_status=0
+[TIMING] t=115000 | motion max=613us ovr=0 stack=672/2176B | io max=1941us ovr=5494 stack=480/2176B | mission max=2092us ovr=5750 stack=1112/2176B
+[TIMING] t=120000 | motion max=796us ovr=0 stack=672/2176B | io max=1621us ovr=5744 stack=480/2176B | mission max=1502us ovr=6000 stack=1112/2176B
+[TIMING] t=125000 | motion max=222us ovr=0 stack=672/2176B | io max=1679us ovr=5994 stack=480/2176B | mission max=1726us ovr=6250 stack=1112/2176B
+[TIMING] t=130000 | motion max=229us ovr=0 stack=672/2176B | io max=1839us ovr=6244 stack=480/2176B | mission max=1574us ovr=6500 stack=1112/2176B
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=READY
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[MOTION] motor stall: mode=1 action=1 speed_mmps=100 steering_q=0 left=559 right=35
+[SAFETY] causes=2 gp21=0 fault=1 line_stale=0 motion_stale=0 motion_faults=1 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=0 latched=2 inputs_ok=1 motion_stopped=1 motion_status=0
+[TIMING] t=135000 | motion max=225us ovr=0 stack=672/2176B | io max=1611us ovr=6494 stack=480/2176B | mission max=2967us ovr=6750 stack=1112/2176B
+[TIMING] t=140000 | motion max=776us ovr=0 stack=672/2176B | io max=1624us ovr=6744 stack=480/2176B | mission max=1535us ovr=7000 stack=1112/2176B
+[TIMING] t=145000 | motion max=221us ovr=0 stack=672/2176B | io max=1815us ovr=6994 stack=480/2176B | mission max=1566us ovr=7250 stack=1112/2176B
+[TIMING] t=150000 | motion max=233us ovr=0 stack=672/2176B | io max=1623us ovr=7244 stack=480/2176B | mission max=1553us ovr=7500 stack=1112/2176B
+[TIMING] t=155000 | motion max=224us ovr=0 stack=672/2176B | io max=1755us ovr=7494 stack=480/2176B | mission max=1597us ovr=7750 stack=1112/2176B
+[TIMING] t=160000 | motion max=226us ovr=0 stack=672/2176B | io max=2234us ovr=7744 stack=480/2176B | mission max=1621us ovr=8000 stack=1112/2176B
+[TIMING] t=165000 | motion max=237us ovr=0 stack=672/2176B | io max=1851us ovr=7994 stack=480/2176B | mission max=1554us ovr=8250 stack=1112/2176B
+[TIMING] t=170000 | motion max=227us ovr=0 stack=672/2176B | io max=1938us ovr=8244 stack=480/2176B | mission max=1564us ovr=8500 stack=1112/2176B
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=READY
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[TIMING] t=175000 | motion max=236us ovr=0 stack=672/2176B | io max=1878us ovr=8494 stack=480/2176B | mission max=2926us ovr=8750 stack=1112/2176B
+[MISSION] state=NAVIGATE
+[MISSION] state=FOLLOW_LINE
+[TIMING] t=180000 | motion max=676us ovr=0 stack=672/2176B | io max=1870us ovr=8744 stack=480/2176B | mission max=2845us ovr=9000 stack=1120/2176B
+[MISSION] state=NAVIGATE
+[MISSION] state=FOLLOW_LINE
+[TIMING] t=185000 | motion max=675us ovr=0 stack=672/2176B | io max=1852us ovr=8994 stack=480/2176B | mission max=3055us ovr=9250 stack=1120/2176B
+[MISSION] state=NAVIGATE
+[MISSION] state=FOLLOW_LINE
+[TIMING] t=190000 | motion max=672us ovr=0 stack=672/2176B | io max=1819us ovr=9244 stack=480/2176B | mission max=3177us ovr=9500 stack=1184/2176B
+[TIMING] t=195000 | motion max=689us ovr=0 stack=672/2176B | io max=2194us ovr=9494 stack=480/2176B | mission max=2777us ovr=9750 stack=1184/2176B
+[MISSION] state=NAVIGATE
+[MISSION] state=FOLLOW_LINE
+[TIMING] t=200000 | motion max=682us ovr=0 stack=672/2176B | io max=1880us ovr=9744 stack=480/2176B | mission max=2826us ovr=10000 stack=1184/2176B
+[TIMING] t=205000 | motion max=673us ovr=0 stack=672/2176B | io max=1828us ovr=9994 stack=480/2176B | mission max=2850us ovr=10250 stack=1184/2176B
+[MISSION] state=NAVIGATE
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=1 latched=1 inputs_ok=1 motion_stopped=1 motion_status=0
+[MISSION] state=READY
+[TIMING] t=210000 | motion max=672us ovr=0 stack=672/2176B | io max=1925us ovr=10244 stack=480/2176B | mission max=3084us ovr=10500 stack=1184/2176B
+[TIMING] t=215000 | motion max=775us ovr=0 stack=672/2176B | io max=1685us ovr=10494 stack=480/2176B | mission max=1439us ovr=10750 stack=1184/2176B
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[MISSION] state=NAVIGATE
+[MISSION] state=FOLLOW_LINE
+[TIMING] t=220000 | motion max=243us ovr=0 stack=672/2176B | io max=2101us ovr=10744 stack=480/2176B | mission max=3150us ovr=11000 stack=1184/2176B
+[MISSION] state=NAVIGATE
+[MISSION] state=FOLLOW_LINE
+[MISSION] state=SCAN
+[TIMING] t=225000 | motion max=663us ovr=0 stack=672/2176B | io max=2030us ovr=10994 stack=480/2176B | mission max=2995us ovr=11250 stack=1312/2176B
+[TIMING] t=230000 | motion max=812us ovr=0 stack=672/2176B | io max=1868us ovr=11244 stack=480/2176B | mission max=1804us ovr=11500 stack=1312/2176B
+[TIMING] t=235000 | motion max=243us ovr=0 stack=672/2176B | io max=1824us ovr=11494 stack=480/2176B | mission max=3574us ovr=11750 stack=1312/2176B
+[TIMING] t=240000 | motion max=246us ovr=0 stack=672/2176B | io max=1791us ovr=11744 stack=480/2176B | mission max=1769us ovr=12000 stack=1312/2176B
+[TIMING] t=245000 | motion max=245us ovr=0 stack=672/2176B | io max=1641us ovr=11994 stack=480/2176B | mission max=2334us ovr=12250 stack=1312/2176B
+[MISSION] state=BYPASS
+[TIMING] t=250000 | motion max=244us ovr=0 stack=672/2176B | io max=1875us ovr=12244 stack=480/2176B | mission max=3696us ovr=12500 stack=1400/2176B
+[TIMING] t=255000 | motion max=831us ovr=0 stack=672/2176B | io max=2165us ovr=12494 stack=480/2176B | mission max=3716us ovr=12750 stack=1400/2176B
+[TIMING] t=260000 | motion max=820us ovr=0 stack=672/2176B | io max=2302us ovr=12744 stack=480/2176B | mission max=3655us ovr=13000 stack=1400/2176B
+[MISSION] state=NAVIGATE
+[TIMING] t=265000 | motion max=813us ovr=0 stack=672/2176B | io max=1914us ovr=12994 stack=480/2176B | mission max=3304us ovr=13250 stack=1400/2176B
+[TIMING] t=270000 | motion max=824us ovr=0 stack=672/2176B | io max=1896us ovr=13244 stack=480/2176B | mission max=2437us ovr=13500 stack=1400/2176B
+[TIMING] t=275000 | motion max=850us ovr=0 stack=672/2176B | io max=1873us ovr=13494 stack=480/2176B | mission max=2105us ovr=13750 stack=1400/2176B
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=0 latched=0 inputs_ok=1 motion_stopped=0 motion_status=1
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=READY
+[TIMING] t=280000 | motion max=789us ovr=0 stack=672/2176B | io max=1865us ovr=13744 stack=480/2176B | mission max=2647us ovr=14000 stack=1400/2176B
+[SAFETY] causes=2 gp21=0 fault=1 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=4 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=0 latched=2 inputs_ok=1 motion_stopped=1 motion_status=0
+[TIMING] t=285000 | motion max=783us ovr=0 stack=672/2176B | io max=1632us ovr=13994 stack=480/2176B | mission max=2483us ovr=14250 stack=1400/2176B
+[TIMING] t=290000 | motion max=238us ovr=0 stack=672/2176B | io max=1660us ovr=14244 stack=480/2176B | mission max=1576us ovr=14500 stack=1400/2176B
+[TIMING] t=295000 | motion max=229us ovr=0 stack=672/2176B | io max=2055us ovr=14494 stack=480/2176B | mission max=1627us ovr=14750 stack=1400/2176B
+[TIMING] t=300000 | motion max=241us ovr=0 stack=672/2176B | io max=1828us ovr=14744 stack=480/2176B | mission max=1544us ovr=15000 stack=1400/2176B
+[TIMING] t=305000 | motion max=234us ovr=0 stack=672/2176B | io max=1607us ovr=14994 stack=480/2176B | mission max=1565us ovr=15250 stack=1400/2176B
+[TIMING] t=310000 | motion max=224us ovr=0 stack=672/2176B | io max=1822us ovr=15244 stack=480/2176B | mission max=1678us ovr=15500 stack=1400/2176B
+[TIMING] t=315000 | motion max=229us ovr=0 stack=672/2176B | io max=1643us ovr=15494 stack=480/2176B | mission max=1567us ovr=15750 stack=1400/2176B
+[TIMING] t=320000 | motion max=227us ovr=0 stack=672/2176B | io max=1690us ovr=15744 stack=480/2176B | mission max=1575us ovr=16000 stack=1400/2176B
+[TIMING] t=325000 | motion max=229us ovr=0 stack=672/2176B | io max=1704us ovr=15994 stack=480/2176B | mission max=1582us ovr=16250 stack=1400/2176B
+[TIMING] t=330000 | motion max=224us ovr=0 stack=672/2176B | io max=1675us ovr=16244 stack=480/2176B | mission max=1578us ovr=16500 stack=1400/2176B
