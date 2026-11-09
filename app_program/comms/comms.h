@@ -312,4 +312,8 @@ void comms_step(uint32_t now_ms);
    kind: mqtt_event_kind_t; arg and arg2 as documented in MQTT_PROTOCOL.md. */
 void comms_event(mqtt_event_kind_t kind, uint8_t arg, uint16_t arg2);
 
+/* Mission: the navigation for the last barcode is done, so telemetry reports
+   no letter until the next read. */
+void comms_barcode_clear(void);
+
 #endif /* COMMS_H */

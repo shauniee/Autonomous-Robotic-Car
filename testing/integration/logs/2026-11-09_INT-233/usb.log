@@ -1,0 +1,254 @@
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+all subsystems started
+
+[BCPIN] t=0 level=0 edges=0
+wifi: cyw43_utk_task starting (proc 1)
+[MISSION] state=READY
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+[IMU] calibration started: keep wheels still; timeout_ms=5000
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IMU] calibration passed: samples=100 elapsed_ms=2120
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=5000 | motion max=0us ovr=0 stack=520/2176B | io max=0us ovr=0 stack=448/2176B | mission max=1421us ovr=250 stack=984/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[TIMING] t=10000 | motion max=614us ovr=0 stack=520/2176B | io max=1661us ovr=244 stack=448/2176B | mission max=1244us ovr=500 stack=984/2176B
+wifi: link status -> joined AP, no IP yet (2)
+wifi: link up, ip=172.20.10.4
+mqtt: ready
+[BCPIN] t=13740 level=1 edges=0
+[BCPIN] t=13800 level=0 edges=0
+[BCPIN] t=13940 level=1 edges=0
+[BCPIN] t=14220 level=0 edges=0
+[BCPIN] t=14340 level=1 edges=0
+[BCPIN] t=14620 level=0 edges=0
+[BCPIN] t=14780 level=1 edges=0
+[BCPIN] t=14820 level=0 edges=0
+[TIMING] t=15000 | motion max=287us ovr=0 stack=536/2176B | io max=1620us ovr=494 stack=448/2176B | mission max=2199us ovr=750 stack=1000/2176B
+[BCPIN] t=15180 level=1 edges=0
+[BCPIN] t=15220 level=0 edges=0
+[BCPIN] t=15380 level=1 edges=0
+[BCPIN] t=15420 level=0 edges=0
+[BCPIN] t=15560 level=1 edges=0
+[BCPIN] t=15600 level=0 edges=0
+[BCPIN] t=15760 level=1 edges=0
+[BCPIN] t=16040 level=0 edges=0
+[BCPIN] t=16180 level=1 edges=0
+[BCPIN] t=16440 level=0 edges=0
+[BCPIN] t=16820 level=1 edges=0
+[BCPIN] t=16860 level=0 edges=0
+[BCPIN] t=17020 level=1 edges=0
+[BCPIN] t=17060 level=0 edges=0
+[BCPIN] t=17220 level=1 edges=0
+[BCPIN] t=17520 level=0 edges=0
+[BCPIN] t=17640 level=1 edges=0
+[BCPIN] t=17820 level=0 edges=0
+[BCPIN] t=17940 level=1 edges=0
+[BCPIN] t=17960 level=0 edges=0
+[BCPIN] t=18240 level=1 edges=0
+[BCPIN] t=18280 level=0 edges=0
+[TIMING] t=20000 | motion max=279us ovr=0 stack=576/2176B | io max=1785us ovr=744 stack=448/2176B | mission max=2428us ovr=1000 stack=1000/2176B
+[BCPIN] t=20600 level=1 edges=0
+[BCPIN] t=23920 level=0 edges=0
+[TIMING] t=25000 | motion max=280us ovr=0 stack=576/2176B | io max=2007us ovr=994 stack=448/2176B | mission max=1667us ovr=1250 stack=1000/2176B
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[BC] L=3493 R=3485 width=0 result=0 orientation=0 letter=31 action=0 dropped=0
+[TIMING] t=30000 | motion max=266us ovr=0 stack=576/2176B | io max=1673us ovr=1244 stack=448/2176B | mission max=1670us ovr=1500 stack=1000/2176B
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[BC] L=7798 R=7837 width=4306 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34100 level=1 edges=156
+[BC] L=7814 R=7854 width=16 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34120 level=0 edges=242
+[BC] L=7869 R=7915 width=55 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34160 level=1 edges=334
+[BC] L=7966 R=8025 width=97 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34260 level=0 edges=388
+[BC] L=8020 R=8084 width=54 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34300 level=1 edges=479
+[BC] L=8117 R=8172 width=96 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34380 level=0 edges=566
+[BCPIN] t=34420 level=0 edges=736
+[BC] L=8307 R=8292 width=187 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34500 level=1 edges=884
+[BC] L=8318 R=8300 width=10 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34520 level=0 edges=1056
+[BC] L=8380 R=8350 width=61 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34560 level=1 edges=1293
+[BC] L=8390 R=8359 width=9 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34580 level=0 edges=1475
+[BC] L=8452 R=8415 width=61 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34620 level=1 edges=1695
+[BC] L=8463 R=8423 width=10 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34640 level=0 edges=1807
+[BC] L=8517 R=8472 width=53 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34680 level=1 edges=1883
+[BC] L=8611 R=8556 width=93 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34760 level=0 edges=1975
+[BC] L=8659 R=8599 width=47 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34800 level=1 edges=2062
+[BC] L=8752 R=8679 width=92 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=34860 level=0 edges=2068
+[BCPIN] t=34980 level=0 edges=2405
+[TIMING] t=35000 | motion max=692us ovr=0 stack=656/2176B | io max=1843us ovr=1494 stack=448/2176B | mission max=4481us ovr=1750 stack=1096/2176B
+[BC] L=8950 R=8844 width=196 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=35020 level=1 edges=2515
+[BC] L=8966 R=8857 width=15 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=35040 level=0 edges=2611
+[BC] L=9019 R=8901 width=52 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=35080 level=1 edges=2667
+[BC] L=9114 R=8988 width=94 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=35160 level=0 edges=2743
+[BC] L=9164 R=9035 width=49 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=35200 level=1 edges=2823
+[BC] L=9262 R=9123 width=97 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=35280 level=0 edges=2931
+[BC] L=9316 R=9173 width=53 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=35320 level=1 edges=3067
+[BC] L=9328 R=9184 width=11 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=35340 level=0 edges=3307
+[BC] L=9465 R=9307 width=136 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=35440 level=1 edges=3445
+[BC] L=9476 R=9319 width=11 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=35460 level=0 edges=3583
+[NAV] t=36040 phase=4 turn=0 ir=11 front_valid=0 front_mm=8191
+[MISSION] state=NAVIGATE
+[MISSION] GP20 pressed state=NAVIGATE GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[BC] L=10661 R=10551 width=1186 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=36540 level=1 edges=3721
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=1 latched=1 inputs_ok=1 motion_stopped=1 motion_status=0 phase=4 usable_line=1 line_age_ms=0 front_valid=0 front_mm=8191
+[BCPIN] t=36920 level=0 edges=3721
+[MISSION] state=READY
+[BCPIN] t=37940 level=1 edges=3721
+[BCPIN] t=39880 level=0 edges=3721
+[TIMING] t=40000 | motion max=749us ovr=0 stack=656/2176B | io max=2179us ovr=1744 stack=448/2176B | mission max=3657us ovr=2000 stack=1112/2176B
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[BC] L=10952 R=10844 width=0 result=0 orientation=0 letter=31 action=0 dropped=0
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[BC] L=12492 R=12387 width=1540 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=43880 level=1 edges=3811
+[BC] L=12547 R=12443 width=55 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=43940 level=0 edges=3893
+[BC] L=12788 R=12682 width=240 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=44140 level=1 edges=3979
+[BC] L=12846 R=12740 width=58 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=44180 level=0 edges=4091
+[BC] L=12938 R=12831 width=91 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=44260 level=1 edges=4169
+[BC] L=13145 R=13033 width=206 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=44440 level=0 edges=4228
+[BC] L=13233 R=13121 width=88 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=44520 level=1 edges=4286
+[BC] L=13440 R=13322 width=206 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=44700 level=0 edges=4338
+[BC] L=13529 R=13409 width=88 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=44760 level=1 edges=4394
+[BC] L=13586 R=13462 width=56 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=44820 level=0 edges=4424
+[BC] L=13677 R=13548 width=90 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=44900 level=1 edges=4430
+[TIMING] t=45000 | motion max=747us ovr=0 stack=656/2176B | io max=2048us ovr=1994 stack=448/2176B | mission max=3082us ovr=2250 stack=1112/2176B
+[BC] L=13884 R=13759 width=207 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=45060 level=0 edges=4500
+[BC] L=13972 R=13849 width=88 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=45140 level=1 edges=4558
+[BC] L=14032 R=13909 width=60 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=45200 level=0 edges=4670
+[BC] L=14127 R=14002 width=94 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=45280 level=1 edges=4740
+[BC] L=14182 R=14058 width=55 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=45320 level=0 edges=4810
+[BC] L=14428 R=14306 width=246 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=45540 level=1 edges=4914
+[BC] L=14485 R=14365 width=57 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=45580 level=0 edges=5018
+[BC] L=14575 R=14453 width=89 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=45660 level=1 edges=5126
+[BC] L=14782 R=14658 width=206 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=45840 level=0 edges=5244
+[BC] L=14872 R=14749 width=90 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=45920 level=1 edges=5340
+[BC] L=14932 R=14807 width=59 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=45960 level=0 edges=5428
+[BC] L=15165 R=15009 width=231 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=46160 level=1 edges=5506
+[BC] L=15219 R=15058 width=53 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=46200 level=0 edges=5570
+[BC] L=15309 R=15138 width=89 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=46280 level=1 edges=5598
+[BC] L=15508 R=15314 width=198 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=46440 level=0 edges=5672
+[BC] L=15594 R=15391 width=85 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=46500 level=1 edges=5770
+[BC] L=15796 R=15568 width=200 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=46660 level=0 edges=5872
+[BC] L=15883 R=15644 width=86 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=46740 level=1 edges=5940
+[BC] L=15937 R=15692 width=53 result=1 orientation=0 letter=0 action=1 dropped=0
+[BCPIN] t=46780 level=0 edges=5994
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=1 latched=1 inputs_ok=1 motion_stopped=1 motion_status=0 phase=4 usable_line=1 line_age_ms=0 front_valid=1 front_mm=4407
+[MISSION] state=READY
+[TIMING] t=50000 | motion max=722us ovr=0 stack=656/2176B | io max=2210us ovr=2244 stack=448/2176B | mission max=4074us ovr=2500 stack=1112/2176B
+[TIMING] t=55000 | motion max=738us ovr=0 stack=656/2176B | io max=2434us ovr=2494 stack=448/2176B | mission max=1707us ovr=2750 stack=1112/2176B
+[TIMING] t=60000 | motion max=258us ovr=0 stack=656/2176B | io max=1646us ovr=2744 stack=448/2176B | mission max=1675us ovr=3000 stack=1112/2176B
+[TIMING] t=65000 | motion max=258us ovr=0 stack=656/2176B | io max=1656us ovr=2994 stack=448/2176B | mission max=1690us ovr=3250 stack=1112/2176B
+[TIMING] t=70000 | motion max=262us ovr=0 stack=656/2176B | io max=1834us ovr=3244 stack=448/2176B | mission max=1690us ovr=3500 stack=1112/2176B
+[TIMING] t=75000 | motion max=255us ovr=0 stack=656/2176B | io max=1706us ovr=3494 stack=448/2176B | mission max=1692us ovr=3750 stack=1112/2176B
+[TIMING] t=80000 | motion max=259us ovr=0 stack=656/2176B | io max=1771us ovr=3744 stack=448/2176B | mission max=1650us ovr=4000 stack=1112/2176B
+[BCPIN] t=82600 level=1 edges=5994
+[TIMING] t=85000 | motion max=253us ovr=0 stack=656/2176B | io max=1842us ovr=3994 stack=448/2176B | mission max=1687us ovr=4250 stack=1112/2176B
+[BCPIN] t=85140 level=0 edges=5994
+[TIMING] t=90000 | motion max=267us ovr=0 stack=656/2176B | io max=1829us ovr=4244 stack=448/2176B | mission max=1666us ovr=4500 stack=1112/2176B
+[TIMING] t=95000 | motion max=260us ovr=0 stack=656/2176B | io max=1690us ovr=4494 stack=448/2176B | mission max=1722us ovr=4750 stack=1112/2176B
+[TIMING] t=100000 | motion max=254us ovr=0 stack=656/2176B | io max=1846us ovr=4744 stack=448/2176B | mission max=1687us ovr=5000 stack=1112/2176B
+[TIMING] t=105000 | motion max=274us ovr=0 stack=656/2176B | io max=1804us ovr=4994 stack=448/2176B | mission max=1686us ovr=5250 stack=1112/2176B
+[TIMING] t=110000 | motion max=259us ovr=0 stack=656/2176B | io max=1650us ovr=5244 stack=448/2176B | mission max=1759us ovr=5500 stack=1112/2176B
+[TIMING] t=115000 | motion max=262us ovr=0 stack=656/2176B | io max=1764us ovr=5494 stack=448/2176B | mission max=1701us ovr=5750 stack=1112/2176B
+[TIMING] t=120000 | motion max=259us ovr=0 stack=656/2176B | io max=1784us ovr=5744 stack=448/2176B | mission max=1678us ovr=6000 stack=1112/2176B
+[TIMING] t=125000 | motion max=260us ovr=0 stack=656/2176B | io max=1787us ovr=5994 stack=448/2176B | mission max=1704us ovr=6250 stack=1112/2176B
+[TIMING] t=130000 | motion max=260us ovr=0 stack=656/2176B | io max=1836us ovr=6244 stack=448/2176B | mission max=1712us ovr=6500 stack=1112/2176B
+[TIMING] t=135000 | motion max=253us ovr=0 stack=656/2176B | io max=1721us ovr=6494 stack=448/2176B | mission max=1672us ovr=6750 stack=1112/2176B
+[TIMING] t=140000 | motion max=263us ovr=0 stack=656/2176B | io max=1872us ovr=6744 stack=448/2176B | mission max=1732us ovr=7000 stack=1112/2176B
+[TIMING] t=145000 | motion max=255us ovr=0 stack=656/2176B | io max=1848us ovr=6994 stack=448/2176B | mission max=1685us ovr=7250 stack=1112/2176B
+[TIMING] t=150000 | motion max=258us ovr=0 stack=656/2176B | io max=1707us ovr=7244 stack=448/2176B | mission max=1697us ovr=7500 stack=1112/2176B
+[TIMING] t=155000 | motion max=264us ovr=0 stack=656/2176B | io max=1647us ovr=7494 stack=448/2176B | mission max=1682us ovr=7750 stack=1112/2176B
+[TIMING] t=160000 | motion max=257us ovr=0 stack=656/2176B | io max=2026us ovr=7744 stack=448/2176B | mission max=1697us ovr=8000 stack=1112/2176B
+[TIMING] t=165000 | motion max=258us ovr=0 stack=656/2176B | io max=1702us ovr=7994 stack=448/2176B | mission max=1691us ovr=8250 stack=1112/2176B
+[TIMING] t=170000 | motion max=267us ovr=0 stack=656/2176B | io max=1944us ovr=8244 stack=448/2176B | mission max=1701us ovr=8500 stack=1112/2176B
+[TIMING] t=175000 | motion max=263us ovr=0 stack=656/2176B | io max=1741us ovr=8494 stack=448/2176B | mission max=1714us ovr=8750 stack=1112/2176B
+[TIMING] t=180000 | motion max=267us ovr=0 stack=656/2176B | io max=1965us ovr=8744 stack=448/2176B | mission max=1687us ovr=9000 stack=1112/2176B
+[TIMING] t=185000 | motion max=255us ovr=0 stack=656/2176B | io max=1755us ovr=8994 stack=448/2176B | mission max=1683us ovr=9250 stack=1112/2176B
+[TIMING] t=190000 | motion max=262us ovr=0 stack=656/2176B | io max=1751us ovr=9244 stack=448/2176B | mission max=1694us ovr=9500 stack=1112/2176B
+[TIMING] t=195000 | motion max=273us ovr=0 stack=656/2176B | io max=1795us ovr=9494 stack=448/2176B | mission max=1663us ovr=9750 stack=1112/2176B
+[TIMING] t=200000 | motion max=256us ovr=0 stack=656/2176B | io max=1721us ovr=9744 stack=448/2176B | mission max=1690us ovr=10000 stack=1112/2176B
+[TIMING] t=205000 | motion max=260us ovr=0 stack=656/2176B | io max=1788us ovr=9994 stack=448/2176B | mission max=1689us ovr=10250 stack=1112/2176B
+[TIMING] t=210000 | motion max=255us ovr=0 stack=656/2176B | io max=1686us ovr=10244 stack=448/2176B | mission max=1691us ovr=10500 stack=1112/2176B
+[TIMING] t=215000 | motion max=255us ovr=0 stack=656/2176B | io max=1789us ovr=10494 stack=448/2176B | mission max=1693us ovr=10750 stack=1112/2176B
+[TIMING] t=220000 | motion max=262us ovr=0 stack=656/2176B | io max=1861us ovr=10744 stack=448/2176B | mission max=1712us ovr=11000 stack=1112/2176B
+[TIMING] t=225000 | motion max=256us ovr=0 stack=656/2176B | io max=1878us ovr=10994 stack=448/2176B | mission max=1679us ovr=11250 stack=1112/2176B
+[TIMING] t=230000 | motion max=268us ovr=0 stack=656/2176B | io max=1774us ovr=11244 stack=448/2176B | mission max=1712us ovr=11500 stack=1112/2176B
+[TIMING] t=235000 | motion max=261us ovr=0 stack=656/2176B | io max=1847us ovr=11494 stack=448/2176B | mission max=1672us ovr=11750 stack=1112/2176B
+[TIMING] t=240000 | motion max=257us ovr=0 stack=656/2176B | io max=1725us ovr=11744 stack=448/2176B | mission max=1700us ovr=12000 stack=1112/2176B
+[TIMING] t=245000 | motion max=259us ovr=0 stack=656/2176B | io max=1790us ovr=11994 stack=448/2176B | mission max=1695us ovr=12250 stack=1112/2176B
+[TIMING] t=250000 | motion max=259us ovr=0 stack=656/2176B | io max=2044us ovr=12244 stack=448/2176B | mission max=1680us ovr=12500 stack=1112/2176B
+[TIMING] t=255000 | motion max=261us ovr=0 stack=656/2176B | io max=1792us ovr=12494 stack=448/2176B | mission max=1686us ovr=12750 stack=1112/2176B
+[BCPIN] t=256500 level=1 edges=5994
+[BCPIN] t=258880 level=0 edges=5994
+[BCPIN] t=258920 level=1 edges=5994
+[BCPIN] t=258940 level=0 edges=5994
+[TIMING] t=260000 | motion max=254us ovr=0 stack=656/2176B | io max=1796us ovr=12744 stack=448/2176B | mission max=2140us ovr=13000 stack=1112/2176B

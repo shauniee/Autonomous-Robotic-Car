@@ -341,7 +341,7 @@ range needs, stored is what the field occupies.
 
 | Field | Where | Valid range | Bits | Representation | Writer → readers, sync |
 | --- | --- | --- | ---: | --- | --- |
-| Last barcode | `comms.c` | letter 0..25 (31 none), action 0..4 | 5+3 = 8 | `_Atomic uint8_t` bits 0-4, 5-7 | Mission → Comms (core 0) |
+| Last barcode | `comms.c` | letter 0..25 (31 none, also after its navigation), action 0..4 | 5+3 = 8 | `_Atomic uint8_t` bits 0-4, 5-7 | Mission → Comms (core 0) |
 | Last clearance | `comms.c` | 0..1023 mm | 10 / 16 | `_Atomic uint16_t`, saturates | Mission → Comms |
 | Link state | `report.c` | Wi-Fi up, broker up | 2 / 8 | `_Atomic uint8_t` | transport → I/O (core 0) |
 | Event entry | `comms_packed_event_t` | kind 1..4, arg 0..127, time, counts, arg2 0..1023 | 3+7 / 16, 16, 16+16, 10 / 16 | masks behind accessors | Mission, Terrain → Comms; cross-core mutex |
