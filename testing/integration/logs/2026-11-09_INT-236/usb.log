@@ -1,0 +1,433 @@
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+all subsystems started
+
+[BCPIN] t=0 level=0 edges=0
+wifi: cyw43_utk_task starting (proc 1)
+[MISSION] state=READY
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+[IMU] calibration started: keep wheels still; timeout_ms=5000
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IMU] calibration passed: samples=100 elapsed_ms=2160
+wifi: link status -> joined AP, no IP yet (2)
+wifi: link up, ip=172.20.10.4
+[TIMING] t=5000 | motion max=0us ovr=0 stack=520/2176B | io max=0us ovr=0 stack=448/2176B | mission max=1451us ovr=250 stack=984/2176B
+mqtt: ready
+[TIMING] t=10000 | motion max=619us ovr=0 stack=520/2176B | io max=1713us ovr=244 stack=448/2176B | mission max=1651us ovr=500 stack=984/2176B
+[TIMING] t=15000 | motion max=383us ovr=0 stack=520/2176B | io max=1769us ovr=494 stack=448/2176B | mission max=1684us ovr=750 stack=984/2176B
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[BC] L=0 R=0 width=0 result=0 orientation=0 letter=31 action=0 dropped=0
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[BC] L=2967 R=2935 width=2965 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=19000 level=1 edges=149
+[BC] L=3026 R=2994 width=59 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=19040 level=0 edges=1465
+[BC] L=3032 R=3001 width=6 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=19060 level=1 edges=2745
+[BCPIN] t=19180 level=1 edges=2815
+[BC] L=3386 R=3349 width=353 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=19360 level=0 edges=3077
+[BC] L=3485 R=3450 width=99 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=19440 level=1 edges=3371
+[BC] L=3978 R=3938 width=492 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=19860 level=0 edges=3587
+[BC] L=4083 R=4043 width=105 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=19940 level=1 edges=3810
+[BC] L=4132 R=4091 width=48 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=19980 level=0 edges=4184
+[BC] L=4153 R=4112 width=21 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=20000 level=1 edges=4555
+[TIMING] t=20000 | motion max=375us ovr=0 stack=656/2176B | io max=1676us ovr=744 stack=448/2176B | mission max=5675us ovr=1000 stack=1072/2176B
+[BC] L=4504 R=4461 width=350 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=20300 level=0 edges=4982
+[BC] L=4519 R=4473 width=14 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=20320 level=1 edges=5405
+[BC] L=4565 R=4521 width=46 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=20360 level=0 edges=5599
+[BC] L=4674 R=4626 width=108 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=20460 level=1 edges=5881
+[BC] L=4714 R=4667 width=40 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=20480 level=0 edges=6102
+[NAV] t=20940 phase=4 turn=0 ir=11 front_valid=0 front_mm=8191
+[MISSION] state=NAVIGATE
+[MISSION] state=FOLLOW_LINE
+[BC] L=5863 R=5857 width=1150 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=21500 level=1 edges=6322
+[BC] L=6120 R=6164 width=259 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=21740 level=0 edges=6590
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=1 latched=1 inputs_ok=1 motion_stopped=1 motion_status=0 phase=4 usable_line=1 line_age_ms=0 front_valid=0 front_mm=8191
+[MISSION] state=READY
+[BCPIN] t=23340 level=1 edges=6590
+[TIMING] t=25000 | motion max=942us ovr=0 stack=656/2176B | io max=3023us ovr=994 stack=448/2176B | mission max=3522us ovr=1250 stack=1080/2176B
+[BCPIN] t=25320 level=0 edges=6590
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[BC] L=7233 R=7138 width=0 result=0 orientation=0 letter=31 action=0 dropped=0
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[TIMING] t=30000 | motion max=840us ovr=0 stack=656/2176B | io max=2279us ovr=1244 stack=448/2176B | mission max=2647us ovr=1500 stack=1080/2176B
+[BC] L=11633 R=11508 width=4398 result=3 orientation=0 le[TIMING] t=270010 | motion max=772us ovr=0 stack=664/2176B | io max=1783us ovr=13244 stack=576/2176B | mission max=1731us ovr=13500 stack=1168/2176B
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[BC] L=57046 R=51940 width=0 result=0 orientation=0 letter=31 action=0 dropped=0
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[TIMING] t=275010 | motion max=2528us ovr=0 stack=664/2176B | io max=2001us ovr=13494 stack=576/2176B | mission max=1416us ovr=13750 stack=1168/2176B
+[BC] L=59762 R=54626 width=2714 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275060 level=1 edges=58645
+[BC] L=59807 R=54673 width=45 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275100 level=0 edges=58865
+[BC] L=59832 R=54697 width=24 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275120 level=1 edges=59028
+[BC] L=59958 R=54825 width=126 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275240 level=0 edges=59411
+[BC] L=59983 R=54849 width=24 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275260 level=1 edges=59697
+[BC] L=60106 R=54970 width=122 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275360 level=0 edges=60031
+[BC] L=60130 R=54994 width=24 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275380 level=1 edges=60314
+[BC] L=60173 R=55037 width=43 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275420 level=0 edges=60520
+[BC] L=60280 R=55141 width=106 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275500 level=1 edges=60778
+[BC] L=60325 R=55186 width=45 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275540 level=0 edges=61110
+[BC] L=60353 R=55213 width=27 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275560 level=1 edges=61454
+[BC] L=60402 R=55261 width=48 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275600 level=0 edges=61846
+[BC] L=60426 R=55286 width=24 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275640 level=1 edges=62114
+[BC] L=60475 R=55335 width=49 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275680 level=0 edges=62479
+[BC] L=60500 R=55359 width=24 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275700 level=1 edges=62792
+[BC] L=60628 R=55483 width=127 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275800 level=0 edges=63095
+[BC] L=60649 R=55505 width=21 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275820 level=1 edges=63201
+[BC] L=60771 R=55621 width=121 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=275920 level=0 edges=63395
+[BC] L=60877 R=55721 width=105 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=276020 level=1 edges=63639
+[BC] L=60922 R=55762 width=44 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=276060 level=0 edges=63935
+[BC] L=60951 R=55790 width=28 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=276080 level=1 edges=64166
+[BC] L=60998 R=55837 width=47 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=276120 level=0 edges=64534
+[BC] L=61022 R=55861 width=24 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=276140 level=1 edges=64890
+[BCPIN] t=276260 level=1 edges=65885
+[BC] L=61299 R=56138 width=277 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=276380 level=0 edges=66355
+[BC] L=61317 R=56157 width=18 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=276400 level=1 edges=66783
+[BC] L=61365 R=56202 width=47 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=276440 level=0 edges=66977
+[BC] L=61470 R=56304 width=104 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=276520 level=1 edges=67233
+[BC] L=61513 R=56345 width=42 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=276560 level=0 edges=67427
+[NAV] t=277060 phase=4 turn=0 ir=11 front_valid=0 front_mm=8191
+[MISSION] state=NAVIGATE
+[MISSION] state=FOLLOW_LINE
+[BC] L=62658 R=57528 width=1146 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=277540 level=1 edges=67621
+[BC] L=62909 R=57813 width=252 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=277780 level=0 edges=67783
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=1 latched=1 inputs_ok=1 motion_stopped=1 motion_status=0 phase=4 usable_line=1 line_age_ms=0 front_valid=0 front_mm=8191
+[MISSION] state=READY
+[BCPIN] t=279960 level=1 edges=67783
+[TIMING] t=280010 | motion max=2608us ovr=0 stack=664/2176B | io max=1821us ovr=13744 stack=576/2176B | mission max=2281us ovr=14000 stack=1168/2176B
+[BCPIN] t=281720 level=0 edges=67783
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[BC] L=64811 R=59576 width=0 result=0 orientation=0 letter=31 action=0 dropped=0
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[BC] L=735 R=61021 width=1459 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284160 level=1 edges=67923
+[BC] L=781 R=61066 width=45 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284200 level=0 edges=68179
+[BC] L=806 R=61091 width=25 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284220 level=1 edges=68405
+[BC] L=935 R=61216 width=128 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284320 level=0 edges=68605
+[BC] L=955 R=61236 width=20 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284340 level=1 edges=69011
+[BC] L=1088 R=61364 width=132 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284440 level=0 edges=69595
+[BC] L=1103 R=61379 width=15 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284460 level=1 edges=69807
+[BC] L=1154 R=61430 width=51 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284500 level=0 edges=70062
+[BC] L=1258 R=61532 width=103 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284600 level=1 edges=70350
+[BC] L=1322 R=61595 width=63 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284640 level=0 edges=72245
+[BC] L=1328 R=61601 width=6 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284660 level=1 edges=73680
+[BC] L=1395 R=61669 width=67 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284700 level=1 edges=77130
+[BC] L=1399 R=61674 width=4 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=284760 level=1 edges=77182
+[BCPIN] t=284780 level=1 edges=79332
+[BCPIN] t=284900 level=1 edges=80648
+[BCPIN] t=284920 level=1 edges=80650
+[TIMING] t=285010 | motion max=2559us ovr=0 stack=664/2176B | io max=1695us ovr=13994 stack=576/2176B | mission max=6180us ovr=14250 stack=1168/2176B
+[BC] L=1751 R=62055 width=353 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=285020 level=0 edges=80881
+[BC] L=1857 R=62175 width=106 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=285120 level=1 edges=81091
+[BC] L=1906 R=62230 width=49 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=285160 level=0 edges=81355
+[BC] L=1936 R=62265 width=30 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=285200 level=1 edges=81639
+[BC] L=1983 R=62319 width=47 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=285240 level=0 edges=81835
+[BC] L=2011 R=62350 width=28 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=285260 level=1 edges=82117
+[BCPIN] t=285400 level=1 edges=83440
+[BC] L=2295 R=62670 width=285 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=285520 level=0 edges=83827
+[BC] L=2315 R=62693 width=20 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=285540 level=1 edges=84067
+[BC] L=2364 R=62746 width=49 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=285580 level=0 edges=84279
+[BC] L=2478 R=62876 width=114 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=285700 level=1 edges=84528
+[BC] L=2522 R=62926 width=44 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=285740 level=0 edges=84746
+[NAV] t=286180 phase=4 turn=0 ir=11 front_valid=0 front_mm=8191
+[MISSION] state=NAVIGATE
+[MISSION] state=FOLLOW_LINE
+[BC] L=3676 R=64097 width=1154 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=286740 level=1 edges=84788
+[BC] L=3904 R=64277 width=226 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=286920 level=0 edges=84951
+[BC] L=4915 R=65152 width=1005 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=287740 level=1 edges=86000
+[BC] L=4952 R=65185 width=36 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=287780 level=0 edges=86717
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=1 latched=1 inputs_ok=1 motion_stopped=1 motion_status=0 phase=4 usable_line=1 line_age_ms=0 front_valid=0 front_mm=8191
+[MISSION] state=READY
+[BCPIN] t=288500 level=1 edges=86717
+[TIMING] t=290010 | motion max=3499us ovr=0 stack=664/2176B | io max=1891us ovr=14244 stack=576/2176B | mission max=2350us ovr=14500 stack=1168/2176B
+[BCPIN] t=290320 level=0 edges=86717
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[BC] L=4995 R=65235 width=0 result=0 orientation=0 letter=31 action=0 dropped=0
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[BC] L=6790 R=1461 width=1793 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=292900 level=1 edges=86956
+[BCPIN] t=292960 level=1 edges=88044
+[BCPIN] t=292980 level=1 edges=88046
+[BC] L=7000 R=1702 width=211 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293100 level=0 edges=88362
+[BC] L=7016 R=1720 width=16 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293120 level=1 edges=88928
+[BC] L=7152 R=1874 width=136 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293240 level=0 edges=89364
+[BC] L=7173 R=1896 width=21 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293260 level=1 edges=90000
+[BC] L=7219 R=1951 width=46 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293300 level=0 edges=90307
+[BC] L=7330 R=2075 width=111 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293400 level=1 edges=90627
+[BC] L=7377 R=2131 width=47 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293440 level=0 edges=91087
+[BC] L=7404 R=2160 width=27 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293480 level=1 edges=91465
+[BC] L=7454 R=2217 width=50 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293520 level=0 edges=91867
+[BC] L=7480 R=2247 width=26 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293540 level=1 edges=92005
+[BC] L=7532 R=2306 width=52 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293580 level=0 edges=92463
+[BC] L=7557 R=2335 width=25 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293620 level=1 edges=92795
+[BC] L=7685 R=2480 width=128 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293740 level=0 edges=93131
+[BC] L=7709 R=2508 width=24 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293760 level=1 edges=93470
+[BC] L=7834 R=2646 width=125 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293860 level=0 edges=93728
+[BC] L=7938 R=2758 width=104 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=293960 level=1 edges=93969
+[BC] L=7990 R=2811 width=52 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=294000 level=0 edges=94461
+[BC] L=8012 R=2835 width=22 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=294020 level=1 edges=95032
+[BC] L=8075 R=2904 width=63 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=294080 level=0 edges=95904
+[BC] L=8088 R=2919 width=13 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=294100 level=1 edges=96795
+[BCPIN] t=294240 level=1 edges=98550
+[BCPIN] t=294340 level=1 edges=99616
+[BC] L=8431 R=3218 width=341 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=294380 level=0 edges=99792
+[BC] L=8534 R=3291 width=101 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=294460 level=1 edges=100028
+[BC] L=8575 R=3327 width=40 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=294480 level=0 edges=100260
+[NAV] t=294940 phase=4 turn=0 ir=11 front_valid=0 front_mm=8191
+[MISSION] state=NAVIGATE
+[TIMING] t=295010 | motion max=2882us ovr=0 stack=664/2176B | io max=1812us ovr=14494 stack=576/2176B | mission max=2736us ovr=14750 stack=1168/2176B
+[MISSION] state=FOLLOW_LINE
+[BC] L=9706 R=4405 width=1128 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=295440 level=1 edges=100578
+[BC] L=9910 R=4612 width=204 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=295600 level=0 edges=100987
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=1 latched=1 inputs_ok=1 motion_stopped=1 motion_status=0 phase=4 usable_line=1 line_age_ms=0 front_valid=0 front_mm=8191
+[MISSION] state=READY
+[BCPIN] t=296020 level=1 edges=100987
+[BCPIN] t=297540 level=0 edges=100987
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[BC] L=9945 R=4622 width=0 result=0 orientation=0 letter=31 action=0 dropped=0
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[TIMING] t=300010 | motion max=2554us ovr=0 stack=664/2176B | io max=1846us ovr=14744 stack=576/2176B | mission max=2501us ovr=15000 stack=1168/2176B
+[BC] L=12170 R=6825 width=2224 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=300680 level=1 edges=101191
+[BC] L=12216 R=6871 width=46 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=300720 level=0 edges=101401
+[BC] L=12243 R=6898 width=27 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=300740 level=1 edges=101642
+[BC] L=12366 R=7021 width=123 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=300840 level=0 edges=101944
+[BC] L=12389 R=7044 width=23 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=300860 level=1 edges=102300
+[BC] L=12513 R=7167 width=123 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=300980 level=0 edges=102605
+[BC] L=12539 R=7193 width=26 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301000 level=1 edges=102930
+[BC] L=12584 R=7239 width=45 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301040 level=0 edges=103138
+[BC] L=12691 R=7347 width=107 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301120 level=1 edges=103452
+[BC] L=12738 R=7394 width=47 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301160 level=0 edges=103836
+[BC] L=12764 R=7420 width=26 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301200 level=1 edges=104166
+[BC] L=12814 R=7469 width=49 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301240 level=0 edges=104540
+[BC] L=12840 R=7495 width=26 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301260 level=1 edges=104845
+[BC] L=12889 R=7545 width=49 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301300 level=0 edges=105245
+[BC] L=12914 R=7569 width=24 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301320 level=1 edges=105435
+[BC] L=13039 R=7692 width=124 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301420 level=0 edges=105773
+[BC] L=13064 R=7716 width=24 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301440 level=1 edges=106115
+[BC] L=13184 R=7834 width=119 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301560 level=0 edges=106283
+[BC] L=13293 R=7942 width=108 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301640 level=1 edges=106485
+[BC] L=13337 R=7986 width=44 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301680 level=0 edges=106571
+[BC] L=13367 R=8016 width=30 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301700 level=1 edges=106901
+[BC] L=13411 R=8061 width=44 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301740 level=0 edges=107223
+[BC] L=13438 R=8088 width=27 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=301780 level=1 edges=107501
+[BCPIN] t=301880 level=1 edges=108185
+[BCPIN] t=301900 level=1 edges=109314
+[BCPIN] t=302020 level=1 edges=110734
+[BC] L=13781 R=8427 width=342 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=302060 level=0 edges=110966
+[BC] L=13887 R=8532 width=105 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=302160 level=1 edges=111241
+[BC] L=13930 R=8575 width=43 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=302200 level=0 edges=111513
+[NAV] t=302680 phase=4 turn=0 ir=11 front_valid=0 front_mm=8191
+[MISSION] state=NAVIGATE
+[MISSION] state=FOLLOW_LINE
+[BC] L=15023 R=9615 width=1090 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=303100 level=1 edges=111807
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=1 latched=1 inputs_ok=1 motion_stopped=1 motion_status=0 phase=4 usable_line=1 line_age_ms=0 front_valid=0 front_mm=8191
+[MISSION] state=READY
+[BCPIN] t=304920 level=0 edges=111807
+[TIMING] t=305010 | motion max=2624us ovr=0 stack=664/2176B | io max=1787us ovr=14994 stack=576/2176B | mission max=4127us ovr=15250 stack=1168/2176B
+[BCPIN] t=305140 level=1 edges=111807
+[BCPIN] t=305180 level=0 edges=111807
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] state=FOLLOW_LINE
+[BC] L=15071 R=9657 width=0 result=0 orientation=0 letter=31 action=0 dropped=0
+[MISSION] GP20 released state=FOLLOW_LINE GP21_down=0
+[BC] L=17679 R=12251 width=2607 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=308740 level=1 edges=111997
+[BC] L=17721 R=12293 width=42 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=308760 level=0 edges=112215
+[BC] L=17751 R=12323 width=30 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=308800 level=1 edges=112427
+[BC] L=17873 R=12443 width=121 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=308900 level=0 edges=112685
+[BC] L=17902 R=12471 width=28 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=308920 level=1 edges=112803
+[BC] L=18023 R=12591 width=120 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309020 level=0 edges=113096
+[BC] L=18050 R=12617 width=26 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309040 level=1 edges=113404
+[BC] L=18091 R=12659 width=41 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309080 level=0 edges=113590
+[BC] L=18201 R=12766 width=109 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309180 level=1 edges=113797
+[BC] L=18246 R=12812 width=45 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309220 level=0 edges=114177
+[BC] L=18274 R=12839 width=27 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309240 level=1 edges=114339
+[BC] L=18323 R=12889 width=49 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309280 level=0 edges=114733
+[BC] L=18347 R=12913 width=24 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309300 level=1 edges=115144
+[BCPIN] t=309360 level=1 edges=116054
+[BC] L=18557 R=13125 width=210 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309480 level=0 edges=116681
+[BC] L=18568 R=13137 width=11 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309500 level=1 edges=117136
+[BC] L=18694 R=13258 width=125 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309600 level=0 edges=117405
+[BC] L=18797 R=13357 width=102 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309700 level=1 edges=117658
+[BC] L=18847 R=13403 width=49 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309740 level=0 edges=117972
+[BC] L=18870 R=13425 width=22 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=309760 level=1 edges=118294
+[BCPIN] t=309800 level=1 edges=119238
+[TIMING] t=310010 | motion max=2636us ovr=0 stack=664/2176B | io max=1900us ovr=15244 stack=576/2176B | mission max=2359us ovr=15500 stack=1168/2176B
+[BCPIN] t=310060 level=1 edges=120773
+[BC] L=19286 R=13834 width=415 result=3 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=310100 level=0 edges=121001
+[BC] L=19390 R=13938 width=104 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=310200 level=1 edges=121275
+[BC] L=19433 R=13982 width=43 result=0 orientation=0 letter=31 action=0 dropped=0
+[BCPIN] t=310220 level=0 edges=121477
+[NAV] t=310700 phase=4 turn=0 ir=11 front_valid=0 front_mm=8191
+[MISSION] state=NAVIGATE
+[SAFETY] causes=1 gp21=1 fault=0 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=0 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED
+[MISSION] stop: gp21=1 latched=1 inputs_ok=1 motion_stopped=1 motion_status=0 phase=4 usable_line=1 line_age_ms=0 front_valid=0 front_mm=8191
+[MISSION] state=READY
+[BCPIN] t=311820 level=1 edges=121477
+[BCPIN] t=312640 level=0 edges=121477
+[TIMING] t=315010 | motion max=2482us ovr=0 stack=664/2176B | io max=1797us ovr=15494 stack=576/2176B | mission max=2235us ovr=15750 stack=1168/2176B

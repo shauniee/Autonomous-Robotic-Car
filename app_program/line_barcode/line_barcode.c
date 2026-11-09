@@ -149,6 +149,18 @@ void line_barcode_step(uint32_t now)
                 record.letter,record.action,dropped);
         diagnostic_due=now+IO_PERIOD_MS;
     }
+    /* Pin level and IRQ edge total on change: separates a module or wiring
+       fault (level never moves) from a capture fault (level moves, no
+       edges). */
+    static unsigned pin_key = ~0u;
+    unsigned level = gpio_get_val(BARCODE_GPIO) != 0 ? 1u : 0u;
+    unsigned edges = (unsigned)drv_barcode_edge_count();
+    if (((edges << 1u) | level) != pin_key)
+    {
+        pin_key = (edges << 1u) | level;
+        tm_printf((UB *)"[BCPIN] t=%u level=%u edges=%u\n",
+            (unsigned)now, level, edges);
+    }
 #endif
     LineIrSnapshot snapshot = ir_snapshot_build(&tracker, now);
     /* Invalid digital acquisition blocks startup. */

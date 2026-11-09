@@ -211,7 +211,9 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
    #59 measures print scale and polarity (D01, D04). */
 #define BARCODE_BLACK_HIGH	1	/* PROVISIONAL (D04): as the line modules (IR_BLACK_LEVEL); INT-137 */
 #define BARCODE_SENSOR_LEFT_MM	55u	/* User-reported position left of the axle centre; specs D01 */
-#define BARCODE_MIN_ELEMENT_COUNTS 16u	/* PROVISIONAL (D01): about 1.4 mm; narrow bars read as low as 23 (INT-152), shorter runs are chatter */
+/* PROVISIONAL (D01): about 0.9 mm; half-size narrow bars read 16 to 21
+   (INT-235), shorter runs are chatter */
+#define BARCODE_MIN_ELEMENT_COUNTS 10u
 #define BARCODE_MAX_ELEMENT_COUNTS 400u	/* PROVISIONAL (D01): longer runs are open floor; a 2x print's wide bar is about 210 */
 #define BARCODE_EVENT_CAPACITY	8u
 #define BARCODE_EDGE_CAPACITY	64u	/* power of two: indices wrap unsigned */

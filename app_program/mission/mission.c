@@ -40,6 +40,7 @@ static void mission_task(INT stacd, void *exinf)
     uint32_t last_left = drv_encoder_count(ENCODER_LEFT), last_right = drv_encoder_count(ENCODER_RIGHT);
     uint32_t still_since = now;
     bool side_watching = false;
+    bool clear_on_follow = false; /* a barcode turn is under way */
 #if ROBOT_TRACE_ENABLED
     uint32_t traced_ms = 0u;
 #endif
@@ -184,6 +185,7 @@ static void mission_task(INT stacd, void *exinf)
             .barcode_letter = barcode_event_letter(&barcode)};
 
         MissionOutputs out;
+        MissionState state_before = mission.state;
         bool was_recovering = mission.state == MISSION_REACQUIRE;
 #if ROBOT_TRACE_ENABLED
         bool was_moving = mission.state != MISSION_READY && mission.state != MISSION_STOPPED;
@@ -220,6 +222,23 @@ static void mission_task(INT stacd, void *exinf)
         if (out.event_kind != 0u)
         {
             comms_event((mqtt_event_kind_t)out.event_kind, out.event_arg, out.event_arg2);
+        }
+        /* A new read keeps its letter; a barcode turn clears it once the
+           navigation is back on the line. */
+        if (in.have_barcode)
+        {
+            clear_on_follow = false;
+        }
+        if (MQTT_EVENT_TURN == out.event_kind &&
+            BARCODE_UNMAPPED != out.event_arg)
+        {
+            clear_on_follow = true;
+        }
+        if (clear_on_follow && MISSION_NAVIGATE == state_before &&
+            MISSION_FOLLOW_LINE == mission.state)
+        {
+            comms_barcode_clear();
+            clear_on_follow = false;
         }
         if (out.start_refused)
         {
