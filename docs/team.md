@@ -481,7 +481,7 @@ stays below the stack size.
 | Run | Image | Motion max | Mission max | I/O max | Overruns | Stack use |
 | --- | --- | --- | --- | --- | --- | --- |
 | INT-224 before narrowing | `017f5ed` trial | 889 us | 3,716 us | 2,302 us | Motion 0; Mission and I/O +50/s | 672 / 1,400 / 480 B of 2,176 B |
-| INT-225 after narrowing | final trial | not yet run | | | | |
+| INT-225 after narrowing | `0727821` trial | 1,275 us | 3,576 us | 2,394 us | Motion 0; Mission and I/O +50/s | 632 / 1,256 / 544 B of 2,176 B |
 
 INT-224 maxima are over the whole run: idle, bench, one line lap and one bypass;
 Mission's 3,716 us came during the bypass. Stack use is Motion / Mission / I/O.
@@ -491,6 +491,13 @@ rate does not follow load, so the likely cause is the 10 ms kernel tick
 (`CNF_TIMER_PERIOD` in `config/config.h`) making a 10 ms task release every 20 ms;
 this is not confirmed. INT-225 compares like for like, so a change in that rate
 would still show.
+
+INT-225 has no bench segment; its maxima cover idle, one line lap and a bypass
+that the stall guard stopped in its first pivot. Against INT-224, Motion's
+longest body rose from 889 to 1,275 us (6.4 percent of its 20 ms period),
+Mission's fell from 3,716 to 3,576 us and I/O's rose from 2,302 to 2,394 us. The
+overrun rate is unchanged and every stack keeps over 900 bytes free. One run
+each, so these are single samples, not worst cases.
 
 To fill this table: flash `017f5ed` (timing added, no narrowing) with
 `./flash.sh trial`, capture the USB console during a bench run, one line lap
