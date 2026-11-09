@@ -455,7 +455,7 @@ Rules for every frame:
 | Snapshot request | 6 | PC to robot | 2 |
 | Wheel trace | 8 | robot to PC, best effort per Motion release | 15 |
 | Line trace | 9 | robot to PC, best effort per fresh IR acquisition while moving | 17 |
-| Barcode trace | 10 | robot to PC, best effort, raw GP16 run widths | 18 |
+| Barcode trace | 10 | robot to PC, best effort, raw GP27 run widths | 18 |
 | Terrain trace | 11 | robot to PC, best effort, IMU sample for the dashboard | 14 |
 
 ### Wheel trace (15 bytes)
@@ -496,7 +496,7 @@ Type 9 is outbound diagnostics only, kept separate so the wheel trace is unchang
 Comms owner agreement pending. Byte 0 is `39` hex; bytes 1..4 are the
 IR acquisition time uint32 ms. Byte 5 flags: bit 0 left black, 1 right black,
 2 in broad black, 3 junction candidate open, 4 junction qualified, 5 curved entry,
-6 junction locked, 7 raw barcode GP16 level. Byte 6: bits 0..3 Mission state, 4..6 junction phase,
+6 junction locked, 7 raw barcode GP27 level. Byte 6: bits 0..3 Mission state, 4..6 junction phase,
 7 zero. Bytes 7..8 and 9..10 are the low 16 bits of the left/right encoder counts.
 Byte 11 is the steering law output, signed Q7. Byte 12 is the law state: the side
 last touched (-1 left, +1 right, 0 none) times the integral held at the last touch transition, signed Q7. Byte 13 is the FOLLOW steering sent to Motion (0 for
