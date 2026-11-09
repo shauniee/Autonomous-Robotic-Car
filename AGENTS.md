@@ -15,7 +15,7 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 - **Git Messages:** Never co author the commit messages, PRs, merge comments
 - **No co-authors:** never add `Co-Authored-By` or any co-author attribution to a commit message, including merge and squash messages.
 - **Never commit** `config/wifi_secrets.h`, credentials, `*.elf`, `*.uf2`, `*.map` or video files.
-- **Testing:** keep fixtures and evidence in `testing/`, in the folder of the subsystem a test exercises; `integration/` is only for tests of two or more ([layout](testing/README.md#layout)). Append one result row per run and never reuse a test ID. Keep captures, photos and measurements; do not save build or host output. A build or host test is not a firmware or physical pass; record the exact commit with each result ([testing](testing/README.md#run-and-record)).
+- **Testing:** follow [testing](testing/README.md): five unit tests per subsystem (`S1-U01` to `S1-U05`), ten integration (`INT-01` to `INT-10`) and ten system (`SYS-01` to `SYS-10`), each shown on [video](video/README.md); a test goes in the folder of the subsystem it exercises, `integration/` only for two or more. Append one result row per run with its log in that folder's `logs/`, and record the exact commit. Never reuse a test ID. A build or host test is not a firmware or physical pass; do not save build or host output.
 - **Markdown:** `docs/` holds only `project-specs`, `team` and `architecture`; subsystem detail goes in each `app_program/<name>/README.md`. Every Markdown file starts with a contents list of its sections.
 
 ## Where to look

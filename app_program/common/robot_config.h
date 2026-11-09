@@ -67,9 +67,9 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
    enough to show both channels switching cleanly. This is a provisional
    electrical-progress threshold, not a calibrated wheel-travel distance. */
 #define ENC_FAULT_CLEAR_COUNTS	64u
-/* INT-138: a lone invalid edge costs about 0.2 mm, so it must not stop a run.
-   Each one scores a point and each Motion release removes one; reaching this
-   score means sustained noise. PROVISIONAL D03. */
+/* 2026-11-02: a lone invalid edge costs about 0.2 mm, so it must not stop a
+   run. Each one scores a point and each Motion release removes one; reaching
+   this score means sustained noise. PROVISIONAL D03. */
 #define ENC_FAULT_INVALID_SCORE	8u
 #define ENC_LEFT_A_PIN		28u
 #define ENC_LEFT_B_PIN		7u
@@ -86,16 +86,17 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
    initially. Saturated duty needs diagnosis before increasing gains/cap.
    Keep IR classification and steering settings fixed during these trials.
    Procedure: app_program/motion/README.md, Wheel-speed tuning. */
-#define ENC_COUNTS_PER_MM 11.649f /* S2-U08: mean of both wheels over 500 mm */
+/* 2026-10-31: mean of both wheels over 500 mm */
+#define ENC_COUNTS_PER_MM 11.649f
 #define TRACK_WIDTH_MM		120.0f	/* User-measured wheel centres; specs D03; effective turning calibration pending */
 #define MOTION_SPEED_MAX_MMPS	500.0f	/* PROVISIONAL (D07): speed limit; the 9-bit command field holds 511 */
-/* PROVISIONAL (D07): S2-U11 raised fit ~0 plus ~5 points measured floor load
-   at 200 mm/s */
+/* PROVISIONAL (D07): 2026-11-01 raised fit ~0 plus ~5 points measured floor
+   load at 200 mm/s */
 #define MOTION_KS 0.05f
-/* PROVISIONAL (D07): S2-U11 raised-wheel fit 60-200 mm/s, left 1.05e-4,
+/* PROVISIONAL (D07): 2026-11-01 raised-wheel fit 60-200 mm/s, left 1.05e-4,
    right 0.95e-4 */
 #define MOTION_KF 0.0001f
-/* PROVISIONAL (D07): duty per count/s; S2-U12 0.0003 oscillated below
+/* PROVISIONAL (D07): duty per count/s; 2026-11-01 0.0003 oscillated below
    60 mm/s */
 #define MOTION_KP 0.0001f
 #define MOTION_KI		0.0010f	/* PROVISIONAL (D07) */
@@ -106,13 +107,16 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 #define MOTION_ANGLE_TOL_DEG 1.0f
 #define MOTION_STATIONARY_CPS	5.0f	/* PROVISIONAL (D08): below this a wheel is stationary */
 #define MOTION_STALL_MS		400u	/* PROVISIONAL (D07) */
-#define MOTION_STALL_MIN_TARGET_CPS (10.0f * ENC_COUNTS_PER_MM) /* PROVISIONAL (D07): the end of an approach asks for too little to turn a wheel; INT-156 sat at 3 mm/s for 1060 ms */
+/* PROVISIONAL (D07): the end of an approach asks for too little to turn a
+   wheel; 2026-11-02 sat at 3 mm/s for 1060 ms */
+#define MOTION_STALL_MIN_TARGET_CPS (10.0f * ENC_COUNTS_PER_MM)
 #define MOTION_ACTION_TIMEOUT_MS 12000u /* D07 trial: corrected turn distances */
 #define MOTION_PERIOD_MS	20u
 
 
 /* --- line ------------------------------------------------------- */
-#define IR_SAMPLE_MS		10u	/* INT-115: 10 ms reads were the first change that helped at 100 mm/s */
+/* 2026-11-01: 10 ms reads were the first change that helped at 100 mm/s */
+#define IR_SAMPLE_MS 10u
 #define IR_MAX_GAP_MS		60u
 #define IR_LEFT_PIN		26u
 #define IR_RIGHT_PIN 17u /* Nicholas, 2026-11-09 rewire */
@@ -145,7 +149,7 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 #define MOTION_FOLLOW_STEER_QPS 300u /* PROVISIONAL D07: applied steering slew; about 250 mm/s^2 at each wheel at 100 mm/s */
 /* The one course speed: line following, crossings, junction advances and bypass
    driving. Smoothness and accuracy come first, then speed. Below 60 mm/s the
-   feedforward fit does not apply (S2-U11); retune before going there. */
+   feedforward fit does not apply (2026-11-01); retune before going there. */
 #define COURSE_SPEED_MMPS 100u
 #define MISSION_TRACK_SPEED_MMPS ((float)COURSE_SPEED_MMPS)
 /* White reported as black with LOW polarity; use HIGH for black. */
@@ -172,13 +176,20 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 /* Distance-based digital steering (reference-style): a strong fixed correction
    while one sensor is black, bend memory from repeated same-side touches, and a
    gentle drift toward the last side on white/white. Trial values, not calibrated. */
-#define LINE_KP_Q 45 /* PROVISIONAL D07 trial: one sensor black; 115 overshot at 100 mm/s (INT-132) */
+/* PROVISIONAL D07 trial: one sensor black; 115 overshot at 100 mm/s
+   (2026-11-02) */
+#define LINE_KP_Q 45
 #define LINE_KI_QPMM 1.0f /* PROVISIONAL D07 trial: integral growth per mm of one touch */
-#define LINE_I_MAX_Q 45 /* PROVISIONAL D07 trial: with LINE_KP_Q gives the 90 used in bends (INT-132) */
+/* PROVISIONAL D07 trial: with LINE_KP_Q gives the 90 used in bends
+   (2026-11-02) */
+#define LINE_I_MAX_Q 45
 #define LINE_I_FADE_QPMM 0.5f /* PROVISIONAL D07 trial: integral fade per mm of white/white */
-#define LINE_TURN_LEAN_Q 30 /* PROVISIONAL D07 trial INT-132: starting integral after a pivot */
+/* PROVISIONAL D07 trial 2026-11-02: starting integral after a pivot */
+#define LINE_TURN_LEAN_Q 30
 #define LINE_DRIFT_Q 8 /* PROVISIONAL D07 trial: white/white drift toward the last side */
-#define LINE_LOST_MM 350u /* PROVISIONAL D07 trial: white/white this far past the last touch is loss; INT-135: the drift arc can stay between the sensors for about 270 mm */
+/* PROVISIONAL D07 trial: white/white this far past the last touch is loss;
+   2026-11-02: the drift arc can stay between the sensors for about 270 mm */
+#define LINE_LOST_MM 350u
 #define LINE_RELEASE_QPS 1800u /* steering to zero: a crossbar needs it off at once */
 #define LINE_REVERSE_QPS 600u /* PROVISIONAL D07 trial: back to zero when the other side touches */
 _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < LINE_TURN_LEAN_Q &&
@@ -189,19 +200,23 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define NAV_GEOMETRY_RELEASED 0
 #endif
 #ifndef NAV_SENSOR_FORWARD_MM
-#define NAV_SENSOR_FORWARD_MM 120 /* User-measured axle centre to IR pair centre after an 18 mm move (INT-117); specs D02 */
+/* User-measured axle centre to IR pair centre after an 18 mm move (2026-11-01);
+   specs D02 */
+#define NAV_SENSOR_FORWARD_MM 120
 #endif
 #ifndef NAV_CROSSBAR_MM
 #define NAV_CROSSBAR_MM 18 /* User-reported stripe thickness; specs D02 */
 #endif
 #define NAV_ENTRY_MAX_DEG 5.0f
-/* PROVISIONAL D02 trial INT-189: both black this far is a crossing; shorter
+/* PROVISIONAL D02 trial 2026-11-04: both black this far is a crossing; shorter
    reads were not, and real ones can read under 9 mm. With a turn queued,
    two samples in a row are enough */
 #define NAV_CONFIRM_MM 6u
 #define NAV_ONSET_SKEW_MM 15u /* PROVISIONAL D02 trial: both sensors went black within this = crossing; set from line traces */
 #define NAV_REARM_MM 10u
-#define NAV_STRAIGHT_MM 36u /* PROVISIONAL D02 trial INT-189: straight roll at course speed from commit, no steering, twice the crossbar */
+/* PROVISIONAL D02 trial 2026-11-04: straight roll at course speed from commit,
+   no steering, twice the crossbar */
+#define NAV_STRAIGHT_MM 36u
 /* Junction pivots end on the line: the leading sensor black then not black,
    looked for only past the sense angle so the branch being left never counts.
    Reference-repo values, PROVISIONAL D02/D07 trial. */
@@ -218,10 +233,11 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define BARCODE_GPIO 27u /* Nicholas, 2026-11-09 rewire */
 /* Widths are encoder counts of sensor travel. UNMEASURED PLACEHOLDERS until
    #59 measures print scale and polarity (D01, D04). */
-#define BARCODE_BLACK_HIGH	1	/* PROVISIONAL (D04): as the line modules (IR_BLACK_LEVEL); INT-137 */
+/* PROVISIONAL (D04): as the line modules (IR_BLACK_LEVEL); 2026-11-02 */
+#define BARCODE_BLACK_HIGH 1
 #define BARCODE_SENSOR_LEFT_MM	55u	/* User-reported position left of the axle centre; specs D01 */
 /* PROVISIONAL (D01): about 0.9 mm; half-size narrow bars read 16 to 21
-   (S3-U44), shorter runs are chatter */
+   (2026-11-09), shorter runs are chatter */
 #define BARCODE_MIN_ELEMENT_COUNTS 10u
 #define BARCODE_MAX_ELEMENT_COUNTS 400u	/* PROVISIONAL (D01): longer runs are open floor; a 2x print's wide bar is about 210 */
 #define BARCODE_EVENT_CAPACITY	8u
@@ -249,13 +265,13 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define TERRAIN_TRACE_HUMP_MS 50u
 #define HUMP_MIN_HEIGHT_MM	5u	/* PROVISIONAL (D06): smaller rises are not humps */
 #define HUMP_MAX_HEIGHT_MM	40u	/* PROVISIONAL (D06): course limit 30 mm plus margin; above it the car was lifted */
-/* PROVISIONAL (D06): travel over the exit level; S4-U10 humps 76 and 156,
+/* PROVISIONAL (D06): travel over the exit level; 2026-11-02 humps 76 and 156,
    curves 26 or less */
 #define HUMP_MIN_TRAVEL_MM 50u
 #define HUMP_MAX_TRAVEL_MM	400u	/* PROVISIONAL (D06): tilted further than this is new ground */
 #define HUMP_FLAT_SAMPLES	10u	/* PROVISIONAL (D06): releases below the exit level that end an encounter */
-/* PROVISIONAL (D06): one 10 mm hump read about 12.5 uncorrected, S4-U10 and
-   S4-U11 */
+/* PROVISIONAL (D06): one 10 mm hump read about 12.5 uncorrected, 2026-11-02 and
+   2026-11-02 */
 #define HUMP_CALIB_FACTOR 0.8f
 
 /* --- obstacle --------------------------------------------------- */
@@ -308,7 +324,7 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define BYPASS_BODY_HALF_LENGTH_MM ((BYPASS_BODY_NOSE_MM + BYPASS_BODY_REAR_MM) / 2u)
 #define BYPASS_CLEARANCE_MM 30u
 /* PROVISIONAL D07: beyond a pivot's reach, for range jumps of about 10 mm
-   (S5-U11) */
+   (2026-11-03) */
 #define BYPASS_BACKUP_MARGIN_MM 20u
 /* PROVISIONAL D07: reversing is blind; total for one obstacle, covers the stop
    distance down to contact */
@@ -335,9 +351,9 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 /* PROVISIONAL D07: extra distance out each time the side is too close while
    passing */
 #define BYPASS_STEP_OUT_MM 40u
-/* PROVISIONAL D07: planned passing distance above the too-close limit, so normal
-   error does not trigger a step out. About 9 mm a side of width error (S5-U11)
-   plus 26 mm from a 5 degree heading error over a 300 mm pass. */
+/* PROVISIONAL D07: planned passing distance above the too-close limit, so
+   normal error does not trigger a step out. About 9 mm a side of width error
+   (2026-11-03) plus 26 mm from a 5 degree heading error over a 300 mm pass. */
 #define BYPASS_PASS_ALLOWANCE_MM 40u
 /* PROVISIONAL D02: the bypass passes at least this much box, whatever the side
    ray reads. Set it to the deepest box; course obstacle depth is not specified. */

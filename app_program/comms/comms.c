@@ -219,7 +219,7 @@ void comms_step(uint32_t now)
     /* Normal ACK/telemetry/events get first use of the bounded TX bridge. */
     report_step(now);
     /* Always sent, for the dashboard's IMU graphs. Before the wheel and line
-       traces, which keep the bridge full (S3-U31). */
+       traces, which keep the bridge full (2026-11-02). */
     {
         uint8_t frame[MQTT_LEN_TERRAIN_TRACE];
         unsigned length = terrain_trace_take(frame, sizeof frame);

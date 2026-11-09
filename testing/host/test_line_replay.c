@@ -133,7 +133,7 @@ static void test_curve_skew_keeps_turning(void)
     assert(trace.onset_skew_mm > NAV_ONSET_SKEW_MM && (trace.flags & MQTT_LINE_ENTRY_CURVED));
 }
 
-/* INT-123 mechanism: a curve, a centred stretch (the integral is held through
+/* 2026-11-01 mechanism: a curve, a centred stretch (the integral is held through
    white/white), then a crossbar under both sensors at once. That is a
    crossing, not curve skew, whatever the integral holds. */
 static void test_junction_after_curve_is_a_crossing(void)
@@ -155,7 +155,7 @@ static void test_junction_after_curve_is_a_crossing(void)
         assert(r.m.state != MISSION_STOPPED);
         crossed = r.m.state == MISSION_NAVIGATE;
     }
-    assert(crossed); /* INT-123: both onsets together make a crossing */
+    assert(crossed); /* 2026-11-01: both onsets together make a crossing */
     mqtt_line_trace_t trace = mission_line_trace(&r.m, &r.in, &r.out);
     assert(trace.sampled_ms == r.in.line_sampled_ms && trace.onset_skew_mm == 0u);
     assert((trace.flags & (MQTT_LINE_LEFT_BLACK | MQTT_LINE_RIGHT_BLACK | MQTT_LINE_ENTRY_CURVED)) ==
@@ -185,7 +185,7 @@ static void cross_bar(Rig *r)
     }
 }
 
-/* INT-188: on the car one sensor left the bar under 9 mm after both were black,
+/* 2026-11-04: on the car one sensor left the bar under 9 mm after both were black,
    the crossing never committed and tracking followed the other sensor off the
    line. That read now commits; a shorter both-black still does not. */
 static void test_short_both_black_decides_the_crossing(void)
@@ -234,7 +234,7 @@ static void test_queued_turn_commits_on_short_both_black(void)
     }
 }
 
-/* INT-154: the left sensor stayed black about 12 mm past the right on most
+/* 2026-11-02: the left sensor stayed black about 12 mm past the right on most
    exits. Through the advance that is the bar, not a line touch: the command stays
    the straight advance, and the last side is kept for the drift afterwards. */
 static void test_crossing_exit_ignores_trailing_sensor(void)
@@ -274,7 +274,7 @@ static void test_first_touch_after_crossing_has_no_integral(void)
     assert(following(&r) && steering(&r) == LINE_KP_Q);
 }
 
-/* INT-190: regaining the line after a crossing can take over 50 mm of one touch.
+/* 2026-11-04: regaining the line after a crossing can take over 50 mm of one touch.
    Correction grows from P with distance instead of jumping, stops at its limit,
    and fades on white/white rather than holding a lean. */
 static void test_long_first_touch_after_crossing_grows_then_fades(void)

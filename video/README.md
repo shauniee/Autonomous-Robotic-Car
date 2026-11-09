@@ -15,8 +15,8 @@ Not started; nothing has been recorded.
 
 ## What to record
 
-- **Short:** 15-60 seconds, one test or feature per video.
-- **Say what it is:** show or say the test ID (e.g. `S2-U03`, `INT-01`, `MR-12`) or the demo name at the start.
+- **Short:** 15-60 seconds; a full-course run (`SYS-04`) can be as long as the run.
+- **One test per video:** each test in a `testing/<folder>/TEST_LOG.md` is one video. Say its ID (e.g. `S2-U03`, `INT-01`, `SYS-04`) at the start.
 - **Show the commit:** run `git rev-parse --short HEAD`, put it in the index, and record the flashed-image checksum in the linked test result.
 - **Show the result:** keep the hardware and, if relevant, the USB TEST console in view. During battery-only trials follow the [power policy](../README.md#power-and-flashing) and use camera, scope or wireless evidence.
 - **Landscape**, steady, good light. No music needed.

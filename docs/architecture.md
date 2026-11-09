@@ -80,7 +80,7 @@ multi-producer events and mapping installation across cores: DI/EI protects only
 one core. The implemented event log uses a bounded cross-core mutex; its contention and
 load margins still require on-target measurements.
 
-**D14 audit (2026-11-03, source review, INT-172).** Task placement matches the table above, and `app_main.c` runs every `*_init` before starting Motion, I/O, then Mission. Fault bytes have one writing context each: Motion, Mission (Line, Obstacle, Mission), I/O (Terrain) and the kernel transport (Network). This matters because `rd_fault_set` is a load then a store. Cross-core data uses single-writer words, acquire/release SPSC rings or mapping tickets; only `comms_event` has two producing cores, and it uses the bounded mutex. `lock_misses` has one writer per core. No defect found. Not covered: contention, lock duration and load, which need the Pico.
+**D14 audit (2026-11-03, source review).** Task placement matches the table above, and `app_main.c` runs every `*_init` before starting Motion, I/O, then Mission. Fault bytes have one writing context each: Motion, Mission (Line, Obstacle, Mission), I/O (Terrain) and the kernel transport (Network). This matters because `rd_fault_set` is a load then a store. Cross-core data uses single-writer words, acquire/release SPSC rings or mapping tickets; only `comms_event` has two producing cores, and it uses the bounded mutex. `lock_misses` has one writer per core. No defect found. Not covered: contention, lock duration and load, which need the Pico.
 
 ## Mission loop
 
@@ -271,7 +271,7 @@ This table owns target policy. `robot_data.c` now leaves IMU/calibration failure
 | --- | --- | --- | --- |
 | GP21 / Motion local input | Block | Latch brake | Eligible GP21 release after serviced brake; GP20 starts separately |
 | Motion bit 0 stall / wheel controller (detection disabled in current trial; see [trial settings](project-specs.md#pending-decisions)) | Block while active | Latch stop | Cause cleared plus local reset; threshold uncalibrated D07 |
-| Motion bit 1 encoder / sustained invalid edges (`ENC_FAULT_INVALID_SCORE`, INT-138) or failed capture | Block | Latch stop | Validated encoder recovery; existing 64-count rule is provisional D03 |
+| Motion bit 1 encoder / sustained invalid edges (`ENC_FAULT_INVALID_SCORE`, the 2026-11-02 run) or failed capture | Block | Latch stop | Validated encoder recovery; existing 64-count rule is provisional D03 |
 | Line bit 0 acquisition invalid / line_barcode | Block | Stop if required acquisition invalid/stale | Valid digital readings and local reset |
 | Healthy line lost / Mission | No start on unusable line | Bounded REACQUIRE, then stop if exhausted | Line confirmed or operator reposition/reset |
 | Line bits 1/2 barcode capture/event overflow | Report | Report; never guess/replay an action | Existing encounter/run clearing behavior audited during integration |
@@ -480,7 +480,7 @@ Older laptop decoders reject this new type; use the matching decoder for traces.
 
 ### Barcode trace (18 bytes)
 
-Type 10 is outbound diagnostics only, added for S3-U31 and filtered since S3-U33; Comms owner agreement pending. Byte 0 is `3A`
+Type 10 is outbound diagnostics only, added for the 2026-11-02 run and filtered since the 2026-11-02 run; Comms owner agreement pending. Byte 0 is `3A`
 hex, byte 1 a wrapping sequence, bytes 2..17 eight little-endian runs: bit 15 black level, bits
 14..0 width in encoder counts after chatter is merged, zero for an unused slot. A full ring drops frames.
 
@@ -597,7 +597,7 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 | Telemetry | up to 768 bytes (`COMMS_TELEMETRY_PAYLOAD_MAX`) | 18 bytes |
 | Mapping | up to 512 bytes on `uat` | 5 bytes |
 
-Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Message sizes and RAM evidence, not yet final: [SYS-11](../testing/system/TEST_LOG.md#results) for October and INT-178 in the [integration log](../testing/integration/TEST_LOG.md) for the latest build. Final figures need the final image.
+Baseline figures come from the CR baseline evidence and the #22 census and are historical; a comparison is not required. Binary sizes are the exact frame lengths above. Message sizes and RAM evidence, not yet final: a 2026-10-27 audit for October and a 2026-11-03 audit for the latest build, both in git history. Final figures need the final image.
 
 Implementation limits: standalone recovery uses bounded stationary pivot sweeps;
 physical speed/geometry acceptance remains D07. Obstacle scans
@@ -628,7 +628,7 @@ and applied-steering policies. Measurement and numeric settings are owned by
 [specs](project-specs.md#dout-navigation-commissioning).
 
 Mission steers with a distance-based PI (proposed 2026-11-05, host-tested only;
-replaces the bend-state law, which replaced the time-based INT-123 PI law). Per
+replaces the bend-state law, which replaced the time-based PI law of the 2026-11-01 run). Per
 distinct acquisition: one sensor black steers P plus I toward it, and I grows per
 mm of that touch up to a limit. White/white has no P; I fades per mm, never below
 a gentle drift toward the last side, so a centred robot soon touches again. The
@@ -669,7 +669,7 @@ a bound angle (left +, right and U-turn -) is the turn; it ends on the line, not
 the angle: past a sense angle, the leading sensor (left for a left turn, right
 otherwise) black then not black stops it, which leaves the new branch between the
 sensors. The pivot back to the line after a bypass looks from a lower angle,
-because the car can meet the line off square (INT-208). Mission then commands STOP, confirms stationary, holds the pause and
+because the car can meet the line off square (2026-11-05). Mission then commands STOP, confirms stationary, holds the pause and
 follows. Reaching the bound without that evidence stops. Stationarity loss restarts
 pause qualification. Discrete mode/target/style are immutable for an action ID.
 STOP, stale data and faults override all profiles.

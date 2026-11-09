@@ -73,7 +73,7 @@ with no IR software calibration; IMU failure is flagged but permits operation. D
 IR/Motion failure stops; ordinary IMU/sonar/network loss is report-only. **Course speed guardrail (user,
 2026-11-02):** line following, crossings, junction advances and junction pivots
 are commanded at exactly 100 mm/s, humps included (the earlier half-speed hump
-request was dropped by the user, INT-134); steering never lowers it. A compile-time assert fixes `MISSION_TRACK_SPEED_MMPS` at 100, and
+request was dropped by the user, the 2026-11-02 run); steering never lowers it. A compile-time assert fixes `MISSION_TRACK_SPEED_MMPS` at 100, and
 Mission stops rather than send any other speed while following or navigating.
 Recovery sweeps and obstacle bypass keep their own slower speeds. The original moving 70-degree
 recovery request was superseded by the stationary wider sweep revision in
@@ -103,7 +103,7 @@ physical speed accuracy. D07/D10 must define acceptable measured-speed variation
 Nicholas self-tests the lap rate, so no 95% sample is recorded (2026-11-05). The
 full-course three-run repeatability check remains; one successful lap does not
 establish it. All M1–M10 and applicable
-Tribunal safety/resource obligations remain required. Bypass drives at the same `COURSE_SPEED_MMPS`, with good runs observed on the car at that speed and no measurements (INT-203, INT-204). Standalone recovery is tested
+Tribunal safety/resource obligations remain required. Bypass drives at the same `COURSE_SPEED_MMPS`, with good runs observed on the car at that speed and no measurements (the 2026-11-05 runs). Standalone recovery is tested
 separately and fails the qualifying lap if entered; original-line rejoin within
 bypass remains required under M9.
 
@@ -128,7 +128,7 @@ Record the exact settings with each image and result.
 
 **Flipped barcodes (Nicholas, 2026-11-04):** the print can be turned 180 degrees, so the sensor must read it from either end. The decoder already does this and host tests cover all 26 letters; the car check is open. Colour-inverted prints are out of scope.
 
-**Known restart cause:** Nicholas attributes the ten restarts in INT-154 to INT-156 and S4-U10 to
+**Known restart cause:** Nicholas attributes the ten restarts in the 2026-11-02 runs and the 2026-11-02 run to
 a poorly connected battery, a hardware fix. Exclude them from unexplained
 software-reset work; no new electrical measurement or physical PASS is implied.
 
@@ -175,7 +175,7 @@ The default project is an autonomous robot car on a predefined course, using onb
 | Obstacles | Static, block the line; width 100-200 mm in supplied professor clarification. Straight-only placement is the user-selected operating assumption; inconsistent earlier source wording remains D12. |
 | Map | Undisclosed until demonstration |
 
-Implemented Motion storage extension (INT-38): `MotionController.turn_arrived`
+Implemented Motion storage extension (2026-10-30): `MotionController.turn_arrived`
 is two bits, one arrival latch per wheel for the current TURN action; zero at
 reset/new action. Private to Motion. Arrival uses the existing angle tolerance,
 not a new calibrated limit; no claim of physical settling or angle accuracy.
@@ -391,7 +391,7 @@ Steering keeps no filter history: it stores the Q7 target and integral above and
 wheel counts where touches began. The integral between transitions comes from
 those counts, so no rounding accumulates. Float remains only in local geometry computation.
 Current working-tree target ABI, static RAM and inter-task copy sizes are
-recorded in [SYS-12](../testing/system/TEST_LOG.md#results).
+recorded in a 2026-10-30 resource audit (git history).
 The accepted-commit minimum-bit/resource audit remains Stage 9 work.
 MQTT byte counts stay unchanged;
 the seven-state meaning replaces the old CALIBRATE/COMPLETE state labels, so
@@ -573,7 +573,7 @@ one-full-wheel-revolution manual check with GP21 held, Nicholas supplied encoder
 counts 31142 before and 33655 after: delta 2513 decoded counts. Wheel identity,
 other-wheel scale and repeatability remain pending; this is not a completed
 calibration or independently measured physical acceptance. See
-[S2-U07 observation](../testing/motion/logs/2026-10-31_S2-U07/observation.json).
+a 2026-10-31 hand observation (git history).
 The current 360-count setting underestimates this delta by a factor of 6.981;
 under existing diameter/track assumptions, it predicts a physical 10.03 degree
 turn for an estimated 70 degree pivot. Applying this scale also changes wheel
@@ -587,12 +587,12 @@ first baseline, stable telemetry was 65501 before the requested manual forward
 revolution and 2454 after. Signed 16-bit wrap-safe travel is +2489 counts.
 Both observations are close to 2500 counts/revolution (difference 0.96% of
 their mean); manual angle placement and repeatability remain unmeasured.
-See [S2-U08](../testing/motion/TEST_LOG.md#results).
+Measured 2026-10-31; the log is in git history.
 At that observation stage, no encoder/motor setting had changed. A manual 500 mm straight rolling
 measurement is next to establish effective counts/mm without powered motion;
 awaiting the operator's positioned baseline.
 
-Applied rolling-scale revision, 2026-10-31: S2-U08's operator-reported 500 mm
+Applied rolling-scale revision, 2026-10-31: the 2026-10-31 run's operator-reported 500 mm
 manual straight roll produced left +5833 and right +5816 counts. Effective
 scales are 11.666 and 11.632 counts/mm; use their mean 11.649 counts/mm as the
 single odometry constant. Their relative difference is 0.292%; repeatability,
@@ -613,7 +613,7 @@ distance target is 23298 counts, within the signed 16-bit half range; the
 right-minus-left displacement so long forward travel cannot alias each
 wheel's signed origin subtraction; differential heading stays bounded to
 180 degrees. Shared/wire counters remain 16 bits. Live decoder reads the
-same direct counts/mm constant. S2-U09 owns software verification; no powered
+same direct counts/mm constant. A 2026-10-31 host test owns software verification; no powered
 angle, distance, speed-loop or stopping acceptance is implied.
 
 Simplified standalone recovery revision, 2026-10-31, supersedes the loss delay,
@@ -656,10 +656,10 @@ LOST acquisition timestamps in milliseconds modulo 2^32, wrap-safe subtraction,
 and one pending bit beside existing Mission flags. Timestamp zero is valid;
 the bit denotes activity. State changes clear it. No shared/wire fields change.
 
-Line-loss revision, 2026-11-02 (INT-127; host and build only): supersedes the
+Line-loss revision, 2026-11-02 (the 2026-11-02 run; host and build only): supersedes the
 500 ms qualification above. DOUT white/white is also the centred reading, so time
 alone stopped good straights, and the tracker never produced `IR_LINE_LOST`.
-Loss is now white/white for `LINE_LOST_MM` (350 mm, trial value, INT-135) of encoder travel
+Loss is now white/white for `LINE_LOST_MM` (350 mm, trial value, the 2026-11-02 run) of encoder travel
 past the last one-black or broad-black acquisition, counted only after the first
 touch since entering FOLLOW (before it the line is between the sensors and cannot
 leave unseen). The steering drift toward the last side makes a centred robot touch
@@ -696,7 +696,7 @@ speed (35..70); existing Motion braking/tolerances/timeouts still apply.
 Tracking correction is +/-127 Q7, yielding 0/140 mm/s wheel targets at 70.
 Obstacle bypass keeps its prior independent 7 mm/s pivot speed.
 
-Tracking smoothing revision (2026-10-31, INT-80; provisional D07): Mission's
+Tracking smoothing revision (2026-10-31, the 2026-10-31 run; provisional D07): Mission's
 `line_steer_q` retains signed Q7 -127..127 (8 logical/stored bits, -128 unused).
 It moves at most 64 Q7 units per distinct usable acquisition toward the digital
 target, saturating at that target; state entry resets it to zero. New private
@@ -708,8 +708,8 @@ full correction requests 45/76.5 or 76.5/45 mm/s before wheel PID. Navigation
 retains its separate half-to-full 70 mm/s ceiling. These values are proposed
 physical tuning, not calibrated limits or an observed tracking pass.
 
-Curve authority/speed revision (2026-10-31, INT-81; provisional D07): supersedes
-INT-80 tuning values. Normal tracking requests 48 whole mm/s; navigation
+Curve authority/speed revision (2026-10-31, the 2026-10-31 run; provisional D07): supersedes
+the 2026-10-31 run tuning values. Normal tracking requests 48 whole mm/s; navigation
 ceiling is 75 mm/s (half-speed requests round down). Existing Q7 steering
 ramp and acquisition history are unchanged; no stored/shared fields added.
 At |steering| <=64 the inner wheel retains base speed; from 64 to 127 its
@@ -718,7 +718,7 @@ of base. Full tracking correction requests 28.8/81.6 or 81.6/28.8 mm/s; these
 are local float wheel targets, not new packed command fields. Zero remains
 base/base; existing duty cap, stop and expiry apply. No physical pass inferred.
 
-Curve-speed ramp revision (2026-10-31, INT-82; provisional D07): the working
+Curve-speed ramp revision (2026-10-31, the 2026-10-31 run; provisional D07): the working
 tracking ceiling is now user-selected 75 mm/s. Mission adds private
 `curve_speed_step` (unsigned 0..10, 4 logical/stored bit-field bits; 11..15
 invalid, speed accessor returns zero) and `curve_direction` (0 none, 1 negative
@@ -736,14 +736,14 @@ requests 37..75 mm/s at this setting; actual wheel speed/acceleration and
 duty saturation are not established by the command ramp. Existing navigation
 uses its separate encoder-progress ramp. No physical acceptance inferred.
 
-INT-82 working tuning identity: preserve the concurrent user-selected 0.85
+the 2026-10-31 run working tuning identity: preserve the concurrent user-selected 0.85
 outer-wheel boost (185% at full Q7), with the existing 40% inner reduction.
 At the selected 75 mm/s full curve speed, local targets are 45/138.75 or
 138.75/45 mm/s. The duty cap can constrain achieved speed; ramp percentages
 refer to commands, not physically measured acceleration.
 
-Smooth FOLLOW revision (2026-10-31, INT-83; provisional D07): supersedes
-INT-82's acquisition-count speed reset. Remove Mission's `curve_speed_step`
+Smooth FOLLOW revision (2026-10-31, the 2026-10-31 run; provisional D07): supersedes
+the 2026-10-31 run's acquisition-count speed reset. Remove Mission's `curve_speed_step`
 and `curve_direction`; tracking requests its configured ceiling, with existing
 hump scaling. Motion owns two private unsigned Q6 mm/s wheel-target histories,
 `follow_speed_q6[2]`: range 0..59200 (0..925 mm/s at current maximum command
@@ -757,7 +757,7 @@ FOLLOW zero speed, STOP, invalid/expired commands, reset and faults bypass
 the ramp and clear history. Discrete distance/turn endpoint control is unchanged.
 Physical acceleration, curve retention and PID acceptance remain unmeasured.
 
-Navigation wheel/IR revision (2026-10-31, INT-84): user requests left turns
+Navigation wheel/IR revision (2026-10-31): user requests left turns
 with left braked/right forward, right turns with left forward/right braked,
 and clockwise U-turns with left forward/right reverse. User subsequently
 confirmed turning-side IR completion for left/right as well: left IR for
@@ -790,7 +790,7 @@ existing action timeout, obstacle and stop guards. The first eligible post-exit
 crossing is accepted; course geometry and sensor positioning require physical
 verification (D02/D03/D07/D08), not a host-derived guarantee of exact heading.
 
-Navigation approach/curve response revision (2026-10-31, INT-85): user
+Navigation approach/curve response revision (2026-10-31): user
 requests 70 mm forward before left/right navigation turns. On the queued
 junction acquisition consume the direction once, store wheel origins and
 enter new private phase ADVANCE (code 5; 3-bit phase field, 6/7 invalid).
@@ -820,7 +820,7 @@ targets are local floats, bounded by existing mixing and duty limits; a wheel
 may change faster than the base during steering. No physical curve pass or
 calibrated acceleration is inferred.
 
-Steering smoothness tuning (2026-10-31, INT-86; provisional D07): after
+Steering smoothness tuning (2026-10-31, the 2026-10-31 run; provisional D07): after
 reported jerky curve traversal, reduce LINE_STEER_STEP_Q from 64 to 32 per
 distinct fresh acquisition. Retain the common-base speed ramp and full
 steering/mixing limits, so correction starts on the first sample and sustained
@@ -830,7 +830,7 @@ API or wire change. The 70 mm left/right approach, navigation speeds,
 IR turn completion and stop/expiry policies remain. These are user-triggered
 provisional tuning values; physical curve retention remains unmeasured.
 
-Faster tracking trial (2026-10-31, INT-87; provisional D07): user requests
+Faster tracking trial (2026-10-31, the 2026-10-31 run; provisional D07): user requests
 faster line following. Increase MISSION_TRACK_SPEED_MMPS from 75 to 90 mm/s
 (+20%). Normal tracking, straight navigation and the 70 mm L/R approach
 share this ceiling; existing hump scaling requests 45 mm/s. Rotation ceiling
@@ -843,7 +843,7 @@ or the reverse. Duty saturation, curve retention and stopping distance at
 this setting are not measured; this is a requested-speed change, not physical
 acceptance. No persistent field, API or wire layout changes.
 
-Gentler curve authority trial (2026-10-31, INT-88; provisional D07): after
+Gentler curve authority trial (2026-10-31, the 2026-10-31 run; provisional D07): after
 reported excessive curve correction/overshoot at the faster setting, reduce
 MOTION_FOLLOW_BOOST from 0.85 to 0.60 and MOTION_FOLLOW_INNER_CUT from
 0.40 to 0.25. Full correction now requests inner 0.75 * base and outer
@@ -855,7 +855,7 @@ applies to bypass; discrete swing/pivot targets are unchanged. No stored
 field, API or wire changes. These are provisional tuning changes following
 a user report, not calibrated physical curve acceptance.
 
-IR response trial (2026-10-31, INT-89; provisional D07): after user reports
+IR response trial (2026-10-31, the 2026-10-31 run; provisional D07): after user reports
 running wide / late turning and jerky straights, retain the gentle first
 32-Q7 correction but use 64-Q7 steps while correction is nonzero. Opposite
 black first unwinds to zero; a fresh acquisition then enters the new direction.
@@ -863,12 +863,12 @@ Entry is 32/96/127, white release 127/63/0, full reversal 127/63/0/-32/-96/-127.
 Tracking base speed scales linearly with absolute steering from 90 to 45 mm/s;
 hump scales that request by half afterward. At full correction the requested
 mixed wheel targets are 33.75/72 mm/s or the reverse, before Motion's common
-base ramp and wheel PID. This supersedes INT-86's symmetric steps and INT-83's
+base ramp and wheel PID. This supersedes the 2026-10-31 run's symmetric steps and the 2026-10-31 run's
 fixed tracking ceiling, retaining existing mixing and navigation settings.
 No new stored field, interface or wire representation. Physical comparator
 thresholds, oscillation, curve retention and loaded speed remain uncalibrated.
 
-Curve entry/inner-wheel trial (2026-10-31, INT-90; provisional D07): user
+Curve entry/inner-wheel trial (2026-10-31, the 2026-10-31 run; provisional D07): user
 reports initial jerk and insufficient steady turning, requests slower inner
 or faster outer wheel. Reduce LINE_STEER_STEP_Q from 32 to 24: first step
 24, subsequent steps 48, giving 24/72/120/127 entry, 127/79/31/0 white
@@ -877,32 +877,32 @@ now needs four acquisitions instead of three; confirm the added delay on
 actual curves. Increase MOTION_FOLLOW_INNER_CUT from 0.25 to 0.50 above
 unchanged Q7=64 tightening threshold. Full inner target is 50% of base;
 outer remains 160%. At the 45 mm/s full-curve base request, targets are
-22.5/72 mm/s or the reverse, versus INT-89's 33.75/72. The common-base ramp
+22.5/72 mm/s or the reverse, versus the 2026-10-31 run's 33.75/72. The common-base ramp
 and wheel PID still determine actual wheel response. Shared FOLLOW mixing
 also affects bypass guidance. Straight/approach, rotation, stop, freshness
 and hump policies retain their settings. No stored field/API/wire change.
-These supersede INT-89 entry timing and INT-88 inner cut; loaded speed,
+These supersede the 2026-10-31 run entry timing and the 2026-10-31 run inner cut; loaded speed,
 curve retention and smoothness remain unmeasured D07/T03.
 
-Curve/straight-exit revision (2026-10-31, INT-91; provisional D07): continued
+Curve/straight-exit revision (2026-10-31, the 2026-10-31 run; provisional D07): continued
 wide-curve and angled straight-junction report. Increase FOLLOW inner cut
 from 0.50 to 0.70, retaining Q7=64 tightening onset and 0.60 outer boost.
 Full-curve targets at the requested 45 mm/s base are 13.5/72 mm/s or the
 reverse; Motion slew/PID response determines actual wheel speed. This shared
-mixing also affects bypass guidance. Entry timing remains INT-90.
+mixing also affects bypass guidance. Entry timing remains the 2026-10-31 run.
 During the 25 mm straight-navigation segment use fresh visible IR guidance
 and normal tracking curve-speed scaling instead of forcing steering to zero.
 Broad-black/no-guidance crossing clears steering history; invalid VISIBLE
 guidance stops. Preserve steering and acquisition time on the transition
 back to FOLLOW_LINE. Encoder completion, local stop, stale data, obstacle
 and navigation timeout checks remain; L/R approach remains zero-steering.
-No new stored state/API/wire changes. These supersede INT-90's inner cut
+No new stored state/API/wire changes. These supersede the 2026-10-31 run's inner cut
 and earlier fixed-steering straight-segment descriptions. This can correct
 an angled exit while a sensor sees the line; two digital white inputs still
 cannot prove centering, loss or heading. Slower inner-wheel stall/overshoot,
 curve retention and junction geometry remain physical D07/T03 trials.
 
-FOLLOW steering storage (2026-10-31, INT-92; proposed before implementation):
+FOLLOW steering storage (2026-10-31, the 2026-10-31 run; proposed before implementation):
 Motion owns private `follow_steer_q`, signed Q7 -127..127; 8 logical/stored
 bits including invalid -128, zero rounding (integral slew steps toward target).
 Invalid -128 brakes and resets. Proposed slew is 800 Q7 units/s, elapsed
@@ -923,7 +923,7 @@ This supersedes prior Mission steering steps and half-speed curve scaling.
 Response time, comparator chatter, loaded PID, curve retention, stopping
 excursion and pivot geometry remain provisional D07/T03.
 
-Encoder PID diagnostic revision (2026-10-31, INT-94): expose best-effort
+Encoder PID diagnostic revision (2026-10-31): expose best-effort
 per-release wheel targets, measured speeds and serviced duties without changing
 PID gains, encoder scale, steering or travel settings. Use the
 [Motion tuning procedure](../app_program/motion/README.md#wheel-speed-tuning) to separate
@@ -945,9 +945,9 @@ Control behavior is owned by [architecture](architecture.md#dout-navigation-cont
 | --- | --- | --- |
 | D03 | Effective driven-wheel separation; rolling scale/sign per wheel | Wheel-centre separation user-measured 120 mm; effective turning width and individual rolling verification pending; existing mean scale retained |
 | D02/D03 | Chassis centre forward and left of drive axle midpoint | Unknown; zero config is a placeholder, not a measurement |
-| D04 | Both tracking sensors forward/left of axle, optical centre spacing, height, polarity and dead zone | User-measured 120 mm from axle line to IR pair centre after moving the pair back 18 mm (`NAV_SENSOR_FORWARD_MM`; was 135, INT-117); modules 30 mm apart, outside both line edges. INT-98 slide: effective spot spacing 33 mm, effective line width 23 mm (right sensor), centred white/white band 10 mm, console polarity black=1. Left-sensor span, hysteresis, lateral offset and height pending |
-| D01/D04 | Barcode sensor forward/left of axle, mounted polarity, narrow/wide print widths, quiet/rearm zones | User reports 65 mm ahead of and 40 mm left of the left IR sensor, moved back 18 mm with the IR pair (INT-118), so about 185 mm forward and 55 mm left of the axle midpoint if the IR pair is centred; polarity and quiet/rearm zones unknown; user measures a narrow black bar on the course print at about 5 mm (S3-U35); decoder limits provisional. User constraint (2026-11-02): the barcode sensor stays at the line sensors' height, because on a hump a lower sensor would hit the floor; narrowing its spot must not lower it (S1-U26). User decision: the barcode sensor stays digital, no analog output |
-| D02 | Crossbar width, switching-position uncertainty, body swept clearance, tightest curve traces | Line and crossbar both 18 mm (two intersecting lines); a crossing reads both-black for about 23 mm of travel (INT-98 spot width); clearance and tightest-curve traces pending |
+| D04 | Both tracking sensors forward/left of axle, optical centre spacing, height, polarity and dead zone | User-measured 120 mm from axle line to IR pair centre after moving the pair back 18 mm (`NAV_SENSOR_FORWARD_MM`; was 135, the 2026-11-01 run); modules 30 mm apart, outside both line edges. The 2026-11-01 run slide: effective spot spacing 33 mm, effective line width 23 mm (right sensor), centred white/white band 10 mm, console polarity black=1. Left-sensor span, hysteresis, lateral offset and height pending |
+| D01/D04 | Barcode sensor forward/left of axle, mounted polarity, narrow/wide print widths, quiet/rearm zones | User reports 65 mm ahead of and 40 mm left of the left IR sensor, moved back 18 mm with the IR pair (2026-11-01), so about 185 mm forward and 55 mm left of the axle midpoint if the IR pair is centred; polarity and quiet/rearm zones unknown; user measures a narrow black bar on the course print at about 5 mm (2026-11-02); decoder limits provisional. User constraint (2026-11-02): the barcode sensor stays at the line sensors' height, because on a hump a lower sensor would hit the floor; narrowing its spot must not lower it (2026-11-02). User decision: the barcode sensor stays digital, no analog output |
+| D02 | Crossbar width, switching-position uncertainty, body swept clearance, tightest curve traces | Line and crossbar both 18 mm (two intersecting lines); a crossing reads both-black for about 23 mm of travel (the 2026-11-01 run spot width); clearance and tightest-curve traces pending |
 | D07/D08 | Loaded speed response, braking distance, stationarity, arc error limits and pause behavior | Physical trials pending |
 
 `NAV_GEOMETRY_RELEASED=0` inhibits newly qualified left/right/U-turn navigation;
@@ -959,15 +959,15 @@ lateral offset cannot be corrected by an in-place 180-degree pivot alone.
 
 Provisional commissioning settings, not measured limits: tracking at 100 mm/s
 with IR read every 10 ms. Steering (proposed trial values; 115/127/57 veered off
-in INT-132, and the INT-123 PI defaults are in git history): one sensor black
+in the 2026-11-02 run, and the 2026-11-01 PI defaults are in git history): one sensor black
 P 45/127 plus I growing 1/127 per mm of that touch up to 45/127; on white/white I
 fades 0.5/127 per mm, never below a 8/127 drift toward the last side. Broad black requests
 none; at broad entry, black onsets more than 15 mm apart mark curve skew (trial
 value, to be set from type 9 line traces). Motion releases to zero at
 1800 Q/s, reverses at 600 Q/s until zero and builds at 300 Q/s (about the 250 mm/s2 course limit at each wheel at 100 mm/s; lowered 2026-11-05 for the jolt on straight-line touches); steering is mixed centre-preserving, left
 v(1+q/127) and right v(1-q/127), so the robot centre keeps the commanded speed
-(the outer wheel reaches 200 mm/s at full steering; INT-129). Wheel feedforward KF 0.0001, KS 0.05, KP 0.0001
-(S2-U11 to S2-U13). Candidate travel is 6 mm (INT-189; 9 mm in INT-98 missed real crossings, INT-188). A straight crossing rolls 36 mm at course speed with no steering, without stopping, then tracks (INT-189). Curved turn entry then stops rather than assuming pose.
+(the outer wheel reaches 200 mm/s at full steering; the 2026-11-02 run). Wheel feedforward KF 0.0001, KS 0.05, KP 0.0001
+(2026-11-01). Candidate travel is 6 mm (the 2026-11-04 run; 9 mm in the 2026-11-01 run missed real crossings, the 2026-11-04 run). A straight crossing rolls 36 mm at course speed with no steering, without stopping, then tracks (2026-11-04). Curved turn entry then stops rather than assuming pose.
 Entry-relative yaw bound 5 degrees; junction pivots (trial values copied from the
 reference repo, no physical run) are bounded at 120 degrees for left/right and 210
 for U-turn, look for the new branch from 60 and 150 degrees, at the 100 mm/s

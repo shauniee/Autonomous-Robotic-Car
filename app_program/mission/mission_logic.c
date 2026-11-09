@@ -384,7 +384,8 @@ static void handle_follow(Mission *m, const MissionInputs *in,
     if (broad)
     {
         /* Crossbar: no steering. Curve skew: keep the held correction, unless a
-           queued turn may commit here and needs the heading steady (INT-153). */
+           queued turn may commit here and needs the heading steady
+           (2026-11-02). */
         /* Freeze I: the same side afterwards resumes from here. */
         if (m->line_prev != 0)
         {
@@ -782,7 +783,7 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
         enter(m, MISSION_FOLLOW_LINE, in->now_ms);
         m->broad_origin[0] = in->wheel_count[0];
         m->broad_origin[1] = in->wheel_count[1];
-        /* INT-139b: keep the last side, so a white exit drifts back toward
+        /* 2026-11-02: keep the last side, so a white exit drifts back toward
            the line with line loss armed instead of driving on blind. */
         m->line_side = m->cross_side;
         mark(m->dark_origin, in);
@@ -826,9 +827,10 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
             enter(m, MISSION_FOLLOW_LINE, in->now_ms);
             m->broad_origin[0] = in->wheel_count[0];
             m->broad_origin[1] = in->wheel_count[1];
-            /* INT-136: the pivot coasts past the branch, which can leave both
-               sensors white with the line behind the trailing sensor. Lean back
-               toward it, with line loss armed, instead of driving on blind. */
+            /* 2026-11-02: the pivot coasts past the branch, which can leave
+               both sensors white with the line behind the trailing sensor. Lean
+               back toward it, with line loss armed, instead of driving on
+               blind. */
             m->line_side = m->turn_code == 1u ? 1 : -1;
             m->line_i_q = LINE_TURN_LEAN_Q;
             mark(m->dark_origin, in);

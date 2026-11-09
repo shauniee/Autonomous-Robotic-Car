@@ -90,7 +90,7 @@ static void publish_status(const char *payload)
 static void drain_outgoing(void)
 {
     /* A frame the send buffer refused is kept and sent first next poll:
-       dropping it lost barcode events behind trace traffic (INT-234). */
+       dropping it lost barcode events behind trace traffic (2026-11-09). */
     static uint8_t frame[COMMS_FRAME_MAX];
     static unsigned held;
     for (unsigned i = 0u; i < MQTT_FRAMES_PER_POLL && online; ++i)
