@@ -2,12 +2,39 @@
 
 ## Contents
 
+- [Layout](#layout)
+- [Renumbered IDs](#renumbered-ids)
 - [Continuous integration](#continuous-integration)
 - [Run and record](#run-and-record)
 - [Preserved software evidence](#preserved-software-evidence)
 - [Planned integrated trials](#planned-integrated-trials)
 
-Keep subsystem cases/results in `<name>/TEST_LOG.md`, cross-subsystem cases in `integration/TEST_LOG.md`, and physical/full-product cases in `system/TEST_LOG.md`. Saved evidence goes in the corresponding `logs/` directory.
+## Layout
+
+A test only counts once it is written here with its result and its saved log.
+
+```
+testing/
+├── README.md              this guide
+├── comms/                 S1, kept by its owner
+│   ├── TEST_LOG.md        test cases and results
+│   └── logs/              saved console output, photos, scope captures
+├── motion/                S2
+├── line_barcode/          S3
+├── terrain/               S4
+├── obstacle/              S5
+├── integration/           tests across two or more subsystems (shared)
+├── system/                the whole robot against its requirements (shared),
+│                          with the mission-readiness checklist
+└── host/                  host tests: the real subsystem code on the laptop
+                           with fake hardware, run by CI on every PR
+```
+
+Choose the folder by what the test exercises, not by where it ran. A barcode
+read on the car tests line_barcode only, so it goes in `line_barcode/`. A run
+that needs Mission to combine two or more subsystems (line following, junction
+turns, bypass) is integration. Builds, layout and timing audits of the whole
+image are integration too.
 
 | Level | Stable IDs | Ownership / contract |
 | --- | --- | --- |
@@ -15,7 +42,22 @@ Keep subsystem cases/results in `<name>/TEST_LOG.md`, cross-subsystem cases in `
 | Integration | `INT-01`, … | Both interface owners; [system contracts](../docs/architecture.md#shared-data-rules) and [line and barcode](../app_program/line_barcode/README.md) |
 | System | `SYS-01`, …; planned `T01`–`T16` | Team; [requirements](../docs/project-specs.md) |
 
-IDs never change or get reused, including retired template cases. Test IDs keep their old prefix: S1 is comms, S2 motion, S3 line_barcode, S4 terrain and S5 obstacle. Retired definitions remain in the relevant log; placeholder template rows are not observations.
+IDs never change or get reused, including retired template cases, except for the one renumbering below. Test IDs keep their old prefix: S1 is comms, S2 motion, S3 line_barcode, S4 terrain and S5 obstacle. Retired definitions remain in the relevant log; placeholder template rows are not observations.
+
+## Renumbered IDs
+
+On 2026-11-09 the integration results that test only one subsystem moved to that
+subsystem's log, with their saved logs, and took a new subsystem ID. Commit
+messages and old captures still use the old IDs. The old INT numbers stay retired
+and are never reused; the next integration ID is INT-239.
+
+| Folder | Old ID → new ID |
+| --- | --- |
+| `comms/` | INT-08 → S1-U15, INT-10 → S1-U16, INT-33 → S1-U17, INT-34 → S1-U18, INT-36 → S1-U19, INT-39 → S1-U20, INT-40 → S1-U21, INT-41 → S1-U22, INT-43 → S1-U23, INT-53 → S1-U24, INT-139 → S1-U25, INT-140 → S1-U26 |
+| `motion/` | INT-65 → S2-U07, INT-66 → S2-U08, INT-67 → S2-U09, INT-99 → S2-U10, INT-100 → S2-U11, INT-101 → S2-U12, INT-102 → S2-U13, INT-165 → S2-U14, INT-176 → S2-U15, INT-195 → S2-U16 |
+| `line_barcode/` | INT-70 → S3-U21, INT-71 → S3-U22, INT-93 → S3-U23, INT-140b → S3-U24, INT-141 → S3-U25, INT-141b → S3-U26, INT-142 → S3-U27, INT-143 → S3-U28, INT-144 → S3-U29, INT-145 → S3-U30, INT-146 → S3-U31, INT-147 → S3-U32, INT-148 → S3-U33, INT-149 → S3-U34, INT-150 → S3-U35, INT-151 → S3-U36, INT-152 → S3-U37, INT-170 → S3-U38, INT-192 → S3-U39, INT-230 → S3-U40, INT-231 → S3-U41, INT-232 → S3-U42, INT-233 → S3-U43, INT-235 → S3-U44, INT-236 → S3-U45, INT-237 → S3-U46 |
+| `terrain/` | INT-48 → S4-U09, INT-157 → S4-U10, INT-158 → S4-U11, INT-166 → S4-U12, INT-171 → S4-U13 |
+| `obstacle/` | INT-201 → S5-U16 |
 
 ## Continuous integration
 
@@ -25,7 +67,7 @@ IDs never change or get reused, including retired template cases. Test IDs keep 
 | --- | --- | --- |
 | Coding standard | `python3 scripts/check_barr.py --base origin/main` | A changed line breaks a mechanical BARR-C:2018 rule. `--summary` lists the legacy backlog without failing |
 | Deliverables | `python3 scripts/check_deliverables.py` | A subsystem's source, public function, wired-in test or report section is missing; a second motor writer appears; networking commands Motion; firmware and laptop frame lengths differ |
-| Host tests | `bash testing/pure/run.sh` and `node testing/pure/test_dashboard.mjs` | Any test of the real subsystem code fails |
+| Host tests | `bash testing/host/run.sh` and `node testing/host/test_dashboard.mjs` | Any test of the real subsystem code fails |
 | Firmware build | `sh testing/build_pending_profiles.sh` | Any of the six images fails to compile or link, or a struct outgrows its bound in `testing/sizeof_probe.c`. It never flashes |
 
 Deliverables that need the car print NEEDS EVIDENCE and do not fail the check, because only a physical run can close them.
@@ -52,7 +94,7 @@ Deliverables that need the car print NEEDS EVIDENCE and do not fail the check, b
 
 ## Preserved software evidence
 
-Host-only tests for kernel-free modules run with `testing/pure/run.sh` (no fake kernel). `run.sh` passes `-DHOST_TEST`, which hides the kernel and driver parts of merged files such as `line.c`, `barcode.c` and `motion.c`. The older 2026-10-08 fake-kernel/hardware/network and laptop-loopback results remain historical software evidence; their recorded methods are not current run instructions. They do not establish GPIO performance, physical motion or an actual Pico connection.
+Host-only tests for kernel-free modules run with `testing/host/run.sh` (no fake kernel). `run.sh` passes `-DHOST_TEST`, which hides the kernel and driver parts of merged files such as `line.c`, `barcode.c` and `motion.c`. The older 2026-10-08 fake-kernel/hardware/network and laptop-loopback results remain historical software evidence; their recorded methods are not current run instructions. They do not establish GPIO performance, physical motion or an actual Pico connection.
 
 Firmware self-tests remain: S1-U09 (binary codec; replaces retired S1-U04), S2-U03 (Motion policy), S3-U02 (normalization/progress) and S3-U06 (P guidance). S3-U03 remains the retired line-PID case; later P/capture/recovery cases retain their IDs. Network snapshots never count as sensor progress.
 
@@ -60,7 +102,7 @@ Actual wireless checks are SYS-09/10 through [wireless setup](../README.md#getti
 
 ## Planned integrated trials
 
-Target procedures follow [pending work](../pending.md) and [mission-readiness](mission-readiness.md).
+Target procedures follow [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) and [mission-readiness](system/mission-readiness.md).
 Historical case definitions and results in TEST_LOG files stay as recorded. Differences
 such as GP20 reset, JSON output or a dedicated Safety task describe their recorded
 source, not target acceptance. Append a new procedure revision/result, never reuse
@@ -92,5 +134,5 @@ All remain pending until actual measurements/results are recorded. This retains 
 
 Acceptance targets/unknown values are owned by [project-specs](../docs/project-specs.md#pending-decisions), not inferred from a case name. Demonstration links belong in the [video index](../video/README.md#video-index) and the corresponding result row.
 
-The live completion checklist is [pending work](../pending.md).
+The live completion checklist is [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues).
 Historical plan references in recorded logs refer to their original revisions.

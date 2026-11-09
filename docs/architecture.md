@@ -39,7 +39,7 @@
 
 ## Plan status and scope
 
-[pending work](../pending.md) owns the live plan and completion status.
+[open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) owns the live plan and completion status.
 The implementation creates Motion, Mission and core-0 I/O only; software
 checks do not establish physical calibration or acceptance. Requirements and
 calibrated values are owned by [project-specs](project-specs.md); wiring by
@@ -219,12 +219,12 @@ Target: `app_program/mission/` holds coordinator and small policy helpers;
 `app_program/common/` holds startup/shared contracts and I/O orchestration as
 appropriate. Keep `comms/` through `obstacle/` for their reusable modules.
 No separate Safety task. Move files/build/includes only with tested implementation
-stages in [pending work](../pending.md). `mqtt_utk.c` stays in the kernel
+stages in [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues). `mqtt_utk.c` stays in the kernel
 library and only WiFi service context calls MQTT/lwIP.
 
 ## Implementation order and acceptance
 
-[pending work](../pending.md) owns
+[open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) owns
 the live work sequence and incorporates #129–#133. The Motion/Mission/I/O
 refactor is implemented; remaining calibration, feature release and integrated
 acceptance follow that file and the physical procedures. No host/build result
@@ -432,7 +432,7 @@ the evidence: no lost function, memory, message sizes and timing.
 
 ## MQTT binary protocol, schema version 3
 
-Implemented by `app_program/comms/comms.h` and `mqtt_frame.c`, tested by `testing/pure/test_mqtt_frame.c`; the laptop decoder `scripts/mqtt_client.py` checks the same golden vectors (`--self-test`). Field widths follow the [data table](team.md#6-data-representation). Version 3 packs the six owner fault bytes into one 12-bit fault word, so telemetry shrinks from 22 to 18 bytes; version 1 and 2 frames are rejected. A laptop decoder and firmware must be on the same version.
+Implemented by `app_program/comms/comms.h` and `mqtt_frame.c`, tested by `testing/host/test_mqtt_frame.c`; the laptop decoder `scripts/mqtt_client.py` checks the same golden vectors (`--self-test`). Field widths follow the [data table](team.md#6-data-representation). Version 3 packs the six owner fault bytes into one 12-bit fault word, so telemetry shrinks from 22 to 18 bytes; version 1 and 2 frames are rejected. A laptop decoder and firmware must be on the same version.
 
 Topics (root `robot/s3`, set in `config/wifi_secrets.h`): `<root>/telemetry` carries every robot-to-PC frame, `<root>/request` carries mapping and snapshot requests, `<root>/status` is the retained online/offline text.
 
@@ -480,7 +480,7 @@ Older laptop decoders reject this new type; use the matching decoder for traces.
 
 ### Barcode trace (18 bytes)
 
-Type 10 is outbound diagnostics only, added for INT-146 and filtered since INT-148; Comms owner agreement pending. Byte 0 is `3A`
+Type 10 is outbound diagnostics only, added for S3-U31 and filtered since S3-U33; Comms owner agreement pending. Byte 0 is `3A`
 hex, byte 1 a wrapping sequence, bytes 2..17 eight little-endian runs: bit 15 black level, bits
 14..0 width in encoder counts after chatter is merged, zero for an unused slot. A full ring drops frames.
 
@@ -605,7 +605,7 @@ now have bounded median groups and qualified edge/model estimation. Their
 operating settings are provisional configured proposals, and physical bypass
 release remains inhibited. Supported forward/side coverage, rear-edge/original-line
 validation and any resulting implementation corrections remain in the
-[pending work](../pending.md). These are not accepted floor
+[open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues). These are not accepted floor
 features. Terrain publishes original acquisition/service times under a mutex;
 impact remains asserted until a fresh non-impact sample observes serviced braking.
 Comms events use a short cross-core mutex; events stay in the ring when the TX bridge

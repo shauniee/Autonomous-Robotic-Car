@@ -129,7 +129,7 @@ def check_deliverable(root, item, test_runner):
         if text is None or not re.search(rf"\b{function}\s*\(", text):
             problems.append(f"{relative} does not declare {function}()")
     for test in item.get("tests", []):
-        if read(root, f"testing/pure/{test}") is None:
+        if read(root, f"testing/host/{test}") is None:
             problems.append(f"missing test {test}")
         elif test not in test_runner:
             problems.append(f"{test} is not run by CI")
@@ -188,7 +188,7 @@ def check_wire_lengths(root):
 
 def main(argv):
     root = Path(argv[0] if argv else Path(__file__).resolve().parents[1])
-    test_runner = (read(root, "testing/pure/run.sh") or "") + \
+    test_runner = (read(root, "testing/host/run.sh") or "") + \
         (read(root, ".github/workflows/host-tests.yml") or "")
     failed = 0
     awaiting = 0

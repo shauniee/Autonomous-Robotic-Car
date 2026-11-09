@@ -42,7 +42,7 @@ team confirmations below remain distinct sources; this review does not
 reclassify them as statements in the attached PDFs or remove later course
 updates such as the minimum-bit requirement.
 
-**Reconciled design, 2026-10-29:** [pending work](../pending.md) owns implementation
+**Reconciled design, 2026-10-29:** [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) owns implementation
 sequence; [architecture](architecture.md) owns task/control contracts. Three
 application tasks retain core 1 Motion/Mission and core 0 I/O, with kernel WiFi/USB
 unchanged. Motion has higher scheduling priority than Mission. No separate Safety
@@ -86,7 +86,7 @@ GP20 starts separately. No two-second barcode disabling rule remains.
 Nicholas is the sole decision contact and approver for the remaining work,
 including data contracts previously awaiting named subsystem owners. Historical
 attribution remains historical; code-level writer/authority rules are unchanged.
-All unresolved work is tracked in [pending work](../pending.md); issue #117 stays
+All unresolved work is tracked in [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues); issue #117 stays
 closed and PR 149 is already merged. The demo is 2026-11-04 (Singapore time).
 
 **Qualifying lap (user acceptance criterion):** one complete lap, successful
@@ -128,7 +128,7 @@ Record the exact settings with each image and result.
 
 **Flipped barcodes (Nicholas, 2026-11-04):** the print can be turned 180 degrees, so the sensor must read it from either end. The decoder already does this and host tests cover all 26 letters; the car check is open. Colour-inverted prints are out of scope.
 
-**Known restart cause:** Nicholas attributes the ten restarts in INT-154–157 to
+**Known restart cause:** Nicholas attributes the ten restarts in INT-154 to INT-156 and S4-U10 to
 a poorly connected battery, a hardware fix. Exclude them from unexplained
 software-reset work; no new electrical measurement or physical PASS is implied.
 
@@ -573,7 +573,7 @@ one-full-wheel-revolution manual check with GP21 held, Nicholas supplied encoder
 counts 31142 before and 33655 after: delta 2513 decoded counts. Wheel identity,
 other-wheel scale and repeatability remain pending; this is not a completed
 calibration or independently measured physical acceptance. See
-[INT-65 observation](../testing/integration/logs/2026-10-31_INT-65/observation.json).
+[S2-U07 observation](../testing/motion/logs/2026-10-31_S2-U07/observation.json).
 The current 360-count setting underestimates this delta by a factor of 6.981;
 under existing diameter/track assumptions, it predicts a physical 10.03 degree
 turn for an estimated 70 degree pivot. Applying this scale also changes wheel
@@ -587,12 +587,12 @@ first baseline, stable telemetry was 65501 before the requested manual forward
 revolution and 2454 after. Signed 16-bit wrap-safe travel is +2489 counts.
 Both observations are close to 2500 counts/revolution (difference 0.96% of
 their mean); manual angle placement and repeatability remain unmeasured.
-See [INT-66](../testing/integration/TEST_LOG.md#results).
+See [S2-U08](../testing/motion/TEST_LOG.md#results).
 At that observation stage, no encoder/motor setting had changed. A manual 500 mm straight rolling
 measurement is next to establish effective counts/mm without powered motion;
 awaiting the operator's positioned baseline.
 
-Applied rolling-scale revision, 2026-10-31: INT-66's operator-reported 500 mm
+Applied rolling-scale revision, 2026-10-31: S2-U08's operator-reported 500 mm
 manual straight roll produced left +5833 and right +5816 counts. Effective
 scales are 11.666 and 11.632 counts/mm; use their mean 11.649 counts/mm as the
 single odometry constant. Their relative difference is 0.292%; repeatability,
@@ -613,7 +613,7 @@ distance target is 23298 counts, within the signed 16-bit half range; the
 right-minus-left displacement so long forward travel cannot alias each
 wheel's signed origin subtraction; differential heading stays bounded to
 180 degrees. Shared/wire counters remain 16 bits. Live decoder reads the
-same direct counts/mm constant. INT-67 owns software verification; no powered
+same direct counts/mm constant. S2-U09 owns software verification; no powered
 angle, distance, speed-loop or stopping acceptance is implied.
 
 Simplified standalone recovery revision, 2026-10-31, supersedes the loss delay,
@@ -946,7 +946,7 @@ Control behavior is owned by [architecture](architecture.md#dout-navigation-cont
 | D03 | Effective driven-wheel separation; rolling scale/sign per wheel | Wheel-centre separation user-measured 120 mm; effective turning width and individual rolling verification pending; existing mean scale retained |
 | D02/D03 | Chassis centre forward and left of drive axle midpoint | Unknown; zero config is a placeholder, not a measurement |
 | D04 | Both tracking sensors forward/left of axle, optical centre spacing, height, polarity and dead zone | User-measured 120 mm from axle line to IR pair centre after moving the pair back 18 mm (`NAV_SENSOR_FORWARD_MM`; was 135, INT-117); modules 30 mm apart, outside both line edges. INT-98 slide: effective spot spacing 33 mm, effective line width 23 mm (right sensor), centred white/white band 10 mm, console polarity black=1. Left-sensor span, hysteresis, lateral offset and height pending |
-| D01/D04 | Barcode sensor forward/left of axle, mounted polarity, narrow/wide print widths, quiet/rearm zones | User reports 65 mm ahead of and 40 mm left of the left IR sensor, moved back 18 mm with the IR pair (INT-118), so about 185 mm forward and 55 mm left of the axle midpoint if the IR pair is centred; polarity and quiet/rearm zones unknown; user measures a narrow black bar on the course print at about 5 mm (INT-150); decoder limits provisional. User constraint (2026-11-02): the barcode sensor stays at the line sensors' height, because on a hump a lower sensor would hit the floor; narrowing its spot must not lower it (INT-140). User decision: the barcode sensor stays digital, no analog output |
+| D01/D04 | Barcode sensor forward/left of axle, mounted polarity, narrow/wide print widths, quiet/rearm zones | User reports 65 mm ahead of and 40 mm left of the left IR sensor, moved back 18 mm with the IR pair (INT-118), so about 185 mm forward and 55 mm left of the axle midpoint if the IR pair is centred; polarity and quiet/rearm zones unknown; user measures a narrow black bar on the course print at about 5 mm (S3-U35); decoder limits provisional. User constraint (2026-11-02): the barcode sensor stays at the line sensors' height, because on a hump a lower sensor would hit the floor; narrowing its spot must not lower it (S1-U26). User decision: the barcode sensor stays digital, no analog output |
 | D02 | Crossbar width, switching-position uncertainty, body swept clearance, tightest curve traces | Line and crossbar both 18 mm (two intersecting lines); a crossing reads both-black for about 23 mm of travel (INT-98 spot width); clearance and tightest-curve traces pending |
 | D07/D08 | Loaded speed response, braking distance, stationarity, arc error limits and pause behavior | Physical trials pending |
 
@@ -967,7 +967,7 @@ value, to be set from type 9 line traces). Motion releases to zero at
 1800 Q/s, reverses at 600 Q/s until zero and builds at 300 Q/s (about the 250 mm/s2 course limit at each wheel at 100 mm/s; lowered 2026-11-05 for the jolt on straight-line touches); steering is mixed centre-preserving, left
 v(1+q/127) and right v(1-q/127), so the robot centre keeps the commanded speed
 (the outer wheel reaches 200 mm/s at full steering; INT-129). Wheel feedforward KF 0.0001, KS 0.05, KP 0.0001
-(INT-100 to INT-102). Candidate travel is 6 mm (INT-189; 9 mm in INT-98 missed real crossings, INT-188). A straight crossing rolls 36 mm at course speed with no steering, without stopping, then tracks (INT-189). Curved turn entry then stops rather than assuming pose.
+(S2-U11 to S2-U13). Candidate travel is 6 mm (INT-189; 9 mm in INT-98 missed real crossings, INT-188). A straight crossing rolls 36 mm at course speed with no steering, without stopping, then tracks (INT-189). Curved turn entry then stops rather than assuming pose.
 Entry-relative yaw bound 5 degrees; junction pivots (trial values copied from the
 reference repo, no physical run) are bounded at 120 degrees for left/right and 210
 for U-turn, look for the new branch from 60 and 150 degrees, at the 100 mm/s

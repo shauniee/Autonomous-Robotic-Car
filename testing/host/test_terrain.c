@@ -119,7 +119,7 @@ static void test_what_is_not_a_hump(void)
     assert(ctx.state == TERRAIN_STATE_FLAT && ctx.hump_count == 0u);
 }
 
-/* INT-157: one boot pose read 6.5 degrees pitch and -1 degree roll on flat ground,
+/* S4-U10: one boot pose read 6.5 degrees pitch and -1 degree roll on flat ground,
    and curves then reached the entry level. Offsets must not count, or stick. */
 static void test_baseline(void)
 {
@@ -136,7 +136,7 @@ static void test_baseline(void)
     feed(-7.0f, 100, 0.0f); feed(-7.0f, 50, 2.0f); feed(-7.0f, 30, 2.0f);
     assert(ctx.state == TERRAIN_STATE_FLAT && ctx.hump_count == 0u);
 
-    calibrate();					/* INT-158: a pivot has no mean travel, and is not stopped */
+    calibrate();					/* S4-U11: a pivot has no mean travel, and is not stopped */
     Gy511RawAxes pivot = tilted(2.5f, 0.0f);
     for (int i = 0; i < 100; ++i) {
         terrain_algo_process(&ctx, &pivot, 0.0f, false);

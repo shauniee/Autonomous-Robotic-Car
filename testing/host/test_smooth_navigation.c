@@ -326,7 +326,7 @@ static void pivot_turns(void)
     }
 }
 #endif
-/* INT-139: a straight crossing that exits white/white keeps the last side, so
+/* INT-139b: a straight crossing that exits white/white keeps the last side, so
    the robot drifts back toward the line with line loss armed. */
 static void crossing_keeps_last_side(void)
 {

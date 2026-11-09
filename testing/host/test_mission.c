@@ -732,7 +732,7 @@ static void test_bypass_long_encoder_travel(void)
         assert(out.route == BYPASS_ROUTE_OUT);
         assert(control.heading_cdeg > 0 && control.heading_cdeg < 100);
     }
-    puts("INT-67: differential heading survives long common wheel travel PASS");
+    puts("S2-U09: differential heading survives long common wheel travel PASS");
 }
 
 static void test_bypass_full_sequence(void)

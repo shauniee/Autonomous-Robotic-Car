@@ -1,6 +1,6 @@
 #!/bin/sh
 # Host-only tests for kernel-free modules. Prints one line per test and the
-# full output of any test that fails. Run from anywhere: testing/pure/run.sh
+# full output of any test that fails. Run from anywhere: testing/host/run.sh
 set -u
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -11,7 +11,7 @@ cd "$repo_root"
 
 CC=${CC:-cc}
 CFLAGS="-std=c11 -O2 -Wall -Wextra -Werror -pthread -DHOST_TEST"
-T=testing/pure
+T=testing/host
 DATA=app_program/common/robot_data.c
 FRAME="app_program/comms/mqtt_frame.c $DATA"
 MISSION="app_program/mission/mission_logic.c app_program/mission/recovery_control.c

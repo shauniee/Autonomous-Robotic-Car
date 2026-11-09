@@ -13,7 +13,7 @@
 Measured 2026-11-07 for RP2040, Arm GNU C11 13.3.1, Cortex-M0+, Thumb,
 soft-float, `CNF_SMP=1`, at base commit
 `84e5bf5d00c3d4dea70fb78091d21f3a72f8d262` plus the source hashes in
-[INT-222 measurements](logs/2026-11-07_INT-222/layout.json).
+[INT-222 measurements](layout.json).
 This covers all 51 application-defined struct types in `app_program/`.
 The unnamed barcode count-pair struct has 32 member/stored bits and zero
 padding. The unnamed mapping duplicate flag has one member bit, seven padding
@@ -153,9 +153,9 @@ and alignment guarantees; this audit does not apply one.
 
 ## Logical subsystem budgets and wire payloads
 
-The owning [README bit tables](../../README.md#bits-per-subsystem) list every
+The owning [README bit tables](../../../../README.md#bits-per-subsystem) list every
 currently budgeted persistent item, instance counts and subsystem subtotals.
-The [data representation table](../../docs/team.md#6-data-representation)
+The [data representation table](../../../../docs/team.md#6-data-representation)
 owns valid ranges and logical widths. Those logical tables are partial RAM
 budgets; the struct inventory above adds temporary/private types without
 pretending they all have approved minimum-width contracts.
@@ -195,5 +195,5 @@ sh testing/sizeof_probe.sh
 
 Detailed field offsets and widths were inspected in GNU DWARF 4 debug records
 (`arm-none-eabi-readelf --debug-dump=info`); the saved JSON contains extracted
-measurements, not console/build output. [Integration results](TEST_LOG.md#results)
+measurements, not console/build output. [Integration results](../../TEST_LOG.md#results)
 record the run IDs and source revision.
