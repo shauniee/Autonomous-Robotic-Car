@@ -28,7 +28,8 @@ typedef enum
     MQTT_TYPE_JUNCTION_TEST = 7, /* PC -> Mission, next-junction test direction */
     MQTT_TYPE_WHEEL_TRACE = 8, /* robot -> PC, best-effort Motion-release trace */
     MQTT_TYPE_LINE_TRACE = 9, /* robot -> PC, best-effort Mission line decision trace */
-    MQTT_TYPE_BARCODE_TRACE = 10, /* robot -> PC, best-effort raw GP16 run widths */
+    /* robot -> PC, best-effort raw GP27 run widths */
+    MQTT_TYPE_BARCODE_TRACE = 10,
     MQTT_TYPE_TERRAIN_TRACE = 11 /* robot -> PC, best-effort hump detector state */
 } mqtt_type_t;
 
@@ -175,7 +176,7 @@ typedef struct
     uint8_t command_mode;	/* motion_mode_t, 0..3 */
     uint16_t command_speed;	/* mm/s sent to Motion, 0..511 */
     uint8_t onset_skew_mm;	/* both black: mm between the black onsets, 254 max; else 255 */
-    uint8_t barcode_edges;	/* running GP16 edge count, 0..31, wraps */
+    uint8_t barcode_edges; /* running GP27 edge count, 0..31, wraps */
 } mqtt_line_trace_t;
 
 /* Terrain trace for the dashboard's IMU graphs. Tilt is in quarter degrees;
@@ -197,7 +198,8 @@ typedef struct
 unsigned mqtt_encode_terrain_trace(uint8_t *p_out, unsigned capacity,
     const mqtt_terrain_trace_t *p_trace);
 
-/* Barcode trace: 8 raw GP16 runs, each bit 15 black level, bits 14..0 width in counts. */
+/* Barcode trace: 8 raw GP27 runs, each bit 15 black level, bits 14..0
+   width in counts. */
 unsigned mqtt_encode_barcode_trace(uint8_t *out, unsigned capacity, uint8_t sequence,
     const uint16_t runs[MQTT_BARCODE_TRACE_RUNS]);
 
