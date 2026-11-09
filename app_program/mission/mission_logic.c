@@ -247,8 +247,8 @@ static void handle_stop(Mission *m, const MissionInputs *in,
 
 static bool held_turn(const Mission *m)
 {
-    return m->held == BARCODE_LEFT || m->held == BARCODE_RIGHT ||
-        m->held == BARCODE_U_TURN;
+    return BARCODE_LEFT == m->held || BARCODE_RIGHT == m->held ||
+        BARCODE_U_TURN == m->held;
 }
 
 static void observe_junction(Mission *m, const MissionInputs *in)
@@ -392,8 +392,8 @@ static void handle_follow(Mission *m, const MissionInputs *in,
             m->line_prev = 0;
         }
         mark(m->dark_origin, in); /* the line is under both sensors */
-        out->command = follow_command(in,
-            m->in_broad && m->entry_curved && !held_turn(m) ? m->line_steer_q : 0, 1u);
+        bool hold = m->in_broad && m->entry_curved && !held_turn(m);
+        out->command = follow_command(in, hold ? m->line_steer_q : 0, 1u);
         return;
     }
 
