@@ -28,6 +28,7 @@ typedef struct
     uint8_t left_side : 1;
     uint8_t edge_open : 1;
     uint8_t close_samples : 2;
+    uint8_t return_white : 1; /* RETURN: the sensors have seen white */
     int32_t left_q8 : 21;
     uint8_t edge_samples : 3;
     uint8_t action_id : 6;

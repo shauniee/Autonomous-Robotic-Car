@@ -325,6 +325,7 @@ range needs, stored is what the field occupies.
 | Bypass edge budget | `bypass_control_t.edge_counts` | 0..93192 counts | 17 | bit-field | Mission only |
 | Bypass half width | `bypass_control_t.half_width_mm` | 0..511 mm | 9 | bit-field | Mission only |
 | Bypass samples, flags, action ID | `bypass_control_t` | 0..7, 0..3, flags, 0..63 | 3, 2, 1, 6 | bit-fields | Mission only |
+| Bypass return saw white | `bypass_control_t.return_white` | flag | 1 | bit-field | Mission only |
 | Bypass geometry | `bypass_control_t` | centre, front ±1023 mm; offset, flank, heading, target unbounded | 11 / 16; 16 | `int16_t`, `uint16_t` | Mission only |
 | Bypass and recovery inputs | `bypass_input_t`, `recovery_input_t` | counts; ranges 0..8190; status 0..3; action 0..63; flags | 16; 13; 2; 6; 1 | `enc_count_t`, bit-fields | per release |
 | Recovery phase | `recovery_control_t`, `recovery_output_t` | 0..3 | 2 | bit-field | Mission only |
