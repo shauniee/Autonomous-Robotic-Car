@@ -60,6 +60,11 @@ void comms_event(mqtt_event_kind_t kind, uint8_t arg, uint16_t arg2)
     }
 }
 
+void comms_barcode_clear(void)
+{
+    atomic_store_explicit(&last_barcode, MQTT_NO_LETTER, memory_order_release);
+}
+
 static void gather(mqtt_telemetry_t *t, uint8_t sequence)
 {
     uint32_t feedback = motion_feedback(), terrain = terrain_read_word();

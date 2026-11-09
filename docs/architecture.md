@@ -538,7 +538,7 @@ monitor` prints it as a short `LINE` line (`--raw` for JSON); the dashboard does
 | 12-13 | 12-0 | front range, mm | 0-8190; 8191 invalid |
 | 12-13 | 13 | front range valid | no echo is not clear space |
 | 12-13 | 15-14 | IMU calibration | 0 unknown, 1 not calibrated, 2 calibrated, 3 invalid |
-| 14 | 4-0 | last decoded barcode letter | 0-25 (A-Z), 31 none |
+| 14 | 4-0 | last decoded barcode letter, cleared when its navigation ends on the line | 0-25 (A-Z), 31 none |
 | 14 | 7-5 | action it maps to | 0 unmapped, 1 left, 2 right, 3 straight, 4 U-turn |
 | 15-17 | 9-0 | latest obstacle width, mm | 0 none; saturates at 1023 |
 | 15-17 | 19-10 | clearance on the side chosen for the latest bypass, mm | 0 none; saturates at 1023 |
