@@ -245,6 +245,12 @@ static void handle_stop(Mission *m, const MissionInputs *in,
     }
 }
 
+static bool held_turn(const Mission *m)
+{
+    return BARCODE_LEFT == m->held || BARCODE_RIGHT == m->held ||
+        BARCODE_U_TURN == m->held;
+}
+
 static void observe_junction(Mission *m, const MissionInputs *in)
 {
     if (!m->in_broad || !m->junction_open ||
@@ -258,7 +264,10 @@ static void observe_junction(Mission *m, const MissionInputs *in)
         m->junction_open = 0u;
         return;
     }
-    if (enc_mean_travel(in->wheel_count, m->broad_origin) >=
+    /* Reaching here is a second both-black sample in a row. A queued turn
+       commits on it: a crossing met mid-correction can read both black for
+       only 2 to 4 mm. */
+    if (held_turn(m) || enc_mean_travel(in->wheel_count, m->broad_origin) >=
         NAV_CONFIRM_MM * ENC_COUNTS_PER_MM)
     {
         m->junction_qualified = 1u;
@@ -322,11 +331,9 @@ static void handle_follow(Mission *m, const MissionInputs *in,
     {
         m->in_broad = false;
     }
-    bool held_turn = m->held == BARCODE_LEFT || m->held == BARCODE_RIGHT ||
-        m->held == BARCODE_U_TURN;
     /* Curve skew reads both black too: without a queued turn, keep following. */
     if (m->in_broad && m->junction_qualified && !m->junction_locked &&
-        (held_turn || !m->entry_curved))
+        (held_turn(m) || !m->entry_curved))
     {
         barcode_action_t action = m->held;
         bool turning = action == BARCODE_LEFT || action == BARCODE_RIGHT ||
@@ -385,8 +392,8 @@ static void handle_follow(Mission *m, const MissionInputs *in,
             m->line_prev = 0;
         }
         mark(m->dark_origin, in); /* the line is under both sensors */
-        out->command = follow_command(in,
-            m->in_broad && m->entry_curved && !held_turn ? m->line_steer_q : 0, 1u);
+        bool hold = m->in_broad && m->entry_curved && !held_turn(m);
+        out->command = follow_command(in, hold ? m->line_steer_q : 0, 1u);
         return;
     }
 

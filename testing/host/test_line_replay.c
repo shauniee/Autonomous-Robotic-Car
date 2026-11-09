@@ -207,6 +207,33 @@ static void test_short_both_black_decides_the_crossing(void)
     assert(following(&r) && steering(&r) == -LINE_KP_Q);
 }
 
+/* A crossing met mid-correction read both black for only 2 mm, under
+   NAV_CONFIRM_MM, and a queued LEFT went past it. A queued turn commits on two
+   samples in a row; with nothing queued the same read stays a line touch.
+   Navigation geometry is unreleased here, so a turn commit shows as its stop. */
+static void test_queued_turn_commits_on_short_both_black(void)
+{
+    for (unsigned queued = 0u; queued < 2u; ++queued)
+    {
+        Rig r;
+        start(&r);
+        r.m.held = queued ? BARCODE_LEFT : BARCODE_UNMAPPED;
+        for (unsigned i = 0u; i < 10u; ++i)
+        {
+            tick(&r, 1u, 0u); /* correcting left */
+        }
+        tick(&r, 1u, 1u);
+        tick(&r, 1u, 1u);
+        if (queued)
+        {
+            assert(r.m.state == MISSION_STOPPED && r.out.nav_rejected == 1u);
+            continue;
+        }
+        tick(&r, 0u, 1u);
+        assert(following(&r) && r.m.held == BARCODE_UNMAPPED);
+    }
+}
+
 /* INT-154: the left sensor stayed black about 12 mm past the right on most
    exits. Through the advance that is the bar, not a line touch: the command stays
    the straight advance, and the last side is kept for the drift afterwards. */
@@ -409,6 +436,7 @@ int main(void)
     test_curve_skew_keeps_turning();
     test_junction_after_curve_is_a_crossing();
     test_short_both_black_decides_the_crossing();
+    test_queued_turn_commits_on_short_both_black();
     test_crossing_exit_ignores_trailing_sensor();
     test_first_touch_after_crossing_has_no_integral();
     test_both_black_freezes_integral();
