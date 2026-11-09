@@ -320,13 +320,13 @@ static void pivot_turns(void)
             out = tick(&m, &in);
         assert(m.state == MISSION_FOLLOW_LINE && m.junction_locked);
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
-        /* INT-136: both sensors white after the pivot: lean back toward the line. */
+        /* 2026-11-02: both sensors white after the pivot: lean back toward the line. */
         assert(motion_cmd_steering(&out.command) ==
             (action == BARCODE_LEFT ? LINE_TURN_LEAN_Q : -LINE_TURN_LEAN_Q));
     }
 }
 #endif
-/* INT-139b: a straight crossing that exits white/white keeps the last side, so
+/* 2026-11-02: a straight crossing that exits white/white keeps the last side, so
    the robot drifts back toward the line with line loss armed. */
 static void crossing_keeps_last_side(void)
 {
@@ -394,7 +394,7 @@ static void navigation_failures(void)
     assert(m.entry_curved);
     move(&in, NAV_CONFIRM_MM + 1, NAV_CONFIRM_MM + 1);
     MissionOutputs out = tick(&m, &in);
-    /* INT-153: a queued turn commits on a skewed but qualified entry. */
+    /* 2026-11-02: a queued turn commits on a skewed but qualified entry. */
     assert(m.state == MISSION_NAVIGATE && m.phase == JUNCTION_PHASE_ADVANCE && out.nav_rejected == 0u);
     /* Pivoting to the bound without finding the branch stops. */
     in = input(); follow(&m, &in);

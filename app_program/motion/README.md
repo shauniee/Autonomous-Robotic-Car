@@ -59,9 +59,9 @@ Draft from existing evidence only. All of it is on raised wheels, so it does not
 
 | Trial | Change | Observed |
 | --- | --- | --- |
-| S2-U11 | Feedforward fit, raised wheels | The log row names 60, 100 and 140 mm/s; `robot_config.h` says 60 to 200 mm/s and gives left 1.05e-4, right 0.95e-4. The range needs checking against the saved evidence |
-| S2-U12 | 100 mm/s step with fitted feedforward | Peak 112 mm/s; wheels alternate below 60 mm/s at KP 0.0003 |
-| S2-U13 | KP lowered to 0.0001 | The alternation is gone |
+| 2026-11-01 | Feedforward fit, raised wheels | The log row names 60, 100 and 140 mm/s; `robot_config.h` says 60 to 200 mm/s and gives left 1.05e-4, right 0.95e-4. The range needs checking against the saved evidence |
+| 2026-11-01 | 100 mm/s step with fitted feedforward | Peak 112 mm/s; wheels alternate below 60 mm/s at KP 0.0003 |
+| 2026-11-01 | KP lowered to 0.0001 | The alternation is gone |
 
 Current values, all provisional (D07): `MOTION_KS` 0.05, `MOTION_KF` 0.0001, `MOTION_KP` 0.0001, `MOTION_KI` 0.0010, `MOTION_KD` 0.
 

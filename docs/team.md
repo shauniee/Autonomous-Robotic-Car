@@ -422,17 +422,17 @@ into the 12-bit fault word in this order: Motion bits 0-1, Line 2-4, Terrain
 - **Wire format.** Schema v3 changes only the fault field (six bytes to one
   12-bit word) and the version nibble; every other field keeps its width and
   meaning. The C codec and `scripts/mqtt_client.py --self-test` decode the same
-  new golden vectors, and S1-U14 walks each of the 12 fault bits alone and all
+  new golden vectors, and the 2026-11-08 run walks each of the 12 fault bits alone and all
   together.
 - **Builds.** All six profiles in `testing/build_pending_profiles.sh` compile
   with `-Wall -Wextra`, and the Arm size probes pass their size bounds.
-- **Physical.** A course trial on the final image is still to be run (INT-225).
+- **Physical.** A course trial on the final image is still to be run (2026-11-09).
 
 ### Memory
 
 Target `sizeof`, Arm GNU C, RP2040, measured with
 `sh testing/sizeof_probe.sh`
-on `main` (`84e5bf5`) and on this change (INT-223).
+on `main` (`84e5bf5`) and on this change (2026-11-08).
 
 | Type | Before (bytes) | After (bytes) |
 | --- | ---: | ---: |
@@ -481,20 +481,20 @@ stays below the stack size.
 
 | Run | Image | Motion max | Mission max | I/O max | Overruns | Stack use |
 | --- | --- | --- | --- | --- | --- | --- |
-| INT-224 before narrowing | `017f5ed` trial | 889 us | 3,716 us | 2,302 us | Motion 0; Mission and I/O +50/s | 672 / 1,400 / 480 B of 2,176 B |
-| INT-225 after narrowing | `0727821` trial | 1,275 us | 5,229 us | 2,400 us | Motion 0; Mission and I/O +50/s | 664 / 1,256 / 544 B of 2,176 B |
+| 2026-11-09, before narrowing | `017f5ed` trial | 889 us | 3,716 us | 2,302 us | Motion 0; Mission and I/O +50/s | 672 / 1,400 / 480 B of 2,176 B |
+| 2026-11-09, after narrowing | `0727821` trial | 1,275 us | 5,229 us | 2,400 us | Motion 0; Mission and I/O +50/s | 664 / 1,256 / 544 B of 2,176 B |
 
-INT-224 maxima are over the whole run: idle, bench, one line lap and one bypass;
+The before-narrowing maxima are over the whole run: idle, bench, one line lap and one bypass;
 Mission's 3,716 us came during the bypass. Stack use is Motion / Mission / I/O.
 Mission and I/O overruns grow at exactly 50 a second in every segment,
 idle included, while their longest body stays under 4 ms of a 10 ms period. The
 rate does not follow load, so the likely cause is the 10 ms kernel tick
 (`CNF_TIMER_PERIOD` in `config/config.h`) making a 10 ms task release every 20 ms;
-this is not confirmed. INT-225 compares like for like, so a change in that rate
+this is not confirmed. The after-narrowing run compares like for like, so a change in that rate
 would still show.
 
-INT-225 has no bench segment; its maxima cover idle, one line lap and two
-bypasses. Against INT-224, Motion's longest body rose from 889 to 1,275 us
+The after-narrowing run has no bench segment; its maxima cover idle, one line lap and two
+bypasses. Against the run before narrowing, Motion's longest body rose from 889 to 1,275 us
 (6.4 percent of its 20 ms period) and I/O's from 2,302 to 2,400 us. Mission's
 rose from 3,716 to 5,229 us, during the second scan and the start of its bypass:
 52 percent of its 10 ms period. The overrun rate is unchanged and every stack

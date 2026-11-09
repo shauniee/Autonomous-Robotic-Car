@@ -185,7 +185,7 @@ static void test_one_event_per_print(void)
     assert(scan(w, 20u, &s, &o) == BARCODE_DECODED && s == 'A');
 }
 
-/* INT-137: sensor chatter inside a bar must not split the element. */
+/* 2026-11-02: sensor chatter inside a bar must not split the element. */
 static void test_chatter(void)
 {
     uint32_t w[29]; char s = 0; barcode_orientation_t o = BARCODE_FORWARD;
@@ -209,7 +209,7 @@ static void test_chatter(void)
     assert(r == BARCODE_DECODED && s == 'A');
 }
 
-/* INT-137: steering changes the mean of the wheels, not the sensor's travel. */
+/* 2026-11-02: steering changes the mean of the wheels, not the sensor's travel. */
 static void test_steering(void)
 {
     uint32_t w[29]; char s = 0; barcode_orientation_t o = BARCODE_FORWARD;
@@ -257,7 +257,7 @@ static void test_flipped_capture(void)
     }
 }
 
-/* INT-155 confirmed black high on real passes; inverted runs must not read. */
+/* Car passes on 2026-11-02 confirmed black high on real passes; inverted runs must not read. */
 static void test_inverted_polarity(void)
 {
     uint32_t w[29]; char s = 0; barcode_orientation_t o = BARCODE_FORWARD;
@@ -269,7 +269,7 @@ static void test_inverted_polarity(void)
     assert(scan(w, 100u, &s, &o) != BARCODE_DECODED);
 }
 
-/* S3-U37: real A widths, reads missed by the old three-widest rule: a narrow
+/* 2026-11-02: real A widths, reads missed by the old three-widest rule: a narrow
    space (157) came within 1.5 times of the wide bars. */
 static void test_real_pass(void)
 {
@@ -283,7 +283,7 @@ static void test_real_pass(void)
     assert(s == 'A' && o == BARCODE_REVERSE);
 }
 
-/* INT-155: real passes just after a hump. A narrow space in the first guard read
+/* 2026-11-02: real passes just after a hump. A narrow space in the first guard read
    as black, so that guard arrived 7 elements long and never matched. */
 static void test_hump_before_print(void)
 {

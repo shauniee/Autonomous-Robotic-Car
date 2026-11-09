@@ -1,8 +1,0 @@
-{
-  "id": "INT-49",
-  "date": "2026-10-31",
-  "barcode_commit": "8de55fd",
-  "main_commit": "32757b820fa948ad71adbc8c84422295b862399a",
-  "expected": "Preserve both feature sets and historical evidence; pass host/dashboard/CLI/HTTP and all four firmware build profiles",
-  "physical": "NOT RUN"
-}

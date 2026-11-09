@@ -7,7 +7,7 @@ void motion_test(void) {
     bool pass = motion_command_fresh(&c, 160u) && !motion_command_fresh(&c, 161u) &&
         !motion_command_fresh(&c, 99u + 0x80000000u);
     TEST_INIT();
-    TEST_CHECK("S2-U03",pass,"command freshness gate; outputs inhibited");
+    TEST_CHECK("S2-U05", pass, "command freshness gate; outputs inhibited");
     TEST_SUMMARY("motion");
 }
 #endif

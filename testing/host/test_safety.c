@@ -79,7 +79,7 @@ int main(void)
     assert(!safety_reset_step(&reset, BUTTON_EVENT_RELEASED, 0u, false));
     assert(!safety_reset_step(&reset, BUTTON_EVENT_NONE, 0u, true));
 
-    /* S2-U06: the real reset service uses this predicate while interrupts
+    /* 2026-10-29: the real reset service uses this predicate while interrupts
        are masked. A stop arriving after the acknowledged brake refuses reset. */
     assert(!motion_stop_reset_allowed(false, true, 1u, 0u, false)); /* boot */
     assert(!motion_stop_reset_allowed(false, true, 2u, 1u, false));
@@ -89,6 +89,6 @@ int main(void)
     assert(!motion_stop_reset_allowed(false, true, 2u, 2u, true));
     assert(!motion_stop_reset_allowed(false, true, 0u, UINT32_MAX, false));
     assert(motion_stop_reset_allowed(false, true, 0u, 0u, false));
-    puts("safety / S2-U06 reset brake ordering: PASS");
+    puts("reset brake ordering: PASS");
     return 0;
 }

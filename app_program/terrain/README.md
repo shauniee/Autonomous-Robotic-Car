@@ -26,7 +26,7 @@ Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement a
 ## Behaviour
 
 - **Boot:** up to 5 seconds to collect 100 fresh stationary samples at 50 Hz. Encoder movement restarts the count without extending the deadline. The USB console's `[IMU]` messages distinguish init failure, completion and timeout. A failure is flagged and report-only, and only a reboot retries it.
-- **Humps:** course humps lift one wheel, so an encounter is sideways tilt (roll) of either sign, measured from its average while both wheels are stopped so the boot pose does not matter, over `HUMP_ROLL_ENTER_DEG` until it stays under `HUMP_ROLL_EXIT_DEG` for `HUMP_FLAT_SAMPLES`. It counts with `HUMP_MIN_TRAVEL_MM` of travel over the exit level and a height, track width times the sine of peak roll, between `HUMP_MIN_HEIGHT_MM` and `HUMP_MAX_HEIGHT_MM`. Past `HUMP_MAX_TRAVEL_MM` the tilt becomes the new average (INT-156, S4-U10). Independent of Mission states. Humps do not change the course speed.
+- **Humps:** course humps lift one wheel, so an encounter is sideways tilt (roll) of either sign, measured from its average while both wheels are stopped so the boot pose does not matter, over `HUMP_ROLL_ENTER_DEG` until it stays under `HUMP_ROLL_EXIT_DEG` for `HUMP_FLAT_SAMPLES`. It counts with `HUMP_MIN_TRAVEL_MM` of travel over the exit level and a height, track width times the sine of peak roll, between `HUMP_MIN_HEIGHT_MM` and `HUMP_MAX_HEIGHT_MM`. Past `HUMP_MAX_TRAVEL_MM` the tilt becomes the new average (the 2026-11-02 runs). Independent of Mission states. Humps do not change the course speed.
 - **Results:** only a valid completed encounter updates count or maximum, and results persist through starts and stops until reboot. Missing travel invalidates the current window but keeps completed results. Any failed quality sample disqualifies that encounter. Never fabricate height when data is missing, stale or dominated by acceleration.
 
 ## Contract
@@ -69,7 +69,7 @@ Install `pyserial` on the laptop once, then capture using the actual port:
 
 ```sh
 python -m pip install pyserial
-python scripts/capture_imu.py --port COM5 --seconds 60 --output testing/terrain/logs/YYYY-MM-DD_hump-raw-01.csv
+python scripts/capture_imu.py --port COM5 --seconds 60 --output testing/terrain/logs/S4-U04/YYYY-MM-DD_hump-raw-01.log
 ```
 
 Start capture before resetting the board. Keep it level with wheels still
@@ -102,8 +102,8 @@ power and mounting with each physical trial in the terrain test log.
 
 Draft from existing evidence only. No reference height above one 10 mm hump has been measured.
 
-- **Detector:** pitch did not show a one-wheel hump, so INT-156 replaced it with roll.
-- **Counting:** S4-U10 counted the wrong encounters, and S4-U11 reported `humps=5` for 1 crossing because pivots moved the baseline. The fix passes host tests and has never run on the car.
+- **Detector:** pitch did not show a one-wheel hump, so a 2026-11-02 change replaced it with roll.
+- **Counting:** One 2026-11-02 run counted the wrong encounters, and another reported `humps=5` for 1 crossing because pivots moved the baseline. The fix passes host tests and has never run on the car.
 - **Height:** one 10 mm hump read about 12.5 mm uncorrected, which gives `HUMP_CALIB_FACTOR` 0.8. That is one height, not a calibration.
 - **Travel limit:** `HUMP_MIN_TRAVEL_MM` 50 rests on two crossings (76 and 156 mm) against curves of 26 mm or less.
 - **Turn rate:** no turn-rate monitor exists in Terrain. The GY-511 has no gyroscope, so any monitor must be encoder-derived and labelled so (T06).
@@ -119,7 +119,7 @@ Record each run separately with source SHA, UF2 hash, setup and evidence. Limits
 | Level standstill/startup | At least 3 boots | Stationary and tilted setup | IMU calibration completion, baseline roll, false events | D06 |
 | Single known 10 mm hump | At least 3 passes | Height from calipers | Completed count, reported height, profile, any double count | MR-29 |
 | Additional reference up to 30 mm | At least 3 passes per height | Known true height | Actual versus reported, error per pass | D06/D10 |
-| Pure pivot or tight curve | Repeated | No hump | Event count must not increase | S4-U11 |
+| Pure pivot or tight curve | Repeated | No hump | Event count must not increase | 2026-11-02 |
 | Hump before barcode / on curve | Repeated | Known route | Event count and barcode/line continuation | MR-29 |
 | One-wheel and reversed approach | Repeated | Known wheel and direction | Roll sign, height, count and completion | D11 |
 | Sharp chassis tap | Repeated safe test | Controlled impact | Fault byte, braked output and persistent stop | MR-16 |

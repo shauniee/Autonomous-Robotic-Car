@@ -289,7 +289,7 @@ Build with the [Build profiles](#build-profiles) commands as written, from the r
 
 Flash as in [Power and flashing](#power-and-flashing): hold BOOTSEL while connecting USB, release when **RPI-RP2** appears and copy the profile's UF2 from `build_make/` to the drive.
 
-Software verification on 2026-10-29 is recorded in the [integration log](testing/integration/TEST_LOG.md#results). Existing task periods, gains and checkpoint signs remain provisional software settings, not an instruction to flash an uncalibrated normal image. Offline profiles compile but cannot satisfy the normal WiFi/MQTT start prerequisite. Exactly three application tasks are created; see [architecture](docs/architecture.md#tasks).
+Software verification on 2026-10-29 is in git history. Existing task periods, gains and checkpoint signs remain provisional software settings, not an instruction to flash an uncalibrated normal image. Offline profiles compile but cannot satisfy the normal WiFi/MQTT start prerequisite. Exactly three application tasks are created; see [architecture](docs/architecture.md#tasks).
 
 Current continuation: obstacle triggering follows the resolved D16 decision in
 [project specs](docs/project-specs.md#pending-decisions). Scan/filter settings

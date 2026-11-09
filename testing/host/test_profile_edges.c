@@ -164,7 +164,7 @@ int main(void)
     scene(rays, 150u);
     rays[4].valid = false;
     assert(!obstacle_profile_estimate(rays, RAYS, NULL, &config, &profile, &evidence));
-    /* Rays logged in S5-U11 from scans that used to give no profile. */
+    /* Rays logged on 2026-11-03 from scans that used to give no profile. */
     {
         static const int16_t logged[][OBSTACLE_SCAN_CAPACITY * 2u] = {
             {-50, 377, -40, 566, -30, 196, -20, 186, -10, 177, 0, 177, 10, 174, 20, 193, 30, 224, 40, 0, 50, 0, -35, 205},
