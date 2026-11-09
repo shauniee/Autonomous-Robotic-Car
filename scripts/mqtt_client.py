@@ -5,7 +5,7 @@
   snapshot         request one telemetry snapshot
   serve            live web dashboard at http://127.0.0.1:8080 (scripts/dashboard.html);
                    the dashboard can send mappings and next-junction test directions
-  --self-test      decode the golden vectors shared with testing/pure/test_mqtt_frame.c
+  --self-test      decode the golden vectors shared with testing/host/test_mqtt_frame.c
 
 Frame layouts: docs/architecture.md (MQTT binary protocol). Speed and
 direction are derived here from encoder counts between telemetry frames, so
@@ -229,7 +229,7 @@ class Motion:
 
         Telemetry is emitted about every 500 ms, but MQTT delivery is not a
         periodic clock. Back-to-back delivery can make a 500 ms wheel count
-        change look like a huge speed spike (INT-157). Report unavailable when
+        change look like a huge speed spike (S4-U10). Report unavailable when
         the arrival gap is implausible instead of displaying false precision.
         For actual per-wheel tuning use the timestamped WHEEL diagnostic frames.
         """
@@ -432,7 +432,7 @@ def direction_frame(sequence, action):
 
 
 def self_test():
-    # INT-66 measured rolling distance must agree with the firmware scale.
+    # S2-U08 measured rolling distance must agree with the firmware scale.
     assert abs((5833 + 5816) * 0.5 / COUNTS_PER_MM - 500.0) < 0.01
     golden_trace = bytes.fromhex("38 78 56 34 12 e8 03 0c be e3 03 1d fc 50 b0")
     trace = decode_wheel_trace(golden_trace)

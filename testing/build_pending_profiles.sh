@@ -1,5 +1,5 @@
 #!/bin/sh
-# Compile the software profiles whose matrix pending.md requires.
+# Compile every software profile the course and test images need.
 # RUN ONLY in a configured RP2040/Pico SDK toolchain environment.
 # No flashing, motor enable, or claiming of hardware acceptance.
 set -eu

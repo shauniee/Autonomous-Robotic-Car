@@ -37,7 +37,7 @@ static uint16_t reverse_pattern(uint16_t pattern)
 
 /* True when the widest `wide` of `count` widths are clearly wider than the rest,
    and the smallest wide width is returned. Bars and spaces are judged apart
-   because the threshold makes one thinner and the other wider (INT-152). */
+   because the threshold makes one thinner and the other wider (S3-U37). */
 static bool wide_cut(const uint16_t *widths, unsigned count, unsigned wide, uint16_t *cut)
 {
     uint16_t sorted[5];
@@ -313,7 +313,7 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
     (void)sampled_us;	/* edge positions are encoder counts; time is not needed */
     atomic_store_explicit(&edge_total, atomic_load_explicit(&edge_total, memory_order_relaxed) +
         (edges == (GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE) ? 2u : 1u), memory_order_release);
-    /* INT-147: the edge flags cannot order sensor chatter, and trusting them
+    /* S3-U32: the edge flags cannot order sensor chatter, and trusting them
        produced runs of one polarity. The pin says where the level really is. */
     bool high = gpio_get_val(BARCODE_GPIO) != 0;
     if (high == capture_high)
@@ -505,7 +505,7 @@ static void push_event(const barcode_event_t *event)
     atomic_store_explicit(&event_head, head + 1u, memory_order_release);
 }
 
-/* INT-146 diagnostics: raw run widths for the laptop, before any filtering. A
+/* S3-U31 diagnostics: raw run widths for the laptop, before any filtering. A
    full ring drops them; the sequence number shows the loss. */
 enum { RUN_TRACE_DEPTH = 8u };
 static uint8_t run_records[RUN_TRACE_DEPTH][MQTT_LEN_BARCODE_TRACE];

@@ -12,7 +12,7 @@ static float mean(const uint32_t count[2], const uint32_t origin[2])
 
 int main(void)
 {
-    /* INT-66: independently recorded wheel deltas over the measured 500 mm. */
+    /* S2-U08: independently recorded wheel deltas over the measured 500 mm. */
     const uint32_t measured_before[2] = {2210u, 9u};
     const uint32_t measured_after[2] = {8043u, 5825u};
     float measured_mm = mean(measured_after, measured_before) /

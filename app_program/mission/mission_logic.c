@@ -775,8 +775,8 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
         enter(m, MISSION_FOLLOW_LINE, in->now_ms);
         m->broad_origin[0] = in->wheel_count[0];
         m->broad_origin[1] = in->wheel_count[1];
-        /* INT-139: keep the last side, so a white exit drifts back toward the line
-           with line loss armed instead of driving on blind. */
+        /* INT-139b: keep the last side, so a white exit drifts back toward
+           the line with line loss armed instead of driving on blind. */
         m->line_side = m->cross_side;
         mark(m->dark_origin, in);
         handle_follow(m, in, out);

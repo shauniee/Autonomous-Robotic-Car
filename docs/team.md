@@ -43,7 +43,7 @@ A **subsystem** is one student's folder (may hold several tasks and peripherals)
 Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [video](../video/README.md). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
 
 **Implementation status.** The current source baseline and completion
-plan are linked from [pending work](../pending.md). The code
+plan are linked from [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues). The code
 contains Motion PID/actions, Mission/Safety, line/barcode, Terrain, Obstacle and
 Reporting modules; this is not physical acceptance. Older smaller bench/task
 arrangements are historical. Target coordination is in [architecture](architecture.md).
@@ -410,7 +410,7 @@ into the 12-bit fault word in this order: Motion bits 0-1, Line 2-4, Terrain
 - **Compile-time proof.** Every narrowed field has a `_Static_assert` that its
   largest enumerator or configured maximum fits. Changing a config value past a
   field's width fails the build.
-- **Boundary tests.** `sh testing/pure/run.sh` runs the host suite against the
+- **Boundary tests.** `sh testing/host/run.sh` runs the host suite against the
   real `app_program` sources. Tests that cover packed data include
   `test_mqtt_frame.c` (golden vectors, every maximum, one past maximum and
   reserved bits), `test_robot_data.c` (field accessors, torn-read stress),

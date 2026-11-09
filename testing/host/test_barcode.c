@@ -269,7 +269,7 @@ static void test_inverted_polarity(void)
     assert(scan(w, 100u, &s, &o) != BARCODE_DECODED);
 }
 
-/* INT-152: real A widths, reads missed by the old three-widest rule: a narrow
+/* S3-U37: real A widths, reads missed by the old three-widest rule: a narrow
    space (157) came within 1.5 times of the wide bars. */
 static void test_real_pass(void)
 {

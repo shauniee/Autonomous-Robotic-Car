@@ -41,6 +41,7 @@
 | 2026-11-03 | S5-U13 | `e576760`+ | Claude | OBSERVED (host) | Same 23 scans as S5-U11 | MEASURED (host replay). Width from 19 of 23 scans before the edge change, 22 of 23 after; the 19 widths are unchanged |
 | 2026-11-03 | S5-U14 | `e576760`+ | Claude | OBSERVED (host) | Same 23 scans as S5-U11 | MEASURED (host replay), no pass or fail. Edge thresholds, see Measurements. Servo settle, empty-scene reference and two-distance scans not tested |
 | 2026-11-05 | S5-U15 | `56f7656`+ | Nicholas, Claude | OBSERVED (car) | [serial log](logs/2026-11-05_S5-U15-serial.txt.gz) | 180 mm box at 160 mm, centre/right/left. 13 scans: +25 deg hit in 13, +30 in none, so left edge always 27.5 deg; right -25 to -42.5. Rule would choose left in 12 of 13 |
+| 2026-11-05 | S5-U16 | `3fd95ba`+ | Nicholas | OBSERVED (car) | [scan.log](logs/2026-11-05_S5-U16/scan.log) | Stationary scans, motors inhibited. Echoes at twice the edge range (389 mm vs 196/206 mm) appear only with the box: ghost echo. Clear scan: left 31, right 40 mm |
 
 ## Measurements
 

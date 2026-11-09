@@ -15,14 +15,14 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 - **Git Messages:** Never co author the commit messages, PRs, merge comments
 - **No co-authors:** never add `Co-Authored-By` or any co-author attribution to a commit message, including merge and squash messages.
 - **Never commit** `config/wifi_secrets.h`, credentials, `*.elf`, `*.uf2`, `*.map` or video files.
-- **Testing:** keep fixtures and evidence in `testing/`. Append one result row per run and never reuse a test ID. Keep captures, photos and measurements; do not save build or host output. A build or host test is not a firmware or physical pass; record the exact commit with each result ([testing](testing/README.md#run-and-record)).
+- **Testing:** keep fixtures and evidence in `testing/`, in the folder of the subsystem a test exercises; `integration/` is only for tests of two or more ([layout](testing/README.md#layout)). Append one result row per run and never reuse a test ID. Keep captures, photos and measurements; do not save build or host output. A build or host test is not a firmware or physical pass; record the exact commit with each result ([testing](testing/README.md#run-and-record)).
 - **Markdown:** `docs/` holds only `project-specs`, `team` and `architecture`; subsystem detail goes in each `app_program/<name>/README.md`. Every Markdown file starts with a contents list of its sections.
 
 ## Where to look
 
 | Need | Guide |
 | --- | --- |
-| All open work, planned changes and where each branch went | [pending work](pending.md) |
+| All open work and planned changes | [GitHub issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) |
 | Build, flash, calibrate, MQTT laptop tool, bring-up order | [README](README.md) |
 | Requirements, minimum-bit change requirement, pending decisions | [project-specs](docs/project-specs.md) |
 | Bits used by each field, and the evidence for them | [team](docs/team.md#6-data-representation) |
@@ -30,6 +30,6 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 | Members, pins, wiring, task budget, interfaces, coding rules | [team](docs/team.md) |
 | One subsystem: comms, motion, line_barcode, terrain, obstacle | `app_program/<name>/README.md` (`comms`, `motion`, `line_barcode`, `terrain`, `obstacle`) |
 | Test IDs, how to record results, host tests | [testing](testing/README.md) |
-| Is the robot ready for a full run? | [mission-readiness checklist](testing/mission-readiness.md) |
+| Is the robot ready for a full run? | [mission-readiness checklist](testing/system/mission-readiness.md) |
 | Line-tracking state, open issues and how to run a trial | [line_barcode README](app_program/line_barcode/README.md) |
 | Video recording | [video](video/README.md) |
