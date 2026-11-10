@@ -22,6 +22,7 @@ Owner: Jia Jing. Bounded sonar and servo acquisition with uncertain width and cl
 | `obstacle.h` | The subsystem's only header |
 | `obstacle.c` | `obstacle_step`: trigger, Echo, servo settle, scan phases, range snapshots |
 | `obstacle_profile.c` | Range filter, edge detection and profile (host-tested) |
+| `obstacle_test.c` | Firmware self-tests |
 
 ## Lecturer expectations
 
