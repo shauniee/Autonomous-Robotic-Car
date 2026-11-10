@@ -157,7 +157,7 @@ The default project is an autonomous robot car on a predefined course, using onb
 | Barcode | Decode in either direction; hold the command; do not turn on reading |
 | Cross junction | Execute the held straight, left, right or U-turn there |
 | Hump | Detect, estimate height, report; coordinate motion and line following while one wheel is raised |
-| Blocking obstacle | Scan left/right with the servo ultrasonic sensor, estimate width and clearance (full car width), pick a bypass side (the shorter distance from the servo axis to a box edge, by `range * tan(angle)`; clearance does not affect the choice, Nicholas 2026-11-05); leave margin for the car's width |
+| Blocking obstacle | Scan left/right with the servo ultrasonic sensor, estimate width and clearance (full car width), pick a bypass side (if exactly one side shows clearance of at least `MISSION_BYPASS_MIN_CLEAR_MM`, that side; otherwise the shorter distance from the servo axis to a box edge, by `range * tan(angle)`; two clearances are never compared); leave margin for the car's width |
 | Bypass | Leave the line, travel round without line guidance, keep observing until passed |
 | After bypass | Rejoin the original line and resume |
 | U-turn detail | At the junction, brake, pause approximately 200 ms, turn 180 degrees and track the return branch; never undo the turn (user request; pause reference pending D02/D08) |
