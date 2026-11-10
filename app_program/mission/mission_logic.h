@@ -145,8 +145,6 @@ typedef struct
     uint8_t entry_curved : 1;
     uint8_t exit_seen : 1;
     uint8_t manual_held : 1; /* test direction protects the held command */
-    uint8_t impact_seen : 1; /* impact input at the last release */
-    uint8_t scan_impact : 1; /* this scan follows a hit: a clear front stops */
     int16_t turn_length_mm : 12; /* signed whole mm, +/-2000 */
     uint8_t state : 3;
     uint8_t phase : 3;
@@ -163,6 +161,9 @@ typedef struct
     uint8_t scan_second : 1; /* second sweep at this position is running */
     uint8_t scan_id : 4;
     uint8_t held : 3; /* barcode_action_t held for the next junction */
+    /* These two use spare bits of held's byte; the first byte above is full. */
+    uint8_t impact_seen : 1; /* impact input at the last release */
+    uint8_t scan_impact : 1; /* this scan follows a hit: a clear front stops */
     uint8_t line_i_q : 6; /* integral at last touch transition, Q7, 0..45 */
     uint8_t action_id : 6; /* last Motion action ID issued, 1..63 */
     uint8_t current_action : 6; /* ID of the Motion action in progress */
