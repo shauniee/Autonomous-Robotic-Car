@@ -119,8 +119,8 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
     ctx->roll_cdeg = (int16_t)lroundf(roll_deg * 100.0f);
 
     /* 4. Impact detection (FR11): horizontal shock on level ground. IMPACT
-       lasts while the shock does; Safety latches the stop it causes, and a
-       hump in progress is abandoned. */
+       lasts while the shock does; Motion brakes and Mission runs the
+       obstacle check, and a hump in progress is abandoned. */
     float shock_horiz = sqrtf((cur_x * cur_x) + (cur_y * cur_y));
     if (shock_horiz > IMPACT_THRESHOLD_G && fabsf(pitch_deg) < 3.0f) {
         ctx->state = TERRAIN_STATE_IMPACT;

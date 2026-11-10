@@ -179,6 +179,7 @@ static void mission_task(INT stacd, void *exinf)
             .left_clearance_mm = profile.left_clearance_mm,
             .right_clearance_mm = profile.right_clearance_mm,
             .have_barcode = have_barcode,
+            .impact = rd_fault_impact(),
             .barcode_level = gpio_get_val(BARCODE_GPIO) != 0,
             .barcode_edges = (uint8_t)(drv_barcode_edge_count() & 31u),
             .barcode_action = barcode_event_action(&barcode),

@@ -83,6 +83,7 @@ typedef struct
     bool profile_valid : 1;
     bool barcode_level : 1; /* raw GP27 level, diagnostics only */
     bool have_barcode : 1; /* a decoded barcode this release */
+    bool impact : 1; /* Terrain holds an impact (rd_fault_impact) */
     uint8_t line : 2; /* IrLine */
     uint8_t motion_status : 2; /* rd_motion_status_t */
     uint8_t motion_action : 6; /* RD_MOTION_ACTION_BITS */
@@ -144,6 +145,8 @@ typedef struct
     uint8_t entry_curved : 1;
     uint8_t exit_seen : 1;
     uint8_t manual_held : 1; /* test direction protects the held command */
+    uint8_t impact_seen : 1; /* impact input at the last release */
+    uint8_t scan_impact : 1; /* this scan follows a hit: a clear front stops */
     int16_t turn_length_mm : 12; /* signed whole mm, +/-2000 */
     uint8_t state : 3;
     uint8_t phase : 3;

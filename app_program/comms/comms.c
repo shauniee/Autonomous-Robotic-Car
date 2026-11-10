@@ -101,6 +101,11 @@ static void gather(mqtt_telemetry_t *t, uint8_t sequence)
         .obstacle_clearance_mm = atomic_load_explicit(&last_clearance_mm,
             memory_order_acquire)};
     for (unsigned i = 0u; i < MQTT_FAULT_BYTES; ++i) t->faults[i] = rd_fault_get((rd_owner_t)i);
+    if (terrain_impact_notice_take())
+    {
+        /* same bit, no new field: a hit shorter than a frame still shows */
+        t->faults[RD_OWNER_TERRAIN] |= RD_FAULT_IMPACT;
+    }
     comms_clamp(t);
 }
 

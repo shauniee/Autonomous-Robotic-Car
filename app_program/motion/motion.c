@@ -221,7 +221,9 @@ static void motion_task(INT stacd, void *exinf)
             .measured_cps = {-32768.0f, -32768.0f}};
         bool previously_stopped = local_stop || initial_er < E_OK ||
             (initial.flgptn & STOP_BIT) != 0u;
-        if (previously_stopped || er < E_OK)
+        /* An impact brakes this release without the latch, so Mission can
+           scan and bypass once Terrain sees the wheels stopped. */
+        if (previously_stopped || er < E_OK || rd_fault_impact())
         {
             motion_control_reset(&controller);
         }

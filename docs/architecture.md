@@ -264,7 +264,7 @@ state from another task without the agreed copy/hand-off contract.
 Six existing owner bytes and positions remain wire-compatible. Owner denotes a
 module, not necessarily a separate task. Target writers: Motion byte by Motion;
 Line/Obstacle/Mission bytes by Mission; Terrain by I/O; Network by WiFi service.
-This table owns target policy. `robot_data.c` now leaves IMU/calibration failure report-only. Mission checks
+This table owns target policy. `robot_data.c` leaves IMU acquisition failure report-only; calibration failure blocks start because impact detection is off without it. Mission checks
 `comms_bridge_ready()` for local start; network loss does not stop an accepted run.
 
 | Condition / detector | Start response | During run | Clear/reset |
@@ -275,8 +275,9 @@ This table owns target policy. `robot_data.c` now leaves IMU/calibration failure
 | Line bit 0 acquisition invalid / line_barcode | Block | Stop if required acquisition invalid/stale | Valid digital readings and local reset |
 | Healthy line lost / Mission | No start on unusable line | Bounded REACQUIRE, then stop if exhausted | Line confirmed or operator reposition/reset |
 | Line bits 1/2 barcode capture/event overflow | Report | Report; never guess/replay an action | Existing encounter/run clearing behavior audited during integration |
-| Terrain bits 0/1 IMU acquisition/calibration failure | Flag, allow after bounded startup attempt | Flag; ordinary tracking continues | Successful reacquisition/calibration; no invented height |
-| Terrain bit 2 detected impact | Block while active | Latch stop | Cause cleared plus deliberate local reset |
+| Terrain bit 0 IMU acquisition failure | Flag, allow after bounded startup attempt | Flag; ordinary tracking continues | Successful reacquisition; no invented height |
+| Terrain bit 1 calibration failure | Block: impact detection is off | Flag; ordinary tracking continues | Reboot; only a reboot retries calibration |
+| Terrain bit 2 detected impact | Block while active | Motion brakes at once without latching. From FOLLOW_LINE, Mission runs the obstacle check: scan, then the normal bypass or stop; a clear front after a hit stops. In any other moving state, the check included, a hit stops | A fresh non-impact sample with the wheels stopped or a serviced latched brake |
 | Obstacle bit 0 no echo / Obstacle | Flag, not universal block | Flag; ordinary tracking continues; no inferred clear space | Fresh valid readings clear/report status |
 | Required scan/bypass evidence unavailable / Mission | Not ordinary readiness input | Brake/stop unsupported manoeuvre | Local reset after safe reposition/cause clearance |
 | Mission bit 0 recovery exhausted | Report historical reason | Already stopped | Clear on accepted new start |
@@ -607,7 +608,9 @@ release remains inhibited. Supported forward/side coverage, rear-edge/original-l
 validation and any resulting implementation corrections remain in the
 [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues). These are not accepted floor
 features. Terrain publishes original acquisition/service times under a mutex;
-impact remains asserted until a fresh non-impact sample observes serviced braking.
+impact remains asserted until a fresh non-impact sample observes stopped wheels or serviced braking.
+Each hit is also reported in the next telemetry frame through the same Terrain
+impact bit, even if the fault cleared before that frame; no bit is added.
 Comms events use a short cross-core mutex; events stay in the ring when the TX bridge
 is full. Overflow overwrites oldest entries; lock misses drop the new event.
 Neither kind of drop is exposed in telemetry. Mapping uses a single

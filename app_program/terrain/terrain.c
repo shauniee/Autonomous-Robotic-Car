@@ -12,6 +12,17 @@ static rd_word_t terrain_word; /* writer: I/O */
 static _Atomic uint8_t startup_outcome;
 static TerrainContext context;
 
+/* Set at each new hit and cleared once telemetry has carried it: the fault
+   bit itself can clear between two 500 ms frames. io_task only, so plain. */
+static bool impact_unreported;
+
+bool terrain_impact_notice_take(void)
+{
+    bool notice = impact_unreported;
+    impact_unreported = false;
+    return notice;
+}
+
 uint32_t terrain_read_word(void)
 {
     return rd_word_read(&terrain_word);
@@ -246,13 +257,19 @@ void terrain_step(uint32_t now)
         {
             terrain_algo_invalidate_window(&context);
         }
-        bool impact = terrain_impact_pending(
-            (rd_fault_get(RD_OWNER_TERRAIN) & RD_FAULT_IMPACT) != 0u,
+        bool held = (rd_fault_get(RD_OWNER_TERRAIN) & RD_FAULT_IMPACT) != 0u;
+        bool impact = terrain_impact_pending(held,
             context.state == TERRAIN_STATE_IMPACT,
-            health_copied && motion_health_brake_acknowledged(&health));
+            stationary || (health_copied &&
+                motion_health_brake_acknowledged(&health)));
         if (impact)
         {
             rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
+            if (!held)
+            {
+                impact_unreported = true;
+                tm_printf((UB *)"[IMU] impact\n");
+            }
         }
         else
         {

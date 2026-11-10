@@ -865,6 +865,69 @@ static void test_scan_obstacle_removed(void)
     puts("Obstacle: obstacle removed during a scan resumes the line PASS");
 }
 
+/* A hit while following brakes at once and runs the obstacle check; a hit
+   during that check stops instead of restarting it. */
+static void test_impact_runs_the_obstacle_check(void)
+{
+    Mission m;
+    MissionInputs in = base(100u);
+    uint32_t t = to_follow(&m, &in);
+    in.impact = true;
+    MissionOutputs out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_SCAN && m.scan_impact && !out.stop_now);
+    assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP && !out.scan_request);
+    out = bstep(&m, &in, &t); /* the held bit is not a second hit */
+    assert(m.state == MISSION_SCAN);
+    in.impact = false;
+    in.stationary = true;
+    out = bstep(&m, &in, &t);
+    assert(out.scan_request);
+
+    /* Something is there: the normal check follows (bypass or, unreleased, stop). */
+    in.scan_id = out.scan_id;
+    in.scan_state = OBSTACLE_SCAN_DONE;
+    in.profile_valid = true;
+    in.profile_closest_mm = 300u;
+    in.profile_width_mm = 200u;
+    in.profile_planning_mm = OBSTACLE_EXPECTED_MAX_WIDTH_MM;
+    in.profile_forward_mm = 150;
+    in.left_clearance_mm = 800u;
+    in.right_clearance_mm = 400u;
+    in.front_mm = 1000u;
+    out = bstep(&m, &in, &t);
+    assert(MISSION_BYPASS_RELEASED ? m.state == MISSION_BYPASS :
+        m.state == MISSION_STOPPED && out.stop_now);
+
+    /* A second hit during the check or the bypass stops the run. */
+    in.impact = true;
+    out = bstep(&m, &in, &t);
+    assert(m.state == MISSION_STOPPED);
+
+    /* Nothing in front after a hit: stop rather than carry on. */
+    in = base(100u);
+    t = to_follow(&m, &in);
+    in.impact = true;
+    out = bstep(&m, &in, &t);
+    in.impact = false;
+    in.stationary = true;
+    out = bstep(&m, &in, &t);
+    assert(out.scan_request);
+    in.scan_id = out.scan_id;
+    in.scan_state = OBSTACLE_SCAN_FAILED;
+    for (unsigned i = 0u; i < MISSION_SCAN_CLEAR_SAMPLES; ++i)
+    {
+        out = front_reading(&m, &in, &t, false, 0u);
+    }
+    assert(m.state == MISSION_STOPPED && out.stop_now);
+
+    /* A hit while stopped or ready moves nothing. */
+    in.impact = true;
+    out = bstep(&m, &in, &t);
+    assert((m.state == MISSION_STOPPED || m.state == MISSION_READY) &&
+        motion_cmd_mode(&out.command) == MOTION_MODE_STOP && !out.scan_request);
+    puts("impact: brakes, runs the obstacle check once, stops on a clear front PASS");
+}
+
 /* Finishes the current TURN or DISTANCE action with the wheels where it asked. */
 static void finish_bypass_action(bypass_control_t *control, bypass_input_t *in,
     uint8_t *action, bypass_output_t *out)
@@ -1355,6 +1418,7 @@ int main(void)
     test_bypass_short_side_reading(true);
     test_bypass_reverses_when_too_close();
     test_scan_obstacle_removed();
+    test_impact_runs_the_obstacle_check();
     test_missing_echo_policy();
     test_one_barcode_event_per_read();
     test_obstacle_stops_at_the_stop_distance();

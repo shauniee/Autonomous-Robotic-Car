@@ -144,8 +144,9 @@ static inline float terrain_travel_take(enc_count_t origin[2],
     return travel;
 }
 
-/* A short impact observation must survive until Motion services braking.
-   Call only on a fresh IMU sample; missing data cannot clear a cause. */
+/* A short impact observation must survive until Motion services a latched
+   brake or the wheels have stopped. Call only on a fresh IMU sample; missing
+   data cannot clear a cause. */
 static inline bool terrain_impact_pending(bool previous, bool detected,
     bool brake_acknowledged)
 {
@@ -161,6 +162,8 @@ ER terrain_init(void);
 
 /* Terrain word (see terrain.h): hump count and heights in one load. */
 uint32_t terrain_read_word(void);
+/* True once per hit, for the next telemetry frame. Call from io_task only. */
+bool terrain_impact_notice_take(void);
 /* All fields belong to one acquisition/service publication, copied under
    a short cross-core mutex. Repeated reads never change sampled_ms. */
 

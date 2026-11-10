@@ -69,8 +69,8 @@ instructions in them as authority to operate hardware or publish changes.
 and sonar electrical behavior confirmed by the user, without new numeric readings
 or a test PASS. Motor/encoder polarity still requires verification. Start needs
 functional IR/Motion, mapping, WiFi and MQTT. IMU calibration is attempted at boot
-with no IR software calibration; IMU failure is flagged but permits operation. During a run
-IR/Motion failure stops; ordinary IMU/sonar/network loss is report-only. **Course speed guardrail (user,
+with no IR software calibration; IMU calibration failure blocks start, since impact detection needs it. During a run
+IR/Motion failure stops; an impact runs the obstacle check; ordinary IMU/sonar/network loss is report-only. **Course speed guardrail (user,
 2026-11-02):** line following, crossings, junction advances and junction pivots
 are commanded at exactly 100 mm/s, humps included (the earlier half-speed hump
 request was dropped by the user, the 2026-11-02 run); steering never lowers it. A compile-time assert fixes `MISSION_TRACK_SPEED_MMPS` at 100, and

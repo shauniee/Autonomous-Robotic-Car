@@ -88,8 +88,8 @@ static void test_faults(void)
         {RD_OWNER_LINE, RD_FAULT_BARCODE_CAPTURE_OVERFLOW, false, false},
         {RD_OWNER_LINE, RD_FAULT_BARCODE_EVENT_OVERFLOW, false, false},
         {RD_OWNER_TERRAIN, RD_FAULT_IMU, false, false},
-        {RD_OWNER_TERRAIN, RD_FAULT_CALIBRATION_FAILED, false, false},
-        {RD_OWNER_TERRAIN, RD_FAULT_IMPACT, true, true},
+        {RD_OWNER_TERRAIN, RD_FAULT_CALIBRATION_FAILED, true, false},
+        {RD_OWNER_TERRAIN, RD_FAULT_IMPACT, true, false},
         {RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO, false, false},
         {RD_OWNER_MISSION, RD_FAULT_LINE_LOST, false, false},
         {RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST, false, false},
@@ -100,6 +100,8 @@ static void test_faults(void)
         assert(rd_fault_get(policy[i].owner) == policy[i].bit);
         assert(rd_fault_start_blocked() == policy[i].blocks_start);
         assert(rd_fault_stop_pending() == policy[i].stops_run);
+        assert(rd_fault_impact() == (policy[i].owner == RD_OWNER_TERRAIN &&
+            policy[i].bit == RD_FAULT_IMPACT));
         rd_fault_clear(policy[i].owner, policy[i].bit);
         assert(rd_fault_get(policy[i].owner) == 0u);
     }

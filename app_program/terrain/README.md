@@ -25,7 +25,7 @@ Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement a
 
 ## Behaviour
 
-- **Boot:** up to 5 seconds to collect 100 fresh stationary samples at 50 Hz. Encoder movement restarts the count without extending the deadline. The USB console's `[IMU]` messages distinguish init failure, completion and timeout. A failure is flagged and report-only, and only a reboot retries it.
+- **Boot:** up to 5 seconds to collect 100 fresh stationary samples at 50 Hz. Encoder movement restarts the count without extending the deadline. The USB console's `[IMU]` messages distinguish init failure, completion and timeout. A failure is flagged and blocks start, since impact detection is off without calibration; only a reboot retries it.
 - **Humps:** course humps lift one wheel, so an encounter is sideways tilt (roll) of either sign, measured from its average while both wheels are stopped so the boot pose does not matter, over `HUMP_ROLL_ENTER_DEG` until it stays under `HUMP_ROLL_EXIT_DEG` for `HUMP_FLAT_SAMPLES`. It counts with `HUMP_MIN_TRAVEL_MM` of travel over the exit level and a height, track width times the sine of peak roll, between `HUMP_MIN_HEIGHT_MM` and `HUMP_MAX_HEIGHT_MM`. Past `HUMP_MAX_TRAVEL_MM` the tilt becomes the new average (the 2026-11-02 runs). Independent of Mission states. Humps do not change the course speed.
 - **Results:** only a valid completed encounter updates count or maximum, and results persist through starts and stops until reboot. Missing travel invalidates the current window but keeps completed results. Any failed quality sample disqualifies that encounter. Never fabricate height when data is missing, stale or dominated by acceleration.
 
@@ -122,7 +122,7 @@ Record each run separately with source SHA, UF2 hash, setup and evidence. Limits
 | Pure pivot or tight curve | Repeated | No hump | Event count must not increase | 2026-11-02 |
 | Hump before barcode / on curve | Repeated | Known route | Event count and barcode/line continuation | MR-29 |
 | One-wheel and reversed approach | Repeated | Known wheel and direction | Roll sign, height, count and completion | D11 |
-| Sharp chassis tap | Repeated safe test | Controlled impact | Fault byte, braked output and persistent stop | MR-16 |
+| Sharp chassis tap | Repeated safe test | Controlled impact | `[IMU] impact`, braked output; while following, Mission scans, then bypasses or stops | MR-16 |
 | IMU disconnected | Bench only, power off first | No device | Bounded calibration failure and fault policy | MR-11 |
 
 ## Status and open items

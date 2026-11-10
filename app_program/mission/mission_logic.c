@@ -13,7 +13,7 @@ static void handle_scan(Mission *m, const MissionInputs *in,
 static void handle_reacquire(Mission *m, const MissionInputs *in,
     MissionOutputs *out);
 static void enter_bypass(Mission *m, const MissionInputs *in,
-    MissionOutputs *out);
+    MissionOutputs *out, bool impact);
 static void handle_junction_turn(Mission *m, const MissionInputs *in,
     MissionOutputs *out);
 
@@ -298,7 +298,7 @@ static void handle_follow(Mission *m, const MissionInputs *in,
 
     if (obstacle_in_stopping_range(in))
     {
-        enter_bypass(m, in, out);
+        enter_bypass(m, in, out, false);
         return;
     }
     bool broad = in->line == IR_LINE_BROAD_BLACK && in->usable_line;
@@ -533,10 +533,12 @@ static void request_scan(Mission *m, const MissionInputs *in,
     m->scan_phase = 1u;
 }
 
+/* A hit brakes at once and scans; a clear front after it stops the run. */
 static void enter_bypass(Mission *m, const MissionInputs *in,
-    MissionOutputs *out)
+    MissionOutputs *out, bool impact)
 {
     enter(m, MISSION_SCAN, in->now_ms);
+    m->scan_impact = impact;
     m->scan_phase = 0u;
     m->scan_retries = 0u;
     m->scan_backing = 0u;
@@ -550,7 +552,7 @@ static void enter_bypass(Mission *m, const MissionInputs *in,
        would reach the barcode arm's clearance. */
     int32_t now_mm = front_now_mm(in);
     int32_t stop_mm = (int32_t)motion_stop_distance_mm(COURSE_SPEED_MMPS);
-    if (now_mm - stop_mm < (int32_t)(BYPASS_BODY_ARM_FORWARD_MM -
+    if (impact || now_mm - stop_mm < (int32_t)(BYPASS_BODY_ARM_FORWARD_MM -
         OBSTACLE_SONAR_FORWARD_MM + BYPASS_CLEARANCE_MM))
     {
         m->scan_stopping = 0u;
@@ -655,6 +657,11 @@ static void handle_scan(Mission *m, const MissionInputs *in,
     {
         if (!front_checked(m, in))
         {
+            return;
+        }
+        if (m->front_clear >= MISSION_SCAN_CLEAR_SAMPLES && m->scan_impact)
+        {
+            to_stop(m, in, out, true); /* nothing ahead explains the hit */
             return;
         }
         if (m->front_clear >= MISSION_SCAN_CLEAR_SAMPLES)
@@ -930,6 +937,8 @@ void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out)
     *out = (MissionOutputs){.command = stop_command(in->now_ms)};
 
     note_onsets(m, in);
+    bool hit = in->impact && !m->impact_seen;
+    m->impact_seen = in->impact;
     bool moving = m->state != MISSION_READY && m->state != MISSION_STOPPED;
     if (m->state != MISSION_STOPPED &&
         (in->stop_down || in->safety_latched || !in->inputs_ok ||
@@ -937,6 +946,18 @@ void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out)
     {
         /* Safety already called motion_stop() for its own causes. */
         to_stop(m, in, out, in->stop_down || !in->inputs_ok);
+        return;
+    }
+    /* A hit while following runs the obstacle check. One during another
+       manoeuvre, the check included, stops: no scan restarts itself. */
+    if (hit && (MISSION_FOLLOW_LINE == m->state))
+    {
+        enter_bypass(m, in, out, true);
+        return;
+    }
+    if (hit && moving)
+    {
+        to_stop(m, in, out, true);
         return;
     }
     if ((m->state == MISSION_FOLLOW_LINE || m->state == MISSION_NAVIGATE) &&

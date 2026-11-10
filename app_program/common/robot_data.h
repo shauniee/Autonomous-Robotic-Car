@@ -170,8 +170,8 @@ enum {
     RD_FAULT_BARCODE_EVENT_OVERFLOW = 1u << 2,	/* report only */
 
     RD_FAULT_IMU = 1u << 0,		/* report only */
-    RD_FAULT_CALIBRATION_FAILED = 1u << 1,	/* report only */
-    RD_FAULT_IMPACT = 1u << 2,		/* start-blocking, run-stopping */
+    RD_FAULT_CALIBRATION_FAILED = 1u << 1, /* start-blocking: no impacts */
+    RD_FAULT_IMPACT = 1u << 2, /* start-blocking; Mission scans */
 
     RD_FAULT_NO_ECHO = 1u << 0,		/* report only: open space gives no echo */
 
@@ -202,5 +202,9 @@ bool rd_fault_start_blocked(void);
 
 /* True when a run-stopping bit is set: Safety latches a stop. */
 bool rd_fault_stop_pending(void);
+
+/* True while Terrain holds an impact: Motion brakes without latching and
+   Mission runs the obstacle check. */
+bool rd_fault_impact(void);
 
 #endif /* ROBOT_DATA_H */
