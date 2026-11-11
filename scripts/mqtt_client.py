@@ -42,7 +42,7 @@ ACK_RESULT = ["OK", "BUSY", "INVALID request", "MALFORMED"]
 FAULTS = [
     ("Motion", ["motor stall", "encoder"]),
     ("Line", ["IR invalid", "barcode capture overflow", "barcode event overflow"]),
-    ("Terrain", ["IMU", "IMU calibration failed", "impact"]),
+    ("Terrain", ["IMU", "IMU calibration failed", "lifted"]),
     ("Obstacle", ["no echo"]),
     ("Mission", ["line lost"]),
     ("Network", ["WiFi lost", "broker lost"]),

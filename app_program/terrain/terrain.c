@@ -246,17 +246,17 @@ void terrain_step(uint32_t now)
         {
             terrain_algo_invalidate_window(&context);
         }
-        bool impact = terrain_impact_pending(
-            (rd_fault_get(RD_OWNER_TERRAIN) & RD_FAULT_IMPACT) != 0u,
-            context.state == TERRAIN_STATE_IMPACT,
+        bool lifted = terrain_lift_pending(
+            (rd_fault_get(RD_OWNER_TERRAIN) & RD_FAULT_LIFTED) != 0u,
+            TERRAIN_STATE_LIFTED == context.state,
             health_copied && motion_health_brake_acknowledged(&health));
-        if (impact)
+        if (lifted)
         {
-            rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
+            rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_LIFTED);
         }
         else
         {
-            rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
+            rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_LIFTED);
         }
         if (context.hump_count != previous_humps)
         {
@@ -461,7 +461,7 @@ bool drv_gy511_init(void)
     out_w(I2C0_BASE + I2Cx_ENABLE, 1);
 
     /* 4. Configure accelerometer: 50 Hz, all axes, +/- 4 g high resolution
-       (CTRL_REG4_A: BDU, FS = 01, HR), so a 2.5 g impact is measurable. */
+       (CTRL_REG4_A: BDU, FS = 01, HR): a lift or turn over stays in range. */
     if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG1_A, 0x47u))
         return false;
     if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG4_A, 0x98u))
