@@ -3,6 +3,7 @@
   monitor          print telemetry, events and WHEEL/LINE traces, folding exact repeats (--raw: every frame as JSON)
   map L R S U      send the four mission-day letters (left, right, straight, U-turn)
   snapshot         request one telemetry snapshot
+  probe            send three bad requests (truncated, wrong version, drive) the robot must refuse
   serve            live web dashboard at http://127.0.0.1:8080 (scripts/dashboard.html);
                    the dashboard can send mappings and next-junction test directions
   --self-test      decode the golden vectors shared with testing/host/test_mqtt_frame.c
@@ -437,6 +438,21 @@ def direction_frame(sequence, action):
     return bytes([VERSION << 4 | JUNCTION_TEST, sequence, action])
 
 
+DRIVE_PROBE = 15  # unassigned type: the protocol has no drive request
+
+
+def probe_frames(sequence):
+    """(label, frame, expected) for each request S1-U04 sends; each fails the firmware's type check."""
+    mapping = mapping_frame(sequence, "ABCD")
+    return [
+        ("truncated mapping", mapping[:-1], "drop it: wrong length, no ACK, state unchanged"),
+        (f"mapping as v{VERSION - 1}", bytes([(VERSION - 1) << 4 | MAPPING]) + mapping[1:],
+         "drop it: wrong version, no ACK, state unchanged"),
+        ("drive both wheels forward", bytes([VERSION << 4 | DRIVE_PROBE, sequence, 100, 100]),
+         "drop it: unknown type, no ACK, wheels stay still"),
+    ]
+
+
 def self_test():
     # 2026-10-31 measured rolling distance must agree with the firmware scale.
     assert abs((5833 + 5816) * 0.5 / COUNTS_PER_MM - 500.0) < 0.01
@@ -566,7 +582,7 @@ def self_test():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("action", nargs="?", choices=("monitor", "map", "snapshot", "serve"))
+    parser.add_argument("action", nargs="?", choices=("monitor", "map", "snapshot", "serve", "probe"))
     parser.add_argument("letters", nargs="*", help="map: four distinct letters for left, right, straight, U-turn")
     parser.add_argument("--broker", help="broker address")
     parser.add_argument("--port", type=int, default=1883)
@@ -668,6 +684,11 @@ def main():
             else:
                 print("Monitoring; Ctrl+C to exit.", flush=True)
             done.wait()
+            return 0
+        if args.action == "probe":
+            for label, frame, expected in probe_frames(sequence):
+                client.publish(args.root + "/request", frame, qos=1).wait_for_publish(timeout=5)
+                print(f"sent {label} ({frame.hex(' ')}); Pico should {expected}", flush=True)
             return 0
         payload = mapping_frame(sequence, letters) if args.action == "map" else bytes([VERSION << 4 | SNAPSHOT_REQUEST, sequence])
         client.publish(args.root + "/request", payload, qos=1).wait_for_publish(timeout=5)
