@@ -108,8 +108,10 @@ EXPORT INT usermain(void)
 	comms_test();
 	motion_test();
 	terrain_test();
+    REQUIRE(mission_start()); /* Mission samples line IR, sonar */
+    line_barcode_test();
+    obstacle_test();
 	tm_printf((UB*)"[TEST] === test run end ===\n");
-	REQUIRE(mission_start());
 #endif
 	tm_printf((UB*)"all subsystems started\n\n");
 

@@ -42,7 +42,7 @@ ACK_RESULT = ["OK", "BUSY", "INVALID request", "MALFORMED"]
 FAULTS = [
     ("Motion", ["motor stall", "encoder"]),
     ("Line", ["IR invalid", "barcode capture overflow", "barcode event overflow"]),
-    ("Terrain", ["IMU", "IMU calibration failed", "impact"]),
+    ("Terrain", ["IMU", "IMU calibration failed", "lifted"]),
     ("Obstacle", ["no echo"]),
     ("Mission", ["line lost"]),
     ("Network", ["WiFi lost", "broker lost"]),
@@ -321,7 +321,6 @@ class Dashboard:
         self.clients, self.lock = [], threading.Lock()
         self.status = None
         page = (Path(__file__).resolve().parent / "dashboard.html").read_bytes()
-        origin = f"http://127.0.0.1:{port}"
         self.send_direction = None
         self.send_mapping = None	# set by main once the MQTT client exists; returns the sequence sent
         dashboard = self
@@ -364,7 +363,7 @@ class Dashboard:
 
             def do_POST(self):
                 # Another site open in the same browser could post here; only this page may submit requests.
-                if self.path not in ("/map", "/direction") or self.headers.get("Origin") != origin \
+                if self.path not in ("/map", "/direction") or self.headers.get("Origin") not in origins \
                         or self.headers.get("Content-Type") != "application/json":
                     self.send_error(403)
                     return
@@ -397,7 +396,7 @@ class Dashboard:
 
         # Unauthenticated: keep it on host loopback (the --http-host default).
         self.server = ThreadingHTTPServer((host, port), Handler)
-        origin = f"http://127.0.0.1:{self.server.server_port}"
+        origins = tuple(f"http://{name}:{self.server.server_port}" for name in ("127.0.0.1", "localhost"))
         self.server.daemon_threads = True
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
 

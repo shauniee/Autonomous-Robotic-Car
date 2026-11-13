@@ -765,16 +765,34 @@ static void test_bypass_real_outline(void)
     profile.closest_mm = 210u;
     profile.obstacle_left_mm = 0;
     assert(!bypass_control_begin(&control, &in, &profile, 200u, &action));
-    /* The shorter distance to an edge, whatever the clearance says. */
+    /* A side only the scan proves clear beats the nearer edge, either way. */
     profile.closest_mm = 500u;
     profile.left_clearance_mm = 800u;
     profile.right_clearance_mm = 0u;
     profile.obstacle_left_mm = 100;
     assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
-    assert(!control.left_side && control.offset_mm == -135); /* the barcode arm side needs more */
+    assert(control.left_side);
+    profile.left_clearance_mm = 0u;
+    profile.right_clearance_mm = 662u;
     profile.obstacle_left_mm = -100;
     assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
-    assert(control.left_side && control.offset_mm == 125);
+    assert(!control.left_side);
+    /* Both or neither proven: the shorter distance to an edge, never the
+       larger clearance. */
+    static const uint16_t clear_pairs[][2] = {{800u, 300u}, {0u, 219u}};
+    for (unsigned i = 0u; i < 2u; ++i)
+    {
+        profile.left_clearance_mm = clear_pairs[i][0];
+        profile.right_clearance_mm = clear_pairs[i][1];
+        profile.obstacle_left_mm = 100;
+        assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
+        assert(!control.left_side && control.offset_mm == -135); /* the barcode arm side needs more */
+        profile.obstacle_left_mm = -100;
+        assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
+        assert(control.left_side && control.offset_mm == 125);
+    }
+    profile.left_clearance_mm = 800u;
+    profile.right_clearance_mm = 0u;
 
     /* Forward travel keeps the arm, not the sonar, clear of what is ahead. */
     in = (bypass_input_t){.now_ms = 100u, .stationary = true, .functional = true};
