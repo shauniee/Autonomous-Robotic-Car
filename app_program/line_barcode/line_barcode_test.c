@@ -6,7 +6,7 @@
 void line_barcode_test(void)
 {
     /* Line IR is sampled by Mission; wait (bounded) for its first snapshot. */
-    LineIrSnapshot s = {0};
+    LineIrSnapshot_t s = {0};
     for (int i = 0; i < 50 && !(line_ir_copy(&s) && s.have_sample); i++)
     {
         (void)tk_dly_tsk(10);

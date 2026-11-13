@@ -4,7 +4,7 @@
 #if APP_TEST
 void motion_test(void)
 {
-    MotionCommand c = motion_command_make(MOTION_MODE_FOLLOW, 100.0f, 0.0f,
+    MotionCommand_t c = motion_command_make(MOTION_MODE_FOLLOW, 100.0f, 0.0f,
         0, 1u, 100u);
     bool pass = motion_command_fresh(&c, 160u) &&
         !motion_command_fresh(&c, 161u) &&

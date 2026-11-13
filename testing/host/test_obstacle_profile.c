@@ -31,16 +31,16 @@ int main(void)
 
     /* Minimum-bit packing retains the complete signed angle and 13-bit
        measurement. Both structures are checked against Cortex-M0+ layout. */
-    assert(sizeof(ObstacleRay) == 3u && sizeof(ObstacleProfile) == 9u);
+    assert(sizeof(ObstacleRay_t) == 3u && sizeof(ObstacleProfile_t) == 9u);
     assert(obstacle_ray_make(0, 65535u, true).range_mm == ECHO_RANGE_INVALID);	/* never wraps */
     for (int angle = -SERVO_MAX_DEG; angle <= SERVO_MAX_DEG; ++angle) {
-        ObstacleRay roundtrip = obstacle_ray_make((int16_t)angle, 8190u, true);
+        ObstacleRay_t roundtrip = obstacle_ray_make((int16_t)angle, 8190u, true);
         assert(roundtrip.valid && roundtrip.angle_deg == angle && roundtrip.range_mm == 8190u);
         uint32_t packed = obstacle_side_watch_pack(true, (int16_t)angle);
         assert((packed & 1u) != 0u && (packed & ~0x1FFu) == 0u);
         assert(obstacle_side_watch_angle(packed) == angle);
     }
-    ObstacleRay invalid = obstacle_ray_make((int16_t)(SERVO_MAX_DEG + 1), 42u, true);
+    ObstacleRay_t invalid = obstacle_ray_make((int16_t)(SERVO_MAX_DEG + 1), 42u, true);
     assert(!invalid.valid && invalid.range_mm == 0u);
     assert(obstacle_side_watch_angle(obstacle_side_watch_pack(false, -90)) == -SERVO_LOOK_DEG);
     assert((obstacle_side_watch_pack(false, 0) & 1u) == 0u);

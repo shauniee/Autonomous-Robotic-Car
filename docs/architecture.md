@@ -290,7 +290,7 @@ wire bits must still be observable through existing state/reason diagnostics.
 
 ## Motion command contract
 
-Mission is the only latest-command writer. Keep packed `MotionCommand`, action
+Mission is the only latest-command writer. Keep packed `MotionCommand_t`, action
 ID and coherent feedback. Repeating a command does not restart its encoder action
 or extend its absolute deadline. Preserve acquisition time; copying stale evidence
 never makes it fresh. No lease/generation/acknowledgement framework is added.

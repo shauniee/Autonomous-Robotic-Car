@@ -100,7 +100,7 @@ bool obstacle_range_group_median(const obstacle_range_group_t *group,
 /* ---- Profile edge estimation ---- */
 #define OBSTACLE_PROFILE_DEG_TO_RAD 0.0174532925f
 
-static bool ray_valid(const ObstacleRay *ray)
+static bool ray_valid(const ObstacleRay_t *ray)
 {
     return ray->valid && ray->range_mm != 0u &&
         ray->range_mm < ECHO_RANGE_INVALID &&
@@ -128,7 +128,7 @@ static float plane_left(float forward, float angle)
         forward * tanf(angle * OBSTACLE_PROFILE_DEG_TO_RAD);
 }
 
-static float ray_left(const ObstacleRay *ray)
+static float ray_left(const ObstacleRay_t *ray)
 {
     return OBSTACLE_SONAR_LEFT_MM +
         (float)ray->range_mm *
@@ -148,16 +148,16 @@ static bool config_valid(const obstacle_profile_config_t *config)
 /* Sound that bounces box, car, box reads about twice the box's range just past
    its edge. 2026-11-05: these went with the box, while farther echoes
    stayed. */
-static bool ghost_of_box(const ObstacleRay *ray, const ObstacleRay *edge)
+static bool ghost_of_box(const ObstacleRay_t *ray, const ObstacleRay_t *edge)
 {
     return ray_valid(edge) &&
         (float)ray->range_mm >= (float)edge->range_mm * 1.75f &&
         (float)ray->range_mm <= (float)edge->range_mm * 2.25f;
 }
 
-bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
-    const ObstacleRay *background, const obstacle_profile_config_t *config,
-    ObstacleProfile *out, obstacle_profile_evidence_t *evidence)
+bool obstacle_profile_estimate(const ObstacleRay_t *rays, unsigned count,
+    const ObstacleRay_t *background, const obstacle_profile_config_t *config,
+    ObstacleProfile_t *out, obstacle_profile_evidence_t *evidence)
 {
     if (NULL == rays || NULL == out || NULL == evidence ||
         !config_valid(config) || count < 5u || count > OBSTACLE_SCAN_CAPACITY)
@@ -211,7 +211,7 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
         for (int index = (int)centre; index >= 0 && index < (int)count;
              index += direction)
         {
-            const ObstacleRay *ray = &rays[order[index]];
+            const ObstacleRay_t *ray = &rays[order[index]];
             known[index] = ray_valid(ray);
             float forward = (float)ray->range_mm *
                 cosf((float)ray->angle_deg * OBSTACLE_PROFILE_DEG_TO_RAD);
@@ -233,7 +233,7 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
             {
                 if (background != NULL && target)
                 {
-                    const ObstacleRay *reference = &background[order[index]];
+                    const ObstacleRay_t *reference = &background[order[index]];
                     known[index] = ray_valid(reference);
                     target = known[index] &&
                         (uint32_t)ray->range_mm +
@@ -333,7 +333,7 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
             reach_right = fminf(reach_right, -ray_left(&rays[order[i - 1u]]));
         }
     }
-    *out = (ObstacleProfile){.closest_angle_deg = 0,
+    *out = (ObstacleProfile_t){.closest_angle_deg = 0,
         .closest_mm = distance_code(hypotf(front + OBSTACLE_SONAR_FORWARD_MM,
             OBSTACLE_SONAR_LEFT_MM)),
         .width_mm = distance_code(width),
@@ -357,8 +357,9 @@ bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
     return true;
 }
 
-unsigned obstacle_profile_fine_angles(const ObstacleRay *coarse, unsigned count,
-    const obstacle_profile_config_t *config, int8_t *out, unsigned capacity)
+unsigned obstacle_profile_fine_angles(const ObstacleRay_t *coarse,
+    unsigned count, const obstacle_profile_config_t *config, int8_t *out,
+    unsigned capacity)
 {
     if (NULL == coarse || NULL == out || !config_valid(config) ||
         count < 3u || count > OBSTACLE_SCAN_CAPACITY)
@@ -388,17 +389,16 @@ unsigned obstacle_profile_fine_angles(const ObstacleRay *coarse, unsigned count,
         for (unsigned i = 0u; i < count; ++i)
         {
             int angle = coarse[i].angle_deg * side;
-            if (angle <= 0 || !ray_valid(&coarse[i]))
+            if (angle > 0 && ray_valid(&coarse[i]))
             {
-                continue;
-            }
-            float forward = coarse[i].range_mm *
-                cosf(coarse[i].angle_deg * OBSTACLE_PROFILE_DEG_TO_RAD);
-            if (forward <= front + config->depth_exit_mm)
-            {
-                if (angle > inside)
+                float forward = coarse[i].range_mm *
+                    cosf(coarse[i].angle_deg * OBSTACLE_PROFILE_DEG_TO_RAD);
+                if (forward <= front + config->depth_exit_mm)
                 {
-                    inside = angle;
+                    if (angle > inside)
+                    {
+                        inside = angle;
+                    }
                 }
             }
         }
@@ -411,11 +411,8 @@ unsigned obstacle_profile_fine_angles(const ObstacleRay *coarse, unsigned count,
                 outside = angle;
             }
         }
-        if (outside > SERVO_MAX_DEG)
-        {
-            continue;
-        }
-        for (unsigned n = 1u; n <= 2u && written < capacity; ++n)
+        for (unsigned n = 1u;
+             outside <= SERVO_MAX_DEG && n <= 2u && written < capacity; ++n)
         {
             int angle = inside + (int)n * OBSTACLE_FINE_STEP_DEG;
             if (angle >= outside)

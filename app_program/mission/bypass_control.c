@@ -121,7 +121,7 @@ static float facing_half_mm(bool pass_left)
 /* Sideways distance from the servo axis to the box's edge on that side. The
    profile gets each edge from the forward range and the edge ray's angle:
    range * tan(angle). */
-static float edge_mm(const ObstacleProfile *profile, bool left)
+static float edge_mm(const ObstacleProfile_t *profile, bool left)
 {
     return (left ? profile->obstacle_left_mm : -profile->obstacle_left_mm) +
         profile->width_mm * 0.5f;
@@ -137,7 +137,7 @@ static float pass_distance_mm(bool left)
 }
 
 /* The leg out, at right angles to the line. */
-static float offset_mm(const ObstacleProfile *profile, bool left)
+static float offset_mm(const ObstacleProfile_t *profile, bool left)
 {
     return edge_mm(profile, left) + pass_distance_mm(left);
 }
@@ -145,7 +145,7 @@ static float offset_mm(const ObstacleProfile *profile, bool left)
 /* A side the scan alone proves clear is taken; otherwise the shorter distance
    to an edge picks the side and a tie goes left. Clearance 0 is unproven, not
    blocked, and two noisy clearances are never compared. */
-static bool pass_left(const ObstacleProfile *profile)
+static bool pass_left(const ObstacleProfile_t *profile)
 {
     bool left_clear = profile->left_clearance_mm >= MISSION_BYPASS_MIN_CLEAR_MM;
     bool right_clear =
@@ -157,14 +157,14 @@ static bool pass_left(const ObstacleProfile *profile)
     return edge_mm(profile, true) <= edge_mm(profile, false);
 }
 
-static bool side_usable(const ObstacleProfile *profile, bool left)
+static bool side_usable(const ObstacleProfile_t *profile, bool left)
 {
     float offset = offset_mm(profile, left);
     return profile->closest_mm > pivot_reach_mm(left) &&
         offset > 0.0f && offset <= BYPASS_MAX_OFFSET_MM;
 }
 
-uint8_t bypass_control_backup_mm(const ObstacleProfile *profile,
+uint8_t bypass_control_backup_mm(const ObstacleProfile_t *profile,
     uint16_t planning_width_mm)
 {
     (void)planning_width_mm;
@@ -192,7 +192,7 @@ static bool heading_held(const bypass_control_t *control)
 }
 
 bool bypass_control_can_begin(const bypass_input_t *input,
-    const ObstacleProfile *profile, uint16_t planning_width_mm)
+    const ObstacleProfile_t *profile, uint16_t planning_width_mm)
 {
     return input != NULL && profile != NULL && input->stationary &&
         input->functional && profile->valid &&
@@ -201,7 +201,7 @@ bool bypass_control_can_begin(const bypass_input_t *input,
 }
 
 bool bypass_control_begin(bypass_control_t *control,
-    const bypass_input_t *input, const ObstacleProfile *profile,
+    const bypass_input_t *input, const ObstacleProfile_t *profile,
     uint16_t planning_width_mm, uint8_t *action_id)
 {
     if (NULL == control || NULL == action_id ||

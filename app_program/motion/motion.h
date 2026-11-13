@@ -128,22 +128,23 @@ typedef struct
     int16_t target;
     uint16_t speed_action;
     uint16_t mode_steering;
-} MotionCommand;
+} MotionCommand_t;
 
-_Static_assert(sizeof(MotionCommand) == 12u, "unexpected MotionCommand ABI");
+_Static_assert(sizeof(MotionCommand_t) == 12u,
+    "unexpected MotionCommand_t ABI");
 
-bool motion_command_set(MotionCommand *dst, motion_mode_t mode,
+bool motion_command_set(MotionCommand_t *dst, motion_mode_t mode,
                         float speed_mmps, float target, int steering_q,
                         unsigned action_id, uint32_t sampled_ms);
-motion_mode_t motion_cmd_mode(const MotionCommand *cmd);
-uint16_t motion_cmd_speed(const MotionCommand *cmd);
-int16_t motion_cmd_target(const MotionCommand *cmd);
-int8_t motion_cmd_steering(const MotionCommand *cmd);
-uint8_t motion_cmd_action(const MotionCommand *cmd);
+motion_mode_t motion_cmd_mode(const MotionCommand_t *cmd);
+uint16_t motion_cmd_speed(const MotionCommand_t *cmd);
+int16_t motion_cmd_target(const MotionCommand_t *cmd);
+int8_t motion_cmd_steering(const MotionCommand_t *cmd);
+uint8_t motion_cmd_action(const MotionCommand_t *cmd);
 
 /* A failed construction yields an all-zero STOP command; never drive with an
    invalid representation. */
-MotionCommand motion_command_make(motion_mode_t mode, float speed_mmps,
+MotionCommand_t motion_command_make(motion_mode_t mode, float speed_mmps,
                                   float target, int steering_q,
                                   unsigned action_id, uint32_t sampled_ms);
 
@@ -165,7 +166,7 @@ typedef struct
 {
     int16_t integral_q4;
     int16_t previous_cps;
-} WheelPid;
+} WheelPid_t;
 
 /* Fill the target word's spare bits and keep byte fields together. */
 typedef struct
@@ -184,15 +185,15 @@ typedef struct
     uint32_t stalled_since_ms[2];
     uint16_t follow_base_q6 : 15; /* private unsigned Q6 mm/s, see specs */
     int16_t profile_accel : 11; /* applied acceleration, signed whole mm/s^2 */
-    WheelPid pid[2];
+    WheelPid_t pid[2];
     int8_t follow_steer_q; /* private applied Q7 steering, see specs */
-} MotionController;
+} MotionController_t;
 
 typedef struct
 {
     uint32_t now_ms;
     enc_count_t count[2]; /* wrapped encoder counts: left, right */
-} MotionInput;
+} MotionInput_t;
 
 typedef struct
 {
@@ -201,7 +202,7 @@ typedef struct
     uint8_t status : 2; /* rd_motion_status_t */
     uint8_t action_id : 6;
     bool stall : 1; /* stall fault condition this release */
-} MotionOutput;
+} MotionOutput_t;
 
 _Static_assert(MOTION_MODE_COUNT <= 4 && RD_MOTION_FAILED < 4,
     "Motion mode and status fit 2 bits");
@@ -217,16 +218,16 @@ static inline uint16_t motion_stop_distance_mm(uint16_t speed_mmps)
     return (uint16_t)MOTION_STOP_MM(v);
 }
 
-void motion_control_reset(MotionController *c);
+void motion_control_reset(MotionController_t *c);
 
 /* True when a command may drive the wheels: valid fields and a sample no
    older than MOTION_EXPIRY_MS (wrap-safe). */
-bool motion_command_fresh(const MotionCommand *cmd, uint32_t now_ms);
+bool motion_command_fresh(const MotionCommand_t *cmd, uint32_t now_ms);
 
 /* One release. cmd may be NULL (no command). Outputs brake duties unless a
    fresh, valid command is being executed. */
-void motion_control_step(MotionController *c, const MotionCommand *cmd,
-                         const MotionInput *in, MotionOutput *out);
+void motion_control_step(MotionController_t *c, const MotionCommand_t *cmd,
+                         const MotionInput_t *in, MotionOutput_t *out);
 
 /* Kernel-free packed Motion progress/stop snapshot, guarded by Motion mutex. */
 
@@ -235,7 +236,7 @@ typedef struct
     uint32_t serviced_ms;
     /* bit 0 stop latched, bit 1 brake acknowledged, bit 2 serviced once */
     uint8_t flags;
-} MotionHealth;
+} MotionHealth_t;
 
 enum
 {
@@ -244,15 +245,16 @@ enum
     MOTION_HEALTH_SERVICED_BIT = 4u
 };
 /* False until Motion has serviced its first release after boot. */
-static inline bool motion_health_serviced(const MotionHealth *h)
+static inline bool motion_health_serviced(const MotionHealth_t *h)
 {
     return (h->flags & MOTION_HEALTH_SERVICED_BIT) != 0u;
 }
-static inline bool motion_health_stopped(const MotionHealth *h)
+static inline bool motion_health_stopped(const MotionHealth_t *h)
 { return (h->flags & MOTION_HEALTH_STOPPED_BIT) != 0u; }
-static inline bool motion_health_brake_acknowledged(const MotionHealth *h)
+static inline bool motion_health_brake_acknowledged(const MotionHealth_t *h)
 { return (h->flags & MOTION_HEALTH_BRAKED_BIT) != 0u; }
-_Static_assert(sizeof(MotionHealth) == 8u, "unexpected MotionHealth layout");
+_Static_assert(sizeof(MotionHealth_t) == 8u,
+    "unexpected MotionHealth_t layout");
 
 /* Kernel-free stop/reset decision shared with the real Motion service. */
 
@@ -270,7 +272,7 @@ ER motion_start(void);
 
 /* Mission writes the command each 20 ms. Copy under a mutex; the sample time
    inside the command is never refreshed by rewriting it. */
-ER motion_command(const MotionCommand *command);
+ER motion_command(const MotionCommand_t *command);
 
 /* Motion's feedback word: status (IDLE/RUNNING/DONE/FAILED) and action ID.
    Decode with rd_motion_feedback_status() / rd_motion_feedback_action(). */
@@ -284,8 +286,8 @@ ER motion_stop(void);
 ER motion_reset_stop(void);
 /* Any core, startup only: latches stop and a permanent inhibit. */
 ER motion_inhibit_startup(void);
-ER motion_health(MotionHealth *health);
-ER motion_health_try(MotionHealth *health);
+ER motion_health(MotionHealth_t *health);
+ER motion_health_try(MotionHealth_t *health);
 
 /* Errors report software/BSP failures, not measured electrical output. */
 ER drv_motor_init(void);

@@ -176,7 +176,7 @@ The default project is an autonomous robot car on a predefined course, using onb
 | Obstacles | Static, block the line; width 100-200 mm in supplied professor clarification. Straight-only placement is the user-selected operating assumption; inconsistent earlier source wording remains D12. |
 | Map | Undisclosed until demonstration |
 
-Implemented Motion storage extension (2026-10-30): `MotionController.turn_arrived`
+Implemented Motion storage extension (2026-10-30): `MotionController_t.turn_arrived`
 is two bits, one arrival latch per wheel for the current TURN action; zero at
 reset/new action. Private to Motion. Arrival uses the existing angle tolerance,
 not a new calibrated limit; no claim of physical settling or angle accuracy.
@@ -289,7 +289,7 @@ The 11 warnings are in the pinned sources and are part of the baseline.
 | `barcode_service_t` | 488 | 860 |
 | `TerrainSnapshot` | 40 | 336 |
 
-`ObstacleSnapshot`, `MotionFeedback` and `MotionCommand` were not found in `main` and are not reported. Task stack is 2048 bytes each (`app_program/app.h`): 4 application task creation sites in `main` (Motion, terrain_task, IR line, Line follow), 7 in `uat` (Motion, Obstacle, Terrain, IR line, Safety, Mission, Reporting); live task counts were not recorded. Not measured: periodic task loop timing, MQTT/telemetry payload sizes (both need an on-target run), per-object `nm` sizes.
+`ObstacleSnapshot`, `MotionFeedback` and `MotionCommand_t` were not found in `main` and are not reported. Task stack is 2048 bytes each (`app_program/app.h`): 4 application task creation sites in `main` (Motion, terrain_task, IR line, Line follow), 7 in `uat` (Motion, Obstacle, Terrain, IR line, Safety, Mission, Reporting); live task counts were not recorded. Not measured: periodic task loop timing, MQTT/telemetry payload sizes (both need an on-target run), per-object `nm` sizes.
 
 ## 5. Data representation table (Week 13)
 
@@ -524,7 +524,7 @@ position adds the sonar forward mount and baseline ray's forward projection to
 this first position, keeping depth and return clearance in the profile's frame.
 At the +/-60 degree side look, angle needs eight signed bits;
 ray validity needs one more bit. Existing eight-bit angle storage is retained
-to preserve the current layouts; commands and constructors enforce the sweep. `ObstacleRay` becomes four packed bytes; `ObstacleProfile`
+to preserve the current layouts; commands and constructors enforce the sweep. `ObstacleRay_t` becomes four packed bytes; `ObstacleProfile_t`
 remains 14 bytes because its previous alignment byte holds validity. Side-watch
 uses eight angle bits plus one enable bit in its existing atomic word. Terrain
 adds one window-quality bit beside its existing classification/result flags;
@@ -681,8 +681,8 @@ All storage is private to Mission; no shared or wire layout changes.
 
 Digital IR calibration removal (2026-10-31): `IrCalibration`, capture enums,
 capture counters/results and all IR calibration gates/APIs are removed.
-`IrTracker` stores only line, reading, raw word and acquisition presence/time;
-`LineIrSnapshot` stores acquisition identity/age, raw word, digital endpoints/error,
+`IrTracker_t` stores only line, reading, raw word and acquisition presence/time;
+`LineIrSnapshot_t` stores acquisition identity/age, raw word, digital endpoints/error,
 line and freshness/validity flags. Existing field widths/scales are retained;
 the older aggregate struct-size rows describe their recorded revision, not a
 current target size measurement. IMU calibration remains separate.
@@ -769,7 +769,7 @@ other TURN styles are invalid and brake. No command layout/size or wire change.
 Swing driven-wheel arc is track_width * angle; the braked wheel never gets
 position correction. Mission sends +/-360-degree bounds (left positive,
 right/U negative), which are failure ceilings, not requested completion angles.
-MissionInputs adds transient `left_black` and `right_black` from normalized
+MissionInputs_t adds transient `left_black` and `right_black` from normalized
 digital sensors, meaningful only with a fresh usable acquisition; line error
 cannot distinguish both-black from both-white. Private Mission adds a 2-bit
 `turn_line_phase`: 0 leave starting black, 1 wait for new black, 2 wait for
@@ -990,7 +990,7 @@ Storage extension (one writer per object; local floating point geometry only):
 | Mission entry origins | encoder counts modulo configured width | Half-range modular arithmetic | 2 x ENC_COUNT_BITS / uint16 |
 | Barcode diagnostic | 2 wrapping counts, width 0..65535 counts; result 0..6; orientation 0/1; letter 0..25 or 31; action 0..4 | Width saturates; queue drops counted; no guessed letter | 16+16+16+3+1+5+3 / 8 bytes on target |
 
-MotionCommand remains 12 bytes with the existing mutex and two-bit mode. TURN
+MotionCommand_t remains 12 bytes with the existing mutex and two-bit mode. TURN
 style 2 is rejected (the smooth path was removed 2026-11-02); other TURN styles
 take degrees. DISTANCE style 3 enables
 a ramped approach. No MQTT payload changes. Diagnostic ring is optional, 32 entries;

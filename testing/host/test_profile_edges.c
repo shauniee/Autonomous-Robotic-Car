@@ -10,7 +10,7 @@
 
 /* Synthetic fixtures define a flat target face and an empty background plane.
    Their dimensions are test inputs, never claims about the mounted robot. */
-static void scene(ObstacleRay rays[RAYS], unsigned width_mm)
+static void scene(ObstacleRay_t rays[RAYS], unsigned width_mm)
 {
     const int angles[] = {-20, -15, -10, -5, 0, 5, 10, 15, 20};
     for (unsigned i = 0u; i < RAYS; ++i)
@@ -32,9 +32,9 @@ static float sweep_ray_mm(int angle, float range, unsigned width, float left_wal
 }
 
 static void sweep(const obstacle_profile_config_t *config, float range, unsigned width,
-    float left_wall, ObstacleProfile *profile)
+    float left_wall, ObstacleProfile_t *profile)
 {
-    ObstacleRay rays[OBSTACLE_SCAN_CAPACITY];
+    ObstacleRay_t rays[OBSTACLE_SCAN_CAPACITY];
     int8_t fine[OBSTACLE_SCAN_CAPACITY];
     obstacle_profile_evidence_t evidence = {0};
     unsigned count = 0u;
@@ -55,9 +55,9 @@ static void sweep(const obstacle_profile_config_t *config, float range, unsigned
 
 /* Rays captured on the car, 2026-11-05 (testing/integration/logs/scan.log). */
 static void estimate_scan(const obstacle_profile_config_t *config, const int scan[][2],
-    unsigned count, ObstacleProfile *profile)
+    unsigned count, ObstacleProfile_t *profile)
 {
-    ObstacleRay rays[OBSTACLE_SCAN_CAPACITY];
+    ObstacleRay_t rays[OBSTACLE_SCAN_CAPACITY];
     obstacle_profile_evidence_t evidence = {0};
     for (unsigned i = 0u; i < count; ++i)
     {
@@ -68,7 +68,7 @@ static void estimate_scan(const obstacle_profile_config_t *config, const int sca
 
 static void test_ghost_echoes(const obstacle_profile_config_t *config)
 {
-    ObstacleProfile profile = {0};
+    ObstacleProfile_t profile = {0};
     /* Clear surroundings: 389 mm just past each edge is the box's ghost, so the
        room comes from the 850 mm and farther echoes behind it. */
     const int clear[][2] = {{-60, 1090}, {-50, 974}, {-40, 389}, {-35, 206}, {-30, 186},
@@ -95,7 +95,7 @@ static void test_ghost_echoes(const obstacle_profile_config_t *config)
 static void test_full_sweep_from_stop(const obstacle_profile_config_t *config)
 {
     const float ranges[] = {110.0f, 130.0f, MISSION_OBSTACLE_STOP_MM};
-    ObstacleProfile profile = {0};
+    ObstacleProfile_t profile = {0};
     for (unsigned r = 0u; r < 3u; ++r)
     {
         for (unsigned width = 100u; width <= 200u; width += 50u)
@@ -120,8 +120,8 @@ int main(void)
         .planning_width_mm = 200u, .adjacent_rays = 2u, .maximum_gap_deg = OBSTACLE_COARSE_STEP_DEG};
     test_full_sweep_from_stop(&config);
     test_ghost_echoes(&config);
-    ObstacleRay rays[RAYS];
-    ObstacleProfile profile = {0};
+    ObstacleRay_t rays[RAYS];
+    ObstacleProfile_t profile = {0};
     obstacle_profile_evidence_t evidence = {0};
     for (unsigned width = 100u; width <= 200u; width += 50u)
     {
@@ -138,7 +138,7 @@ int main(void)
     uint16_t ordered_width = profile.width_mm;
     for (unsigned i = 0u; i < RAYS / 2u; ++i)
     {
-        ObstacleRay temporary = rays[i];
+        ObstacleRay_t temporary = rays[i];
         rays[i] = rays[RAYS - 1u - i];
         rays[RAYS - 1u - i] = temporary;
     }
@@ -173,7 +173,7 @@ int main(void)
         static const unsigned logged_rays[] = {12u, 11u, 13u};
         for (unsigned scan = 0u; scan < 3u; ++scan)
         {
-            ObstacleRay real[OBSTACLE_SCAN_CAPACITY];
+            ObstacleRay_t real[OBSTACLE_SCAN_CAPACITY];
             for (unsigned i = 0u; i < logged_rays[scan]; ++i)
             {
                 real[i] = obstacle_ray_make(logged[scan][i * 2u], (uint16_t)logged[scan][i * 2u + 1u],
@@ -186,7 +186,7 @@ int main(void)
     }
     /* A no-echo ray ends the box for fine sampling, and a fine ray never repeats a coarse angle. */
     {
-        ObstacleRay lost[5] = {obstacle_ray_make(-30, 0u, false), obstacle_ray_make(-20, 110u, true),
+        ObstacleRay_t lost[5] = {obstacle_ray_make(-30, 0u, false), obstacle_ray_make(-20, 110u, true),
             obstacle_ray_make(0, 100u, true), obstacle_ray_make(20, 110u, true), obstacle_ray_make(30, 2000u, true)};
         int8_t extra[4];
         unsigned added = obstacle_profile_fine_angles(lost, 5u, &config, extra, 4u);
@@ -200,7 +200,7 @@ int main(void)
     assert(!obstacle_profile_estimate(rays, RAYS, NULL, &config, &profile, &evidence));
     /* Optional background must match angles and show actual separation. */
     scene(rays, 150u);
-    ObstacleRay background[RAYS];
+    ObstacleRay_t background[RAYS];
     for (unsigned i = 0u; i < RAYS; ++i)
     {
         background[i] = obstacle_ray_make(rays[i].angle_deg,
@@ -214,7 +214,7 @@ int main(void)
     unknown.adjacent_rays = 0u;
     assert(!obstacle_profile_estimate(rays, RAYS, NULL, &unknown, &profile, &evidence));
     /* Fine sampling follows wide-object edges instead of only its centre. */
-    ObstacleRay coarse[5] = {obstacle_ray_make(-20, 2000u, true),
+    ObstacleRay_t coarse[5] = {obstacle_ray_make(-20, 2000u, true),
         obstacle_ray_make(-10, 406u, true), obstacle_ray_make(0, 400u, true),
         obstacle_ray_make(10, 406u, true), obstacle_ray_make(20, 2000u, true)};
     int8_t fine[4];

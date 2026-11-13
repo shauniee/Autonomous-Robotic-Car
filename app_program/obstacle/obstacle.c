@@ -31,7 +31,7 @@ static const obstacle_profile_config_t profile_config = {
     .planning_width_mm = OBSTACLE_EXPECTED_MAX_WIDTH_MM,
     .adjacent_rays = OBSTACLE_PROFILE_ADJACENT_RAYS,
     .maximum_gap_deg = OBSTACLE_COARSE_STEP_DEG};
-static ObstacleProfile profile; /* guarded by profile_mutex */
+static ObstacleProfile_t profile; /* guarded by profile_mutex */
 static bool profile_ready; /* guarded by profile_mutex */
 /* Mission -> Obstacle requests: one writer per counter (no atomic RMW on
    M0+). */
@@ -72,7 +72,7 @@ void obstacle_side_watch(bool on, int16_t angle_deg)
     rd_word_publish(&side_command, obstacle_side_watch_pack(on, angle_deg));
 }
 
-static ER profile_copy(ObstacleProfile *out, TMO wait)
+static ER profile_copy(ObstacleProfile_t *out, TMO wait)
 {
     if (NULL == out || profile_mutex <= 0)
     {
@@ -214,7 +214,7 @@ typedef struct
     obstacle_range_group_t group;
     enc_count_t left_origin, right_origin;
     int8_t angles[OBSTACLE_SCAN_CAPACITY]; /* +/-SERVO_MAX_DEG */
-    ObstacleRay rays[OBSTACLE_SCAN_CAPACITY];
+    ObstacleRay_t rays[OBSTACLE_SCAN_CAPACITY];
     uint16_t group_retried : 1;
     uint16_t keep_narrower : 1;
     uint16_t count : 4;
@@ -288,7 +288,7 @@ static void finish_scan(obstacle_scan_state_t state, uint32_t now)
 {
     if (OBSTACLE_SCAN_DONE == state)
     {
-        ObstacleProfile built;
+        ObstacleProfile_t built;
         obstacle_profile_evidence_t evidence;
         bool ok = obstacle_profile_estimate(acquisition.rays,
             acquisition.count, NULL, &profile_config, &built, &evidence);
@@ -609,7 +609,7 @@ void obstacle_step(uint32_t now)
     }
 }
 
-ER obstacle_profile_try_copy(ObstacleProfile *out)
+ER obstacle_profile_try_copy(ObstacleProfile_t *out)
 {
     return profile_copy(out, TMO_POL);
 }

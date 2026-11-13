@@ -8,7 +8,10 @@
 #define LEFT 0
 #define RIGHT 1
 
-void motion_control_reset(MotionController *c) { *c = (MotionController){0}; }
+void motion_control_reset(MotionController_t *c)
+{
+    *c = (MotionController_t){0};
+}
 
 enum
 {
@@ -18,30 +21,30 @@ enum
         MOTION_Q_MASK = 0xFFu
 };
 
-motion_mode_t motion_cmd_mode(const MotionCommand *c)
+motion_mode_t motion_cmd_mode(const MotionCommand_t *c)
 {
     return (motion_mode_t)(c->mode_steering & MOTION_MODE_MASK);
 }
 
-uint16_t motion_cmd_speed(const MotionCommand *c)
+uint16_t motion_cmd_speed(const MotionCommand_t *c)
 {
     return (uint16_t)(c->speed_action & MOTION_SPEED_MASK);
 }
 
-int16_t motion_cmd_target(const MotionCommand *c) { return c->target; }
+int16_t motion_cmd_target(const MotionCommand_t *c) { return c->target; }
 
-int8_t motion_cmd_steering(const MotionCommand *c)
+int8_t motion_cmd_steering(const MotionCommand_t *c)
 {
     unsigned v = (c->mode_steering >> 2u) & MOTION_Q_MASK;
     return (int8_t)(v < 128u ? (int)v : (int)v - 256);
 }
 
-uint8_t motion_cmd_action(const MotionCommand *c)
+uint8_t motion_cmd_action(const MotionCommand_t *c)
 {
     return (uint8_t)((c->speed_action >> 9u) & MOTION_ACTION_MASK);
 }
 
-bool motion_command_set(MotionCommand *dst, motion_mode_t mode,
+bool motion_command_set(MotionCommand_t *dst, motion_mode_t mode,
     float speed_mmps, float target, int steering_q,
     unsigned action_id, uint32_t sampled_ms)
 {
@@ -49,7 +52,7 @@ bool motion_command_set(MotionCommand *dst, motion_mode_t mode,
     {
         return false;
     }
-    *dst = (MotionCommand){0}; /* invalid requests fail closed */
+    *dst = (MotionCommand_t){0}; /* invalid requests fail closed */
     if ((unsigned)mode >= MOTION_MODE_COUNT ||
         action_id > rd_mask(RD_MOTION_ACTION_BITS) || !isfinite(speed_mmps) ||
         !isfinite(target) || speed_mmps != floorf(speed_mmps) ||
@@ -65,7 +68,7 @@ bool motion_command_set(MotionCommand *dst, motion_mode_t mode,
     {
         return false;
     }
-    *dst = (MotionCommand)
+    *dst = (MotionCommand_t)
     {
         .sampled_ms = sampled_ms,
             .target = (int16_t)target,
@@ -77,17 +80,17 @@ bool motion_command_set(MotionCommand *dst, motion_mode_t mode,
     return true;
 }
 
-MotionCommand motion_command_make(motion_mode_t mode, float speed_mmps,
+MotionCommand_t motion_command_make(motion_mode_t mode, float speed_mmps,
     float target, int steering_q,
     unsigned action_id, uint32_t sampled_ms)
 {
-    MotionCommand out = {0};
+    MotionCommand_t out = {0};
     (void)motion_command_set(&out, mode, speed_mmps, target, steering_q,
         action_id, sampled_ms);
     return out;
 }
 
-static bool command_valid(const MotionCommand *cmd)
+static bool command_valid(const MotionCommand_t *cmd)
 {
     if ((cmd->speed_action & 0x8000u) != 0u ||
         (cmd->mode_steering & 0xFC00u) != 0u ||
@@ -119,7 +122,7 @@ static bool command_valid(const MotionCommand *cmd)
     return abs(motion_cmd_target(cmd)) <= 360;
 }
 
-bool motion_command_fresh(const MotionCommand *cmd, uint32_t now_ms)
+bool motion_command_fresh(const MotionCommand_t *cmd, uint32_t now_ms)
 {
     return cmd != 0 && command_valid(cmd) &&
         robot_time_elapsed(now_ms, cmd->sampled_ms) <= MOTION_EXPIRY_MS;
@@ -135,12 +138,12 @@ static int16_t wheel_pid_store(float value)
     return (int16_t)lroundf(fminf(fmaxf(value, -32767.0f), 32767.0f));
 }
 
-static float wheel_duty(WheelPid *p, float target_cps, float speed_cps,
+static float wheel_duty(WheelPid_t *p, float target_cps, float speed_cps,
     float dt)
 {
     if (fabsf(target_cps) < 0.001f)
     {
-        *p = (WheelPid){.previous_cps = wheel_pid_store(speed_cps)};
+        *p = (WheelPid_t){.previous_cps = wheel_pid_store(speed_cps)};
         return 0.0f;
     }
     float error = target_cps - speed_cps;
@@ -169,7 +172,7 @@ static float wheel_duty(WheelPid *p, float target_cps, float speed_cps,
 /* One release of the lift-style profile: speed follows desired while
    acceleration changes at no more than the jerk limit. Returns the new speed
    in mm/s. */
-static float profile_step(MotionController *c, float desired, float dt)
+static float profile_step(MotionController_t *c, float desired, float dt)
 {
     const float limit = MOTION_ACCEL_MMPS2;
     const float jerk = MOTION_JERK_MMPS3;
@@ -203,15 +206,15 @@ static float reachable_cps(float remaining_counts)
         COUNTS_PER_MM;
 }
 
-static void brake(MotionOutput *out, rd_motion_status_t status, uint8_t id)
+static void brake(MotionOutput_t *out, rd_motion_status_t status, uint8_t id)
 {
     out->duty[LEFT] = out->duty[RIGHT] = 0.0f;
     out->status = status;
     out->action_id = id;
 }
 
-void motion_control_step(MotionController *c, const MotionCommand *cmd,
-    const MotionInput *in, MotionOutput *out)
+void motion_control_step(MotionController_t *c, const MotionCommand_t *cmd,
+    const MotionInput_t *in, MotionOutput_t *out)
 {
     out->stall = false;
     for (unsigned w = 0u; w < 2u; ++w)
@@ -239,7 +242,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
     {
         uint16_t base = c->follow_base_q6;
         int accel = c->profile_accel;
-        WheelPid previous_pid[2] = {c->pid[0], c->pid[1]};
+        WheelPid_t previous_pid[2] = {c->pid[0], c->pid[1]};
         bool continuous = c->active &&
             (((MOTION_MODE_FOLLOW == c->mode ||
                MOTION_MODE_DISTANCE == c->mode) &&
@@ -247,7 +250,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
               motion_cmd_steering(cmd) == MOTION_TURN_RAMPED) ||
              (MOTION_MODE_TURN == c->mode &&
               motion_cmd_mode(cmd) == MOTION_MODE_FOLLOW));
-        *c = (MotionController){0};
+        *c = (MotionController_t){0};
         if (continuous)
         {
             c->follow_base_q6 = base;
@@ -423,17 +426,16 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         {
             float remaining =
                 goal[w] - (float)enc_travel_signed(in->count[w], c->origin[w]);
-            if (swing && 0.0f == goal[w])
-            {
-                target_cps[w] = 0.0f;
-                continue;
-            }
             /* Just past the goal counts as arrived: reversing for it would
                hunt. A larger overshoot is still corrected below. */
             bool passed = remaining * goal[w] < 0.0f && (swing ||
                 fabsf(remaining) <= 2.0f * tol_counts);
             bool inside = fabsf(remaining) <= tol_counts || passed;
-            if (inside && !passed && vmax_cps > 0.0f &&
+            if (swing && 0.0f == goal[w])
+            {
+                target_cps[w] = 0.0f;
+            }
+            else if (inside && !passed && vmax_cps > 0.0f &&
                 motion_cmd_mode(cmd) == MOTION_MODE_DISTANCE)
             {
                 /* Finish slowing down instead of braking from speed at the edge

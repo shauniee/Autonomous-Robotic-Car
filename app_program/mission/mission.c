@@ -15,9 +15,9 @@
 /* writer: Mission task; 7 states, 3 logical bits */
 static _Atomic uint8_t published_state;
 
-MissionState mission_state(void)
+MissionState_t mission_state(void)
 {
-    return (MissionState)atomic_load_explicit(&published_state,
+    return (MissionState_t)atomic_load_explicit(&published_state,
         memory_order_acquire);
 }
 
@@ -58,11 +58,11 @@ static void mission_task(INT stacd, void *exinf)
     (void)exinf;
     uint32_t now = robot_time_ms();
     uint32_t release = now;
-    Mission mission;
+    Mission_t mission;
     mission_init(&mission, now);
-    Button start_button;
+    Button_t start_button;
     button_init(&start_button, now);
-    MissionState reported = MISSION_STATE_COUNT;
+    MissionState_t reported = MISSION_STATE_COUNT;
     uint8_t bypass_route = UINT8_MAX; /* last bypass leg printed */
     uint8_t nav_phase = UINT8_MAX; /* last navigation phase printed */
     uint32_t last_left = drv_encoder_count(ENCODER_LEFT),
@@ -118,12 +118,12 @@ static void mission_task(INT stacd, void *exinf)
             (MISSION_BYPASS == mission.state &&
              BYPASS_ROUTE_RETURN == mission.bypass.route);
         safety_step(line_required);
-        ButtonInputs buttons = drv_buttons_read();
+        ButtonInputs_t buttons = drv_buttons_read();
         if (buttons.gp21_down || MISSION_STOPPED == mission.state)
         {
             button_disarm(&start_button);
         }
-        ButtonEvent event = button_update(&start_button, buttons.gp20_down,
+        ButtonEvent_t event = button_update(&start_button, buttons.gp20_down,
             now);
         if (event != BUTTON_EVENT_NONE)
         {
@@ -144,8 +144,8 @@ static void mission_task(INT stacd, void *exinf)
         }
 #endif
 
-        LineIrSnapshot snapshot = {0};
-        MotionHealth health = {0};
+        LineIrSnapshot_t snapshot = {0};
+        MotionHealth_t health = {0};
         bool copied = line_ir_copy(&snapshot);
         bool healthy = motion_health(&health) >= E_OK;
         now = robot_time_ms();
@@ -172,11 +172,11 @@ static void mission_task(INT stacd, void *exinf)
                 <= OBSTACLE_SCAN_DEADLINE_MS &&
             scan_profile.evidence.left_edge_valid
                 && scan_profile.evidence.right_edge_valid;
-        ObstacleProfile profile = scan_profile.profile;
+        ObstacleProfile_t profile = scan_profile.profile;
         uint32_t scan = obstacle_scan_word();
         barcode_event_t barcode = {0};
         bool have_barcode = barcode_pop(&barcode);
-        MissionInputs in = {
+        MissionInputs_t in = {
             .now_ms = now,
             .start_pressed = (0 == MISSION_BENCH) &&
                 (BUTTON_EVENT_PRESSED == event),
@@ -236,8 +236,8 @@ static void mission_task(INT stacd, void *exinf)
             .barcode_action = barcode_event_action(&barcode),
             .barcode_letter = barcode_event_letter(&barcode)};
 
-        MissionOutputs out;
-        MissionState state_before = mission.state;
+        MissionOutputs_t out;
+        MissionState_t state_before = mission.state;
         bool was_recovering = MISSION_REACQUIRE == mission.state;
 #if ROBOT_TRACE_ENABLED
         bool was_moving = mission.state != MISSION_READY && mission.state

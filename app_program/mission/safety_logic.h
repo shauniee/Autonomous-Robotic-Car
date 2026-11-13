@@ -33,11 +33,11 @@ typedef struct
     bool fault_pending : 1; /* rd_fault_stop_pending() */
     bool line_seen : 1; /* the IR producer has published at least once */
     bool motion_seen : 1; /* Motion has serviced at least once */
-} SafetyInputs;
+} SafetyInputs_t;
 
 /* Causes present right now. A producer that has never published is excused
    only during the boot grace period. */
-static inline uint32_t safety_causes(const SafetyInputs *in)
+static inline uint32_t safety_causes(const SafetyInputs_t *in)
 {
     uint32_t causes = 0u;
     bool grace = in->uptime_ms < SAFETY_BOOT_GRACE_MS;
@@ -84,7 +84,7 @@ typedef enum
     SAFETY_RESET_RELEASE
 } safety_reset_state_t;
 
-static inline bool safety_reset_step(uint8_t *state, ButtonEvent event,
+static inline bool safety_reset_step(uint8_t *state, ButtonEvent_t event,
     uint32_t causes, bool brake_acknowledged)
 {
     if (SAFETY_RESET_BOOT == *state && causes != 0u)

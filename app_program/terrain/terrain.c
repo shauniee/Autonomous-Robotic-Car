@@ -10,7 +10,7 @@
 static rd_word_t terrain_word; /* writer: I/O */
 /* Writer: I/O. 0 pending, 1 complete, 2 failed: 2 of 8 bits, one byte store. */
 static _Atomic uint8_t startup_outcome;
-static TerrainContext context;
+static TerrainContext_t context;
 
 uint32_t terrain_read_word(void)
 {
@@ -50,7 +50,7 @@ static uint8_t trace_byte(float value)
     return (uint8_t)(limited + 0.5f);
 }
 
-static void terrain_trace_note(uint32_t now, const Gy511RawAxes *p_raw,
+static void terrain_trace_note(uint32_t now, const Gy511RawAxes_t *p_raw,
     bool b_encoder_valid, float moved_counts)
 {
     const float mg_per_lsb = ACCEL_MG_PER_LSB * 1000.0f;
@@ -162,7 +162,7 @@ void terrain_step(uint32_t now)
     bool stationary = left == last_left && right == last_right;
     last_left = left;
     last_right = right;
-    Gy511RawAxes raw = {0};
+    Gy511RawAxes_t raw = {0};
     gy511_sample_result_t result =
         hardware_ready ? drv_gy511_sample(&raw) : GY511_SAMPLE_ERROR;
     now = robot_time_ms();
@@ -232,7 +232,7 @@ void terrain_step(uint32_t now)
     }
     else if (acquired && context.is_calibrated)
     {
-        MotionHealth health = {0};
+        MotionHealth_t health = {0};
         bool health_copied = motion_health_try(&health) >= E_OK;
         /* A lock this poll lost says nothing about the encoders
            (2026-11-02). */
@@ -497,7 +497,7 @@ bool drv_gy511_init(void)
     return true;
 }
 
-gy511_sample_result_t drv_gy511_sample(Gy511RawAxes *out_raw)
+gy511_sample_result_t drv_gy511_sample(Gy511RawAxes_t *out_raw)
 {
     operation_started = robot_time_us();
     if (NULL == out_raw)

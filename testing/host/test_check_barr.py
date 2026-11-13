@@ -89,6 +89,7 @@ for text, expected in BAD:
     found = messages(text)
     assert any(expected in message for message in found), (text, found)
 
+assert not any("_t" in m for m in messages("typedef int ER;\n"))
 assert any("guard" in m for m in messages("int a;\n", "sample.h"))
 assert not any("guard" in m for m in
                messages("#ifndef A_H\n#define A_H\n#endif\n", "sample.h"))

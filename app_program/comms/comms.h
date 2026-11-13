@@ -81,7 +81,7 @@ typedef struct
     uint8_t mission_state;  /* 0..15 */
     uint8_t motion_status;  /* 0..3: IDLE, RUNNING, DONE, FAILED */
     uint8_t motion_action;  /* 0..63 */
-    /* 0..3: IrLine (UNKNOWN, VISIBLE, LOST, BROAD_BLACK) */
+    /* 0..3: IrLine_t (UNKNOWN, VISIBLE, LOST, BROAD_BLACK) */
     uint8_t line_status;
     bool mapped;        /* four barcode letters installed */
     uint8_t faults[MQTT_FAULT_BYTES];
@@ -326,9 +326,9 @@ void comms_log_init(comms_event_log_t *log);
 bool comms_log_push(comms_event_log_t *log, const mqtt_event_t *event);
 /* oldest first */
 bool comms_log_pop(comms_event_log_t *log, mqtt_event_t *event);
-typedef bool (*comms_post_fn)(const uint8_t *frame, unsigned length);
+typedef bool (*comms_post_fn_t)(const uint8_t *frame, unsigned length);
 /* Retains the oldest event if posting fails. Caller synchronizes the ring. */
-bool comms_log_post_oldest(comms_event_log_t *log, comms_post_fn post);
+bool comms_log_post_oldest(comms_event_log_t *log, comms_post_fn_t post);
 unsigned comms_log_count(const comms_event_log_t *log);
 
 /* Clamps a gathered telemetry record to its field widths in place, so the

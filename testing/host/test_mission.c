@@ -10,8 +10,8 @@
    duplicating the ordinary FOLLOW barcode event. */
 static void test_barcode_event_fallback_policy(void)
 {
-    MissionInputs in = {.have_barcode = false, .barcode_letter = 0u};
-    MissionOutputs out = {.event_kind = 0u};
+    MissionInputs_t in = {.have_barcode = false, .barcode_letter = 0u};
+    MissionOutputs_t out = {.event_kind = 0u};
     assert(!mission_barcode_event_needed(&in, &out));
     out.event_kind = MQTT_EVENT_TURN;
     assert(!mission_barcode_event_needed(&in, &out));
@@ -34,16 +34,16 @@ static void test_barcode_event_fallback_policy(void)
     }
 }
 
-static MissionInputs base(uint32_t now)
+static MissionInputs_t base(uint32_t now)
 {
-    return (MissionInputs){.now_ms = now, .inputs_ok = true, .guidance_valid = true,
+    return (MissionInputs_t){.now_ms = now, .inputs_ok = true, .guidance_valid = true,
                            .usable_line = true, .line = IR_LINE_VISIBLE, .line_sampled_ms = now,
                            .motion_stopped = true, .motion_status = RD_MOTION_IDLE, .mapped = true};
 }
 
-static MissionOutputs step(Mission *m, MissionInputs *in, uint32_t now)
+static MissionOutputs_t step(Mission_t *m, MissionInputs_t *in, uint32_t now)
 {
-    MissionOutputs out;
+    MissionOutputs_t out;
     in->now_ms = now;
     in->line_sampled_ms = now;
     mission_step(m, in, &out);
@@ -56,11 +56,11 @@ static int ref_initial_steer(int error_q)
     return error_q < 0 ? -correction : (error_q > 0 ? correction : 0);
 }
 
-static uint32_t to_follow(Mission *m, MissionInputs *in)
+static uint32_t to_follow(Mission_t *m, MissionInputs_t *in)
 {
     uint32_t t = 100u;
     mission_init(m, t);
-    MissionOutputs out = step(m, in, t);			/* calibrated */
+    MissionOutputs_t out = step(m, in, t);			/* calibrated */
     assert(m->state == MISSION_READY && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
     in->motion_stopped = false; /* Boot reset already serviced. */
     t += 10u; in->start_pressed = true;
@@ -72,12 +72,12 @@ static uint32_t to_follow(Mission *m, MissionInputs *in)
 
 static void test_start_and_reset_never_move(void)
 {
-    Mission m; MissionInputs in = base(100u);
+    Mission_t m; MissionInputs_t in = base(100u);
     uint32_t t = to_follow(&m, &in);
 
     /* A press while stopped only releases the latch; no motion command results. */
     in.stop_down = true; t += 10u;
-    MissionOutputs out = step(&m, &in, t);
+    MissionOutputs_t out = step(&m, &in, t);
     assert(m.state == MISSION_STOPPED && out.stop_now && out.stop_scanner && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
     in.stop_down = false; in.motion_stopped = true; in.start_pressed = true; t += 10u;
     out = step(&m, &in, t);
@@ -102,8 +102,8 @@ static void test_start_gate(void)
     /* Each prerequisite can keep READY even after GP20 is accepted. */
     for (unsigned blocker = 0u; blocker < 4u; ++blocker)
     {
-        Mission m;
-        MissionInputs in = base(100u);
+        Mission_t m;
+        MissionInputs_t in = base(100u);
         mission_init(&m, 100u);
         in.motion_stopped = false;
         in.start_pressed = true;
@@ -123,7 +123,7 @@ static void test_start_gate(void)
         {
             in.guidance_valid = false;
         }
-        MissionOutputs out = step(&m, &in, 110u);
+        MissionOutputs_t out = step(&m, &in, 110u);
         assert(m.state == MISSION_READY && out.start_refused);
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
         in.mapped = true;
@@ -141,10 +141,10 @@ static void test_start_gate(void)
 
 static void test_follow_and_stops(void)
 {
-    Mission m; MissionInputs in = base(100u);
+    Mission_t m; MissionInputs_t in = base(100u);
     uint32_t t = to_follow(&m, &in);
     in.line_error = IR_SCALE_ONE; t += 10u;			/* right black: steer left */
-    MissionOutputs out = step(&m, &in, t);
+    MissionOutputs_t out = step(&m, &in, t);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW && motion_cmd_steering(&out.command) == ref_initial_steer(IR_SCALE_ONE));
     /* 100 mm/s guardrail: steering never lowers the commanded course speed. */
     assert(out.command.sampled_ms == t && motion_cmd_speed(&out.command) == COURSE_SPEED_MMPS);
@@ -153,14 +153,14 @@ static void test_follow_and_stops(void)
     in.inputs_ok = false; t += 10u;
     out = step(&m, &in, t);
     assert(m.state == MISSION_STOPPED && out.stop_now);
-    Mission m2; MissionInputs in2 = base(100u);
+    Mission_t m2; MissionInputs_t in2 = base(100u);
     t = to_follow(&m2, &in2);
     in2.safety_latched = true; t += 10u;
     out = step(&m2, &in2, t);
     assert(m2.state == MISSION_STOPPED && !out.stop_now && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
 }
 
-static void advance_mm(MissionInputs *in, float mm)
+static void advance_mm(MissionInputs_t *in, float mm)
 {
     int counts = (int)ceilf(mm * ENC_COUNTS_PER_MM); /* never short of mm */
     in->wheel_count[0] = enc_advance(in->wheel_count[0], counts);
@@ -168,7 +168,7 @@ static void advance_mm(MissionInputs *in, float mm)
 }
 
 /* Raw-consistent line states: error and black bits agree. */
-static void see(MissionInputs *in, int side)
+static void see(MissionInputs_t *in, int side)
 {
     in->line = IR_LINE_VISIBLE;
     in->guidance_valid = true;
@@ -177,11 +177,11 @@ static void see(MissionInputs *in, int side)
     in->right_black = side > 0;
 }
 
-static MissionOutputs enter_line_recovery(Mission *m, MissionInputs *in,
+static MissionOutputs_t enter_line_recovery(Mission_t *m, MissionInputs_t *in,
     uint32_t *t)
 {
     see(in, -1);
-    MissionOutputs out = step(m, in, *t += IR_SAMPLE_MS);
+    MissionOutputs_t out = step(m, in, *t += IR_SAMPLE_MS);
     assert(m->state == MISSION_FOLLOW_LINE && m->line_side < 0);
     see(in, 0);
     advance_mm(in, LINE_LOST_MM - 1);
@@ -198,14 +198,14 @@ static void test_line_loss_qualification(void)
 {
     /* White/white past LINE_LOST_MM after a touch is loss; the queue is kept
        until then and cleared on entering recovery. */
-    Mission m;
-    MissionInputs in = base(100u);
+    Mission_t m;
+    MissionInputs_t in = base(100u);
     uint32_t t = to_follow(&m, &in);
     see(&in, 1);
     step(&m, &in, t += IR_SAMPLE_MS);
     assert(mission_queue_direction(&m, BARCODE_LEFT));
     see(&in, 0);
-    MissionOutputs out;
+    MissionOutputs_t out;
     for (unsigned mm = 0u; mm < LINE_LOST_MM; mm += 10u)
     {
         out = step(&m, &in, t += IR_SAMPLE_MS);
@@ -307,20 +307,20 @@ static void test_line_loss_recovery_is_bounded(void)
 {
     for (int error = -100; error <= 100; error += 200)
     {
-        Mission m;
-        MissionInputs in = base(100u);
+        Mission_t m;
+        MissionInputs_t in = base(100u);
         uint32_t t = to_follow(&m, &in);
         enter_line_recovery(&m, &in, &t);
-        MissionOutputs out = step(&m, &in, t += IR_SAMPLE_MS);
+        MissionOutputs_t out = step(&m, &in, t += IR_SAMPLE_MS);
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
         in.stationary = true;
         out = step(&m, &in, t += IR_SAMPLE_MS);
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_TURN);
         assert(motion_cmd_target(&out.command) == 70);
-        MotionController controller;
+        MotionController_t controller;
         motion_control_reset(&controller);
-        MotionInput input = {.now_ms = t};
-        MotionOutput motion;
+        MotionInput_t input = {.now_ms = t};
+        MotionOutput_t motion;
         motion_control_step(&controller, &out.command, &input, &motion);
         assert(motion.status == RD_MOTION_RUNNING);
         /* Broad black is not usable guidance; either visible side is. */
@@ -350,13 +350,13 @@ static void test_line_loss_recovery_is_bounded(void)
 
 static void test_recovery_reverses_through_motion(void)
 {
-    Mission m;
-    MissionInputs in = base(100u);
+    Mission_t m;
+    MissionInputs_t in = base(100u);
     uint32_t t = to_follow(&m, &in);
-    MissionOutputs out = enter_line_recovery(&m, &in, &t);
-    MotionController controller;
+    MissionOutputs_t out = enter_line_recovery(&m, &in, &t);
+    MotionController_t controller;
     motion_control_reset(&controller);
-    MotionOutput motion;
+    MotionOutput_t motion;
     unsigned previous_action = 0u;
     for (unsigned leg = 0u; leg < 8u; ++leg)
     {
@@ -368,7 +368,7 @@ static void test_recovery_reverses_through_motion(void)
         assert((leg & 1u) == 0u ? motion_cmd_target(&out.command) > 0 :
             motion_cmd_target(&out.command) < 0);
         previous_action = motion_cmd_action(&out.command);
-        MotionInput input = {.now_ms = t,
+        MotionInput_t input = {.now_ms = t,
             .count = {in.wheel_count[0], in.wheel_count[1]}};
         motion_control_step(&controller, &out.command, &input, &motion);
         assert(motion.status == RD_MOTION_RUNNING);
@@ -384,7 +384,7 @@ static void test_recovery_reverses_through_motion(void)
         in.wheel_count[1] = enc_advance(0u, (int32_t)lroundf(arc));
         out = step(&m, &in, t += IR_SAMPLE_MS);
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
-        input = (MotionInput){.now_ms = t,
+        input = (MotionInput_t){.now_ms = t,
             .count = {in.wheel_count[0], in.wheel_count[1]}};
         motion_control_step(&controller, &out.command, &input, &motion);
         assert(motion.status == RD_MOTION_IDLE);
@@ -452,7 +452,7 @@ static void test_recovery_sweep_targets(void)
 }
 
 /* The box is still there when the servo comes back forward from a sweep. */
-static MissionOutputs bstep(Mission *m, MissionInputs *in, uint32_t *t)
+static MissionOutputs_t bstep(Mission_t *m, MissionInputs_t *in, uint32_t *t)
 {
     *t += 10u;
     if (m->state != MISSION_SCAN || !m->scan_phase || in->scan_id != m->scan_id ||
@@ -465,7 +465,7 @@ static MissionOutputs bstep(Mission *m, MissionInputs *in, uint32_t *t)
     in->front_valid = true;
     in->front_mm = MISSION_OBSTACLE_STOP_MM;
     in->front_sequence++;
-    MissionOutputs out = step(m, in, *t);
+    MissionOutputs_t out = step(m, in, *t);
     if (out.scan_request && out.scan_keep_narrower) /* the second sweep gives the same profile */
     {
         in->scan_id = out.scan_id;
@@ -479,7 +479,7 @@ static MissionOutputs bstep(Mission *m, MissionInputs *in, uint32_t *t)
 }
 
 /* An obstacle is a planned stop: the car slows on the profile before scanning. */
-static void slow_to_rest(Mission *m, MissionInputs *in, uint32_t *t, MissionOutputs *out)
+static void slow_to_rest(Mission_t *m, MissionInputs_t *in, uint32_t *t, MissionOutputs_t *out)
 {
     assert(motion_cmd_mode(&out->command) == MOTION_MODE_DISTANCE);
     assert(motion_cmd_steering(&out->command) == MOTION_TURN_RAMPED);
@@ -494,15 +494,15 @@ static void slow_to_rest(Mission *m, MissionInputs *in, uint32_t *t, MissionOutp
 static void test_obstacle_stops_at_the_stop_distance(void)
 {
     assert(motion_stop_distance_mm(COURSE_SPEED_MMPS) == MOTION_STOP_MM(COURSE_SPEED_MMPS));
-    Mission m;
-    MissionInputs in = base(100u);
+    Mission_t m;
+    MissionInputs_t in = base(100u);
     uint32_t t = to_follow(&m, &in);
     in.front_valid = true;
     in.front_age_ms = 0u;
 
     /* Just outside the slowing distance: keeps following. */
     in.front_mm = MISSION_OBSTACLE_SLOW_MM + 1u;
-    MissionOutputs out = bstep(&m, &in, &t);
+    MissionOutputs_t out = bstep(&m, &in, &t);
     assert(m.state == MISSION_FOLLOW_LINE);
 
     /* An old reading counts the travel since it: 20 mm on, this is the slowing
@@ -520,8 +520,8 @@ static void test_obstacle_stops_at_the_stop_distance(void)
     assert(m.state == MISSION_STOPPED && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
 
     /* A reading that jumps short still gets the whole slow stop. */
-    Mission late;
-    MissionInputs near = base(100u);
+    Mission_t late;
+    MissionInputs_t near = base(100u);
     t = to_follow(&late, &near);
     near.front_valid = true;
     near.front_age_ms = 0u;
@@ -538,14 +538,14 @@ static void test_obstacle_stops_at_the_stop_distance(void)
     puts("obstacle: slows at stop distance + deceleration, short readings keep the slow stop PASS");
 }
 
-static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t,
+static void into_scanning(Mission_t *m, MissionInputs_t *in, uint32_t *t,
     uint32_t left_mm, uint32_t right_mm)
 {
     *t = to_follow(m, in);
     in->front_valid = true;
     in->front_age_ms = 0u;
     in->front_mm = MISSION_OBSTACLE_SLOW_MM;
-    MissionOutputs out = bstep(m, in, t);
+    MissionOutputs_t out = bstep(m, in, t);
     assert(m->state == MISSION_SCAN);
     slow_to_rest(m, in, t, &out);
     out = bstep(m, in, t);
@@ -565,7 +565,7 @@ static void into_scanning(Mission *m, MissionInputs *in, uint32_t *t,
     in->front_mm = 1000u;
 }
 
-static void complete_action(MissionInputs *in, const MissionOutputs *out)
+static void complete_action(MissionInputs_t *in, const MissionOutputs_t *out)
 {
     float target = motion_cmd_target(&out->command);
     int32_t left = 0, right = 0;
@@ -585,7 +585,7 @@ static void complete_action(MissionInputs *in, const MissionOutputs *out)
     in->motion_status = RD_MOTION_DONE;
 }
 
-static void fresh_front(MissionInputs *in, uint32_t now)
+static void fresh_front(MissionInputs_t *in, uint32_t now)
 {
     in->front_valid = true;
     in->front_mm = 1000u;
@@ -596,7 +596,7 @@ static void fresh_front(MissionInputs *in, uint32_t now)
 }
 
 /* Range of the side ray from the current pose, hitting the box's side or the background. */
-static uint32_t side_ray_mm(const Mission *m, float box_front, float box_rear, float half_width,
+static uint32_t side_ray_mm(const Mission_t *m, float box_front, float box_rear, float half_width,
     bool *hit)
 {
     float side = m->bypass.left_side ? 1.0f : -1.0f;
@@ -610,8 +610,8 @@ static uint32_t side_ray_mm(const Mission *m, float box_front, float box_rear, f
 static void run_bypass_sequence(int16_t box_left_mm, float depth_mm,
     float box_half_width, bool background_echoes)
 {
-    Mission m;
-    MissionInputs in = base(100u);
+    Mission_t m;
+    MissionInputs_t in = base(100u);
     uint32_t t;
     into_scanning(&m, &in, &t, 0u, 0u); /* no echo beside the box does not matter */
     in.profile_left_mm = box_left_mm;
@@ -621,7 +621,7 @@ static void run_bypass_sequence(int16_t box_left_mm, float depth_mm,
     in.left_clearance_mm = 130u;
     in.right_clearance_mm = 170u;
     float box_front = 250.0f, box_rear = box_front + depth_mm;
-    MissionOutputs out = bstep(&m, &in, &t);
+    MissionOutputs_t out = bstep(&m, &in, &t);
     bool left = box_left_mm <= 0; /* a centred box ties: left */
     float half_width = box_half_width + (left ? box_left_mm : -box_left_mm); /* centre to the edge passed */
     assert(m.state == MISSION_BYPASS && m.bypass.left_side == left);
@@ -716,7 +716,7 @@ static void test_bypass_long_encoder_travel(void)
 {
     bypass_control_t control;
     bypass_input_t in = {.now_ms = 100u, .stationary = true, .functional = true};
-    ObstacleProfile profile = {.valid = true, .closest_mm = 500u, .width_mm = 200u,
+    ObstacleProfile_t profile = {.valid = true, .closest_mm = 500u, .width_mm = 200u,
         .left_clearance_mm = 800u, .right_clearance_mm = 400u};
     uint8_t action = 1u;
     assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
@@ -753,7 +753,7 @@ static void test_bypass_real_outline(void)
     uint8_t action = 1u;
     /* Between the two pivots' reach: a left pivot keeps the barcode arm clear. A
        box to the left still picks right, so it must not begin until further back. */
-    ObstacleProfile profile = {.valid = true, .closest_mm = 220u, .width_mm = 200u};
+    ObstacleProfile_t profile = {.valid = true, .closest_mm = 220u, .width_mm = 200u};
     assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
     assert(control.left_side);
     profile.obstacle_left_mm = 10;
@@ -822,7 +822,7 @@ static void test_bypass_real_outline(void)
 }
 
 /* Scan again after a reverse, from a further position. */
-static MissionOutputs front_reading(Mission *m, MissionInputs *in, uint32_t *t, bool valid, uint32_t mm)
+static MissionOutputs_t front_reading(Mission_t *m, MissionInputs_t *in, uint32_t *t, bool valid, uint32_t mm)
 {
     in->front_valid = valid;
     in->front_mm = mm;
@@ -831,7 +831,7 @@ static MissionOutputs front_reading(Mission *m, MissionInputs *in, uint32_t *t, 
     return step(m, in, *t);
 }
 
-static MissionOutputs finish_scan_at(Mission *m, MissionInputs *in, uint32_t *t, uint32_t closest)
+static MissionOutputs_t finish_scan_at(Mission_t *m, MissionInputs_t *in, uint32_t *t, uint32_t closest)
 {
     in->scan_id = m->scan_id;
     in->scan_state = OBSTACLE_SCAN_DONE;
@@ -841,8 +841,8 @@ static MissionOutputs finish_scan_at(Mission *m, MissionInputs *in, uint32_t *t,
 
 static void test_scan_obstacle_removed(void)
 {
-    Mission m;
-    MissionInputs in = base(100u);
+    Mission_t m;
+    MissionInputs_t in = base(100u);
     uint32_t t;
     /* Removed while the sweep ran, so the scan's profile is out of date: no bypass. */
     into_scanning(&m, &in, &t, 800u, 800u);
@@ -852,7 +852,7 @@ static void test_scan_obstacle_removed(void)
     (void)step(&m, &in, t);
     in.scan_state = OBSTACLE_SCAN_DONE;
     t += 10u;
-    MissionOutputs out = step(&m, &in, t);
+    MissionOutputs_t out = step(&m, &in, t);
     assert(m.state == MISSION_SCAN && motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
     out = front_reading(&m, &in, &t, false, 0u);
     out = front_reading(&m, &in, &t, true, 900u);
@@ -937,7 +937,7 @@ static void test_bypass_steps_out_when_too_close(void)
     bypass_input_t in = {.now_ms = 100u, .stationary = true, .functional = true};
     uint8_t action = 1u;
     bypass_output_t out;
-    ObstacleProfile profile = {.valid = true, .closest_mm = 255u, .width_mm = 200u,
+    ObstacleProfile_t profile = {.valid = true, .closest_mm = 255u, .width_mm = 200u,
         .obstacle_forward_mm = 255, .left_clearance_mm = 300u, .right_clearance_mm = 300u};
     assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
     assert(control.left_side && control.offset_mm == 225);
@@ -1008,7 +1008,7 @@ static void test_bypass_short_side_reading(bool corner_echo)
     bypass_input_t in = {.now_ms = 100u, .stationary = true, .functional = true};
     uint8_t action = 1u;
     bypass_output_t out;
-    ObstacleProfile profile = {.valid = true, .closest_mm = 255u, .width_mm = 200u,
+    ObstacleProfile_t profile = {.valid = true, .closest_mm = 255u, .width_mm = 200u,
         .obstacle_forward_mm = 255, .left_clearance_mm = 300u, .right_clearance_mm = 300u};
     assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
     bypass_control_step(&control, &in, &action, &out);
@@ -1035,13 +1035,13 @@ static void test_bypass_short_side_reading(bool corner_echo)
 
 static void test_bypass_reverses_when_too_close(void)
 {
-    Mission m;
-    MissionInputs in = base(100u);
+    Mission_t m;
+    MissionInputs_t in = base(100u);
     uint32_t t;
     /* A box to the left picks right, and that pivot needs 232 mm from the axle. */
     into_scanning(&m, &in, &t, 100u, 800u);
     in.profile_left_mm = 10;
-    MissionOutputs out = finish_scan_at(&m, &in, &t, 220u);
+    MissionOutputs_t out = finish_scan_at(&m, &in, &t, 220u);
     assert(m.state == MISSION_SCAN && m.scan_backing);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_DISTANCE);
     assert(motion_cmd_target(&out.command) == -32.0f);
@@ -1154,7 +1154,7 @@ static void test_bypass_return_needs_white_first(void)
     bypass_control_t control;
     bypass_input_t in = {.now_ms = 100u, .stationary = true, .functional = true,
         .line_functional = true};
-    ObstacleProfile profile = {.valid = true, .closest_mm = 500u, .width_mm = 200u,
+    ObstacleProfile_t profile = {.valid = true, .closest_mm = 500u, .width_mm = 200u,
         .left_clearance_mm = 800u, .right_clearance_mm = 800u};
     uint8_t action = 1u;
     assert(bypass_control_begin(&control, &in, &profile, 200u, &action));
@@ -1194,10 +1194,10 @@ static void test_bypass_return_needs_white_first(void)
 
 static void test_bypass_failures(void)
 {
-    Mission m;
-    MissionInputs in = base(100u);
+    Mission_t m;
+    MissionInputs_t in = base(100u);
     uint32_t t;
-    MissionOutputs out;
+    MissionOutputs_t out;
 
     /* Wrong scan IDs cannot release movement; failed scans retry boundedly. */
     in = base(100u);
@@ -1263,11 +1263,11 @@ static void test_bypass_failures(void)
 
 static void test_missing_echo_policy(void)
 {
-    Mission m;
-    MissionInputs in = base(100u);
+    Mission_t m;
+    MissionInputs_t in = base(100u);
     uint32_t t = to_follow(&m, &in);
     in.front_valid = false;
-    MissionOutputs out = bstep(&m, &in, &t);
+    MissionOutputs_t out = bstep(&m, &in, &t);
     assert(m.state == MISSION_FOLLOW_LINE);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_FOLLOW);
 
@@ -1292,10 +1292,10 @@ static void test_missing_echo_policy(void)
    task's fallback, including when another event replaces Mission's (2026-11-02). */
 static void test_one_barcode_event_per_read(void)
 {
-    Mission m;
-    MissionInputs in = base(100u);
+    Mission_t m;
+    MissionInputs_t in = base(100u);
     uint32_t t = to_follow(&m, &in);
-    MissionOutputs out = bstep(&m, &in, &t);
+    MissionOutputs_t out = bstep(&m, &in, &t);
     assert(!mission_barcode_event_needed(&in, &out));	/* no read */
 
     in.have_barcode = true;
@@ -1305,7 +1305,7 @@ static void test_one_barcode_event_per_read(void)
     assert(m.state == MISSION_FOLLOW_LINE && out.event_kind == MQTT_EVENT_BARCODE);
     assert(out.event_arg == 3u && !mission_barcode_event_needed(&in, &out));
 
-    MissionOutputs other = {.event_kind = MQTT_EVENT_TURN};
+    MissionOutputs_t other = {.event_kind = MQTT_EVENT_TURN};
     assert(mission_barcode_event_needed(&in, &other));
     other.event_kind = 0u;			/* a read outside following */
     assert(mission_barcode_event_needed(&in, &other));
@@ -1319,13 +1319,13 @@ static void test_stop_cancels_every_phase(void)
     _Static_assert(MISSION_STATE_COUNT == 7u, "seven states, no COMPLETE");
     for (unsigned state = 0u; state < MISSION_STATE_COUNT; ++state)
     {
-        Mission m;
-        MissionInputs in = base(100u);
+        Mission_t m;
+        MissionInputs_t in = base(100u);
         mission_init(&m, 100u);
-        m.state = (MissionState)state;
+        m.state = (MissionState_t)state;
         m.held = BARCODE_LEFT;
         in.stop_down = true;
-        MissionOutputs out = step(&m, &in, 110u);
+        MissionOutputs_t out = step(&m, &in, 110u);
         assert(m.state == MISSION_STOPPED);
         assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
         if (state != MISSION_STOPPED)
@@ -1334,22 +1334,22 @@ static void test_stop_cancels_every_phase(void)
             assert(m.held == BARCODE_UNMAPPED);
         }
     }
-    Mission m;
-    MissionInputs in = base(100u);
+    Mission_t m;
+    MissionInputs_t in = base(100u);
     uint32_t t = to_follow(&m, &in);
     in.motion_stopped = true; /* independent Motion expiry latch */
-    MissionOutputs out = step(&m, &in, t + 10u);
+    MissionOutputs_t out = step(&m, &in, t + 10u);
     assert(m.state == MISSION_STOPPED);
     assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
 }
 
 static void test_run_network_loss(void)
 {
-    Mission m;
-    MissionInputs in = base(100u);
+    Mission_t m;
+    MissionInputs_t in = base(100u);
     uint32_t t = to_follow(&m, &in);
     in.start_blocked = true; /* connectivity lost after accepted local start */
-    MissionOutputs out = step(&m, &in, t += 20u);
+    MissionOutputs_t out = step(&m, &in, t += 20u);
     assert(m.state == MISSION_FOLLOW_LINE && !out.stop_now);
     assert(motion_cmd_speed(&out.command) == COURSE_SPEED_MMPS);
 }

@@ -20,33 +20,33 @@ typedef struct
 {
     uint8_t left : 2;
     uint8_t right : 2;
-} IrRaw;
+} IrRaw_t;
 
 /* A raw pair and its valid flag in one word: left bit 0, right bit 1,
    valid bit 2. Written with one byte store, so no reader
    sees a left from one sample beside a right from another. Readings above
    1 (only possible with valid clear) saturate to 1. */
-typedef uint8_t IrRawWord;
+typedef uint8_t IrRawWord_t;
 
 #define IR_RAW_BITS 1u
 #define IR_RAW_MASK ((1u << IR_RAW_BITS) - 1u)
 #define IR_RAW_VALID_BIT (2u * IR_RAW_BITS)
 
-static inline IrRawWord ir_raw_word(IrRaw raw, bool valid)
+static inline IrRawWord_t ir_raw_word(IrRaw_t raw, bool valid)
 {
     uint32_t left = raw.left > IR_RAW_MASK ? IR_RAW_MASK : raw.left;
     uint32_t right = raw.right > IR_RAW_MASK ? IR_RAW_MASK : raw.right;
-    return (IrRawWord)(left | right << IR_RAW_BITS |
+    return (IrRawWord_t)(left | right << IR_RAW_BITS |
         (valid ? 1u : 0u) << IR_RAW_VALID_BIT);
 }
 
-static inline IrRaw ir_raw_word_raw(IrRawWord word)
+static inline IrRaw_t ir_raw_word_raw(IrRawWord_t word)
 {
-    return (IrRaw){(uint8_t)(word & IR_RAW_MASK),
+    return (IrRaw_t){(uint8_t)(word & IR_RAW_MASK),
         (uint8_t)(word >> IR_RAW_BITS & IR_RAW_MASK)};
 }
 
-static inline bool ir_raw_word_valid(IrRawWord word)
+static inline bool ir_raw_word_valid(IrRawWord_t word)
 {
     return (word >> IR_RAW_VALID_BIT & 1u) != 0u;
 }
@@ -57,7 +57,7 @@ typedef enum
     IR_LINE_VISIBLE,
     IR_LINE_LOST,
     IR_LINE_BROAD_BLACK
-} IrLine;
+} IrLine_t;
 
 typedef struct
 {
@@ -65,17 +65,17 @@ typedef struct
     uint8_t left_fraction : 7; /* digital: 0 white, IR_SCALE_ONE black */
     uint8_t right_fraction : 7;
     bool valid : 1;
-} IrReading;
+} IrReading_t;
 
 _Static_assert(IR_SCALE_ONE < 128, "IR fractions fit 7 bits");
 
 typedef struct
 {
     uint32_t sample_ms;
-    IrRawWord raw; /* latest pair; valid flag = sample valid */
-    uint8_t line : 2; /* IrLine */
+    IrRawWord_t raw; /* latest pair; valid flag = sample valid */
+    uint8_t line : 2; /* IrLine_t */
     uint8_t have_sample : 1;
-} IrTracker;
+} IrTracker_t;
 
 /* Valid guidance is fresh digital VISIBLE data, never motion permission.
    error is -127 left black, +127 right black, 0 both white.
@@ -86,51 +86,51 @@ typedef struct
 {
     uint32_t sampled_ms;
     int8_t error; /* -IR_SCALE_ONE..+IR_SCALE_ONE */
-    uint8_t line : 2; /* IrLine */
+    uint8_t line : 2; /* IrLine_t */
     bool valid : 1;
-} IrTrackingOutput;
+} IrTrackingOutput_t;
 
-void ir_tracking_init(IrTracker *tracker);
+void ir_tracking_init(IrTracker_t *tracker);
 /* now is paired acquisition completion time, not publication time. */
-void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
+void ir_tracking_sample(IrTracker_t *tracker, IrRaw_t raw, bool acquired,
                         uint32_t now);
-IrReading ir_tracking_reading(IrRaw raw);
-IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now);
+IrReading_t ir_tracking_reading(IrRaw_t raw);
+IrTrackingOutput_t ir_tracking_output(const IrTracker_t *tracker, uint32_t now);
 /* Portable data for Comms and future Mission consumers; no wire format implied.
    Invalid black flags are zero; use validity flags. */
 typedef struct
 {
     uint32_t sampled_ms;
-    IrRawWord raw; /* valid flag = acquisition valid */
-    uint8_t line : 2; /* IrLine */
+    IrRawWord_t raw; /* valid flag = acquisition valid */
+    uint8_t line : 2; /* IrLine_t */
     uint8_t left_black : 1;
     uint8_t right_black : 1;
     uint8_t have_sample : 1;
     uint8_t sample_fresh : 1;
     uint8_t normalized_valid : 1;
     uint8_t guidance_valid : 1;
-} LineIrSnapshot;
+} LineIrSnapshot_t;
 
 /* right - left: -IR_SCALE_ONE left black, +IR_SCALE_ONE right black. */
-static inline int8_t ir_snapshot_error(const LineIrSnapshot *snapshot)
+static inline int8_t ir_snapshot_error(const LineIrSnapshot_t *snapshot)
 {
     return (int8_t)(((int)snapshot->right_black -
         (int)snapshot->left_black) * IR_SCALE_ONE);
 }
 
-LineIrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t now);
+LineIrSnapshot_t ir_snapshot_build(const IrTracker_t *tracker, uint32_t now);
 /* Recompute age at read time without changing sequence or acquisition time. */
-void ir_snapshot_refresh(LineIrSnapshot *snapshot, uint32_t now);
+void ir_snapshot_refresh(LineIrSnapshot_t *snapshot, uint32_t now);
 
 #if APP_TEST
-const char *ir_tracking_line_name(IrLine line);
+const char *ir_tracking_line_name(IrLine_t line);
 #endif
 
 /* Called only by line_barcode; shared timebase must already be initialized. */
 bool drv_ir_tracking_init(void);
 /* False leaves *raw unchanged. No connectivity inference from digital
    levels. */
-bool drv_ir_tracking_read(IrRaw *raw);
+bool drv_ir_tracking_read(IrRaw_t *raw);
 
 /*
  *    Kernel-free barcode types, Code 39 decoder and frame assembler: turns
@@ -360,7 +360,7 @@ void line_barcode_step(uint32_t now_ms);
  * Ignore the destination on failure; normalized zero is not validity.
  * This API is for task context, never an ISR.
 */
-bool line_ir_copy(LineIrSnapshot *snapshot);
-bool line_ir_try_copy(LineIrSnapshot *snapshot);
+bool line_ir_copy(LineIrSnapshot_t *snapshot);
+bool line_ir_try_copy(LineIrSnapshot_t *snapshot);
 
 #endif /* LINE_BARCODE_H */
