@@ -21,8 +21,8 @@
 /* ---- Motion task ---- */
 static ID command_mutex, stop_flag, motion_tid;
 static MotionCommand latest;
-static rd_word_t feedback;		/* single writer: Motion */
-static MotionHealth progress;		/* guarded by command_mutex */
+static rd_word_t feedback;      /* single writer: Motion */
+static MotionHealth progress;      /* guarded by command_mutex */
 /* Core-1 writers only, inside DI. Core 0 (Terrain's health read) loads
    serviced_stops before stop_requests: serviced only follows requests, so
    equal loads mean every stop seen so far was braked. */
@@ -55,33 +55,49 @@ static ER latch_stop(void)
 
 ER motion_stop(void)
 {
-    if (stop_flag <= 0) return E_OBJ;
+    if (stop_flag <= 0)
+    {
+        return E_OBJ;
+    }
     UW state = control_enter();
     ER er = latch_stop();
     control_leave(state);
-    if (motion_tid > 0) tk_wup_tsk(motion_tid);
+    if (motion_tid > 0)
+    {
+        tk_wup_tsk(motion_tid);
+    }
     return er;
 }
 
-/* Copies the shared command under the mutex; dst is untouched if the lock fails. */
+/* Copies the shared command under the mutex; dst is untouched if the lock
+   fails. */
 static ER command_copy(MotionCommand *dst, const MotionCommand *src)
 {
     ER er = tk_loc_mtx(command_mutex, RD_SNAPSHOT_LOCK_MS);
-    if (er < E_OK) return er;
+    if (er < E_OK)
+    {
+        return er;
+    }
     *dst = *src;
     return tk_unl_mtx(command_mutex);
 }
 
 ER motion_command(const MotionCommand *command)
 {
-    if (command == NULL)
+    if (NULL == command)
     {
         (void)motion_stop();
         return E_PAR;
     }
-    if (command_mutex <= 0) return E_OBJ;
+    if (command_mutex <= 0)
+    {
+        return E_OBJ;
+    }
     ER er = command_copy(&latest, command);
-    if (er < E_OK) motion_stop();
+    if (er < E_OK)
+    {
+        motion_stop();
+    }
     return er;
 }
 
@@ -94,7 +110,10 @@ uint32_t motion_feedback(void)
    Nonwaiting kernel flag operation, safe from any core including startup. */
 ER motion_inhibit_startup(void)
 {
-    if (stop_flag <= 0) return E_OBJ;
+    if (stop_flag <= 0)
+    {
+        return E_OBJ;
+    }
     return tk_set_flg(stop_flag, STOP_BIT | INHIBIT_BIT);
 }
 
@@ -105,7 +124,10 @@ ER motion_reset_stop(void)
         return E_OBJ;
     }
     ER er = tk_loc_mtx(command_mutex, 2);
-    if (er < E_OK) return er;
+    if (er < E_OK)
+    {
+        return er;
+    }
     UW state = control_enter();
     T_RFLG flag = {0};
     er = tk_ref_flg(stop_flag, &flag);
@@ -124,7 +146,10 @@ ER motion_reset_stop(void)
         else
         {
             er = tk_clr_flg(stop_flag, ~STOP_BIT);
-            if (er >= E_OK) latest = (MotionCommand){0};
+            if (er >= E_OK)
+            {
+                latest = (MotionCommand){0};
+            }
         }
     }
     control_leave(state);
@@ -134,9 +159,15 @@ ER motion_reset_stop(void)
 
 static ER health_copy(MotionHealth *h, TMO wait)
 {
-    if (h == NULL) return E_PAR;
+    if (NULL == h)
+    {
+        return E_PAR;
+    }
     ER er = tk_loc_mtx(command_mutex, wait);
-    if (er < E_OK) return er;
+    if (er < E_OK)
+    {
+        return er;
+    }
     *h = progress;
     er = tk_unl_mtx(command_mutex);
     if (er < E_OK)
@@ -160,24 +191,31 @@ static ER health_copy(MotionHealth *h, TMO wait)
 
 static void motion_task(INT stacd, void *exinf)
 {
-    (void)stacd; (void)exinf;
+    (void)stacd;
+    (void)exinf;
     MotionController controller;
     motion_control_reset(&controller);
     uint32_t release = robot_time_ms();
     /* The GPIO dispatcher is core-1 only, so the encoder starts here. */
     bool encoder_ready = drv_encoder_init();
-    if (!encoder_ready) rd_fault_set(RD_OWNER_MOTION, RD_FAULT_ENCODER); /* permanent: no ISR */
+    if (!encoder_ready)
+    {
+        /* permanent: no ISR */
+        rd_fault_set(RD_OWNER_MOTION, RD_FAULT_ENCODER);
+    }
     uint32_t seen_invalid_edges = drv_encoder_invalid_edges();
     uint32_t good_counts = 0u;
     uint32_t invalid_score = 0u;
-    uint32_t last_left = drv_encoder_count(ENCODER_LEFT), last_right = drv_encoder_count(ENCODER_RIGHT);
+    uint32_t last_left = drv_encoder_count(ENCODER_LEFT);
+    uint32_t last_right = drv_encoder_count(ENCODER_RIGHT);
     task_timing_t timing = {.window_start_ms = release};
     for (;;)
     {
         uint32_t started_us = task_timing_begin();
         /* Motion is the sole writer of its fault byte: the ISR only counts. */
         uint32_t invalid_edges = drv_encoder_invalid_edges();
-        uint32_t left = drv_encoder_count(ENCODER_LEFT), right = drv_encoder_count(ENCODER_RIGHT);
+        uint32_t left = drv_encoder_count(ENCODER_LEFT);
+        uint32_t right = drv_encoder_count(ENCODER_RIGHT);
         uint32_t new_invalid = invalid_edges - seen_invalid_edges;
         seen_invalid_edges = invalid_edges;
         if (enc_invalid_score_update(&invalid_score, new_invalid))
@@ -185,11 +223,17 @@ static void motion_task(INT stacd, void *exinf)
             good_counts = 0u;
             rd_fault_set(RD_OWNER_MOTION, RD_FAULT_ENCODER);
         }
-        else if (encoder_ready && (rd_fault_get(RD_OWNER_MOTION) & RD_FAULT_ENCODER) != 0u)
+        else if (encoder_ready &&
+            (rd_fault_get(RD_OWNER_MOTION) & RD_FAULT_ENCODER) != 0u)
         {
-            int32_t dl = enc_travel_signed(left, last_left), dr = enc_travel_signed(right, last_right);
-            good_counts += (uint32_t)(dl < 0 ? -dl : dl) + (uint32_t)(dr < 0 ? -dr : dr);
-            if (good_counts >= ENC_FAULT_CLEAR_COUNTS) rd_fault_clear(RD_OWNER_MOTION, RD_FAULT_ENCODER);
+            int32_t dl = enc_travel_signed(left, last_left);
+            int32_t dr = enc_travel_signed(right, last_right);
+            good_counts += (uint32_t)(dl < 0 ? -dl : dl) +
+                (uint32_t)(dr < 0 ? -dr : dr);
+            if (good_counts >= ENC_FAULT_CLEAR_COUNTS)
+            {
+                rd_fault_clear(RD_OWNER_MOTION, RD_FAULT_ENCODER);
+            }
         }
         last_left = left;
         last_right = right;
@@ -250,7 +294,7 @@ static void motion_task(INT stacd, void *exinf)
         bool unsafe = drv_buttons_read().gp21_down ||
             rd_fault_stop_pending() ||
             initial_er < E_OK || er < E_OK || expired ||
-            out.status == RD_MOTION_FAILED;
+            RD_MOTION_FAILED == out.status;
         if ((unsafe && !stopped) || flag_er < E_OK)
         {
             (void)latch_stop();
@@ -263,7 +307,7 @@ static void motion_task(INT stacd, void *exinf)
             motion_control_reset(&controller);
             out.duty[0] = 0.0f;
             out.duty[1] = 0.0f;
-            if (out.status == RD_MOTION_RUNNING)
+            if (RD_MOTION_RUNNING == out.status)
             {
                 out.status = RD_MOTION_IDLE;
             }
@@ -273,8 +317,9 @@ static void motion_task(INT stacd, void *exinf)
 #if APP_TEST
         output_er = drv_motor_brake(); /* TEST never permits movement. */
 #else
-        output_er = (stopped || (out.duty[0] == 0.0f && out.duty[1] == 0.0f))
-            ? drv_motor_brake() : drv_motor_apply(out.duty[0], out.duty[1]);
+        output_er = (stopped || (0.0f == out.duty[0] && 0.0f == out.duty[1]))
+            ? drv_motor_brake()
+            : drv_motor_apply(out.duty[0], out.duty[1]);
 #endif
         if (output_er < E_OK)
         {
@@ -304,7 +349,8 @@ static void motion_task(INT stacd, void *exinf)
         (void)motion_trace_publish(&trace);
 #endif /* ROBOT_TRACE_ENABLED */
 
-        rd_word_publish(&feedback, rd_motion_feedback_pack(out.status, out.action_id, 0));
+        rd_word_publish(&feedback,
+            rd_motion_feedback_pack(out.status, out.action_id, 0));
         if (output_er >= E_OK)
         {
             uint32_t serviced_ms = robot_time_ms();
@@ -322,7 +368,8 @@ static void motion_task(INT stacd, void *exinf)
         }
         if (out.stall)
         {
-            /* Outputs have already been braked; report before this fault clears. */
+            /* Outputs have already been braked; report before this fault
+               clears. */
             tm_printf((UB *)"[MOTION] motor stall: mode=%u action=%u "
                 "speed_mmps=%u steering_q=%d left=%u right=%u\n",
                 (unsigned)motion_cmd_mode(&command),
@@ -331,7 +378,8 @@ static void motion_task(INT stacd, void *exinf)
                 (int)motion_cmd_steering(&command),
                 (unsigned)in.count[0], (unsigned)in.count[1]);
         }
-        /* Fixed-rate release; a stop wake-up services immediately without shifting it. */
+        /* Fixed-rate release; a stop wake-up services immediately without
+           shifting it. */
         uint32_t end_ms = robot_time_ms();
         task_timing_end(&timing, TASK_TIMING_MOTION, started_us, release,
             MOTION_PERIOD_MS, end_ms);
@@ -343,11 +391,17 @@ static void motion_task(INT stacd, void *exinf)
 ER motion_init(void)
 {
     ER er = drv_motor_init();
-    if (er < E_OK) return er;
+    if (er < E_OK)
+    {
+        return er;
+    }
     T_CMTX m = {0};
     m.mtxatr = TA_INHERIT;
     command_mutex = tk_cre_mtx(&m);
-    if (command_mutex < E_OK) return command_mutex;
+    if (command_mutex < E_OK)
+    {
+        return command_mutex;
+    }
     /* Boot STOP is not acknowledged until Motion brakes. */
     atomic_store_explicit(&stop_requests, 1u, memory_order_relaxed);
     atomic_store_explicit(&serviced_stops, 0u, memory_order_relaxed);
@@ -490,7 +544,7 @@ static ER motor_wheel(unsigned pin, float duty, int forward_a)
     }
     /* Clamped magnitude <= MOTION_MAX_DUTY keeps compare within MOTOR_WRAP. */
     UW compare = (UW)(magnitude * (MOTOR_WRAP + 1u));
-    int a_active = (duty >= 0.0f) ? (forward_a != 0) : (forward_a == 0);
+    int a_active = (duty >= 0.0f) ? (forward_a != 0) : (0 == forward_a);
     ER er = pwm_set_cc(pin, a_active ? compare : 0u);
     if (er >= E_OK)
     {
@@ -535,46 +589,62 @@ static uint8_t previous_levels;
 
 static unsigned level(unsigned wheel)
 {
-    return (unsigned)gpio_get_val(pins[wheel][0]) * 2u + (unsigned)gpio_get_val(pins[wheel][1]);
+    return (unsigned)gpio_get_val(pins[wheel][0]) * 2u +
+        (unsigned)gpio_get_val(pins[wheel][1]);
 }
 
 static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
 {
     (void)sampled_us;
-    unsigned wheel = (pin == ENC_LEFT_A_PIN || pin == ENC_LEFT_B_PIN) ? ENCODER_LEFT : ENCODER_RIGHT;
+    unsigned wheel = (ENC_LEFT_A_PIN == pin || ENC_LEFT_B_PIN == pin)
+        ? ENCODER_LEFT : ENCODER_RIGHT;
     unsigned current = level(wheel);
     unsigned shift = wheel * ENC_LEVEL_BITS;
     int delta = enc_quad_step(rd_field_get(previous_levels, shift,
         ENC_LEVEL_BITS), current);
     previous_levels = (uint8_t)rd_field_set(previous_levels, shift,
         ENC_LEVEL_BITS, current, RD_NULL);
-    if (delta == ENC_QUAD_INVALID || edges == (GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE)) {
+    if (ENC_QUAD_INVALID == delta ||
+        (GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE) == edges)
+    {
         uint32_t n = atomic_load_explicit(&invalid_edges, memory_order_relaxed);
         atomic_store_explicit(&invalid_edges, n + 1u, memory_order_release);
-    } else if (delta != 0) {
+    }
+    else if (delta != 0)
+    {
         uint32_t c = atomic_load_explicit(&counts[wheel], memory_order_relaxed);
-        atomic_store_explicit(&counts[wheel], (enc_count_t)enc_advance(c, delta * sign[wheel]), memory_order_release);
+        atomic_store_explicit(&counts[wheel],
+            (enc_count_t)enc_advance(c, delta * sign[wheel]),
+            memory_order_release);
     }
 }
 
 bool drv_encoder_init(void)
 {
-    if (drv_gpio_irq_init() < E_OK) {
+    if (drv_gpio_irq_init() < E_OK)
+    {
         return false;
     }
-    for (unsigned wheel = 0u; wheel < ENCODER_WHEELS; ++wheel) {
-        for (unsigned channel = 0u; channel < 2u; ++channel) {
+    for (unsigned wheel = 0u; wheel < ENCODER_WHEELS; ++wheel)
+    {
+        for (unsigned channel = 0u; channel < 2u; ++channel)
+        {
             unsigned pin = pins[wheel][channel];
-            if (gpio_set_pin(pin, GPIO_MODE_IN) < E_OK || !drv_gpio_irq_claim(pin, edge)) {
+            if (gpio_set_pin(pin, GPIO_MODE_IN) < E_OK ||
+                !drv_gpio_irq_claim(pin, edge))
+            {
                 return false;
             }
         }
         previous_levels = (uint8_t)rd_field_set(previous_levels,
             wheel * ENC_LEVEL_BITS, ENC_LEVEL_BITS, level(wheel), RD_NULL);
     }
-    for (unsigned wheel = 0u; wheel < ENCODER_WHEELS; ++wheel) {
-        for (unsigned channel = 0u; channel < 2u; ++channel) {
-            if (!drv_gpio_irq_enable(pins[wheel][channel], true)) {
+    for (unsigned wheel = 0u; wheel < ENCODER_WHEELS; ++wheel)
+    {
+        for (unsigned channel = 0u; channel < 2u; ++channel)
+        {
+            if (!drv_gpio_irq_enable(pins[wheel][channel], true))
+            {
                 return false;
             }
         }
@@ -584,7 +654,8 @@ bool drv_encoder_init(void)
 
 uint32_t drv_encoder_count(encoder_wheel_t wheel)
 {
-    if ((unsigned)wheel >= ENCODER_WHEELS) {
+    if ((unsigned)wheel >= ENCODER_WHEELS)
+    {
         return 0u;
     }
     return atomic_load_explicit(&counts[wheel], memory_order_acquire);
@@ -616,7 +687,7 @@ bool motion_trace_publish(const mqtt_wheel_trace_t *trace)
 unsigned motion_trace_take(uint8_t *out, unsigned capacity)
 {
     uint32_t slot;
-    if (out == NULL || capacity < MQTT_LEN_WHEEL_TRACE ||
+    if (NULL == out || capacity < MQTT_LEN_WHEEL_TRACE ||
         !trace_ring_peek(&ring, &slot))
     {
         return 0u;

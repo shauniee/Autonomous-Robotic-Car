@@ -45,7 +45,7 @@ bool motion_command_set(MotionCommand *dst, motion_mode_t mode,
     float speed_mmps, float target, int steering_q,
     unsigned action_id, uint32_t sampled_ms)
 {
-    if (dst == 0)
+    if (0 == dst)
     {
         return false;
     }
@@ -57,21 +57,23 @@ bool motion_command_set(MotionCommand *dst, motion_mode_t mode,
         speed_mmps > MOTION_SPEED_MAX_MMPS || steering_q < -127 ||
         steering_q > 127 || target < -MOTION_TARGET_MAX_MM ||
         target > MOTION_TARGET_MAX_MM ||
-        (mode == MOTION_MODE_TURN &&
+        (MOTION_MODE_TURN == mode &&
         (fabsf(target) > 360.0f || steering_q < MOTION_TURN_PIVOT ||
-        steering_q == 2 || steering_q > MOTION_TURN_RAMPED)) ||
-        (mode == MOTION_MODE_DISTANCE && speed_mmps == 0.0f) ||
-        (mode == MOTION_MODE_TURN && speed_mmps == 0.0f))
+        2 == steering_q || steering_q > MOTION_TURN_RAMPED)) ||
+        (MOTION_MODE_DISTANCE == mode && 0.0f == speed_mmps) ||
+        (MOTION_MODE_TURN == mode && 0.0f == speed_mmps))
     {
         return false;
     }
-    *dst = (MotionCommand){
+    *dst = (MotionCommand)
+    {
         .sampled_ms = sampled_ms,
             .target = (int16_t)target,
             .speed_action =
             (uint16_t)(((uint16_t)action_id << 9u) | (uint16_t)speed_mmps),
             .mode_steering =
-            (uint16_t)((((uint16_t)(uint8_t)steering_q) << 2u) | (unsigned)mode)};
+            (uint16_t)((((uint16_t)(uint8_t)steering_q) << 2u) |
+                (unsigned)mode)};
     return true;
 }
 
@@ -109,7 +111,8 @@ static bool command_valid(const MotionCommand *cmd)
         return true;
     }
     int style = motion_cmd_steering(cmd);
-    if (style < MOTION_TURN_PIVOT || style == 2 || style > MOTION_TURN_RAMPED)
+    if (style < MOTION_TURN_PIVOT || 2 == style ||
+        style > MOTION_TURN_RAMPED)
     {
         return false;
     }
@@ -163,20 +166,25 @@ static float wheel_duty(WheelPid *p, float target_cps, float speed_cps,
     return bounded;
 }
 
-/* One release of the lift-style profile: speed follows desired while acceleration
-   changes at no more than the jerk limit. Returns the new speed in mm/s. */
+/* One release of the lift-style profile: speed follows desired while
+   acceleration changes at no more than the jerk limit. Returns the new speed
+   in mm/s. */
 static float profile_step(MotionController *c, float desired, float dt)
 {
-    const float limit = MOTION_ACCEL_MMPS2, jerk = MOTION_JERK_MMPS3;
-    float speed = c->follow_base_q6 / 64.0f, accel = c->profile_accel;
+    const float limit = MOTION_ACCEL_MMPS2;
+    const float jerk = MOTION_JERK_MMPS3;
+    float speed = c->follow_base_q6 / 64.0f;
+    float accel = c->profile_accel;
     float error = desired - speed;
-    float wanted = copysignf(fminf(limit, sqrtf(2.0f * jerk * fabsf(error))), error);
+    float wanted = copysignf(
+        fminf(limit, sqrtf(2.0f * jerk * fabsf(error))), error);
     accel += fminf(fmaxf(wanted - accel, -jerk * dt), jerk * dt);
     speed += accel * dt;
     if ((error >= 0.0f ? speed >= desired : speed <= desired) ||
         (fabsf(desired - speed) <= jerk * dt * dt && fabsf(accel) <= jerk * dt))
     {
-        speed = desired; /* arrived: end on the target with no acceleration left */
+        /* arrived: end on the target with no acceleration left */
+        speed = desired;
         accel = 0.0f;
     }
     c->profile_accel = (int16_t)lroundf(accel);
@@ -184,14 +192,15 @@ static float profile_step(MotionController *c, float desired, float dt)
     return c->follow_base_q6 / 64.0f;
 }
 
-/* Highest wheel speed, counts/s, that can still stop in the distance left on the
-   profile. This closes the position loop when a wheel lags its target. */
+/* Highest wheel speed, counts/s, that can still stop in the distance left on
+   the profile. This closes the position loop when a wheel lags its target. */
 static float reachable_cps(float remaining_counts)
 {
     const float limit = MOTION_ACCEL_MMPS2;
     float settle = limit / (2.0f * MOTION_JERK_MMPS3);
     return limit * (sqrtf(settle * settle +
-        2.0f * fabsf(remaining_counts) / (COUNTS_PER_MM * limit)) - settle) * COUNTS_PER_MM;
+        2.0f * fabsf(remaining_counts) / (COUNTS_PER_MM * limit)) - settle) *
+        COUNTS_PER_MM;
 }
 
 static void brake(MotionOutput *out, rd_motion_status_t status, uint8_t id)
@@ -210,14 +219,15 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         out->target_cps[w] = 0.0f;
         out->measured_cps[w] = NAN;
     }
-    if (cmd == 0 || motion_cmd_mode(cmd) == MOTION_MODE_STOP ||
+    if (0 == cmd || MOTION_MODE_STOP == motion_cmd_mode(cmd) ||
         !motion_command_fresh(cmd, in->now_ms))
     {
         /* Recovery brakes deliberately before aligning or reversing. */
-        bool requested_stop = cmd != 0 && motion_cmd_mode(cmd) == MOTION_MODE_STOP;
+        bool requested_stop =
+            cmd != 0 && MOTION_MODE_STOP == motion_cmd_mode(cmd);
         bool was_running =
-            !requested_stop && c->active && c->status == RD_MOTION_RUNNING &&
-            (c->mode == MOTION_MODE_DISTANCE || c->mode == MOTION_MODE_TURN);
+            !requested_stop && c->active && RD_MOTION_RUNNING == c->status &&
+            (MOTION_MODE_DISTANCE == c->mode || MOTION_MODE_TURN == c->mode);
         uint8_t id = c->action_id;
         motion_control_reset(c);
         brake(out, was_running ? RD_MOTION_FAILED : RD_MOTION_IDLE, id);
@@ -231,10 +241,11 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         int accel = c->profile_accel;
         WheelPid previous_pid[2] = {c->pid[0], c->pid[1]};
         bool continuous = c->active &&
-            (((c->mode == MOTION_MODE_FOLLOW || c->mode == MOTION_MODE_DISTANCE) &&
+            (((MOTION_MODE_FOLLOW == c->mode ||
+               MOTION_MODE_DISTANCE == c->mode) &&
               motion_cmd_mode(cmd) == MOTION_MODE_DISTANCE &&
               motion_cmd_steering(cmd) == MOTION_TURN_RAMPED) ||
-             (c->mode == MOTION_MODE_TURN &&
+             (MOTION_MODE_TURN == c->mode &&
               motion_cmd_mode(cmd) == MOTION_MODE_FOLLOW));
         *c = (MotionController){0};
         if (continuous)
@@ -269,7 +280,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
     }
 
     /* A finished action holds its result until a new action ID replaces it. */
-    if (c->status == RD_MOTION_FAILED || c->status == RD_MOTION_DONE)
+    if (RD_MOTION_FAILED == c->status || RD_MOTION_DONE == c->status)
     {
         for (int w = 0; w < 2; ++w)
         {
@@ -288,7 +299,8 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         for (int w = 0; w < 2; ++w)
         {
             speed_cps[w] =
-                (float)enc_travel_signed(in->count[w], c->previous_count[w]) / dt;
+                (float)enc_travel_signed(in->count[w], c->previous_count[w]) /
+                dt;
             out->measured_cps[w] = speed_cps[w];
         }
     }
@@ -315,14 +327,15 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
             return;
         }
         uint32_t requested = (uint32_t)motion_cmd_speed(cmd) * 64u;
-        if (requested == 0u)
+        if (0u == requested)
         {
             c->follow_base_q6 = 0u;
             c->profile_accel = 0;
         }
         else
         {
-            (void)profile_step(c, (float)motion_cmd_speed(cmd), ramp_ms * .001f);
+            (void)profile_step(c, (float)motion_cmd_speed(cmd),
+                ramp_ms * .001f);
         }
         unsigned rate =
             motion_cmd_steering(cmd) == 0 ? LINE_RELEASE_QPS :
@@ -331,7 +344,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         ? LINE_REVERSE_QPS
         : MOTION_FOLLOW_STEER_QPS;
         int steer_step = (int)(rate * ramp_ms / 1000u);
-        int requested_steer = requested == 0u ? 0 : motion_cmd_steering(cmd);
+        int requested_steer = 0u == requested ? 0 : motion_cmd_steering(cmd);
         int steer_delta = requested_steer - c->follow_steer_q;
         if (steer_delta > steer_step)
         {
@@ -342,7 +355,7 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
             steer_delta = -steer_step;
         }
         c->follow_steer_q =
-            requested == 0u ? 0 : (int8_t)(c->follow_steer_q + steer_delta);
+            0u == requested ? 0 : (int8_t)(c->follow_steer_q + steer_delta);
         /* Smooth the differential as well as translation before mixing. */
         vmax_cps = (c->follow_base_q6 / 64.0f) * COUNTS_PER_MM;
         /* Centre-preserving mix: the outer wheel gains what the inner loses, so
@@ -363,7 +376,8 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         }
         else
         {
-            /* Pivot: each wheel travels the arc of half the track; + is left. */
+            /* Pivot: each wheel travels the arc of half the track; + is
+               left. */
             float arc = TRACK_WIDTH_MM * 0.5f * motion_cmd_target(cmd) *
             (PI_F / 180.0f) * COUNTS_PER_MM;
             goal[LEFT] = -arc;
@@ -380,34 +394,42 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
         float remaining_mm = 0.0f;
         for (unsigned w = 0; w < 2; ++w)
         {
-            /* Aim for the goal itself: stopping a little short lands inside the tolerance. */
+            /* Aim for the goal itself: stopping a little short lands inside
+               the tolerance. */
             remaining_mm = fmaxf(remaining_mm, fabsf(goal[w] -
                 enc_travel_signed(in->count[w], c->origin[w])) / COUNTS_PER_MM);
         }
         /* Brake when the profile's stop distance reaches what is left, counting
-           the speed still to come from acceleration. Once braking, stay braking. */
-        const float limit = MOTION_ACCEL_MMPS2, jerk = MOTION_JERK_MMPS3;
-        float speed = c->follow_base_q6 / 64.0f, accel = c->profile_accel;
-        float peak = speed + (accel > 0.0f ? accel * accel / (2.0f * jerk) : 0.0f);
-        float stop_mm = peak * peak / (2.0f * limit) + peak * limit / (2.0f * jerk) +
+           the speed still to come from acceleration. Once braking, stay
+           braking. */
+        const float limit = MOTION_ACCEL_MMPS2;
+        const float jerk = MOTION_JERK_MMPS3;
+        float speed = c->follow_base_q6 / 64.0f;
+        float accel = c->profile_accel;
+        float peak = speed +
+            (accel > 0.0f ? accel * accel / (2.0f * jerk) : 0.0f);
+        /* last term: discrete release timing */
+        float stop_mm = peak * peak / (2.0f * limit) +
+            peak * limit / (2.0f * jerk) +
             (accel > 0.0f ? (speed + peak) * 0.5f * accel / jerk : 0.0f) -
-            2.0f * speed * (float)MOTION_PERIOD_MS * .001f; /* discrete release timing */
+            2.0f * speed * (float)MOTION_PERIOD_MS * .001f;
         bool braking = remaining_mm <= stop_mm ||
             (accel < 0.0f && speed <= motion_cmd_speed(cmd));
-        vmax_cps = profile_step(c, braking ? 0.0f : (float)motion_cmd_speed(cmd),
+        vmax_cps = profile_step(c,
+            braking ? 0.0f : (float)motion_cmd_speed(cmd),
             starting ? .020f : fminf(dt_ms * .001f, .020f)) * COUNTS_PER_MM;
         bool within = true;
         for (int w = 0; w < 2; ++w)
         {
             float remaining =
                 goal[w] - (float)enc_travel_signed(in->count[w], c->origin[w]);
-            if (swing && goal[w] == 0.0f)
+            if (swing && 0.0f == goal[w])
             {
                 target_cps[w] = 0.0f;
                 continue;
             }
-            /* Just past the goal counts as arrived: reversing for it would hunt. A
-               larger overshoot is still corrected below. */
+            /* Just past the goal counts as arrived: reversing for it would
+               hunt. A larger overshoot is still corrected below. */
             bool passed = remaining * goal[w] < 0.0f && (swing ||
                 fabsf(remaining) <= 2.0f * tol_counts);
             bool inside = fabsf(remaining) <= tol_counts || passed;
@@ -441,16 +463,19 @@ void motion_control_step(MotionController *c, const MotionCommand *cmd,
                 }
                 else
                 {
-                    target_cps[w] = copysignf(fminf(vmax_cps, reachable_cps(fabsf(remaining) + tol_counts)), remaining);
+                    target_cps[w] = copysignf(fminf(vmax_cps,
+                        reachable_cps(fabsf(remaining) + tol_counts)),
+                        remaining);
                 }
             }
         }
         /* An arrived, braked wheel may roll back a little and cannot
            restart. */
-        /* The same when the profile has slowed to rest just short: restarting for
-           the last few mm would be a visible creep. */
-        if (!within && (c->follow_base_q6 == 0u || (motion_cmd_mode(cmd) == MOTION_MODE_TURN &&
-            c->turn_arrived == 3u)))
+        /* The same when the profile has slowed to rest just short: restarting
+           for the last few mm would be a visible creep. */
+        if (!within && (0u == c->follow_base_q6 ||
+            (MOTION_MODE_TURN == motion_cmd_mode(cmd) &&
+            3u == c->turn_arrived)))
         {
             within = true;
             for (int w = 0; w < 2; ++w)

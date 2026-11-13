@@ -1,4 +1,5 @@
-/* Motion public interface: encoder arithmetic, controller, task API and drivers. */
+/* Motion public interface: encoder arithmetic, controller, task API and
+   drivers. */
 #ifndef MOTION_H
 #define MOTION_H
 
@@ -9,14 +10,15 @@
 #include "../comms/comms.h"
 
 /*
- *	Kernel-free encoder arithmetic: quadrature decode and wrap-safe travel.
- *	The shared count wraps at ENC_COUNT_BITS and is never reset. Every
- *	consumer (Motion actions, barcode bar widths, hump travel, bypass legs)
- *	stores its own origin count and measures travel by modular subtraction.
+ *    Kernel-free encoder arithmetic: quadrature decode and wrap-safe travel.
+ *    The shared count wraps at ENC_COUNT_BITS and is never reset. Every
+ *    consumer (Motion actions, barcode bar widths, hump travel, bypass legs)
+ *    stores its own origin count and measures travel by modular subtraction.
  */
 
-/* Measured rolling scale is owned by robot_config.h; track width remains D03. */
-#define ENC_QUAD_INVALID 2	/* skipped state or both channels changed */
+/* Measured rolling scale is owned by robot_config.h; track width remains
+   D03. */
+#define ENC_QUAD_INVALID 2    /* skipped state or both channels changed */
 
 /* Heading in degrees from signed wheel travel counts; positive turns left. */
 static inline float enc_heading_deg(int32_t left, int32_t right)
@@ -31,15 +33,17 @@ static inline int enc_quad_step(unsigned before, unsigned after)
 {
     static const int8_t table[16] = {0, 1, -1, 2, -1, 0, 2, 1,
                                      1, 2, 0, -1, 2, -1, 1, 0};
-    return (before < 4u && after < 4u) ? table[before * 4u + after] : ENC_QUAD_INVALID;
+    return (before < 4u && after < 4u)
+        ? table[before * 4u + after] : ENC_QUAD_INVALID;
 }
 
 /* Leaky score of invalid edges, updated once per Motion release with the new
-   edges since the last one. True when they are sustained enough to be a fault. */
+   edges since the last one. True when they are sustained enough to be a
+   fault. */
 static inline bool enc_invalid_score_update(uint32_t *score, uint32_t new_edges)
 {
     *score += new_edges;
-    if (new_edges == 0u && *score > 0u)
+    if (0u == new_edges && *score > 0u)
     {
         --*score;
     }
@@ -54,7 +58,8 @@ static inline bool enc_invalid_score_update(uint32_t *score, uint32_t new_edges)
 /* count + delta, wrapped to ENC_COUNT_BITS. */
 /* A stored count or origin: the values wrap at ENC_COUNT_BITS. */
 typedef uint16_t enc_count_t;
-_Static_assert(ENC_COUNT_BITS <= 16u, "enc_count_t narrower than ENC_COUNT_BITS");
+_Static_assert(ENC_COUNT_BITS <= 16u,
+    "enc_count_t narrower than ENC_COUNT_BITS");
 
 static inline uint32_t enc_advance(uint32_t count, int delta)
 {
@@ -85,24 +90,26 @@ static inline float enc_mean_travel(const enc_count_t count[2],
 }
 
 /*
- *	Kernel-free closed-loop Motion core: wheel PID on encoder speed plus
- *	distance, turn and follow actions. motion.c feeds it the latest
- *	command and counts each 20 ms release and applies the duties it returns.
+ *    Kernel-free closed-loop Motion core: wheel PID on encoder speed plus
+ *    distance, turn and follow actions. motion.c feeds it the latest
+ *    command and counts each 20 ms release and applies the duties it returns.
  *
- *	Contract (ARCHITECTURE, Motion command contract):
- *	  - A command carries the acquisition time of the sensor sample it was
- *	    derived from. Rewriting a command never refreshes that time; Motion
- *	    brakes when the sample is older than MOTION_EXPIRY_MS.
- *	  - Discrete actions report IDLE / RUNNING / DONE / FAILED with their
- *	    action ID. A command with a new action ID replaces the old action.
- *	  - Zero commanded speed is never taken as proof of stopping.
+ *    Contract (ARCHITECTURE, Motion command contract):
+ *      - A command carries the acquisition time of the sensor sample it was
+ *        derived from. Rewriting a command never refreshes that time; Motion
+ *        brakes when the sample is older than MOTION_EXPIRY_MS.
+ *      - Discrete actions report IDLE / RUNNING / DONE / FAILED with their
+ *        action ID. A command with a new action ID replaces the old action.
+ *      - Zero commanded speed is never taken as proof of stopping.
  */
 
-typedef enum {
+typedef enum
+{
     MOTION_MODE_STOP,
-    MOTION_MODE_FOLLOW,	/* speed_mmps, steering: continuous */
-    MOTION_MODE_DISTANCE,	/* target: signed mm, speed_mmps: magnitude */
-    MOTION_MODE_TURN,	/* target: signed degrees (+ left), speed_mmps: magnitude */
+    MOTION_MODE_FOLLOW,    /* speed_mmps, steering: continuous */
+    MOTION_MODE_DISTANCE,    /* target: signed mm, speed_mmps: magnitude */
+    MOTION_MODE_TURN,    /* target: signed degrees (+ left), speed_mmps:
+                            magnitude */
     MOTION_MODE_COUNT
 } motion_mode_t;
 
@@ -115,7 +122,8 @@ typedef enum {
    +/-360 degrees respectively; sampled_ms must remain 32 bits for wrap-safe
    age checks. The sole writer constructs a complete value through accessors.
    Consumers copy under the existing mutex and never mask fields by hand. */
-typedef struct {
+typedef struct
+{
     uint32_t sampled_ms;
     int16_t target;
     uint16_t speed_action;
@@ -124,8 +132,9 @@ typedef struct {
 
 _Static_assert(sizeof(MotionCommand) == 12u, "unexpected MotionCommand ABI");
 
-bool motion_command_set(MotionCommand *dst, motion_mode_t mode, float speed_mmps,
-                        float target, int steering_q, unsigned action_id, uint32_t sampled_ms);
+bool motion_command_set(MotionCommand *dst, motion_mode_t mode,
+                        float speed_mmps, float target, int steering_q,
+                        unsigned action_id, uint32_t sampled_ms);
 motion_mode_t motion_cmd_mode(const MotionCommand *cmd);
 uint16_t motion_cmd_speed(const MotionCommand *cmd);
 int16_t motion_cmd_target(const MotionCommand *cmd);
@@ -134,8 +143,9 @@ uint8_t motion_cmd_action(const MotionCommand *cmd);
 
 /* A failed construction yields an all-zero STOP command; never drive with an
    invalid representation. */
-MotionCommand motion_command_make(motion_mode_t mode, float speed_mmps, float target,
-                                  int steering_q, unsigned action_id, uint32_t sampled_ms);
+MotionCommand motion_command_make(motion_mode_t mode, float speed_mmps,
+                                  float target, int steering_q,
+                                  unsigned action_id, uint32_t sampled_ms);
 
 /* TURN uses style 0/1/3 for degree targets; style 2 is invalid (it was the
    removed smooth path). DISTANCE style 3 requests a ramped approach; FOLLOW
@@ -148,15 +158,18 @@ typedef enum
     MOTION_TURN_RAMPED = 3 /* encoder pivot with acceleration/deceleration */
 } motion_turn_style_t;
 
-/* Integral: Q4 counts, about +-2047, past what MOTION_KI can use at the duty cap.
+/* Integral: Q4 counts, about +-2047, past what MOTION_KI can use at the duty
+   cap.
    Previous speed: whole counts/s, past any wheel's reach. */
-typedef struct {
+typedef struct
+{
     int16_t integral_q4;
     int16_t previous_cps;
 } WheelPid;
 
 /* Fill the target word's spare bits and keep byte fields together. */
-typedef struct {
+typedef struct
+{
     int16_t action_target : 12; /* immutable discrete target +/-2000 */
     uint8_t turn_style : 2; /* immutable TURN/DISTANCE style 0..3 */
     uint8_t turn_arrived : 2; /* wheels already braked inside turn tolerance */
@@ -164,7 +177,8 @@ typedef struct {
     uint8_t status : 2; /* rd_motion_status_t */
     uint8_t active : 1;
     uint8_t action_id : 6; /* RD_MOTION_ACTION_BITS */
-    uint32_t start_ms, previous_ms;
+    uint32_t start_ms;
+    uint32_t previous_ms;
     enc_count_t origin[2];
     enc_count_t previous_count[2];
     uint32_t stalled_since_ms[2];
@@ -174,13 +188,15 @@ typedef struct {
     int8_t follow_steer_q; /* private applied Q7 steering, see specs */
 } MotionController;
 
-typedef struct {
+typedef struct
+{
     uint32_t now_ms;
     enc_count_t count[2]; /* wrapped encoder counts: left, right */
 } MotionInput;
 
-typedef struct {
-    float duty[2];	/* signed, within +-MOTION_MAX_DUTY; 0 = brake */
+typedef struct
+{
+    float duty[2];    /* signed, within +-MOTION_MAX_DUTY; 0 = brake */
     float target_cps[2], measured_cps[2]; /* local tuning diagnostics */
     uint8_t status : 2; /* rd_motion_status_t */
     uint8_t action_id : 6;
@@ -193,7 +209,8 @@ _Static_assert(RD_MOTION_ACTION_BITS == 6u, "action IDs fit 6 bits");
 
 /* Forget any action: next valid command starts fresh. */
 /* Travel, whole mm, of a planned stop from speed_mmps. Any subsystem that plans
-   around a stop uses this, so its distances stay right when the profile changes. */
+   around a stop uses this, so its distances stay right when the profile
+   changes. */
 static inline uint16_t motion_stop_distance_mm(uint16_t speed_mmps)
 {
     uint32_t v = speed_mmps;
@@ -278,9 +295,9 @@ ER drv_motor_brake(void);
 ER drv_motor_apply(float left, float right);
 
 /*
- *	Quadrature decoder for both wheels, driven by the shared GPIO IRQ
- *	dispatcher on core 1. The ISR is the only writer of the counts. Counts
- *	wrap at ENC_COUNT_BITS; see motion.h for travel arithmetic.
+ *    Quadrature decoder for both wheels, driven by the shared GPIO IRQ
+ *    dispatcher on core 1. The ISR is the only writer of the counts. Counts
+ *    wrap at ENC_COUNT_BITS; see motion.h for travel arithmetic.
  */
 
 typedef enum { ENCODER_LEFT, ENCODER_RIGHT, ENCODER_WHEELS } encoder_wheel_t;
