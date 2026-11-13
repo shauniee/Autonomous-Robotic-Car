@@ -43,6 +43,11 @@ for trace_mode in 0 1; do
     WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 \
     TEST=0 FULL_COURSE=1 NOGUARDS=0 TRACE="$trace_mode"
 done
+# The image flash.sh bench builds.
+printf '\n=== TEST=0 FULL_COURSE=1 TRACE=1 BENCH=1 ===\n'
+make -C "$root/build_make" -j"$jobs" SMP=1 CONSOLE=usb_cdc \
+  WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 \
+  TEST=0 FULL_COURSE=1 NOGUARDS=0 TRACE=1 BENCH=1
 # Target struct sizes; the probe's static asserts fail if a narrowed type grows.
 printf '\n=== Target struct sizes ===\n'
 sh "$root/testing/sizeof_probe.sh" >/dev/null

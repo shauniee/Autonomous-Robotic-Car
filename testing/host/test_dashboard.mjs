@@ -61,7 +61,7 @@ context.document.body.classList.remove = () => {};
 const sample = {
   sequence: 0, mission: 'STOPPED', motion: 'IDLE', action_id: 0,
   line: 'VISIBLE', faults: [], mapped: true, left: 65535, right: 0,
-  speed_left: 0, speed_right: -12, direction: 'reverse',
+  speed_left: 0, speed_right: -12, direction: 'reverse', turn_rate_dps: -6,
   barcode: 'A', barcode_action: 'LEFT', front_mm: 0,
   obstacle_width_mm: 120, obstacle_clearance_mm: 0,
   hump_count: 0, hump_max_mm: 0
@@ -70,13 +70,14 @@ context.sample = sample;
 vm.runInContext('showTelemetry(sample)', context);
 assert.equal(get('sensor-speed-left').textContent, '0 mm/s');
 assert.equal(get('sensor-speed-right').textContent, '-12 mm/s');
+assert.equal(get('sensor-turn-rate').textContent, '-6 deg/s');
 assert.equal(get('sensor-front').textContent, '0 mm');
 assert.equal(get('flap-Obstacle').textContent, 'CLEAR');
 assert.equal(String(get('sensor-count-left').textContent), '65535');
 assert.equal(get('sensor-width').textContent, '120 mm');
 assert.equal(get('sensor-clearance').textContent, 'No result');
 assert.equal(get('sensor-height').textContent, '0 mm');
-Object.assign(sample, {speed_left: null, speed_right: null, front_mm: null,
+Object.assign(sample, {speed_left: null, speed_right: null, turn_rate_dps: null, front_mm: null,
   hump_max_mm: null, barcode: '-', mapped: false});
 vm.runInContext('showTelemetry(sample)', context);
 assert.equal(get('sensor-speed-left').textContent, 'Awaiting sample');

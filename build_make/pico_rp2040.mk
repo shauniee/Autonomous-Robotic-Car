@@ -133,6 +133,15 @@ endif
 ifeq ($(TRACE),0)
 TRACE_SUFFIX := _notrace
 endif
+# BENCH=1: GP20 runs the next single Motion move instead of starting the
+# mission (flash.sh bench). The image gets a _bench suffix.
+BENCH ?= 0
+ifneq ($(filter $(BENCH),0 1),$(BENCH))
+$(error BENCH must be 0 or 1)
+endif
+ifeq ($(BENCH),1)
+BENCH_SUFFIX := _bench
+endif
 NOGUARDS ?= 0
 ifneq ($(filter $(NOGUARDS),0 1),$(NOGUARDS))
 $(error Unknown NOGUARDS '$(NOGUARDS)'; use 0 or 1)
@@ -166,7 +175,7 @@ endif
 # a live hazard: an SMP=1 build was once flashed in place of an SMP=0 one and
 # only the banner in the log revealed it.
 #
-EXE_FILE := mtk3pico_smp$(SMP)_$(CONSOLE)$(WIFI_SUFFIX)$(NET_SUFFIX)$(MQTT_SUFFIX)$(CRASH_SUFFIX)$(TEST_SUFFIX)$(COURSE_SUFFIX)$(NOGUARDS_SUFFIX)$(TRACE_SUFFIX)$(TERRAIN_SUFFIX)
+EXE_FILE := mtk3pico_smp$(SMP)_$(CONSOLE)$(WIFI_SUFFIX)$(NET_SUFFIX)$(MQTT_SUFFIX)$(CRASH_SUFFIX)$(TEST_SUFFIX)$(COURSE_SUFFIX)$(NOGUARDS_SUFFIX)$(TRACE_SUFFIX)$(TERRAIN_SUFFIX)$(BENCH_SUFFIX)
 
 GCC := arm-none-eabi-gcc
 AS := arm-none-eabi-gcc
@@ -241,7 +250,7 @@ CFLAGS  += -DAPP_TEST=$(TEST) -DROBOT_TRACE_ENABLED=$(TRACE)
 CFLAGS  += -DTERRAIN_DIAGNOSTICS=$(TERRAIN_DIAGNOSTICS)
 CFLAGS  += -DAPP_NO_GUARDS=$(NOGUARDS) -DBARCODE_DIAGNOSTICS=$(BARCODE_DIAGNOSTICS)
 CFLAGS  += -DNAV_GEOMETRY_RELEASED=$(FULL_COURSE) -DMISSION_BYPASS_RELEASED=$(FULL_COURSE)
-CFLAGS  += -DMOTION_STALL_GUARD_ENABLED=$(FULL_COURSE)
+CFLAGS  += -DMOTION_STALL_GUARD_ENABLED=$(FULL_COURSE) -DMISSION_BENCH=$(BENCH)
 CFLAGS  += -DTM_CONSOLE_UART=$(CRASH_REPORT)
 ifeq ($(CRASH_REPORT),0)
 CFLAGS  += -DBOARD_UART0_FREE=1
@@ -276,7 +285,7 @@ endif
 
 # The compiler version is part of the profile, so objects from different
 # toolchains are never linked together.
-PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-noguards$(NOGUARDS)-bcdiag$(BARCODE_DIAGNOSTICS)-course$(FULL_COURSE)-trace$(TRACE)-imudiag$(TERRAIN_DIAGNOSTICS)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
+PROFILE_ID := smp$(SMP)-$(CONSOLE)-wifi$(WIFI)-net$(NET)-mqtt$(MQTT)-crash$(CRASH_REPORT)-test$(TEST)-noguards$(NOGUARDS)-bcdiag$(BARCODE_DIAGNOSTICS)-course$(FULL_COURSE)-trace$(TRACE)-imudiag$(TERRAIN_DIAGNOSTICS)-bench$(BENCH)-gcc$(shell $(GCC) -dumpversion 2>/dev/null)
 PROFILE_FILE := .build_profile
 
 ifneq ($(strip $(shell cat $(PROFILE_FILE) 2>/dev/null)),$(PROFILE_ID))
