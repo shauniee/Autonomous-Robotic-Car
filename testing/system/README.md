@@ -37,7 +37,7 @@ How to run and record SYS-01 to SYS-10. Test definitions: [TEST_LOG.md](TEST_LOG
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py map A B C D --broker 127.0.0.1
    ```
 
-6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080>:
+6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080> (or <http://localhost:8080>):
 
    ```bash
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
@@ -95,13 +95,21 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Image:** `./flash.sh test` (wireless, motors always off, USB)
 
-**Set up:** USB capture started; wheels free.
+**Set up:** USB capture started; wheels free; car still; a board about 250 mm in front of the sonar.
 
 **Steps:**
 
 1. Reset the Pico.
 2. Wait for `[TEST] === test run end ===`.
 3. Press GP21, then GP20: nothing moves.
+
+The image checks each subsystem and prints one line each:
+
+- `S1-U05` frame codec
+- `S2-U05` command freshness gate
+- `S3-U01` line IR sample valid
+- `S4-U01` IMU calibration passed (boot still)
+- `S5-U01` front sonar echo valid (needs the board in range)
 
 **Show on video:** Every `[TEST]` line PASS and the wheels still.
 
@@ -178,7 +186,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 **Steps:**
 
 1. Wiggle an encoder lead.
-2. Reset; tap the chassis hard.
+2. Reset; start again and lift the car off the floor (`Terrain: lifted`).
 3. Power off, unplug the IMU, boot.
 
 **Show on video:** Each stop and the fault name on the dashboard.
