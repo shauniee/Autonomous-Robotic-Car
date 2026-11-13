@@ -8,7 +8,7 @@
 #include "../../app_program/common/robot_data.h"
 
 /* Faults {1, 2, 4, 1, 1, 3} pack to word 0x0F89: Motion stall, Line capture
-   overflow, Terrain impact, Obstacle no echo, Mission line lost, both Network. */
+   overflow, Terrain lifted, Obstacle no echo, Mission line lost, both Network. */
 static const uint8_t golden_telemetry[MQTT_LEN_TELEMETRY] = {
     0x31, 0x2A, 0x72, 0x45, 0x89, 0x0F, 0x34, 0x12, 0x78, 0x56,
     0x03, 0xF8, 0xD0, 0x30, 0x61, 0xA4, 0xA9, 0x02};
