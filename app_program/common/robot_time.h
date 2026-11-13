@@ -1,10 +1,10 @@
 /*
- *	robot_time.h
- *	The only time helpers for application tasks.  Two clocks, never mixed:
- *	  robot_time_ms()  kernel milliseconds: freshness, control periods, waits
- *	  robot_time_us()  RP2040 TIMER microseconds: barcode and Echo edges
- *	Stored stamps are uint32_t.  Compare them only through robot_time_elapsed()
- *	or robot_time_reached(), which stay correct across wrap.
+ *  robot_time.h
+ *  The only time helpers for application tasks.  Two clocks, never mixed:
+ *    robot_time_ms()  kernel milliseconds: freshness, control periods, waits
+ *    robot_time_us()  RP2040 TIMER microseconds: barcode and Echo edges
+ *  Stored stamps are uint32_t.  Compare them only through robot_time_elapsed()
+ *  or robot_time_reached(), which stay correct across wrap.
  */
 
 #ifndef ROBOT_TIME_H
