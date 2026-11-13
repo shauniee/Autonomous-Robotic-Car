@@ -4,15 +4,15 @@
 #include "../../app_program/mission/safety_logic.h"
 #include "../../app_program/motion/motion.h"
 
-static SafetyInputs healthy(void)
+static SafetyInputs_t healthy(void)
 {
-    return (SafetyInputs){.line_required = true, .line_seen = true, .line_age_ms = 20u, .motion_seen = true, .motion_age_ms = 20u,
+    return (SafetyInputs_t){.line_required = true, .line_seen = true, .line_age_ms = 20u, .motion_seen = true, .motion_age_ms = 20u,
                           .uptime_ms = 10000u};
 }
 
 int main(void)
 {
-    SafetyInputs in = healthy();
+    SafetyInputs_t in = healthy();
     assert(safety_causes(&in) == 0u);
 
     in.stop_button = true;

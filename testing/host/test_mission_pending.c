@@ -6,13 +6,13 @@
 
 int main(void)
 {
-    Mission mission;
+    Mission_t mission;
     mission_init(&mission, 100u);
-    MissionInputs in = {.now_ms = 100u, .start_pressed = true,
+    MissionInputs_t in = {.now_ms = 100u, .start_pressed = true,
         .mapped = true, .inputs_ok = true,
         .guidance_valid = true, .usable_line = true, .line = IR_LINE_VISIBLE,
         .line_sampled_ms = 100u};
-    MissionOutputs out;
+    MissionOutputs_t out;
     mission_step(&mission, &in, &out);
     assert(mission.state == MISSION_FOLLOW_LINE);
     in.start_pressed = false;

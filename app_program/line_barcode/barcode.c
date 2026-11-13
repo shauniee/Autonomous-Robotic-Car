@@ -450,7 +450,7 @@ static _Atomic bool run_wanted; /* writer: Mission (barcode_start/stop) */
 static barcode_frame_t frame;   /* line_barcode task only */
 static barcode_event_t events[BARCODE_EVENT_CAPACITY];
 static _Atomic unsigned event_head,
-    event_tail; /* head: line_barcode task, tail: Mission */
+    event_tail; /* head: line_barcode task, tail: Mission_t */
 static uint32_t seen_overflows; /* line_barcode task only */
 static _Atomic bool initialised; /* writer: line_barcode task, once */
 

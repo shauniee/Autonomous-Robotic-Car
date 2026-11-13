@@ -10,7 +10,7 @@
 #define MM_PER_COUNT (1.0f / ENC_COUNTS_PER_MM)
 
 typedef struct {
-    MotionController ctl;
+    MotionController_t ctl;
     uint32_t now, count[2];
     float frac[2];
     float wheel_gain[2];	/* 0 = wheel does not move (stalled / raised) */
@@ -27,11 +27,11 @@ static void sim_init(Sim *s)
 
 /* One 20 ms release; the command's sample time is the current time unless the
    caller pins it (cmd->sampled_ms preset and keep_sample true). */
-static MotionOutput sim_step(Sim *s, MotionCommand *cmd, bool keep_sample, float *duty_applied)
+static MotionOutput_t sim_step(Sim *s, MotionCommand_t *cmd, bool keep_sample, float *duty_applied)
 {
     if (!keep_sample && cmd != 0) cmd->sampled_ms = s->now;
-    MotionInput in = {.now_ms = s->now, .count = {s->count[0], s->count[1]}};
-    MotionOutput out;
+    MotionInput_t in = {.now_ms = s->now, .count = {s->count[0], s->count[1]}};
+    MotionOutput_t out;
     motion_control_step(&s->ctl, cmd, &in, &out);
     for (int w = 0; w < 2; ++w) {
         assert(fabsf(out.duty[w]) <= MOTION_MAX_DUTY + 1e-6f);
@@ -49,13 +49,13 @@ static MotionOutput sim_step(Sim *s, MotionCommand *cmd, bool keep_sample, float
 static void test_freshness_and_rewrite(void)
 {
     Sim s; sim_init(&s);
-    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW, 100.0f, 0.0f, 0, 1u, s.now);
+    MotionCommand_t cmd = motion_command_make(MOTION_MODE_FOLLOW, 100.0f, 0.0f, 0, 1u, s.now);
     assert(motion_command_fresh(&cmd, s.now + MOTION_EXPIRY_MS));
     assert(!motion_command_fresh(&cmd, s.now + MOTION_EXPIRY_MS + 1u));	/* one past the limit */
-    MotionOutput out = sim_step(&s, &cmd, true, 0);
+    MotionOutput_t out = sim_step(&s, &cmd, true, 0);
     assert(out.status == RD_MOTION_RUNNING && out.duty[0] > 0.0f);
     /* Rewriting the same command with the same sample time never refreshes it. */
-    MotionCommand rewritten = cmd;
+    MotionCommand_t rewritten = cmd;
     for (int i = 0; i < 6; ++i) out = sim_step(&s, &rewritten, true, 0);
     assert(out.status == RD_MOTION_IDLE && out.duty[0] == 0.0f && out.duty[1] == 0.0f);
     /* A command stamped in the future-of-wrap is still judged by wrap-safe age. */
@@ -72,7 +72,7 @@ static void test_invalid_and_stop(void)
     Sim s; sim_init(&s);
     /* Bad constructor inputs must fail closed. Invalid packed words still
        brake when a damaged producer bypasses the accessor. */
-    MotionCommand invalid = {0};
+    MotionCommand_t invalid = {0};
     assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, NAN, 0, 0, 1u, 0u));
     assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, MOTION_SPEED_MAX_MMPS + 1.0f, 0, 0, 1u, 0u));
     assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, 50.0f, 0, 128, 1u, 0u));
@@ -80,7 +80,7 @@ static void test_invalid_and_stop(void)
     assert(!motion_command_set(&invalid, MOTION_MODE_DISTANCE, 50.0f, 2001.0f, 0, 1u, 0u));
     assert(!motion_command_set(&invalid, MOTION_MODE_FOLLOW, 50.0f, 0, 0, 64u, 0u));
     assert(!motion_command_set(&invalid, MOTION_MODE_DISTANCE, 0.0f, 100.0f, 0, 1u, 0u));
-    MotionCommand bad[] = {
+    MotionCommand_t bad[] = {
         {.speed_action = (uint16_t)(MOTION_SPEED_MAX_MMPS + 1.0f), .mode_steering = MOTION_MODE_FOLLOW},
         {.speed_action = 50u, .mode_steering = 0xFC00u | MOTION_MODE_FOLLOW},
         {.speed_action = 50u, .mode_steering = MOTION_MODE_FOLLOW, .target = 2001},
@@ -89,12 +89,12 @@ static void test_invalid_and_stop(void)
         {.speed_action = 0u, .mode_steering = MOTION_MODE_DISTANCE, .target = 100},
     };
     for (unsigned i = 0; i < sizeof bad / sizeof bad[0]; ++i) {
-        MotionOutput out = sim_step(&s, &bad[i], false, 0);
+        MotionOutput_t out = sim_step(&s, &bad[i], false, 0);
         assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f && out.status == RD_MOTION_IDLE);
     }
-    MotionOutput out = sim_step(&s, 0, false, 0);			/* no command */
+    MotionOutput_t out = sim_step(&s, 0, false, 0);			/* no command */
     assert(out.duty[0] == 0.0f && out.status == RD_MOTION_IDLE);
-    MotionCommand stop = motion_command_make(MOTION_MODE_STOP, 200.0f, 0.0f, 0, 2u, 0u);
+    MotionCommand_t stop = motion_command_make(MOTION_MODE_STOP, 200.0f, 0.0f, 0, 2u, 0u);
     out = sim_step(&s, &stop, false, 0);
     assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f);		/* speed field ignored */
 }
@@ -107,11 +107,11 @@ static void test_action_brake_handoff(void)
         {
             Sim s;
             sim_init(&s);
-            MotionCommand cmd = motion_command_make(mode, 100.0f,
+            MotionCommand_t cmd = motion_command_make(mode, 100.0f,
                 90.0f, 0, 1u, s.now);
-            MotionOutput out = sim_step(&s, &cmd, false, 0);
+            MotionOutput_t out = sim_step(&s, &cmd, false, 0);
             assert(out.status == RD_MOTION_RUNNING);
-            MotionCommand stop = motion_command_make(MOTION_MODE_STOP,
+            MotionCommand_t stop = motion_command_make(MOTION_MODE_STOP,
                 0.0f, 0.0f, 0, 0u, s.now);
             s.now += MOTION_EXPIRY_MS + 1u;
             /* Explicit STOP, missing command, expired action respectively. */
@@ -132,7 +132,7 @@ static void test_action_brake_handoff(void)
     }
 }
 
-static void run_to_done(Sim *s, MotionCommand *cmd, int max_steps, MotionOutput *out)
+static void run_to_done(Sim *s, MotionCommand_t *cmd, int max_steps, MotionOutput_t *out)
 {
     for (int i = 0; i < max_steps; ++i) {
         *out = sim_step(s, cmd, false, 0);
@@ -144,8 +144,8 @@ static void test_distance_turn_actions(void)
 {
     Sim s; sim_init(&s);
     uint32_t origin_l = s.count[0], origin_r = s.count[1];
-    MotionCommand cmd = motion_command_make(MOTION_MODE_DISTANCE, 200.0f, 300.0f, 0, 5u, 0u);
-    MotionOutput out = {0};
+    MotionCommand_t cmd = motion_command_make(MOTION_MODE_DISTANCE, 200.0f, 300.0f, 0, 5u, 0u);
+    MotionOutput_t out = {0};
     run_to_done(&s, &cmd, 2000, &out);
     assert(out.status == RD_MOTION_DONE && out.action_id == 5u);
     float travel_mm = (float)enc_travel_signed(s.count[0], origin_l) * MM_PER_COUNT;
@@ -168,7 +168,7 @@ static void test_distance_turn_actions(void)
 
     /* Turn +90 degrees (left): wheels move in opposite directions by the arc. */
     uint32_t tl = s.count[0], tr = s.count[1];
-    MotionCommand turn = motion_command_make(MOTION_MODE_TURN, 150.0f, 90.0f, 0, 7u, 0u);
+    MotionCommand_t turn = motion_command_make(MOTION_MODE_TURN, 150.0f, 90.0f, 0, 7u, 0u);
     run_to_done(&s, &turn, 2000, &out);
     assert(out.status == RD_MOTION_DONE && out.action_id == 7u);
     float dl = (float)enc_travel_signed(s.count[0], tl) * MM_PER_COUNT;
@@ -182,9 +182,9 @@ static void test_distance_turn_actions(void)
    a wheel running backward. */
 static void test_pid_state_saturates(void)
 {
-    assert(sizeof(WheelPid) == 4u);
+    assert(sizeof(WheelPid_t) == 4u);
     Sim s; sim_init(&s);
-    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW, 100.0f, 0.0f, 0, 1u, s.now);
+    MotionCommand_t cmd = motion_command_make(MOTION_MODE_FOLLOW, 100.0f, 0.0f, 0, 1u, s.now);
     (void)sim_step(&s, &cmd, false, 0);
     s.count[0] = enc_advance(s.count[0], 5000);
     (void)sim_step(&s, &cmd, false, 0);
@@ -197,9 +197,9 @@ static void test_crawl_is_not_a_stall(void)
 {
     Sim s; sim_init(&s);
     s.wheel_gain[0] = s.wheel_gain[1] = 0.0f;
-    MotionCommand cmd = motion_command_make(MOTION_MODE_DISTANCE, 5.0f, 100.0f, 0, 9u, 0u);
+    MotionCommand_t cmd = motion_command_make(MOTION_MODE_DISTANCE, 5.0f, 100.0f, 0, 9u, 0u);
     for (int i = 0; i < (int)(MOTION_STALL_MS / MOTION_PERIOD_MS) * 2; ++i) {
-        MotionOutput out = sim_step(&s, &cmd, false, 0);
+        MotionOutput_t out = sim_step(&s, &cmd, false, 0);
         assert(!out.stall);
     }
 }
@@ -208,8 +208,8 @@ static void test_stall_and_timeout(void)
 {
     Sim s; sim_init(&s);
     s.wheel_gain[1] = 0.0f;				/* right wheel raised/stuck */
-    MotionCommand cmd = motion_command_make(MOTION_MODE_DISTANCE, 200.0f, 500.0f, 0, 9u, 0u);
-    MotionOutput out = {0};
+    MotionCommand_t cmd = motion_command_make(MOTION_MODE_DISTANCE, 200.0f, 500.0f, 0, 9u, 0u);
+    MotionOutput_t out = {0};
     bool stalled = false;
     for (int i = 0; i < (int)(MOTION_STALL_MS / MOTION_PERIOD_MS) + 10 && !stalled; ++i) {
         out = sim_step(&s, &cmd, false, 0);
@@ -234,7 +234,7 @@ static void test_stall_and_timeout(void)
 
     /* A stale sample during a discrete action fails it and brakes. */
     Sim t; sim_init(&t);
-    MotionCommand d = motion_command_make(MOTION_MODE_DISTANCE, 100.0f, 400.0f, 0, 3u, 0u);
+    MotionCommand_t d = motion_command_make(MOTION_MODE_DISTANCE, 100.0f, 400.0f, 0, 3u, 0u);
     out = sim_step(&t, &d, false, 0);
     assert(out.status == RD_MOTION_RUNNING);
     t.now += MOTION_EXPIRY_MS + 20u;
@@ -252,8 +252,8 @@ static void test_follow_steering(void)
         {30.078740f, 9.921260f}, {35.118110f, 4.881890f}, {40.0f, 0.0f}
     };
     Sim s;
-    MotionCommand cmd;
-    MotionOutput out = {0};
+    MotionCommand_t cmd;
+    MotionOutput_t out = {0};
     for (unsigned i = 0; i < sizeof(steering) / sizeof(steering[0]); ++i)
     {
         sim_init(&s);
@@ -300,17 +300,17 @@ static void test_follow_steering(void)
 
 static void test_follow_target_slew(void)
 {
-    MotionController c;
+    MotionController_t c;
     motion_control_reset(&c);
-    MotionInput in = {.now_ms = UINT32_MAX - 99u};
-    MotionOutput out;
+    MotionInput_t in = {.now_ms = UINT32_MAX - 99u};
+    MotionOutput_t out;
     const int steering[] = {0, -127, 127, 0};
     for (unsigned phase = 0; phase < 4u; ++phase)
     {
         for (unsigned i = 0; i < 40u; ++i)
         {
             unsigned before = c.follow_base_q6;
-            MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+            MotionCommand_t cmd = motion_command_make(MOTION_MODE_FOLLOW,
                 75.0f, 0.0f, steering[phase], 1u, in.now_ms);
             motion_control_step(&c, &cmd, &in, &out);
             assert(c.follow_base_q6 >= before);
@@ -330,7 +330,7 @@ static void test_follow_target_slew(void)
     for (unsigned i = 0; i < 30u; ++i)
     {
         unsigned before = c.follow_base_q6;
-        MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+        MotionCommand_t cmd = motion_command_make(MOTION_MODE_FOLLOW,
             20.0f, 0.0f, -127, 1u, in.now_ms);
         motion_control_step(&c, &cmd, &in, &out);
         assert(c.follow_base_q6 <= before && c.follow_base_q6 >= 1280u);
@@ -343,7 +343,7 @@ static void test_follow_target_slew(void)
     /* Zero demand, stale/invalid commands and STOP bypass the slew limit. */
     for (unsigned cause = 0; cause < 5u; ++cause)
     {
-        MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+        MotionCommand_t cmd = motion_command_make(MOTION_MODE_FOLLOW,
             75.0f, 0.0f, 127, 1u, in.now_ms);
         motion_control_step(&c, &cmd, &in, &out);
         if (cause == 0u)
@@ -374,7 +374,7 @@ static void test_follow_target_slew(void)
         in.now_ms += MOTION_PERIOD_MS;
     }
     /* A late release cannot catch up with a large speed jump. */
-    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW, 75.0f,
+    MotionCommand_t cmd = motion_command_make(MOTION_MODE_FOLLOW, 75.0f,
         0.0f, 127, 1u, in.now_ms);
     motion_control_step(&c, &cmd, &in, &out);
     unsigned before = c.follow_base_q6;
@@ -411,10 +411,10 @@ static void test_follow_target_slew(void)
    for any planned move, while a STOP still brakes at once. */
 static void check_profile(motion_mode_t mode, float speed, float target, int style)
 {
-    MotionController c;
+    MotionController_t c;
     motion_control_reset(&c);
-    MotionInput in = {.now_ms = 1000u};
-    MotionOutput out;
+    MotionInput_t in = {.now_ms = 1000u};
+    MotionOutput_t out;
     int previous_q6 = 0, previous_step = 0;
     int peak = 0, first_motion = -1, finished = 0;
     bool slowing = false;
@@ -423,7 +423,7 @@ static void check_profile(motion_mode_t mode, float speed, float target, int sty
     const int max_jerk = (int)(MOTION_JERK_MMPS3 * MOTION_PERIOD_MS * MOTION_PERIOD_MS * 64u / 1000000u) + 2;
     for (unsigned i = 0u; i < 3000u; ++i)
     {
-        MotionCommand cmd = motion_command_make(mode, speed, target, style, 1u, in.now_ms);
+        MotionCommand_t cmd = motion_command_make(mode, speed, target, style, 1u, in.now_ms);
         motion_control_step(&c, &cmd, &in, &out);
         if (out.status == RD_MOTION_DONE)
         {
@@ -471,14 +471,14 @@ static void test_lift_profile(void)
     check_profile(MOTION_MODE_TURN, COURSE_SPEED_MMPS, -180.0f, MOTION_TURN_RAMPED);
 
     /* Moving off in FOLLOW takes a real time to reach course speed. */
-    MotionController c;
+    MotionController_t c;
     motion_control_reset(&c);
-    MotionInput in = {.now_ms = 1000u};
-    MotionOutput out;
+    MotionInput_t in = {.now_ms = 1000u};
+    MotionOutput_t out;
     unsigned releases = 0u;
     while (c.follow_base_q6 < COURSE_SPEED_MMPS * 64u)
     {
-        MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW, COURSE_SPEED_MMPS, 0.0f, 0, 1u, in.now_ms);
+        MotionCommand_t cmd = motion_command_make(MOTION_MODE_FOLLOW, COURSE_SPEED_MMPS, 0.0f, 0, 1u, in.now_ms);
         motion_control_step(&c, &cmd, &in, &out);
         in.now_ms += MOTION_PERIOD_MS;
         in.count[0] = enc_advance(in.count[0], 12);
@@ -489,7 +489,7 @@ static void test_lift_profile(void)
     assert(releases * MOTION_PERIOD_MS >= 1000u * COURSE_SPEED_MMPS / MOTION_ACCEL_MMPS2);
 
     /* A STOP during the move is not profiled. */
-    MotionCommand stop = motion_command_make(MOTION_MODE_STOP, 0.0f, 0.0f, 0, 0u, in.now_ms);
+    MotionCommand_t stop = motion_command_make(MOTION_MODE_STOP, 0.0f, 0.0f, 0, 0u, in.now_ms);
     motion_control_step(&c, &stop, &in, &out);
     assert(out.duty[0] == 0.0f && out.duty[1] == 0.0f && c.follow_base_q6 == 0u);
     puts("lift profile: no jump moving off or slowing down, STOP still immediate PASS");
@@ -497,10 +497,10 @@ static void test_lift_profile(void)
 
 static void test_follow_steering_slew(void)
 {
-    MotionController c;
+    MotionController_t c;
     motion_control_reset(&c);
-    MotionInput in = {.now_ms = UINT32_MAX - 39u};
-    MotionOutput out;
+    MotionInput_t in = {.now_ms = UINT32_MAX - 39u};
+    MotionOutput_t out;
     /* Entry, full reversal through zero, and return to straight. */
     const int targets[] = {127, -127, 0};
     const unsigned build = 127u * 1000u / (MOTION_FOLLOW_STEER_QPS * MOTION_PERIOD_MS) + 1u;
@@ -512,7 +512,7 @@ static void test_follow_steering_slew(void)
         for (unsigned i = 0; i < releases[phase]; ++i)
         {
             int previous = c.follow_steer_q;
-            MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+            MotionCommand_t cmd = motion_command_make(MOTION_MODE_FOLLOW,
                 20.0f, 0.0f, targets[phase], 1u, in.now_ms);
             motion_control_step(&c, &cmd, &in, &out);
             assert(out.status == RD_MOTION_RUNNING);
@@ -538,7 +538,7 @@ static void test_follow_steering_slew(void)
         assert(c.follow_steer_q == targets[phase]);
     }
     /* A single black acquisition followed by white is a small correction. */
-    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+    MotionCommand_t cmd = motion_command_make(MOTION_MODE_FOLLOW,
         20.0f, 0.0f, -127, 1u, in.now_ms);
     motion_control_step(&c, &cmd, &in, &out);
     assert(c.follow_steer_q == -(int)(MOTION_FOLLOW_STEER_QPS*MOTION_PERIOD_MS/1000u));
@@ -574,11 +574,11 @@ static void test_follow_slowdown_never_reverses(void)
 {
     /* Tracking -> recovery keeps FOLLOW action 1 but sharply reduces speed.
        Inject forward encoder travel from the preceding faster command. */
-    MotionController control;
+    MotionController_t control;
     motion_control_reset(&control);
-    MotionInput in = {.now_ms = 1000u, .count = {100u, 100u}};
-    MotionOutput out;
-    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+    MotionInput_t in = {.now_ms = 1000u, .count = {100u, 100u}};
+    MotionOutput_t out;
+    MotionCommand_t cmd = motion_command_make(MOTION_MODE_FOLLOW,
         75.0f, 0.0f, 0, 1u, in.now_ms);
     motion_control_step(&control, &cmd, &in, &out);
     in.now_ms += MOTION_PERIOD_MS;
@@ -607,13 +607,13 @@ static void test_discrete_overspeed_does_not_reverse(void)
     {
         for (int direction = -1; direction <= 1; direction += 2)
         {
-            MotionController control;
+            MotionController_t control;
             motion_control_reset(&control);
-            MotionInput in = {.now_ms = 100u, .count = {0u, 0u}};
+            MotionInput_t in = {.now_ms = 100u, .count = {0u, 0u}};
             float target = direction * (mode == MOTION_MODE_DISTANCE ? 28.0f : 90.0f);
-            MotionCommand cmd = motion_command_make((motion_mode_t)mode,
+            MotionCommand_t cmd = motion_command_make((motion_mode_t)mode,
                 37.0f, target, 0, 2u, in.now_ms);
-            MotionOutput out;
+            MotionOutput_t out;
             motion_control_step(&control, &cmd, &in, &out);
             float goal = mode == MOTION_MODE_DISTANCE ? 28.0f * ENC_COUNTS_PER_MM :
                 TRACK_WIDTH_MM * 0.5f * 90.0f * 3.14159265f / 180.0f * ENC_COUNTS_PER_MM;
@@ -639,12 +639,12 @@ static void test_discrete_overspeed_does_not_reverse(void)
     }
     /* Position overshoot is distinct from speed overshoot: allow corrective
        reverse wheel targets after passing the distance goal. */
-    MotionController control;
+    MotionController_t control;
     motion_control_reset(&control);
-    MotionInput in = {.now_ms = 100u, .count = {0u, 0u}};
-    MotionCommand cmd = motion_command_make(MOTION_MODE_DISTANCE, 90.0f,
+    MotionInput_t in = {.now_ms = 100u, .count = {0u, 0u}};
+    MotionCommand_t cmd = motion_command_make(MOTION_MODE_DISTANCE, 90.0f,
         28.0f, 0, 3u, in.now_ms);
-    MotionOutput out;
+    MotionOutput_t out;
     motion_control_step(&control, &cmd, &in, &out);
     in.count[0] = in.count[1] = (uint32_t)(40.0f * ENC_COUNTS_PER_MM);
     in.now_ms += MOTION_PERIOD_MS;
@@ -659,12 +659,12 @@ static void test_turn_endpoint_does_not_reactivate(void)
 {
     for (int direction = -1; direction <= 1; direction += 2)
     {
-        MotionController control;
+        MotionController_t control;
         motion_control_reset(&control);
-        MotionInput in = {.now_ms = 100u, .count = {0u, 0u}};
-        MotionCommand cmd = motion_command_make(MOTION_MODE_TURN, 100.0f,
+        MotionInput_t in = {.now_ms = 100u, .count = {0u, 0u}};
+        MotionCommand_t cmd = motion_command_make(MOTION_MODE_TURN, 100.0f,
             direction * 90.0f, 0, 4u, in.now_ms);
-        MotionOutput out;
+        MotionOutput_t out;
         motion_control_step(&control, &cmd, &in, &out);
         int arc = (int)lroundf(TRACK_WIDTH_MM * 0.5f * 90.0f *
             3.14159265f / 180.0f * ENC_COUNTS_PER_MM);
@@ -706,11 +706,11 @@ static void test_turn_endpoint_does_not_reactivate(void)
    the turn then waited out the action timeout on the car. */
 static void test_turn_rollback_completes(void)
 {
-    MotionController control;
+    MotionController_t control;
     motion_control_reset(&control);
-    MotionInput in = {.now_ms = 100u, .count = {0u, 0u}};
-    MotionCommand cmd = motion_command_make(MOTION_MODE_TURN, 36.0f, 90.0f, 0, 4u, in.now_ms);
-    MotionOutput out;
+    MotionInput_t in = {.now_ms = 100u, .count = {0u, 0u}};
+    MotionCommand_t cmd = motion_command_make(MOTION_MODE_TURN, 36.0f, 90.0f, 0, 4u, in.now_ms);
+    MotionOutput_t out;
     motion_control_step(&control, &cmd, &in, &out);
     int arc = (int)lroundf(TRACK_WIDTH_MM * 0.5f * 90.0f *
         3.14159265f / 180.0f * ENC_COUNTS_PER_MM);
@@ -737,12 +737,12 @@ static void test_swing_turn(void)
     {
         Sim s;
         sim_init(&s);
-        MotionCommand cmd = motion_command_make(MOTION_MODE_TURN, 100.0f,
+        MotionCommand_t cmd = motion_command_make(MOTION_MODE_TURN, 100.0f,
             direction * 90.0f, MOTION_TURN_SWING, 2u, s.now);
         unsigned driven = direction > 0 ? 1u : 0u;
         unsigned braked = 1u - driven;
         uint32_t origin = s.count[driven];
-        MotionOutput out;
+        MotionOutput_t out;
         for (unsigned i = 0; i < 1000u; ++i)
         {
             out = sim_step(&s, &cmd, false, 0);
@@ -762,7 +762,7 @@ static void test_swing_turn(void)
             3.14159265f / 180.0f + MM_PER_COUNT;
         assert(fabsf(travelled - expected) <= tolerance);
     }
-    MotionCommand cmd;
+    MotionCommand_t cmd;
     assert(!motion_command_set(&cmd, MOTION_MODE_TURN, 50.0f,
         90.0f, -1, 2u, 100u));
     assert(!motion_command_set(&cmd, MOTION_MODE_TURN, 50.0f,
@@ -776,11 +776,11 @@ static void test_swing_turn(void)
 
 static void test_wheel_trace_inputs(void)
 {
-    MotionController c;
+    MotionController_t c;
     motion_control_reset(&c);
-    MotionInput in = {.now_ms = 100u, .count = {65530u, 2u}};
-    MotionOutput out;
-    MotionCommand cmd = motion_command_make(MOTION_MODE_FOLLOW,
+    MotionInput_t in = {.now_ms = 100u, .count = {65530u, 2u}};
+    MotionOutput_t out;
+    MotionCommand_t cmd = motion_command_make(MOTION_MODE_FOLLOW,
         50.0f, 0.0f, 0, 1u, in.now_ms);
     motion_control_step(&c, &cmd, &in, &out);
     assert(isnan(out.measured_cps[0]) && isnan(out.measured_cps[1]));

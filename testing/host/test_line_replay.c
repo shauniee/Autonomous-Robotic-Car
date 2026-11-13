@@ -12,18 +12,18 @@
 
 typedef struct
 {
-    IrTracker ir;
+    IrTracker_t ir;
     uint32_t now;
     float counts;
-    Mission m;
-    MissionInputs in;
-    MissionOutputs out;
+    Mission_t m;
+    MissionInputs_t in;
+    MissionOutputs_t out;
 } Rig;
 
 /* The snapshot-to-input mapping mission.c uses for the line fields. */
 static void read_line(Rig *r)
 {
-    LineIrSnapshot s = ir_snapshot_build(&r->ir, r->now);
+    LineIrSnapshot_t s = ir_snapshot_build(&r->ir, r->now);
     r->in.now_ms = r->now;
     r->in.guidance_valid = s.guidance_valid;
     r->in.usable_line = s.normalized_valid;
@@ -43,7 +43,7 @@ static void tick_mm(Rig *r, unsigned left, unsigned right, bool fresh, float mm)
     r->counts += mm * ENC_COUNTS_PER_MM;
     if (fresh)
     {
-        ir_tracking_sample(&r->ir, (IrRaw){(uint8_t)left, (uint8_t)right}, true, r->now);
+        ir_tracking_sample(&r->ir, (IrRaw_t){(uint8_t)left, (uint8_t)right}, true, r->now);
     }
     read_line(r);
     mission_step(&r->m, &r->in, &r->out);
@@ -63,7 +63,7 @@ static void start(Rig *r)
 {
     *r = (Rig){.now = 100u};
     ir_tracking_init(&r->ir);
-    r->in = (MissionInputs){.inputs_ok = true, .mapped = true, .motion_status = RD_MOTION_IDLE};
+    r->in = (MissionInputs_t){.inputs_ok = true, .mapped = true, .motion_status = RD_MOTION_IDLE};
     mission_init(&r->m, r->now);
     tick_mm(r, 0u, 0u, true, 0.0f);
     r->in.start_pressed = true;

@@ -119,7 +119,7 @@ typedef struct __attribute__((packed))
     int8_t angle_deg;
     uint16_t range_mm : 13;
     uint16_t valid : 1;
-} ObstacleRay;
+} ObstacleRay_t;
 
 /* Distances saturate at OBSTACLE_PROFILE_MAX_MM: past it a side has more room
    than any bypass uses (BYPASS_MAX_OFFSET_MM), so the exact value changes
@@ -138,11 +138,11 @@ typedef struct __attribute__((packed))
     uint16_t right_clearance_mm : 10;
     int16_t obstacle_forward_mm : 11;
     int16_t obstacle_left_mm : 11;
-} ObstacleProfile;
+} ObstacleProfile_t;
 
-_Static_assert(sizeof(ObstacleRay) == 3u,
+_Static_assert(sizeof(ObstacleRay_t) == 3u,
     "packed obstacle ray must use 24 bits");
-_Static_assert(sizeof(ObstacleProfile) == 9u,
+_Static_assert(sizeof(ObstacleProfile_t) == 9u,
     "obstacle profile layout changed unexpectedly");
 
 static inline uint16_t obstacle_profile_mm(uint32_t mm)
@@ -152,10 +152,10 @@ static inline uint16_t obstacle_profile_mm(uint32_t mm)
 }
 
 /* Public construction/decoding helpers: callers do not mask packed fields. */
-static inline ObstacleRay obstacle_ray_make(int16_t angle_deg,
+static inline ObstacleRay_t obstacle_ray_make(int16_t angle_deg,
     uint16_t range_mm, bool valid)
 {
-    ObstacleRay ray = {0};
+    ObstacleRay_t ray = {0};
     if (angle_deg < -SERVO_MAX_DEG || angle_deg > SERVO_MAX_DEG)
     {
         ray.valid = false;
@@ -277,13 +277,14 @@ typedef struct
    Optional background is a known empty-scene reference with matching angles.
    Configured uncertainty is a model input, never a calibrated sensor rating.
    False leaves both outputs unchanged. No waits or dynamic allocation. */
-bool obstacle_profile_estimate(const ObstacleRay *rays, unsigned count,
-    const ObstacleRay *background, const obstacle_profile_config_t *config,
-    ObstacleProfile *out, obstacle_profile_evidence_t *evidence);
+bool obstacle_profile_estimate(const ObstacleRay_t *rays, unsigned count,
+    const ObstacleRay_t *background, const obstacle_profile_config_t *config,
+    ObstacleProfile_t *out, obstacle_profile_evidence_t *evidence);
 
 /* Up to two bounded refinements per supported object/background edge. */
-unsigned obstacle_profile_fine_angles(const ObstacleRay *coarse, unsigned count,
-    const obstacle_profile_config_t *config, int8_t *out, unsigned capacity);
+unsigned obstacle_profile_fine_angles(const ObstacleRay_t *coarse,
+    unsigned count, const obstacle_profile_config_t *config, int8_t *out,
+    unsigned capacity);
 
 /* Jia Jing: obstacle. Front ultrasonic range on the GPIO dispatcher; servo
    scan follows in #49. */
@@ -300,7 +301,7 @@ ER obstacle_range_try_copy(obstacle_range_sample_t *front,
 
 typedef struct
 {
-    ObstacleProfile profile;
+    ObstacleProfile_t profile;
     obstacle_profile_evidence_t evidence;
     uint32_t sampled_ms;
 } obstacle_profile_snapshot_t;
@@ -322,7 +323,7 @@ uint32_t obstacle_scan_word(void);
 
 /* Latest finished profile, copied under a mutex. E_OK when the last scan
    completed; E_OBJ if none yet. */
-ER obstacle_profile_try_copy(ObstacleProfile *out);
+ER obstacle_profile_try_copy(ObstacleProfile_t *out);
 
 /* Side-watch for the bypass leg: hold the servo at angle_deg (relative to
    forward, + left) and range it every release. Read the side sample through

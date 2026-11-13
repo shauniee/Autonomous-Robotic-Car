@@ -7,9 +7,9 @@
 #endif
 
 /* ---- IR tracking logic ---- */
-IrReading ir_tracking_reading(IrRaw raw)
+IrReading_t ir_tracking_reading(IrRaw_t raw)
 {
-    IrReading reading = {0};
+    IrReading_t reading = {0};
     if (raw.left > 1u || raw.right > 1u)
     {
         return reading;
@@ -21,22 +21,22 @@ IrReading ir_tracking_reading(IrRaw raw)
     return reading;
 }
 
-void ir_tracking_init(IrTracker *tracker)
+void ir_tracking_init(IrTracker_t *tracker)
 {
     if (tracker != NULL)
     {
-        *tracker = (IrTracker){0};
+        *tracker = (IrTracker_t){0};
     }
 }
 
-void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
+void ir_tracking_sample(IrTracker_t *tracker, IrRaw_t raw, bool acquired,
     uint32_t now)
 {
     if (NULL == tracker)
     {
         return;
     }
-    IrReading reading = ir_tracking_reading(raw);
+    IrReading_t reading = ir_tracking_reading(raw);
     reading.valid = acquired && reading.valid;
     tracker->raw = ir_raw_word(raw, reading.valid);
     tracker->have_sample = 1u;
@@ -46,9 +46,9 @@ void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
             IR_LINE_BROAD_BLACK : IR_LINE_VISIBLE));
 }
 
-IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
+IrTrackingOutput_t ir_tracking_output(const IrTracker_t *tracker, uint32_t now)
 {
-    IrTrackingOutput output = {0};
+    IrTrackingOutput_t output = {0};
     if (NULL == tracker)
     {
         return output;
@@ -63,7 +63,7 @@ IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
     return output;
 }
 
-void ir_snapshot_refresh(LineIrSnapshot *snapshot, uint32_t now)
+void ir_snapshot_refresh(LineIrSnapshot_t *snapshot, uint32_t now)
 {
     if (NULL == snapshot)
     {
@@ -82,9 +82,9 @@ void ir_snapshot_refresh(LineIrSnapshot *snapshot, uint32_t now)
     }
 }
 
-LineIrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t now)
+LineIrSnapshot_t ir_snapshot_build(const IrTracker_t *tracker, uint32_t now)
 {
-    LineIrSnapshot snapshot = {0};
+    LineIrSnapshot_t snapshot = {0};
     if (NULL == tracker)
     {
         return snapshot;
@@ -93,14 +93,14 @@ LineIrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t now)
     snapshot.raw = ir_raw_word(ir_raw_word_raw(tracker->raw),
         tracker->have_sample && ir_raw_word_valid(tracker->raw));
     snapshot.have_sample = tracker->have_sample;
-    IrReading reading = ir_tracking_reading(ir_raw_word_raw(tracker->raw));
+    IrReading_t reading = ir_tracking_reading(ir_raw_word_raw(tracker->raw));
     snapshot.normalized_valid = ir_raw_word_valid(snapshot.raw);
     if (snapshot.normalized_valid)
     {
         snapshot.left_black = reading.left_fraction != 0u;
         snapshot.right_black = reading.right_fraction != 0u;
     }
-    IrTrackingOutput output = ir_tracking_output(tracker, now);
+    IrTrackingOutput_t output = ir_tracking_output(tracker, now);
     snapshot.guidance_valid = output.valid;
     snapshot.line = (uint8_t)output.line;
     ir_snapshot_refresh(&snapshot, now);
@@ -108,7 +108,7 @@ LineIrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t now)
 }
 
 #if APP_TEST
-const char *ir_tracking_line_name(IrLine line)
+const char *ir_tracking_line_name(IrLine_t line)
 {
     switch (line)
     {
@@ -139,7 +139,7 @@ bool drv_ir_tracking_init(void)
     return configure_input(IR_LEFT_PIN) && configure_input(IR_RIGHT_PIN);
 }
 
-bool drv_ir_tracking_read(IrRaw *raw)
+bool drv_ir_tracking_read(IrRaw_t *raw)
 {
     if (NULL == raw)
     {

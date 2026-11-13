@@ -78,8 +78,8 @@ static void gather(mqtt_telemetry_t *t, uint8_t sequence)
     uint32_t front = front_sample.word;
     uint32_t barcode = atomic_load_explicit(&last_barcode,
         memory_order_acquire);
-    LineIrSnapshot line = {0};
-    ObstacleProfile profile = {0};
+    LineIrSnapshot_t line = {0};
+    ObstacleProfile_t profile = {0};
     bool have_line = line_ir_try_copy(&line);
     bool have_profile =
         obstacle_profile_try_copy(&profile) >= E_OK && profile.valid;
@@ -174,9 +174,9 @@ static void report_step(uint32_t now)
         mqtt_type_t type;
         if (mqtt_frame_type(in, length, &type) != MQTT_DECODE_OK)
         {
-            continue;
+            /* Undecodable frame: drop it and read the next. */
         }
-        if (MQTT_TYPE_SNAPSHOT_REQUEST == type)
+        else if (MQTT_TYPE_SNAPSHOT_REQUEST == type)
         {
             post_snapshot(MQTT_TYPE_SNAPSHOT_REPLY, &sequence);
         }
@@ -186,32 +186,31 @@ static void report_step(uint32_t now)
             uint8_t action;
             mqtt_decode_t decoded =
                 mqtt_decode_junction_test(in, length, &seq, &action);
-            if (MQTT_DECODE_OK == decoded &&
-                mission_direction_submit(seq, action))
+            if (MQTT_DECODE_OK != decoded ||
+                !mission_direction_submit(seq, action))
             {
-                continue;
+                pending_ack = (mqtt_ack_t){.sequence = in[1],
+                    .result = MQTT_DECODE_OK == decoded ? MQTT_ACK_BUSY :
+                        (MQTT_DECODE_RANGE == decoded ? MQTT_ACK_INVALID :
+                            MQTT_ACK_MALFORMED)};
+                ack_pending = 1u;
+                break;
             }
-            pending_ack = (mqtt_ack_t){.sequence = in[1],
-                .result = MQTT_DECODE_OK == decoded ? MQTT_ACK_BUSY :
-                    (MQTT_DECODE_RANGE == decoded ? MQTT_ACK_INVALID :
-                        MQTT_ACK_MALFORMED)};
-            ack_pending = 1u;
-            break;
         }
         else if (MQTT_TYPE_MAPPING == type)
         {
             mqtt_mapping_t mapping;
             mqtt_decode_t decoded = mqtt_decode_mapping(in, length, &mapping);
-            if (MQTT_DECODE_OK == decoded && mission_mapping_submit(&mapping))
+            /* Only Mission's installed result may ACK OK. */
+            if (MQTT_DECODE_OK != decoded || !mission_mapping_submit(&mapping))
             {
-                continue; /* Only Mission's installed result may ACK OK. */
+                pending_ack = (mqtt_ack_t){.sequence = in[1],
+                    .result = MQTT_DECODE_OK == decoded ? MQTT_ACK_BUSY :
+                        (MQTT_DECODE_RANGE == decoded ? MQTT_ACK_INVALID :
+                            MQTT_ACK_MALFORMED)};
+                ack_pending = 1u;
+                break;
             }
-            pending_ack = (mqtt_ack_t){.sequence = in[1],
-                .result = MQTT_DECODE_OK == decoded ? MQTT_ACK_BUSY :
-                    (MQTT_DECODE_RANGE == decoded ? MQTT_ACK_INVALID :
-                        MQTT_ACK_MALFORMED)};
-            ack_pending = 1u;
-            break;
         }
     }
     if ((int32_t)(now - telemetry_due) >= 0)

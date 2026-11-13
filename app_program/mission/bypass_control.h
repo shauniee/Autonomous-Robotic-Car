@@ -72,7 +72,7 @@ typedef struct
 } bypass_input_t;
 typedef struct
 {
-    MotionCommand command;
+    MotionCommand_t command;
     int8_t side_angle_deg; /* +/-SERVO_LOOK_DEG */
     uint8_t route : 4; /* bypass_route_t */
     bool side_watch : 1;
@@ -87,13 +87,13 @@ _Static_assert((uint32_t)(2.0f * BYPASS_TRAVEL_MM * ENC_COUNTS_PER_MM) <
    Planning width is supplied separately from the reported measurement. */
 /* Millimetres to reverse so a side with room can pivot, or 0 if none
    applies. */
-uint8_t bypass_control_backup_mm(const ObstacleProfile *profile,
+uint8_t bypass_control_backup_mm(const ObstacleProfile_t *profile,
     uint16_t planning_width_mm);
 bool bypass_control_can_begin(const bypass_input_t *input,
-    const ObstacleProfile *profile, uint16_t planning_width_mm);
+    const ObstacleProfile_t *profile, uint16_t planning_width_mm);
 bool bypass_control_begin(bypass_control_t *control,
     const bypass_input_t *input,
-    const ObstacleProfile *profile, uint16_t planning_width_mm,
+    const ObstacleProfile_t *profile, uint16_t planning_width_mm,
         uint8_t *action_id);
 void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
     uint8_t *action_id, bypass_output_t *output);

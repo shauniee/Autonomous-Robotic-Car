@@ -6,23 +6,23 @@
 
 #define LAST_ACTION_ID rd_mask(RD_MOTION_ACTION_BITS)
 
-static bool obstacle_ahead(const MissionInputs *in);
-static bool obstacle_in_stopping_range(const MissionInputs *in);
-static void handle_scan(Mission *m, const MissionInputs *in,
-    MissionOutputs *out);
-static void handle_reacquire(Mission *m, const MissionInputs *in,
-    MissionOutputs *out);
-static void enter_bypass(Mission *m, const MissionInputs *in,
-    MissionOutputs *out);
-static void handle_junction_turn(Mission *m, const MissionInputs *in,
-    MissionOutputs *out);
+static bool obstacle_ahead(const MissionInputs_t *in);
+static bool obstacle_in_stopping_range(const MissionInputs_t *in);
+static void handle_scan(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out);
+static void handle_reacquire(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out);
+static void enter_bypass(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out);
+static void handle_junction_turn(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out);
 
-void mission_init(Mission *m, uint32_t now_ms)
+void mission_init(Mission_t *m, uint32_t now_ms)
 {
-    *m = (Mission){.state = MISSION_READY, .state_since_ms = now_ms};
+    *m = (Mission_t){.state = MISSION_READY, .state_since_ms = now_ms};
 }
 
-static float mission_turn_target_get(const Mission *m)
+static float mission_turn_target_get(const Mission_t *m)
 {
     switch (m->turn_code)
     {
@@ -37,7 +37,7 @@ static float mission_turn_target_get(const Mission *m)
     }
 }
 
-static void mission_turn_target_set(Mission *m, barcode_action_t action)
+static void mission_turn_target_set(Mission_t *m, barcode_action_t action)
 {
     m->turn_code =
         BARCODE_LEFT == action
@@ -46,7 +46,7 @@ static void mission_turn_target_set(Mission *m, barcode_action_t action)
         : (BARCODE_U_TURN == action ? 3u : 0u));
 }
 
-static void enter(Mission *m, MissionState next, uint32_t now_ms)
+static void enter(Mission_t *m, MissionState_t next, uint32_t now_ms)
 {
     m->state = next;
     m->state_since_ms = now_ms;
@@ -57,26 +57,26 @@ static void enter(Mission *m, MissionState next, uint32_t now_ms)
     m->line_steer_sampled_ms = now_ms - IR_MAX_GAP_MS - 1u;
 }
 
-static float travel_mm(const MissionInputs *in, const enc_count_t origin[2])
+static float travel_mm(const MissionInputs_t *in, const enc_count_t origin[2])
 {
     return enc_mean_travel(in->wheel_count, origin) / ENC_COUNTS_PER_MM;
 }
 
-static void mark(enc_count_t origin[2], const MissionInputs *in)
+static void mark(enc_count_t origin[2], const MissionInputs_t *in)
 {
     origin[0] = in->wheel_count[0];
     origin[1] = in->wheel_count[1];
 }
 
 /* I held at the last transition, grown over the current touch. */
-static float line_i_grown(const Mission *m, const MissionInputs *in)
+static float line_i_grown(const Mission_t *m, const MissionInputs_t *in)
 {
     return fminf(m->line_i_q + LINE_KI_QPMM * travel_mm(in, m->touch_origin),
         (float)LINE_I_MAX_Q);
 }
 
 /* I held at the last transition, faded since the last touch. */
-static float line_i_faded(const Mission *m, const MissionInputs *in)
+static float line_i_faded(const Mission_t *m, const MissionInputs_t *in)
 {
     return fmaxf(m->line_i_q - LINE_I_FADE_QPMM * travel_mm(in, m->dark_origin),
         0.0f);
@@ -89,7 +89,7 @@ static float line_i_faded(const Mission *m, const MissionInputs *in)
    White/white fades I per mm, never below a drift toward the last side, so a
    centred robot soon touches again. The other side touching clears I (S-bends);
    a junction or new state clears it too, so nothing carries past a crossing. */
-static int line_digital_steering(Mission *m, const MissionInputs *in)
+static int line_digital_steering(Mission_t *m, const MissionInputs_t *in)
 {
     if (in->usable_line && in->guidance_valid &&
         in->line_sampled_ms != m->line_steer_sampled_ms)
@@ -125,7 +125,7 @@ static int line_digital_steering(Mission *m, const MissionInputs *in)
 }
 
 /* Where each sensor last went black, from fresh acquisitions in any state. */
-static void note_onsets(Mission *m, const MissionInputs *in)
+static void note_onsets(Mission_t *m, const MissionInputs_t *in)
 {
     if (!in->usable_line || in->line_sampled_ms == m->onset_sampled_ms)
     {
@@ -145,12 +145,12 @@ static void note_onsets(Mission *m, const MissionInputs *in)
 
 /* Distance between the two sensors' black onsets, mm. A crossing darkens both
    together; curve skew darkens the inner sensor long before the outer. */
-static float onset_skew_mm(const Mission *m)
+static float onset_skew_mm(const Mission_t *m)
 {
     return fabsf(enc_mean_travel(m->onset[0], m->onset[1])) / ENC_COUNTS_PER_MM;
 }
 
-static uint8_t next_action_id(Mission *m)
+static uint8_t next_action_id(Mission_t *m)
 {
     /* ID 1 is reserved for FOLLOW so a wrapped action ID can never alias it. */
     m->action_id = (uint8_t)(m->action_id >= LAST_ACTION_ID || m->action_id < 1u
@@ -160,8 +160,8 @@ static uint8_t next_action_id(Mission *m)
 }
 
 /* Mission.action_id is a bit-field, so bypass gets a local copy. */
-static bool begin_bypass(Mission *m, const bypass_input_t *input,
-    const ObstacleProfile *profile, uint16_t planning_width_mm)
+static bool begin_bypass(Mission_t *m, const bypass_input_t *input,
+    const ObstacleProfile_t *profile, uint16_t planning_width_mm)
 {
     uint8_t action_id = m->action_id;
     bool begun = bypass_control_begin(&m->bypass, input, profile,
@@ -170,21 +170,21 @@ static bool begin_bypass(Mission *m, const bypass_input_t *input,
     return begun;
 }
 
-static MotionCommand stop_command(uint32_t now_ms)
+static MotionCommand_t stop_command(uint32_t now_ms)
 {
     return motion_command_make(MOTION_MODE_STOP, 0.0f, 0.0f, 0, 0u, now_ms);
 }
 
 /* Action targets are integral mm or degrees; invalid/out-of-range values
 fail closed as a STOP command rather than being truncated. */
-static MotionCommand action_command(motion_mode_t mode, float speed,
+static MotionCommand_t action_command(motion_mode_t mode, float speed,
     float target, uint8_t id, uint32_t now_ms)
 {
     return motion_command_make(mode, floorf(speed), target, 0, id, now_ms);
 }
 
-static MotionCommand junction_turn_command(const Mission *m,
-    const MissionInputs *in)
+static MotionCommand_t junction_turn_command(const Mission_t *m,
+    const MissionInputs_t *in)
 {
     /* A bound, not the goal: the pivot ends when the new branch is found. */
     float bound = 3u == m->turn_code ? NAV_UTURN_MAX_DEG : NAV_TURN_MAX_DEG;
@@ -194,7 +194,7 @@ static MotionCommand junction_turn_command(const Mission *m,
         m->current_action, in->line_sampled_ms);
 }
 
-static MotionCommand follow_command(const MissionInputs *in, int steering_q,
+static MotionCommand_t follow_command(const MissionInputs_t *in, int steering_q,
     uint8_t id)
 {
     return motion_command_make(MOTION_MODE_FOLLOW, MISSION_TRACK_SPEED_MMPS,
@@ -202,8 +202,8 @@ static MotionCommand follow_command(const MissionInputs *in, int steering_q,
         steering_q, id, in->line_sampled_ms);
 }
 
-static void to_stop(Mission *m, const MissionInputs *in, MissionOutputs *out,
-    bool call_stop)
+static void to_stop(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out, bool call_stop)
 {
     enter(m, MISSION_STOPPED, in->now_ms);
     m->held = BARCODE_UNMAPPED;
@@ -216,8 +216,8 @@ static void to_stop(Mission *m, const MissionInputs *in, MissionOutputs *out,
     out->command = stop_command(in->now_ms);
 }
 
-static void handle_ready(Mission *m, const MissionInputs *in,
-    MissionOutputs *out)
+static void handle_ready(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out)
 {
     if (!in->start_pressed)
     {
@@ -237,8 +237,8 @@ static void handle_ready(Mission *m, const MissionInputs *in,
     out->start_scanner = true;
 }
 
-static void handle_stop(Mission *m, const MissionInputs *in,
-    MissionOutputs *out)
+static void handle_stop(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out)
 {
     (void)out;
     /* GP21 release is serviced by safety_step; GP20 never resets. */
@@ -249,13 +249,13 @@ static void handle_stop(Mission *m, const MissionInputs *in,
     }
 }
 
-static bool held_turn(const Mission *m)
+static bool held_turn(const Mission_t *m)
 {
     return BARCODE_LEFT == m->held || BARCODE_RIGHT == m->held ||
         BARCODE_U_TURN == m->held;
 }
 
-static void observe_junction(Mission *m, const MissionInputs *in)
+static void observe_junction(Mission_t *m, const MissionInputs_t *in)
 {
     if (!m->in_broad || !m->junction_open ||
         in->line_sampled_ms == m->junction_sampled_ms)
@@ -278,8 +278,8 @@ static void observe_junction(Mission *m, const MissionInputs *in)
     }
 }
 
-static void handle_follow(Mission *m, const MissionInputs *in,
-    MissionOutputs *out)
+static void handle_follow(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out)
 {
     if (m->in_broad && (!in->usable_line || obstacle_ahead(in) ||
         robot_time_elapsed(in->now_ms, m->broad_since_ms) >=
@@ -446,7 +446,7 @@ static void handle_follow(Mission *m, const MissionInputs *in,
 
 /* ---- Bounded profile/coverage handover ---------------------------------- */
 /* The range now: the last reading less the travel since it was sampled. */
-static int32_t front_now_mm(const MissionInputs *in)
+static int32_t front_now_mm(const MissionInputs_t *in)
 {
     float counts = ((float)enc_travel_signed(in->wheel_count[0],
         in->front_wheel_count[0]) +
@@ -455,20 +455,20 @@ static int32_t front_now_mm(const MissionInputs *in)
     return (int32_t)in->front_mm - (int32_t)lroundf(counts / ENC_COUNTS_PER_MM);
 }
 
-static bool obstacle_in_stopping_range(const MissionInputs *in)
+static bool obstacle_in_stopping_range(const MissionInputs_t *in)
 {
     return in->front_valid && in->front_age_ms <= BYPASS_FRONT_MAX_AGE_MS &&
         front_now_mm(in) <= (int32_t)MISSION_OBSTACLE_STOP_MM +
         (int32_t)motion_stop_distance_mm(COURSE_SPEED_MMPS);
 }
 
-static bool obstacle_ahead(const MissionInputs *in)
+static bool obstacle_ahead(const MissionInputs_t *in)
 {
     return in->front_valid && in->front_age_ms <= BYPASS_FRONT_MAX_AGE_MS &&
         in->front_mm <= MISSION_OBSTACLE_STOP_MM;
 }
 
-static bypass_input_t bypass_input(const MissionInputs *in)
+static bypass_input_t bypass_input(const MissionInputs_t *in)
 {
     return (bypass_input_t)
     {
@@ -493,8 +493,8 @@ static bypass_input_t bypass_input(const MissionInputs *in)
             .motion_action = in->motion_action};
 }
 
-static void run_bypass(Mission *m, const MissionInputs *in,
-    MissionOutputs *out)
+static void run_bypass(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out)
 {
     if (robot_time_elapsed(in->now_ms, m->bypass_started_ms) >=
         MISSION_BYPASS_TIMEOUT_MS)
@@ -533,8 +533,8 @@ static void run_bypass(Mission *m, const MissionInputs *in,
     }
 }
 
-static void request_scan(Mission *m, const MissionInputs *in,
-    MissionOutputs *out, bool second)
+static void request_scan(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out, bool second)
 {
     m->scan_second = second;
     out->scan_keep_narrower = second;
@@ -546,8 +546,8 @@ static void request_scan(Mission *m, const MissionInputs *in,
     m->scan_phase = 1u;
 }
 
-static void enter_bypass(Mission *m, const MissionInputs *in,
-    MissionOutputs *out)
+static void enter_bypass(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out)
 {
     enter(m, MISSION_SCAN, in->now_ms);
     m->scan_phase = 0u;
@@ -585,7 +585,7 @@ static void enter_bypass(Mission *m, const MissionInputs *in,
    or MISSION_SCAN_CLEAR_SAMPLES clear ones in a row. The servo publishes no
    forward reading until it is back at 0, so these cannot be left over from the
    sweep. */
-static bool front_checked(Mission *m, const MissionInputs *in)
+static bool front_checked(Mission_t *m, const MissionInputs_t *in)
 {
     if ((uint8_t)in->front_sequence == m->front_seen)
     {
@@ -603,8 +603,8 @@ static bool front_checked(Mission *m, const MissionInputs *in)
     return m->front_clear >= MISSION_SCAN_CLEAR_SAMPLES;
 }
 
-static void handle_scan(Mission *m, const MissionInputs *in,
-    MissionOutputs *out)
+static void handle_scan(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out)
 {
     if (robot_time_elapsed(in->now_ms, m->bypass_started_ms) >=
         MISSION_BYPASS_TIMEOUT_MS)
@@ -708,7 +708,7 @@ static void handle_scan(Mission *m, const MissionInputs *in,
     else if ((use_first || OBSTACLE_SCAN_DONE == in->scan_state) &&
         in->profile_valid)
     {
-        ObstacleProfile profile =
+        ObstacleProfile_t profile =
         {
             .valid = true,
                 .closest_mm = obstacle_profile_mm(in->profile_closest_mm),
@@ -768,8 +768,8 @@ static void handle_scan(Mission *m, const MissionInputs *in,
     }
 }
 
-static void handle_junction_turn(Mission *m, const MissionInputs *in,
-    MissionOutputs *out)
+static void handle_junction_turn(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out)
 {
     if (!in->usable_line ||
         robot_time_elapsed(in->now_ms, in->line_sampled_ms) > IR_MAX_GAP_MS ||
@@ -904,8 +904,8 @@ static void handle_junction_turn(Mission *m, const MissionInputs *in,
     out->command = junction_turn_command(m, in);
 }
 
-static void handle_reacquire(Mission *m, const MissionInputs *in,
-    MissionOutputs *out)
+static void handle_reacquire(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out)
 {
     recovery_input_t input =
     {
@@ -946,16 +946,17 @@ static void handle_reacquire(Mission *m, const MissionInputs *in,
     }
 }
 
-bool mission_barcode_event_needed(const MissionInputs *in,
-    const MissionOutputs *out)
+bool mission_barcode_event_needed(const MissionInputs_t *in,
+    const MissionOutputs_t *out)
 {
     return in->have_barcode && out->event_kind != MQTT_EVENT_BARCODE &&
         in->barcode_letter < BARCODE_ALPHABET;
 }
 
-void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out)
+void mission_step(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out)
 {
-    *out = (MissionOutputs){.command = stop_command(in->now_ms)};
+    *out = (MissionOutputs_t){.command = stop_command(in->now_ms)};
 
     note_onsets(m, in);
     bool moving = m->state != MISSION_READY && m->state != MISSION_STOPPED;
@@ -1011,8 +1012,8 @@ void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out)
     }
 }
 
-mqtt_line_trace_t mission_line_trace(const Mission *m, const MissionInputs *in,
-    const MissionOutputs *out)
+mqtt_line_trace_t mission_line_trace(const Mission_t *m,
+    const MissionInputs_t *in, const MissionOutputs_t *out)
 {
     bool follow = motion_cmd_mode(&out->command) == MOTION_MODE_FOLLOW;
     return (mqtt_line_trace_t)
@@ -1040,7 +1041,7 @@ mqtt_line_trace_t mission_line_trace(const Mission *m, const MissionInputs *in,
         .barcode_edges = in->barcode_edges};
 }
 
-bool mission_queue_direction(Mission *m, uint8_t action)
+bool mission_queue_direction(Mission_t *m, uint8_t action)
 {
     if (m->state != MISSION_FOLLOW_LINE || m->in_broad || m->manual_held ||
         action < BARCODE_LEFT || action > BARCODE_U_TURN)
