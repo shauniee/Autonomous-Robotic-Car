@@ -1,17 +1,17 @@
 /*
- *	app.h
- *	Definitions shared by the whole team.  Changed only by team agreement.
+ *  app.h
+ *  Definitions shared by the whole team.  Changed only by team agreement.
  *
- *	Anything that belongs to ONE subsystem goes in that subsystem's own
- *	header instead (app_program/<name>/<name>.h).
+ *  Anything that belongs to ONE subsystem goes in that subsystem's own
+ *  header instead (app_program/<name>/<name>.h).
  */
 
 #ifndef APP_H
 #define APP_H
 
-#include <tk/tkernel.h>		/* micro T-Kernel API (tk_xxx_yyy) */
-#include <tm/tmonitor.h>	/* T-Monitor API: tm_printf() console output */
-#include <bsp/libbsp.h>		/* Board helpers: gpio_set_pin/val, pwm_... */
+#include <tk/tkernel.h>     /* micro T-Kernel API (tk_xxx_yyy) */
+#include <tm/tmonitor.h>    /* T-Monitor API: tm_printf() console output */
+#include <bsp/libbsp.h>     /* Board helpers: gpio_set_pin/val, pwm_... */
 #include "./common/robot_config.h"
 
 /* ---------------------------------------------------------------------
@@ -56,12 +56,12 @@ IMPORT void obstacle_test(void);
 #endif
 
 /* Print a readable message if a kernel call failed (negative error code) */
-#define CHECK(er, what)							\
-	do {								\
-		INT check_er_ = (INT)(er);	/* evaluate once */	\
-		if (check_er_ < E_OK) {					\
-			tm_printf((UB*)"ERROR %s: %d\n", (what), check_er_); \
-		}							\
-	} while (0)
+#define CHECK(er, what)                         \
+    do {                                \
+        INT check_er_ = (INT)(er);  /* evaluate once */ \
+        if (check_er_ < E_OK) {                 \
+            tm_printf((UB*)"ERROR %s: %d\n", (what), check_er_); \
+        }                           \
+    } while (0)
 
 #endif /* APP_H */

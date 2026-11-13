@@ -1,9 +1,9 @@
 /*
- *	drv_gpio_irq.h
- *	Single GPIO bank IRQ entry shared by barcode, encoder and Echo edges.
- *	The dispatcher reads one timestamp, acknowledges the edge bits of every
- *	claimed pin and calls that pin's handler. Handlers capture and return:
- *	no kernel wait, no mutex, no tm_printf.
+ *  drv_gpio_irq.h
+ *  Single GPIO bank IRQ entry shared by barcode, encoder and Echo edges.
+ *  The dispatcher reads one timestamp, acknowledges the edge bits of every
+ *  claimed pin and calls that pin's handler. Handlers capture and return:
+ *  no kernel wait, no mutex, no tm_printf.
  */
 
 #ifndef DRV_GPIO_IRQ_H
@@ -13,8 +13,8 @@
 #include <stdint.h>
 #include "../app.h"
 
-#define GPIO_IRQ_EDGE_FALL 4u	/* INTR/STATUS edge-low bit of a pin */
-#define GPIO_IRQ_EDGE_RISE 8u	/* INTR/STATUS edge-high bit of a pin */
+#define GPIO_IRQ_EDGE_FALL 4u   /* INTR/STATUS edge-low bit of a pin */
+#define GPIO_IRQ_EDGE_RISE 8u   /* INTR/STATUS edge-high bit of a pin */
 #define GPIO_IRQ_PIN_COUNT 30u
 
 /* edges: GPIO_IRQ_EDGE_FALL and/or GPIO_IRQ_EDGE_RISE (both: order lost).

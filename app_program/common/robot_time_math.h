@@ -1,7 +1,7 @@
 /*
- *	robot_time_math.h
- *	Wrap-safe interval arithmetic on uint32_t stamps. Kernel-free so it can
- *	be tested on the host; robot_time.h adds the two clock readers.
+ *  robot_time_math.h
+ *  Wrap-safe interval arithmetic on uint32_t stamps. Kernel-free so it can
+ *  be tested on the host; robot_time.h adds the two clock readers.
  */
 
 #ifndef ROBOT_TIME_MATH_H
@@ -27,11 +27,15 @@ static inline bool robot_time_reached(uint32_t now, uint32_t deadline)
    cycle, advanced by one period each time it is reached.  An overrun
    re-anchors to now, so missed periods are skipped rather than run back to
    back. */
-static inline uint32_t robot_time_next_delay(uint32_t *release, uint32_t period, uint32_t now)
+static inline uint32_t robot_time_next_delay(uint32_t *release,
+                                             uint32_t period,
+                                             uint32_t now)
 {
-    if (robot_time_reached(now, *release)) {
+    if (robot_time_reached(now, *release))
+    {
         *release += period;
-        if (robot_time_reached(now, *release)) {
+        if (robot_time_reached(now, *release))
+        {
             *release = now + period;
         }
     }

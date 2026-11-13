@@ -21,7 +21,7 @@ void button_disarm(Button *button)
 
 ButtonEvent button_update(Button *button, bool down, uint32_t now)
 {
-    if (button == NULL)
+    if (NULL == button)
     {
         return BUTTON_EVENT_NONE;
     }
@@ -77,7 +77,8 @@ static bool configure_button_pin(unsigned pin)
 
 bool drv_buttons_init(void)
 {
-    return configure_button_pin(BUTTON_GP20) && configure_button_pin(BUTTON_GP21);
+    return configure_button_pin(BUTTON_GP20) &&
+           configure_button_pin(BUTTON_GP21);
 }
 
 ButtonInputs drv_buttons_read(void)
