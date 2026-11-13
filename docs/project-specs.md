@@ -13,8 +13,7 @@
 - [2. Subsystem deliverables](#2-subsystem-deliverables)
 - [3. Communications](#3-communications)
 - [4. Change in requirement: minimum-bit data representation](#4-change-in-requirement-minimum-bit-data-representation)
-  - [Historical baseline, issue #22 (not required)](#historical-baseline-issue-22-not-required)
-  - [Week 13 change in requirement (placeholder)](#week-13-change-in-requirement-placeholder)
+  - [Historical baseline, issue #22](#historical-baseline-issue-22)
 - [5. Data representation table (Week 13)](#5-data-representation-table-week-13)
 - [6. Assessment, demonstration and process rules](#6-assessment-demonstration-and-process-rules)
 - [7. Course geometry](#7-course-geometry)
@@ -256,24 +255,24 @@ Turn rate and heading come from encoder differential motion; lift and overturn f
 
 ## 4. Change in requirement: minimum-bit data representation
 
-Change requirement one, adopted at Tribunal 1 (Week 8). Implemented in firmware before the final demonstration; the Week 13 submission carries its evidence.
+Change requirement one, adopted at Tribunal 1 (Week 8). Implemented in firmware before the final demonstration; the Week 13 submission carries its evidence. It is the only change in requirement: Week 13 adds no new change (Nicholas, 2026-11-13).
 
 **Requirement.** Each application data field uses only the bits its valid range needs, via C bit-fields or explicit masks and shifts (e.g. range 1-5: 3 bits; up to 8 states: 3 bits). Fault conditions (motor stall, encoder fault, IMU fault, no echo, Wi-Fi loss) are individual bits of a shared fault bitmask, not separate integers. Scope: motion/encoder; line/barcode; obstacle; hump estimation; vehicle and controller states; task-to-task and ISR-to-task data; inter-task queue messages; MQTT telemetry and command payloads (compact binary fields, not text values). Read-modify-write of packed data shared between tasks, cores or an ISR and a task must be race-free (atomic access or synchronisation).
 
 **Briefing clarifications.** Loop counters and temporaries are exempt. Small fields may be combined into one integer or char, but do not combine merely because widths match; each owner justifies every width and provides accessor functions that read and write packed fields. Screen sharing in the discussion recording is for illustrating points; reading AI output aloud is not required.
 
-**Week 13 evidence (in the repository):**
+**Week 13 evidence (in the repository), as the latest course wording gives it:**
 
 1. Data representation table ([team section 6](team.md#6-data-representation)): field, valid range, bits, representation.
-2. RAM usage of the final implementation.
-3. Message size of the final implementation (inter-task and/or communication messages).
-4. Evidence of no lost functionality and no unacceptable timing or performance degradation.
+2. RAM usage comparison: RAM usage measured and compared before and after the change.
+3. Message size comparison: the size of the relevant inter-task and/or communication messages measured and compared before and after the change.
+4. Correctness and performance: evidence that the revised representation loses no required functionality and causes no unacceptable degradation in timing or system performance.
 
-Comparison of the revised implementation with the original is not required (course update, 2026-10-27). Evidence covers the final implementation only; items 2 to 4 are in [team section 7](team.md#7-correctness-and-performance-evidence).
+The latest wording (Change Requirement 1, from Nicholas, 2026-11-13) asks for the before-and-after comparison in items 2 and 3, and replaces the 2026-10-27 course update that dropped it. Items 2 to 4 are in [team section 7](team.md#7-correctness-and-performance-evidence).
 
-### Historical baseline, issue #22 (not required)
+### Historical baseline, issue #22
 
-Retained as a record of the pre-change build; the Week 13 evidence does not compare against it.
+A record of an early pre-change build, kept for history. The before-and-after tables for items 2 and 3 are in [team section 7](team.md#memory).
 
 Compile and link results only; no firmware was executed or flashed. Measured from pinned commits: `main` `97de812`, `uat` `d8220bc`, both with the same `build_make` makefiles (taken from `main` `90628ba`). Toolchain: arm-none-eabi-gcc 15.3.1, Pico SDK 2.3.1, macOS host. Command in each `build_make/`: `make clean`, then `make -k -j8 SMP=1 CONSOLE=usb_cdc WIFI=none NET=none MQTT=0 CRASH_REPORT=0 TEST=0`, then `arm-none-eabi-size mtk3pico_smp1_usb_cdc.elf`.
 
@@ -292,17 +291,6 @@ The 11 warnings are in the pinned sources and are part of the baseline.
 
 `ObstacleSnapshot`, `MotionFeedback` and `MotionCommand` were not found in `main` and are not reported. Task stack is 2048 bytes each (`app_program/app.h`): 4 application task creation sites in `main` (Motion, terrain_task, IR line, Line follow), 7 in `uat` (Motion, Obstacle, Terrain, IR line, Safety, Mission, Reporting); live task counts were not recorded. Not measured: periodic task loop timing, MQTT/telemetry payload sizes (both need an on-target run), per-object `nm` sizes.
 
-### Week 13 change in requirement (placeholder)
-
-**Status: placeholder, not a discussion.** The course requires the Week 13 change to be discussed in writing; it need not be implemented ([section 6](#6-assessment-demonstration-and-process-rules), CIR-12 in issue #192). What the Week 13 change asks is not recorded anywhere in this repository: not in this guide, [team section 6](team.md#6-data-representation), [tribunal1](tribunal1.md), the issues or the git history. The Week 13 evidence listed above belongs to the Week 8 change, not to a new one. No content is inferred here (D17).
-
-To turn this into the discussion, record:
-
-1. The Week 13 change as stated by the course (source, date and wording).
-2. How the current design meets it, or would meet it, naming the affected subsystems and tasks ([architecture](architecture.md)).
-3. Impact on field widths ([team section 6](team.md#6-data-representation)), MQTT frames ([team: MQTT frames](team.md#mqtt-frames)) and task timing ([team section 7](team.md#7-correctness-and-performance-evidence)).
-4. Risks, and what is not done or not tested.
-
 ## 5. Data representation table (Week 13)
 
 The data representation table, with every field's valid range, bits and
@@ -316,7 +304,7 @@ proposals and audits on this page are in git history.
 - Assessed: mission completion (whole course, hump height, barcode instructions followed, correct movement), navigation accuracy (a U-turn command executes at the junction, not on reading), completion time, barcode reliability, hump measurement, obstacle avoidance, robustness (a run that works once must work every run),  software design/code quality, resource efficiency, integration, demonstration. Grading is holistic; no weights, penalty amounts or formula were supplied.
 - Final demonstration: up to three attempts; the most recent counts, even if worse; the team may stop after an earlier attempt. A good run takes about five minutes; excessive time may be penalised (no hard cutoff or speed mandated). Each attempt is scored on features working (e.g. 2 of 5). No recompilation after the barcode mapping is announced; use the instructor's broker.
 - Week 10: partial-integration demonstration (format pending, D10).
-- Requirement changes: the Week 8 change is implemented; the Week 13 change is discussed in writing and need not be implemented. AI is used to identify challenges and pivot when requirements change.
+- Requirement changes: the Week 8 change is implemented and is the only change; Week 13 is its documentation and demonstration. AI is used to identify challenges and pivot when requirements change.
 - Five members, each owning one subsystem. AI-generated code is permitted, but each owner must explain any line of their submitted code on request; failure attracts a penalty (no amount given).
 - Develop drivers and subsystem behaviour, then integrate progressively in pairs or small groups; test for repeatability. A basic micro T-Kernel repository is shared; the instructor teaches no micro T-Kernel but gives a FreeRTOS lab, and learning the kernel is part of the project; ask for help via forums or face to face.
 - Group grade is holistic; peer evaluation (affects only the group-work portion of the grade) and contribution evidence (GitHub commits and merges) can raise or lower individual grades. Commit and push regularly with meaningful messages; report serious contribution problems early (anonymous reporting may be possible).
@@ -366,7 +354,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D14 | Core swap superseded. Audit core-0 I/O integration, cross-core event producers/mapping hand-off, synchronization and required initialization order; kernel WiFi/USB and capture core unchanged | Nicholas |
 | D15 | Closed by Nicholas, 2026-11-05: the reset watchdog is removed from the firmware, replacing the earlier decision to run it on `full_course`. It never had a bench test. A hung Motion or kernel has no automatic reset. Tribunal A12 names watchdog recovery, and that wording is unchanged | Nicholas |
 | D16 | Settled 2026-10-29: configurable 15 cm is the obstacle trigger distance (150 mm). The car stops at that distance: it starts slowing earlier by `motion_stop_distance_mm`, 191 mm at 100 mm/s (Nicholas, 2026-11-04). It does not authorize any travel without valid forward sonar | Nicholas |
-| D17 | State the Week 13 change in requirement (source, date and wording) so the written discussion in [section 4](#week-13-change-in-requirement-placeholder) can be completed (CIR-12, #209) | Nicholas |
+| D17 | Closed by Nicholas, 2026-11-13: there is no Week 13 change in requirement; Week 13 documents and demonstrates the minimum-bit change, with a before-and-after RAM and message size comparison ([section 4](#4-change-in-requirement-minimum-bit-data-representation)) | Nicholas |
 
 Implementation note (2026-10-29, #130): Mission's local reset handshake has
 three exclusive states (boot, await GP21 press, await GP21 release), encoded as
