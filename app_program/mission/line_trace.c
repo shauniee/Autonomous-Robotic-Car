@@ -1,36 +1,32 @@
 #include "line_trace.h"
-#include <stdatomic.h>
 #include <string.h>
+#include "../common/trace_ring.h"
 
-enum { TRACE_DEPTH = 8u };
-static uint8_t records[TRACE_DEPTH][MQTT_LEN_LINE_TRACE];
-static _Atomic uint32_t head, tail;
+static uint8_t records[TRACE_RING_DEPTH][MQTT_LEN_LINE_TRACE];
+static trace_ring_t ring;
 
 bool line_trace_publish(const mqtt_line_trace_t *trace)
 {
-    uint32_t h = atomic_load_explicit(&head, memory_order_relaxed);
-    if (h - atomic_load_explicit(&tail, memory_order_acquire) >= TRACE_DEPTH)
+    uint32_t slot;
+    if (!trace_ring_reserve(&ring, &slot) ||
+        (mqtt_encode_line_trace(records[slot], MQTT_LEN_LINE_TRACE,
+            trace) == 0u))
     {
         return false;
     }
-    if (mqtt_encode_line_trace(records[h % TRACE_DEPTH],
-            MQTT_LEN_LINE_TRACE, trace) == 0u)
-    {
-        return false;
-    }
-    atomic_store_explicit(&head, h + 1u, memory_order_release);
+    trace_ring_commit(&ring);
     return true;
 }
 
 unsigned line_trace_take(uint8_t *out, unsigned capacity)
 {
-    uint32_t t = atomic_load_explicit(&tail, memory_order_relaxed);
+    uint32_t slot;
     if (out == NULL || capacity < MQTT_LEN_LINE_TRACE ||
-        t == atomic_load_explicit(&head, memory_order_acquire))
+        !trace_ring_peek(&ring, &slot))
     {
         return 0u;
     }
-    memcpy(out, records[t % TRACE_DEPTH], MQTT_LEN_LINE_TRACE);
-    atomic_store_explicit(&tail, t + 1u, memory_order_release);
+    memcpy(out, records[slot], MQTT_LEN_LINE_TRACE);
+    trace_ring_release(&ring);
     return MQTT_LEN_LINE_TRACE;
 }

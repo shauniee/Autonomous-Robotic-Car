@@ -24,7 +24,7 @@ typedef struct
 typedef enum {
     TERRAIN_STATE_FLAT = 0,
     TERRAIN_STATE_ON_HUMP,
-    TERRAIN_STATE_IMPACT
+    TERRAIN_STATE_LIFTED
 } TerrainState;
 
 /* Signed Q16 units of one raw accelerometer LSB. Intermediate range may be
@@ -102,7 +102,7 @@ float terrain_height_mm(const TerrainContext *p_ctx);
  */
 
 #define TERRAIN_STATE_BITS 2u
-_Static_assert(TERRAIN_STATE_IMPACT < (1u << TERRAIN_STATE_BITS),
+_Static_assert(TERRAIN_STATE_LIFTED < (1u << TERRAIN_STATE_BITS),
     "terrain state fits its field");
 
 static inline uint32_t terrain_pack(uint32_t last_code, uint32_t max_code, uint32_t count, uint32_t state,
@@ -144,9 +144,9 @@ static inline float terrain_travel_take(enc_count_t origin[2],
     return travel;
 }
 
-/* A short impact observation must survive until Motion services braking.
+/* A short lift observation must survive until Motion services braking.
    Call only on a fresh IMU sample; missing data cannot clear a cause. */
-static inline bool terrain_impact_pending(bool previous, bool detected,
+static inline bool terrain_lift_pending(bool previous, bool detected,
     bool brake_acknowledged)
 {
     return detected || (previous && !brake_acknowledged);

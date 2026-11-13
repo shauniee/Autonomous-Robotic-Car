@@ -1,0 +1,34 @@
+name: Bug report
+description: The car or a tool does something wrong
+title: "fix(<scope>): "
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Include what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ./flash.sh trial
+        2.
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Commit and image
+      description: Exact commit, image (test, trial, full_course) and the test ID if one was running.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste the relevant lines, or the path under testing/*/logs/.
+      render: shell

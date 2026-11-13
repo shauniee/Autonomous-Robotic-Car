@@ -43,6 +43,7 @@ For an Apple Silicon Mac with [Homebrew](https://brew.sh). Other systems: [Manua
    ./flash.sh        # full course: motors on, junction turns and obstacle bypass released, no diagnostics
    ./flash.sh trial  # driving test: same as the full course, with diagnostics on
    ./flash.sh test   # wireless self-test image: motors always inhibited
+   ./flash.sh bench  # motion bench: each GP20 press runs the next move and prints a [BENCH] line
    ```
 
    See [Power and flashing](#power-and-flashing) before running on the floor.
@@ -145,6 +146,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `./flash.sh` | `full_course.uf2` |
 | `./flash.sh trial` | `trial.uf2` |
 | `./flash.sh test` | `test.uf2` |
+| `./flash.sh bench` | `bench.uf2` |
 
 | Option | Meaning |
 | --- | --- |
@@ -155,6 +157,7 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `FULL_COURSE=1` | Releases junction turns and obstacle bypass; `_course` image (`flash.sh` default) |
 | `TEST=1` | Firmware self-tests; forces Motion braking even if the controller enables motion |
 | `TRACE=0` | Skip high-rate diagnostic frame production (types 9/10/11, plus Terrain trace), retaining telemetry, events, ACKs and all safety; `_notrace` image. Default `TRACE=0` with `FULL_COURSE=1`, otherwise `TRACE=1` |
+| `BENCH=1` | GP20 runs the next single move (100 mm forward, 1 m straight, 90 left, 90 right, 180) instead of starting the mission and prints one `[BENCH]` line per move; a move that does not finish is repeated on the next press; GP21 still stops; `_bench` image |
 | `CRASH_REPORT=1` | Crash/console copy on UART0; project uses `0` (GP0/GP1 conflict, [pins](docs/team.md#2-pins)) |
 
 Diagnostics belong in test images (Nicholas, 2026-11-04): `full_course` has none, for the least memory. To check they do not change driving, keep the same course, battery condition and
@@ -219,6 +222,7 @@ Laptop tool (binary protocol, schema v3; firmware and laptop tool must match):
 ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py monitor --broker 127.0.0.1
 ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py map A B C D --broker 127.0.0.1
 ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py snapshot --broker 127.0.0.1
+~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py probe --broker 127.0.0.1
 ```
 
 `monitor` prints WHEEL and LINE traces as short `key=value` lines and folds exact
@@ -233,13 +237,14 @@ firewall/WSL boundaries, and install `scripts/requirements-mqtt.txt` in a Python
 - `monitor` prints every telemetry frame, event and acknowledgement as text, including active fault names and the speed/direction derived from encoder counts.
 - `map` sends the four mission-day letters in the order left, right, straight, U-turn and waits for the acknowledgement. The robot accepts it only while stopped, and a reboot clears it.
 - `snapshot` requests one telemetry frame.
+- `probe` sends a truncated mapping, a mapping with the old version and a drive request (unassigned type 15) for S1-U04, one line each. The robot must drop all three: no ACK, no state change, no movement.
 - `python3 scripts/mqtt_client.py --self-test` checks the decoder against the firmware golden vectors without a broker.
 - The dashboard has **Junction testing** buttons: install a barcode mapping, start
   locally with GP20, then click **Activate left/right/straight/U-turn** while
   FOLLOW_LINE, before the junction. Wait for the robot ACK; the direction takes
   priority over barcode reads and runs once at the next confirmed cross junction.
   GP21 cancels it. See [test policy](docs/project-specs.md#mission-day-barcode-rule).
-- `python3 scripts/mqtt_client.py serve --broker <broker-lan-ip>` opens the live dashboard at `http://127.0.0.1:8080`. Its barcode-mapping strip sends the same mapping frame as `map` and shows the robot's acknowledgement; Send is enabled only while live telemetry reports READY or STOPPED. Open it at `127.0.0.1`, not `localhost`: the server refuses mapping requests from any other origin.
+- `python3 scripts/mqtt_client.py serve --broker <broker-lan-ip>` opens the live dashboard at `http://127.0.0.1:8080`. Its barcode-mapping strip sends the same mapping frame as `map` and shows the robot's acknowledgement; Send is enabled only while live telemetry reports READY or STOPPED. Open it at `127.0.0.1` or `localhost` on that port: the server refuses mapping requests from any other origin.
 
 Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--port` for other configs. Networking never starts, stops or drives the robot. Frame layouts: [architecture](docs/architecture.md#mqtt-binary-protocol-schema-version-3). The 500 ms stream cannot prove brief stop or recovery timing; broker loss does not change healthy local control.
 
