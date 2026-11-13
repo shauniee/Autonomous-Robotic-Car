@@ -32,7 +32,7 @@ How to run and record S5-U01 to S5-U05. Wheels never move: all five use the TEST
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py map A B C D --broker 127.0.0.1
    ```
 
-6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080>:
+6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080> (or <http://localhost:8080>):
 
    ```bash
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
@@ -80,7 +80,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 2. 250, 500 and 1000 mm.
 3. Aim at open space.
 
-**Show on video:** The tape and the dashboard `front=` reading at each distance.
+**Show on video:** The tape and the dashboard `front=` reading at each distance. At boot, with the board in range, the image also prints its self-check `[TEST] S5-U01 PASS` (front echo valid); show it.
 
 **Logs:** `usb.log` and `monitor.log`; write down the tape distances.
 
@@ -125,6 +125,12 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 1. Box centred: scan three times.
 2. Box offset left: three scans.
 3. Box offset right: three scans.
+4. Box centred, with a wall or a second box less than 220 mm past one edge: three scans. Then move it to the other edge: three scans.
+
+The side is chosen like this:
+
+- If exactly one side shows at least `MISSION_BYPASS_MIN_CLEAR_MM` (220 mm) of clearance, the car takes that side (step 4).
+- Otherwise it takes the side with the shorter edge; a tie goes left (steps 1 to 3). Clearance 0 means no echo, not blocked.
 
 **Show on video:** The box position and the side chosen each time.
 
