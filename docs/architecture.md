@@ -275,8 +275,9 @@ This table owns target policy. `robot_data.c` now leaves IMU/calibration failure
 | Line bit 0 acquisition invalid / line_barcode | Block | Stop if required acquisition invalid/stale | Valid digital readings and local reset |
 | Healthy line lost / Mission | No start on unusable line | Bounded REACQUIRE, then stop if exhausted | Line confirmed or operator reposition/reset |
 | Line bits 1/2 barcode capture/event overflow | Report | Report; never guess/replay an action | Existing encounter/run clearing behavior audited during integration |
-| Terrain bits 0/1 IMU acquisition/calibration failure | Flag, allow after bounded startup attempt | Flag; ordinary tracking continues | Successful reacquisition/calibration; no invented height |
-| Terrain bit 2 detected impact | Block while active | Latch stop | Cause cleared plus deliberate local reset |
+| Terrain bit 0 IMU acquisition failure | Flag, allow after bounded startup attempt | Flag; ordinary tracking continues | Successful reacquisition/calibration; no invented height |
+| Terrain bit 1 calibration failure | Block: without it a lift cannot stop the car | Flag | Successful calibration |
+| Terrain bit 2 lifted or overturned (filtered vertical axis more than `LIFT_ACCEL_G` from 1 g) | Block while active | Latch stop; lifting the car is how a demonstration run ends | Cause cleared plus deliberate local reset |
 | Obstacle bit 0 no echo / Obstacle | Flag, not universal block | Flag; ordinary tracking continues; no inferred clear space | Fresh valid readings clear/report status |
 | Required scan/bypass evidence unavailable / Mission | Not ordinary readiness input | Brake/stop unsupported manoeuvre | Local reset after safe reposition/cause clearance |
 | Mission bit 0 recovery exhausted | Report historical reason | Already stopped | Clear on accepted new start |
@@ -349,7 +350,7 @@ Implemented software uses Motion service sequence/time, fresh IR acquisition for
 tracking/crossing/reacquisition and Mission release time for encoder-only actions.
 Motion enforces command expiry and the original absolute action deadline. Copies
 do not renew acquisition time. Existing age limits remain provisional D07/D13. Stop must not wait for the command mutex or diagnostics.
-Runtime stop/reset stays on Motion's core; Terrain publishes impact evidence and
+Runtime stop/reset stays on Motion's core; Terrain publishes lift evidence and
 Motion/Mission observe it. Motion checks GP21 independently every release.
 Reset invalidates old commands and never enables output itself. Brake service
 acknowledgement is software progress; stationarity uses encoder evidence.
@@ -399,7 +400,7 @@ Mission coordination moves out. No independent line_barcode control thread in th
 ### Terrain
 
 [README](../app_program/terrain/README.md): core-0 bounded IMU/terrain functions; measured
-encoder travel, filtered pitch, valid completed hump results and impact evidence.
+encoder travel, filtered pitch, valid completed hump results and lift evidence.
 
 ### Obstacle and bypass (with Mission)
 
@@ -525,7 +526,7 @@ monitor` prints it as a short `LINE` line (`--raw` for JSON); the dashboard does
 | 3 | 7 | reserved | 0 |
 | 4-5 | 1-0 | Motion faults: stall, encoder | [fault bitmask](#fault-bitmask) |
 | 4-5 | 4-2 | Line faults: IR invalid, capture overflow, event overflow | |
-| 4-5 | 7-5 | Terrain faults: IMU, calibration failed, impact | |
+| 4-5 | 7-5 | Terrain faults: IMU, calibration failed, lifted | |
 | 4-5 | 8 | Obstacle fault: no echo | |
 | 4-5 | 9 | Mission fault: line lost | |
 | 4-5 | 11-10 | Network faults: Wi-Fi lost, broker lost | |
@@ -584,7 +585,7 @@ Used by the host tests and `scripts/mqtt_client.py --self-test`.
 
 | Frame | Bytes |
 | --- | --- |
-| Telemetry (faults: Motion stall, Line capture overflow, Terrain impact, no echo, line lost, both Network) | `31 2A 72 45 89 0F 34 12 78 56 03 F8 D0 30 61 A4 A9 02` |
+| Telemetry (faults: Motion stall, Line capture overflow, Terrain lifted, no echo, line lost, both Network) | `31 2A 72 45 89 0F 34 12 78 56 03 F8 D0 30 61 A4 A9 02` |
 | Event (barcode Z, action 2) | `32 01 19 E8 03 10 00 11 00 02 00` |
 | Mapping A left, B right, C straight, D U-turn, sequence 7 | `34 07 20 88 01` |
 | Acknowledgement installed, sequence 7 | `35 07 00` |
@@ -607,7 +608,7 @@ release remains inhibited. Supported forward/side coverage, rear-edge/original-l
 validation and any resulting implementation corrections remain in the
 [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues). These are not accepted floor
 features. Terrain publishes original acquisition/service times under a mutex;
-impact remains asserted until a fresh non-impact sample observes serviced braking.
+a lift remains asserted until a fresh level sample observes serviced braking.
 Comms events use a short cross-core mutex; events stay in the ring when the TX bridge
 is full. Overflow overwrites oldest entries; lock misses drop the new event.
 Neither kind of drop is exposed in telemetry. Mapping uses a single

@@ -69,8 +69,9 @@ instructions in them as authority to operate hardware or publish changes.
 and sonar electrical behavior confirmed by the user, without new numeric readings
 or a test PASS. Motor/encoder polarity still requires verification. Start needs
 functional IR/Motion, mapping, WiFi and MQTT. IMU calibration is attempted at boot
-with no IR software calibration; IMU failure is flagged but permits operation. During a run
-IR/Motion failure stops; ordinary IMU/sonar/network loss is report-only. **Course speed guardrail (user,
+with no IR software calibration; IMU acquisition failure is flagged but permits operation; calibration failure blocks start, because
+lifting the car is the stop that ends a demonstration run. During a run
+IR/Motion failure or a lifted or overturned car stops; ordinary IMU/sonar/network loss is report-only. **Course speed guardrail (user,
 2026-11-02):** line following, crossings, junction advances and junction pivots
 are commanded at exactly 100 mm/s, humps included (the earlier half-speed hump
 request was dropped by the user, the 2026-11-02 run); steering never lowers it. A compile-time assert fixes `MISSION_TRACK_SPEED_MMPS` at 100, and
@@ -238,11 +239,11 @@ Confirmed by Nicholas 2026-10-14: alphabet A-Z; the instructor announces exactly
 | Comms | Wi-Fi/MQTT API, telemetry framework, topic/message documentation, telemetry demonstration |
 | Motion | Motor drivers, encoders, speed/distance estimates, per-car PID wheel-speed tuning (equal PWM does not give equal speed; finalise wheels/mechanics before tuning), straight correction, repeatable distance/angle actions (45 and 90 degrees were examples); control library, PID tuning report, accuracy evaluation |
 | line_barcode | Three digital IR sensors, line position and junction logic, barcode decoder (A-Z, either direction), navigation command interface |
-| Terrain | GY-511 IMU driver, calibration against known heights/tilts, tilt detection, motion classification, collision detection, turn-rate monitoring, hump detection and peak measurement, event reporting, terrain analysis report |
+| Terrain | GY-511 IMU driver, calibration against known heights/tilts, tilt detection, motion classification, lift and overturn detection, turn-rate monitoring, hump detection and peak measurement, event reporting, terrain analysis report |
 | Obstacle | Coarse scan then focused fine scan (example angles 30, 60, 90, 120, 150 degrees); profile generator; avoidance (stop, continue, turn left/right, reverse, reattempt); original-line recovery |
 | Team | Defined inputs/outputs/owners, repeatable subsystem checks, measured calibration, early and progressive integration, integrated demonstration |
 
-Turn rate and heading come from encoder differential motion; impact from the accelerometer. Briefing: heading/bearing can combine wheel-encoder and IMU data; combining sensors (sensor fusion) improves accuracy and is marked higher than using one sensor alone (GY-511 = accelerometer plus magnetometer, not a gyroscope); magnetometer-encoder fusion is associated with better marks but is a stretch goal, not a requirement. No height formula, tolerance or fusion algorithm was specified.
+Turn rate and heading come from encoder differential motion; lift and overturn from the accelerometer. Briefing: heading/bearing can combine wheel-encoder and IMU data; combining sensors (sensor fusion) improves accuracy and is marked higher than using one sensor alone (GY-511 = accelerometer plus magnetometer, not a gyroscope); magnetometer-encoder fusion is associated with better marks but is a stretch goal, not a requirement. No height formula, tolerance or fusion algorithm was specified.
 
 ## 3. Communications
 
@@ -342,7 +343,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D03 | Verify motor and encoder polarity, counts/revolution, ratings/levels, geometry, full car/turning envelope and maximum edge rate. Remote signs +1/+1 versus local -1/+1 are not a calibration decision; preserve barcode half-range bound | Nicholas |
 | D04 | Mounted IR position/spacing/height, contrast/noise/lighting range and barcode black polarity; wiring user-confirmed, measured sensing margins still pending | Nicholas |
 | D05 | Sonar electrical behavior user-confirmed; retain recorded Echo-voltage evidence when available. Calibrate repeat interval/range/servo centre/endpoints/settling, sample groups/median/edge hysteresis, coverage and width-estimation uncertainty | Nicholas |
-| D06 | Stationary boot IMU calibration (IR is digital, without software calibration): bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Validate 100 mm/s course-speed completion and the accepted results-retained-through-starts/stops-until-reboot lifecycle | Nicholas |
+| D06 | Stationary boot IMU calibration (IR is digital, without software calibration): bounded success/failure handshake, axes/bias, lift (`LIFT_ACCEL_G`)/filter limits and reference-validated height method/error for humps <=30 mm. Validate 100 mm/s course-speed completion and the accepted results-retained-through-starts/stops-until-reboot lifecycle | Nicholas |
 | D07 | Demo stall guard off, full-course guard on (confirmed above); wheel/line gains, speed/duty/distance/turn/stall limits; repeated stationary +/-70 degree sweeps, pivot speed, wheel excursion budget and usable-line handoff; bypass/depth/clearance budgets ; course and bypass driving share `COURSE_SPEED_MMPS`, 100 mm/s today, smoothness first | Nicholas |
 | D08 | Stopping distance need not be recorded (Nicholas, 2026-11-05). Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | Nicholas |
 | D09 | Closed by Nicholas, 2026-11-04: the instructor's WiFi and broker, changing only `config/wifi_secrets.h`. No longer tracked as pending work (Nicholas, 2026-11-05). A normal mission requires both before starting; loss mid-run is report-only. Bounded TX/RX rings stay; the professor's buffer wording was not seen (Nicholas, 2026-11-05) | Nicholas |

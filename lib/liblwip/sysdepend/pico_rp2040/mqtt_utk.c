@@ -43,6 +43,9 @@ static uint32_t retry_ms = MQTT_RETRY_MIN_MS;
 static uint8_t rx[COMMS_FRAME_MAX];
 static unsigned rx_length;
 static bool rx_overflow;
+/* A frame the send buffer refused; sent first on the next poll. */
+static uint8_t held_frame[COMMS_FRAME_MAX];
+static unsigned held;
 
 static void retry_timeout(void *arg);
 static void attempt_timeout(void *arg);
@@ -74,6 +77,7 @@ static void schedule_retry(void)
 static void drop_connection(void)
 {
     connecting = false;
+    held = 0u;  /* like the bridge queue: nothing from before the loss */
     set_online(false);
     if (client != NULL && mqtt_client_is_connected(client))
     {
@@ -91,20 +95,18 @@ static void drain_outgoing(void)
 {
     /* A frame the send buffer refused is kept and sent first next poll:
        dropping it lost barcode events behind trace traffic (2026-11-09). */
-    static uint8_t frame[COMMS_FRAME_MAX];
-    static unsigned held;
     for (unsigned i = 0u; i < MQTT_FRAMES_PER_POLL && online; ++i)
     {
         if (0u == held)
         {
-            held = comms_bridge_take(frame, sizeof frame);
+            held = comms_bridge_take(held_frame, sizeof held_frame);
         }
         if (0u == held)
         {
             return;
         }
         /* QoS 0, not retained. */
-        if (mqtt_publish(client, MQTT_TOPIC, frame, (u16_t)held, 0u, 0u, NULL, NULL) != ERR_OK)
+        if (mqtt_publish(client, MQTT_TOPIC, held_frame, (u16_t)held, 0u, 0u, NULL, NULL) != ERR_OK)
         {
             return;	/* send buffer full: retry this frame next poll */
         }
