@@ -15,13 +15,17 @@ enum
     COMMS_COUNT_SHIFT = 4u
 };
 
-static bool comms_event_pack(comms_packed_event_t *dst, const mqtt_event_t *src)
+static bool comms_event_pack(comms_packed_event_t *dst,
+    const mqtt_event_t *src)
 {
-    if (dst == 0 || src == 0 || src->kind == 0u ||
+    if (0 == dst || 0 == src || 0u == src->kind ||
         src->kind >= MQTT_EVENT_COUNT || src->arg > COMMS_ARG_MASK)
+    {
         return false;
+    }
 
-    dst->kind_arg = (uint16_t)(((uint16_t)src->arg << COMMS_ARG_SHIFT) | src->kind);
+    dst->kind_arg =
+        (uint16_t)(((uint16_t)src->arg << COMMS_ARG_SHIFT) | src->kind);
     dst->time_ms = src->time_ms;
     dst->left_count = src->left_count;
     dst->right_count = src->right_count;
@@ -29,9 +33,11 @@ static bool comms_event_pack(comms_packed_event_t *dst, const mqtt_event_t *src)
     return true;
 }
 
-static void comms_event_unpack(mqtt_event_t *dst, const comms_packed_event_t *src)
+static void comms_event_unpack(mqtt_event_t *dst,
+    const comms_packed_event_t *src)
 {
-    *dst = (mqtt_event_t){
+    *dst = (mqtt_event_t)
+    {
         .kind = (uint8_t)(src->kind_arg & COMMS_KIND_MASK),
         .arg = (uint8_t)((src->kind_arg >> COMMS_ARG_SHIFT) & COMMS_ARG_MASK),
         .time_ms = src->time_ms,
@@ -48,29 +54,40 @@ static unsigned comms_log_head(const comms_event_log_t *log)
 
 unsigned comms_log_count(const comms_event_log_t *log)
 {
-    return log == 0 ? 0u : (unsigned)((log->indices >> COMMS_COUNT_SHIFT) & COMMS_COUNT_MASK);
+    return 0 == log ? 0u : (unsigned)((log->indices >> COMMS_COUNT_SHIFT) &
+        COMMS_COUNT_MASK);
 }
 
-static void comms_log_set_indices(comms_event_log_t *log, unsigned head, unsigned count)
+static void comms_log_set_indices(comms_event_log_t *log, unsigned head,
+    unsigned count)
 {
     log->indices = (uint16_t)((head & COMMS_HEAD_MASK) |
-                              ((count & COMMS_COUNT_MASK) << COMMS_COUNT_SHIFT));
+        ((count & COMMS_COUNT_MASK) << COMMS_COUNT_SHIFT));
 }
 
 void comms_log_init(comms_event_log_t *log)
 {
-    if (log != 0) *log = (comms_event_log_t){0};
+    if (log != 0)
+    {
+        *log = (comms_event_log_t){0};
+    }
 }
 
 bool comms_log_push(comms_event_log_t *log, const mqtt_event_t *event)
 {
-    if (log == 0) return false;
+    if (0 == log)
+    {
+        return false;
+    }
     comms_packed_event_t packed;
-    if (!comms_event_pack(&packed, event)) return false; /* no truncation */
+    if (!comms_event_pack(&packed, event))
+    {
+        return false; /* no truncation */
+    }
 
     unsigned head = comms_log_head(log);
     unsigned count = comms_log_count(log);
-    if (count == COMMS_EVENT_CAPACITY)
+    if (COMMS_EVENT_CAPACITY == count)
     {
         /* head is also the oldest slot when full: overwrite it. */
     }
@@ -86,10 +103,17 @@ bool comms_log_push(comms_event_log_t *log, const mqtt_event_t *event)
 
 bool comms_log_pop(comms_event_log_t *log, mqtt_event_t *event)
 {
-    if (log == 0 || event == 0) return false;
+    if (0 == log || 0 == event)
+    {
+        return false;
+    }
     unsigned count = comms_log_count(log);
-    if (count == 0u) return false;
-    unsigned oldest = (comms_log_head(log) + COMMS_EVENT_CAPACITY - count) % COMMS_EVENT_CAPACITY;
+    if (0u == count)
+    {
+        return false;
+    }
+    unsigned oldest = (comms_log_head(log) + COMMS_EVENT_CAPACITY - count) %
+        COMMS_EVENT_CAPACITY;
     comms_event_unpack(event, &log->events[oldest]);
     comms_log_set_indices(log, comms_log_head(log), count - 1u);
     return true;
@@ -98,16 +122,17 @@ bool comms_log_pop(comms_event_log_t *log, mqtt_event_t *event)
 bool comms_log_post_oldest(comms_event_log_t *log, comms_post_fn post)
 {
     unsigned count = comms_log_count(log);
-    if (count == 0u || post == NULL)
+    if (0u == count || NULL == post)
     {
         return false;
     }
-    unsigned oldest = (comms_log_head(log) + COMMS_EVENT_CAPACITY - count) % COMMS_EVENT_CAPACITY;
+    unsigned oldest = (comms_log_head(log) + COMMS_EVENT_CAPACITY - count) %
+        COMMS_EVENT_CAPACITY;
     mqtt_event_t event;
     comms_event_unpack(&event, &log->events[oldest]);
     uint8_t frame[MQTT_FRAME_MAX];
     unsigned length = mqtt_encode_event(frame, sizeof frame, &event);
-    if (length == 0u || !post(frame, length))
+    if (0u == length || !post(frame, length))
     {
         return false;
     }
@@ -115,7 +140,10 @@ bool comms_log_post_oldest(comms_event_log_t *log, comms_post_fn post)
     return true;
 }
 
-static uint8_t clamp8(unsigned v, unsigned max) { return (uint8_t)(v > max ? max : v); }
+static uint8_t clamp8(unsigned v, unsigned max)
+{
+    return (uint8_t)(v > max ? max : v);
+}
 
 void comms_clamp(mqtt_telemetry_t *t)
 {
@@ -127,7 +155,8 @@ void comms_clamp(mqtt_telemetry_t *t)
     t->front_mm = (uint16_t)(t->front_mm > 8191u ? 8191u : t->front_mm);
     t->front_valid = t->front_valid && t->front_mm != 8191u;
     t->hump_valid = t->hump_valid && t->hump_max != 127u;
-    t->barcode_letter = t->barcode_letter > 25u ? MQTT_NO_LETTER : t->barcode_letter;
+    t->barcode_letter =
+        t->barcode_letter > 25u ? MQTT_NO_LETTER : t->barcode_letter;
     t->barcode_action = t->barcode_action > 4u ? 0u : t->barcode_action;
 }
 
@@ -142,13 +171,15 @@ _Static_assert(COMMS_FRAME_MAX < 32u, "frame length fits 5 bits");
 typedef struct
 {
     slot_t slots[COMMS_OUTGOING_DEPTH];
-    _Atomic unsigned head, tail;	/* head: producer, tail: consumer */
+    _Atomic unsigned head;
+    _Atomic unsigned tail; /* head: producer, tail: consumer */
 } out_ring_t;
 
 typedef struct
 {
     slot_t slots[COMMS_INCOMING_DEPTH];
-    _Atomic unsigned head, tail;
+    _Atomic unsigned head;
+    _Atomic unsigned tail;
 } in_ring_t;
 
 /* Sole writer: kernel transport. Bit 0 Wi-Fi up, bit 1 broker up. */
@@ -158,31 +189,48 @@ static out_ring_t outgoing;
 static in_ring_t incoming;
 static _Atomic unsigned incoming_floor; /* transport: first eligible RX slot */
 
-static bool push(slot_t *slots, unsigned depth, _Atomic unsigned *head, _Atomic unsigned *tail,
-                 const uint8_t *frame, unsigned length)
+static bool push(slot_t *slots, unsigned depth, _Atomic unsigned *head,
+    _Atomic unsigned *tail, const uint8_t *frame, unsigned length)
 {
-    if (frame == 0 || length == 0u || length > COMMS_FRAME_MAX) return false;
+    if (0 == frame || 0u == length || length > COMMS_FRAME_MAX)
+    {
+        return false;
+    }
     unsigned h = atomic_load_explicit(head, memory_order_relaxed);
-    if ((unsigned)(h - atomic_load_explicit(tail, memory_order_acquire)) >= depth) return false;
+    if ((unsigned)(h - atomic_load_explicit(tail, memory_order_acquire)) >=
+        depth)
+    {
+        return false;
+    }
     slot_t *s = &slots[h % depth];
-    for (unsigned i = 0u; i < length; ++i) s->bytes[i] = frame[i];
+    for (unsigned i = 0u; i < length; ++i)
+    {
+        s->bytes[i] = frame[i];
+    }
     s->length = (uint8_t)length;
     atomic_store_explicit(head, h + 1u, memory_order_release);
     return true;
 }
 
-static unsigned pop(slot_t *slots, unsigned depth, _Atomic unsigned *head, _Atomic unsigned *tail,
-                    uint8_t *out, unsigned capacity)
+static unsigned pop(slot_t *slots, unsigned depth, _Atomic unsigned *head,
+    _Atomic unsigned *tail, uint8_t *out, unsigned capacity)
 {
     unsigned t = atomic_load_explicit(tail, memory_order_relaxed);
-    if (t == atomic_load_explicit(head, memory_order_acquire)) return 0u;
-    const slot_t *s = &slots[t % depth];
-    if (out == 0 || capacity < s->length)
+    if (t == atomic_load_explicit(head, memory_order_acquire))
     {
-        atomic_store_explicit(tail, t + 1u, memory_order_release);	/* cannot fit: drop it */
         return 0u;
     }
-    for (unsigned i = 0u; i < s->length; ++i) out[i] = s->bytes[i];
+    const slot_t *s = &slots[t % depth];
+    if (0 == out || capacity < s->length)
+    {
+        /* cannot fit: drop it */
+        atomic_store_explicit(tail, t + 1u, memory_order_release);
+        return 0u;
+    }
+    for (unsigned i = 0u; i < s->length; ++i)
+    {
+        out[i] = s->bytes[i];
+    }
     unsigned n = s->length;
     atomic_store_explicit(tail, t + 1u, memory_order_release);
     return n;
@@ -194,12 +242,14 @@ bool comms_bridge_post(const uint8_t *frame, unsigned length)
     {
         return false;
     }
-    return push(outgoing.slots, COMMS_OUTGOING_DEPTH, &outgoing.head, &outgoing.tail, frame, length);
+    return push(outgoing.slots, COMMS_OUTGOING_DEPTH, &outgoing.head,
+        &outgoing.tail, frame, length);
 }
 
 unsigned comms_bridge_take(uint8_t *out, unsigned capacity)
 {
-    return pop(outgoing.slots, COMMS_OUTGOING_DEPTH, &outgoing.head, &outgoing.tail, out, capacity);
+    return pop(outgoing.slots, COMMS_OUTGOING_DEPTH, &outgoing.head,
+        &outgoing.tail, out, capacity);
 }
 
 void comms_bridge_put(const uint8_t *frame, unsigned length)
@@ -218,18 +268,20 @@ unsigned comms_bridge_receive(uint8_t *out, unsigned capacity)
     unsigned tail = atomic_load_explicit(&incoming.tail, memory_order_relaxed);
     if ((int32_t)(floor - tail) > 0)
     {
-        /* Only the RX consumer advances tail, including connection-loss drops. */
+        /* Only the RX consumer advances tail, including connection-loss
+           drops. */
         atomic_store_explicit(&incoming.tail, floor, memory_order_release);
     }
     unsigned length = pop(incoming.slots, COMMS_INCOMING_DEPTH, &incoming.head,
         &incoming.tail, out, capacity);
-    return comms_bridge_ready() && floor == atomic_load_explicit(&incoming_floor,
-        memory_order_acquire) ? length : 0u;
+    return comms_bridge_ready() && floor ==
+        atomic_load_explicit(&incoming_floor, memory_order_acquire) ?
+        length : 0u;
 }
 
 bool comms_bridge_ready(void)
 {
-    return atomic_load_explicit(&link_state, memory_order_acquire) == 3u;
+    return 3u == atomic_load_explicit(&link_state, memory_order_acquire);
 }
 
 void comms_bridge_link(bool wifi_up, bool broker_up)
@@ -238,7 +290,8 @@ void comms_bridge_link(bool wifi_up, bool broker_up)
        a producer already posting at loss may publish after the first flush. */
     if (!wifi_up || !broker_up || !comms_bridge_ready())
     {
-        unsigned head = atomic_load_explicit(&outgoing.head, memory_order_acquire);
+        unsigned head = atomic_load_explicit(&outgoing.head,
+            memory_order_acquire);
         atomic_store_explicit(&outgoing.tail, head, memory_order_release);
         unsigned received = atomic_load_explicit(&incoming.head,
             memory_order_acquire);
@@ -248,8 +301,20 @@ void comms_bridge_link(bool wifi_up, bool broker_up)
         (uint8_t)((wifi_up ? 1u : 0u) | (broker_up ? 2u : 0u)),
         memory_order_release);
     /* The transport (core 0) is the only writer of the Network byte. */
-    if (wifi_up) rd_fault_clear(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST);
-    else rd_fault_set(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST);
-    if (broker_up) rd_fault_clear(RD_OWNER_NETWORK, RD_FAULT_BROKER_LOST);
-    else rd_fault_set(RD_OWNER_NETWORK, RD_FAULT_BROKER_LOST);
+    if (wifi_up)
+    {
+        rd_fault_clear(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST);
+    }
+    else
+    {
+        rd_fault_set(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST);
+    }
+    if (broker_up)
+    {
+        rd_fault_clear(RD_OWNER_NETWORK, RD_FAULT_BROKER_LOST);
+    }
+    else
+    {
+        rd_fault_set(RD_OWNER_NETWORK, RD_FAULT_BROKER_LOST);
+    }
 }
