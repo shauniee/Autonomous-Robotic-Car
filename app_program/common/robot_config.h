@@ -1,13 +1,13 @@
 /*
- *	robot_config.h
- *	Every tunable constant in one header, as #define. Relations between
- *	constants are _Static_assert, so an inconsistent edit fails the build.
- *	No runtime configuration, parsing or validation structs.
+ *  robot_config.h
+ *  Every tunable constant in one header, as #define. Relations between
+ *  constants are _Static_assert, so an inconsistent edit fails the build.
+ *  No runtime configuration, parsing or validation structs.
  *
- *	"PROVISIONAL (Dnn)" marks a value that the pending decision Dnn in
- *	docs/project-specs.md will set; change it there first, then here.
- *	Register addresses, bit fields and device register maps stay in their
- *	drivers: they are facts of the chip, not tuning.
+ *  "PROVISIONAL (Dnn)" marks a value that the pending decision Dnn in
+ *  docs/project-specs.md will set; change it there first, then here.
+ *  Register addresses, bit fields and device register maps stay in their
+ *  drivers: they are facts of the chip, not tuning.
  */
 
 #ifndef ROBOT_CONFIG_H
@@ -25,9 +25,9 @@ typedef int ER;
 #endif
 
 /* --- Tasks: provisional existing defaults, physical acceptance D13 ---- */
-#define TASK_STACK_SIZE		2048	/* bytes; tm_printf needs ~1 KB */
-#define MOTION_PRI		13
-#define FOLLOW_PRIORITY		14
+#define TASK_STACK_SIZE     2048    /* bytes; tm_printf needs ~1 KB */
+#define MOTION_PRI      13
+#define FOLLOW_PRIORITY     14
 #define IO_PRIORITY 16 /* provisional existing Terrain priority; D13 */
 #define IO_PERIOD_MS 10u /* existing calibration cadence; D13 */
 
@@ -46,39 +46,47 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 #ifndef MISSION_BENCH
 #define MISSION_BENCH 0
 #endif
-#define COMMS_TELEMETRY_PERIOD_MS	500u
-#define COMMS_REPORT_PERIOD_MS	50u	/* Reporting release: requests and events are served at this rate */
-#define COMMS_EVENT_CAPACITY	16u	/* event-log ring; oldest overwritten, drops counted */
+#define COMMS_TELEMETRY_PERIOD_MS   500u
+/* Reporting release: requests and events are served at this rate */
+#define COMMS_REPORT_PERIOD_MS  50u
+/* event-log ring; oldest overwritten, drops counted */
+#define COMMS_EVENT_CAPACITY    16u
 #define COMMS_REQUESTS_PER_RELEASE 2u /* bounded by incoming bridge depth */
-#define COMMS_EVENTS_PER_RELEASE	2u
+#define COMMS_EVENTS_PER_RELEASE    2u
 
 /* --- motion ------------------------------------------------------ */
-#define MOTION_MAX_DUTY		.80f	/* PROVISIONAL (D07): retained duty cap; verify motor/driver rating */
-#define MOTION_TARGET_MAX_MM 2000.0f /* D07: bounded by longest Mission leg; hardware validation pending */
-#define MOTION_EXPIRY_MS	60u	/* PROVISIONAL (D07): sample age limit */
-#define MOTOR_WRAP		999u	/* 20 kHz at 125 MHz with divider below */
-#define MOTOR_DIV_8_4		100u
-#define LEFT_FORWARD_A		1	/* PROVISIONAL (D03): polarity */
-#define RIGHT_FORWARD_A		1	/* PROVISIONAL (D03): polarity */
+/* PROVISIONAL (D07): retained duty cap; verify motor/driver rating */
+#define MOTION_MAX_DUTY     .80f
+/* D07: bounded by longest Mission leg; hardware validation pending */
+#define MOTION_TARGET_MAX_MM 2000.0f
+#define MOTION_EXPIRY_MS    60u /* PROVISIONAL (D07): sample age limit */
+#define MOTOR_WRAP      999u    /* 20 kHz at 125 MHz with divider below */
+#define MOTOR_DIV_8_4       100u
+#define LEFT_FORWARD_A      1   /* PROVISIONAL (D03): polarity */
+#define RIGHT_FORWARD_A     1   /* PROVISIONAL (D03): polarity */
 
 /* Encoder: one wrapping count per wheel (ARCHITECTURE, Encoder contract). */
-#define ENC_COUNT_BITS		16u
-#define ENC_COUNT_MASK		(ENC_COUNT_BITS >= 32u ? 0xFFFFFFFFu : ((1u << (ENC_COUNT_BITS % 32u)) - 1u))	/* PROVISIONAL (D03): width from counts/rev and longest segment */
-#define LEFT_ENCODER_SIGN	-1	/* MEASURED 2026-10-28: counts fell while the rewired left wheel drove forward */
-#define RIGHT_ENCODER_SIGN	1	/* PROVISIONAL (D03): polarity */
+#define ENC_COUNT_BITS      16u
+/* PROVISIONAL (D03): width from counts/rev and longest segment */
+#define ENC_COUNT_MASK      (ENC_COUNT_BITS >= 32u ? 0xFFFFFFFFu : \
+                             ((1u << (ENC_COUNT_BITS % 32u)) - 1u))
+/* MEASURED 2026-10-28: counts fell while the rewired left wheel drove
+   forward */
+#define LEFT_ENCODER_SIGN   -1
+#define RIGHT_ENCODER_SIGN  1   /* PROVISIONAL (D03): polarity */
 /* An encoder fault clears after this many valid counts (both wheels) with
    no new invalid transition: 64 counts are 16 complete quadrature cycles,
    enough to show both channels switching cleanly. This is a provisional
    electrical-progress threshold, not a calibrated wheel-travel distance. */
-#define ENC_FAULT_CLEAR_COUNTS	64u
+#define ENC_FAULT_CLEAR_COUNTS  64u
 /* 2026-11-02: a lone invalid edge costs about 0.2 mm, so it must not stop a
    run. Each one scores a point and each Motion release removes one; reaching
    this score means sustained noise. PROVISIONAL D03. */
-#define ENC_FAULT_INVALID_SCORE	8u
-#define ENC_LEFT_A_PIN		28u
-#define ENC_LEFT_B_PIN		7u
-#define ENC_RIGHT_A_PIN		1u
-#define ENC_RIGHT_B_PIN		0u
+#define ENC_FAULT_INVALID_SCORE 8u
+#define ENC_LEFT_A_PIN      28u
+#define ENC_LEFT_B_PIN      7u
+#define ENC_RIGHT_A_PIN     1u
+#define ENC_RIGHT_B_PIN     0u
 
 /* Motion geometry and control. UNMEASURED PLACEHOLDERS until #32 measures
    them (D03 geometry, D07 gains/thresholds, D08 stationary threshold).
@@ -92,8 +100,11 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
    Procedure: app_program/motion/README.md, Wheel-speed tuning. */
 /* 2026-10-31: mean of both wheels over 500 mm */
 #define ENC_COUNTS_PER_MM 11.649f
-#define TRACK_WIDTH_MM		120.0f	/* User-measured wheel centres; specs D03; effective turning calibration pending */
-#define MOTION_SPEED_MAX_MMPS	500.0f	/* PROVISIONAL (D07): speed limit; the 9-bit command field holds 511 */
+/* User-measured wheel centres; specs D03; effective turning calibration
+   pending */
+#define TRACK_WIDTH_MM      120.0f
+/* PROVISIONAL (D07): speed limit; the 9-bit command field holds 511 */
+#define MOTION_SPEED_MAX_MMPS   500.0f
 /* PROVISIONAL (D07): 2026-11-01 raised fit ~0 plus ~5 points measured floor
    load at 200 mm/s */
 #define MOTION_KS 0.05f
@@ -103,33 +114,37 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 /* PROVISIONAL (D07): duty per count/s; 2026-11-01 0.0003 oscillated below
    60 mm/s */
 #define MOTION_KP 0.0001f
-#define MOTION_KI		0.0010f	/* PROVISIONAL (D07) */
-#define MOTION_KD		0.0000f	/* PROVISIONAL (D07) */
-#define MOTION_DIST_TOL_MM	3.0f	/* PROVISIONAL (D07) */
+#define MOTION_KI       0.0010f /* PROVISIONAL (D07) */
+#define MOTION_KD       0.0000f /* PROVISIONAL (D07) */
+#define MOTION_DIST_TOL_MM  3.0f    /* PROVISIONAL (D07) */
 /* PROVISIONAL (D07): a pivot brakes at the edge of this band, so it is always
    short by about this much (2 degrees measured 88 of 90) */
 #define MOTION_ANGLE_TOL_DEG 1.0f
-#define MOTION_STATIONARY_CPS	5.0f	/* PROVISIONAL (D08): below this a wheel is stationary */
-#define MOTION_STALL_MS		400u	/* PROVISIONAL (D07) */
+/* PROVISIONAL (D08): below this a wheel is stationary */
+#define MOTION_STATIONARY_CPS   5.0f
+#define MOTION_STALL_MS     400u    /* PROVISIONAL (D07) */
 /* PROVISIONAL (D07): the end of an approach asks for too little to turn a
    wheel; 2026-11-02 sat at 3 mm/s for 1060 ms */
 #define MOTION_STALL_MIN_TARGET_CPS (10.0f * ENC_COUNTS_PER_MM)
-#define MOTION_ACTION_TIMEOUT_MS 12000u /* D07 trial: corrected turn distances */
-#define MOTION_PERIOD_MS	20u
+/* D07 trial: corrected turn distances */
+#define MOTION_ACTION_TIMEOUT_MS 12000u
+#define MOTION_PERIOD_MS    20u
 
 
 /* --- line ------------------------------------------------------- */
 /* 2026-11-01: 10 ms reads were the first change that helped at 100 mm/s */
 #define IR_SAMPLE_MS 10u
-#define IR_MAX_GAP_MS		60u
-#define IR_LEFT_PIN		26u
+#define IR_MAX_GAP_MS       60u
+#define IR_LEFT_PIN     26u
 #define IR_RIGHT_PIN 17u /* Nicholas, 2026-11-09 rewire */
 
 
-#define SAFETY_STALE_MS		60u	/* PROVISIONAL (D07): required-producer age limit */
-#define SAFETY_BOOT_GRACE_MS	1500u	/* producers may be silent this long after boot */
-#define REPORT_PERIOD_MS	500u
-#define FOLLOW_PERIOD_MS	10u
+/* PROVISIONAL (D07): required-producer age limit */
+#define SAFETY_STALE_MS     60u
+/* producers may be silent this long after boot */
+#define SAFETY_BOOT_GRACE_MS    1500u
+#define REPORT_PERIOD_MS    500u
+#define FOLLOW_PERIOD_MS    10u
 #ifndef MISSION_RECOVERY_RELEASED
 #define MISSION_RECOVERY_RELEASED 1
 #endif
@@ -142,15 +157,17 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 #define RECOVERY_TARGET_DEG 70 /* user: sweep each side of the stopped pose */
 #define RECOVERY_TARGET_TOL_DEG 5
 #define RECOVERY_OVERSHOOT_DEG 20 /* PROPOSAL D07/D08: coast before reversal */
-/* Lift-style speed profile for every planned move: acceleration builds and fades
-   at the jerk limit. PROVISIONAL D07 trial values; lower either for a gentler
-   move. Safety stops ignore this and brake at once. */
+/* Lift-style speed profile for every planned move: acceleration builds and
+   fades at the jerk limit. PROVISIONAL D07 trial values; lower either for a
+   gentler move. Safety stops ignore this and brake at once. */
 #define MOTION_ACCEL_MMPS2 150u
 #define MOTION_JERK_MMPS3 1000u
 /* Travel for a profile stop from speed v, in whole mm, rounded up. */
 #define MOTION_STOP_MM(v) ((v) * (v) / (2u * MOTION_ACCEL_MMPS2) + \
     (v) * MOTION_ACCEL_MMPS2 / (2u * MOTION_JERK_MMPS3) + 1u)
-#define MOTION_FOLLOW_STEER_QPS 300u /* PROVISIONAL D07: applied steering slew; about 250 mm/s^2 at each wheel at 100 mm/s */
+/* PROVISIONAL D07: applied steering slew; about 250 mm/s^2 at each wheel at
+   100 mm/s */
+#define MOTION_FOLLOW_STEER_QPS 300u
 /* The one course speed: line following, crossings, junction advances and bypass
    driving. Smoothness and accuracy come first, then speed. Below 60 mm/s the
    feedforward fit does not apply (2026-11-01); retune before going there. */
@@ -166,40 +183,54 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 #define MISSION_BYPASS_RELEASED 0
 #endif
 /* Bypass (D02, D12; curved sections out of scope until D12 is answered). */
-#define MISSION_OBSTACLE_STOP_MM	150u	/* user-confirmed distance to stop at, D16 */
-/* Start slowing this far out, so the planned stop ends at MISSION_OBSTACLE_STOP_MM. */
-#define MISSION_OBSTACLE_SLOW_MM (MISSION_OBSTACLE_STOP_MM + MOTION_STOP_MM(COURSE_SPEED_MMPS))
-#define MISSION_STATIONARY_MS		150u	/* encoders unchanged this long before a scan */
+/* user-confirmed distance to stop at, D16 */
+#define MISSION_OBSTACLE_STOP_MM    150u
+/* Start slowing this far out, so the planned stop ends at
+   MISSION_OBSTACLE_STOP_MM. */
+#define MISSION_OBSTACLE_SLOW_MM \
+    (MISSION_OBSTACLE_STOP_MM + MOTION_STOP_MM(COURSE_SPEED_MMPS))
+/* encoders unchanged this long before a scan */
+#define MISSION_STATIONARY_MS       150u
 /* Reference for reported clearance only; the bypass side ignores it. */
 #define MISSION_BYPASS_MIN_CLEAR_MM 220u
-#define MISSION_BYPASS_TIMEOUT_MS	90000u	/* whole bypass must finish by then */
-#define BYPASS_TURN_SPEED_MMPS 36u /* PROVISIONAL D07: recovery pivot speed; 7 mm/s overran the action timeout */
+/* whole bypass must finish by then */
+#define MISSION_BYPASS_TIMEOUT_MS   90000u
+/* PROVISIONAL D07: recovery pivot speed; 7 mm/s overran the action timeout */
+#define BYPASS_TURN_SPEED_MMPS 36u
 
 /* DOUT commissioning defaults, NOT calibrated limits (D02/D03/D04/D07).
    Zero measurement fields deliberately inhibit navigation. */
 /* Distance-based digital steering (reference-style): a strong fixed correction
    while one sensor is black, bend memory from repeated same-side touches, and a
-   gentle drift toward the last side on white/white. Trial values, not calibrated. */
+   gentle drift toward the last side on white/white. Trial values, not
+   calibrated. */
 /* PROVISIONAL D07 trial: one sensor black; 115 overshot at 100 mm/s
    (2026-11-02) */
 #define LINE_KP_Q 45
-#define LINE_KI_QPMM 1.0f /* PROVISIONAL D07 trial: integral growth per mm of one touch */
+/* PROVISIONAL D07 trial: integral growth per mm of one touch */
+#define LINE_KI_QPMM 1.0f
 /* PROVISIONAL D07 trial: with LINE_KP_Q gives the 90 used in bends
    (2026-11-02) */
 #define LINE_I_MAX_Q 45
-#define LINE_I_FADE_QPMM 0.5f /* PROVISIONAL D07 trial: integral fade per mm of white/white */
+/* PROVISIONAL D07 trial: integral fade per mm of white/white */
+#define LINE_I_FADE_QPMM 0.5f
 /* PROVISIONAL D07 trial 2026-11-02: starting integral after a pivot */
 #define LINE_TURN_LEAN_Q 30
-#define LINE_DRIFT_Q 8 /* PROVISIONAL D07 trial: white/white drift toward the last side */
+/* PROVISIONAL D07 trial: white/white drift toward the last side */
+#define LINE_DRIFT_Q 8
 /* PROVISIONAL D07 trial: white/white this far past the last touch is loss;
    2026-11-02: the drift arc can stay between the sensors for about 270 mm */
 #define LINE_LOST_MM 350u
-#define LINE_RELEASE_QPS 1800u /* steering to zero: a crossbar needs it off at once */
-#define LINE_REVERSE_QPS 600u /* PROVISIONAL D07 trial: back to zero when the other side touches */
-_Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < LINE_TURN_LEAN_Q &&
+/* steering to zero: a crossbar needs it off at once */
+#define LINE_RELEASE_QPS 1800u
+/* PROVISIONAL D07 trial: back to zero when the other side touches */
+#define LINE_REVERSE_QPS 600u
+_Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q &&
+    LINE_DRIFT_Q < LINE_TURN_LEAN_Q &&
     LINE_TURN_LEAN_Q <= LINE_I_MAX_Q && LINE_KP_Q + LINE_I_MAX_Q <= 127 &&
     LINE_KI_QPMM > 0.0f && LINE_I_FADE_QPMM > 0.0f &&
-    (float)LINE_I_MAX_Q / LINE_I_FADE_QPMM < (float)LINE_LOST_MM, "line steering ordering");
+    (float)LINE_I_MAX_Q / LINE_I_FADE_QPMM < (float)LINE_LOST_MM,
+    "line steering ordering");
 #ifndef NAV_GEOMETRY_RELEASED
 #define NAV_GEOMETRY_RELEASED 0
 #endif
@@ -216,7 +247,9 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
    reads were not, and real ones can read under 9 mm. With a turn queued,
    two samples in a row are enough */
 #define NAV_CONFIRM_MM 6u
-#define NAV_ONSET_SKEW_MM 15u /* PROVISIONAL D02 trial: both sensors went black within this = crossing; set from line traces */
+/* PROVISIONAL D02 trial: both sensors went black within this = crossing; set
+   from line traces */
+#define NAV_ONSET_SKEW_MM 15u
 #define NAV_REARM_MM 10u
 /* PROVISIONAL D02 trial 2026-11-04: straight roll at course speed from commit,
    no steering, twice the crossbar */
@@ -228,7 +261,8 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define NAV_TURN_SENSE_DEG 60.0f
 #define NAV_UTURN_MAX_DEG 210.0f
 #define NAV_UTURN_SENSE_DEG 150.0f
-#define NAV_PAUSE_MS 200u /* Nicholas D02: U-turn stationary pause; PROVISIONAL until measured */
+/* Nicholas D02: U-turn stationary pause; PROVISIONAL until measured */
+#define NAV_PAUSE_MS 200u
 #ifndef BARCODE_DIAGNOSTICS
 #define BARCODE_DIAGNOSTICS 0
 #endif
@@ -239,14 +273,17 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
    #59 measures print scale and polarity (D01, D04). */
 /* PROVISIONAL (D04): as the line modules (IR_BLACK_LEVEL); 2026-11-02 */
 #define BARCODE_BLACK_HIGH 1
-#define BARCODE_SENSOR_LEFT_MM	55u	/* User-reported position left of the axle centre; specs D01 */
+/* User-reported position left of the axle centre; specs D01 */
+#define BARCODE_SENSOR_LEFT_MM  55u
 /* PROVISIONAL (D01): about 0.9 mm; half-size narrow bars read 16 to 21
    (2026-11-09), shorter runs are chatter */
 #define BARCODE_MIN_ELEMENT_COUNTS 10u
-#define BARCODE_MAX_ELEMENT_COUNTS 400u	/* PROVISIONAL (D01): longer runs are open floor; a 2x print's wide bar is about 210 */
-#define BARCODE_EVENT_CAPACITY	8u
-#define BARCODE_EDGE_CAPACITY	64u	/* power of two: indices wrap unsigned */
-#define BARCODE_SERVICE_BUDGET	16u
+/* PROVISIONAL (D01): longer runs are open floor; a 2x print's wide bar is
+   about 210 */
+#define BARCODE_MAX_ELEMENT_COUNTS 400u
+#define BARCODE_EVENT_CAPACITY  8u
+#define BARCODE_EDGE_CAPACITY   64u /* power of two: indices wrap unsigned */
+#define BARCODE_SERVICE_BUDGET  16u
 
 /* --- terrain ---------------------------------------------------- */
 #ifndef TERRAIN_DIAGNOSTICS
@@ -255,54 +292,66 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define TERRAIN_CALIBRATION_PERIOD_MS 10u
 #define TERRAIN_CALIBRATION_TIMEOUT_MS 5000u /* software budget: 100 samples at
                                               50 Hz plus scheduling margin */
-#define TERRAIN_PERIOD_MS	20u
-#define GY511_TIMEOUT_US	5000u
-#define ACCEL_MG_PER_LSB	0.002f	/* g per digit: 2 mg/digit at +/- 4 g, high resolution (LSM303DLHC) */
-#define FILTER_DIV		5	/* IIR filter weight 1/5; PROVISIONAL (D06) */
-#define HUMP_ROLL_ENTER_DEG	3.5f	/* PROVISIONAL (D06): from the roll average while stopped */
-#define HUMP_ROLL_EXIT_DEG	2.0f	/* PROVISIONAL (D06) */
+#define TERRAIN_PERIOD_MS   20u
+#define GY511_TIMEOUT_US    5000u
+/* g per digit: 2 mg/digit at +/- 4 g, high resolution (LSM303DLHC) */
+#define ACCEL_MG_PER_LSB    0.002f
+#define FILTER_DIV      5   /* IIR filter weight 1/5; PROVISIONAL (D06) */
+/* PROVISIONAL (D06): from the roll average while stopped */
+#define HUMP_ROLL_ENTER_DEG 3.5f
+#define HUMP_ROLL_EXIT_DEG  2.0f    /* PROVISIONAL (D06) */
 /* PROVISIONAL (D06): filtered vertical axis this far off 1 g means lifted or
    overturned; 0.3 g is about 45 degrees of tilt */
 #define LIFT_ACCEL_G 0.3f
-#define HUMP_RESULT_BITS	7u	/* reported height: 7 bits, all-ones is the invalid code */
-#define HUMP_MM_PER_COUNT	1u	/* PROVISIONAL (D06): scale of the reported 7-bit result */
+/* reported height: 7 bits, all-ones is the invalid code */
+#define HUMP_RESULT_BITS    7u
+/* PROVISIONAL (D06): scale of the reported 7-bit result */
+#define HUMP_MM_PER_COUNT   1u
 /* Dashboard IMU graph rate; the climb is the part worth seeing. */
 #define TERRAIN_TRACE_FLAT_MS 100u
 #define TERRAIN_TRACE_HUMP_MS 50u
-#define HUMP_MIN_HEIGHT_MM	5u	/* PROVISIONAL (D06): smaller rises are not humps */
-#define HUMP_MAX_HEIGHT_MM	40u	/* PROVISIONAL (D06): course limit 30 mm plus margin; above it the car was lifted */
+/* PROVISIONAL (D06): smaller rises are not humps */
+#define HUMP_MIN_HEIGHT_MM  5u
+/* PROVISIONAL (D06): course limit 30 mm plus margin; above it the car was
+   lifted */
+#define HUMP_MAX_HEIGHT_MM  40u
 /* PROVISIONAL (D06): travel over the exit level; 2026-11-02 humps 76 and 156,
    curves 26 or less */
 #define HUMP_MIN_TRAVEL_MM 50u
-#define HUMP_MAX_TRAVEL_MM	400u	/* PROVISIONAL (D06): tilted further than this is new ground */
-#define HUMP_FLAT_SAMPLES	10u	/* PROVISIONAL (D06): releases below the exit level that end an encounter */
+/* PROVISIONAL (D06): tilted further than this is new ground */
+#define HUMP_MAX_TRAVEL_MM  400u
+/* PROVISIONAL (D06): releases below the exit level that end an encounter */
+#define HUMP_FLAT_SAMPLES   10u
 /* PROVISIONAL (D06): one 10 mm hump read about 12.5 uncorrected, 2026-11-02 and
    2026-11-02 */
 #define HUMP_CALIB_FACTOR 0.8f
 
 /* --- obstacle --------------------------------------------------- */
-#define SONAR_REPEAT_MS		60u	/* PROVISIONAL (D05): trigger-to-trigger */
-#define SONAR_TIMEOUT_US	30000u	/* no echo after this long */
-#define SONAR_MIN_PULSE_US	150u	/* shorter than this is not a real echo */
-#define SONAR_NO_ECHO_LIMIT	3u	/* consecutive misses that set the fault bit */
-#define SONAR_MM_PER_MS_X10	1715u	/* mm per ms of pulse x10: 343 m/s round trip, PROVISIONAL (D05) */
+#define SONAR_REPEAT_MS     60u /* PROVISIONAL (D05): trigger-to-trigger */
+#define SONAR_TIMEOUT_US    30000u  /* no echo after this long */
+#define SONAR_MIN_PULSE_US  150u    /* shorter than this is not a real echo */
+#define SONAR_NO_ECHO_LIMIT 3u  /* consecutive misses that set the fault bit */
+/* mm per ms of pulse x10: 343 m/s round trip, PROVISIONAL (D05) */
+#define SONAR_MM_PER_MS_X10 1715u
 /* Servo and scan. UNMEASURED PLACEHOLDERS until #60 (D05). */
-#define SERVO_PIN		12u
-#define SERVO_CENTRE_US		1500u	/* PROVISIONAL (D05): faces forward */
-#define SERVO_US_PER_DEG	10u	/* PROVISIONAL (D05): endpoints and scale */
+#define SERVO_PIN       12u
+#define SERVO_CENTRE_US     1500u   /* PROVISIONAL (D05): faces forward */
+#define SERVO_US_PER_DEG    10u /* PROVISIONAL (D05): endpoints and scale */
 /* user: the servo can do +/-60 degrees (2026-11-03); calibrate D05 */
 #define SERVO_MAX_DEG 60
-/* Side look while passing: the servo's measured limit. 70 degrees sat beyond it,
-   which put the rear estimate short. Calibrate D05. */
+/* Side look while passing: the servo's measured limit. 70 degrees sat beyond
+   it, which put the rear estimate short. Calibrate D05. */
 #define SERVO_LOOK_DEG SERVO_MAX_DEG
-#define SERVO_STEP_MS		10u	/* PROVISIONAL (D05): 1 degree per step, a bypass look must fit BYPASS_SENSE_TIMEOUT_MS */
-#define SERVO_SETTLE_MS		100u	/* PROVISIONAL (D05) */
+/* PROVISIONAL (D05): 1 degree per step, a bypass look must fit
+   BYPASS_SENSE_TIMEOUT_MS */
+#define SERVO_STEP_MS       10u
+#define SERVO_SETTLE_MS     100u    /* PROVISIONAL (D05) */
 /* settled readings every 10 degrees, -60..60 */
 #define OBSTACLE_COARSE_STEP_DEG 10
-#define OBSTACLE_FINE_STEP_DEG	5	/* refine edges within the servo limits */
+#define OBSTACLE_FINE_STEP_DEG  5   /* refine edges within the servo limits */
 /* User-measured ahead of the axle (2026-11-03); D05 */
 #define OBSTACLE_SONAR_FORWARD_MM 105.0f
-#define OBSTACLE_SONAR_LEFT_MM	0.0f	/* PROVISIONAL (D05) */
+#define OBSTACLE_SONAR_LEFT_MM  0.0f    /* PROVISIONAL (D05) */
 /* Proposed D05 settings for software verification, not calibrated limits.
    Physical release remains inhibited. */
 #define OBSTACLE_SCAN_GROUP_SAMPLES 3u
@@ -310,8 +359,10 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define OBSTACLE_PROFILE_DEPTH_ENTER_MM 30u
 #define OBSTACLE_PROFILE_DEPTH_EXIT_MM 40u
 #define OBSTACLE_PROFILE_ADJACENT_RAYS 2u
-#define OBSTACLE_PROFILE_RANGE_ERROR_MM 10u /* proposed model input, not sensor accuracy */
-#define BYPASS_SPEED_MMPS COURSE_SPEED_MMPS /* Nicholas D07: one speed; 9 mm/s overran MISSION_BYPASS_TIMEOUT_MS */
+/* proposed model input, not sensor accuracy */
+#define OBSTACLE_PROFILE_RANGE_ERROR_MM 10u
+/* Nicholas D07: one speed; 9 mm/s overran MISSION_BYPASS_TIMEOUT_MS */
+#define BYPASS_SPEED_MMPS COURSE_SPEED_MMPS
 #define BYPASS_TRAVEL_MM 4000u
 /* PROVISIONAL D05: slewing 70 degrees is estimated at 1.75 s from scan
    timing */
@@ -327,7 +378,8 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define BYPASS_BODY_REAR_MM 95u
 /* Nicholas 2026-11-05: added to the box edge for the leg out. Nose to rear,
    without the barcode arm. */
-#define BYPASS_BODY_HALF_LENGTH_MM ((BYPASS_BODY_NOSE_MM + BYPASS_BODY_REAR_MM) / 2u)
+#define BYPASS_BODY_HALF_LENGTH_MM \
+    ((BYPASS_BODY_NOSE_MM + BYPASS_BODY_REAR_MM) / 2u)
 #define BYPASS_CLEARANCE_MM 30u
 /* PROVISIONAL D07: beyond a pivot's reach, for range jumps of about 10 mm
    (2026-11-03) */
@@ -343,8 +395,8 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define BYPASS_LEG_MAX_MM 550u
 /* User-chosen: car side to the box's side while passing, the too-close limit */
 #define BYPASS_SAFE_GAP_MM 10u
-/* User-chosen 2026-11-05: car side to the box rear before pivoting back; the rear
-   wire hit at 10 mm */
+/* User-chosen 2026-11-05: car side to the box rear before pivoting back; the
+   rear wire hit at 10 mm */
 #define BYPASS_REAR_GAP_MM 20u
 /* PROVISIONAL D05: travel with the side ray off the box before it counts as
    clear */
@@ -362,7 +414,8 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
    (2026-11-03) plus 26 mm from a 5 degree heading error over a 300 mm pass. */
 #define BYPASS_PASS_ALLOWANCE_MM 40u
 /* PROVISIONAL D02: the bypass passes at least this much box, whatever the side
-   ray reads. Set it to the deepest box; course obstacle depth is not specified. */
+   ray reads. Set it to the deepest box; course obstacle depth is not
+   specified. */
 #define BYPASS_MIN_DEPTH_MM 200u
 #define BYPASS_RETURN_HEADING_DEG 5u
 #define MISSION_SCAN_RETRIES 1u
@@ -371,41 +424,52 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 /* beyond the stop distance plus any reverse, so a range jump is not a
    removal */
 #define MISSION_SCAN_CLEAR_MARGIN_MM 30u
-#define OBSTACLE_EXPECTED_MAX_WIDTH_MM 200u /* supplied obstacle width upper bound */
-#define OBSTACLE_SCAN_DEADLINE_MS	20000u	/* includes slow slew and per-ray settling */
-#define ECHO_PIN		3	/* PROVISIONAL (D05): <= 3.3 V before connecting */
-#define TRIGGER_PIN		2
+/* supplied obstacle width upper bound */
+#define OBSTACLE_EXPECTED_MAX_WIDTH_MM 200u
+/* includes slow slew and per-ray settling */
+#define OBSTACLE_SCAN_DEADLINE_MS   20000u
+#define ECHO_PIN        3   /* PROVISIONAL (D05): <= 3.3 V before connecting */
+#define TRIGGER_PIN     2
 
 /* --- Shared inputs and locks ---------------------------------------- */
-#define BUTTON_GP20		20u
-#define BUTTON_GP21		21u
-#define BUTTON_DEBOUNCE_MS	30u
-#define RD_SNAPSHOT_LOCK_MS	2u	/* bounded wait for a mutex-guarded snapshot copy */
+#define BUTTON_GP20     20u
+#define BUTTON_GP21     21u
+#define BUTTON_DEBOUNCE_MS  30u
+/* bounded wait for a mutex-guarded snapshot copy */
+#define RD_SNAPSHOT_LOCK_MS 2u
 
 /* --- Relations ----------------------------------------------------- */
 _Static_assert(MOTION_MAX_DUTY > 0.0f && MOTION_MAX_DUTY <= 1.0f,
-	"motion duty limit must be a fraction");
+    "motion duty limit must be a fraction");
 _Static_assert(MOTION_EXPIRY_MS > 2u * FOLLOW_PERIOD_MS,
-	"motion sample age limit must span at least two follow releases");
-_Static_assert(IR_MAX_GAP_MS > IR_SAMPLE_MS, "IR gap limit below sample period");
+    "motion sample age limit must span at least two follow releases");
+_Static_assert(IR_MAX_GAP_MS > IR_SAMPLE_MS,
+    "IR gap limit below sample period");
 _Static_assert(IR_BLACK_LEVEL <= 1u, "digital black level must be 0 or 1");
 _Static_assert((BARCODE_EDGE_CAPACITY & (BARCODE_EDGE_CAPACITY - 1u)) == 0u,
-	"barcode edge ring capacity must be a power of two");
-_Static_assert(BARCODE_MIN_ELEMENT_COUNTS > 0u && BARCODE_MIN_ELEMENT_COUNTS < BARCODE_MAX_ELEMENT_COUNTS &&
-	BARCODE_MAX_ELEMENT_COUNTS < ENC_COUNT_MASK / 2u && BARCODE_SENSOR_LEFT_MM * 2u < (unsigned)TRACK_WIDTH_MM,
-	"barcode width limits and sensor offset");
+    "barcode edge ring capacity must be a power of two");
+_Static_assert(BARCODE_MIN_ELEMENT_COUNTS > 0u &&
+    BARCODE_MIN_ELEMENT_COUNTS < BARCODE_MAX_ELEMENT_COUNTS &&
+    BARCODE_MAX_ELEMENT_COUNTS < ENC_COUNT_MASK / 2u &&
+    BARCODE_SENSOR_LEFT_MM * 2u < (unsigned)TRACK_WIDTH_MM,
+    "barcode width limits and sensor offset");
 _Static_assert(BARCODE_EVENT_CAPACITY >= 1u, "barcode event queue empty");
-_Static_assert(ENC_COUNT_BITS >= 8u && ENC_COUNT_BITS <= 32u, "encoder count width out of range");
+_Static_assert(ENC_COUNT_BITS >= 8u && ENC_COUNT_BITS <= 32u,
+    "encoder count width out of range");
 _Static_assert((LEFT_ENCODER_SIGN == 1 || LEFT_ENCODER_SIGN == -1) &&
-	(RIGHT_ENCODER_SIGN == 1 || RIGHT_ENCODER_SIGN == -1), "encoder sign must be +1 or -1");
-_Static_assert(MOTION_SPEED_MAX_MMPS < 511.0f, "commanded speed must fit the 9-bit command field");
-_Static_assert(MOTION_KF >= 0.0f && MOTION_KS >= 0.0f && MOTION_KS < MOTION_MAX_DUTY,
-	"feedforward terms must be non-negative and below the duty limit");
+    (RIGHT_ENCODER_SIGN == 1 || RIGHT_ENCODER_SIGN == -1),
+    "encoder sign must be +1 or -1");
+_Static_assert(MOTION_SPEED_MAX_MMPS < 511.0f,
+    "commanded speed must fit the 9-bit command field");
+_Static_assert(MOTION_KF >= 0.0f && MOTION_KS >= 0.0f &&
+    MOTION_KS < MOTION_MAX_DUTY,
+    "feedforward terms must be non-negative and below the duty limit");
 _Static_assert(MOTION_SPEED_MAX_MMPS > 0.0f && ENC_COUNTS_PER_MM > 0.0f &&
-	TRACK_WIDTH_MM > 0.0f, "motion geometry must be positive");
+    TRACK_WIDTH_MM > 0.0f, "motion geometry must be positive");
 _Static_assert(MOTION_TARGET_MAX_MM * ENC_COUNTS_PER_MM < ENC_COUNT_MASK / 2u,
     "distance targets must fit encoder signed half range");
-_Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS, "stall limit must precede the action timeout");
+_Static_assert(MOTION_STALL_MS < MOTION_ACTION_TIMEOUT_MS,
+    "stall limit must precede the action timeout");
 _Static_assert(MOTION_ACCEL_MMPS2 > 0u && MOTION_ACCEL_MMPS2 <= 1000u &&
     MOTION_JERK_MMPS3 * MOTION_PERIOD_MS >= 1000u,
     "the profile must fit its 11-bit field and move every release");
@@ -418,12 +482,17 @@ _Static_assert(MOTION_FOLLOW_STEER_QPS > 0u &&
     MISSION_TRACK_SPEED_MMPS <= MOTION_SPEED_MAX_MMPS,
     "tracking speed and steering step must remain bounded");
 _Static_assert(MISSION_TRACK_SPEED_MMPS * 2.0f <= MOTION_SPEED_MAX_MMPS,
-	"Mission speeds must stay within the Motion speed limit");
-_Static_assert(SONAR_TIMEOUT_US / 1000u < SONAR_REPEAT_MS && SONAR_MIN_PULSE_US < SONAR_TIMEOUT_US &&
-	SONAR_NO_ECHO_LIMIT >= 1u, "sonar timing: the timeout must fit inside the repeat interval");
-_Static_assert(SERVO_MAX_DEG > 0 && SERVO_MAX_DEG * (int)SERVO_US_PER_DEG < (int)SERVO_CENTRE_US &&
-	SERVO_MAX_DEG > OBSTACLE_COARSE_STEP_DEG &&
-	OBSTACLE_COARSE_STEP_DEG >= OBSTACLE_FINE_STEP_DEG && OBSTACLE_FINE_STEP_DEG > 0, "servo sweep out of range");
+    "Mission speeds must stay within the Motion speed limit");
+_Static_assert(SONAR_TIMEOUT_US / 1000u < SONAR_REPEAT_MS &&
+    SONAR_MIN_PULSE_US < SONAR_TIMEOUT_US &&
+    SONAR_NO_ECHO_LIMIT >= 1u,
+    "sonar timing: the timeout must fit inside the repeat interval");
+_Static_assert(SERVO_MAX_DEG > 0 &&
+    SERVO_MAX_DEG * (int)SERVO_US_PER_DEG < (int)SERVO_CENTRE_US &&
+    SERVO_MAX_DEG > OBSTACLE_COARSE_STEP_DEG &&
+    OBSTACLE_COARSE_STEP_DEG >= OBSTACLE_FINE_STEP_DEG &&
+    OBSTACLE_FINE_STEP_DEG > 0,
+    "servo sweep out of range");
 _Static_assert(MOTION_PRI < FOLLOW_PRIORITY,
     "Motion must outrank Mission");
 _Static_assert(IO_PRIORITY > 4, "I/O stays below kernel WiFi/USB services");
@@ -432,10 +501,12 @@ _Static_assert(SAFETY_STALE_MS >= IR_SAMPLE_MS &&
     "provisional producer limits must cover their release intervals");
 _Static_assert(GY511_TIMEOUT_US < IO_PERIOD_MS * 1000u,
     "one I2C operation must not consume a whole I/O release");
-_Static_assert(HUMP_ROLL_ENTER_DEG > HUMP_ROLL_EXIT_DEG && HUMP_ROLL_EXIT_DEG > 0.0f,
-	"hump roll exit must sit below entry");
-_Static_assert(COMMS_TELEMETRY_PERIOD_MS % COMMS_REPORT_PERIOD_MS == 0u && COMMS_EVENT_CAPACITY >= 4u,
-	"telemetry period must be a whole number of Reporting releases");
+_Static_assert(HUMP_ROLL_ENTER_DEG > HUMP_ROLL_EXIT_DEG &&
+    HUMP_ROLL_EXIT_DEG > 0.0f,
+    "hump roll exit must sit below entry");
+_Static_assert(COMMS_TELEMETRY_PERIOD_MS % COMMS_REPORT_PERIOD_MS == 0u &&
+    COMMS_EVENT_CAPACITY >= 4u,
+    "telemetry period must be a whole number of Reporting releases");
 _Static_assert(BYPASS_BACKUP_MAX_MM <= 255u,
     "Mission stores the reverse in 8 bits");
 _Static_assert(BYPASS_TRAVEL_MM <= 4095u && BYPASS_EDGE_SAMPLES > 0u &&
