@@ -257,7 +257,9 @@ _Static_assert(LINE_DRIFT_Q >= 0 && LINE_DRIFT_Q < LINE_KP_Q && LINE_DRIFT_Q < L
 #define FILTER_DIV		5	/* IIR filter weight 1/5; PROVISIONAL (D06) */
 #define HUMP_ROLL_ENTER_DEG	3.5f	/* PROVISIONAL (D06): from the roll average while stopped */
 #define HUMP_ROLL_EXIT_DEG	2.0f	/* PROVISIONAL (D06) */
-#define IMPACT_THRESHOLD_G	2.5f	/* PROVISIONAL (D06); must stay below the +/- 4 g range */
+/* PROVISIONAL (D06): filtered vertical axis this far off 1 g means lifted or
+   overturned; 0.3 g is about 45 degrees of tilt */
+#define LIFT_ACCEL_G 0.3f
 #define HUMP_RESULT_BITS	7u	/* reported height: 7 bits, all-ones is the invalid code */
 #define HUMP_MM_PER_COUNT	1u	/* PROVISIONAL (D06): scale of the reported 7-bit result */
 /* Dashboard IMU graph rate; the climb is the part worth seeing. */
