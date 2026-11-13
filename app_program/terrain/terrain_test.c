@@ -8,7 +8,8 @@
 #include "../test_report.h"
 
 #if APP_TEST
-void terrain_test(void) {
+void terrain_test(void)
+{
     /* Calibration runs on the I/O task and its own timeout ends it;
        this bound is only a backstop. */
     uint32_t waited = 0u;
