@@ -47,8 +47,10 @@ typedef struct
 
 _Static_assert(RECOVERY_FAILED < 4, "recovery phase fits 2 bits");
 
-void recovery_control_begin(recovery_control_t *control, const recovery_input_t *input);
-void recovery_control_step(recovery_control_t *control, const recovery_input_t *input,
+void recovery_control_begin(recovery_control_t *control,
+    const recovery_input_t *input);
+void recovery_control_step(recovery_control_t *control,
+    const recovery_input_t *input,
     recovery_output_t *output);
 
 #endif /* RECOVERY_CONTROL_H */

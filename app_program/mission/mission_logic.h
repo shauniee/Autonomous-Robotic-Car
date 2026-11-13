@@ -1,9 +1,9 @@
 /*
- *	mission_logic.h
- *	Kernel-free Mission state machine: one switch on the state with one
- *	handler per state. mission.c supplies the inputs each release and applies
- *	the outputs. The only way to move the robot is the MotionCommand returned
- *	here (the Motion contract); a state never touches motors or the encoder.
+ *    mission_logic.h
+ *    Kernel-free Mission state machine: one switch on the state with one
+ *    handler per state. mission.c supplies the inputs each release and applies
+ *    the outputs. The only way to move the robot is the MotionCommand returned
+ *    here (the Motion contract); a state never touches motors or the encoder.
  */
 
 #ifndef MISSION_LOGIC_H
@@ -95,7 +95,8 @@ typedef struct
 
 typedef struct
 {
-    MotionCommand command;	/* written every release; STOP unless following or acting */
+    /* written every release; STOP unless following or acting */
+    MotionCommand command;
     uint16_t event_arg2 : 10; /* clearance mm (<= 1023) or barcode action */
     uint8_t event_kind : 3; /* mqtt_event_kind_t, 0 none; one per release */
     uint8_t nav_rejected : 2; /* 0 none, 1 measurements, 2 geometry, 3 entry */
@@ -183,7 +184,8 @@ bool mission_queue_direction(Mission *mission, uint8_t action);
 void mission_init(Mission *m, uint32_t now_ms);
 void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out);
 /* True when this release's read still needs its own route event: mission_step
-   reports reads only while following, and another event can replace that one. */
+   reports reads only while following, and another event can replace that one.
+   */
 bool mission_barcode_event_needed(const MissionInputs *in,
     const MissionOutputs *out);
 /* Diagnostic record of the line decision mission_step just made. */

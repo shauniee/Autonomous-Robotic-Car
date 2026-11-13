@@ -48,7 +48,7 @@ void safety_step(bool line_required)
         /* Capture transient owner faults before Motion clears them at rest. */
         uint8_t motion_faults = rd_fault_get(RD_OWNER_MOTION);
         uint8_t terrain_faults = rd_fault_get(RD_OWNER_TERRAIN);
-        if (held == 0u)
+        if (0u == held)
         {
             (void)motion_stop();
         }

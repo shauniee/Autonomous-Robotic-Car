@@ -21,7 +21,7 @@ bool line_trace_publish(const mqtt_line_trace_t *trace)
 unsigned line_trace_take(uint8_t *out, unsigned capacity)
 {
     uint32_t slot;
-    if (out == NULL || capacity < MQTT_LEN_LINE_TRACE ||
+    if (NULL == out || capacity < MQTT_LEN_LINE_TRACE ||
         !trace_ring_peek(&ring, &slot))
     {
         return 0u;

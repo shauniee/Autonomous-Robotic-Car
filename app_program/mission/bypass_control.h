@@ -18,8 +18,11 @@ typedef enum
 } bypass_work_t;
 typedef struct
 {
-    enc_count_t origin[2], previous[2];
-    uint32_t started_ms, phase_ms, action_ms;
+    enc_count_t origin[2];
+    enc_count_t previous[2];
+    uint32_t started_ms;
+    uint32_t phase_ms;
+    uint32_t action_ms;
     uint32_t sensor_sequence;
     /* Fill spare bits in the Q8 storage words without unaligned accesses. */
     int32_t forward_q8 : 21;
@@ -88,8 +91,10 @@ uint8_t bypass_control_backup_mm(const ObstacleProfile *profile,
     uint16_t planning_width_mm);
 bool bypass_control_can_begin(const bypass_input_t *input,
     const ObstacleProfile *profile, uint16_t planning_width_mm);
-bool bypass_control_begin(bypass_control_t *control, const bypass_input_t *input,
-    const ObstacleProfile *profile, uint16_t planning_width_mm, uint8_t *action_id);
+bool bypass_control_begin(bypass_control_t *control,
+    const bypass_input_t *input,
+    const ObstacleProfile *profile, uint16_t planning_width_mm,
+        uint8_t *action_id);
 void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
     uint8_t *action_id, bypass_output_t *output);
 
