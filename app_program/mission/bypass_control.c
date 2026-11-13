@@ -134,9 +134,18 @@ static float offset_mm(const ObstacleProfile *profile, bool left)
     return edge_mm(profile, left) + pass_distance_mm(left);
 }
 
-/* The shorter distance to an edge picks the side; a tie goes left. */
+/* A side the scan alone proves clear is taken; otherwise the shorter distance
+   to an edge picks the side and a tie goes left. Clearance 0 is unproven, not
+   blocked, and two noisy clearances are never compared. */
 static bool pass_left(const ObstacleProfile *profile)
 {
+    bool left_clear = profile->left_clearance_mm >= MISSION_BYPASS_MIN_CLEAR_MM;
+    bool right_clear =
+        profile->right_clearance_mm >= MISSION_BYPASS_MIN_CLEAR_MM;
+    if (left_clear != right_clear)
+    {
+        return left_clear;
+    }
     return edge_mm(profile, true) <= edge_mm(profile, false);
 }
 

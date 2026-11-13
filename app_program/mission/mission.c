@@ -25,6 +25,30 @@ static const char *const bypass_route_names[BYPASS_ROUTE_FAILED + 1] = {
     "OUT", "OFFSET", "PARALLEL", "PASS", "REAR", "IN", "RETURN", "DONE",
     "FAILED"};
 
+#if MISSION_BENCH
+/* Bench image moves, run in turn by GP20 at course speed; target in mm or
+   degrees (+ left). */
+typedef struct
+{
+    const char *name;
+    motion_mode_t mode;
+    int16_t target;
+} bench_move_t;
+
+enum
+{
+    BENCH_MOVE_COUNT = 5
+};
+
+static const bench_move_t bench_moves[BENCH_MOVE_COUNT] = {
+    {"short_forward", MOTION_MODE_DISTANCE, 100},
+    {"straight_1m", MOTION_MODE_DISTANCE, 1000},
+    {"left_90", MOTION_MODE_TURN, 90},
+    {"right_90", MOTION_MODE_TURN, -90},
+    {"turn_180", MOTION_MODE_TURN, 180}};
+static const char *const bench_results[] = {"ABORTED", "DONE", "FAILED"};
+#endif /* MISSION_BENCH */
+
 static void mission_task(INT stacd, void *exinf)
 {
     (void)stacd; (void)exinf;
@@ -45,6 +69,13 @@ static void mission_task(INT stacd, void *exinf)
     uint32_t traced_ms = 0u;
 #endif
     task_timing_t timing = {.window_start_ms = now};
+#if MISSION_BENCH
+    uint8_t bench_index = 0u; /* next move; advances only after DONE */
+    uint8_t bench_id = 0u; /* action ID 1..63 of the running move */
+    bool bench_active = false;
+    uint32_t bench_started_ms = 0u;
+    uint32_t bench_origin[2] = {0u, 0u};
+#endif
 
     for (;;)
     {
@@ -134,7 +165,8 @@ static void mission_task(INT stacd, void *exinf)
         bool have_barcode = barcode_pop(&barcode);
         MissionInputs in = {
             .now_ms = now,
-            .start_pressed = event == BUTTON_EVENT_PRESSED,
+            .start_pressed = (0 == MISSION_BENCH) &&
+                (BUTTON_EVENT_PRESSED == event),
             .mapped = barcode_mapped(),
             .start_blocked = rd_fault_start_blocked() || !comms_bridge_ready() ||
                 !terrain_startup_complete() || !copied || !snapshot.sample_fresh ||
@@ -288,6 +320,81 @@ static void mission_task(INT stacd, void *exinf)
             side_watching = out.side_watch_on;
             obstacle_side_watch(out.side_watch_on, out.side_watch_deg);
         }
+#if MISSION_BENCH
+        /* Mission stays READY; this only replaces its STOP command. Any stop,
+           GP21 or Motion fault ends the move and keeps that STOP. */
+        if (bench_active)
+        {
+            const bench_move_t *move = &bench_moves[bench_index];
+            bool ours = bench_id == in.motion_action;
+            uint8_t result = 0u; /* index into bench_results; 0 aborted */
+            if (ours && (RD_MOTION_DONE == in.motion_status))
+            {
+                result = 1u;
+            }
+            else if (ours && (RD_MOTION_FAILED == in.motion_status))
+            {
+                result = 2u;
+            }
+            else if ((MISSION_READY == mission.state) && !in.stop_down &&
+                !in.motion_stopped && !in.safety_latched)
+            {
+                out.command = motion_command_make(move->mode,
+                    MISSION_TRACK_SPEED_MMPS, (float)move->target,
+                    MOTION_TURN_RAMPED, bench_id, now);
+                result = UINT8_MAX;
+            }
+            else
+            {
+                /* aborted */
+            }
+            if (UINT8_MAX != result)
+            {
+                int32_t left = enc_travel_signed(left_now, bench_origin[0]);
+                int32_t right = enc_travel_signed(right_now,
+                    bench_origin[1]);
+                tm_printf((UB *)"[BENCH] move=%s target=%d result=%s "
+                    "left_counts=%d right_counts=%d travel_mm=%d "
+                    "heading_cdeg=%d elapsed_ms=%u\n", move->name,
+                    (int)move->target, bench_results[result], (int)left,
+                    (int)right, (int)((float)(left + right) * 0.5f /
+                        ENC_COUNTS_PER_MM),
+                    (int)(enc_heading_deg(left, right) * 100.0f),
+                    (unsigned)robot_time_elapsed(now, bench_started_ms));
+                bench_active = false;
+                if (1u == result)
+                {
+                    bench_index = (uint8_t)((bench_index + 1u) %
+                        BENCH_MOVE_COUNT);
+                }
+            }
+        }
+        else if ((BUTTON_EVENT_PRESSED == event) &&
+            (MISSION_READY == mission.state) && !in.motion_stopped &&
+            !in.safety_latched)
+        {
+            bench_id = (uint8_t)((bench_id % 63u) + 1u);
+            bench_origin[0] = left_now;
+            bench_origin[1] = right_now;
+            bench_started_ms = now;
+            bench_active = true;
+            out.command = motion_command_make(bench_moves[bench_index].mode,
+                MISSION_TRACK_SPEED_MMPS,
+                (float)bench_moves[bench_index].target, MOTION_TURN_RAMPED,
+                bench_id, now);
+        }
+        else if (BUTTON_EVENT_PRESSED == event)
+        {
+            tm_printf((UB *)"[BENCH] refused: state=%s motion_stopped=%d "
+                "safety_latched=%d (press and release GP21 first)\n",
+                state_names[mission.state], (int)in.motion_stopped,
+                (int)in.safety_latched);
+        }
+        else
+        {
+            /* idle */
+        }
+#endif /* MISSION_BENCH */
         if (motion_command(&out.command) < E_OK)
         {
             tm_printf((UB *)"[MISSION] command write failed; stopping\n");

@@ -59,7 +59,7 @@ Each value measured here replaces a placeholder that later behaviour depends on.
 | MR-13 | Barcode IR (GP27) level over black and over white | Level differs consistently | Which level means black: `BARCODE_BLACK_HIGH` (D04) |
 | MR-14 | Turn each wheel one revolution forward by hand, three times | Counts increase on both wheels, repeatably; no encoder fault | Record counts/revolution in project specs; effective rolling scale: `ENC_COUNTS_PER_MM`; signs: `*_ENCODER_SIGN` (D03) |
 | MR-15 | Force an encoder fault (wiggle a connector), then spin the wheel by hand | `Motion: encoder` appears, then clears after spinning | - |
-| MR-16 | Boot with the robot still; tilt the front up; tap the chassis sharply | No calibration fault; pitch rises when the nose is up; `Terrain: impact` and a latched stop on the tap | Pitch sign; tap level that triggers (D06) |
+| MR-16 | Boot with the robot still; tilt the front up; start a run and lift the car off the floor; repeat and turn it over | No calibration fault; pitch rises when the nose is up; the wheels stop within one IMU sample of the lift, with `Terrain: lifted` and a latched stop | Pitch sign; lift and tilt level that triggers (D06) |
 | MR-17 | Sonar against a flat board at 100, 250, 500 and 1000 mm; then aim at open space | Reported range measured and agreed against a tape measure; open space shows `no echo` and the robot is **not** stopped | Error at each distance (D05) |
 | MR-18 | Servo to centre and to both sweep limits | Centre faces forward; limits do not stall the servo | `SERVO_CENTRE_US`, `SERVO_US_PER_DEG`, settle time (D05) |
 

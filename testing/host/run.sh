@@ -55,6 +55,7 @@ py_test() {
 # shellcheck disable=SC2086 # the source lists are several words
 {
 c_test robot_time $T/test_robot_time.c
+c_test trace_ring $T/test_trace_ring.c
 c_test encoder_math $T/test_encoder_math.c
 c_test robot_data $T/test_robot_data.c $DATA
 c_test motion_control $T/test_motion_control.c app_program/motion/motion_control.c $DATA

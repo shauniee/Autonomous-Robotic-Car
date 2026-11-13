@@ -3,6 +3,7 @@
 #   ./flash.sh        full course: motors on, junction turns and bypass released, no diagnostics
 #   ./flash.sh trial  driving test: same as the full course, with diagnostics on
 #   ./flash.sh test   wireless self-test image: motors always inhibited
+#   ./flash.sh bench  motion bench: each GP20 press runs the next single move
 # Hold BOOTSEL while plugging in USB; the script waits for the RPI-RP2 drive.
 set -eu
 
@@ -15,7 +16,8 @@ case "${1:-course}" in
     course) profile="TEST=0 FULL_COURSE=1"; name=full_course ;;
     trial) profile="TEST=0 FULL_COURSE=1 TRACE=1"; name=trial ;;
     test) profile="TEST=1 FULL_COURSE=0"; name=test ;;
-    *) echo "Usage: ./flash.sh [course|trial|test]" >&2; exit 2 ;;
+    bench) profile="TEST=0 FULL_COURSE=1 TRACE=1 BENCH=1"; name=bench ;;
+    *) echo "Usage: ./flash.sh [course|trial|test|bench]" >&2; exit 2 ;;
 esac
 
 [ -x "$tools/arm/bin/arm-none-eabi-gcc" ] && [ -d "$tools/pico-sdk" ] || {

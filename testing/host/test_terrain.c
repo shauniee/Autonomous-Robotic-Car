@@ -166,16 +166,31 @@ static void test_count(void)
     assert(ctx.hump_count == 12u);
 }
 
-static void test_impact_and_restart(void)
+static void hold(Gy511RawAxes a, int n)
 {
+    for (int i = 0; i < n; ++i) {
+        terrain_algo_process(&ctx, &a, 0.0f, false);
+    }
+}
+
+static void test_lift_and_restart(void)
+{
+    const int16_t one_g = (int16_t)lroundf(1.0f / ACCEL_MG_PER_LSB);
     calibrate();
-    Gy511RawAxes shock = {(int16_t)lroundf(3.0f / ACCEL_MG_PER_LSB), 0,
-                          (int16_t)lroundf(1.0f / ACCEL_MG_PER_LSB)};
-    terrain_algo_process(&ctx, &shock, 0.0f, true);
-    assert(ctx.state == TERRAIN_STATE_IMPACT);
-    Gy511RawAxes flat = {0, 0, (int16_t)lroundf(1.0f / ACCEL_MG_PER_LSB)};
-    terrain_algo_process(&ctx, &flat, 0.0f, true);
-    assert(ctx.state != TERRAIN_STATE_IMPACT);
+    hold(tilted(20.0f, 10.0f), 30);			/* a steep hump is not a lift */
+    assert(ctx.state != TERRAIN_STATE_LIFTED);
+    hold((Gy511RawAxes){0, 0, (int16_t)(one_g * 3 / 2)}, 1);	/* one jolt is filtered out */
+    assert(ctx.state != TERRAIN_STATE_LIFTED);
+    hold((Gy511RawAxes){0, 0, (int16_t)(one_g * 3 / 2)}, 10);	/* picked up */
+    assert(ctx.state == TERRAIN_STATE_LIFTED);
+    hold(tilted(0.0f, 0.0f), 30);			/* set down level */
+    assert(ctx.state == TERRAIN_STATE_FLAT);
+    hold(tilted(60.0f, 0.0f), 30);			/* tipped on its side */
+    assert(ctx.state == TERRAIN_STATE_LIFTED);
+    hold(tilted(0.0f, 0.0f), 30);
+    hold((Gy511RawAxes){0, 0, (int16_t)-one_g}, 30);	/* upside down */
+    assert(ctx.state == TERRAIN_STATE_LIFTED);
+    Gy511RawAxes flat = {0, 0, one_g};
 
     terrain_algo_init(&ctx);
     for (unsigned i = 0u; i < 37u; ++i) {
@@ -194,9 +209,9 @@ static void test_word_boundaries(void)
     const uint32_t inv = rd_invalid_code(HUMP_RESULT_BITS);
     uint32_t w = terrain_pack(0u, 0u, 0u, 0u, false, false);
     assert(w == 0u && !terrain_height_valid(w) && !terrain_calibrated(w));
-    w = terrain_pack(inv - 1u, inv - 1u, 255u, TERRAIN_STATE_IMPACT, true, true);	/* maxima */
+    w = terrain_pack(inv - 1u, inv - 1u, 255u, TERRAIN_STATE_LIFTED, true, true);	/* maxima */
     assert(terrain_last_code(w) == inv - 1u && terrain_max_code(w) == inv - 1u && terrain_hump_count(w) == 255u);
-    assert(terrain_state_code(w) == TERRAIN_STATE_IMPACT && terrain_height_valid(w) && terrain_calibrated(w));
+    assert(terrain_state_code(w) == TERRAIN_STATE_LIFTED && terrain_height_valid(w) && terrain_calibrated(w));
     w = terrain_pack(1000u, 1000u, 1000u, 15u, false, true);			/* beyond range: clamps, never spills */
     assert(terrain_last_code(w) == inv && terrain_max_code(w) == inv && terrain_hump_count(w) == 255u);
     /* 2-bit state: 15 masks to 3; spare bit 24 and bits 27..31 stay zero. */
@@ -221,10 +236,10 @@ static void test_evidence_and_invalid_window(void)
     assert(terrain_travel_take(origin, fresh, true, false) == 10.5f);
     assert(terrain_travel_take(origin, pending, true, true) == 0.0f);
     assert(origin[0] == pending[0] && origin[1] == pending[1]);
-    assert(terrain_impact_pending(false, true, false));
-    assert(terrain_impact_pending(true, false, false));
-    assert(terrain_impact_pending(true, true, true));
-    assert(!terrain_impact_pending(true, false, true));
+    assert(terrain_lift_pending(false, true, false));
+    assert(terrain_lift_pending(true, false, false));
+    assert(terrain_lift_pending(true, true, true));
+    assert(!terrain_lift_pending(true, false, true));
     TerrainContext context;
     terrain_algo_init(&context);
     context.hump_count = 2u;
@@ -247,7 +262,7 @@ int main(void)
     test_what_is_not_a_hump();
     test_baseline();
     test_count();
-    test_impact_and_restart();
+    test_lift_and_restart();
     test_word_boundaries();
     puts("terrain: PASS");
     return 0;
