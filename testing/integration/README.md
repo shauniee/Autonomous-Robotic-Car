@@ -37,7 +37,7 @@ How to run and record INT-01 to INT-10. These drive on the course on battery. Te
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py map A B C D --broker 127.0.0.1
    ```
 
-6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080>:
+6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080> (or <http://localhost:8080>):
 
    ```bash
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
@@ -148,17 +148,17 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 ### INT-06 Turn with one wheel on a hump
 
-**Image:** bench image (battery)
+**Image:** `./flash.sh bench` (battery). Each GP20 press runs the next move: short forward, 1 m straight, 90 left, 90 right, 180, then again. Each move prints one `[BENCH]` line.
 
 **Set up:** Hump under one wheel at the taped square.
 
 **Steps:**
 
-1. Repeat the S2-U03 pivots, five of each.
+1. Press GP20 for each pivot (`left_90`, `right_90`, `turn_180`), as in S2-U03, five of each.
 
 **Show on video:** Each pivot against the tape.
 
-**Logs:** `usb.log`; write down the errors. Needs the S2 bench image.
+**Logs:** `usb.log` (`[BENCH]` lines); write down the errors and compare them with S2-U03.
 
 ### INT-07 Hump while line following
 
@@ -196,8 +196,8 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Steps:**
 
-1. Both sides open: run.
-2. One side blocked: run.
+1. Both sides open: run. The car takes the side with the shorter edge.
+2. One side blocked (a wall or box less than 220 mm past that edge): run. The car takes the other side, the only one with at least `MISSION_BYPASS_MIN_CLEAR_MM` (220 mm) of clearance.
 3. Both sides blocked: run.
 
 **Show on video:** Each bypass and the rejoin, or the stop when blocked.
@@ -215,6 +215,6 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 1. Run the course.
 2. Mid-run, stop the broker for 10 s and restart it.
 
-**Show on video:** Each event on the dashboard, and the car carrying on during the loss.
+**Show on video:** Each event on the dashboard, the turn rate (Turn under Motor speed, from the encoders, FR-20) changing in the turns, and the car carrying on during the loss.
 
 **Logs:** `usb.log` and `monitor.log`
