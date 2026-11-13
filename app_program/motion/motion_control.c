@@ -177,7 +177,7 @@ static float profile_step(MotionController_t *c, float desired, float dt)
     const float limit = MOTION_ACCEL_MMPS2;
     const float jerk = MOTION_JERK_MMPS3;
     float speed = c->follow_base_q6 / 64.0f;
-    float accel = c->profile_accel;
+    float accel = rd_sext(c->profile_accel, MOTION_PROFILE_ACCEL_BITS);
     float error = desired - speed;
     float wanted = copysignf(
         fminf(limit, sqrtf(2.0f * jerk * fabsf(error))), error);
@@ -190,7 +190,8 @@ static float profile_step(MotionController_t *c, float desired, float dt)
         speed = desired;
         accel = 0.0f;
     }
-    c->profile_accel = (int16_t)lroundf(accel);
+    c->profile_accel = rd_swrap((int32_t)lroundf(accel),
+        MOTION_PROFILE_ACCEL_BITS);
     c->follow_base_q6 = (uint16_t)lroundf(fmaxf(speed, 0.0f) * 64.0f);
     return c->follow_base_q6 / 64.0f;
 }
@@ -241,7 +242,7 @@ void motion_control_step(MotionController_t *c, const MotionCommand_t *cmd,
     if (starting)
     {
         uint16_t base = c->follow_base_q6;
-        int accel = c->profile_accel;
+        int accel = rd_sext(c->profile_accel, MOTION_PROFILE_ACCEL_BITS);
         WheelPid_t previous_pid[2] = {c->pid[0], c->pid[1]};
         bool continuous = c->active &&
             (((MOTION_MODE_FOLLOW == c->mode ||
@@ -254,14 +255,15 @@ void motion_control_step(MotionController_t *c, const MotionCommand_t *cmd,
         if (continuous)
         {
             c->follow_base_q6 = base;
-            c->profile_accel = (int16_t)accel;
+            c->profile_accel = rd_swrap(accel, MOTION_PROFILE_ACCEL_BITS);
             c->pid[0] = previous_pid[0];
             c->pid[1] = previous_pid[1];
         }
         c->active = true;
         c->action_id = motion_cmd_action(cmd);
         c->mode = motion_cmd_mode(cmd);
-        c->action_target = motion_cmd_target(cmd);
+        c->action_target = rd_swrap(motion_cmd_target(cmd),
+            MOTION_ACTION_TARGET_BITS);
         c->turn_style = (uint8_t)motion_cmd_steering(cmd) & 3u;
         c->status = RD_MOTION_RUNNING;
         c->start_ms = c->previous_ms = in->now_ms;
@@ -274,7 +276,8 @@ void motion_control_step(MotionController_t *c, const MotionCommand_t *cmd,
 
     if (c->mode != motion_cmd_mode(cmd) ||
         (c->mode != MOTION_MODE_FOLLOW &&
-        (c->action_target != motion_cmd_target(cmd) ||
+        (rd_sext(c->action_target, MOTION_ACTION_TARGET_BITS) !=
+            motion_cmd_target(cmd) ||
         c->turn_style != motion_cmd_steering(cmd))))
     {
         c->status = RD_MOTION_FAILED;
@@ -408,7 +411,8 @@ void motion_control_step(MotionController_t *c, const MotionCommand_t *cmd,
         const float limit = MOTION_ACCEL_MMPS2;
         const float jerk = MOTION_JERK_MMPS3;
         float speed = c->follow_base_q6 / 64.0f;
-        float accel = c->profile_accel;
+        float accel = rd_sext(c->profile_accel,
+            MOTION_PROFILE_ACCEL_BITS);
         float peak = speed +
             (accel > 0.0f ? accel * accel / (2.0f * jerk) : 0.0f);
         /* last term: discrete release timing */

@@ -16,7 +16,8 @@ static void start_turn(recovery_control_t *control, recovery_output_t *output,
 {
     /* Heading plus the opposite endpoint fits
        Motion's +/-360 degree representation. Round once and hold the goal. */
-    control->turn_degrees = (int16_t)lroundf(degrees);
+    control->turn_degrees = rd_swrap((int32_t)lroundf(degrees),
+        RECOVERY_TURN_DEGREES_BITS);
     control->turning = 1u;
     output->new_turn = true;
 }
@@ -97,5 +98,6 @@ void recovery_control_step(recovery_control_t *control,
     }
     output->phase = (recovery_phase_t)control->phase;
     output->turn = control->turning;
-    output->turn_degrees = control->turn_degrees;
+    output->turn_degrees = (int16_t)rd_sext(control->turn_degrees,
+        RECOVERY_TURN_DEGREES_BITS);
 }

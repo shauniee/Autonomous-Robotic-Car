@@ -168,10 +168,14 @@ typedef struct
     int16_t previous_cps;
 } WheelPid_t;
 
+/* Widths of the signed fields below, stored unsigned and read with rd_sext. */
+#define MOTION_ACTION_TARGET_BITS 12u
+#define MOTION_PROFILE_ACCEL_BITS 11u
+
 /* Fill the target word's spare bits and keep byte fields together. */
 typedef struct
 {
-    int16_t action_target : 12; /* immutable discrete target +/-2000 */
+    uint16_t action_target : MOTION_ACTION_TARGET_BITS; /* +/-2000, rd_sext */
     uint8_t turn_style : 2; /* immutable TURN/DISTANCE style 0..3 */
     uint8_t turn_arrived : 2; /* wheels already braked inside turn tolerance */
     uint8_t mode : 2; /* motion_mode_t */
@@ -184,7 +188,7 @@ typedef struct
     enc_count_t previous_count[2];
     uint32_t stalled_since_ms[2];
     uint16_t follow_base_q6 : 15; /* private unsigned Q6 mm/s, see specs */
-    int16_t profile_accel : 11; /* applied acceleration, signed whole mm/s^2 */
+    uint16_t profile_accel : MOTION_PROFILE_ACCEL_BITS; /* signed mm/s^2 */
     WheelPid_t pid[2];
     int8_t follow_steer_q; /* private applied Q7 steering, see specs */
 } MotionController_t;

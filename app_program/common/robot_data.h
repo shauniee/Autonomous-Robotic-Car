@@ -48,6 +48,20 @@ static inline uint32_t rd_mask(unsigned width)
     return (1u << width) - 1u;
 }
 
+/* Signed values live in unsigned bit-fields (BARR-C:2018 5.3.a). rd_sext
+   sign-extends a width-bit field on read; rd_swrap masks a value to the
+   width on write. Callers clamp first, so nothing is lost. */
+static inline int32_t rd_sext(uint32_t raw, unsigned bits)
+{
+    uint32_t sign = 1u << (bits - 1u);
+    return (int32_t)(raw ^ sign) - (int32_t)sign;
+}
+
+static inline uint32_t rd_swrap(int32_t value, unsigned bits)
+{
+    return (uint32_t)value & rd_mask(bits);
+}
+
 static inline uint32_t rd_field_get(uint32_t word, unsigned shift,
                                     unsigned width)
 {

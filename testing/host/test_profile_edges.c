@@ -78,7 +78,7 @@ static void test_ghost_echoes(const obstacle_profile_config_t *config)
     assert(profile.left_clearance_mm >= MISSION_BYPASS_MIN_CLEAR_MM);
     assert(profile.right_clearance_mm >= MISSION_BYPASS_MIN_CLEAR_MM);
     /* The box sits right of centre, so its left edge is the nearer one. */
-    assert(profile.obstacle_left_mm < 0);
+    assert(obstacle_profile_left_mm(&profile) < 0);
 
     /* Ghosts with nothing real behind them prove no room. */
     const int cluttered[][2] = {{-60, 498}, {-50, 426}, {-40, 414}, {-35, 410}, {-30, 193},

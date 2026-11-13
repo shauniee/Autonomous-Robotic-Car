@@ -37,6 +37,11 @@ static int32_t saturate_q16(int64_t value)
     return (int32_t)value;
 }
 
+static int32_t calib_sum_get(uint32_t raw)
+{
+    return rd_sext(raw, TERRAIN_CALIB_SUM_BITS);
+}
+
 static int32_t filter_axis(int32_t previous, int16_t raw, int32_t sum,
     bool vertical)
 {
@@ -69,9 +74,12 @@ bool terrain_algo_calibrate_sample(TerrainContext_t *ctx,
     {
         return true;
     }
-    ctx->calib_sum.x += raw->x;
-    ctx->calib_sum.y += raw->y;
-    ctx->calib_sum.z += raw->z;
+    ctx->calib_sum.x = rd_swrap(calib_sum_get(ctx->calib_sum.x) + raw->x,
+        TERRAIN_CALIB_SUM_BITS);
+    ctx->calib_sum.y = rd_swrap(calib_sum_get(ctx->calib_sum.y) + raw->y,
+        TERRAIN_CALIB_SUM_BITS);
+    ctx->calib_sum.z = rd_swrap(calib_sum_get(ctx->calib_sum.z) + raw->z,
+        TERRAIN_CALIB_SUM_BITS);
     ++ctx->calib_count;
     if (ctx->calib_count >= 100u)
     {
@@ -122,11 +130,11 @@ void terrain_algo_process(TerrainContext_t *ctx, const Gy511RawAxes_t *raw,
     /* Local float values exist only inside this one processing release;
        persistent filter state and calibration history are scaled integers. */
     ctx->filtered_accel_q16.x = filter_axis(ctx->filtered_accel_q16.x,
-        raw->x, ctx->calib_sum.x, false);
+        raw->x, calib_sum_get(ctx->calib_sum.x), false);
     ctx->filtered_accel_q16.y = filter_axis(ctx->filtered_accel_q16.y,
-        raw->y, ctx->calib_sum.y, false);
+        raw->y, calib_sum_get(ctx->calib_sum.y), false);
     ctx->filtered_accel_q16.z = filter_axis(ctx->filtered_accel_q16.z,
-        raw->z, ctx->calib_sum.z, true);
+        raw->z, calib_sum_get(ctx->calib_sum.z), true);
 
     float filtered_x = ((float)ctx->filtered_accel_q16.x /
         (float)RAW_Q_ONE) * ACCEL_MG_PER_LSB;

@@ -19,11 +19,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Lines this pull request changed must comply
-        if: github.event_name == 'pull_request'
-        run: python3 scripts/check_barr.py --base "origin/${{ github.base_ref }}"
-      - name: Legacy backlog, for information
-        run: python3 scripts/check_barr.py --summary
+      - name: Every line of app_program must comply
+        run: python3 scripts/check_barr.py --all
 
   secrets:
     name: No secrets in new commits (gitleaks)

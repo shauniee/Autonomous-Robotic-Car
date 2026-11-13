@@ -20,6 +20,9 @@
 #include "recovery_control.h"
 #include "bypass_control.h"
 
+/* Width of turn_length_mm: signed, stored unsigned, read with rd_sext. */
+#define MISSION_TURN_LENGTH_BITS 12u
+
 typedef enum
 {
     MISSION_READY,
@@ -147,7 +150,7 @@ typedef struct
     uint8_t entry_curved : 1;
     uint8_t exit_seen : 1;
     uint8_t manual_held : 1; /* test direction protects the held command */
-    int16_t turn_length_mm : 12; /* signed whole mm, +/-2000 */
+    uint16_t turn_length_mm : MISSION_TURN_LENGTH_BITS; /* signed mm +/-2000 */
     uint8_t state : 3;
     uint8_t phase : 3;
     uint8_t turn_code : 2; /* 0 none, 1 left, 2 right, 3 U-turn */

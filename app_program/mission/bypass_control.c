@@ -16,12 +16,12 @@ static uint8_t next_id(uint8_t *id)
 
 static float forward_mm(const bypass_control_t *control)
 {
-    return (float)control->forward_q8 / BYPASS_Q8;
+    return (float)bypass_q8(control->forward_q8) / BYPASS_Q8;
 }
 
 static float left_mm(const bypass_control_t *control)
 {
-    return (float)control->left_q8 / BYPASS_Q8;
+    return (float)bypass_q8(control->left_q8) / BYPASS_Q8;
 }
 
 static void fail(bypass_control_t *control)
@@ -59,15 +59,17 @@ static bool pose_step(bypass_control_t *control, const bypass_input_t *input)
     float middle = ((float)control->heading_cdeg + heading) * 0.5f
         * BYPASS_RAD_PER_CDEG;
     float distance = ((float)delta[0] + delta[1]) * 0.5f / ENC_COUNTS_PER_MM;
-    float x = control->forward_q8 + distance * cosf(middle) * BYPASS_Q8;
-    float y = control->left_q8 + distance * sinf(middle) * BYPASS_Q8;
+    float x = bypass_q8(control->forward_q8) +
+        distance * cosf(middle) * BYPASS_Q8;
+    float y = bypass_q8(control->left_q8) +
+        distance * sinf(middle) * BYPASS_Q8;
     if (fabsf(x) > BYPASS_TRAVEL_MM * BYPASS_Q8 ||
         fabsf(y) > BYPASS_TRAVEL_MM * BYPASS_Q8)
     {
         return false;
     }
-    control->forward_q8 = (int32_t)lroundf(x);
-    control->left_q8 = (int32_t)lroundf(y);
+    control->forward_q8 = rd_swrap((int32_t)lroundf(x), BYPASS_Q8_BITS);
+    control->left_q8 = rd_swrap((int32_t)lroundf(y), BYPASS_Q8_BITS);
     control->heading_cdeg = (int16_t)lroundf(heading);
     return true;
 }
@@ -123,7 +125,8 @@ static float facing_half_mm(bool pass_left)
    range * tan(angle). */
 static float edge_mm(const ObstacleProfile_t *profile, bool left)
 {
-    return (left ? profile->obstacle_left_mm : -profile->obstacle_left_mm) +
+    return (left ? obstacle_profile_left_mm(profile) :
+        -obstacle_profile_left_mm(profile)) +
         profile->width_mm * 0.5f;
 }
 
@@ -216,9 +219,9 @@ bool bypass_control_begin(bypass_control_t *control,
         .started_ms = input->now_ms,
         .left_side = left,
         .offset_mm = (int16_t)lroundf(left ? offset : -offset),
-        .centre_mm = profile->obstacle_left_mm,
+        .centre_mm = obstacle_profile_left_mm(profile),
         .half_width_mm = (uint16_t)(profile->width_mm / 2u),
-        .obstacle_front_mm = profile->obstacle_forward_mm};
+        .obstacle_front_mm = obstacle_profile_forward_mm(profile)};
     turn(control, input, BYPASS_ROUTE_OUT, left ? 90 : -90, action_id);
     return true;
 }
@@ -302,7 +305,8 @@ static void side_observation(bypass_control_t *control,
         ++control->edge_samples;
     }
     if (control->edge_samples < BYPASS_EDGE_SAMPLES ||
-        forward_mm(control) - (float)control->edge_forward_q8 / BYPASS_Q8 <
+        forward_mm(control) -
+        (float)bypass_q8(control->edge_forward_q8) / BYPASS_Q8 <
         BYPASS_EDGE_MM)
     {
         return;
@@ -312,7 +316,7 @@ static void side_observation(bypass_control_t *control,
        at the scan's edge. */
     float to_side = control->flank_mm != 0u ? (float)control->flank_mm :
         fmaxf(to_centre - control->half_width_mm, 0.0f);
-    float rear = (float)control->edge_forward_q8 / BYPASS_Q8 +
+    float rear = (float)bypass_q8(control->edge_forward_q8) / BYPASS_Q8 +
         OBSTACLE_SONAR_FORWARD_MM + to_side / tanf(angle);
     /* A flat side at this angle can return no echo, or only its front corner,
        so
@@ -320,9 +324,9 @@ static void side_observation(bypass_control_t *control,
        deeper
        than this. This only times the pivot back; depth is not reported. */
     rear = fmaxf(rear, (float)control->obstacle_front_mm + BYPASS_MIN_DEPTH_MM);
-    control->rear_clear_q8 = (int32_t)lroundf(
+    control->rear_clear_q8 = rd_swrap((int32_t)lroundf(
         (rear + facing_half_mm(control->left_side) + BYPASS_REAR_GAP_MM)
-            * BYPASS_Q8);
+            * BYPASS_Q8), BYPASS_Q8_BITS);
     control->route = BYPASS_ROUTE_REAR;
 }
 
@@ -467,7 +471,8 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
                     /* Slow to rest at the point that clears the box, or as soon
                        after it as the stop allows. */
                     drive(control, input, BYPASS_ROUTE_REAR, fmaxf(
-                        (float)control->rear_clear_q8 / BYPASS_Q8
+                        (float)rd_sext(control->rear_clear_q8,
+                            BYPASS_Q8_BITS) / BYPASS_Q8
                             - forward_mm(control),
                         motion_stop_distance_mm(BYPASS_SPEED_MMPS)), action_id);
                     finished = false;

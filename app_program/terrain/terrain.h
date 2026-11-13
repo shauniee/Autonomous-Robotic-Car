@@ -38,15 +38,18 @@ typedef struct
     int32_t z;
 } TerrainFilterQ16_t;
 
+/* Signed, stored unsigned: read with rd_sext, write with rd_swrap. */
+#define TERRAIN_CALIB_SUM_BITS 23u
+
 /* Calibration sums accumulate exactly 100 signed int16 samples. Each axis
    ranges -3276800..3276700, requiring 23 signed bits. No ISR/task shares
    this memory, so compiler bit-field writes are safe in the Terrain task.
    GNU C packed layout is asserted and checked by the target sizeof probe. */
 typedef struct __attribute__((packed))
 {
-    int32_t x : 23;
-    int32_t y : 23;
-    int32_t z : 23;
+    uint32_t x : TERRAIN_CALIB_SUM_BITS;
+    uint32_t y : TERRAIN_CALIB_SUM_BITS;
+    uint32_t z : TERRAIN_CALIB_SUM_BITS;
 } TerrainCalibSum_t;
 
 _Static_assert(9u == sizeof(TerrainCalibSum_t),
