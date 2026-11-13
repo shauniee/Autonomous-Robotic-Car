@@ -119,7 +119,7 @@ bool comms_log_pop(comms_event_log_t *log, mqtt_event_t *event)
     return true;
 }
 
-bool comms_log_post_oldest(comms_event_log_t *log, comms_post_fn post)
+bool comms_log_post_oldest(comms_event_log_t *log, comms_post_fn_t post)
 {
     unsigned count = comms_log_count(log);
     if (0u == count || NULL == post)

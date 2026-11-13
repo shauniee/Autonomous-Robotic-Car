@@ -133,7 +133,8 @@ def check_structure(code):
         name = pointer.group(1) if pointer else (names[-1] if names else "")
         array = re.search(r"(\w+)\s*\[[^\]]*\]\s*$", declaration)
         name = array.group(1) if array and not pointer else name
-        if name and not name.endswith("_t"):
+        # ER repeats the kernel type for host builds (robot_config.h).
+        if name and name != "ER" and not name.endswith("_t"):
             yield match.start(), f"type name {name} must end in _t"
 
 

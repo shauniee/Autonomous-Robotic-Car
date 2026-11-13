@@ -2,8 +2,9 @@
  *    mission_logic.h
  *    Kernel-free Mission state machine: one switch on the state with one
  *    handler per state. mission.c supplies the inputs each release and applies
- *    the outputs. The only way to move the robot is the MotionCommand returned
- *    here (the Motion contract); a state never touches motors or the encoder.
+ *    the outputs. The only way to move the robot is the MotionCommand_t
+ *    returned here (the Motion contract); a state never touches motors or the
+ *    encoder.
  */
 
 #ifndef MISSION_LOGIC_H
@@ -29,7 +30,7 @@ typedef enum
     MISSION_REACQUIRE,
     MISSION_STOPPED,
     MISSION_STATE_COUNT
-} MissionState;
+} MissionState_t;
 
 typedef enum
 {
@@ -38,7 +39,7 @@ typedef enum
     JUNCTION_PHASE_TURN,
     JUNCTION_PHASE_BRAKE,
     JUNCTION_PHASE_ADVANCE
-} MissionJunctionPhase;
+} MissionJunctionPhase_t;
 
 /* Widths below are the minimum for each field's range (docs/team.md, data
    table). Times and sample sequences stay 32-bit for wrap-safe comparison. */
@@ -83,7 +84,7 @@ typedef struct
     bool profile_valid : 1;
     bool barcode_level : 1; /* raw GP27 level, diagnostics only */
     bool have_barcode : 1; /* a decoded barcode this release */
-    uint8_t line : 2; /* IrLine */
+    uint8_t line : 2; /* IrLine_t */
     uint8_t motion_status : 2; /* rd_motion_status_t */
     uint8_t motion_action : 6; /* RD_MOTION_ACTION_BITS */
     uint8_t scan_state : 3; /* obstacle_scan_state_t */
@@ -91,12 +92,12 @@ typedef struct
     uint8_t barcode_letter : 5; /* 0..25, 31 none */
     uint8_t barcode_edges : 5; /* running GP27 edge count, diagnostics only */
     uint8_t barcode_action : 3; /* barcode_action_t */
-} MissionInputs;
+} MissionInputs_t;
 
 typedef struct
 {
     /* written every release; STOP unless following or acting */
-    MotionCommand command;
+    MotionCommand_t command;
     uint16_t event_arg2 : 10; /* clearance mm (<= 1023) or barcode action */
     uint8_t event_kind : 3; /* mqtt_event_kind_t, 0 none; one per release */
     uint8_t nav_rejected : 2; /* 0 none, 1 measurements, 2 geometry, 3 entry */
@@ -112,10 +113,11 @@ typedef struct
     bool scan_keep_narrower : 1; /* the second sweep at this position */
     bool scan_cancel : 1;
     bool side_watch_on : 1; /* hold the servo toward the obstacle */
-} MissionOutputs;
+} MissionOutputs_t;
 
-_Static_assert(IR_LINE_BROAD_BLACK < 4, "IrLine fits MissionInputs.line");
-_Static_assert(RD_MOTION_FAILED < 4, "status fits MissionInputs.motion_status");
+_Static_assert(IR_LINE_BROAD_BLACK < 4, "IrLine_t fits MissionInputs_t.line");
+_Static_assert(RD_MOTION_FAILED < 4,
+    "status fits MissionInputs_t.motion_status");
 _Static_assert(RD_MOTION_ACTION_BITS == 6u, "motion_action follows the wire");
 _Static_assert(OBSTACLE_SCAN_STATE_COUNT <= 8, "scan state fits 3 bits");
 _Static_assert(BARCODE_U_TURN < 8, "barcode action fits 3 bits");
@@ -173,23 +175,24 @@ typedef struct
     uint8_t front_seen;
     uint8_t backup_mm;
     uint8_t backed_mm; /* total reversed for this obstacle */
-} Mission;
+} Mission_t;
 
 _Static_assert((LINE_I_MAX_Q < 64) && (LINE_TURN_LEAN_Q < 64),
     "line_i_q fits 6 bits");
 _Static_assert(BYPASS_BACKUP_MAX_MM <= UINT8_MAX, "backup fits 8 bits");
 
-bool mission_queue_direction(Mission *mission, uint8_t action);
+bool mission_queue_direction(Mission_t *mission, uint8_t action);
 
-void mission_init(Mission *m, uint32_t now_ms);
-void mission_step(Mission *m, const MissionInputs *in, MissionOutputs *out);
+void mission_init(Mission_t *m, uint32_t now_ms);
+void mission_step(Mission_t *m, const MissionInputs_t *in,
+    MissionOutputs_t *out);
 /* True when this release's read still needs its own route event: mission_step
    reports reads only while following, and another event can replace that one.
    */
-bool mission_barcode_event_needed(const MissionInputs *in,
-    const MissionOutputs *out);
+bool mission_barcode_event_needed(const MissionInputs_t *in,
+    const MissionOutputs_t *out);
 /* Diagnostic record of the line decision mission_step just made. */
-mqtt_line_trace_t mission_line_trace(const Mission *m, const MissionInputs *in,
-    const MissionOutputs *out);
+mqtt_line_trace_t mission_line_trace(const Mission_t *m,
+    const MissionInputs_t *in, const MissionOutputs_t *out);
 
 #endif /* MISSION_LOGIC_H */

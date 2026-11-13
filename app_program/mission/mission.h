@@ -15,6 +15,6 @@
 ER mission_start(void);
 
 /* Current state (single load). */
-MissionState mission_state(void);
+MissionState_t mission_state(void);
 
 #endif /* MISSION_H */

@@ -3,9 +3,9 @@
 #include <math.h>
 #include <stdio.h>
 
-static MissionInputs input(void)
+static MissionInputs_t input(void)
 {
-    return (MissionInputs){.now_ms = 100,
+    return (MissionInputs_t){.now_ms = 100,
             .line_sampled_ms = 100,
             .mapped = true,
             .inputs_ok = true,
@@ -13,15 +13,15 @@ static MissionInputs input(void)
             .guidance_valid = true,
             .line = IR_LINE_VISIBLE};
 }
-static MissionOutputs tick(Mission *m, MissionInputs *in)
+static MissionOutputs_t tick(Mission_t *m, MissionInputs_t *in)
 {
-    MissionOutputs out;
+    MissionOutputs_t out;
     in->now_ms += 20;
     in->line_sampled_ms = in->now_ms;
     mission_step(m, in, &out);
     return out;
 }
-static void follow(Mission *m, MissionInputs *in)
+static void follow(Mission_t *m, MissionInputs_t *in)
 {
     mission_init(m, in->now_ms);
     in->start_pressed = true;
@@ -29,14 +29,14 @@ static void follow(Mission *m, MissionInputs *in)
     in->start_pressed = false;
     assert(m->state == MISSION_FOLLOW_LINE);
 }
-static void move(MissionInputs *in, float left, float right)
+static void move(MissionInputs_t *in, float left, float right)
 {
     in->wheel_count[0] =
         enc_advance(in->wheel_count[0], (int)lroundf(left * ENC_COUNTS_PER_MM));
     in->wheel_count[1] =
         enc_advance(in->wheel_count[1], (int)lroundf(right * ENC_COUNTS_PER_MM));
 }
-static MissionOutputs junction(Mission *m, MissionInputs *in, int action)
+static MissionOutputs_t junction(Mission_t *m, MissionInputs_t *in, int action)
 {
     assert(mission_queue_direction(m, action));
     in->line = IR_LINE_BROAD_BLACK;
@@ -48,7 +48,7 @@ static MissionOutputs junction(Mission *m, MissionInputs *in, int action)
     return tick(m, in);
 }
 /* A straight crossing rolls its distance over the bar, then tracks. */
-static MissionOutputs finish_straight(Mission *m, MissionInputs *in)
+static MissionOutputs_t finish_straight(Mission_t *m, MissionInputs_t *in)
 {
     assert(m->state == MISSION_NAVIGATE && m->phase == JUNCTION_PHASE_ADVANCE);
     move(in, NAV_STRAIGHT_MM + 1, NAV_STRAIGHT_MM + 1);
@@ -57,11 +57,11 @@ static MissionOutputs finish_straight(Mission *m, MissionInputs *in)
 
 static void tracking(void)
 {
-    Mission m;
-    MissionInputs in = input();
+    Mission_t m;
+    MissionInputs_t in = input();
     follow(&m, &in);
     in.line_error = -127;
-    MissionOutputs out = tick(&m, &in);
+    MissionOutputs_t out = tick(&m, &in);
     assert(motion_cmd_steering(&out.command) == -LINE_KP_Q);
     move(&in, 5, 5);
     mission_step(&m, &in, &out); /* a repeated sample changes nothing */
@@ -113,10 +113,10 @@ static void navigation(void)
 {
     for (int action = BARCODE_LEFT; action <= BARCODE_U_TURN; action++)
     {
-        Mission m;
-        MissionInputs in = input();
+        Mission_t m;
+        MissionInputs_t in = input();
         follow(&m, &in);
-        MissionOutputs out = junction(&m, &in, action);
+        MissionOutputs_t out = junction(&m, &in, action);
 #if NAV_GEOMETRY_RELEASED
         assert(m.state == MISSION_NAVIGATE && m.held == BARCODE_UNMAPPED);
         if (action != BARCODE_STRAIGHT)
@@ -143,8 +143,8 @@ static void navigation(void)
 #endif
     }
     /* A short black patch never consumes the command. */
-    Mission m;
-    MissionInputs in = input();
+    Mission_t m;
+    MissionInputs_t in = input();
     follow(&m, &in);
     assert(mission_queue_direction(&m, BARCODE_LEFT));
     in.line = IR_LINE_BROAD_BLACK;
@@ -168,7 +168,7 @@ static void navigation(void)
         in.left_black = in.right_black = true;
         tick(&m, &in);
         move(&in, NAV_CONFIRM_MM + 1, NAV_CONFIRM_MM + 1);
-        MissionOutputs out = tick(&m, &in);
+        MissionOutputs_t out = tick(&m, &in);
         assert(m.state == MISSION_NAVIGATE && !out.stop_now);
         assert(m.held == BARCODE_UNMAPPED && out.nav_rejected == 0u);
         /* Rolls straight over the bar at course speed, never stopping. */
@@ -212,7 +212,7 @@ static void navigation(void)
     in.line = IR_LINE_BROAD_BLACK;
     in.left_black = true;
     in.guidance_valid = false;
-    MissionOutputs out = tick(&m, &in);
+    MissionOutputs_t out = tick(&m, &in);
     assert(m.entry_curved);
     move(&in, NAV_CONFIRM_MM + 5, NAV_CONFIRM_MM + 5);
     out = tick(&m, &in);
@@ -247,13 +247,13 @@ static void navigation(void)
 }
 #if NAV_GEOMETRY_RELEASED
 /* Rotate the robot in place by degrees, + left, as encoder counts. */
-static void pivot(MissionInputs *in, float degrees)
+static void pivot(MissionInputs_t *in, float degrees)
 {
     float arc = degrees / 57.2957795f * TRACK_WIDTH_MM * 0.5f;
     move(in, -arc, arc);
 }
 /* Commit, finish the advance, pause stationary: the pivot has started. */
-static void to_pivot(Mission *m, MissionInputs *in, int action)
+static void to_pivot(Mission_t *m, MissionInputs_t *in, int action)
 {
     junction(m, in, action);
     in->line = IR_LINE_VISIBLE;
@@ -263,7 +263,7 @@ static void to_pivot(Mission *m, MissionInputs *in, int action)
     tick(m, in);
     assert(m->phase == JUNCTION_PHASE_PAUSE_WAIT);
     in->stationary = true;
-    MissionOutputs out = {0};
+    MissionOutputs_t out = {0};
     for (int i = 0; i < 20 && m->phase != JUNCTION_PHASE_TURN; i++)
         out = tick(m, in);
     assert(m->phase == JUNCTION_PHASE_TURN && motion_cmd_mode(&out.command) == MOTION_MODE_TURN);
@@ -279,7 +279,7 @@ static void to_pivot(Mission *m, MissionInputs *in, int action)
 /* The pivot ends on the new branch: leading sensor black, then not black,
    only past the sense angle; then it brakes, pauses and follows. */
 /* Bit-fields have no address: set the leading sensor through this. */
-static void set_leading(MissionInputs *in, bool left, bool black)
+static void set_leading(MissionInputs_t *in, bool left, bool black)
 {
     if (left)
         in->left_black = black;
@@ -293,8 +293,8 @@ static void pivot_turns(void)
     {
         if (action == BARCODE_STRAIGHT)
             continue;
-        Mission m;
-        MissionInputs in = input();
+        Mission_t m;
+        MissionInputs_t in = input();
         follow(&m, &in);
         to_pivot(&m, &in, action);
         float sign = action == BARCODE_LEFT ? 1.0f : -1.0f;
@@ -305,7 +305,7 @@ static void pivot_turns(void)
         set_leading(&in, left_leads, true);
         tick(&m, &in);
         set_leading(&in, left_leads, false);
-        MissionOutputs out = tick(&m, &in);
+        MissionOutputs_t out = tick(&m, &in);
         assert(m.phase == JUNCTION_PHASE_TURN && motion_cmd_mode(&out.command) == MOTION_MODE_TURN);
         pivot(&in, sign * (sense - 10.0f));
         set_leading(&in, left_leads, true);
@@ -330,8 +330,8 @@ static void pivot_turns(void)
    the robot drifts back toward the line with line loss armed. */
 static void crossing_keeps_last_side(void)
 {
-    Mission m;
-    MissionInputs in = input();
+    Mission_t m;
+    MissionInputs_t in = input();
     follow(&m, &in);
     in.line = IR_LINE_VISIBLE;
     in.left_black = true;
@@ -348,7 +348,7 @@ static void crossing_keeps_last_side(void)
     assert(m.state == MISSION_NAVIGATE);
     in.line = IR_LINE_VISIBLE;
     in.left_black = in.right_black = false;
-    MissionOutputs out = finish_straight(&m, &in);
+    MissionOutputs_t out = finish_straight(&m, &in);
     assert(m.state == MISSION_FOLLOW_LINE && m.line_side == -1);
     assert(motion_cmd_steering(&out.command) == -LINE_DRIFT_Q);
     move(&in, LINE_LOST_MM + 1.0f, LINE_LOST_MM + 1.0f);
@@ -361,8 +361,8 @@ static void navigation_failures(void)
     {
         for (unsigned cause = 0; cause < 5; ++cause)
         {
-            Mission m;
-            MissionInputs in = input();
+            Mission_t m;
+            MissionInputs_t in = input();
             follow(&m, &in);
             m.state = MISSION_NAVIGATE;
             m.phase = phase;
@@ -371,14 +371,14 @@ static void navigation_failures(void)
             if (cause == 2) in.usable_line = false;
             if (cause == 3) { in.front_valid = true; in.front_mm = 100; }
             if (cause == 4) in.now_ms += MOTION_ACTION_TIMEOUT_MS;
-            MissionOutputs out = tick(&m, &in);
+            MissionOutputs_t out = tick(&m, &in);
             assert(m.state == MISSION_STOPPED);
             assert(motion_cmd_mode(&out.command) == MOTION_MODE_STOP);
         }
     }
 #if NAV_GEOMETRY_RELEASED
-    Mission m;
-    MissionInputs in = input();
+    Mission_t m;
+    MissionInputs_t in = input();
     follow(&m, &in);
     in.line_error = -127;
     in.left_black = true;
@@ -393,7 +393,7 @@ static void navigation_failures(void)
     tick(&m, &in);
     assert(m.entry_curved);
     move(&in, NAV_CONFIRM_MM + 1, NAV_CONFIRM_MM + 1);
-    MissionOutputs out = tick(&m, &in);
+    MissionOutputs_t out = tick(&m, &in);
     /* 2026-11-02: a queued turn commits on a skewed but qualified entry. */
     assert(m.state == MISSION_NAVIGATE && m.phase == JUNCTION_PHASE_ADVANCE && out.nav_rejected == 0u);
     /* Pivoting to the bound without finding the branch stops. */
@@ -407,7 +407,7 @@ static void navigation_failures(void)
 static void motion(void)
 {
     /* Style 2 was the removed smooth path; it is no longer a valid turn. */
-    MotionCommand cmd = motion_command_make(MOTION_MODE_TURN, 50, 90, 2, 2, 100);
+    MotionCommand_t cmd = motion_command_make(MOTION_MODE_TURN, 50, 90, 2, 2, 100);
     assert(motion_cmd_mode(&cmd) == MOTION_MODE_STOP);
     cmd = motion_command_make(MOTION_MODE_TURN, 50, -NAV_UTURN_MAX_DEG,
         MOTION_TURN_RAMPED, 2, 100);

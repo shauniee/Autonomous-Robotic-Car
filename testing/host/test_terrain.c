@@ -4,22 +4,22 @@
 #include <math.h>
 #include <stdio.h>
 
-static TerrainContext ctx;
+static TerrainContext_t ctx;
 
 static void calibrate(void)
 {
     terrain_algo_init(&ctx);
-    Gy511RawAxes flat = {0, 0, (int16_t)lroundf(1.0f / ACCEL_MG_PER_LSB)};
+    Gy511RawAxes_t flat = {0, 0, (int16_t)lroundf(1.0f / ACCEL_MG_PER_LSB)};
     for (int i = 0; i < 100; ++i) {
         terrain_algo_calibrate_sample(&ctx, &flat);
     }
     assert(ctx.is_calibrated);
 }
 
-static Gy511RawAxes tilted(float roll_deg, float pitch_deg)
+static Gy511RawAxes_t tilted(float roll_deg, float pitch_deg)
 {
     float r = roll_deg * 0.0174532925f, q = pitch_deg * 0.0174532925f;
-    return (Gy511RawAxes){(int16_t)lroundf(sinf(r) / ACCEL_MG_PER_LSB),
+    return (Gy511RawAxes_t){(int16_t)lroundf(sinf(r) / ACCEL_MG_PER_LSB),
         (int16_t)lroundf(sinf(q) / ACCEL_MG_PER_LSB),
         (int16_t)lroundf(cosf(r) * cosf(q) / ACCEL_MG_PER_LSB)};
 }
@@ -27,7 +27,7 @@ static Gy511RawAxes tilted(float roll_deg, float pitch_deg)
 /* Feed a physical travel step so encoder calibration does not shrink fixtures. */
 static void feed(float roll_deg, int n, float step_mm)
 {
-    Gy511RawAxes a = tilted(roll_deg, 0.0f);
+    Gy511RawAxes_t a = tilted(roll_deg, 0.0f);
     for (int i = 0; i < n; ++i) {
         terrain_algo_process(&ctx, &a, step_mm * ENC_COUNTS_PER_MM, step_mm <= 0.0f);
     }
@@ -109,7 +109,7 @@ static void test_what_is_not_a_hump(void)
     assert(ctx.hump_count == 0u && !ctx.height_valid && ctx.last_hump_code == 0u);
 
     calibrate();					/* pitch from speed changes or a two-wheel ramp */
-    Gy511RawAxes nose_up = tilted(0.0f, 12.0f), nose_down = tilted(0.0f, -12.0f);
+    Gy511RawAxes_t nose_up = tilted(0.0f, 12.0f), nose_down = tilted(0.0f, -12.0f);
     for (int i = 0; i < 60; ++i) {
         terrain_algo_process(&ctx, &nose_up, 23.0f, false);
     }
@@ -137,7 +137,7 @@ static void test_baseline(void)
     assert(ctx.state == TERRAIN_STATE_FLAT && ctx.hump_count == 0u);
 
     calibrate();					/* 2026-11-02: a pivot has no mean travel, and is not stopped */
-    Gy511RawAxes pivot = tilted(2.5f, 0.0f);
+    Gy511RawAxes_t pivot = tilted(2.5f, 0.0f);
     for (int i = 0; i < 100; ++i) {
         terrain_algo_process(&ctx, &pivot, 0.0f, false);
     }
@@ -166,7 +166,7 @@ static void test_count(void)
     assert(ctx.hump_count == 12u);
 }
 
-static void hold(Gy511RawAxes a, int n)
+static void hold(Gy511RawAxes_t a, int n)
 {
     for (int i = 0; i < n; ++i) {
         terrain_algo_process(&ctx, &a, 0.0f, false);
@@ -179,18 +179,18 @@ static void test_lift_and_restart(void)
     calibrate();
     hold(tilted(20.0f, 10.0f), 30);			/* a steep hump is not a lift */
     assert(ctx.state != TERRAIN_STATE_LIFTED);
-    hold((Gy511RawAxes){0, 0, (int16_t)(one_g * 3 / 2)}, 1);	/* one jolt is filtered out */
+    hold((Gy511RawAxes_t){0, 0, (int16_t)(one_g * 3 / 2)}, 1);	/* one jolt is filtered out */
     assert(ctx.state != TERRAIN_STATE_LIFTED);
-    hold((Gy511RawAxes){0, 0, (int16_t)(one_g * 3 / 2)}, 10);	/* picked up */
+    hold((Gy511RawAxes_t){0, 0, (int16_t)(one_g * 3 / 2)}, 10);	/* picked up */
     assert(ctx.state == TERRAIN_STATE_LIFTED);
     hold(tilted(0.0f, 0.0f), 30);			/* set down level */
     assert(ctx.state == TERRAIN_STATE_FLAT);
     hold(tilted(60.0f, 0.0f), 30);			/* tipped on its side */
     assert(ctx.state == TERRAIN_STATE_LIFTED);
     hold(tilted(0.0f, 0.0f), 30);
-    hold((Gy511RawAxes){0, 0, (int16_t)-one_g}, 30);	/* upside down */
+    hold((Gy511RawAxes_t){0, 0, (int16_t)-one_g}, 30);	/* upside down */
     assert(ctx.state == TERRAIN_STATE_LIFTED);
-    Gy511RawAxes flat = {0, 0, one_g};
+    Gy511RawAxes_t flat = {0, 0, one_g};
 
     terrain_algo_init(&ctx);
     for (unsigned i = 0u; i < 37u; ++i) {
@@ -240,7 +240,7 @@ static void test_evidence_and_invalid_window(void)
     assert(terrain_lift_pending(true, false, false));
     assert(terrain_lift_pending(true, true, true));
     assert(!terrain_lift_pending(true, false, true));
-    TerrainContext context;
+    TerrainContext_t context;
     terrain_algo_init(&context);
     context.hump_count = 2u;
     context.max_hump_code = 20u;

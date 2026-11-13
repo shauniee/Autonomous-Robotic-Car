@@ -54,16 +54,16 @@ static int32_t filter_axis(int32_t previous, int16_t raw, int32_t sum,
                   FILTER_DIV));
 }
 
-void terrain_algo_init(TerrainContext *ctx)
+void terrain_algo_init(TerrainContext_t *ctx)
 {
-    *ctx = (TerrainContext){0};
+    *ctx = (TerrainContext_t){0};
     ctx->filtered_accel_q16.z =
         (int32_t)((1.0f / ACCEL_MG_PER_LSB + 0.5f) * RAW_Q_ONE);
     ctx->state = TERRAIN_STATE_FLAT;
 }
 
-bool terrain_algo_calibrate_sample(TerrainContext *ctx,
-    const Gy511RawAxes *raw)
+bool terrain_algo_calibrate_sample(TerrainContext_t *ctx,
+    const Gy511RawAxes_t *raw)
 {
     if (ctx->is_calibrated)
     {
@@ -81,14 +81,14 @@ bool terrain_algo_calibrate_sample(TerrainContext *ctx,
     return false;
 }
 
-void terrain_algo_calibration_restart(TerrainContext *ctx)
+void terrain_algo_calibration_restart(TerrainContext_t *ctx)
 {
     ctx->calib_count = 0;
-    ctx->calib_sum = (TerrainCalibSum){0};
+    ctx->calib_sum = (TerrainCalibSum_t){0};
     ctx->is_calibrated = false;
 }
 
-float terrain_height_mm(const TerrainContext *p_ctx)
+float terrain_height_mm(const TerrainContext_t *p_ctx)
 {
     float height_mm = 0.0f;
 
@@ -104,14 +104,14 @@ float terrain_height_mm(const TerrainContext *p_ctx)
     return height_mm;
 }
 
-float terrain_acceleration_mg(const Gy511RawAxes *raw)
+float terrain_acceleration_mg(const Gy511RawAxes_t *raw)
 {
     return sqrtf((float)raw->x * raw->x +
         (float)raw->y * raw->y + (float)raw->z * raw->z) *
         ACCEL_MG_PER_LSB * 1000.0f;
 }
 
-void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw,
+void terrain_algo_process(TerrainContext_t *ctx, const Gy511RawAxes_t *raw,
     float delta_counts, bool stationary)
 {
     if (!ctx->is_calibrated)
@@ -238,7 +238,7 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw,
     }
 }
 
-void terrain_algo_invalidate_window(TerrainContext *ctx)
+void terrain_algo_invalidate_window(TerrainContext_t *ctx)
 {
     ctx->rise_q = 0u;
     ctx->flat_run = 0u;

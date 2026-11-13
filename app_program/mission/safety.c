@@ -5,7 +5,7 @@
 #include "../common/robot_time.h"
 
 static rd_word_t latched; /* writer: Mission; readers use one-word copies */
-static Button reset_button;
+static Button_t reset_button;
 static bool initialized;
 static uint8_t reset_state = SAFETY_RESET_BOOT;
 
@@ -19,18 +19,18 @@ uint32_t safety_latched_causes(void)
 void safety_step(bool line_required)
 {
     uint32_t now = robot_time_ms();
-    ButtonInputs buttons = drv_buttons_read();
+    ButtonInputs_t buttons = drv_buttons_read();
     if (!initialized)
     {
         button_init(&reset_button, now);
         initialized = true;
     }
-    ButtonEvent event = button_update(&reset_button, buttons.gp21_down, now);
-    LineIrSnapshot snapshot = {0};
-    MotionHealth health = {0};
+    ButtonEvent_t event = button_update(&reset_button, buttons.gp21_down, now);
+    LineIrSnapshot_t snapshot = {0};
+    MotionHealth_t health = {0};
     bool line_copied = line_ir_copy(&snapshot);
     bool health_read = motion_health(&health) >= E_OK;
-    SafetyInputs in = {
+    SafetyInputs_t in = {
         .stop_button = buttons.gp21_down,
         .line_required = line_required,
         .fault_pending = rd_fault_stop_pending(),

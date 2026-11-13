@@ -15,7 +15,7 @@ typedef struct
     int16_t x;
     int16_t y;
     int16_t z;
-} Gy511RawAxes;
+} Gy511RawAxes_t;
 
 /*
  * terrain.h - calibrated terrain filtering and hump estimation.
@@ -27,7 +27,7 @@ typedef enum
     TERRAIN_STATE_FLAT = 0,
     TERRAIN_STATE_ON_HUMP,
     TERRAIN_STATE_LIFTED
-} TerrainState;
+} TerrainState_t;
 
 /* Signed Q16 units of one raw accelerometer LSB. Intermediate range may be
    wider than one raw int16 value after bias removal; saturate if necessary. */
@@ -36,7 +36,7 @@ typedef struct
     int32_t x;
     int32_t y;
     int32_t z;
-} TerrainFilterQ16;
+} TerrainFilterQ16_t;
 
 /* Calibration sums accumulate exactly 100 signed int16 samples. Each axis
    ranges -3276800..3276700, requiring 23 signed bits. No ISR/task shares
@@ -47,10 +47,10 @@ typedef struct __attribute__((packed))
     int32_t x : 23;
     int32_t y : 23;
     int32_t z : 23;
-} TerrainCalibSum;
+} TerrainCalibSum_t;
 
-_Static_assert(9u == sizeof(TerrainCalibSum),
-    "TerrainCalibSum must use 69 bits in 9 bytes");
+_Static_assert(9u == sizeof(TerrainCalibSum_t),
+    "TerrainCalibSum_t must use 69 bits in 9 bytes");
 
 #define TERRAIN_RISE_BITS 11u
 #define TERRAIN_TRAVEL_BITS 13u
@@ -66,10 +66,10 @@ _Static_assert((float)HUMP_MAX_TRAVEL_MM * ENC_COUNTS_PER_MM <
    Last/max codes are 7 bits each. */
 typedef struct
 {
-    TerrainFilterQ16 filtered_accel_q16;
+    TerrainFilterQ16_t filtered_accel_q16;
     /* roll average while stopped, 1/256 centidegree */
     int32_t roll_base_q8;
-    TerrainCalibSum calib_sum;
+    TerrainCalibSum_t calib_sum;
     /* Peak height this encounter, 0.1 mm: TRACK_WIDTH_MM x sin <= 1200. */
     uint16_t rise_q : TERRAIN_RISE_BITS;
     /* Encoder travel while tilted; the encounter ends past
@@ -82,25 +82,25 @@ typedef struct
     uint8_t hump_count;
     uint8_t flat_run : 4;
     uint8_t calib_count : 7;
-    uint8_t state : 2;                 /* TerrainState */
+    uint8_t state : 2;                 /* TerrainState_t */
     uint8_t height_valid : 1;
     uint8_t is_calibrated : 1;
-} TerrainContext;
+} TerrainContext_t;
 
-_Static_assert(sizeof(TerrainContext) <= 40u,
-    "TerrainContext packing regressed");
+_Static_assert(sizeof(TerrainContext_t) <= 40u,
+    "TerrainContext_t packing regressed");
 
-void terrain_algo_init(TerrainContext *ctx);
-bool terrain_algo_calibrate_sample(TerrainContext *ctx,
-    const Gy511RawAxes *raw);
+void terrain_algo_init(TerrainContext_t *ctx);
+bool terrain_algo_calibrate_sample(TerrainContext_t *ctx,
+    const Gy511RawAxes_t *raw);
 /* Local travel includes half counts from averaging the two wheel deltas. */
-void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw,
+void terrain_algo_process(TerrainContext_t *ctx, const Gy511RawAxes_t *raw,
     float delta_counts, bool stationary);
-void terrain_algo_invalidate_window(TerrainContext *ctx);
-void terrain_algo_calibration_restart(TerrainContext *ctx);
-float terrain_acceleration_mg(const Gy511RawAxes *raw);
+void terrain_algo_invalidate_window(TerrainContext_t *ctx);
+void terrain_algo_calibration_restart(TerrainContext_t *ctx);
+float terrain_acceleration_mg(const Gy511RawAxes_t *raw);
 /* Height under the raised wheel now, mm; 0 on flat ground. */
-float terrain_height_mm(const TerrainContext *p_ctx);
+float terrain_height_mm(const TerrainContext_t *p_ctx);
 
 /*
  * Terrain word (writer: Terrain, one aligned word, single store). Layout is
@@ -220,6 +220,6 @@ typedef enum
     GY511_SAMPLE_PENDING,
     GY511_SAMPLE_FRESH
 } gy511_sample_result_t;
-gy511_sample_result_t drv_gy511_sample(Gy511RawAxes *out_raw);
+gy511_sample_result_t drv_gy511_sample(Gy511RawAxes_t *out_raw);
 
 #endif /* TERRAIN_H */

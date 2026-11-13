@@ -211,38 +211,38 @@ range needs, stored is what the field occupies.
 | Encoder count, per wheel | `motion.c` `counts[2]` | 0..65535, wraps (`ENC_COUNT_BITS`) | 16 | `_Atomic enc_count_t` | encoder ISR (core 1) → all tasks; release/acquire |
 | Quadrature level, per wheel | `motion.c` `previous_levels` | 0..3 | 2+2 / 8 | one byte, masks per wheel | encoder ISR only |
 | Invalid edges | `motion.c` `invalid_edges` | change counter | 32 | `_Atomic uint32_t` | ISR → Motion |
-| Command target | `MotionCommand.target` | -2000..2000 mm or -360..360 deg | 12 / 16 | `int16_t` | Mission → Motion, mutex copy |
+| Command target | `MotionCommand_t.target` | -2000..2000 mm or -360..360 deg | 12 / 16 | `int16_t` | Mission → Motion, mutex copy |
 | Command speed | `speed_action` bits 0-8 | 0..500 mm/s | 9 | mask and shift | same |
 | Command action ID | `speed_action` bits 9-14 | 0..63 | 6 | mask and shift; bit 15 spare | same |
 | Command mode | `mode_steering` bits 0-1 | STOP, FOLLOW, DISTANCE, TURN | 2 | mask and shift | same |
 | Command steering | `mode_steering` bits 2-9 | -127..127, Q7 | 8 | mask and shift; bits 10-15 spare | same |
-| Command time | `MotionCommand.sampled_ms` | ms, wraps | 32 | `uint32_t` | same |
+| Command time | `MotionCommand_t.sampled_ms` | ms, wraps | 32 | `uint32_t` | same |
 | Feedback | `motion.c` `feedback` | status 0..3, action 0..63 | 8 / 32 | `rd_word_t`, bits 0-1 and 2-7 | Motion → Mission, Comms; one word |
-| Health flags | `MotionHealth.flags` | stopped, braked, serviced once | 3 / 8 | bits 0-2 | Motion → Mission, Safety, Terrain; mutex copy |
-| Health time | `MotionHealth.serviced_ms` | ms | 32 | `uint32_t` | same |
+| Health flags | `MotionHealth_t.flags` | stopped, braked, serviced once | 3 / 8 | bits 0-2 | Motion → Mission, Safety, Terrain; mutex copy |
+| Health time | `MotionHealth_t.serviced_ms` | ms | 32 | `uint32_t` | same |
 | Stop requests, stops serviced | `motion.c` | change counters | 32 each | `_Atomic uint32_t`; core 0 loads serviced first | core-1 callers under DI, Motion → Terrain (core 0) |
-| Action target | `MotionController` | -2000..2000 | 12 | signed bit-field (kept) | Motion only |
-| Turn style, turn arrived | `MotionController` | 0..3 each | 2 each | bit-fields | Motion only |
-| Mode, status | `MotionController` | 0..3 each | 2 each | bit-fields | Motion only |
-| Active, action ID | `MotionController` | 0..1, 0..63 | 1, 6 | bit-fields | Motion only |
-| Follow base speed | `MotionController` | Q6 mm/s | 15 | bit-field | Motion only |
-| Profile acceleration | `MotionController` | signed mm/s² | 11 | signed bit-field (kept) | Motion only |
-| Origin and previous counts | `MotionController` | encoder counts | 16 each | `enc_count_t` | Motion only |
-| PID integral, previous speed | `WheelPid` | Q4 counts, counts/s | 16 each | `int16_t` | Motion only |
-| Input counts | `MotionInput.count[2]` | encoder counts | 16 each | `enc_count_t` | per release |
-| Output status, action, stall | `MotionOutput` | 0..3, 0..63, flag | 2, 6, 1 | bit-fields | per release |
+| Action target | `MotionController_t` | -2000..2000 | 12 | signed bit-field (kept) | Motion only |
+| Turn style, turn arrived | `MotionController_t` | 0..3 each | 2 each | bit-fields | Motion only |
+| Mode, status | `MotionController_t` | 0..3 each | 2 each | bit-fields | Motion only |
+| Active, action ID | `MotionController_t` | 0..1, 0..63 | 1, 6 | bit-fields | Motion only |
+| Follow base speed | `MotionController_t` | Q6 mm/s | 15 | bit-field | Motion only |
+| Profile acceleration | `MotionController_t` | signed mm/s² | 11 | signed bit-field (kept) | Motion only |
+| Origin and previous counts | `MotionController_t` | encoder counts | 16 each | `enc_count_t` | Motion only |
+| PID integral, previous speed | `WheelPid_t` | Q4 counts, counts/s | 16 each | `int16_t` | Motion only |
+| Input counts | `MotionInput_t.count[2]` | encoder counts | 16 each | `enc_count_t` | per release |
+| Output status, action, stall | `MotionOutput_t` | 0..3, 0..63, flag | 2, 6, 1 | bit-fields | per release |
 
 ### Line and barcode
 
 | Field | Where | Valid range | Bits | Representation | Writer → readers, sync |
 | --- | --- | --- | ---: | --- | --- |
-| IR level, per sensor | `IrRaw` | 0..1; 2..3 driver error | 2 each | bit-fields | per acquisition |
-| IR raw word | `IrRawWord` | left, right, valid | 3 / 8 | `uint8_t` bits 0-2, one byte store | Mission task |
-| IR fraction, per sensor | `IrReading` | 0 or 127 (`IR_SCALE_ONE`) | 7 each | bit-fields | per acquisition |
-| IR error | `IrReading`, `IrTrackingOutput` | -127..127 | 8 | `int8_t` | per acquisition |
-| Line status | `IrTracker`, `LineIrSnapshot`, `IrTrackingOutput` | unknown, visible, lost, broad black | 2 | bit-field | Mission task |
-| Sample flags | `LineIrSnapshot` | black L/R, have sample, fresh, valid, guidance | 1 each | bit-fields | Mission → Mission, Safety, Comms; mutex copy |
-| Sample time | `IrTracker`, `LineIrSnapshot` | ms | 32 | `uint32_t` | same |
+| IR level, per sensor | `IrRaw_t` | 0..1; 2..3 driver error | 2 each | bit-fields | per acquisition |
+| IR raw word | `IrRawWord_t` | left, right, valid | 3 / 8 | `uint8_t` bits 0-2, one byte store | Mission task |
+| IR fraction, per sensor | `IrReading_t` | 0 or 127 (`IR_SCALE_ONE`) | 7 each | bit-fields | per acquisition |
+| IR error | `IrReading_t`, `IrTrackingOutput_t` | -127..127 | 8 | `int8_t` | per acquisition |
+| Line status | `IrTracker_t`, `LineIrSnapshot_t`, `IrTrackingOutput_t` | unknown, visible, lost, broad black | 2 | bit-field | Mission task |
+| Sample flags | `LineIrSnapshot_t` | black L/R, have sample, fresh, valid, guidance | 1 each | bit-fields | Mission → Mission, Safety, Comms; mutex copy |
+| Sample time | `IrTracker_t`, `LineIrSnapshot_t` | ms | 32 | `uint32_t` | same |
 | Edge ring entry | `barcode.c` `ring[64]` | two counts and a level | 33 | two `uint16_t` plus one bit of `ring_high` | GP27 ISR → Mission (same core); SPSC atomics |
 | Edge counts, level | `barcode_edge_t` | counts, 0..1 | 16 each, 1 | `barcode_count_t`, bit-field | per pop |
 | Element widths | `barcode_frame_t.widths` | 16..400 counts, 25 elements | 9 each | 29 packed bytes, masks behind `barcode_frame_width()` | Mission task |
@@ -265,9 +265,9 @@ range needs, stored is what the field occupies.
 | Echo state | `obstacle.c` `echo_state` | idle, armed, high, done | 2 / 8 | `_Atomic uint8_t` | Echo ISR ↔ Mission (same core) |
 | Echo pulse width | `obstacle.c` `pulse_us` | 0..30000 us, saturates | 15 / 16 | `_Atomic uint16_t` | Echo ISR → Mission |
 | Consecutive misses | `obstacle_acquisition_t` | 0..3, saturates at the limit | 2 | bit-field | Mission task |
-| Ray | `ObstacleRay` | angle ±60 deg, 0..8190 mm, valid | 8+13+1 | packed 3 bytes | Mission task |
-| Profile distances | `ObstacleProfile` | closest, width, clearances 0..1023 mm | 10 each | bit-fields, saturate | Mission → Comms; mutex copy |
-| Profile coordinates | `ObstacleProfile` | ±1023 mm; angle ±60 deg | 11 each; 7 | signed bit-fields (kept) | same |
+| Ray | `ObstacleRay_t` | angle ±60 deg, 0..8190 mm, valid | 8+13+1 | packed 3 bytes | Mission task |
+| Profile distances | `ObstacleProfile_t` | closest, width, clearances 0..1023 mm | 10 each | bit-fields, saturate | Mission → Comms; mutex copy |
+| Profile coordinates | `ObstacleProfile_t` | ±1023 mm; angle ±60 deg | 11 each; 7 | signed bit-fields (kept) | same |
 | Width uncertainty | `obstacle_profile_evidence_t` | 0..1023 mm, 2047 unknown | 11 | bit-field | same |
 | Planning width | `obstacle_profile_evidence_t` | 0..1023 mm | 10 | bit-field | same |
 | Ray counts, edge flags | `obstacle_profile_evidence_t` | 0..15; flags | 4 each; 1 each | bit-fields | same |
@@ -284,15 +284,15 @@ range needs, stored is what the field occupies.
 | --- | --- | --- | ---: | --- | --- |
 | Terrain word | `terrain.c` `terrain_word` | last and max code 0..127, count 0..255, state 0..2, height valid, calibrated | 7+7+8+2+1+1 = 26 / 32 | `rd_word_t`; bit 24 and 27-31 spare | I/O (core 0) → Comms |
 | Startup outcome | `terrain.c` | pending, done, failed | 2 / 8 | `_Atomic uint8_t` | I/O (core 0) → Mission (core 1) |
-| Filtered acceleration | `TerrainContext` | Q16 raw LSB | 32 each | `int32_t` | I/O only |
-| Calibration sums | `TerrainCalibSum` | ±3276800 | 23 each | signed bit-fields, packed 9 bytes (kept) | I/O only |
-| Roll baseline | `TerrainContext.roll_base_q8` | ±2.3 M, Q8 cdeg | 23 / 32 | `int32_t` (signed) | I/O only |
-| Peak rise | `TerrainContext.rise_q` | 0..1200, 0.1 mm | 11 | bit-field, saturates | I/O only |
-| Tilted travel | `TerrainContext.travel_counts` | 0..4660 counts | 13 | bit-field, saturates | I/O only |
-| Pitch, roll | `TerrainContext` | ±9000 cdeg | 15 / 16 each | `int16_t` | I/O only |
-| Hump codes, count | `TerrainContext` | 0..127; 0..255 | 7 each; 8 | bit-fields; `uint8_t` | I/O only |
-| Flat run, calibration count | `TerrainContext` | 0..10; 0..100 | 4; 7 | bit-fields | I/O only |
-| State, height valid, calibrated | `TerrainContext` | 0..2; flags | 2; 1 each | bit-fields | I/O only |
+| Filtered acceleration | `TerrainContext_t` | Q16 raw LSB | 32 each | `int32_t` | I/O only |
+| Calibration sums | `TerrainCalibSum_t` | ±3276800 | 23 each | signed bit-fields, packed 9 bytes (kept) | I/O only |
+| Roll baseline | `TerrainContext_t.roll_base_q8` | ±2.3 M, Q8 cdeg | 23 / 32 | `int32_t` (signed) | I/O only |
+| Peak rise | `TerrainContext_t.rise_q` | 0..1200, 0.1 mm | 11 | bit-field, saturates | I/O only |
+| Tilted travel | `TerrainContext_t.travel_counts` | 0..4660 counts | 13 | bit-field, saturates | I/O only |
+| Pitch, roll | `TerrainContext_t` | ±9000 cdeg | 15 / 16 each | `int16_t` | I/O only |
+| Hump codes, count | `TerrainContext_t` | 0..127; 0..255 | 7 each; 8 | bit-fields; `uint8_t` | I/O only |
+| Flat run, calibration count | `TerrainContext_t` | 0..10; 0..100 | 4; 7 | bit-fields | I/O only |
+| State, height valid, calibrated | `TerrainContext_t` | 0..2; flags | 2; 1 each | bit-fields | I/O only |
 | Trace travel | `terrain.c` | mm, wraps at 65536 | 32 | `uint32_t` Q8; wire takes bits 8-23 | I/O only |
 
 ### Mission and Safety
@@ -300,26 +300,26 @@ range needs, stored is what the field occupies.
 | Field | Where | Valid range | Bits | Representation | Writer → readers, sync |
 | --- | --- | --- | ---: | --- | --- |
 | Published state | `mission.c` | 7 states | 3 / 8 | `_Atomic uint8_t` | Mission → Comms (core 0) |
-| State, phase | `Mission` | 0..6; 0..4 | 3 each | bit-fields | Mission only |
-| Held barcode action | `Mission.held` | 0..4 | 3 | bit-field | Mission only |
-| Turn code, onset black, front clear | `Mission` | 0..3 each | 2 each | bit-fields | Mission only |
-| Scan id | `Mission` | 0..15 | 4 | bit-field | Mission only |
-| Junction and scan flags (12) | `Mission` | flags | 1 each | bit-fields | Mission only |
-| Line integral | `Mission.line_i_q` | 0..45, Q7 | 6 | bit-field | Mission only |
-| Action IDs | `Mission.action_id`, `current_action` | 1..63 | 6 each | bit-fields | Mission only |
-| Turn length | `Mission.turn_length_mm` | ±2000 mm | 12 | signed bit-field (kept) | Mission only |
-| Touch sides | `Mission.line_side`, `line_prev`, `cross_side` | -1, 0, +1 | 2 / 8 each | `int8_t` (signed) | Mission only |
-| Steering target | `Mission.line_steer_q` | -127..127, Q7 | 8 | `int8_t` | Mission only |
-| Reverse distances | `Mission.backup_mm`, `backed_mm` | 0..150 mm | 8 each | `uint8_t` | Mission only |
-| Origins | `Mission` | encoder counts | 16 each | `enc_count_t` | Mission only |
-| Ranges in | `MissionInputs` | front and side 0..8190 mm; clearances, profile distances 0..1023 | 13; 10 | bit-fields | per release |
-| Codes in | `MissionInputs` | line 0..3, motion status 0..3, action 0..63, scan state 0..7, scan id 0..15, letter 0..31, edges 0..31, barcode action 0..4 | 2, 2, 6, 3, 4, 5, 5, 3 | bit-fields | per release |
-| Flags in (17) | `MissionInputs` | flags | 1 each | bit-fields | per release |
-| Counts in | `MissionInputs` | encoder counts | 16 each | `enc_count_t` | per release |
-| Event out | `MissionOutputs` | kind 0..4, arg 0..127, arg2 0..1023 | 3, 7, 10 | bit-fields | per release |
-| Scan id, rejection out | `MissionOutputs` | 0..15; 0..3 | 4; 2 | bit-fields | per release |
-| Side watch angle out | `MissionOutputs` | ±60 deg | 7 / 8 | `int8_t` | per release |
-| Flags out (9) | `MissionOutputs` | flags | 1 each | bit-fields | per release |
+| State, phase | `Mission_t` | 0..6; 0..4 | 3 each | bit-fields | Mission only |
+| Held barcode action | `Mission_t.held` | 0..4 | 3 | bit-field | Mission only |
+| Turn code, onset black, front clear | `Mission_t` | 0..3 each | 2 each | bit-fields | Mission only |
+| Scan id | `Mission_t` | 0..15 | 4 | bit-field | Mission only |
+| Junction and scan flags (12) | `Mission_t` | flags | 1 each | bit-fields | Mission only |
+| Line integral | `Mission_t.line_i_q` | 0..45, Q7 | 6 | bit-field | Mission only |
+| Action IDs | `Mission_t.action_id`, `current_action` | 1..63 | 6 each | bit-fields | Mission only |
+| Turn length | `Mission_t.turn_length_mm` | ±2000 mm | 12 | signed bit-field (kept) | Mission only |
+| Touch sides | `Mission_t.line_side`, `line_prev`, `cross_side` | -1, 0, +1 | 2 / 8 each | `int8_t` (signed) | Mission only |
+| Steering target | `Mission_t.line_steer_q` | -127..127, Q7 | 8 | `int8_t` | Mission only |
+| Reverse distances | `Mission_t.backup_mm`, `backed_mm` | 0..150 mm | 8 each | `uint8_t` | Mission only |
+| Origins | `Mission_t` | encoder counts | 16 each | `enc_count_t` | Mission only |
+| Ranges in | `MissionInputs_t` | front and side 0..8190 mm; clearances, profile distances 0..1023 | 13; 10 | bit-fields | per release |
+| Codes in | `MissionInputs_t` | line 0..3, motion status 0..3, action 0..63, scan state 0..7, scan id 0..15, letter 0..31, edges 0..31, barcode action 0..4 | 2, 2, 6, 3, 4, 5, 5, 3 | bit-fields | per release |
+| Flags in (17) | `MissionInputs_t` | flags | 1 each | bit-fields | per release |
+| Counts in | `MissionInputs_t` | encoder counts | 16 each | `enc_count_t` | per release |
+| Event out | `MissionOutputs_t` | kind 0..4, arg 0..127, arg2 0..1023 | 3, 7, 10 | bit-fields | per release |
+| Scan id, rejection out | `MissionOutputs_t` | 0..15; 0..3 | 4; 2 | bit-fields | per release |
+| Side watch angle out | `MissionOutputs_t` | ±60 deg | 7 / 8 | `int8_t` | per release |
+| Flags out (9) | `MissionOutputs_t` | flags | 1 each | bit-fields | per release |
 | Bypass route, work | `bypass_control_t` | 0..8; 0..3 | 4; 2 | bit-fields | Mission only |
 | Bypass pose | `bypass_control_t` | Q8 mm | 21 each | signed bit-fields (kept) | Mission only |
 | Bypass edge budget | `bypass_control_t.edge_counts` | 0..93192 counts | 17 | bit-field | Mission only |
@@ -332,8 +332,8 @@ range needs, stored is what the field occupies.
 | Recovery turn | `recovery_control_t` | ±360 deg | 10 | signed bit-field (kept) | Mission only |
 | Latched causes | `safety.c` `latched` | 4 cause bits | 4 / 32 | `rd_word_t` | Mission (Safety step) → Mission |
 | Reset state | `safety.c` | 0..3 | 2 / 8 | `uint8_t`, passed by pointer | Mission only |
-| Button flags | `Button`, `ButtonInputs` | flags | 1 each | bit-fields | Mission task |
-| Safety inputs | `SafetyInputs` | flags; ages in ms | 1 each; 32 | bit-fields; `uint32_t` | per release |
+| Button flags | `Button_t`, `ButtonInputs_t` | flags | 1 each | bit-fields | Mission task |
+| Safety inputs | `SafetyInputs_t` | flags; ages in ms | 1 each; 32 | bit-fields; `uint32_t` | per release |
 | Mapping request | `mission_mapping.c` `request_word` | letters 20, mapped 1, sequence 8, direction 3 | 32 | `rd_word_t` bits 0-31 | I/O (core 0) → Mission |
 | Mapping reply | `mission_mapping.c` `reply_word` | sequence 8, result 2 | 10 / 32 | `rd_word_t` | Mission → I/O |
 
@@ -360,7 +360,7 @@ fixed rings and copies.
 | Barcode, wheel, line trace rings | 8 each | encoded 18, 15 and 17-byte frames | producer → I/O, SPSC atomics (trace images only) |
 | Comms event ring | 16 | 10 bytes; 162 bytes in all | cross-core mutex, bounded wait |
 | Bridge out / in | 4 / 2 | 19-byte slot | SPSC atomics, core 0 |
-| Snapshots | 1 each | `MotionCommand` 12, `MotionHealth` 8, `LineIrSnapshot` 8, profile 20, range samples 2 x 16 bytes | mutex copy |
+| Snapshots | 1 each | `MotionCommand_t` 12, `MotionHealth_t` 8, `LineIrSnapshot_t` 8, profile 20, range samples 2 x 16 bytes | mutex copy |
 
 ### MQTT frames
 
@@ -436,19 +436,19 @@ on `main` (`84e5bf5`) and on this change (2026-11-08).
 
 | Type | Before (bytes) | After (bytes) |
 | --- | ---: | ---: |
-| `MissionInputs` | 104 | 64 |
+| `MissionInputs_t` | 104 | 64 |
 | `barcode_frame_t` | 62 | 38 |
 | `bypass_input_t` | 60 | 40 |
-| `Mission` | 160 | 140 |
-| `MissionOutputs` | 32 | 20 |
+| `Mission_t` | 160 | 140 |
+| `MissionOutputs_t` | 32 | 20 |
 | `recovery_input_t` | 24 | 16 |
 | `bypass_control_t` | 64 | 56 |
 | `comms_event_log_t` | 168 | 162 |
 | `obstacle_range_sample_t` | 20 | 16 |
-| `bypass_output_t`, `SafetyInputs` | 20 each | 16 each |
-| `MotionInput`, `MotionHealth`, `LineIrSnapshot` | 12 each | 8 each |
-| `MotionController` | 48 | 44 |
-| `IrRaw` | 4 | 1 |
+| `bypass_output_t`, `SafetyInputs_t` | 20 each | 16 each |
+| `MotionInput_t`, `MotionHealth_t`, `LineIrSnapshot_t` | 12 each | 8 each |
+| `MotionController_t` | 48 | 44 |
+| `IrRaw_t` | 4 | 1 |
 
 | Image | Text before → after | Static RAM (bss) before → after |
 | --- | --- | --- |

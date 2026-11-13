@@ -8,7 +8,7 @@
 
 // consumers may call before startup, including from the other core
 static atomic_int snapshot_mutex;
-static LineIrSnapshot latest;
+static LineIrSnapshot_t latest;
 #define LINE_COPY_WAIT_MS 2 /* readers' lock wait; matches motion_health() */
 
 ER line_barcode_init(void)
@@ -28,7 +28,7 @@ ER line_barcode_init(void)
     {
         return id < E_OK ? id : E_SYS;
     }
-    latest = (LineIrSnapshot){0};
+    latest = (LineIrSnapshot_t){0};
     // ensure setup first before informing mutex is ready
     atomic_store_explicit(&snapshot_mutex, id, memory_order_release);
 #if APP_TEST
@@ -40,7 +40,7 @@ ER line_barcode_init(void)
 
 /* Task-to-publication boundary. A busy mutex skips only this cached copy;
    readers invalidate a stale acquisition by its age. */
-static void line_barcode_publish(const LineIrSnapshot *snapshot)
+static void line_barcode_publish(const LineIrSnapshot_t *snapshot)
 {
     ID id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
     static unsigned misses;
@@ -66,12 +66,12 @@ static void line_barcode_publish(const LineIrSnapshot *snapshot)
    a quiet bench capture still shows the sensor is alive. Button changes have
    their own line. */
 #define IR_REPORT_HEARTBEAT_MS 5000u
-static void report(const IrTracker *tracker, uint32_t now)
+static void report(const IrTracker_t *tracker, uint32_t now)
 {
     static uint16_t last_key = UINT16_MAX;
     static uint32_t heartbeat_due;
-    LineIrSnapshot snapshot = ir_snapshot_build(tracker, now);
-    IrRaw raw = ir_raw_word_raw(snapshot.raw);
+    LineIrSnapshot_t snapshot = ir_snapshot_build(tracker, now);
+    IrRaw_t raw = ir_raw_word_raw(snapshot.raw);
     uint16_t key = (uint16_t)(raw.left | (raw.right << 2u) |
         ((unsigned)ir_raw_word_valid(snapshot.raw) << 4u) |
         ((unsigned)snapshot.sample_fresh << 5u) |
@@ -97,7 +97,7 @@ static void report(const IrTracker *tracker, uint32_t now)
 
 void line_barcode_step(uint32_t now)
 {
-    static IrTracker tracker;
+    static IrTracker_t tracker;
     static struct
     {
         uint8_t initialized : 1;
@@ -116,9 +116,9 @@ void line_barcode_step(uint32_t now)
         sample_due = now;
         flags.initialized = 1u;
     }
-    ButtonInputs inputs = drv_buttons_read();
+    ButtonInputs_t inputs = drv_buttons_read();
 #if APP_TEST
-    static ButtonInputs previous_inputs;
+    static ButtonInputs_t previous_inputs;
     if (!flags.have_inputs || inputs.gp20_down != previous_inputs.gp20_down ||
         inputs.gp21_down != previous_inputs.gp21_down)
     {
@@ -130,7 +130,7 @@ void line_barcode_step(uint32_t now)
 #endif
     if ((int32_t)(now - sample_due) >= 0)
     {
-        IrRaw raw = {0};
+        IrRaw_t raw = {0};
         bool acquired = flags.ir_ready && drv_ir_tracking_read(&raw);
         now = robot_time_ms();
         ir_tracking_sample(&tracker, raw, acquired, now);
@@ -171,7 +171,7 @@ void line_barcode_step(uint32_t now)
             (unsigned)now, level, edges);
     }
 #endif
-    LineIrSnapshot snapshot = ir_snapshot_build(&tracker, now);
+    LineIrSnapshot_t snapshot = ir_snapshot_build(&tracker, now);
     /* Invalid digital acquisition blocks startup. */
     if (!ir_raw_word_valid(snapshot.raw) || !snapshot.normalized_valid)
     {
@@ -193,7 +193,7 @@ void line_barcode_step(uint32_t now)
 
 
 
-static bool copy_snapshot(LineIrSnapshot *snapshot, TMO wait)
+static bool copy_snapshot(LineIrSnapshot_t *snapshot, TMO wait)
 {
     ID id = atomic_load_explicit(&snapshot_mutex, memory_order_acquire);
     /* Wait briefly instead of polling: the holder only copies a struct and
@@ -212,12 +212,12 @@ static bool copy_snapshot(LineIrSnapshot *snapshot, TMO wait)
     return true;
 }
 
-bool line_ir_copy(LineIrSnapshot *snapshot)
+bool line_ir_copy(LineIrSnapshot_t *snapshot)
 {
     return copy_snapshot(snapshot, LINE_COPY_WAIT_MS);
 }
 
-bool line_ir_try_copy(LineIrSnapshot *snapshot)
+bool line_ir_try_copy(LineIrSnapshot_t *snapshot)
 {
     return copy_snapshot(snapshot, TMO_POL);
 }

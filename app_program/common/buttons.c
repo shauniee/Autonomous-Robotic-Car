@@ -3,15 +3,15 @@
 #include "./robot_config.h"
 
 
-void button_init(Button *button, uint32_t now)
+void button_init(Button_t *button, uint32_t now)
 {
     if (button != NULL)
     {
-        *button = (Button){.raw_changed_ms = now};
+        *button = (Button_t){.raw_changed_ms = now};
     }
 }
 
-void button_disarm(Button *button)
+void button_disarm(Button_t *button)
 {
     if (button != NULL)
     {
@@ -19,7 +19,7 @@ void button_disarm(Button *button)
     }
 }
 
-ButtonEvent button_update(Button *button, bool down, uint32_t now)
+ButtonEvent_t button_update(Button_t *button, bool down, uint32_t now)
 {
     if (NULL == button)
     {
@@ -81,9 +81,9 @@ bool drv_buttons_init(void)
            configure_button_pin(BUTTON_GP21);
 }
 
-ButtonInputs drv_buttons_read(void)
+ButtonInputs_t drv_buttons_read(void)
 {
-    ButtonInputs inputs;
+    ButtonInputs_t inputs;
 
     inputs.gp20_down = gpio_get_val(BUTTON_GP20) == 0u;
     inputs.gp21_down = gpio_get_val(BUTTON_GP21) == 0u;

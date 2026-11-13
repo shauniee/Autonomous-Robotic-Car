@@ -20,9 +20,9 @@
 #ifndef HOST_TEST
 /* ---- Motion task ---- */
 static ID command_mutex, stop_flag, motion_tid;
-static MotionCommand latest;
+static MotionCommand_t latest;
 static rd_word_t feedback;      /* single writer: Motion */
-static MotionHealth progress;      /* guarded by command_mutex */
+static MotionHealth_t progress;      /* guarded by command_mutex */
 /* Core-1 writers only, inside DI. Core 0 (Terrain's health read) loads
    serviced_stops before stop_requests: serviced only follows requests, so
    equal loads mean every stop seen so far was braked. */
@@ -71,7 +71,7 @@ ER motion_stop(void)
 
 /* Copies the shared command under the mutex; dst is untouched if the lock
    fails. */
-static ER command_copy(MotionCommand *dst, const MotionCommand *src)
+static ER command_copy(MotionCommand_t *dst, const MotionCommand_t *src)
 {
     ER er = tk_loc_mtx(command_mutex, RD_SNAPSHOT_LOCK_MS);
     if (er < E_OK)
@@ -82,7 +82,7 @@ static ER command_copy(MotionCommand *dst, const MotionCommand *src)
     return tk_unl_mtx(command_mutex);
 }
 
-ER motion_command(const MotionCommand *command)
+ER motion_command(const MotionCommand_t *command)
 {
     if (NULL == command)
     {
@@ -148,7 +148,7 @@ ER motion_reset_stop(void)
             er = tk_clr_flg(stop_flag, ~STOP_BIT);
             if (er >= E_OK)
             {
-                latest = (MotionCommand){0};
+                latest = (MotionCommand_t){0};
             }
         }
     }
@@ -157,7 +157,7 @@ ER motion_reset_stop(void)
     return er < E_OK ? er : unlock;
 }
 
-static ER health_copy(MotionHealth *h, TMO wait)
+static ER health_copy(MotionHealth_t *h, TMO wait)
 {
     if (NULL == h)
     {
@@ -193,7 +193,7 @@ static void motion_task(INT stacd, void *exinf)
 {
     (void)stacd;
     (void)exinf;
-    MotionController controller;
+    MotionController_t controller;
     motion_control_reset(&controller);
     uint32_t release = robot_time_ms();
     /* The GPIO dispatcher is core-1 only, so the encoder starts here. */
@@ -249,7 +249,7 @@ static void motion_task(INT stacd, void *exinf)
         {
             (void)motion_stop();
         }
-        MotionCommand command = {0};
+        MotionCommand_t command = {0};
         ER er = E_OK;
         if (!local_stop && initial_er >= E_OK &&
             (initial.flgptn & STOP_BIT) == 0u)
@@ -258,11 +258,11 @@ static void motion_task(INT stacd, void *exinf)
         }
 
         uint32_t now = robot_time_ms();
-        MotionInput in = {.now_ms = now,
+        MotionInput_t in = {.now_ms = now,
             .count = {(enc_count_t)drv_encoder_count(ENCODER_LEFT),
                       (enc_count_t)drv_encoder_count(ENCODER_RIGHT)}};
         /* Out-of-range trace speed encodes unavailable, never measured zero. */
-        MotionOutput out = {.status = RD_MOTION_IDLE,
+        MotionOutput_t out = {.status = RD_MOTION_IDLE,
             .measured_cps = {-32768.0f, -32768.0f}};
         bool previously_stopped = local_stop || initial_er < E_OK ||
             (initial.flgptn & STOP_BIT) != 0u;
@@ -417,12 +417,12 @@ ER motion_start(void)
     return motion_tid < E_OK ? motion_tid : E_OK;
 }
 
-ER motion_health(MotionHealth *health)
+ER motion_health(MotionHealth_t *health)
 {
     return health_copy(health, 2);
 }
 
-ER motion_health_try(MotionHealth *health)
+ER motion_health_try(MotionHealth_t *health)
 {
     return health_copy(health, TMO_POL);
 }
