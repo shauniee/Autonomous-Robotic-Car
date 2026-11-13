@@ -7,16 +7,18 @@
    Words and tickets are release/acquire copies; no M0+ atomic RMW helpers. */
 static rd_word_t request_word, reply_word;
 static _Atomic uint32_t requested, replied;
-static uint32_t submitted, consumed; /* I/O only */
+static uint32_t submitted; /* I/O only */
+static uint32_t consumed;  /* I/O only */
 static uint32_t taken;               /* Mission only */
 static uint8_t sequence;             /* Mission only */
 
-enum { MAPPING_SEQUENCE_SHIFT = 21u, REPLY_RESULT_SHIFT = 8u, DIRECTION_SHIFT = 29u };
+enum { MAPPING_SEQUENCE_SHIFT = 21u, REPLY_RESULT_SHIFT = 8u,
+    DIRECTION_SHIFT = 29u };
 
 bool mission_mapping_submit(const mqtt_mapping_t *mapping)
 {
     uint32_t packed;
-    if (mapping == NULL || submitted != consumed ||
+    if (NULL == mapping || submitted != consumed ||
         !rd_mapping_pack(mapping->letters, &packed))
     {
         return false;
@@ -31,7 +33,10 @@ bool mission_mapping_submit(const mqtt_mapping_t *mapping)
 bool mission_direction_submit(uint8_t seq, uint8_t action)
 {
     static uint8_t last_sequence;
-    static struct { uint8_t valid : 1; } duplicate;
+    static struct
+    {
+        uint8_t valid : 1;
+    } duplicate;
     if (action < 1u || action > 4u || submitted != consumed ||
         (duplicate.valid && seq == last_sequence))
     {
@@ -49,14 +54,15 @@ bool mission_direction_submit(uint8_t seq, uint8_t action)
 bool mission_mapping_take(mqtt_mapping_t *mapping, uint8_t *action)
 {
     uint32_t ticket = atomic_load_explicit(&requested, memory_order_acquire);
-    if (mapping == NULL || ticket == taken)
+    if (NULL == mapping || ticket == taken)
     {
         return false;
     }
     uint32_t word = rd_word_read(&request_word);
     for (unsigned i = 0u; i < RD_MAP_COUNT; ++i)
     {
-        mapping->letters[i] = (uint8_t)rd_mapping_letter(word, (rd_map_action_t)i);
+        mapping->letters[i] = (uint8_t)rd_mapping_letter(word,
+            (rd_map_action_t)i);
     }
     if (action != NULL)
     {
@@ -75,14 +81,15 @@ void mission_mapping_reply(mqtt_ack_result_t result)
     {
         return;
     }
-    rd_word_publish(&reply_word, sequence | ((uint32_t)result << REPLY_RESULT_SHIFT));
+    rd_word_publish(&reply_word, sequence
+        | ((uint32_t)result << REPLY_RESULT_SHIFT));
     atomic_store_explicit(&replied, taken, memory_order_release);
 }
 
 bool mission_mapping_poll(mqtt_ack_t *ack)
 {
     uint32_t ticket = atomic_load_explicit(&replied, memory_order_acquire);
-    if (ack == NULL || ticket == consumed)
+    if (NULL == ack || ticket == consumed)
     {
         return false;
     }
