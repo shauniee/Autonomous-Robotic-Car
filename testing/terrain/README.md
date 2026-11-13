@@ -8,7 +8,7 @@
 - [After each test](#after-each-test)
 - [Tests](#tests)
   - [S4-U01](#s4-u01-imu-boot-calibration)
-  - [S4-U02](#s4-u02-tilt-and-impact)
+  - [S4-U02](#s4-u02-tilt-and-lift)
   - [S4-U03](#s4-u03-hump-count)
   - [S4-U04](#s4-u04-hump-height)
   - [S4-U05](#s4-u05-hump-under-the-other-wheel-and-in-reverse)
@@ -32,7 +32,7 @@ How to run and record S4-U01 to S4-U05. Test definitions: [TEST_LOG.md](TEST_LOG
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py map A B C D --broker 127.0.0.1
    ```
 
-6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080>:
+6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080> (or <http://localhost:8080>):
 
    ```bash
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
@@ -80,24 +80,27 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 2. Boot while rocking the car: `[IMU] calibration failed`.
 3. Power off, unplug the IMU, boot: calibration fails; press GP20 and the start is refused.
 
-**Show on video:** Each `[IMU]` line and the refused start.
+**Show on video:** Each `[IMU]` line, the refused start and, on the still boot, the self-check line `[TEST] S4-U01 PASS`.
 
 **Logs:** `usb.log`
 
-### S4-U02 Tilt and impact
+### S4-U02 Tilt and lift
 
-**Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh test`
+**Image:** `./flash.sh trial` (battery; it sends the IMU trace)
 
-**Set up:** Booted still; captures started; dashboard IMU graphs open.
+**Set up:** Booted still on the floor; letters mapped; telemetry capture started; dashboard IMU graphs open.
 
 **Steps:**
 
-1. Lift the nose about 20 degrees and hold.
-2. Put it down; tap the chassis sharply.
+1. Lift the nose about 20 degrees and hold, then put it down.
+2. Press GP20 to start a run. Lift the car straight up off the floor.
+3. Check the wheels stop and the dashboard shows `Terrain: lifted` and a latched stop. Put the car down; press and release GP21 to clear it.
+4. Start again and turn the car over.
+5. Repeat steps 2 to 4 three times.
 
-**Show on video:** Pitch rising on the dashboard; `Terrain: impact` and the latched stop.
+**Show on video:** Pitch rising on the dashboard; each lift and turn over, the wheels stopping and `Terrain: lifted`.
 
-**Logs:** `usb.log` and `monitor.log`
+**Logs:** `monitor.log`. Claude reads the vertical axis (`z=`) in the trace at each lift and on the floor. Set `LIFT_ACCEL_G` (now 0.3 g, provisional D06) from that trace.
 
 ### S4-U03 Hump count
 
