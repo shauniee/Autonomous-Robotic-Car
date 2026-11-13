@@ -100,10 +100,6 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
 
     /* Local float values exist only inside this one processing release;
        persistent filter state and calibration history are scaled integers. */
-    float cur_x = ((float)raw->x - (float)ctx->calib_sum.x / 100.0f) * ACCEL_MG_PER_LSB;
-    float cur_y = ((float)raw->y - (float)ctx->calib_sum.y / 100.0f) * ACCEL_MG_PER_LSB;
-
-    /* Filter in high-resolution signed Q16 raw-LSB units. */
     ctx->filtered_accel_q16.x = filter_axis(ctx->filtered_accel_q16.x, raw->x, ctx->calib_sum.x, false);
     ctx->filtered_accel_q16.y = filter_axis(ctx->filtered_accel_q16.y, raw->y, ctx->calib_sum.y, false);
     ctx->filtered_accel_q16.z = filter_axis(ctx->filtered_accel_q16.z, raw->z, ctx->calib_sum.z, true);
@@ -118,15 +114,17 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
         sqrtf(filtered_y * filtered_y + filtered_z * filtered_z)) * RAD_TO_DEG;
     ctx->roll_cdeg = (int16_t)lroundf(roll_deg * 100.0f);
 
-    /* 4. Impact detection (FR11): horizontal shock on level ground. IMPACT
-       lasts while the shock does; Safety latches the stop it causes, and a
-       hump in progress is abandoned. */
-    float shock_horiz = sqrtf((cur_x * cur_x) + (cur_y * cur_y));
-    if (shock_horiz > IMPACT_THRESHOLD_G && fabsf(pitch_deg) < 3.0f) {
-        ctx->state = TERRAIN_STATE_IMPACT;
+    /* 4. Lift or overturn (FR11): with the wheels on the floor the filtered
+       vertical axis reads 1 g. Picking the car up, tipping it past about 45
+       degrees or turning it over moves it further. Safety latches the stop,
+       which ends the run; a hump in progress is abandoned. */
+    if (fabsf(filtered_z - 1.0f) > LIFT_ACCEL_G)
+    {
+        ctx->state = TERRAIN_STATE_LIFTED;
         return;
     }
-    if (ctx->state == TERRAIN_STATE_IMPACT) {
+    if (TERRAIN_STATE_LIFTED == ctx->state)
+    {
         ctx->state = TERRAIN_STATE_FLAT;
     }
 
@@ -195,7 +193,7 @@ void terrain_algo_invalidate_window(TerrainContext *ctx)
     ctx->flat_run = 0u;
     ctx->travel_counts = 0u;
     ctx->height_valid = false;
-    if (ctx->state != TERRAIN_STATE_IMPACT)
+    if (ctx->state != TERRAIN_STATE_LIFTED)
     {
         ctx->state = TERRAIN_STATE_FLAT;
     }

@@ -24,6 +24,7 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). lin
 | `line.c` | DOUT acquisition and classification |
 | `barcode.c` | Edge capture, Code 39 decode, mapping and events |
 | `line_barcode.c` | `line_barcode_step` task work and the line snapshot |
+| `line_barcode_test.c` | Firmware self-tests |
 
 ## Line tracking
 
