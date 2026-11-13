@@ -26,20 +26,32 @@ static int64_t round_div(int64_t value, int64_t divisor)
 
 static int32_t saturate_q16(int64_t value)
 {
-    if (value > INT32_MAX) return INT32_MAX;
-    if (value < INT32_MIN) return INT32_MIN;
+    if (value > INT32_MAX)
+    {
+        return INT32_MAX;
+    }
+    if (value < INT32_MIN)
+    {
+        return INT32_MIN;
+    }
     return (int32_t)value;
 }
 
-static int32_t filter_axis(int32_t previous, int16_t raw, int32_t sum, bool vertical)
+static int32_t filter_axis(int32_t previous, int16_t raw, int32_t sum,
+    bool vertical)
 {
     /* Calibrated correction preserves fractional averages of all 100
        samples, rather than rounding the bias to a whole sensor count. */
     int64_t corrected = (int64_t)raw * RAW_Q_ONE -
                         round_div((int64_t)sum * RAW_Q_ONE, 100);
-    if (vertical) corrected += (int64_t)(1.0f / ACCEL_MG_PER_LSB + 0.5f) * RAW_Q_ONE;
-    return saturate_q16(round_div((int64_t)previous * (FILTER_DIV - 1) + corrected,
-                                  FILTER_DIV));
+    if (vertical)
+    {
+        corrected +=
+            (int64_t)(1.0f / ACCEL_MG_PER_LSB + 0.5f) * RAW_Q_ONE;
+    }
+    return saturate_q16(
+        round_div((int64_t)previous * (FILTER_DIV - 1) + corrected,
+                  FILTER_DIV));
 }
 
 void terrain_algo_init(TerrainContext *ctx)
@@ -50,9 +62,13 @@ void terrain_algo_init(TerrainContext *ctx)
     ctx->state = TERRAIN_STATE_FLAT;
 }
 
-bool terrain_algo_calibrate_sample(TerrainContext *ctx, const Gy511RawAxes *raw)
+bool terrain_algo_calibrate_sample(TerrainContext *ctx,
+    const Gy511RawAxes *raw)
 {
-    if (ctx->is_calibrated) return true;
+    if (ctx->is_calibrated)
+    {
+        return true;
+    }
     ctx->calib_sum.x += raw->x;
     ctx->calib_sum.y += raw->y;
     ctx->calib_sum.z += raw->z;
@@ -95,20 +111,32 @@ float terrain_acceleration_mg(const Gy511RawAxes *raw)
         ACCEL_MG_PER_LSB * 1000.0f;
 }
 
-void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float delta_counts, bool stationary) {
-    if (!ctx->is_calibrated) return;
+void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw,
+    float delta_counts, bool stationary)
+{
+    if (!ctx->is_calibrated)
+    {
+        return;
+    }
 
     /* Local float values exist only inside this one processing release;
        persistent filter state and calibration history are scaled integers. */
-    ctx->filtered_accel_q16.x = filter_axis(ctx->filtered_accel_q16.x, raw->x, ctx->calib_sum.x, false);
-    ctx->filtered_accel_q16.y = filter_axis(ctx->filtered_accel_q16.y, raw->y, ctx->calib_sum.y, false);
-    ctx->filtered_accel_q16.z = filter_axis(ctx->filtered_accel_q16.z, raw->z, ctx->calib_sum.z, true);
+    ctx->filtered_accel_q16.x = filter_axis(ctx->filtered_accel_q16.x,
+        raw->x, ctx->calib_sum.x, false);
+    ctx->filtered_accel_q16.y = filter_axis(ctx->filtered_accel_q16.y,
+        raw->y, ctx->calib_sum.y, false);
+    ctx->filtered_accel_q16.z = filter_axis(ctx->filtered_accel_q16.z,
+        raw->z, ctx->calib_sum.z, true);
 
-    float filtered_x = ((float)ctx->filtered_accel_q16.x / (float)RAW_Q_ONE) * ACCEL_MG_PER_LSB;
-    float filtered_y = ((float)ctx->filtered_accel_q16.y / (float)RAW_Q_ONE) * ACCEL_MG_PER_LSB;
-    float filtered_z = ((float)ctx->filtered_accel_q16.z / (float)RAW_Q_ONE) * ACCEL_MG_PER_LSB;
+    float filtered_x = ((float)ctx->filtered_accel_q16.x /
+        (float)RAW_Q_ONE) * ACCEL_MG_PER_LSB;
+    float filtered_y = ((float)ctx->filtered_accel_q16.y /
+        (float)RAW_Q_ONE) * ACCEL_MG_PER_LSB;
+    float filtered_z = ((float)ctx->filtered_accel_q16.z /
+        (float)RAW_Q_ONE) * ACCEL_MG_PER_LSB;
     float pitch_deg = atan2f(filtered_y,
-                             sqrtf(filtered_x * filtered_x + filtered_z * filtered_z)) * RAD_TO_DEG;
+        sqrtf(filtered_x * filtered_x + filtered_z * filtered_z)) *
+        RAD_TO_DEG;
     ctx->pitch_cdeg = (int16_t)lroundf(pitch_deg * 100.0f);
     float roll_deg = atan2f(filtered_x,
         sqrtf(filtered_y * filtered_y + filtered_z * filtered_z)) * RAD_TO_DEG;
@@ -134,15 +162,20 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
        boot pose offsets it; averaging while moving would follow a hump's slow
        ramp (2026-11-02). A short dip below the exit level does not end the
        encounter. */
-    float tilt_deg = fabsf(roll_deg - (float)ctx->roll_base_q8 / (100.0f * ROLL_BASE_ONE));
-    if (ctx->state == TERRAIN_STATE_FLAT) {
+    float tilt_deg = fabsf(roll_deg -
+        (float)ctx->roll_base_q8 / (100.0f * ROLL_BASE_ONE));
+    if (TERRAIN_STATE_FLAT == ctx->state)
+    {
         /* Not zero mean travel: a pivot has that too, and tilts
            (2026-11-02). */
-        if (stationary) {
-            ctx->roll_base_q8 += ((int32_t)ctx->roll_cdeg * ROLL_BASE_ONE - ctx->roll_base_q8) / ROLL_BASE_DIV;
+        if (stationary)
+        {
+            ctx->roll_base_q8 += ((int32_t)ctx->roll_cdeg * ROLL_BASE_ONE -
+                ctx->roll_base_q8) / ROLL_BASE_DIV;
             return;
         }
-        if (tilt_deg <= HUMP_ROLL_ENTER_DEG) {
+        if (tilt_deg <= HUMP_ROLL_ENTER_DEG)
+        {
             return;
         }
         ctx->state = TERRAIN_STATE_ON_HUMP;
@@ -152,35 +185,53 @@ void terrain_algo_process(TerrainContext *ctx, const Gy511RawAxes *raw, float de
         ctx->height_valid = false;
     }
     float rise_q = TRACK_WIDTH_MM * sinf(tilt_deg * DEG_TO_RAD) * 10.0f;
-    if (rise_q > (float)ctx->rise_q) {
+    if (rise_q > (float)ctx->rise_q)
+    {
         float top = (float)rd_mask(TERRAIN_RISE_BITS);
-        ctx->rise_q = rise_q >= top ? (uint16_t)top : (uint16_t)(rise_q + 0.5f);
+        ctx->rise_q = rise_q >= top ? (uint16_t)top :
+            (uint16_t)(rise_q + 0.5f);
     }
-    if (tilt_deg >= HUMP_ROLL_EXIT_DEG) {
-        if (delta_counts > 0.0f) {
+    if (tilt_deg >= HUMP_ROLL_EXIT_DEG)
+    {
+        if (delta_counts > 0.0f)
+        {
             float travel = (float)ctx->travel_counts + delta_counts;
             float top = (float)rd_mask(TERRAIN_TRAVEL_BITS);
             ctx->travel_counts = travel >= top ? (uint16_t)top :
                 (uint16_t)(travel + 0.5f);
         }
         ctx->flat_run = 0u;
-        if ((float)ctx->travel_counts >= (float)HUMP_MAX_TRAVEL_MM * ENC_COUNTS_PER_MM) {
+        if ((float)ctx->travel_counts >=
+            (float)HUMP_MAX_TRAVEL_MM * ENC_COUNTS_PER_MM)
+        {
             /* Too long for a hump: this is the new ground, not an encounter. */
             ctx->roll_base_q8 = (int32_t)ctx->roll_cdeg * ROLL_BASE_ONE;
             ctx->state = TERRAIN_STATE_FLAT;
         }
-    } else if (++ctx->flat_run >= HUMP_FLAT_SAMPLES) {
-        /* Only a whole encounter of plausible height while driving adds an event;
-           the top limit rejects the car being lifted by hand. */
+    }
+    else if (++ctx->flat_run >= HUMP_FLAT_SAMPLES)
+    {
+        /* Only a whole encounter of plausible height while driving adds an
+           event; the top limit rejects the car being lifted by hand. */
         float mm = ((float)ctx->rise_q / 10.0f) * HUMP_CALIB_FACTOR;
         ctx->height_valid = mm >= (float)HUMP_MIN_HEIGHT_MM &&
             mm <= (float)HUMP_MAX_HEIGHT_MM &&
-            (float)ctx->travel_counts >= (float)HUMP_MIN_TRAVEL_MM * ENC_COUNTS_PER_MM;
-        if (ctx->height_valid) {
-            uint8_t code = (uint8_t)rd_sat_valid((uint32_t)(mm / (float)HUMP_MM_PER_COUNT + 0.5f), HUMP_RESULT_BITS);
+            (float)ctx->travel_counts >=
+            (float)HUMP_MIN_TRAVEL_MM * ENC_COUNTS_PER_MM;
+        if (ctx->height_valid)
+        {
+            uint8_t code = (uint8_t)rd_sat_valid(
+                (uint32_t)(mm / (float)HUMP_MM_PER_COUNT + 0.5f),
+                HUMP_RESULT_BITS);
             ctx->last_hump_code = code;
-            if (code > ctx->max_hump_code) ctx->max_hump_code = code;
-            if (ctx->hump_count < 255u) ctx->hump_count++;
+            if (code > ctx->max_hump_code)
+            {
+                ctx->max_hump_code = code;
+            }
+            if (ctx->hump_count < 255u)
+            {
+                ctx->hump_count++;
+            }
         }
         ctx->state = TERRAIN_STATE_FLAT;
         ctx->flat_run = 0u;

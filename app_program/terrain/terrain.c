@@ -93,7 +93,7 @@ static void terrain_trace_note(uint32_t now, const Gy511RawAxes *p_raw,
 
 unsigned terrain_trace_take(uint8_t *out, unsigned capacity)
 {
-    if (!trace_pending || out == NULL || capacity < MQTT_LEN_TERRAIN_TRACE)
+    if (!trace_pending || NULL == out || capacity < MQTT_LEN_TERRAIN_TRACE)
     {
         return 0u;
     }
@@ -114,10 +114,14 @@ static void publish(void)
 
 void terrain_step(uint32_t now)
 {
-    static uint8_t initialized, hardware_ready;
-    static uint32_t started_ms, next_sample_ms, acquired_ms;
+    static uint8_t initialized;
+    static uint8_t hardware_ready;
+    static uint32_t started_ms;
+    static uint32_t next_sample_ms;
+    static uint32_t acquired_ms;
     static uint8_t have_acquisition;
-    static enc_count_t last_left, last_right;
+    static enc_count_t last_left;
+    static enc_count_t last_right;
     static enc_count_t travel_origin[2];
     static uint8_t previous_humps;
     if (!initialized)
@@ -133,7 +137,8 @@ void terrain_step(uint32_t now)
         initialized = 1u;
         if (!hardware_ready)
         {
-            rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU | RD_FAULT_CALIBRATION_FAILED);
+            rd_fault_set(RD_OWNER_TERRAIN,
+                RD_FAULT_IMU | RD_FAULT_CALIBRATION_FAILED);
             atomic_store_explicit(&startup_outcome, 2u, memory_order_release);
             tm_printf((UB *)"[IMU] calibration failed: I2C init failed\n");
         }
@@ -150,22 +155,24 @@ void terrain_step(uint32_t now)
         return;
     }
     bool calibrating = !terrain_startup_complete();
-    next_sample_ms = now + (calibrating ? TERRAIN_CALIBRATION_PERIOD_MS : TERRAIN_PERIOD_MS);
+    next_sample_ms = now + (calibrating ? TERRAIN_CALIBRATION_PERIOD_MS :
+                                          TERRAIN_PERIOD_MS);
     uint32_t left = drv_encoder_count(ENCODER_LEFT);
     uint32_t right = drv_encoder_count(ENCODER_RIGHT);
     bool stationary = left == last_left && right == last_right;
     last_left = left;
     last_right = right;
     Gy511RawAxes raw = {0};
-    gy511_sample_result_t result = hardware_ready ? drv_gy511_sample(&raw) : GY511_SAMPLE_ERROR;
+    gy511_sample_result_t result =
+        hardware_ready ? drv_gy511_sample(&raw) : GY511_SAMPLE_ERROR;
     now = robot_time_ms();
-    bool acquired = result == GY511_SAMPLE_FRESH;
+    bool acquired = GY511_SAMPLE_FRESH == result;
 #if TERRAIN_DIAGNOSTICS
     bool trace_encoder_valid = false;
 #endif
     bool stale = !have_acquisition ||
         robot_time_elapsed(now, acquired_ms) > SAFETY_STALE_MS;
-    if (result == GY511_SAMPLE_ERROR)
+    if (GY511_SAMPLE_ERROR == result)
     {
         rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMU);
     }
@@ -182,7 +189,7 @@ void terrain_step(uint32_t now)
 #endif
     const enc_count_t count[2] = {(enc_count_t)left, (enc_count_t)right};
     float moved = terrain_travel_take(travel_origin, count, acquired,
-        calibrating || result == GY511_SAMPLE_ERROR || stale);
+        calibrating || GY511_SAMPLE_ERROR == result || stale);
     if (stale)
     {
         if (!acquired)
@@ -204,11 +211,13 @@ void terrain_step(uint32_t now)
         if (context.is_calibrated)
         {
             atomic_store_explicit(&startup_outcome, 1u, memory_order_release);
-            tm_printf((UB *)"[IMU] calibration passed: samples=%u elapsed_ms=%u\n",
+            tm_printf(
+                (UB *)"[IMU] calibration passed: samples=%u elapsed_ms=%u\n",
                 (unsigned)context.calib_count,
                 (unsigned)robot_time_elapsed(now, started_ms));
         }
-        else if (robot_time_elapsed(now, started_ms) >= TERRAIN_CALIBRATION_TIMEOUT_MS)
+        else if (robot_time_elapsed(now, started_ms) >=
+                 TERRAIN_CALIBRATION_TIMEOUT_MS)
         {
             rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_CALIBRATION_FAILED);
             atomic_store_explicit(&startup_outcome, 2u, memory_order_release);
@@ -218,7 +227,7 @@ void terrain_step(uint32_t now)
                 (unsigned)robot_time_elapsed(now, started_ms),
                 (unsigned)stationary,
                 acquired ? "fresh" :
-                (result == GY511_SAMPLE_PENDING ? "pending" : "I2C-error"));
+                (GY511_SAMPLE_PENDING == result ? "pending" : "I2C-error"));
         }
     }
     else if (acquired && context.is_calibrated)
@@ -233,13 +242,15 @@ void terrain_step(uint32_t now)
             (rd_fault_get(RD_OWNER_MOTION) & RD_FAULT_ENCODER) == 0u;
         if (!encoder_valid)
         {
-            /* Missing travel invalidates this window; keep completed results. */
+            /* Missing travel invalidates this window; keep completed
+               results. */
             terrain_algo_invalidate_window(&context);
         }
 #if TERRAIN_DIAGNOSTICS
         trace_encoder_valid = encoder_valid;
 #endif
-        terrain_algo_process(&context, &raw, encoder_valid && moved > 0.0f ? moved : 0.0f, stationary);
+        terrain_algo_process(&context, &raw,
+            encoder_valid && moved > 0.0f ? moved : 0.0f, stationary);
         terrain_trace_note(now, &raw, encoder_valid,
             (encoder_valid && (moved > 0.0f)) ? moved : 0.0f);
         if (!encoder_valid)
@@ -264,13 +275,14 @@ void terrain_step(uint32_t now)
             comms_event(MQTT_EVENT_HUMP, context.last_hump_code, 0u);
         }
     }
-    if (result == GY511_SAMPLE_ERROR)
+    if (GY511_SAMPLE_ERROR == result)
     {
         terrain_algo_invalidate_window(&context);
     }
     publish();
 #if TERRAIN_DIAGNOSTICS
-    /* USB queues without waiting for a host; losses remain visible in the trace. */
+    /* USB queues without waiting for a host; losses remain visible in the
+       trace. */
     if (acquired)
     {
         static uint32_t trace_sequence;
@@ -315,7 +327,7 @@ static uint32_t operation_started;
 static bool wait_i2c_status(uint32_t mask, bool match_set, uint32_t timeout_us)
 {
     uint32_t start = robot_time_us();
-    while (true)
+    for (;;)
     {
         if ((in_w(I2C0_BASE + I2Cx_RAW_INTR_STAT) & I2C_INT_TX_ABRT) != 0u)
         {
@@ -323,7 +335,8 @@ static bool wait_i2c_status(uint32_t mask, bool match_set, uint32_t timeout_us)
             out_w(I2C0_BASE + I2Cx_ENABLE, 0u);
             return false;
         }
-        if (robot_time_elapsed(robot_time_us(), operation_started) >= GY511_TIMEOUT_US)
+        if (robot_time_elapsed(robot_time_us(), operation_started) >=
+            GY511_TIMEOUT_US)
         {
             out_w(I2C0_BASE + I2Cx_ENABLE, 0u);
             return false;
@@ -335,7 +348,8 @@ static bool wait_i2c_status(uint32_t mask, bool match_set, uint32_t timeout_us)
             return true;
         }
         if ((uint32_t)(robot_time_us() - start) >= timeout_us ||
-            robot_time_elapsed(robot_time_us(), operation_started) >= GY511_TIMEOUT_US)
+            robot_time_elapsed(robot_time_us(), operation_started) >=
+                GY511_TIMEOUT_US)
         {
             return false;
         }
@@ -347,7 +361,8 @@ static bool wait_stop(void)
     while ((in_w(I2C0_BASE + I2Cx_RAW_INTR_STAT) & I2C_INT_STOP_DET) == 0u)
     {
         if ((in_w(I2C0_BASE + I2Cx_RAW_INTR_STAT) & I2C_INT_TX_ABRT) != 0u ||
-            robot_time_elapsed(robot_time_us(), operation_started) >= GY511_TIMEOUT_US)
+            robot_time_elapsed(robot_time_us(), operation_started) >=
+                GY511_TIMEOUT_US)
         {
             (void)in_w(I2C0_BASE + I2Cx_CLR_TX_ABRT);
             out_w(I2C0_BASE + I2Cx_ENABLE, 0u);
@@ -379,9 +394,13 @@ static bool i2c0_write_reg(uint8_t slave_addr, uint8_t reg, uint8_t val)
     out_w(I2C0_BASE + I2Cx_ENABLE, 1); /* Enable */
 
     if (!i2c0_write_byte(reg, false))
+    {
         return false;
+    }
     if (!i2c0_write_byte(val, true))
+    {
         return false;
+    }
 
     /* Wait for transmission to finish */
     return wait_stop();
@@ -398,7 +417,9 @@ static bool i2c0_read_buffer(uint8_t slave_addr, uint8_t reg, uint8_t *buf,
 
     /* Send register sub-address */
     if (!i2c0_write_byte(reg, false))
+    {
         return false;
+    }
 
     /* Issue read commands into FIFO */
     for (uint8_t i = 0; i < len; ++i)
@@ -435,7 +456,9 @@ bool drv_gy511_init(void)
     while (!(in_w(RESETS_RESET_DONE) & RESETS_RESET_I2C0))
     {
         if ((uint32_t)(robot_time_us() - start) >= GY511_TIMEOUT_US)
+        {
             return false;
+        }
     }
 
     /* 2. Configure GP4 (SDA) and GP5 (SCL) mux to I2C (func 3) with pull-ups */
@@ -463,9 +486,13 @@ bool drv_gy511_init(void)
     /* 4. Configure accelerometer: 50 Hz, all axes, +/- 4 g high resolution
        (CTRL_REG4_A: BDU, FS = 01, HR): a lift or turn over stays in range. */
     if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG1_A, 0x47u))
+    {
         return false;
+    }
     if (!i2c0_write_reg(GY511_I2C_ADDR_ACCEL, REG_CTRL_REG4_A, 0x98u))
+    {
         return false;
+    }
 
     return true;
 }
@@ -473,7 +500,7 @@ bool drv_gy511_init(void)
 gy511_sample_result_t drv_gy511_sample(Gy511RawAxes *out_raw)
 {
     operation_started = robot_time_us();
-    if (out_raw == NULL)
+    if (NULL == out_raw)
     {
         return GY511_SAMPLE_ERROR;
     }
@@ -484,7 +511,8 @@ gy511_sample_result_t drv_gy511_sample(Gy511RawAxes *out_raw)
     }
     if ((status & STATUS_NEW_XYZ) == 0u)
     {
-        return GY511_SAMPLE_PENDING; /* unchanged registers are not a new acquisition */
+        /* unchanged registers are not a new acquisition */
+        return GY511_SAMPLE_PENDING;
     }
     uint8_t buf[6] = {0};
     /* Auto-increment bit 7 required on LSM303 */
