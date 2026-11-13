@@ -36,10 +36,12 @@ static uint16_t reverse_pattern(uint16_t pattern)
     return reversed;
 }
 
-/* True when the widest `wide` of `count` widths are clearly wider than the rest,
-   and the smallest wide width is returned. Bars and spaces are judged apart
-   because the threshold makes one thinner and the other wider (2026-11-02). */
-static bool wide_cut(const uint16_t *widths, unsigned count, unsigned wide, uint16_t *cut)
+/* True when the widest `wide` of `count` widths are clearly wider than the
+   rest, and the smallest wide width is returned. Bars and spaces are judged
+   apart because the threshold makes one thinner and the other wider
+   (2026-11-02). */
+static bool wide_cut(const uint16_t *widths, unsigned count, unsigned wide,
+    uint16_t *cut)
 {
     uint16_t sorted[5];
     for (unsigned i = 0u; i < count; ++i)
@@ -53,15 +55,18 @@ static bool wide_cut(const uint16_t *widths, unsigned count, unsigned wide, uint
         }
     }
     *cut = sorted[count - wide];
-    return (uint32_t)sorted[count - wide] * 2u >= (uint32_t)sorted[count - wide - 1u] * 3u;
+    return (uint32_t)sorted[count - wide] * 2u >=
+        (uint32_t)sorted[count - wide - 1u] * 3u;
 }
 
 /* Every A-Z and '*' has two wide bars and one wide space. */
 static bool barcode_group(const uint16_t widths[9], uint16_t *pattern,
     uint16_t *bar_cut_out, uint16_t *space_cut_out)
 {
-    uint16_t bar_cut, space_cut;
-    if (!wide_cut(widths, 5u, 2u, &bar_cut) || !wide_cut(&widths[1], 4u, 1u, &space_cut))
+    uint16_t bar_cut;
+    uint16_t space_cut;
+    if (!wide_cut(widths, 5u, 2u, &bar_cut) ||
+        !wide_cut(&widths[1], 4u, 1u, &space_cut))
     {
         return false;
     }
@@ -79,7 +84,9 @@ static bool barcode_group(const uint16_t widths[9], uint16_t *pattern,
 barcode_result_t barcode_decode(const uint16_t widths[BARCODE_ELEMENTS],
     char *symbol, barcode_orientation_t *orientation)
 {
-    uint16_t patterns[2], bar_cut, space_cut;
+    uint16_t patterns[2];
+    uint16_t bar_cut;
+    uint16_t space_cut;
     /* Elements 5 and 15 are the gaps. A one-wheel hump just before a print
        corrupts the start of the first guard, so only its last 5 elements are
        needed; they stop a run lost inside the letter reading as another letter
@@ -87,7 +94,8 @@ barcode_result_t barcode_decode(const uint16_t widths[BARCODE_ELEMENTS],
        orientation is not known. */
     for (unsigned group = 0u; group < 2u; ++group)
     {
-        if (!barcode_group(&widths[6u + group * 10u], &patterns[group], &bar_cut, &space_cut))
+        if (!barcode_group(&widths[6u + group * 10u], &patterns[group],
+            &bar_cut, &space_cut))
         {
             return BARCODE_NO_RESULT;
         }
@@ -95,9 +103,11 @@ barcode_result_t barcode_decode(const uint16_t widths[BARCODE_ELEMENTS],
     uint16_t lead = 0u;
     for (unsigned i = 0u; i < 5u; ++i)
     {
-        /* These widths did not set the cut, which sits at the narrowest wide. */
+        /* These widths did not set the cut, which sits at the narrowest
+           wide. */
         uint32_t cut = i % 2u == 0u ? bar_cut : space_cut;
-        lead = (uint16_t)((lead << 1) | ((uint32_t)widths[i] * 4u >= cut * 3u ? 1u : 0u));
+        lead = (uint16_t)((lead << 1) |
+            ((uint32_t)widths[i] * 4u >= cut * 3u ? 1u : 0u));
     }
     const uint16_t star = 0x094u;
     barcode_orientation_t direction;
@@ -106,7 +116,8 @@ barcode_result_t barcode_decode(const uint16_t widths[BARCODE_ELEMENTS],
     {
         direction = BARCODE_FORWARD;
     }
-    else if ((patterns[1] == reverse_pattern(star)) && (lead == (reverse_pattern(star) & 0x1Fu)))
+    else if ((patterns[1] == reverse_pattern(star)) &&
+        (lead == (reverse_pattern(star) & 0x1Fu)))
     {
         direction = BARCODE_REVERSE;
         payload = reverse_pattern(payload);
@@ -130,7 +141,8 @@ barcode_result_t barcode_decode(const uint16_t widths[BARCODE_ELEMENTS],
 barcode_action_t barcode_action_for(uint32_t word, char symbol)
 {
     rd_map_action_t action;
-    if (symbol < 'A' || symbol > 'Z' || !rd_mapping_lookup(word, (uint8_t)(symbol - 'A'), &action))
+    if (symbol < 'A' || symbol > 'Z' ||
+        !rd_mapping_lookup(word, (uint8_t)(symbol - 'A'), &action))
     {
         return BARCODE_UNMAPPED;
     }
@@ -237,7 +249,8 @@ barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
     f->last_width = 0u;
     if (width < BARCODE_MIN_ELEMENT_COUNTS)
     {
-        /* Sensor chatter: this run and the next belong to the previous element. */
+        /* Sensor chatter: this run and the next belong to the previous
+           element. */
         if (f->count > 0u)
         {
             f->count--;
@@ -251,7 +264,7 @@ barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
         f->count = 0u; /* open floor: nothing before it belongs to a symbol */
         return BARCODE_BAD_WIDTH;
     }
-    if (f->count == BARCODE_ELEMENTS)
+    if (BARCODE_ELEMENTS == f->count)
     {
         for (unsigned i = 1u; i < BARCODE_ELEMENTS; ++i)
         {
@@ -273,7 +286,7 @@ barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
         widths[i] = barcode_frame_width(f, i);
     }
     barcode_result_t result = barcode_decode(widths, symbol, orientation);
-    if (result == BARCODE_DECODED)
+    if (BARCODE_DECODED == result)
     {
         f->count = 0u; /* one event per print */
     }
@@ -282,23 +295,35 @@ barcode_result_t barcode_frame_edge(barcode_frame_t *f, bool black,
 
 #ifndef HOST_TEST
 /* ---- Edge capture ---- */
-static struct { barcode_count_t left_count, right_count; } ring[BARCODE_EDGE_CAPACITY];
-static uint8_t ring_high[BARCODE_EDGE_CAPACITY / 8u];	/* one level bit per slot */
+static struct
+{
+    barcode_count_t left_count;
+    barcode_count_t right_count;
+} ring[BARCODE_EDGE_CAPACITY];
+/* one level bit per slot */
+static uint8_t ring_high[BARCODE_EDGE_CAPACITY / 8u];
 _Static_assert(BARCODE_EDGE_CAPACITY % 8u == 0u, "whole bytes of ring levels");
-static _Atomic unsigned head;		/* handler; task seeds with IRQ masked */
-static _Atomic unsigned tail;		/* written by the task */
-static _Atomic uint32_t overflows;	/* written by the handler */
-static _Atomic uint32_t edge_total;	/* written by the handler: every edge seen */
+/* handler; task seeds with IRQ masked */
+static _Atomic unsigned head;
+/* written by the task */
+static _Atomic unsigned tail;
+/* written by the handler */
+static _Atomic uint32_t overflows;
+/* written by the handler: every edge seen */
+static _Atomic uint32_t edge_total;
 /* line_barcode task only: GP27 claimed on the dispatcher, scanner running. */
 static struct
 {
     uint8_t claimed : 1;
     uint8_t running : 1;
 } scanner;
-static bool capture_high;	/* level of the newest ring entry; handler, seeded with IRQ masked */
+/* level of the newest ring entry; handler, seeded with IRQ masked */
+static bool capture_high;
 
-/* Handler, or task with IRQ masked; the same core, so byte updates cannot tear. */
-static void ring_store(unsigned write, barcode_count_t left, barcode_count_t right, bool high)
+/* Handler, or task with IRQ masked; the same core, so byte updates cannot
+   tear. */
+static void ring_store(unsigned write, barcode_count_t left,
+    barcode_count_t right, bool high)
 {
     unsigned slot = write % BARCODE_EDGE_CAPACITY;
     uint8_t bit = (uint8_t)(1u << (slot % 8u));
@@ -311,9 +336,12 @@ static void ring_store(unsigned write, barcode_count_t left, barcode_count_t rig
 static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
 {
     (void)pin;
-    (void)sampled_us;	/* edge positions are encoder counts; time is not needed */
-    atomic_store_explicit(&edge_total, atomic_load_explicit(&edge_total, memory_order_relaxed) +
-        (edges == (GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE) ? 2u : 1u), memory_order_release);
+    /* edge positions are encoder counts; time is not needed */
+    (void)sampled_us;
+    atomic_store_explicit(&edge_total,
+        atomic_load_explicit(&edge_total, memory_order_relaxed) +
+        (edges == (GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE) ? 2u : 1u),
+        memory_order_release);
     /* 2026-11-02: the edge flags cannot order sensor chatter, and trusting them
        produced runs of one polarity. The pin says where the level really is. */
     bool high = gpio_get_val(BARCODE_GPIO) != 0;
@@ -328,8 +356,8 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
     if (write != read)
     {
         unsigned newest = (write - 1u) % BARCODE_EDGE_CAPACITY;
-        if (barcode_run_is_chatter(ring[newest].left_count, ring[newest].right_count,
-            left, right))
+        if (barcode_run_is_chatter(ring[newest].left_count,
+            ring[newest].right_count, left, right))
         {
             /* Chatter: this edge undoes the waiting one, so neither takes a
                ring slot. */
@@ -340,7 +368,8 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
     }
     if ((unsigned)(write - read) >= BARCODE_EDGE_CAPACITY)
     {
-        atomic_store_explicit(&overflows, atomic_load_explicit(&overflows, memory_order_relaxed) + 1u,
+        atomic_store_explicit(&overflows,
+            atomic_load_explicit(&overflows, memory_order_relaxed) + 1u,
             memory_order_release);
         return;
     }
@@ -351,7 +380,8 @@ static void edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
 
 bool drv_barcode_init(void)
 {
-    if (drv_gpio_irq_init() < E_OK || gpio_set_pin(BARCODE_GPIO, GPIO_MODE_IN) < E_OK)
+    if (drv_gpio_irq_init() < E_OK ||
+        gpio_set_pin(BARCODE_GPIO, GPIO_MODE_IN) < E_OK)
     {
         return false;
     }
@@ -426,7 +456,9 @@ static _Atomic bool initialised; /* writer: line_barcode task, once */
 
 #if BARCODE_DIAGNOSTICS
 static barcode_diagnostic_t diagnostics[32];
-static unsigned diagnostic_head, diagnostic_tail, diagnostic_dropped;
+static unsigned diagnostic_head;
+static unsigned diagnostic_tail;
+static unsigned diagnostic_dropped;
 #endif
 bool barcode_diagnostic_pop(barcode_diagnostic_t *record, unsigned *dropped)
 {
@@ -482,7 +514,8 @@ bool barcode_start(void)
     barcode_event_t stale;
     while (barcode_pop(&stale))
     {
-        /* Mission is the consumer: drop events left over from an earlier run. */
+        /* Mission is the consumer: drop events left over from an earlier
+           run. */
     }
     atomic_store_explicit(&run_wanted, true, memory_order_release);
     return true;
@@ -518,7 +551,7 @@ static uint8_t run_sequence;
 static void run_trace_flush(void)
 {
     uint32_t slot;
-    if (run_count == 0u)
+    if (0u == run_count)
     {
         return;
     }
@@ -541,12 +574,14 @@ static void run_trace_flush(void)
    merged first, so these frames fit the bridge. */
 static void run_trace_add(uint16_t width, bool black)
 {
-    if (width == 0u)
+    if (0u == width)
     {
         return;
     }
-    run_pending[run_count++] = (uint16_t)((width & 0x7FFFu) | (black ? 0x8000u : 0u));
-    if (run_count == MQTT_BARCODE_TRACE_RUNS || width > BARCODE_MAX_ELEMENT_COUNTS)
+    run_pending[run_count++] =
+        (uint16_t)((width & 0x7FFFu) | (black ? 0x8000u : 0u));
+    if (MQTT_BARCODE_TRACE_RUNS == run_count ||
+        width > BARCODE_MAX_ELEMENT_COUNTS)
     {
         run_trace_flush();
     }
@@ -555,7 +590,7 @@ static void run_trace_add(uint16_t width, bool black)
 unsigned barcode_trace_take(uint8_t *out, unsigned capacity)
 {
     uint32_t slot;
-    if (out == NULL || capacity < MQTT_LEN_BARCODE_TRACE ||
+    if (NULL == out || capacity < MQTT_LEN_BARCODE_TRACE ||
         !trace_ring_peek(&run_ring, &slot))
     {
         return 0u;
@@ -621,21 +656,25 @@ void barcode_service(bool cancel)
 #if BARCODE_DIAGNOSTICS
         if (diagnostic_head - diagnostic_tail < 32u)
         {
-            diagnostics[diagnostic_head++ % 32u] = (barcode_diagnostic_t){
+            diagnostics[diagnostic_head++ % 32u] = (barcode_diagnostic_t)
+            {
                 .left = edge.left_count,
-                    .right = edge.right_count,
-                    .width = (uint16_t)(width > 65535u ? 65535u : width),
-                    .result = result,
-                    .orientation = orientation,
-                    .letter = symbol ? (unsigned)(symbol - 'A') : 31u,
-                    .action =
-                    symbol ? barcode_action_for(rd_word_read(&mapping_word), symbol)
-                : BARCODE_UNMAPPED};
+                .right = edge.right_count,
+                .width = (uint16_t)(width > 65535u ? 65535u : width),
+                .result = result,
+                .orientation = orientation,
+                .letter = symbol ? (unsigned)(symbol - 'A') : 31u,
+                .action = symbol ?
+                    barcode_action_for(rd_word_read(&mapping_word), symbol) :
+                    BARCODE_UNMAPPED
+            };
         }
         else if (diagnostic_dropped != ~0u)
-        ++diagnostic_dropped;
+        {
+            ++diagnostic_dropped;
+        }
 #endif
-        if (result == BARCODE_DECODED)
+        if (BARCODE_DECODED == result)
         {
             barcode_event_t event = {.left_count = edge.left_count,
                     .right_count = edge.right_count};
