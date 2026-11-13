@@ -7,20 +7,22 @@
 #include "../motion/motion.h"
 
 /* Echo capture state. The handler is the only writer once the task arms the
-   measurement with the Echo IRQ disabled, so no field has two writers at once. */
+   measurement with the Echo IRQ disabled, so no field has two writers at
+   once. */
 enum { ECHO_IDLE, ECHO_ARMED, ECHO_HIGH, ECHO_DONE };
 /* Smallest lock-free atomics on Cortex-M0+: state uses 2 of 8 bits, pulse
    width saturates at 16 bits, past SONAR_TIMEOUT_US so it reads invalid. */
 static _Atomic uint8_t echo_state;
 static _Atomic uint16_t pulse_us;
 _Static_assert(SONAR_TIMEOUT_US < UINT16_MAX, "pulse width fits 16 bits");
-static uint32_t rise_us;			/* handler-private */
-static rd_word_t scan_word;			/* writer: the obstacle task */
+static uint32_t rise_us; /* handler-private */
+static rd_word_t scan_word; /* writer: the obstacle task */
 static ID profile_mutex;
 static obstacle_profile_evidence_t profile_evidence;
 static uint32_t profile_sampled_ms;
 static obstacle_range_sample_t report_samples[2]; /* guarded by profile_mutex */
-static obstacle_range_sample_t range_samples[2]; /* Mission-only, not cross-core */
+/* Mission-only, not cross-core */
+static obstacle_range_sample_t range_samples[2];
 static const obstacle_profile_config_t profile_config = {
     .depth_enter_mm = OBSTACLE_PROFILE_DEPTH_ENTER_MM,
     .depth_exit_mm = OBSTACLE_PROFILE_DEPTH_EXIT_MM,
@@ -29,13 +31,18 @@ static const obstacle_profile_config_t profile_config = {
     .planning_width_mm = OBSTACLE_EXPECTED_MAX_WIDTH_MM,
     .adjacent_rays = OBSTACLE_PROFILE_ADJACENT_RAYS,
     .maximum_gap_deg = OBSTACLE_COARSE_STEP_DEG};
-static ObstacleProfile profile;			/* guarded by profile_mutex */
-static bool profile_ready;			/* guarded by profile_mutex */
-/* Mission -> Obstacle requests: one writer per counter (no atomic RMW on M0+). */
-static _Atomic uint32_t scan_requests, scan_served, cancel_requests, cancel_served;
+static ObstacleProfile profile; /* guarded by profile_mutex */
+static bool profile_ready; /* guarded by profile_mutex */
+/* Mission -> Obstacle requests: one writer per counter (no atomic RMW on
+   M0+). */
+static _Atomic uint32_t scan_requests;
+static _Atomic uint32_t scan_served;
+static _Atomic uint32_t cancel_requests;
+static _Atomic uint32_t cancel_served;
 static _Atomic uint8_t requested_scan_id;
 static _Atomic bool requested_keep_narrower;
-static rd_word_t side_command;			/* writer: Mission; bit 0 on, bits 1-8 signed servo angle */
+/* writer: Mission; bit 0 on, bits 1-8 signed servo angle */
+static rd_word_t side_command;
 
 uint32_t obstacle_scan_word(void) { return rd_word_read(&scan_word); }
 
@@ -48,13 +55,15 @@ void obstacle_scan_request(uint8_t scan_id, bool keep_narrower)
     atomic_store_explicit(&requested_scan_id, scan_id, memory_order_relaxed);
     atomic_store_explicit(&requested_keep_narrower, keep_narrower,
         memory_order_relaxed);
-    atomic_store_explicit(&scan_requests, atomic_load_explicit(&scan_requests, memory_order_relaxed) + 1u,
+    atomic_store_explicit(&scan_requests,
+        atomic_load_explicit(&scan_requests, memory_order_relaxed) + 1u,
         memory_order_release);
 }
 
 void obstacle_scan_cancel(void)
 {
-    atomic_store_explicit(&cancel_requests, atomic_load_explicit(&cancel_requests, memory_order_relaxed) + 1u,
+    atomic_store_explicit(&cancel_requests,
+        atomic_load_explicit(&cancel_requests, memory_order_relaxed) + 1u,
         memory_order_release);
 }
 
@@ -65,11 +74,20 @@ void obstacle_side_watch(bool on, int16_t angle_deg)
 
 static ER profile_copy(ObstacleProfile *out, TMO wait)
 {
-    if (out == NULL || profile_mutex <= 0) return E_OBJ;
+    if (NULL == out || profile_mutex <= 0)
+    {
+        return E_OBJ;
+    }
     ER er = tk_loc_mtx(profile_mutex, wait);
-    if (er < E_OK) return er;
+    if (er < E_OK)
+    {
+        return er;
+    }
     bool ready = profile_ready;
-    if (ready) *out = profile;
+    if (ready)
+    {
+        *out = profile;
+    }
     ER unlock = tk_unl_mtx(profile_mutex);
     return unlock < E_OK ? unlock : (ready ? E_OK : E_OBJ);
 }
@@ -78,12 +96,12 @@ static void echo_edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
 {
     (void)pin;
     unsigned state = atomic_load_explicit(&echo_state, memory_order_relaxed);
-    if (edges == GPIO_IRQ_EDGE_RISE && state == ECHO_ARMED)
+    if (GPIO_IRQ_EDGE_RISE == edges && ECHO_ARMED == state)
     {
         rise_us = sampled_us;
         atomic_store_explicit(&echo_state, ECHO_HIGH, memory_order_release);
     }
-    else if (edges == GPIO_IRQ_EDGE_FALL && state == ECHO_HIGH)
+    else if (GPIO_IRQ_EDGE_FALL == edges && ECHO_HIGH == state)
     {
         uint32_t width = robot_time_elapsed(sampled_us, rise_us);
         atomic_store_explicit(&pulse_us,
@@ -91,20 +109,28 @@ static void echo_edge(unsigned pin, uint32_t edges, uint32_t sampled_us)
             memory_order_relaxed);
         atomic_store_explicit(&echo_state, ECHO_DONE, memory_order_release);
     }
-    /* Any other combination (both flags, stray edge) leaves the measurement to time out. */
+    /* Any other combination (both flags, stray edge) leaves the measurement
+       to time out. */
 }
 
 /* Servo on GP12, PWM slice 6 channel A, 50 Hz, 1 us per tick. Left disabled
    until a scan or side-watch needs it. */
 static ER servo_init(void)
 {
-    clr_w(RESETS_RESET, RESETS_RESET_PWM);	/* release only; never reset a shared slice */
+    /* release only; never reset a shared slice */
+    clr_w(RESETS_RESET, RESETS_RESET_PWM);
     out_w(PWM_CH6_BASE + PWM_CHx_CSR, 0u);
     out_w(PWM_CH6_BASE + PWM_CHx_CTR, 0u);
-    out_w(PWM_CH6_BASE + PWM_CHx_DIV, 125u * 16u);	/* 125 MHz / 125 = 1 MHz */
-    ER error = pwm_set_wrap(SERVO_PIN, 19999u);	/* 20 ms frame */
-    if (error >= E_OK) error = pwm_set_cc(SERVO_PIN, 0u);
-    if (error >= E_OK) error = pwm_set_pin(SERVO_PIN);
+    out_w(PWM_CH6_BASE + PWM_CHx_DIV, 125u * 16u); /* 125 MHz / 125 = 1 MHz */
+    ER error = pwm_set_wrap(SERVO_PIN, 19999u); /* 20 ms frame */
+    if (error >= E_OK)
+    {
+        error = pwm_set_cc(SERVO_PIN, 0u);
+    }
+    if (error >= E_OK)
+    {
+        error = pwm_set_pin(SERVO_PIN);
+    }
     return error;
 }
 
@@ -118,7 +144,8 @@ static ER servo_angle(int angle_deg)
     {
         angle_deg = SERVO_LOOK_DEG;
     }
-    ER error = pwm_set_cc(SERVO_PIN, (UW)((int)SERVO_CENTRE_US + angle_deg * (int)SERVO_US_PER_DEG));
+    ER error = pwm_set_cc(SERVO_PIN,
+        (UW)((int)SERVO_CENTRE_US + angle_deg * (int)SERVO_US_PER_DEG));
     return error < E_OK ? error : pwm_set_enabled(SERVO_PIN, TRUE);
 }
 
@@ -127,9 +154,15 @@ ER obstacle_init(void)
     T_CMTX mutex = {0};
     mutex.mtxatr = TA_INHERIT;
     profile_mutex = tk_cre_mtx(&mutex);
-    if (profile_mutex < E_OK) return profile_mutex;
+    if (profile_mutex < E_OK)
+    {
+        return profile_mutex;
+    }
     ER error = servo_init();
-    if (error >= E_OK) error = gpio_set_val(TRIGGER_PIN, 0);
+    if (error >= E_OK)
+    {
+        error = gpio_set_val(TRIGGER_PIN, 0);
+    }
     if (error >= E_OK)
     {
         error = gpio_set_pin(TRIGGER_PIN, GPIO_MODE_OUT);
@@ -146,11 +179,17 @@ ER obstacle_init(void)
 static ER trigger(void)
 {
     ER error = gpio_set_val(TRIGGER_PIN, 0);
-    if (error < E_OK) return error;
+    if (error < E_OK)
+    {
+        return error;
+    }
     uint32_t t = robot_time_us();
     while (robot_time_elapsed(robot_time_us(), t) < 2u) { }
     error = gpio_set_val(TRIGGER_PIN, 1);
-    if (error < E_OK) return error;
+    if (error < E_OK)
+    {
+        return error;
+    }
     t = robot_time_us();
     while (robot_time_elapsed(robot_time_us(), t) < 10u) { }
     return gpio_set_val(TRIGGER_PIN, 0);
@@ -158,11 +197,19 @@ static ER trigger(void)
 
 /* Acquisition phases never sleep through an Echo or servo movement. Mission
    calls one step per release; only the 12 us trigger pulse busy-waits. */
-typedef enum { OBSTACLE_ACQUIRE_IDLE, OBSTACLE_ACQUIRE_SETTLE, OBSTACLE_ACQUIRE_ECHO } obstacle_acquire_phase_t;
+typedef enum
+{
+    OBSTACLE_ACQUIRE_IDLE,
+    OBSTACLE_ACQUIRE_SETTLE,
+    OBSTACLE_ACQUIRE_ECHO
+} obstacle_acquire_phase_t;
 
 typedef struct
 {
-    uint32_t scan_started_ms, sent_us, settle_since_ms, next_ping_ms;
+    uint32_t scan_started_ms;
+    uint32_t sent_us;
+    uint32_t settle_since_ms;
+    uint32_t next_ping_ms;
     uint8_t misses : ECHO_MISS_BITS;
     obstacle_range_group_t group;
     enc_count_t left_origin, right_origin;
@@ -188,20 +235,25 @@ _Static_assert(SERVO_LOOK_DEG <= INT8_MAX,
 
 _Static_assert(OBSTACLE_SCAN_CAPACITY <= 15u,
     "scan counts must fit their four-bit fields");
-_Static_assert((2 * SERVO_MAX_DEG) / OBSTACLE_COARSE_STEP_DEG + 1 <= OBSTACLE_SCAN_CAPACITY,
+_Static_assert((2 * SERVO_MAX_DEG) / OBSTACLE_COARSE_STEP_DEG + 1 <=
+    OBSTACLE_SCAN_CAPACITY,
     "coarse scan must fit fixed capture storage");
 _Static_assert(SERVO_MAX_DEG % OBSTACLE_COARSE_STEP_DEG == 0,
     "scan spacing must include centre and both endpoints");
 _Static_assert(OBSTACLE_SCAN_GROUP_SAMPLES == 0u ||
-    (OBSTACLE_SCAN_GROUP_SAMPLES >= 3u && OBSTACLE_SCAN_GROUP_SAMPLES <= OBSTACLE_RANGE_GROUP_CAPACITY && (OBSTACLE_SCAN_GROUP_SAMPLES & 1u) != 0u),
+    (OBSTACLE_SCAN_GROUP_SAMPLES >= 3u &&
+    OBSTACLE_SCAN_GROUP_SAMPLES <= OBSTACLE_RANGE_GROUP_CAPACITY &&
+    (OBSTACLE_SCAN_GROUP_SAMPLES & 1u) != 0u),
     "scan group is unknown or an odd bounded count");
 _Static_assert(OBSTACLE_SCAN_MIN_VALID <= OBSTACLE_SCAN_GROUP_SAMPLES,
     "valid sample minimum must fit its group");
 _Static_assert(OBSTACLE_PROFILE_ADJACENT_RAYS == 0u ||
-    (OBSTACLE_PROFILE_ADJACENT_RAYS >= 2u && OBSTACLE_PROFILE_ADJACENT_RAYS <= OBSTACLE_SCAN_CAPACITY),
+    (OBSTACLE_PROFILE_ADJACENT_RAYS >= 2u &&
+    OBSTACLE_PROFILE_ADJACENT_RAYS <= OBSTACLE_SCAN_CAPACITY),
     "edge qualification needs bounded adjacent rays");
 _Static_assert(OBSTACLE_PROFILE_DEPTH_ENTER_MM <= 65535u &&
-    OBSTACLE_PROFILE_DEPTH_EXIT_MM <= 65535u && OBSTACLE_PROFILE_RANGE_ERROR_MM <= 65535u,
+    OBSTACLE_PROFILE_DEPTH_EXIT_MM <= 65535u &&
+    OBSTACLE_PROFILE_RANGE_ERROR_MM <= 65535u,
     "profile settings must fit their representation");
 static obstacle_acquisition_t acquisition;
 
@@ -234,12 +286,12 @@ static bool set_angle(int16_t angle, uint32_t now)
 
 static void finish_scan(obstacle_scan_state_t state, uint32_t now)
 {
-    if (state == OBSTACLE_SCAN_DONE)
+    if (OBSTACLE_SCAN_DONE == state)
     {
         ObstacleProfile built;
         obstacle_profile_evidence_t evidence;
-        bool ok = obstacle_profile_estimate(acquisition.rays, acquisition.count, NULL,
-            &profile_config, &built, &evidence);
+        bool ok = obstacle_profile_estimate(acquisition.rays,
+            acquisition.count, NULL, &profile_config, &built, &evidence);
         if (ok && tk_loc_mtx(profile_mutex, TMO_POL) >= E_OK)
         {
             /* The beam catches the box's corner on some sweeps, so the narrower
@@ -268,7 +320,8 @@ static void finish_scan(obstacle_scan_state_t state, uint32_t now)
             ok ? "profile" : "no profile", ok ? built.width_mm : 0u,
             ok ? evidence.width_model_uncertainty_mm : 0u,
             ok ? built.closest_mm : 0u,
-            ok ? built.left_clearance_mm : 0u, ok ? built.right_clearance_mm : 0u,
+            ok ? built.left_clearance_mm : 0u,
+            ok ? built.right_clearance_mm : 0u,
             MISSION_BYPASS_MIN_CLEAR_MM);
 #endif
     }
@@ -321,9 +374,9 @@ static void range_complete(uint32_t range, uint32_t now)
     acquisition.phase = OBSTACLE_ACQUIRE_IDLE;
     if (acquisition.scanning)
     {
-        if (acquisition.group.requested == 0u &&
-            !obstacle_range_group_begin(&acquisition.group, OBSTACLE_SCAN_GROUP_SAMPLES,
-                OBSTACLE_SCAN_MIN_VALID))
+        if (0u == acquisition.group.requested &&
+            !obstacle_range_group_begin(&acquisition.group,
+                OBSTACLE_SCAN_GROUP_SAMPLES, OBSTACLE_SCAN_MIN_VALID))
         {
             finish_scan(OBSTACLE_SCAN_FAILED, now);
             return;
@@ -335,13 +388,14 @@ static void range_complete(uint32_t range, uint32_t now)
         }
         if (!obstacle_range_group_complete(&acquisition.group))
         {
-            return; /* Same settled angle, next trigger at the repeat deadline. */
+            /* Same settled angle, next trigger at the repeat deadline. */
+            return;
         }
         uint16_t filtered;
         range = obstacle_range_group_median(&acquisition.group, &filtered) ?
             filtered : ECHO_RANGE_INVALID;
         acquisition.group = (obstacle_range_group_t){0};
-        if (range == ECHO_RANGE_INVALID && !acquisition.group_retried)
+        if (ECHO_RANGE_INVALID == range && !acquisition.group_retried)
         {
             /* one more group before calling it no echo */
             acquisition.group_retried = 1u;
@@ -351,18 +405,19 @@ static void range_complete(uint32_t range, uint32_t now)
         publish_range(range, now);
 #if APP_TEST
         tm_printf((UB *)"[SCAN] ray %d deg %s %u mm\n", (int)acquisition.angle,
-            range == ECHO_RANGE_INVALID ? "no echo" : "echo",
-            (unsigned)(range == ECHO_RANGE_INVALID ? 0u : range));
+            ECHO_RANGE_INVALID == range ? "no echo" : "echo",
+            (unsigned)(ECHO_RANGE_INVALID == range ? 0u : range));
 #endif
         unsigned index = acquisition.count;
         acquisition.rays[index] = obstacle_ray_make(acquisition.angles[index],
-            (uint16_t)(range == ECHO_RANGE_INVALID ? 0u : range),
+            (uint16_t)(ECHO_RANGE_INVALID == range ? 0u : range),
             range != ECHO_RANGE_INVALID);
         ++acquisition.count;
         if (acquisition.count == acquisition.coarse)
         {
             unsigned extra = obstacle_profile_fine_angles(acquisition.rays,
-                acquisition.count, &profile_config, &acquisition.angles[acquisition.planned],
+                acquisition.count, &profile_config,
+                &acquisition.angles[acquisition.planned],
                 OBSTACLE_SCAN_CAPACITY - acquisition.planned);
             acquisition.planned = (uint8_t)(acquisition.planned + extra);
         }
@@ -402,10 +457,13 @@ void obstacle_step(uint32_t now)
     {
         return;
     }
-    uint32_t cancel = atomic_load_explicit(&cancel_requests, memory_order_acquire);
-    bool cancelled = cancel != atomic_load_explicit(&cancel_served, memory_order_relaxed);
+    uint32_t cancel = atomic_load_explicit(&cancel_requests,
+        memory_order_acquire);
+    bool cancelled = cancel != atomic_load_explicit(&cancel_served,
+        memory_order_relaxed);
     atomic_store_explicit(&cancel_served, cancel, memory_order_release);
-    uint32_t requested = atomic_load_explicit(&scan_requests, memory_order_acquire);
+    uint32_t requested = atomic_load_explicit(&scan_requests,
+        memory_order_acquire);
     if (cancelled)
     {
         atomic_store_explicit(&scan_served, requested, memory_order_release);
@@ -422,10 +480,12 @@ void obstacle_step(uint32_t now)
     }
     if (acquisition.scanning)
     {
-        bool stationary = drv_encoder_count(ENCODER_LEFT) == acquisition.left_origin &&
+        bool stationary =
+            drv_encoder_count(ENCODER_LEFT) == acquisition.left_origin &&
             drv_encoder_count(ENCODER_RIGHT) == acquisition.right_origin;
         obstacle_scan_state_t guard = obstacle_scan_guard(false,
-            robot_time_elapsed(now, acquisition.scan_started_ms) >= OBSTACLE_SCAN_DEADLINE_MS,
+            robot_time_elapsed(now, acquisition.scan_started_ms) >=
+                OBSTACLE_SCAN_DEADLINE_MS,
             stationary);
         if (guard != OBSTACLE_SCAN_COARSE)
         {
@@ -433,10 +493,12 @@ void obstacle_step(uint32_t now)
             return;
         }
     }
-    else if (requested != atomic_load_explicit(&scan_served, memory_order_relaxed))
+    else if (requested != atomic_load_explicit(&scan_served,
+        memory_order_relaxed))
     {
         atomic_store_explicit(&scan_served, requested, memory_order_release);
-        acquisition.id = atomic_load_explicit(&requested_scan_id, memory_order_relaxed);
+        acquisition.id = atomic_load_explicit(&requested_scan_id,
+            memory_order_relaxed);
         acquisition.keep_narrower = atomic_load_explicit(
             &requested_keep_narrower, memory_order_relaxed);
         acquisition.left_origin = (uint16_t)drv_encoder_count(ENCODER_LEFT);
@@ -446,14 +508,17 @@ void obstacle_step(uint32_t now)
         acquisition.scan_started_ms = now;
         acquisition.group = (obstacle_range_group_t){0};
         acquisition.group_retried = 0u;
-        if (OBSTACLE_SCAN_GROUP_SAMPLES == 0u || OBSTACLE_SCAN_MIN_VALID == 0u ||
-            OBSTACLE_PROFILE_ADJACENT_RAYS < 2u || OBSTACLE_PROFILE_DEPTH_ENTER_MM == 0u ||
+        if (OBSTACLE_SCAN_GROUP_SAMPLES == 0u ||
+            OBSTACLE_SCAN_MIN_VALID == 0u ||
+            OBSTACLE_PROFILE_ADJACENT_RAYS < 2u ||
+            OBSTACLE_PROFILE_DEPTH_ENTER_MM == 0u ||
             OBSTACLE_PROFILE_DEPTH_EXIT_MM < OBSTACLE_PROFILE_DEPTH_ENTER_MM ||
-            !obstacle_range_group_begin(&acquisition.group, OBSTACLE_SCAN_GROUP_SAMPLES,
-                OBSTACLE_SCAN_MIN_VALID))
+            !obstacle_range_group_begin(&acquisition.group,
+                OBSTACLE_SCAN_GROUP_SAMPLES, OBSTACLE_SCAN_MIN_VALID))
         {
             publish_scan(OBSTACLE_SCAN_FAILED, acquisition.id);
-            return; /* Explicit pending D05, never execute an unsupported scan. */
+            /* Explicit pending D05, never execute an unsupported scan. */
+            return;
         }
         acquisition.count = 0u;
         acquisition.planned = 0u;
@@ -474,14 +539,15 @@ void obstacle_step(uint32_t now)
     if (!acquisition.scanning)
     {
         uint32_t command = rd_word_read(&side_command);
-        int16_t angle = (command & 1u) != 0u ? obstacle_side_watch_angle(command) : 0;
+        int16_t angle = (command & 1u) != 0u ?
+            obstacle_side_watch_angle(command) : 0;
         if (angle != acquisition.target_angle && !set_angle(angle, now))
         {
             rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
             return;
         }
     }
-    if (acquisition.phase == OBSTACLE_ACQUIRE_SETTLE)
+    if (OBSTACLE_ACQUIRE_SETTLE == acquisition.phase)
     {
         if (acquisition.angle != acquisition.target_angle)
         {
@@ -505,20 +571,23 @@ void obstacle_step(uint32_t now)
             }
             return;
         }
-        if (robot_time_elapsed(now, acquisition.settle_since_ms) < SERVO_SETTLE_MS)
+        if (robot_time_elapsed(now, acquisition.settle_since_ms) <
+            SERVO_SETTLE_MS)
         {
             return;
         }
         acquisition.phase = OBSTACLE_ACQUIRE_IDLE;
     }
-    if (acquisition.phase == OBSTACLE_ACQUIRE_ECHO)
+    if (OBSTACLE_ACQUIRE_ECHO == acquisition.phase)
     {
-        if (atomic_load_explicit(&echo_state, memory_order_acquire) == ECHO_DONE)
+        if (atomic_load_explicit(&echo_state, memory_order_acquire) ==
+            ECHO_DONE)
         {
             range_complete(echo_range_mm(atomic_load_explicit(&pulse_us,
                 memory_order_relaxed)), now);
         }
-        else if (robot_time_elapsed(robot_time_us(), acquisition.sent_us) >= SONAR_TIMEOUT_US)
+        else if (robot_time_elapsed(robot_time_us(), acquisition.sent_us) >=
+            SONAR_TIMEOUT_US)
         {
             range_complete(ECHO_RANGE_INVALID, now);
         }
@@ -545,9 +614,10 @@ ER obstacle_profile_try_copy(ObstacleProfile *out)
     return profile_copy(out, TMO_POL);
 }
 
-ER obstacle_range_samples(obstacle_range_sample_t *front, obstacle_range_sample_t *side)
+ER obstacle_range_samples(obstacle_range_sample_t *front,
+    obstacle_range_sample_t *side)
 {
-    if (front == NULL || side == NULL)
+    if (NULL == front || NULL == side)
     {
         return E_PAR;
     }
@@ -562,7 +632,7 @@ ER obstacle_range_samples(obstacle_range_sample_t *front, obstacle_range_sample_
 
 ER obstacle_profile_snapshot(obstacle_profile_snapshot_t *out)
 {
-    if (out == NULL || profile_mutex <= 0)
+    if (NULL == out || profile_mutex <= 0)
     {
         return E_PAR;
     }
@@ -581,9 +651,10 @@ ER obstacle_profile_snapshot(obstacle_profile_snapshot_t *out)
     return er < E_OK ? er : (ready ? E_OK : E_OBJ);
 }
 
-ER obstacle_range_try_copy(obstacle_range_sample_t *front, obstacle_range_sample_t *side)
+ER obstacle_range_try_copy(obstacle_range_sample_t *front,
+    obstacle_range_sample_t *side)
 {
-    if (front == NULL || side == NULL || profile_mutex <= 0)
+    if (NULL == front || NULL == side || profile_mutex <= 0)
     {
         return E_PAR;
     }
