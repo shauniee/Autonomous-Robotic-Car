@@ -12,7 +12,7 @@
 
 ## Scope
 
-Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement and impact evidence, as bounded work in core-0 `io_task`. The GY-511 has no gyroscope, so label encoder-derived turn rate accurately. Wiring: [team](../../docs/team.md#2-pins).
+Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement and lift evidence, as bounded work in core-0 `io_task`. The GY-511 has no gyroscope, so label encoder-derived turn rate accurately. Wiring: [team](../../docs/team.md#2-pins).
 
 ## Files
 
@@ -25,16 +25,17 @@ Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement a
 
 ## Behaviour
 
-- **Boot:** up to 5 seconds to collect 100 fresh stationary samples at 50 Hz. Encoder movement restarts the count without extending the deadline. The USB console's `[IMU]` messages distinguish init failure, completion and timeout. A failure is flagged and report-only, and only a reboot retries it.
+- **Boot:** up to 5 seconds to collect 100 fresh stationary samples at 50 Hz. Encoder movement restarts the count without extending the deadline. The USB console's `[IMU]` messages distinguish init failure, completion and timeout. A failure blocks start, because the lift stop needs calibration; only a reboot retries it.
 - **Humps:** course humps lift one wheel, so an encounter is sideways tilt (roll) of either sign, measured from its average while both wheels are stopped so the boot pose does not matter, over `HUMP_ROLL_ENTER_DEG` until it stays under `HUMP_ROLL_EXIT_DEG` for `HUMP_FLAT_SAMPLES`. It counts with `HUMP_MIN_TRAVEL_MM` of travel over the exit level and a height, track width times the sine of peak roll, between `HUMP_MIN_HEIGHT_MM` and `HUMP_MAX_HEIGHT_MM`. Past `HUMP_MAX_TRAVEL_MM` the tilt becomes the new average (the 2026-11-02 runs). Independent of Mission states. Humps do not change the course speed.
 - **Turn rate (FR-20):** the GY-511 has no gyroscope, so turn rate is encoder-derived, not measured by the IMU. The laptop tool computes (right speed - left speed) / `TRACK_WIDTH_MM` from the encoder counts in consecutive telemetry frames and shows it in degrees per second, positive left: `monitor` prints `turn=`, the dashboard shows Turn under Motor speed. No firmware or frame change; it inherits the telemetry arrival-time limits of the speed readout and the uncalibrated effective track width (D03). Host-tested in the `mqtt_decoder` self-test.
 - **Results:** only a valid completed encounter updates count or maximum, and results persist through starts and stops until reboot. Missing travel invalidates the current window but keeps completed results. Any failed quality sample disqualifies that encounter. Never fabricate height when data is missing, stale or dominated by acceleration.
+- **Lift:** the filtered vertical axis reads 1 g while the wheels rest on the floor. More than `LIFT_ACCEL_G` (0.3 g, provisional D06) away from it means the car was picked up, tipped past about 45 degrees or turned over. Terrain bit 2 is set, Safety latches the stop and the wheels brake; lifting the car is how a demonstration run ends. One short jolt is filtered out; humps tilt far less.
 
 ## Contract
 
 - `terrain_step` publishes the packed word and `terrain_read_word` reads it. An unchanged word does not prove new acquisition.
 - Use measured encoder travel with a private origin and modular subtraction. Never reset shared counts or substitute nominal travel.
-- Publish impact evidence for Motion and Mission through shared data; never call a core-1 stop API across cores. A short impact must not disappear before it is seen.
+- Publish lift evidence for Motion and Mission through shared data; never call a core-1 stop API across cores. A short lift must not disappear before it is seen.
 - Bound I2C and each processing step, and never hold shared locks through I2C.
 
 Widths: [data table](../../docs/team.md#6-data-representation). Fault policy: [fault bitmask](../../docs/architecture.md#fault-bitmask). The 1 mm/count reported scale stays unless measurements justify a change.
@@ -86,7 +87,7 @@ driver counts after unpacking the sensor's left-aligned 12-bit readings,
 before calibration or filtering; multiply by `ACCEL_MG_PER_LSB` for g.
 `pitch_cdeg` and `roll_cdeg` are filtered forward/backward and sideways tilt
 in 0.01 degrees, meaningful after calibration. States: 0 flat, 1 on hump,
-2 impact. Encoder deltas are counts since the previous fresh acquisition
+2 lifted. Encoder deltas are counts since the previous fresh acquisition
 (calibration/error resets that origin). `encoder_valid` reports encoder health;
 `stationary` means both wheel counts were unchanged on this poll. These are
 context, not a second set of hump acceptance rules. `hump_count` increasing
@@ -109,7 +110,7 @@ Draft from existing evidence only. No reference height above one 10 mm hump has 
 - **Travel limit:** `HUMP_MIN_TRAVEL_MM` 50 rests on two crossings (76 and 156 mm) against curves of 26 mm or less.
 - **Turn rate:** no turn-rate monitor exists in Terrain. The GY-511 has no gyroscope, so any monitor must be encoder-derived and labelled so (T06).
 
-Missing before this is a report: reference humps up to 30 mm with an agreed error limit, labelled traces and an impact result.
+Missing before this is a report: reference humps up to 30 mm with an agreed error limit, labelled traces and a lift result.
 
 ### Measurements to collect
 
@@ -123,12 +124,12 @@ Record each run separately with source SHA, UF2 hash, setup and evidence. Limits
 | Pure pivot or tight curve | Repeated | No hump | Event count must not increase | 2026-11-02 |
 | Hump before barcode / on curve | Repeated | Known route | Event count and barcode/line continuation | MR-29 |
 | One-wheel and reversed approach | Repeated | Known wheel and direction | Roll sign, height, count and completion | D11 |
-| Sharp chassis tap | Repeated safe test | Controlled impact | Fault byte, braked output and persistent stop | MR-16 |
+| Lift and turn over during a run | Repeated safe test | Car lifted level, tipped on its side, upside down | Fault byte, braked output, persistent stop and the smallest lift that triggers | MR-16 |
 | IMU disconnected | Bench only, power off first | No device | Bounded calibration failure and fault policy | MR-11 |
 
 ## Status and open items
 
-Algorithms pass synthetic replays; results are in the [terrain test log](../../testing/terrain/TEST_LOG.md). Physical height and impact calibration are not established.
+Algorithms pass synthetic replays; results are in the [terrain test log](../../testing/terrain/TEST_LOG.md). Physical height and lift calibration are not established.
 
 - D06, D13 and D14: measured references up to 30 mm, height-error target, threshold and filter decisions.
-- Test stationary, acceleration, braking, turning, climb, descent, impact, repeated reference passes, partial encounters and invalid-after-valid maximum (MR-16, MR-23, MR-29, T06, T07).
+- Test stationary, acceleration, braking, turning, climb, descent, lift, repeated reference passes, partial encounters and invalid-after-valid maximum (MR-16, MR-23, MR-29, T06, T07).

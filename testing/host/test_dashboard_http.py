@@ -32,14 +32,16 @@ try:
     assert sent == [1, 2, 3, 4]
     for action in [0, 5, -1, True, '1', None]:
         assert post('/direction', {'action': action})[0] == 400
-    assert post('/direction', {'action': 1}, 'http://foreign.example')[0] == 403
+    assert post('/direction', {'action': 1}, f'http://localhost:{port}')[0] == 200
+    for source in ['http://foreign.example', f'http://localhost.example:{port}', f'http://localhost:{port + 1}', '']:
+        assert post('/direction', {'action': 1}, source)[0] == 403
     assert post('/unknown', {'action': 1})[0] == 403
     dashboard.send_direction = None
     assert post('/direction', {'action': 1})[0] == 503
     dashboard.send_mapping = lambda letters: 8
     assert post('/map', {'letters': 'ABCD'}) == (200, {'sequence': 8})
     assert post('/map', {'letters': 'AAAA'})[0] == 400
-    print('dashboard HTTP: PASS (four actions, invalid inputs, origin, disconnected, mapping regression)')
+    print('dashboard HTTP: PASS (four actions, invalid inputs, localhost and 127.0.0.1 origins, foreign origins, disconnected, mapping regression)')
 finally:
     dashboard.server.shutdown()
     dashboard.server.server_close()
