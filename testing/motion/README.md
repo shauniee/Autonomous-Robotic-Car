@@ -6,7 +6,7 @@
 - [Captures](#captures)
 - [Every video](#every-video)
 - [After each test](#after-each-test)
-- [Needed before recording](#needed-before-recording)
+- [Bench image](#bench-image)
 - [Tests](#tests)
   - [S2-U01](#s2-u01-motor-direction-and-encoder-counts)
   - [S2-U02](#s2-u02-1-m-straight)
@@ -33,7 +33,7 @@ How to run and record S2-U01 to S2-U05. Test definitions: [TEST_LOG.md](TEST_LOG
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py map A B C D --broker 127.0.0.1
    ```
 
-6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080>:
+6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080> (or <http://localhost:8080>):
 
    ```bash
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
@@ -67,21 +67,29 @@ Telemetry with laptop timestamps (every frame, nothing folded):
 
 Send Claude the test ID, the video link and anything you measured (tape readings, counts). Claude checks the logs and makes **one commit per test**: the logs plus one result row in [TEST_LOG.md](TEST_LOG.md), message `test(motion): <ID> <PASS|FAIL|PARTIAL>`.
 
-## Needed before recording
+## Bench image
 
-- **S2-U01 to S2-U04 need a bench image.** No current image drives a single 1 m straight or a pivot on its own. A `./flash.sh bench` image, where each GP20 press runs the next move (short forward, 1 m straight, 90 left, 90 right, 180) and prints a `[BENCH]` line, must be added on this branch first; ask Claude to build it.
+`./flash.sh bench` never runs the mission. Each GP20 press runs the next single move, at course speed, in this order:
+
+1. `short_forward` (100 mm)
+2. `straight_1m` (1000 mm)
+3. `left_90`
+4. `right_90`
+5. `turn_180`
+
+Then it starts again at 1. Each move prints one `[BENCH]` line with the move, the result (`DONE`, `FAILED` or `ABORTED`), the left and right counts, the travel in mm, the heading and the time. A move that does not finish is run again on the next press. GP21 still stops; if a press prints `[BENCH] refused`, press and release GP21 first. The last `[BENCH]` line tells you which move is next.
 
 ## Tests
 
 ### S2-U01 Motor direction and encoder counts
 
-**Image:** bench image for the motor check; `./flash.sh test` (wireless, motors always off, USB) for the hand turns
+**Image:** `./flash.sh bench` for the motor check; `./flash.sh test` (wireless, motors always off, USB) for the hand turns
 
 **Set up:** Mark a spot on each tyre. Wheels off the ground for the motor check.
 
 **Steps:**
 
-1. Bench image: press GP20 once for the short forward move; both wheels must turn forward.
+1. Bench image: press GP20 once for `short_forward`; both wheels must turn forward and the `[BENCH]` line shows both counts rising.
 2. TEST image: turn the left wheel exactly one revolution by hand, three times, reading `counts L` on the dashboard before and after each.
 3. Repeat for the right wheel.
 
@@ -91,16 +99,16 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 ### S2-U02 1 m straight
 
-**Image:** bench image (battery)
+**Image:** `./flash.sh bench` (battery)
 
 **Set up:** Tape a start line and a 1 m mark; mark the car's centre.
 
 **Steps:**
 
 1. Place the car on the start line.
-2. Press GP20 for the 1 m move.
+2. Press GP20 for `straight_1m`.
 3. Tape the stop point: distance and sideways error.
-4. Repeat five times.
+4. Repeat five times (step through the other four moves between runs).
 
 **Show on video:** Each run and the tape measurement.
 
@@ -108,29 +116,29 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 ### S2-U03 90 and 180 degree pivots
 
-**Image:** bench image (battery)
+**Image:** `./flash.sh bench` (battery)
 
 **Set up:** Tape a square on the floor; align the car with one edge.
 
 **Steps:**
 
-1. Press GP20 for each pivot in turn: 90 left, 90 right, 180.
+1. Press GP20 for each pivot in turn: `left_90`, `right_90`, `turn_180`.
 2. Measure the heading error against the tape.
 3. Five of each.
 
 **Show on video:** Each pivot ending against the tape.
 
-**Logs:** `usb.log`; write down the 15 heading errors.
+**Logs:** `usb.log` (`[BENCH]` lines); write down the 15 heading errors.
 
 ### S2-U04 Wheel speed control on the floor
 
-**Image:** bench image (battery)
+**Image:** `./flash.sh bench` (battery; it sends `WHEEL` traces)
 
 **Set up:** Telemetry capture started.
 
 **Steps:**
 
-1. Press GP20 for the 1 m move at 100 mm/s.
+1. Press GP20 for `straight_1m` (course speed, 100 mm/s).
 2. Let it finish.
 
 **Show on video:** The dashboard wheel-speed graph following the target.
