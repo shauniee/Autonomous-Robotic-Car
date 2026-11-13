@@ -32,7 +32,7 @@ How to run and record S3-U01 to S3-U05. Test definitions: [TEST_LOG.md](TEST_LOG
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py map A B C D --broker 127.0.0.1
    ```
 
-6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080>:
+6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080> (or <http://localhost:8080>):
 
    ```bash
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
@@ -80,7 +80,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 2. Same for the right sensor (GP17).
 3. Hold each over the line edge.
 
-**Show on video:** The `[IR] … black=L/R … line=…` lines changing with each move.
+**Show on video:** The `[IR] … black=L/R … line=…` lines changing with each move. At boot the image also prints its self-check, `[TEST] S3-U01 PASS` (line IR sample valid); show it.
 
 **Logs:** `usb.log`
 
