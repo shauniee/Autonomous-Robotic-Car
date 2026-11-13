@@ -6,7 +6,6 @@
 - [Captures](#captures)
 - [Every video](#every-video)
 - [After each test](#after-each-test)
-- [Needed before recording](#needed-before-recording)
 - [Tests](#tests)
   - [S1-U01](#s1-u01-wifi-join-and-telemetry-rate)
   - [S1-U02](#s1-u02-letter-mapping-rules)
@@ -33,7 +32,7 @@ How to run and record S1-U01 to S1-U05. Test definitions: [TEST_LOG.md](TEST_LOG
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py map A B C D --broker 127.0.0.1
    ```
 
-6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080>:
+6. Dashboard for the video (another terminal), then open <http://127.0.0.1:8080> (or <http://localhost:8080>):
 
    ```bash
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
@@ -67,10 +66,6 @@ Telemetry with laptop timestamps (every frame, nothing folded):
 
 Send Claude the test ID, the video link and anything you measured (tape readings, counts). Claude checks the logs and makes **one commit per test**: the logs plus one result row in [TEST_LOG.md](TEST_LOG.md), message `test(comms): <ID> <PASS|FAIL|PARTIAL>`.
 
-## Needed before recording
-
-- **S1-U04 needs a request probe.** `mqtt_client.py` can only send valid requests. A `probe` action that sends a truncated frame, a wrong-version frame and a request to drive must be added on this branch first; ask Claude to build it.
-
 ## Tests
 
 ### S1-U01 WiFi join and telemetry rate
@@ -85,7 +80,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 2. Wait for `wifi: link up, ip=…` on the USB console.
 3. Leave it for 60 s with the dashboard updating.
 
-**Show on video:** The `wifi: link up` line, then the dashboard updating.
+**Show on video:** The `wifi: link up` line, then the dashboard updating, including Turn under Motor speed (turn rate from the encoders, FR-20; `monitor` prints it as `turn=`).
 
 **Logs:** `usb.log` and `monitor.log`; Claude measures the telemetry interval (target about 500 ms).
 
@@ -126,16 +121,21 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Image:** `./flash.sh test` (wireless, motors always off, USB)
 
-**Set up:** Booted and connected; captures started.
+**Set up:** Booted and connected; USB and telemetry (`monitor`) captures started.
 
 **Steps:**
 
-1. Run the request probe (see Needed before recording).
-2. Watch the robot: nothing moves and the state does not change.
+1. In another terminal run the probe. It sends a truncated mapping, a mapping with the old version and a drive request, one line each:
 
-**Show on video:** The probe output with each request rejected, and the robot still idle.
+   ```bash
+   ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py probe --broker 127.0.0.1 | tee testing/comms/logs/S1-U04/YYYY-MM-DD_probe.log
+   ```
 
-**Logs:** `usb.log` and `monitor.log`
+2. Watch `monitor`: no ACK and no state change. Watch the robot: nothing moves.
+
+**Show on video:** The three probe lines, `monitor` with no ACK and no state change, and the robot still idle.
+
+**Logs:** `usb.log`, `monitor.log` and `probe.log`
 
 ### S1-U05 Frame codec on the Pico (auto)
 
