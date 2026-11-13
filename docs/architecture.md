@@ -205,7 +205,7 @@ measurements/events. Completed results persist across accepted starts/stops unti
 reboot, as recorded in [project specs](project-specs.md#pending-decisions).
 
 For a blocking obstacle, brake and confirm stationarity before profiling. Bypass
-selects the side with the shorter distance to a box edge, departs the line, follows the side, confirms
+selects the only side the scan proves clear, else the shorter distance to a box edge, departs the line, follows the side, confirms
 rear-edge and full-car clearance and returns toward the original line. The first
 black sensor on that leg ends it; Mission then advances and pivots as at a junction.
 One servo sensor cannot look forward and sideways simultaneously: schedule fresh
