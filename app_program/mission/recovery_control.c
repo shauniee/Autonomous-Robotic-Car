@@ -3,9 +3,11 @@
 #include "../common/robot_time_math.h"
 #include <math.h>
 
-void recovery_control_begin(recovery_control_t *control, const recovery_input_t *input)
+void recovery_control_begin(recovery_control_t *control,
+    const recovery_input_t *input)
 {
-    *control = (recovery_control_t){.origin = {input->count[0], input->count[1]},
+    *control = (recovery_control_t){.origin = {input->count[0],
+        input->count[1]},
         .started_ms = input->now_ms};
 }
 
@@ -19,7 +21,8 @@ static void start_turn(recovery_control_t *control, recovery_output_t *output,
     output->new_turn = true;
 }
 
-void recovery_control_step(recovery_control_t *control, const recovery_input_t *input,
+void recovery_control_step(recovery_control_t *control,
+    const recovery_input_t *input,
     recovery_output_t *output)
 {
     *output = (recovery_output_t){.phase = RECOVERY_FAILED};
@@ -42,7 +45,7 @@ void recovery_control_step(recovery_control_t *control, const recovery_input_t *
         return;
     }
     output->heading_cdeg = (int16_t)lroundf(heading * 100.0f);
-    if (control->phase == RECOVERY_WAIT)
+    if (RECOVERY_WAIT == control->phase)
     {
         output->phase = RECOVERY_WAIT;
         if (!input->stationary)
@@ -55,7 +58,7 @@ void recovery_control_step(recovery_control_t *control, const recovery_input_t *
         heading = 0.0f;
         control->phase = RECOVERY_SEARCH;
     }
-    if (control->phase == RECOVERY_DONE)
+    if (RECOVERY_DONE == control->phase)
     {
         output->phase = RECOVERY_DONE;
         return;

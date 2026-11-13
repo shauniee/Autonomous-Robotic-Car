@@ -9,7 +9,8 @@
 
 static uint8_t next_id(uint8_t *id)
 {
-    *id = (uint8_t)(*id >= rd_mask(RD_MOTION_ACTION_BITS) || *id < 1u ? 2u : *id + 1u);
+    *id = (uint8_t)(*id >= rd_mask(RD_MOTION_ACTION_BITS) || *id < 1u ? 2u : *id
+        + 1u);
     return *id;
 }
 
@@ -34,12 +35,15 @@ static bool pose_step(bypass_control_t *control, const bypass_input_t *input)
     uint64_t edges = 0u;
     for (unsigned wheel = 0u; wheel < 2u; ++wheel)
     {
-        delta[wheel] = enc_travel_signed(input->count[wheel], control->previous[wheel]);
-        edges += delta[wheel] < 0 ? (uint64_t)(-(int64_t)delta[wheel]) : (uint32_t)delta[wheel];
+        delta[wheel] = enc_travel_signed(input->count[wheel],
+            control->previous[wheel]);
+        edges += delta[wheel] < 0 ? (uint64_t)(-(int64_t)delta[wheel])
+            : (uint32_t)delta[wheel];
         control->previous[wheel] = input->count[wheel];
     }
     uint32_t maximum = (uint32_t)(2.0f * BYPASS_TRAVEL_MM * ENC_COUNTS_PER_MM);
-    if (control->edge_counts > maximum || edges > maximum - control->edge_counts)
+    if (control->edge_counts > maximum || edges > maximum
+        - control->edge_counts)
     {
         return false;
     }
@@ -52,7 +56,8 @@ static bool pose_step(bypass_control_t *control, const bypass_input_t *input)
     {
         return false;
     }
-    float middle = ((float)control->heading_cdeg + heading) * 0.5f * BYPASS_RAD_PER_CDEG;
+    float middle = ((float)control->heading_cdeg + heading) * 0.5f
+        * BYPASS_RAD_PER_CDEG;
     float distance = ((float)delta[0] + delta[1]) * 0.5f / ENC_COUNTS_PER_MM;
     float x = control->forward_q8 + distance * cosf(middle) * BYPASS_Q8;
     float y = control->left_q8 + distance * sinf(middle) * BYPASS_Q8;
@@ -81,11 +86,13 @@ static void turn(bypass_control_t *control, const bypass_input_t *input,
 static int expected_heading(const bypass_control_t *control)
 {
     int side = control->left_side ? 1 : -1;
-    if (control->route == BYPASS_ROUTE_OFFSET || control->route == BYPASS_ROUTE_OUT)
+    if (BYPASS_ROUTE_OFFSET == control->route || BYPASS_ROUTE_OUT
+        == control->route)
     {
         return side * 90;
     }
-    if (control->route == BYPASS_ROUTE_RETURN || control->route == BYPASS_ROUTE_IN)
+    if (BYPASS_ROUTE_RETURN == control->route || BYPASS_ROUTE_IN
+        == control->route)
     {
         return -side * 90;
     }
@@ -121,7 +128,8 @@ static float edge_mm(const ObstacleProfile *profile, bool left)
 }
 
 /* Axle to box edge while passing: half the car's length, or more if that would
-   leave too little above the too-close limit to absorb scan and heading error. */
+   leave too little above the too-close limit to absorb scan and heading error.
+   */
 static float pass_distance_mm(bool left)
 {
     return fmaxf(BYPASS_BODY_HALF_LENGTH_MM,
@@ -196,7 +204,7 @@ bool bypass_control_begin(bypass_control_t *control,
     const bypass_input_t *input, const ObstacleProfile *profile,
     uint16_t planning_width_mm, uint8_t *action_id)
 {
-    if (control == NULL || action_id == NULL ||
+    if (NULL == control || NULL == action_id ||
         !bypass_control_can_begin(input, profile, planning_width_mm))
     {
         return false;
@@ -259,7 +267,8 @@ static void side_observation(bypass_control_t *control,
     /* Raw range, not the sideways part: the beam is wide, so a range this short
        is close whichever way it points, and a normal pass does not step out. */
     if (input->side_valid &&
-        input->side_mm < facing_half_mm(control->left_side) + BYPASS_SAFE_GAP_MM)
+        input->side_mm < facing_half_mm(control->left_side)
+            + BYPASS_SAFE_GAP_MM)
     {
         if (++control->close_samples >= BYPASS_CLOSE_SAMPLES)
         {
@@ -305,12 +314,15 @@ static void side_observation(bypass_control_t *control,
         fmaxf(to_centre - control->half_width_mm, 0.0f);
     float rear = (float)control->edge_forward_q8 / BYPASS_Q8 +
         OBSTACLE_SONAR_FORWARD_MM + to_side / tanf(angle);
-    /* A flat side at this angle can return no echo, or only its front corner, so
-       the ray can leave long before the rear. Trust it only when it reads deeper
+    /* A flat side at this angle can return no echo, or only its front corner,
+       so
+       the ray can leave long before the rear. Trust it only when it reads
+       deeper
        than this. This only times the pivot back; depth is not reported. */
     rear = fmaxf(rear, (float)control->obstacle_front_mm + BYPASS_MIN_DEPTH_MM);
     control->rear_clear_q8 = (int32_t)lroundf(
-        (rear + facing_half_mm(control->left_side) + BYPASS_REAR_GAP_MM) * BYPASS_Q8);
+        (rear + facing_half_mm(control->left_side) + BYPASS_REAR_GAP_MM)
+            * BYPASS_Q8);
     control->route = BYPASS_ROUTE_REAR;
 }
 
@@ -320,12 +332,13 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
     *output = (bypass_output_t){.command = motion_command_make(MOTION_MODE_STOP,
         0.0f, 0.0f, 0, 0u, input->now_ms), .route = BYPASS_ROUTE_FAILED};
     if (input->cancel || !input->functional ||
-        robot_time_elapsed(input->now_ms, control->started_ms) >= MISSION_BYPASS_TIMEOUT_MS ||
+        robot_time_elapsed(input->now_ms, control->started_ms)
+            >= MISSION_BYPASS_TIMEOUT_MS ||
         !pose_step(control, input) || control->route > BYPASS_ROUTE_FAILED)
     {
         fail(control);
     }
-    if (control->route == BYPASS_ROUTE_RETURN)
+    if (BYPASS_ROUTE_RETURN == control->route)
     {
         if (!input->line_functional ||
             robot_time_elapsed(input->now_ms, input->line_ms) > IR_MAX_GAP_MS)
@@ -345,21 +358,23 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
             control->route = BYPASS_ROUTE_DONE;
         }
     }
-    if (control->route == BYPASS_ROUTE_DONE || control->route == BYPASS_ROUTE_FAILED)
+    if (BYPASS_ROUTE_DONE == control->route || BYPASS_ROUTE_FAILED
+        == control->route)
     {
         output->route = (bypass_route_t)control->route;
         return;
     }
     int side = control->left_side ? 1 : -1;
     bool finished = input->motion_action == control->action_id &&
-        input->motion_status == RD_MOTION_DONE;
+        RD_MOTION_DONE == input->motion_status;
     bool action_failed = input->motion_action == control->action_id &&
-        input->motion_status == RD_MOTION_FAILED;
-    if (control->work == BYPASS_WORK_TURN)
+        RD_MOTION_FAILED == input->motion_status;
+    if (BYPASS_WORK_TURN == control->work)
     {
         bool swept_hazard = control->route != BYPASS_ROUTE_PARALLEL &&
             input->front_valid &&
-            robot_time_elapsed(input->now_ms, input->front_ms) <= BYPASS_FRONT_MAX_AGE_MS &&
+            robot_time_elapsed(input->now_ms, input->front_ms)
+                <= BYPASS_FRONT_MAX_AGE_MS &&
             input->front_mm + OBSTACLE_SONAR_FORWARD_MM <=
                 pivot_reach_mm(control->action_target > 0);
         if (swept_hazard || action_failed ||
@@ -374,19 +389,20 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
             {
                 fail(control);
             }
-            else if (control->route == BYPASS_ROUTE_OUT)
+            else if (BYPASS_ROUTE_OUT == control->route)
             {
                 drive(control, input, BYPASS_ROUTE_OFFSET,
-                    fabsf((float)control->offset_mm - left_mm(control)), action_id);
+                    fabsf((float)control->offset_mm - left_mm(control)),
+                        action_id);
             }
-            else if (control->route == BYPASS_ROUTE_PARALLEL)
+            else if (BYPASS_ROUTE_PARALLEL == control->route)
             {
                 control->route = BYPASS_ROUTE_PASS;
                 control->work = BYPASS_WORK_LOOK;
                 control->phase_ms = input->now_ms;
                 control->sensor_sequence = input->side_sequence;
             }
-            else if (control->route == BYPASS_ROUTE_IN)
+            else if (BYPASS_ROUTE_IN == control->route)
             {
                 control->return_white = 0u;
                 drive(control, input, BYPASS_ROUTE_RETURN,
@@ -398,7 +414,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
             }
         }
     }
-    else if (control->work == BYPASS_WORK_LOOK)
+    else if (BYPASS_WORK_LOOK == control->work)
     {
         /* The servo has settled once the first reading from the side
            arrives. */
@@ -414,11 +430,11 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
                 action_id);
         }
     }
-    else if (control->work == BYPASS_WORK_STOP)
+    else if (BYPASS_WORK_STOP == control->work)
     {
         if (input->stationary)
         {
-            if (control->route == BYPASS_ROUTE_REAR)
+            if (BYPASS_ROUTE_REAR == control->route)
             {
                 turn(control, input, BYPASS_ROUTE_IN, -side * 90, action_id);
             }
@@ -428,10 +444,10 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
             }
         }
     }
-    else if (control->work == BYPASS_WORK_DRIVE)
+    else if (BYPASS_WORK_DRIVE == control->work)
     {
-        bool passing = control->route == BYPASS_ROUTE_PASS ||
-            control->route == BYPASS_ROUTE_REAR;
+        bool passing = BYPASS_ROUTE_PASS == control->route ||
+            BYPASS_ROUTE_REAR == control->route;
         if (action_failed || !heading_held(control) ||
             (!passing && !front_clear(input)) ||
             robot_time_elapsed(input->now_ms, control->action_ms) >=
@@ -441,26 +457,27 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
         }
         else if (passing)
         {
-            if (control->route == BYPASS_ROUTE_PASS &&
+            if (BYPASS_ROUTE_PASS == control->route &&
                 input->side_sequence != control->sensor_sequence)
             {
                 control->sensor_sequence = input->side_sequence;
                 side_observation(control, input);
-                if (control->route == BYPASS_ROUTE_REAR)
+                if (BYPASS_ROUTE_REAR == control->route)
                 {
                     /* Slow to rest at the point that clears the box, or as soon
                        after it as the stop allows. */
                     drive(control, input, BYPASS_ROUTE_REAR, fmaxf(
-                        (float)control->rear_clear_q8 / BYPASS_Q8 - forward_mm(control),
+                        (float)control->rear_clear_q8 / BYPASS_Q8
+                            - forward_mm(control),
                         motion_stop_distance_mm(BYPASS_SPEED_MMPS)), action_id);
                     finished = false;
                 }
             }
-            if (finished && control->route == BYPASS_ROUTE_REAR)
+            if (finished && BYPASS_ROUTE_REAR == control->route)
             {
                 control->work = BYPASS_WORK_STOP;
             }
-            else if (finished && control->work == BYPASS_WORK_DRIVE)
+            else if (finished && BYPASS_WORK_DRIVE == control->work)
             {
                 /* the leg ran out with the box still beside the car */
                 fail(control);
@@ -468,7 +485,7 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
         }
         else if (finished)
         {
-            if (control->route == BYPASS_ROUTE_OFFSET)
+            if (BYPASS_ROUTE_OFFSET == control->route)
             {
                 turn(control, input, BYPASS_ROUTE_PARALLEL, 0, action_id);
             }
@@ -483,26 +500,30 @@ void bypass_control_step(bypass_control_t *control, const bypass_input_t *input,
         fail(control);
     }
     output->route = (bypass_route_t)control->route;
-    if (control->route == BYPASS_ROUTE_FAILED || control->route == BYPASS_ROUTE_DONE)
+    if (BYPASS_ROUTE_FAILED == control->route || BYPASS_ROUTE_DONE
+        == control->route)
     {
         output->side_watch = false;
         return;
     }
     /* Start the look during the turn to parallel, so the car barely waits for
        the servo. */
-    output->side_watch = control->route == BYPASS_ROUTE_PARALLEL ||
-        control->route == BYPASS_ROUTE_PASS ||
-        control->route == BYPASS_ROUTE_REAR;
+    output->side_watch = BYPASS_ROUTE_PARALLEL == control->route ||
+        BYPASS_ROUTE_PASS == control->route ||
+        BYPASS_ROUTE_REAR == control->route;
     output->side_angle_deg = (int16_t)(-side * SERVO_LOOK_DEG);
-    if (control->work == BYPASS_WORK_TURN)
+    if (BYPASS_WORK_TURN == control->work)
     {
-        output->command = motion_command_make(MOTION_MODE_TURN, BYPASS_TURN_SPEED_MMPS,
+        output->command = motion_command_make(MOTION_MODE_TURN,
+            BYPASS_TURN_SPEED_MMPS,
             control->action_target, 0, control->action_id, input->now_ms);
     }
-    else if (control->work == BYPASS_WORK_DRIVE)
+    else if (BYPASS_WORK_DRIVE == control->work)
     {
-        output->command = motion_command_make(MOTION_MODE_DISTANCE, BYPASS_SPEED_MMPS,
-            control->action_target, control->route == BYPASS_ROUTE_REAR ? MOTION_TURN_RAMPED : 0,
+        output->command = motion_command_make(MOTION_MODE_DISTANCE,
+            BYPASS_SPEED_MMPS,
+            control->action_target, BYPASS_ROUTE_REAR == control->route
+                ? MOTION_TURN_RAMPED : 0,
             control->action_id, input->now_ms);
     }
 }
