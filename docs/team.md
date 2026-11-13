@@ -398,7 +398,7 @@ into the 12-bit fault word in this order: Motion bits 0-1, Line 2-4, Terrain
 | --- | --- | --- | --- |
 | Motion (Motion) | motor stall | encoder | - |
 | Line (Mission task) | IR invalid | barcode capture overflow | barcode event overflow |
-| Terrain (I/O) | IMU | calibration failed | impact |
+| Terrain (I/O) | IMU | calibration failed | lifted |
 | Obstacle (Mission task) | no echo | - | - |
 | Mission (Mission) | line lost | - | - |
 | Network (kernel transport) | Wi-Fi lost | broker lost | - |

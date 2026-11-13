@@ -57,6 +57,22 @@ with patch.dict(sys.modules, modules), patch.dict(cli.os.environ, {}, clear=True
             assert cli.main() == (0 if result == 0 else 1)
     with patch.object(sys, "argv", ["mqtt_client.py", "snapshot", "--broker", "unused"]):
         assert cli.main() == 0
+    sent = []
+    with patch.object(Client, "publish", lambda self, topic, payload, **kw: sent.append((topic, payload))
+                      or SimpleNamespace(wait_for_publish=lambda **kwargs: None)), \
+            patch.object(cli.time, "time", return_value=9), \
+            patch.object(sys, "argv", ["mqtt_client.py", "probe", "--broker", "unused"]):
+        assert cli.main() == 0
+    assert sent == [("robot/s3/request", bytes.fromhex("34 09 20 88")),
+                    ("robot/s3/request", bytes.fromhex("24 09 20 88 01")),
+                    ("robot/s3/request", bytes.fromhex("3F 09 64 64"))]
+    for _, frame in sent:  # the decoder the firmware mirrors refuses every probe
+        try:
+            cli.frame_type(frame)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"probe frame accepted: {frame.hex()}")
 # Arrival timestamps are not firmware timestamps. A packet burst or a long
 # disconnect must not be reported as a sudden wheel-speed change.
 with patch.object(cli.time, "monotonic", side_effect=(10.0, 10.05, 10.55, 14.0, 14.5)):
@@ -69,4 +85,4 @@ with patch.object(cli.time, "monotonic", side_effect=(10.0, 10.05, 10.55, 14.0, 
     recovered = estimator.measure(2000, 2000)
     assert recovered is not None and 80 < recovered[0] < 90
 
-print("mqtt CLI: PASS (OK/rejected/unknown ACKs, sequence matching, snapshot, burst-safe speed estimate)")
+print("mqtt CLI: PASS (OK/rejected/unknown ACKs, sequence matching, snapshot, probe frames, burst-safe speed estimate)")

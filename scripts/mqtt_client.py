@@ -3,6 +3,7 @@
   monitor          print telemetry, events and WHEEL/LINE traces, folding exact repeats (--raw: every frame as JSON)
   map L R S U      send the four mission-day letters (left, right, straight, U-turn)
   snapshot         request one telemetry snapshot
+  probe            send three bad requests (truncated, wrong version, drive) the robot must refuse
   serve            live web dashboard at http://127.0.0.1:8080 (scripts/dashboard.html);
                    the dashboard can send mappings and next-junction test directions
   --self-test      decode the golden vectors shared with testing/host/test_mqtt_frame.c
@@ -42,7 +43,7 @@ ACK_RESULT = ["OK", "BUSY", "INVALID request", "MALFORMED"]
 FAULTS = [
     ("Motion", ["motor stall", "encoder"]),
     ("Line", ["IR invalid", "barcode capture overflow", "barcode event overflow"]),
-    ("Terrain", ["IMU", "IMU calibration failed", "impact"]),
+    ("Terrain", ["IMU", "IMU calibration failed", "lifted"]),
     ("Obstacle", ["no echo"]),
     ("Mission", ["line lost"]),
     ("Network", ["WiFi lost", "broker lost"]),
@@ -63,6 +64,12 @@ def config_value(name, default):
 
 COUNTS_PER_MM = config_value("ENC_COUNTS_PER_MM", 11.649)
 HUMP_MM_PER_CODE = config_value("HUMP_MM_PER_COUNT", 1.0)
+TRACK_WIDTH_MM = config_value("TRACK_WIDTH_MM", 120.0)
+
+
+def turn_rate_dps(vl, vr):
+    """FR-20 turn rate in deg/s from wheel speeds in mm/s; positive turns left, as enc_heading_deg."""
+    return (vr - vl) / TRACK_WIDTH_MM * 57.2957795
 
 
 def name(table, index):
@@ -255,7 +262,7 @@ class Motion:
         if measured is None:
             return "speed n/a"
         vl, vr, direction = measured
-        return f"speed L={vl:.0f} R={vr:.0f} mm/s ({direction})"
+        return f"speed L={vl:.0f} R={vr:.0f} mm/s ({direction}) turn={turn_rate_dps(vl, vr):.0f} deg/s"
 
 
 def describe(frame, motion):
@@ -301,7 +308,8 @@ def dashboard_message(frame, motion):
         measured = motion.measure(t["left"], t["right"])
         t.update(type="telemetry", faults=active_faults(t["faults"]),
                  speed_left=measured and round(measured[0]), speed_right=measured and round(measured[1]),
-                 direction=measured[2] if measured else None)
+                 direction=measured[2] if measured else None,
+                 turn_rate_dps=measured and round(turn_rate_dps(measured[0], measured[1])))
         return t
     message = {"type": "event" if kind == EVENT else "ack" if kind == ACK else "other", "text": describe(frame, motion)}
     if kind == EVENT and frame[1] == 2:
@@ -321,7 +329,6 @@ class Dashboard:
         self.clients, self.lock = [], threading.Lock()
         self.status = None
         page = (Path(__file__).resolve().parent / "dashboard.html").read_bytes()
-        origin = f"http://127.0.0.1:{port}"
         self.send_direction = None
         self.send_mapping = None	# set by main once the MQTT client exists; returns the sequence sent
         dashboard = self
@@ -364,7 +371,7 @@ class Dashboard:
 
             def do_POST(self):
                 # Another site open in the same browser could post here; only this page may submit requests.
-                if self.path not in ("/map", "/direction") or self.headers.get("Origin") != origin \
+                if self.path not in ("/map", "/direction") or self.headers.get("Origin") not in origins \
                         or self.headers.get("Content-Type") != "application/json":
                     self.send_error(403)
                     return
@@ -397,7 +404,7 @@ class Dashboard:
 
         # Unauthenticated: keep it on host loopback (the --http-host default).
         self.server = ThreadingHTTPServer((host, port), Handler)
-        origin = f"http://127.0.0.1:{self.server.server_port}"
+        origins = tuple(f"http://{name}:{self.server.server_port}" for name in ("127.0.0.1", "localhost"))
         self.server.daemon_threads = True
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
 
@@ -431,9 +438,27 @@ def direction_frame(sequence, action):
     return bytes([VERSION << 4 | JUNCTION_TEST, sequence, action])
 
 
+DRIVE_PROBE = 15  # unassigned type: the protocol has no drive request
+
+
+def probe_frames(sequence):
+    """(label, frame, expected) for each request S1-U04 sends; each fails the firmware's type check."""
+    mapping = mapping_frame(sequence, "ABCD")
+    return [
+        ("truncated mapping", mapping[:-1], "drop it: wrong length, no ACK, state unchanged"),
+        (f"mapping as v{VERSION - 1}", bytes([(VERSION - 1) << 4 | MAPPING]) + mapping[1:],
+         "drop it: wrong version, no ACK, state unchanged"),
+        ("drive both wheels forward", bytes([VERSION << 4 | DRIVE_PROBE, sequence, 100, 100]),
+         "drop it: unknown type, no ACK, wheels stay still"),
+    ]
+
+
 def self_test():
     # 2026-10-31 measured rolling distance must agree with the firmware scale.
     assert abs((5833 + 5816) * 0.5 / COUNTS_PER_MM - 500.0) < 0.01
+    # FR-20: right wheel faster by pi/2 * track per second is a 90 deg/s left turn.
+    assert abs(turn_rate_dps(0, 3.14159265 / 2 * TRACK_WIDTH_MM) - 90) < 0.01
+    assert turn_rate_dps(-50, 50) == -turn_rate_dps(50, -50) > 0 and turn_rate_dps(80, 80) == 0
     golden_trace = bytes.fromhex("38 78 56 34 12 e8 03 0c be e3 03 1d fc 50 b0")
     trace = decode_wheel_trace(golden_trace)
     assert trace["sampled_ms"] == 0x12345678 and trace["output_ok"]
@@ -557,7 +582,7 @@ def self_test():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("action", nargs="?", choices=("monitor", "map", "snapshot", "serve"))
+    parser.add_argument("action", nargs="?", choices=("monitor", "map", "snapshot", "serve", "probe"))
     parser.add_argument("letters", nargs="*", help="map: four distinct letters for left, right, straight, U-turn")
     parser.add_argument("--broker", help="broker address")
     parser.add_argument("--port", type=int, default=1883)
@@ -659,6 +684,11 @@ def main():
             else:
                 print("Monitoring; Ctrl+C to exit.", flush=True)
             done.wait()
+            return 0
+        if args.action == "probe":
+            for label, frame, expected in probe_frames(sequence):
+                client.publish(args.root + "/request", frame, qos=1).wait_for_publish(timeout=5)
+                print(f"sent {label} ({frame.hex(' ')}); Pico should {expected}", flush=True)
             return 0
         payload = mapping_frame(sequence, letters) if args.action == "map" else bytes([VERSION << 4 | SNAPSHOT_REQUEST, sequence])
         client.publish(args.root + "/request", payload, qos=1).wait_for_publish(timeout=5)

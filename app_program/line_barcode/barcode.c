@@ -10,6 +10,7 @@
 #include "../app.h"
 #include "../common/drv_gpio_irq.h"
 #include "../comms/comms.h"
+#include "../common/trace_ring.h"
 #endif
 
 /* ---- Code 39 decoder and frame assembler ---- */
@@ -507,9 +508,8 @@ static void push_event(const barcode_event_t *event)
 
 /* 2026-11-02 diagnostics: raw run widths for the laptop, before any filtering.
    A full ring drops them; the sequence number shows the loss. */
-enum { RUN_TRACE_DEPTH = 8u };
-static uint8_t run_records[RUN_TRACE_DEPTH][MQTT_LEN_BARCODE_TRACE];
-static _Atomic uint32_t run_head, run_tail;
+static uint8_t run_records[TRACE_RING_DEPTH][MQTT_LEN_BARCODE_TRACE];
+static trace_ring_t run_ring;
 static uint16_t run_pending[MQTT_BARCODE_TRACE_RUNS];
 static uint8_t run_count; /* 0..MQTT_BARCODE_TRACE_RUNS */
 _Static_assert(MQTT_BARCODE_TRACE_RUNS <= UINT8_MAX, "run count fits");
@@ -517,7 +517,7 @@ static uint8_t run_sequence;
 
 static void run_trace_flush(void)
 {
-    uint32_t write = atomic_load_explicit(&run_head, memory_order_relaxed);
+    uint32_t slot;
     if (run_count == 0u)
     {
         return;
@@ -528,13 +528,13 @@ static void run_trace_flush(void)
     }
     run_count = 0u;
     uint8_t sequence = run_sequence++;
-    if (write - atomic_load_explicit(&run_tail, memory_order_acquire) >= RUN_TRACE_DEPTH)
+    if (!trace_ring_reserve(&run_ring, &slot))
     {
-        return;
+        return; /* sequence already advanced: the laptop sees the gap */
     }
-    (void)mqtt_encode_barcode_trace(run_records[write % RUN_TRACE_DEPTH],
+    (void)mqtt_encode_barcode_trace(run_records[slot],
         MQTT_LEN_BARCODE_TRACE, sequence, run_pending);
-    atomic_store_explicit(&run_head, write + 1u, memory_order_release);
+    trace_ring_commit(&run_ring);
 }
 
 /* One element the decoder accepted, or a long run it rejected; chatter is
@@ -554,17 +554,17 @@ static void run_trace_add(uint16_t width, bool black)
 
 unsigned barcode_trace_take(uint8_t *out, unsigned capacity)
 {
-    uint32_t read = atomic_load_explicit(&run_tail, memory_order_relaxed);
+    uint32_t slot;
     if (out == NULL || capacity < MQTT_LEN_BARCODE_TRACE ||
-        read == atomic_load_explicit(&run_head, memory_order_acquire))
+        !trace_ring_peek(&run_ring, &slot))
     {
         return 0u;
     }
     for (unsigned i = 0u; i < MQTT_LEN_BARCODE_TRACE; ++i)
     {
-        out[i] = run_records[read % RUN_TRACE_DEPTH][i];
+        out[i] = run_records[slot][i];
     }
-    atomic_store_explicit(&run_tail, read + 1u, memory_order_release);
+    trace_ring_release(&run_ring);
     return MQTT_LEN_BARCODE_TRACE;
 }
 
