@@ -673,7 +673,7 @@ recovery as before.
 Historical recovery storage revision before implementation: phase has five values plus
 invalid (3 logical bits; unused codes fail), leg 0..4 (3 bits), confirmation
 0..3 (3 bits, configurable through 7), and active-turn flag (1 bit). Held
-relative turn target is signed whole degrees -360..360 (10-bit signed bit-field,
+relative turn target is signed whole degrees -360..360 (10-bit unsigned bit-field, sign-extended,
 -512 reserved invalid, nearest rounding with ties away from zero; heading
 bounds and Motion construction reject out-of-range values). Two encoder
 origins and two unsigned 32-bit timestamps retain their existing wrap rules.
@@ -981,11 +981,11 @@ Storage extension (one writer per object; local floating point geometry only):
 
 | Field | Range / scale | Invalid / overflow | Logical bits / storage |
 | --- | --- | --- | --- |
-| Motion discrete target latch | -2000..2000 mm or degrees, whole units | Command mutation fails action | 12 / signed bit-field |
+| Motion discrete target latch | -2000..2000 mm or degrees, whole units | Command mutation fails action | 12 / unsigned bit-field, sign-extended |
 | Motion style latch | 0 pivot, 1 legacy swing, 2 invalid (removed smooth path), 3 ramped | Constructor validates | 2 / bit-field |
 | Mission output navigation rejection | 0 none, 1 measurements, 2 geometry, 3 entry | Console reports on stop transition; no wire change | 2 / bit-field |
 | Mission navigation phase | 0..6, 7 invalid | Invalid stops | 3 / existing field |
-| Mission turn advance | 1..2000 whole mm | Invalid stops before construction | 12 / signed bit-field |
+| Mission turn advance | 1..2000 whole mm | Invalid stops before construction | 12 / unsigned bit-field, sign-extended |
 | Mission locked/curved/exit flags | independent 0/1 | Reset/start manages encounter | 1 each / bit-fields |
 | Mission entry origins | encoder counts modulo configured width | Half-range modular arithmetic | 2 x ENC_COUNT_BITS / uint16 |
 | Barcode diagnostic | 2 wrapping counts, width 0..65535 counts; result 0..6; orientation 0/1; letter 0..25 or 31; action 0..4 | Width saturates; queue drops counted; no guessed letter | 16+16+16+3+1+5+3 / 8 bytes on target |

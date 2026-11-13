@@ -3,8 +3,34 @@
 #include <stdio.h>
 #include "../../app_program/obstacle/obstacle.h"
 
+/* Signed values stored in unsigned bit-fields round-trip at both ends of the
+   width, through the helper alone and through a real packed field. */
+static void test_signed_fields(void)
+{
+    static const unsigned widths[] = {10u, 11u, 12u, 21u, 23u};
+    for (unsigned i = 0u; i < sizeof widths / sizeof widths[0]; ++i)
+    {
+        int32_t max = (int32_t)(1u << (widths[i] - 1u)) - 1;
+        const int32_t values[] = {-max - 1, -1, 0, max};
+        for (unsigned v = 0u; v < 4u; ++v)
+        {
+            assert(rd_sext(rd_swrap(values[v], widths[i]), widths[i]) == values[v]);
+        }
+    }
+    ObstacleProfile_t p = {0};
+    const int16_t coords[] = {-1024, -1, 0, 1023};
+    for (unsigned v = 0u; v < 4u; ++v)
+    {
+        p.obstacle_left_mm = rd_swrap(coords[v], OBSTACLE_COORD_BITS);
+        p.obstacle_forward_mm = rd_swrap(-coords[v] - 1, OBSTACLE_COORD_BITS);
+        assert(obstacle_profile_left_mm(&p) == coords[v]);
+        assert(obstacle_profile_forward_mm(&p) == -coords[v] - 1);
+    }
+}
+
 int main(void)
 {
+    test_signed_fields();
     /* Scan state fits 3 bits; an invalid state is rejected / decoded as FAILED. */
     uint32_t w = 99u;
     for (unsigned s = 0; s < OBSTACLE_SCAN_STATE_COUNT; ++s) {

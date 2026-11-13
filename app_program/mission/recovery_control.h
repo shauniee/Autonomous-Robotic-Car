@@ -12,6 +12,9 @@ typedef enum
     RECOVERY_DONE,
     RECOVERY_FAILED
 } recovery_phase_t;
+/* Width of turn_degrees: signed, stored unsigned, read with rd_sext. */
+#define RECOVERY_TURN_DEGREES_BITS 10u
+
 typedef struct
 {
     enc_count_t origin[2];
@@ -20,7 +23,7 @@ typedef struct
     uint8_t right : 1;
     uint8_t turning : 1;
     uint8_t seen : 1; /* a sensor has been black since begin */
-    int16_t turn_degrees : 10; /* held relative target, -360..360 degrees */
+    uint16_t turn_degrees : RECOVERY_TURN_DEGREES_BITS; /* -360..360 deg */
 } recovery_control_t;
 typedef struct
 {

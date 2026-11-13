@@ -128,22 +128,37 @@ typedef struct __attribute__((packed))
 _Static_assert(BYPASS_MAX_OFFSET_MM < OBSTACLE_PROFILE_MAX_MM,
     "profile cap below bypass reach");
 
+/* Width of the signed box coordinates, stored unsigned (rd_sext, rd_swrap). */
+#define OBSTACLE_COORD_BITS 11u
+_Static_assert(OBSTACLE_PROFILE_MAX_MM < (1u << (OBSTACLE_COORD_BITS - 1u)),
+    "profile cap must fit the signed coordinate width");
+
 typedef struct __attribute__((packed))
 {
-    int8_t closest_angle_deg : 7;
+    uint8_t closest_angle_deg : 7; /* always 0, unused */
     uint8_t valid : 1;
     uint16_t closest_mm : 10;
     uint16_t width_mm : 10;
     uint16_t left_clearance_mm : 10;
     uint16_t right_clearance_mm : 10;
-    int16_t obstacle_forward_mm : 11;
-    int16_t obstacle_left_mm : 11;
+    uint16_t obstacle_forward_mm : OBSTACLE_COORD_BITS; /* signed */
+    uint16_t obstacle_left_mm : OBSTACLE_COORD_BITS; /* signed */
 } ObstacleProfile_t;
 
 _Static_assert(sizeof(ObstacleRay_t) == 3u,
     "packed obstacle ray must use 24 bits");
 _Static_assert(sizeof(ObstacleProfile_t) == 9u,
     "obstacle profile layout changed unexpectedly");
+
+static inline int16_t obstacle_profile_forward_mm(const ObstacleProfile_t *p)
+{
+    return (int16_t)rd_sext(p->obstacle_forward_mm, OBSTACLE_COORD_BITS);
+}
+
+static inline int16_t obstacle_profile_left_mm(const ObstacleProfile_t *p)
+{
+    return (int16_t)rd_sext(p->obstacle_left_mm, OBSTACLE_COORD_BITS);
+}
 
 static inline uint16_t obstacle_profile_mm(uint32_t mm)
 {

@@ -378,7 +378,8 @@ static void handle_follow(Mission_t *m, const MissionInputs_t *in,
         m->cross_side = m->line_side;
         m->exit_seen = 0u;
         mission_turn_target_set(m, action);
-        m->turn_length_mm = turning ? (int16_t)lroundf(d) : 0;
+        m->turn_length_mm = turning ?
+            rd_swrap((int32_t)lroundf(d), MISSION_TURN_LENGTH_BITS) : 0u;
         m->phase = JUNCTION_PHASE_ADVANCE;
         m->current_action = next_action_id(m);
         m->broad_origin[0] = in->wheel_count[0];
@@ -522,7 +523,8 @@ static void run_bypass(Mission_t *m, const MissionInputs_t *in,
         m->exit_seen = 0u;
         mission_turn_target_set(m, m->bypass.left_side ? BARCODE_LEFT
             : BARCODE_RIGHT);
-        m->turn_length_mm = NAV_SENSOR_FORWARD_MM;
+        m->turn_length_mm = rd_swrap(NAV_SENSOR_FORWARD_MM,
+        MISSION_TURN_LENGTH_BITS);
         m->phase = JUNCTION_PHASE_ADVANCE;
         m->current_action = next_action_id(m);
         m->broad_origin[0] = in->wheel_count[0];
@@ -574,9 +576,10 @@ static void enter_bypass(Mission_t *m, const MissionInputs_t *in,
         return;
     }
     m->scan_stopping = 1u;
-    m->turn_length_mm = (int16_t)(now_mm - (int32_t)MISSION_OBSTACLE_STOP_MM
+    m->turn_length_mm = rd_swrap(now_mm - (int32_t)MISSION_OBSTACLE_STOP_MM
         > stop_mm ?
-        now_mm - (int32_t)MISSION_OBSTACLE_STOP_MM : stop_mm);
+        now_mm - (int32_t)MISSION_OBSTACLE_STOP_MM : stop_mm,
+        MISSION_TURN_LENGTH_BITS);
     m->current_action = next_action_id(m);
     handle_scan(m, in, out);
 }
@@ -629,7 +632,8 @@ static void handle_scan(Mission_t *m, const MissionInputs_t *in,
                safety stops. */
             out->command = motion_command_make(MOTION_MODE_DISTANCE,
                 MISSION_TRACK_SPEED_MMPS,
-                m->turn_length_mm, MOTION_TURN_RAMPED, m->current_action,
+                rd_sext(m->turn_length_mm, MISSION_TURN_LENGTH_BITS),
+                MOTION_TURN_RAMPED, m->current_action,
                     in->now_ms);
         }
         return;
@@ -716,8 +720,10 @@ static void handle_scan(Mission_t *m, const MissionInputs_t *in,
                 .left_clearance_mm = obstacle_profile_mm(in->left_clearance_mm),
                 .right_clearance_mm =
                     obstacle_profile_mm(in->right_clearance_mm),
-                .obstacle_forward_mm = in->profile_forward_mm,
-                .obstacle_left_mm = in->profile_left_mm};
+                .obstacle_forward_mm = rd_swrap(in->profile_forward_mm,
+                    OBSTACLE_COORD_BITS),
+                .obstacle_left_mm = rd_swrap(in->profile_left_mm,
+                    OBSTACLE_COORD_BITS)};
         bypass_input_t input = bypass_input(in);
         if (!MISSION_BYPASS_RELEASED)
         {
@@ -816,8 +822,8 @@ static void handle_junction_turn(Mission_t *m, const MissionInputs_t *in,
     {
         out->command = motion_command_make(MOTION_MODE_DISTANCE,
             MISSION_TRACK_SPEED_MMPS,
-            m->turn_length_mm, MOTION_TURN_RAMPED,
-            m->current_action, in->line_sampled_ms);
+            rd_sext(m->turn_length_mm, MISSION_TURN_LENGTH_BITS),
+            MOTION_TURN_RAMPED, m->current_action, in->line_sampled_ms);
         if (in->motion_action == m->current_action &&
             RD_MOTION_DONE == in->motion_status)
         {

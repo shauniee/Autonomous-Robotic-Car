@@ -17,7 +17,7 @@ Closes #
 ## Checklist
 
 - [ ] No `config/wifi_secrets.h`, credentials, `*.elf`, `*.uf2`, `*.map` or video files in the diff
-- [ ] `python3 scripts/check_barr.py --base origin/main` passes
+- [ ] `python3 scripts/check_barr.py --all` passes
 - [ ] Host tests added or updated (`bash testing/host/run.sh`)
 - [ ] Car runs recorded in the test log, with the exact commit
 - [ ] Docs, subsystem README or AGENTS.md updated if behaviour or commands changed

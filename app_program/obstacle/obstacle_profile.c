@@ -114,12 +114,13 @@ static uint16_t distance_code(float value)
             OBSTACLE_PROFILE_MAX_MM : (uint16_t)(value + 0.5f));
 }
 
-static int16_t coordinate_code(float value)
+static uint16_t coordinate_code(float value)
 {
     const float limit = (float)OBSTACLE_PROFILE_MAX_MM;
-    return value <= -limit ? -(int16_t)OBSTACLE_PROFILE_MAX_MM :
-        (value >= limit ? (int16_t)OBSTACLE_PROFILE_MAX_MM :
-            (int16_t)lroundf(value));
+    return (uint16_t)rd_swrap(value <= -limit ?
+        -(int32_t)OBSTACLE_PROFILE_MAX_MM :
+        (value >= limit ? (int32_t)OBSTACLE_PROFILE_MAX_MM :
+            (int32_t)lroundf(value)), OBSTACLE_COORD_BITS);
 }
 
 static float plane_left(float forward, float angle)

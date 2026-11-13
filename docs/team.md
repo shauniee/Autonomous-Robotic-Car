@@ -157,7 +157,7 @@ software copy or brake acknowledgement is not physical stationarity.
 
 ## 5. Coding rules
 
-Apply to new or changed application code (imported kernel need not be reformatted). The standard is BARR-C:2018 (Barr Group), applied as the source allows for legacy code: changed lines must comply, and older code is converted as it is touched. Its license limits it to internal use, so keep it out of this repository. This is not a compliance certification. `python3 scripts/check_barr.py` scans changed `app_program` lines for the mechanical rules below (`--all` for every line); a Claude Code hook runs it once Claude has finished its edits, before it reports them. The review checklist stays manual.
+Apply to application code (imported kernel need not be reformatted). The standard is BARR-C:2018 (Barr Group): all `app_program` code complies and CI checks every line. Its license limits it to internal use, so keep it out of this repository. This is not a compliance certification. `python3 scripts/check_barr.py --all` scans every `app_program` line for the mechanical rules below (without `--all` it scans only changed lines); a Claude Code hook runs it once Claude has finished its edits, before it reports them. The review checklist stays manual.
 
 - **Language/layout:** GNU C11 (`-std=gnu11`). Use C11 acquire/release for word snapshots and startup publication; no atomic RMW helpers on Cortex-M0+. Isolate other extensions in drivers. Four spaces, LF, one statement per line, braces on every body, opening brace on its own line, ~80 columns. Space operators, parenthesize precedence, comment purpose/units/bounds/assumptions, remove dead code.
 - **Modules:** one purpose each; lowercase `snake_case.c/.h`, guarded header, minimal exports; never include a `.c` or absolute path. Public functions prefixed with module name; private `static`. Named constants; prefer functions to macros (macros evaluate args once, parenthesized). Types `module_name_t`.
@@ -186,10 +186,12 @@ range needs, stored is what the field occupies.
   `_Static_assert` beside the field proves the largest enumerator or configured
   maximum fits, so a later config change fails the build instead of truncating.
   Computed values are clamped or saturated before the store.
-- **Signed values** use the smallest signed type (`int8_t`, `int16_t`).
-  BARR-C:2018 rule 5.3.a forbids new signed bit-fields. Signed bit-fields that
-  existed before the change (profile coordinates, bypass Q8 pose, Motion
-  target and acceleration, turn length, calibration sums) are kept.
+- **Signed values** use the smallest signed type (`int8_t`, `int16_t`) outside
+  bit-fields. BARR-C:2018 rule 5.3.a forbids signed bit-fields, so a signed
+  value packed into a bit-field (profile coordinates, bypass Q8 pose, Motion
+  target and acceleration, turn length, recovery turn degrees, calibration
+  sums) is stored unsigned in the same width, read with `rd_sext(raw, bits)`
+  and written with `rd_swrap(value, bits)` (`common/robot_data.h`).
 - **Shared data** has one writer per storage unit. A single value shared across
   cores or with an ISR uses the smallest lock-free C11 atomic (8, 16 or 32-bit
   load and store; Cortex-M0+ has no atomic read-modify-write). Atomics cannot be
@@ -221,12 +223,12 @@ range needs, stored is what the field occupies.
 | Health flags | `MotionHealth_t.flags` | stopped, braked, serviced once | 3 / 8 | bits 0-2 | Motion → Mission, Safety, Terrain; mutex copy |
 | Health time | `MotionHealth_t.serviced_ms` | ms | 32 | `uint32_t` | same |
 | Stop requests, stops serviced | `motion.c` | change counters | 32 each | `_Atomic uint32_t`; core 0 loads serviced first | core-1 callers under DI, Motion → Terrain (core 0) |
-| Action target | `MotionController_t` | -2000..2000 | 12 | signed bit-field (kept) | Motion only |
+| Action target | `MotionController_t` | -2000..2000 | 12 | unsigned bit-field, sign-extended | Motion only |
 | Turn style, turn arrived | `MotionController_t` | 0..3 each | 2 each | bit-fields | Motion only |
 | Mode, status | `MotionController_t` | 0..3 each | 2 each | bit-fields | Motion only |
 | Active, action ID | `MotionController_t` | 0..1, 0..63 | 1, 6 | bit-fields | Motion only |
 | Follow base speed | `MotionController_t` | Q6 mm/s | 15 | bit-field | Motion only |
-| Profile acceleration | `MotionController_t` | signed mm/s² | 11 | signed bit-field (kept) | Motion only |
+| Profile acceleration | `MotionController_t` | signed mm/s² | 11 | unsigned bit-field, sign-extended | Motion only |
 | Origin and previous counts | `MotionController_t` | encoder counts | 16 each | `enc_count_t` | Motion only |
 | PID integral, previous speed | `WheelPid_t` | Q4 counts, counts/s | 16 each | `int16_t` | Motion only |
 | Input counts | `MotionInput_t.count[2]` | encoder counts | 16 each | `enc_count_t` | per release |
@@ -267,7 +269,7 @@ range needs, stored is what the field occupies.
 | Consecutive misses | `obstacle_acquisition_t` | 0..3, saturates at the limit | 2 | bit-field | Mission task |
 | Ray | `ObstacleRay_t` | angle ±60 deg, 0..8190 mm, valid | 8+13+1 | packed 3 bytes | Mission task |
 | Profile distances | `ObstacleProfile_t` | closest, width, clearances 0..1023 mm | 10 each | bit-fields, saturate | Mission → Comms; mutex copy |
-| Profile coordinates | `ObstacleProfile_t` | ±1023 mm; angle ±60 deg | 11 each; 7 | signed bit-fields (kept) | same |
+| Profile coordinates | `ObstacleProfile_t` | ±1023 mm; angle ±60 deg | 11 each; 7 | unsigned bit-fields, sign-extended | same |
 | Width uncertainty | `obstacle_profile_evidence_t` | 0..1023 mm, 2047 unknown | 11 | bit-field | same |
 | Planning width | `obstacle_profile_evidence_t` | 0..1023 mm | 10 | bit-field | same |
 | Ray counts, edge flags | `obstacle_profile_evidence_t` | 0..15; flags | 4 each; 1 each | bit-fields | same |
@@ -285,7 +287,7 @@ range needs, stored is what the field occupies.
 | Terrain word | `terrain.c` `terrain_word` | last and max code 0..127, count 0..255, state 0..2, height valid, calibrated | 7+7+8+2+1+1 = 26 / 32 | `rd_word_t`; bit 24 and 27-31 spare | I/O (core 0) → Comms |
 | Startup outcome | `terrain.c` | pending, done, failed | 2 / 8 | `_Atomic uint8_t` | I/O (core 0) → Mission (core 1) |
 | Filtered acceleration | `TerrainContext_t` | Q16 raw LSB | 32 each | `int32_t` | I/O only |
-| Calibration sums | `TerrainCalibSum_t` | ±3276800 | 23 each | signed bit-fields, packed 9 bytes (kept) | I/O only |
+| Calibration sums | `TerrainCalibSum_t` | ±3276800 | 23 each | unsigned bit-fields, sign-extended, packed 9 bytes | I/O only |
 | Roll baseline | `TerrainContext_t.roll_base_q8` | ±2.3 M, Q8 cdeg | 23 / 32 | `int32_t` (signed) | I/O only |
 | Peak rise | `TerrainContext_t.rise_q` | 0..1200, 0.1 mm | 11 | bit-field, saturates | I/O only |
 | Tilted travel | `TerrainContext_t.travel_counts` | 0..4660 counts | 13 | bit-field, saturates | I/O only |
@@ -307,7 +309,7 @@ range needs, stored is what the field occupies.
 | Junction and scan flags (12) | `Mission_t` | flags | 1 each | bit-fields | Mission only |
 | Line integral | `Mission_t.line_i_q` | 0..45, Q7 | 6 | bit-field | Mission only |
 | Action IDs | `Mission_t.action_id`, `current_action` | 1..63 | 6 each | bit-fields | Mission only |
-| Turn length | `Mission_t.turn_length_mm` | ±2000 mm | 12 | signed bit-field (kept) | Mission only |
+| Turn length | `Mission_t.turn_length_mm` | ±2000 mm | 12 | unsigned bit-field, sign-extended | Mission only |
 | Touch sides | `Mission_t.line_side`, `line_prev`, `cross_side` | -1, 0, +1 | 2 / 8 each | `int8_t` (signed) | Mission only |
 | Steering target | `Mission_t.line_steer_q` | -127..127, Q7 | 8 | `int8_t` | Mission only |
 | Reverse distances | `Mission_t.backup_mm`, `backed_mm` | 0..150 mm | 8 each | `uint8_t` | Mission only |
@@ -321,7 +323,7 @@ range needs, stored is what the field occupies.
 | Side watch angle out | `MissionOutputs_t` | ±60 deg | 7 / 8 | `int8_t` | per release |
 | Flags out (9) | `MissionOutputs_t` | flags | 1 each | bit-fields | per release |
 | Bypass route, work | `bypass_control_t` | 0..8; 0..3 | 4; 2 | bit-fields | Mission only |
-| Bypass pose | `bypass_control_t` | Q8 mm | 21 each | signed bit-fields (kept) | Mission only |
+| Bypass pose | `bypass_control_t` | Q8 mm | 21 each | unsigned bit-fields, sign-extended | Mission only |
 | Bypass edge budget | `bypass_control_t.edge_counts` | 0..93192 counts | 17 | bit-field | Mission only |
 | Bypass half width | `bypass_control_t.half_width_mm` | 0..511 mm | 9 | bit-field | Mission only |
 | Bypass samples, flags, action ID | `bypass_control_t` | 0..7, 0..3, flags, 0..63 | 3, 2, 1, 6 | bit-fields | Mission only |
@@ -329,7 +331,7 @@ range needs, stored is what the field occupies.
 | Bypass geometry | `bypass_control_t` | centre, front ±1023 mm; offset, flank, heading, target unbounded | 11 / 16; 16 | `int16_t`, `uint16_t` | Mission only |
 | Bypass and recovery inputs | `bypass_input_t`, `recovery_input_t` | counts; ranges 0..8190; status 0..3; action 0..63; flags | 16; 13; 2; 6; 1 | `enc_count_t`, bit-fields | per release |
 | Recovery phase | `recovery_control_t`, `recovery_output_t` | 0..3 | 2 | bit-field | Mission only |
-| Recovery turn | `recovery_control_t` | ±360 deg | 10 | signed bit-field (kept) | Mission only |
+| Recovery turn | `recovery_control_t` | ±360 deg | 10 | unsigned bit-field, sign-extended | Mission only |
 | Latched causes | `safety.c` `latched` | 4 cause bits | 4 / 32 | `rd_word_t` | Mission (Safety step) → Mission |
 | Reset state | `safety.c` | 0..3 | 2 / 8 | `uint8_t`, passed by pointer | Mission only |
 | Button flags | `Button_t`, `ButtonInputs_t` | flags | 1 each | bit-fields | Mission task |

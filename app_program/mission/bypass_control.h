@@ -6,6 +6,14 @@
 #include "../motion/motion.h"
 #include "../obstacle/obstacle.h"
 
+/* Width of the signed Q8 position fields, stored unsigned (rd_sext). */
+#define BYPASS_Q8_BITS 21u
+
+static inline int32_t bypass_q8(uint32_t raw)
+{
+    return rd_sext(raw, BYPASS_Q8_BITS);
+}
+
 typedef enum
 {
     BYPASS_ROUTE_OUT, BYPASS_ROUTE_OFFSET, BYPASS_ROUTE_PARALLEL,
@@ -25,18 +33,18 @@ typedef struct
     uint32_t action_ms;
     uint32_t sensor_sequence;
     /* Fill spare bits in the Q8 storage words without unaligned accesses. */
-    int32_t forward_q8 : 21;
+    uint32_t forward_q8 : BYPASS_Q8_BITS;
     uint8_t route : 4; /* bypass_route_t */
     uint8_t work : 2; /* bypass_work_t */
     uint8_t left_side : 1;
     uint8_t edge_open : 1;
     uint8_t close_samples : 2;
     uint8_t return_white : 1; /* RETURN: the sensors have seen white */
-    int32_t left_q8 : 21;
+    uint32_t left_q8 : BYPASS_Q8_BITS;
     uint8_t edge_samples : 3;
     uint8_t action_id : 6;
-    int32_t rear_clear_q8 : 21;
-    int32_t edge_forward_q8 : 21;
+    uint32_t rear_clear_q8 : BYPASS_Q8_BITS;
+    uint32_t edge_forward_q8 : BYPASS_Q8_BITS;
     uint32_t edge_counts : 17; /* <= 2 x BYPASS_TRAVEL_MM of edges, 93192 */
     uint16_t half_width_mm : 9; /* half the 10-bit profile width */
     /* Signed: smallest signed type (BARR-C 5.3.a). Profile coordinates are
