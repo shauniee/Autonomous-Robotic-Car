@@ -1,4 +1,5 @@
-/* Line and barcode public interface: line classification, barcode decoding and task API. */
+/* Line and barcode public interface: line classification, barcode decoding
+   and task API. */
 #ifndef LINE_BARCODE_H
 #define LINE_BARCODE_H
 
@@ -35,7 +36,8 @@ static inline IrRawWord ir_raw_word(IrRaw raw, bool valid)
 {
     uint32_t left = raw.left > IR_RAW_MASK ? IR_RAW_MASK : raw.left;
     uint32_t right = raw.right > IR_RAW_MASK ? IR_RAW_MASK : raw.right;
-    return (IrRawWord)(left | right << IR_RAW_BITS | (valid ? 1u : 0u) << IR_RAW_VALID_BIT);
+    return (IrRawWord)(left | right << IR_RAW_BITS |
+        (valid ? 1u : 0u) << IR_RAW_VALID_BIT);
 }
 
 static inline IrRaw ir_raw_word_raw(IrRawWord word)
@@ -70,8 +72,8 @@ _Static_assert(IR_SCALE_ONE < 128, "IR fractions fit 7 bits");
 typedef struct
 {
     uint32_t sample_ms;
-    IrRawWord raw;		/* latest pair; valid flag = sample valid */
-    uint8_t line : 2;		/* IrLine */
+    IrRawWord raw; /* latest pair; valid flag = sample valid */
+    uint8_t line : 2; /* IrLine */
     uint8_t have_sample : 1;
 } IrTracker;
 
@@ -99,8 +101,8 @@ IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now);
 typedef struct
 {
     uint32_t sampled_ms;
-    IrRawWord raw;		/* valid flag = acquisition valid */
-    uint8_t line : 2;		/* IrLine */
+    IrRawWord raw; /* valid flag = acquisition valid */
+    uint8_t line : 2; /* IrLine */
     uint8_t left_black : 1;
     uint8_t right_black : 1;
     uint8_t have_sample : 1;
@@ -112,7 +114,8 @@ typedef struct
 /* right - left: -IR_SCALE_ONE left black, +IR_SCALE_ONE right black. */
 static inline int8_t ir_snapshot_error(const LineIrSnapshot *snapshot)
 {
-    return (int8_t)(((int)snapshot->right_black - (int)snapshot->left_black) * IR_SCALE_ONE);
+    return (int8_t)(((int)snapshot->right_black -
+        (int)snapshot->left_black) * IR_SCALE_ONE);
 }
 
 LineIrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t now);
@@ -125,26 +128,31 @@ const char *ir_tracking_line_name(IrLine line);
 
 /* Called only by line_barcode; shared timebase must already be initialized. */
 bool drv_ir_tracking_init(void);
-/* False leaves *raw unchanged. No connectivity inference from digital levels. */
+/* False leaves *raw unchanged. No connectivity inference from digital
+   levels. */
 bool drv_ir_tracking_read(IrRaw *raw);
 
 /*
- *	Kernel-free barcode types, Code 39 decoder and frame assembler: turns edges
- *	(level plus the two wheel encoder counts at the edge) into element widths
- *	measured in encoder travel, and tries the last 25 elements as a symbol.
+ *    Kernel-free barcode types, Code 39 decoder and frame assembler: turns
+ *    edges (level plus the two wheel encoder counts at the edge) into element
+ *    widths measured in encoder travel, and tries the last 25 elements as a
+ *    symbol.
  */
 
-#define BARCODE_ELEMENTS 25u	/* end of the first guard, gap, letter, gap, last guard */
+/* end of the first guard, gap, letter, gap, last guard */
+#define BARCODE_ELEMENTS 25u
 #define BARCODE_ALPHABET 26u
 
 /* Encoder counts as line_barcode stores them: the shared ENC_COUNT_BITS width,
    wrapped. Travel between two counts uses modular subtraction (motion.h). */
 typedef uint16_t barcode_count_t;
-_Static_assert(ENC_COUNT_BITS <= 16u, "barcode_count_t narrower than ENC_COUNT_BITS");
+_Static_assert(ENC_COUNT_BITS <= 16u,
+    "barcode_count_t narrower than ENC_COUNT_BITS");
 /* The longest window (25 elements at the longest width) spans less than half
    the count range, so modular subtraction inside a frame cannot alias. A wider
    or narrower ENC_COUNT_BITS (D03) re-checks this bound. */
-_Static_assert((uint32_t)BARCODE_ELEMENTS * BARCODE_MAX_ELEMENT_COUNTS < ENC_COUNT_MASK / 2u,
+_Static_assert((uint32_t)BARCODE_ELEMENTS * BARCODE_MAX_ELEMENT_COUNTS <
+    ENC_COUNT_MASK / 2u,
     "longest window must span less than half the encoder count range");
 
 typedef enum
@@ -191,10 +199,13 @@ typedef struct
 static inline void barcode_event_set(barcode_event_t *e, char symbol,
     barcode_action_t action, barcode_orientation_t orientation)
 {
-    unsigned letter = symbol >= 'A' && symbol <= 'Z' ? (unsigned)(symbol - 'A') : BARCODE_NO_LETTER;
-    unsigned a = (unsigned)action <= (unsigned)BARCODE_U_TURN ? (unsigned)action : (unsigned)BARCODE_UNMAPPED;
+    unsigned letter = symbol >= 'A' && symbol <= 'Z' ?
+        (unsigned)(symbol - 'A') : BARCODE_NO_LETTER;
+    unsigned a = (unsigned)action <= (unsigned)BARCODE_U_TURN ?
+        (unsigned)action : (unsigned)BARCODE_UNMAPPED;
     e->packed = (uint16_t)(letter | a << BARCODE_EVENT_ACTION_SHIFT |
-        (orientation == BARCODE_REVERSE ? 1u : 0u) << BARCODE_EVENT_ORIENTATION_SHIFT);
+        (BARCODE_REVERSE == orientation ? 1u : 0u) <<
+        BARCODE_EVENT_ORIENTATION_SHIFT);
 }
 
 /* 0-25 for 'A'-'Z', BARCODE_NO_LETTER otherwise. */
@@ -208,13 +219,16 @@ static inline barcode_action_t barcode_event_action(const barcode_event_t *e)
     return (barcode_action_t)(e->packed >> BARCODE_EVENT_ACTION_SHIFT & 0x7u);
 }
 
-static inline barcode_orientation_t barcode_event_orientation(const barcode_event_t *e)
+static inline barcode_orientation_t barcode_event_orientation(
+    const barcode_event_t *e)
 {
-    return (e->packed >> BARCODE_EVENT_ORIENTATION_SHIFT & 1u) ? BARCODE_REVERSE : BARCODE_FORWARD;
+    return (e->packed >> BARCODE_EVENT_ORIENTATION_SHIFT & 1u) ?
+        BARCODE_REVERSE : BARCODE_FORWARD;
 }
 
-/* Pure, bounded decoder of the last 25 elements of *X*, in travel order. BARCODE_NO_RESULT if these widths are not a
-   symbol. Failure leaves destinations unchanged. */
+/* Pure, bounded decoder of the last 25 elements of *X*, in travel order.
+   BARCODE_NO_RESULT if these widths are not a symbol. Failure leaves
+   destinations unchanged. */
 barcode_result_t barcode_decode(const uint16_t widths[BARCODE_ELEMENTS],
     char *symbol, barcode_orientation_t *orientation);
 
@@ -263,13 +277,14 @@ barcode_action_t barcode_action_for(uint32_t mapping_word, char symbol);
 
 /*
  *  GP27 edge capture. The dispatcher (core 1) calls the edge handler, which
- *	pushes {both encoder counts, level} into a single-producer /
- *	single-consumer ring and returns. The task drains the ring.
+ *    pushes {both encoder counts, level} into a single-producer /
+ *    single-consumer ring and returns. The task drains the ring.
  */
 
 typedef struct
 {
-    barcode_count_t left_count, right_count;	/* wrapped at ENC_COUNT_BITS */
+    barcode_count_t left_count;
+    barcode_count_t right_count; /* wrapped at ENC_COUNT_BITS */
     bool high : 1; /* GP27 level after the edge, or enable-time reference */
 } barcode_edge_t;
 
@@ -325,8 +340,11 @@ unsigned barcode_trace_take(uint8_t *out, unsigned capacity);
 
 /* line_barcode-task-only optional diagnostic ring. Never called from
    ISR/Mission. */
-typedef struct {
-    uint16_t left, right, width;
+typedef struct
+{
+    uint16_t left;
+    uint16_t right;
+    uint16_t width;
     uint16_t result : 3;
     uint16_t orientation : 1;
     uint16_t letter : 5; /* 0..25, 31 unavailable */

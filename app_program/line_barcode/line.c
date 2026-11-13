@@ -14,8 +14,8 @@ IrReading ir_tracking_reading(IrRaw raw)
     {
         return reading;
     }
-    reading.left_fraction = raw.left == IR_BLACK_LEVEL ? IR_SCALE_ONE : 0u;
-    reading.right_fraction = raw.right == IR_BLACK_LEVEL ? IR_SCALE_ONE : 0u;
+    reading.left_fraction = IR_BLACK_LEVEL == raw.left ? IR_SCALE_ONE : 0u;
+    reading.right_fraction = IR_BLACK_LEVEL == raw.right ? IR_SCALE_ONE : 0u;
     reading.error = (int8_t)(reading.right_fraction - reading.left_fraction);
     reading.valid = true;
     return reading;
@@ -32,7 +32,7 @@ void ir_tracking_init(IrTracker *tracker)
 void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
     uint32_t now)
 {
-    if (tracker == NULL)
+    if (NULL == tracker)
     {
         return;
     }
@@ -49,7 +49,7 @@ void ir_tracking_sample(IrTracker *tracker, IrRaw raw, bool acquired,
 IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
 {
     IrTrackingOutput output = {0};
-    if (tracker == NULL)
+    if (NULL == tracker)
     {
         return output;
     }
@@ -57,7 +57,7 @@ IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
     bool usable = tracker->have_sample && ir_raw_word_valid(tracker->raw) &&
         (uint32_t)(now - tracker->sample_ms) <= IR_MAX_GAP_MS;
     output.line = usable ? tracker->line : (uint8_t)IR_LINE_UNKNOWN;
-    output.valid = usable && output.line == IR_LINE_VISIBLE;
+    output.valid = usable && IR_LINE_VISIBLE == output.line;
     output.error = output.valid ?
         ir_tracking_reading(ir_raw_word_raw(tracker->raw)).error : 0;
     return output;
@@ -65,7 +65,7 @@ IrTrackingOutput ir_tracking_output(const IrTracker *tracker, uint32_t now)
 
 void ir_snapshot_refresh(LineIrSnapshot *snapshot, uint32_t now)
 {
-    if (snapshot == NULL)
+    if (NULL == snapshot)
     {
         return;
     }
@@ -85,7 +85,7 @@ void ir_snapshot_refresh(LineIrSnapshot *snapshot, uint32_t now)
 LineIrSnapshot ir_snapshot_build(const IrTracker *tracker, uint32_t now)
 {
     LineIrSnapshot snapshot = {0};
-    if (tracker == NULL)
+    if (NULL == tracker)
     {
         return snapshot;
     }
@@ -141,7 +141,7 @@ bool drv_ir_tracking_init(void)
 
 bool drv_ir_tracking_read(IrRaw *raw)
 {
-    if (raw == NULL)
+    if (NULL == raw)
     {
         return false;
     }
