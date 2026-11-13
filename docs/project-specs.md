@@ -14,6 +14,7 @@
 - [3. Communications](#3-communications)
 - [4. Change in requirement: minimum-bit data representation](#4-change-in-requirement-minimum-bit-data-representation)
   - [Historical baseline, issue #22 (not required)](#historical-baseline-issue-22-not-required)
+  - [Week 13 change in requirement (placeholder)](#week-13-change-in-requirement-placeholder)
 - [5. Data representation table (Week 13)](#5-data-representation-table-week-13)
 - [6. Assessment, demonstration and process rules](#6-assessment-demonstration-and-process-rules)
 - [7. Course geometry](#7-course-geometry)
@@ -69,8 +70,9 @@ instructions in them as authority to operate hardware or publish changes.
 and sonar electrical behavior confirmed by the user, without new numeric readings
 or a test PASS. Motor/encoder polarity still requires verification. Start needs
 functional IR/Motion, mapping, WiFi and MQTT. IMU calibration is attempted at boot
-with no IR software calibration; IMU failure is flagged but permits operation. During a run
-IR/Motion failure stops; ordinary IMU/sonar/network loss is report-only. **Course speed guardrail (user,
+with no IR software calibration; IMU acquisition failure is flagged but permits operation; calibration failure blocks start, because
+lifting the car is the stop that ends a demonstration run. During a run
+IR/Motion failure or a lifted or overturned car stops; ordinary IMU/sonar/network loss is report-only. **Course speed guardrail (user,
 2026-11-02):** line following, crossings, junction advances and junction pivots
 are commanded at exactly 100 mm/s, humps included (the earlier half-speed hump
 request was dropped by the user, the 2026-11-02 run); steering never lowers it. A compile-time assert fixes `MISSION_TRACK_SPEED_MMPS` at 100, and
@@ -157,7 +159,7 @@ The default project is an autonomous robot car on a predefined course, using onb
 | Barcode | Decode in either direction; hold the command; do not turn on reading |
 | Cross junction | Execute the held straight, left, right or U-turn there |
 | Hump | Detect, estimate height, report; coordinate motion and line following while one wheel is raised |
-| Blocking obstacle | Scan left/right with the servo ultrasonic sensor, estimate width and clearance (full car width), pick a bypass side (the shorter distance from the servo axis to a box edge, by `range * tan(angle)`; clearance does not affect the choice, Nicholas 2026-11-05); leave margin for the car's width |
+| Blocking obstacle | Scan left/right with the servo ultrasonic sensor, estimate width and clearance (full car width), pick a bypass side (if exactly one side shows clearance of at least `MISSION_BYPASS_MIN_CLEAR_MM`, that side; otherwise the shorter distance from the servo axis to a box edge, by `range * tan(angle)`; two clearances are never compared); leave margin for the car's width |
 | Bypass | Leave the line, travel round without line guidance, keep observing until passed |
 | After bypass | Rejoin the original line and resume |
 | U-turn detail | At the junction, brake, pause approximately 200 ms, turn 180 degrees and track the return branch; never undo the turn (user request; pause reference pending D02/D08) |
@@ -238,11 +240,11 @@ Confirmed by Nicholas 2026-10-14: alphabet A-Z; the instructor announces exactly
 | Comms | Wi-Fi/MQTT API, telemetry framework, topic/message documentation, telemetry demonstration |
 | Motion | Motor drivers, encoders, speed/distance estimates, per-car PID wheel-speed tuning (equal PWM does not give equal speed; finalise wheels/mechanics before tuning), straight correction, repeatable distance/angle actions (45 and 90 degrees were examples); control library, PID tuning report, accuracy evaluation |
 | line_barcode | Three digital IR sensors, line position and junction logic, barcode decoder (A-Z, either direction), navigation command interface |
-| Terrain | GY-511 IMU driver, calibration against known heights/tilts, tilt detection, motion classification, collision detection, turn-rate monitoring, hump detection and peak measurement, event reporting, terrain analysis report |
+| Terrain | GY-511 IMU driver, calibration against known heights/tilts, tilt detection, motion classification, lift and overturn detection, turn-rate monitoring, hump detection and peak measurement, event reporting, terrain analysis report |
 | Obstacle | Coarse scan then focused fine scan (example angles 30, 60, 90, 120, 150 degrees); profile generator; avoidance (stop, continue, turn left/right, reverse, reattempt); original-line recovery |
 | Team | Defined inputs/outputs/owners, repeatable subsystem checks, measured calibration, early and progressive integration, integrated demonstration |
 
-Turn rate and heading come from encoder differential motion; impact from the accelerometer. Briefing: heading/bearing can combine wheel-encoder and IMU data; combining sensors (sensor fusion) improves accuracy and is marked higher than using one sensor alone (GY-511 = accelerometer plus magnetometer, not a gyroscope); magnetometer-encoder fusion is associated with better marks but is a stretch goal, not a requirement. No height formula, tolerance or fusion algorithm was specified.
+Turn rate and heading come from encoder differential motion; lift and overturn from the accelerometer. Briefing: heading/bearing can combine wheel-encoder and IMU data; combining sensors (sensor fusion) improves accuracy and is marked higher than using one sensor alone (GY-511 = accelerometer plus magnetometer, not a gyroscope); magnetometer-encoder fusion is associated with better marks but is a stretch goal, not a requirement. No height formula, tolerance or fusion algorithm was specified.
 
 ## 3. Communications
 
@@ -289,6 +291,17 @@ The 11 warnings are in the pinned sources and are part of the baseline.
 | `TerrainSnapshot` | 40 | 336 |
 
 `ObstacleSnapshot`, `MotionFeedback` and `MotionCommand` were not found in `main` and are not reported. Task stack is 2048 bytes each (`app_program/app.h`): 4 application task creation sites in `main` (Motion, terrain_task, IR line, Line follow), 7 in `uat` (Motion, Obstacle, Terrain, IR line, Safety, Mission, Reporting); live task counts were not recorded. Not measured: periodic task loop timing, MQTT/telemetry payload sizes (both need an on-target run), per-object `nm` sizes.
+
+### Week 13 change in requirement (placeholder)
+
+**Status: placeholder, not a discussion.** The course requires the Week 13 change to be discussed in writing; it need not be implemented ([section 6](#6-assessment-demonstration-and-process-rules), CIR-12 in issue #192). What the Week 13 change asks is not recorded anywhere in this repository: not in this guide, [team section 6](team.md#6-data-representation), [tribunal1](tribunal1.md), the issues or the git history. The Week 13 evidence listed above belongs to the Week 8 change, not to a new one. No content is inferred here (D17).
+
+To turn this into the discussion, record:
+
+1. The Week 13 change as stated by the course (source, date and wording).
+2. How the current design meets it, or would meet it, naming the affected subsystems and tasks ([architecture](architecture.md)).
+3. Impact on field widths ([team section 6](team.md#6-data-representation)), MQTT frames ([team: MQTT frames](team.md#mqtt-frames)) and task timing ([team section 7](team.md#7-correctness-and-performance-evidence)).
+4. Risks, and what is not done or not tested.
 
 ## 5. Data representation table (Week 13)
 
@@ -342,7 +355,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D03 | Verify motor and encoder polarity, counts/revolution, ratings/levels, geometry, full car/turning envelope and maximum edge rate. Remote signs +1/+1 versus local -1/+1 are not a calibration decision; preserve barcode half-range bound | Nicholas |
 | D04 | Mounted IR position/spacing/height, contrast/noise/lighting range and barcode black polarity; wiring user-confirmed, measured sensing margins still pending | Nicholas |
 | D05 | Sonar electrical behavior user-confirmed; retain recorded Echo-voltage evidence when available. Calibrate repeat interval/range/servo centre/endpoints/settling, sample groups/median/edge hysteresis, coverage and width-estimation uncertainty | Nicholas |
-| D06 | Stationary boot IMU calibration (IR is digital, without software calibration): bounded success/failure handshake, axes/bias, impact/filter limits and reference-validated height method/error for humps <=30 mm. Validate 100 mm/s course-speed completion and the accepted results-retained-through-starts/stops-until-reboot lifecycle | Nicholas |
+| D06 | Stationary boot IMU calibration (IR is digital, without software calibration): bounded success/failure handshake, axes/bias, lift (`LIFT_ACCEL_G`)/filter limits and reference-validated height method/error for humps <=30 mm. Validate 100 mm/s course-speed completion and the accepted results-retained-through-starts/stops-until-reboot lifecycle | Nicholas |
 | D07 | Demo stall guard off, full-course guard on (confirmed above); wheel/line gains, speed/duty/distance/turn/stall limits; repeated stationary +/-70 degree sweeps, pivot speed, wheel excursion budget and usable-line handoff; bypass/depth/clearance budgets ; course and bypass driving share `COURSE_SPEED_MMPS`, 100 mm/s today, smoothness first | Nicholas |
 | D08 | Stopping distance need not be recorded (Nicholas, 2026-11-05). Output-brake latency versus physical stop distance/time, measured stationarity and U-turn pause start; GP21 release-reset eligibility must not imply physical stationarity | Nicholas |
 | D09 | Closed by Nicholas, 2026-11-04: the instructor's WiFi and broker, changing only `config/wifi_secrets.h`. No longer tracked as pending work (Nicholas, 2026-11-05). A normal mission requires both before starting; loss mid-run is report-only. Bounded TX/RX rings stay; the professor's buffer wording was not seen (Nicholas, 2026-11-05) | Nicholas |
@@ -353,6 +366,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D14 | Core swap superseded. Audit core-0 I/O integration, cross-core event producers/mapping hand-off, synchronization and required initialization order; kernel WiFi/USB and capture core unchanged | Nicholas |
 | D15 | Closed by Nicholas, 2026-11-05: the reset watchdog is removed from the firmware, replacing the earlier decision to run it on `full_course`. It never had a bench test. A hung Motion or kernel has no automatic reset. Tribunal A12 names watchdog recovery, and that wording is unchanged | Nicholas |
 | D16 | Settled 2026-10-29: configurable 15 cm is the obstacle trigger distance (150 mm). The car stops at that distance: it starts slowing earlier by `motion_stop_distance_mm`, 191 mm at 100 mm/s (Nicholas, 2026-11-04). It does not authorize any travel without valid forward sonar | Nicholas |
+| D17 | State the Week 13 change in requirement (source, date and wording) so the written discussion in [section 4](#week-13-change-in-requirement-placeholder) can be completed (CIR-12, #209) | Nicholas |
 
 Implementation note (2026-10-29, #130): Mission's local reset handshake has
 three exclusive states (boot, await GP21 press, await GP21 release), encoded as

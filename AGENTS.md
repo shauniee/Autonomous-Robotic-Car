@@ -11,12 +11,12 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 
 - **Facts:** each fact has one owning guide; other files link to it. Keep requirements, proposed design, implemented code and observed results distinct. Never invent course rules, calibrated limits, measurements or module ratings; unknown values go to the [pending decisions](docs/project-specs.md#pending-decisions).
 - **Code:** follow the [coding rules](docs/team.md#5-coding-rules). Only Motion writes the motors; networking never starts, stops or drives the robot ([authority](docs/architecture.md#authority)).
-- **Git:** one branch (`<type>/<slug>`: `feat`, `fix`, `chore`, `docs`, `test`) = one squash-merged PR into `main`. Never commit to `main`, `uat` or `legacy-main`; never force-push `main` or delete someone's branch. Push, open a PR or merge only when asked.
+- **Git:** one branch (`<type>/<slug>`: `feat`, `fix`, `chore`, `docs`, `test`) = one squash-merged PR into `main`. PR titles, commits and issue titles are Conventional Commits with a scope (`fix(mission): …`; types `feat`, `fix`, `chore`, `docs`, `test`, `refactor`), checked by CI. PR bodies follow `.github/pull_request_template.md` and say `Closes #N`; new issues use the forms in `.github/ISSUE_TEMPLATE/`. Never commit to `main`, `uat` or `legacy-main`; never force-push `main` or delete someone's branch. Push, open a PR or merge only when asked.
 - **Git Messages:** Never co author the commit messages, PRs, merge comments
 - **No co-authors:** never add `Co-Authored-By` or any co-author attribution to a commit message, including merge and squash messages.
 - **Never commit** `config/wifi_secrets.h`, credentials, `*.elf`, `*.uf2`, `*.map` or video files.
 - **Testing:** follow [testing](testing/README.md): five unit tests per subsystem (`S1-U01` to `S1-U05`), ten integration (`INT-01` to `INT-10`) and ten system (`SYS-01` to `SYS-10`), each shown on [video](video/README.md); a test goes in the folder of the subsystem it exercises, `integration/` only for two or more. Append one result row per run with its log in that folder's `logs/`, and record the exact commit. Never reuse a test ID. A build or host test is not a firmware or physical pass; do not save build or host output.
-- **Markdown:** `docs/` holds only `project-specs`, `team` and `architecture`; subsystem detail goes in each `app_program/<name>/README.md`. Every Markdown file starts with a contents list of its sections.
+- **Markdown:** `docs/` holds only `project-specs`, `team` and `architecture`; subsystem detail goes in each `app_program/<name>/README.md`. Every Markdown file except the `.github/` templates starts with a contents list of its sections.
 
 ## Where to look
 
