@@ -3,7 +3,8 @@
 #include <math.h>
 #include <stddef.h>
 
-#define HDR(type) ((uint8_t)((MQTT_FRAME_VERSION << 4) | ((unsigned)(type) & 0xFu)))
+#define HDR(type) \
+    ((uint8_t)((MQTT_FRAME_VERSION << 4) | ((unsigned)(type) & 0xFu)))
 
 static unsigned type_length(unsigned type)
 {
@@ -24,19 +25,41 @@ static unsigned type_length(unsigned type)
     }
 }
 
-mqtt_decode_t mqtt_frame_type(const uint8_t *f, unsigned length, mqtt_type_t *type)
+mqtt_decode_t mqtt_frame_type(const uint8_t *f, unsigned length,
+    mqtt_type_t *type)
 {
-    if (f == 0 || type == 0 || length == 0u) return MQTT_DECODE_NULL;
-    if ((unsigned)(f[0] >> 4) != MQTT_FRAME_VERSION) return MQTT_DECODE_VERSION;
-    unsigned t = f[0] & 0xFu, expect = type_length(t);
-    if (expect == 0u) return MQTT_DECODE_TYPE;
-    if (length != expect) return MQTT_DECODE_LENGTH;
+    if (0 == f || 0 == type || 0u == length)
+    {
+        return MQTT_DECODE_NULL;
+    }
+    if ((unsigned)(f[0] >> 4) != MQTT_FRAME_VERSION)
+    {
+        return MQTT_DECODE_VERSION;
+    }
+    unsigned t = f[0] & 0xFu;
+    unsigned expect = type_length(t);
+    if (0u == expect)
+    {
+        return MQTT_DECODE_TYPE;
+    }
+    if (length != expect)
+    {
+        return MQTT_DECODE_LENGTH;
+    }
     *type = (mqtt_type_t)t;
     return MQTT_DECODE_OK;
 }
 
-static void put16(uint8_t *p, uint16_t v) { p[0] = (uint8_t)(v & 0xFFu); p[1] = (uint8_t)(v >> 8); }
-static uint16_t get16(const uint8_t *p) { return (uint16_t)(p[0] | ((unsigned)p[1] << 8)); }
+static void put16(uint8_t *p, uint16_t v)
+{
+    p[0] = (uint8_t)(v & 0xFFu);
+    p[1] = (uint8_t)(v >> 8);
+}
+
+static uint16_t get16(const uint8_t *p)
+{
+    return (uint16_t)(p[0] | ((unsigned)p[1] << 8));
+}
 
 static int trace_integer(float value, int limit, int invalid)
 {
@@ -47,7 +70,7 @@ static int trace_integer(float value, int limit, int invalid)
 unsigned mqtt_encode_wheel_trace(uint8_t *out, unsigned capacity,
     const mqtt_wheel_trace_t *trace)
 {
-    if (out == NULL || trace == NULL || capacity < MQTT_LEN_WHEEL_TRACE)
+    if (NULL == out || NULL == trace || capacity < MQTT_LEN_WHEEL_TRACE)
     {
         return 0u;
     }
@@ -76,7 +99,8 @@ unsigned mqtt_encode_wheel_trace(uint8_t *out, unsigned capacity,
 
 /* ---- Line trace -----------------------------------------------------------
    0 header | 1..4 IR acquisition ms | 5 flags (MQTT_LINE_*)
-   6 [3:0] mission state, [6:4] junction phase, [7] 0 | 7..8 left count | 9..10 right count
+   6 [3:0] mission state, [6:4] junction phase, [7] 0 | 7..8 left count |
+   9..10 right count
    11 law steering Q7 | 12 law state Q7 | 13 command steering Q7
    14..15 [8:0] command speed mm/s, [10:9] command mode, [15:11] barcode edges
    16 onset skew mm when both black (254 max), 255 otherwise */
@@ -84,7 +108,7 @@ unsigned mqtt_encode_wheel_trace(uint8_t *out, unsigned capacity,
 unsigned mqtt_encode_line_trace(uint8_t *out, unsigned capacity,
     const mqtt_line_trace_t *trace)
 {
-    if (out == NULL || trace == NULL || capacity < MQTT_LEN_LINE_TRACE ||
+    if (NULL == out || NULL == trace || capacity < MQTT_LEN_LINE_TRACE ||
         trace->mission_state > 15u || trace->phase > 7u ||
         trace->command_mode > 3u || trace->command_speed > 511u ||
         trace->barcode_edges > 31u)
@@ -103,8 +127,8 @@ unsigned mqtt_encode_line_trace(uint8_t *out, unsigned capacity,
     out[11] = (uint8_t)trace->steer_q;
     out[12] = (uint8_t)trace->law_q;
     out[13] = (uint8_t)trace->command_steer_q;
-    put16(&out[14], (uint16_t)(trace->command_speed | trace->command_mode << 9 |
-        trace->barcode_edges << 11));
+    put16(&out[14], (uint16_t)(trace->command_speed |
+        trace->command_mode << 9 | trace->barcode_edges << 11));
     out[16] = trace->onset_skew_mm;
     return MQTT_LEN_LINE_TRACE;
 }
@@ -112,10 +136,10 @@ unsigned mqtt_encode_line_trace(uint8_t *out, unsigned capacity,
 /* ---- Barcode trace --------------------------------------------------------
    0 header | 1 sequence | 2..17 eight runs, little-endian */
 
-unsigned mqtt_encode_barcode_trace(uint8_t *out, unsigned capacity, uint8_t sequence,
-    const uint16_t runs[MQTT_BARCODE_TRACE_RUNS])
+unsigned mqtt_encode_barcode_trace(uint8_t *out, unsigned capacity,
+    uint8_t sequence, const uint16_t runs[MQTT_BARCODE_TRACE_RUNS])
 {
-    if (out == NULL || runs == NULL || capacity < MQTT_LEN_BARCODE_TRACE)
+    if (NULL == out || NULL == runs || capacity < MQTT_LEN_BARCODE_TRACE)
     {
         return 0u;
     }
@@ -155,7 +179,8 @@ unsigned mqtt_encode_terrain_trace(uint8_t *p_out, unsigned capacity,
 }
 
 /* ---- Telemetry -----------------------------------------------------------
-   0 header | 1 sequence | 2 [3:0] mission state, [5:4] motion status, [7:6] line status
+   0 header | 1 sequence | 2 [3:0] mission state, [5:4] motion status,
+   [7:6] line status
    3 [5:0] motion action, [6] mapped, [7] 0
    4..5 fault word: Motion 0-1, Line 2-4, Terrain 5-7, Obstacle 8, Mission 9,
         Network 10-11, 12-15 reserved | 6..7 left | 8..9 right
@@ -189,13 +214,15 @@ static void fault_bytes(uint16_t word, uint8_t faults[MQTT_FAULT_BYTES])
     }
 }
 
-unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type, const mqtt_telemetry_t *t)
+unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity,
+    mqtt_type_t type, const mqtt_telemetry_t *t)
 {
-    if (out == 0 || t == 0 || capacity < MQTT_LEN_TELEMETRY ||
+    if (0 == out || 0 == t || capacity < MQTT_LEN_TELEMETRY ||
         (type != MQTT_TYPE_TELEMETRY && type != MQTT_TYPE_SNAPSHOT_REPLY) ||
-        t->mission_state > 15u || t->motion_status > 3u || t->line_status > 3u || t->motion_action > 63u ||
-        t->hump_max > 127u || (t->hump_valid && t->hump_max == 127u) ||
-        t->front_mm > 8191u || (t->front_valid && t->front_mm == 8191u) ||
+        t->mission_state > 15u || t->motion_status > 3u ||
+        t->line_status > 3u || t->motion_action > 63u ||
+        t->hump_max > 127u || (t->hump_valid && 127u == t->hump_max) ||
+        t->front_mm > 8191u || (t->front_valid && 8191u == t->front_mm) ||
         t->imu_calibration > MQTT_IMU_CALIBRATED ||
         (t->barcode_letter > 25u && t->barcode_letter != MQTT_NO_LETTER) ||
         t->barcode_action > 4u)
@@ -204,7 +231,8 @@ unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type
     }
     out[0] = HDR(type);
     out[1] = t->sequence;
-    out[2] = (uint8_t)(t->mission_state | (t->motion_status << 4) | (t->line_status << 6));
+    out[2] = (uint8_t)(t->mission_state | (t->motion_status << 4) |
+        (t->line_status << 6));
     out[3] = (uint8_t)(t->motion_action | (t->mapped ? 0x40u : 0u));
     put16(&out[4], fault_word(t->faults));
     put16(&out[6], t->left_count);
@@ -214,7 +242,8 @@ unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type
     put16(&out[12], (uint16_t)(t->front_mm |
         (t->front_valid ? 0x2000u : 0u) | (t->imu_calibration << 14)));
     out[14] = (uint8_t)(t->barcode_letter | (t->barcode_action << 5));
-    uint32_t width = t->obstacle_width_mm > MQTT_OBSTACLE_MAX_MM ? MQTT_OBSTACLE_MAX_MM : t->obstacle_width_mm;
+    uint32_t width = t->obstacle_width_mm > MQTT_OBSTACLE_MAX_MM ?
+        MQTT_OBSTACLE_MAX_MM : t->obstacle_width_mm;
     uint32_t clearance = (t->obstacle_clearance_mm > MQTT_OBSTACLE_MAX_MM) ?
         MQTT_OBSTACLE_MAX_MM : t->obstacle_clearance_mm;
     uint32_t size = width | (clearance << 10);
@@ -224,13 +253,23 @@ unsigned mqtt_encode_telemetry(uint8_t *out, unsigned capacity, mqtt_type_t type
     return MQTT_LEN_TELEMETRY;
 }
 
-mqtt_decode_t mqtt_decode_telemetry(const uint8_t *f, unsigned length, mqtt_type_t *type, mqtt_telemetry_t *t)
+mqtt_decode_t mqtt_decode_telemetry(const uint8_t *f, unsigned length,
+    mqtt_type_t *type, mqtt_telemetry_t *t)
 {
     mqtt_type_t ty;
     mqtt_decode_t r = mqtt_frame_type(f, length, &ty);
-    if (r != MQTT_DECODE_OK) return r;
-    if (t == 0 || type == 0) return MQTT_DECODE_NULL;
-    if (ty != MQTT_TYPE_TELEMETRY && ty != MQTT_TYPE_SNAPSHOT_REPLY) return MQTT_DECODE_TYPE;
+    if (r != MQTT_DECODE_OK)
+    {
+        return r;
+    }
+    if (0 == t || 0 == type)
+    {
+        return MQTT_DECODE_NULL;
+    }
+    if (ty != MQTT_TYPE_TELEMETRY && ty != MQTT_TYPE_SNAPSHOT_REPLY)
+    {
+        return MQTT_DECODE_TYPE;
+    }
     uint16_t faults = get16(&f[4]);
     if (((f[3] & 0x80u) != 0u) || ((faults >> RD_FAULT_BITS) != 0u))
     {
@@ -270,12 +309,17 @@ mqtt_decode_t mqtt_decode_telemetry(const uint8_t *f, unsigned length, mqtt_type
 }
 
 /* ---- Event --------------------------------------------------------------
-   0 header | 1 [3:0] kind, [7:4] 0 | 2 arg | 3..4 time | 5..6 left | 7..8 right | 9..10 arg2 */
+   0 header | 1 [3:0] kind, [7:4] 0 | 2 arg | 3..4 time | 5..6 left |
+   7..8 right | 9..10 arg2 */
 
-unsigned mqtt_encode_event(uint8_t *out, unsigned capacity, const mqtt_event_t *e)
+unsigned mqtt_encode_event(uint8_t *out, unsigned capacity,
+    const mqtt_event_t *e)
 {
-    if (out == 0 || e == 0 || capacity < MQTT_LEN_EVENT || e->kind == 0u || e->kind >= MQTT_EVENT_COUNT)
+    if (0 == out || 0 == e || capacity < MQTT_LEN_EVENT || 0u == e->kind ||
+        e->kind >= MQTT_EVENT_COUNT)
+    {
         return 0u;
+    }
     out[0] = HDR(MQTT_TYPE_EVENT);
     out[1] = (uint8_t)(e->kind & 0xFu);
     out[2] = e->arg;
@@ -286,15 +330,31 @@ unsigned mqtt_encode_event(uint8_t *out, unsigned capacity, const mqtt_event_t *
     return MQTT_LEN_EVENT;
 }
 
-mqtt_decode_t mqtt_decode_event(const uint8_t *f, unsigned length, mqtt_event_t *e)
+mqtt_decode_t mqtt_decode_event(const uint8_t *f, unsigned length,
+    mqtt_event_t *e)
 {
     mqtt_type_t ty;
     mqtt_decode_t r = mqtt_frame_type(f, length, &ty);
-    if (r != MQTT_DECODE_OK) return r;
-    if (e == 0) return MQTT_DECODE_NULL;
-    if (ty != MQTT_TYPE_EVENT) return MQTT_DECODE_TYPE;
-    if ((f[1] & 0xF0u) != 0u) return MQTT_DECODE_RESERVED;
-    if ((f[1] & 0xFu) == 0u || (f[1] & 0xFu) >= MQTT_EVENT_COUNT) return MQTT_DECODE_RANGE;
+    if (r != MQTT_DECODE_OK)
+    {
+        return r;
+    }
+    if (0 == e)
+    {
+        return MQTT_DECODE_NULL;
+    }
+    if (ty != MQTT_TYPE_EVENT)
+    {
+        return MQTT_DECODE_TYPE;
+    }
+    if ((f[1] & 0xF0u) != 0u)
+    {
+        return MQTT_DECODE_RESERVED;
+    }
+    if (0u == (f[1] & 0xFu) || (f[1] & 0xFu) >= MQTT_EVENT_COUNT)
+    {
+        return MQTT_DECODE_RANGE;
+    }
     e->kind = f[1] & 0xFu;
     e->arg = f[2];
     e->time_ms = get16(&f[3]);
@@ -308,11 +368,19 @@ mqtt_decode_t mqtt_decode_event(const uint8_t *f, unsigned length, mqtt_event_t 
    0 header | 1 sequence | 2..4 little-endian 24 bits: 4 x 5-bit letters in
    bits 0-19 (left in bits 0-4), bits 20-23 zero                              */
 
-unsigned mqtt_encode_mapping(uint8_t *out, unsigned capacity, const mqtt_mapping_t *m)
+unsigned mqtt_encode_mapping(uint8_t *out, unsigned capacity,
+    const mqtt_mapping_t *m)
 {
-    if (out == 0 || m == 0 || capacity < MQTT_LEN_MAPPING || !rd_mapping_letters_valid(m->letters)) return 0u;
+    if (0 == out || 0 == m || capacity < MQTT_LEN_MAPPING ||
+        !rd_mapping_letters_valid(m->letters))
+    {
+        return 0u;
+    }
     uint32_t packed = 0u;
-    for (unsigned i = 0u; i < 4u; ++i) packed |= (uint32_t)m->letters[i] << (5u * i);
+    for (unsigned i = 0u; i < 4u; ++i)
+    {
+        packed |= (uint32_t)m->letters[i] << (5u * i);
+    }
     out[0] = HDR(MQTT_TYPE_MAPPING);
     out[1] = m->sequence;
     out[2] = (uint8_t)(packed & 0xFFu);
@@ -321,20 +389,43 @@ unsigned mqtt_encode_mapping(uint8_t *out, unsigned capacity, const mqtt_mapping
     return MQTT_LEN_MAPPING;
 }
 
-mqtt_decode_t mqtt_decode_mapping(const uint8_t *f, unsigned length, mqtt_mapping_t *m)
+mqtt_decode_t mqtt_decode_mapping(const uint8_t *f, unsigned length,
+    mqtt_mapping_t *m)
 {
     mqtt_type_t ty;
     mqtt_decode_t r = mqtt_frame_type(f, length, &ty);
-    if (r != MQTT_DECODE_OK) return r;
-    if (m == 0) return MQTT_DECODE_NULL;
-    if (ty != MQTT_TYPE_MAPPING) return MQTT_DECODE_TYPE;
-    uint32_t packed = (uint32_t)f[2] | ((uint32_t)f[3] << 8) | ((uint32_t)f[4] << 16);
-    if ((packed >> 20) != 0u) return MQTT_DECODE_RESERVED;
+    if (r != MQTT_DECODE_OK)
+    {
+        return r;
+    }
+    if (0 == m)
+    {
+        return MQTT_DECODE_NULL;
+    }
+    if (ty != MQTT_TYPE_MAPPING)
+    {
+        return MQTT_DECODE_TYPE;
+    }
+    uint32_t packed = (uint32_t)f[2] | ((uint32_t)f[3] << 8) |
+        ((uint32_t)f[4] << 16);
+    if ((packed >> 20) != 0u)
+    {
+        return MQTT_DECODE_RESERVED;
+    }
     uint8_t letters[4];
-    for (unsigned i = 0u; i < 4u; ++i) letters[i] = (uint8_t)((packed >> (5u * i)) & 0x1Fu);
-    if (!rd_mapping_letters_valid(letters)) return MQTT_DECODE_RANGE;
+    for (unsigned i = 0u; i < 4u; ++i)
+    {
+        letters[i] = (uint8_t)((packed >> (5u * i)) & 0x1Fu);
+    }
+    if (!rd_mapping_letters_valid(letters))
+    {
+        return MQTT_DECODE_RANGE;
+    }
     m->sequence = f[1];
-    for (unsigned i = 0u; i < 4u; ++i) m->letters[i] = letters[i];
+    for (unsigned i = 0u; i < 4u; ++i)
+    {
+        m->letters[i] = letters[i];
+    }
     return MQTT_DECODE_OK;
 }
 
@@ -342,7 +433,11 @@ mqtt_decode_t mqtt_decode_mapping(const uint8_t *f, unsigned length, mqtt_mappin
 
 unsigned mqtt_encode_ack(uint8_t *out, unsigned capacity, const mqtt_ack_t *a)
 {
-    if (out == 0 || a == 0 || capacity < MQTT_LEN_ACK || a->result > MQTT_ACK_MALFORMED) return 0u;
+    if (0 == out || 0 == a || capacity < MQTT_LEN_ACK ||
+        a->result > MQTT_ACK_MALFORMED)
+    {
+        return 0u;
+    }
     out[0] = HDR(MQTT_TYPE_ACK);
     out[1] = a->sequence;
     out[2] = a->result;
@@ -353,30 +448,56 @@ mqtt_decode_t mqtt_decode_ack(const uint8_t *f, unsigned length, mqtt_ack_t *a)
 {
     mqtt_type_t ty;
     mqtt_decode_t r = mqtt_frame_type(f, length, &ty);
-    if (r != MQTT_DECODE_OK) return r;
-    if (a == 0) return MQTT_DECODE_NULL;
-    if (ty != MQTT_TYPE_ACK) return MQTT_DECODE_TYPE;
-    if (f[2] > MQTT_ACK_MALFORMED) return MQTT_DECODE_RANGE;
+    if (r != MQTT_DECODE_OK)
+    {
+        return r;
+    }
+    if (0 == a)
+    {
+        return MQTT_DECODE_NULL;
+    }
+    if (ty != MQTT_TYPE_ACK)
+    {
+        return MQTT_DECODE_TYPE;
+    }
+    if (f[2] > MQTT_ACK_MALFORMED)
+    {
+        return MQTT_DECODE_RANGE;
+    }
     a->sequence = f[1];
     a->result = f[2];
     return MQTT_DECODE_OK;
 }
 
-unsigned mqtt_encode_snapshot_request(uint8_t *out, unsigned capacity, uint8_t sequence)
+unsigned mqtt_encode_snapshot_request(uint8_t *out, unsigned capacity,
+    uint8_t sequence)
 {
-    if (out == 0 || capacity < MQTT_LEN_SNAPSHOT_REQUEST) return 0u;
+    if (0 == out || capacity < MQTT_LEN_SNAPSHOT_REQUEST)
+    {
+        return 0u;
+    }
     out[0] = HDR(MQTT_TYPE_SNAPSHOT_REQUEST);
     out[1] = sequence;
     return MQTT_LEN_SNAPSHOT_REQUEST;
 }
 
-mqtt_decode_t mqtt_decode_snapshot_request(const uint8_t *f, unsigned length, uint8_t *sequence)
+mqtt_decode_t mqtt_decode_snapshot_request(const uint8_t *f, unsigned length,
+    uint8_t *sequence)
 {
     mqtt_type_t ty;
     mqtt_decode_t r = mqtt_frame_type(f, length, &ty);
-    if (r != MQTT_DECODE_OK) return r;
-    if (sequence == 0) return MQTT_DECODE_NULL;
-    if (ty != MQTT_TYPE_SNAPSHOT_REQUEST) return MQTT_DECODE_TYPE;
+    if (r != MQTT_DECODE_OK)
+    {
+        return r;
+    }
+    if (0 == sequence)
+    {
+        return MQTT_DECODE_NULL;
+    }
+    if (ty != MQTT_TYPE_SNAPSHOT_REQUEST)
+    {
+        return MQTT_DECODE_TYPE;
+    }
     *sequence = f[1];
     return MQTT_DECODE_OK;
 }
@@ -391,7 +512,7 @@ mqtt_decode_t mqtt_decode_junction_test(const uint8_t *f, unsigned length,
     {
         return result;
     }
-    if (sequence == 0 || action == 0)
+    if (0 == sequence || 0 == action)
     {
         return MQTT_DECODE_NULL;
     }
