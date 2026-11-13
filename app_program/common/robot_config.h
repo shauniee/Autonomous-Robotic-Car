@@ -42,6 +42,10 @@ typedef int ER;
 #endif
 _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
     "ROBOT_TRACE_ENABLED must be boolean");
+/* BENCH=1 image: GP20 runs single Motion moves, never the mission. */
+#ifndef MISSION_BENCH
+#define MISSION_BENCH 0
+#endif
 #define COMMS_TELEMETRY_PERIOD_MS	500u
 #define COMMS_REPORT_PERIOD_MS	50u	/* Reporting release: requests and events are served at this rate */
 #define COMMS_EVENT_CAPACITY	16u	/* event-log ring; oldest overwritten, drops counted */
