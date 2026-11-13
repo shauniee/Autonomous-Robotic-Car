@@ -177,6 +177,7 @@
         <header><h2 id="speed-title">Motor speed</h2><div class="readouts">
           <div><span class="k"><i style="background:var(--ink)"></i>Left</span><b id="sensor-speed-left">—</b></div>
           <div><span class="k"><i style="background:var(--steel)"></i>Right</span><b id="sensor-speed-right">—</b></div>
+          <div class="small"><span class="k">Turn</span><b id="sensor-turn-rate">—</b></div>
           <div class="small"><span class="k">Duty L / R</span><b><span id="trace-duty-left">—</span> / <span id="trace-duty-right">—</span></b></div>
           <div class="small"><span class="k">Count L / R</span><b><span id="sensor-count-left">—</span> / <span id="sensor-count-right">—</span></b></div>
         </div></header>
@@ -328,6 +329,7 @@ function showSensors(t) {
   value("sensor-sequence", t.sequence);
   value("sensor-speed-left", speed(t.speed_left), t.speed_left == null);
   value("sensor-speed-right", speed(t.speed_right), t.speed_right == null);
+  value("sensor-turn-rate", t.turn_rate_dps == null ? "Awaiting sample" : `${t.turn_rate_dps} deg/s`, t.turn_rate_dps == null);
   value("sensor-count-left", t.left);
   value("sensor-count-right", t.right);
   encoderDirection = ["straight", "reverse", "left", "right", "stopped", "uturn"].includes(t.direction) ? t.direction : null;

@@ -20,10 +20,10 @@ int main(void)
 
     /* Only run-stopping bits latch a stop; report-only bits (no echo,
        network) never do. The full policy table is in test_robot_data.c. */
-    rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
+    rd_fault_set(RD_OWNER_TERRAIN, RD_FAULT_LIFTED);
     in = healthy(); in.fault_pending = rd_fault_stop_pending();
     assert(safety_causes(&in) == SAFETY_CAUSE_FAULT);
-    rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_IMPACT);
+    rd_fault_clear(RD_OWNER_TERRAIN, RD_FAULT_LIFTED);
     rd_fault_set(RD_OWNER_OBSTACLE, RD_FAULT_NO_ECHO);
     rd_fault_set(RD_OWNER_NETWORK, RD_FAULT_WIFI_LOST);
     in = healthy(); in.fault_pending = rd_fault_stop_pending();
