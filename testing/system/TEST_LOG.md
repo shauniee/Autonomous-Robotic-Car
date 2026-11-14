@@ -21,7 +21,7 @@ Define a test here before running it. Test IDs never change.
 | SYS-04 | Full course | MR-36, T16 | manual | 1. Course with line, barcodes, junctions, a hump and an obstacle. 2. Save `monitor` | Course completed; run time recorded against about five minutes |
 | SYS-05 | Three runs in a row | MR-37 | manual | 1. Repeat SYS-04 twice more with no code or constant change | Three passes in a row |
 | SYS-06 | Stop and reset | MR-24, A12, T02 | manual | 1. Press GP21 at course speed. 2. Hold GP20. 3. Release and press GP20 fresh | Stops at once; no restart until a fresh GP20; stopping distance taped |
-| SYS-07 | Fault handling | MR-15, MR-16, T14 | manual | 1. Wiggle an encoder lead mid-run. 2. Tap the chassis. 3. Unplug the IMU | Each latches a stop and is named on the dashboard |
+| SYS-07 | Fault handling | MR-15, MR-16, T14 | manual | 1. Wiggle an encoder lead mid-run. 2. Lift the car. 3. Unplug the IMU | Each latches a stop and is named on the dashboard |
 | SYS-08 | Network never drives | Authority, T13 | manual | 1. Stop WiFi mid-run. 2. Restart it. 3. Send requests while stopped | Robot keeps its local state; network never starts or drives it |
 | SYS-09 | Endless operation | MR-40 | manual | 1. Repeated loops over the same junction with and without a queued turn. 2. GP21 ends the session | Every cycle behaves the same |
 | SYS-10 | Timing and memory under full load | MR-39, T15 | manual | 1. SYS-04 on `./flash.sh trial` with the USB console saved | `[TIMING]` max under each task period; overruns do not grow; stack and RAM recorded |
