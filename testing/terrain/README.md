@@ -3,6 +3,7 @@
 ## Contents
 
 - [Before you start](#before-you-start)
+- [Which image to flash](#which-image-to-flash)
 - [Captures](#captures)
 - [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
@@ -38,6 +39,20 @@ How to run and record S4-U01 to S4-U05. Test definitions: [TEST_LOG.md](TEST_LOG
    ```bash
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
    ```
+
+## Which image to flash
+
+Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no flash. Tests on the car need the image named in their **Image** line. Run every test of one image before flashing the next, top to bottom; a test listed under two images uses both (see its steps):
+
+| Image | Power | Tests |
+| --- | --- | --- |
+| `TERRAIN_DIAGNOSTICS=1 ./flash.sh test` | USB only | S4-U01, S4-U03, S4-U04, S4-U05 |
+| `./flash.sh trial` | Battery only | S4-U02 |
+
+Before every flash:
+
+1. `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
+2. `git status` is clean, so the commit you record is the code you flashed.
 
 ## Captures
 
