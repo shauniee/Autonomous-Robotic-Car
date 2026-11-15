@@ -4,6 +4,7 @@
 
 - [Before you start](#before-you-start)
 - [Captures](#captures)
+- [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
 - [After each test](#after-each-test)
 - [Bench image](#bench-image)
@@ -55,6 +56,17 @@ Telemetry with laptop timestamps (every frame, nothing folded):
 ~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/motion/logs/<ID>/YYYY-MM-DD_monitor.log
 ```
 
+## Run the test code
+
+Host test code for a test ID is in `logs/<ID>/` beside its logs. It runs the real subsystem code with fake hardware, so it needs no robot. Run it before flashing:
+
+```bash
+sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
+sh testing/tools/run.sh        # every host test, as CI runs it
+```
+
+A manual test with no code prints `no tests for <ID>`. The on-car check for S2-U05 is in `app_program/motion/motion_test.c`; `./flash.sh test` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
+
 ## Every video
 
 1. Hold up or say the test ID.
@@ -95,6 +107,10 @@ Then it starts again at 1. Each move prints one `[BENCH]` line with the move, th
 
 **Show on video:** Both wheels turning forward; the count before and after each revolution.
 
+**Test code:** `logs/S2-U01/test_encoder_math.c`
+
+**Run:** `sh testing/tools/run.sh S2-U01`, then flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`; write down the counts.
 
 ### S2-U02 1 m straight
@@ -112,6 +128,10 @@ Then it starts again at 1. Each move prints one `[BENCH]` line with the move, th
 
 **Show on video:** Each run and the tape measurement.
 
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` (`[BENCH]` lines); write down the five distances and errors.
 
 ### S2-U03 90 and 180 degree pivots
@@ -128,6 +148,10 @@ Then it starts again at 1. Each move prints one `[BENCH]` line with the move, th
 
 **Show on video:** Each pivot ending against the tape.
 
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` (`[BENCH]` lines); write down the 15 heading errors.
 
 ### S2-U04 Wheel speed control on the floor
@@ -143,6 +167,10 @@ Then it starts again at 1. Each move prints one `[BENCH]` line with the move, th
 
 **Show on video:** The dashboard wheel-speed graph following the target.
 
+**Test code:** `logs/S2-U04/test_motion_trace.c`
+
+**Run:** `sh testing/tools/run.sh S2-U04`, then flash the image above, start the captures and follow the steps.
+
 **Logs:** `monitor.log` (`WHEEL` traces).
 
 ### S2-U05 Command freshness gate (auto)
@@ -157,5 +185,9 @@ Then it starts again at 1. Each move prints one `[BENCH]` line with the move, th
 2. Wait for `[TEST] === test run end ===`.
 
 **Show on video:** The line `[TEST] S2-U05 PASS` and the wheels not moving.
+
+**Test code:** `logs/S2-U05/test_motion_control.c`, `app_program/motion/motion_test.c` (on the car)
+
+**Run:** `sh testing/tools/run.sh S2-U05`, then flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log`
