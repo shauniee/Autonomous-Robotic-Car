@@ -3,6 +3,7 @@
 ## Contents
 
 - [Before you start](#before-you-start)
+- [Which image to flash](#which-image-to-flash)
 - [Captures](#captures)
 - [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
@@ -43,6 +44,22 @@ How to run and record SYS-01 to SYS-10. Test definitions: [TEST_LOG.md](TEST_LOG
    ```bash
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
    ```
+
+## Which image to flash
+
+Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no flash. Tests on the car need the image named in their **Image** line. Run every test of one image before flashing the next, top to bottom; a test listed under two images uses both (see its steps):
+
+| Image | Power | Tests |
+| --- | --- | --- |
+| `./flash.sh test` | USB only | SYS-02 |
+| `./flash.sh trial` | Battery only | SYS-04, SYS-05, SYS-06, SYS-07, SYS-08, SYS-09, SYS-10 |
+| `./flash.sh` | Battery only | SYS-03 |
+| none (no image) | Off | SYS-01 |
+
+Before every flash:
+
+1. `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
+2. `git status` is clean, so the commit you record is the code you flashed.
 
 ## Captures
 
