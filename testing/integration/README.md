@@ -4,6 +4,7 @@
 
 - [Before you start](#before-you-start)
 - [Captures](#captures)
+- [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
 - [After each test](#after-each-test)
 - [Tests](#tests)
@@ -59,6 +60,17 @@ Telemetry with laptop timestamps (every frame, nothing folded):
 ~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/integration/logs/<ID>/YYYY-MM-DD_monitor.log
 ```
 
+## Run the test code
+
+Host test code for a test ID is in `logs/<ID>/` beside its logs. It runs the real subsystem code with fake hardware, so it needs no robot. Run it before flashing:
+
+```bash
+sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
+sh testing/tools/run.sh        # every host test, as CI runs it
+```
+
+A manual test with no code prints `no tests for <ID>`. No test here has an on-car automatic check; each one is run by hand with the steps below.
+
 ## Every video
 
 1. Hold up or say the test ID.
@@ -86,6 +98,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** The whole run, filmed from above if possible.
 
+**Test code:** `logs/INT-01/test_line_replay.c`, `logs/INT-01/test_line_trace.c`
+
+**Run:** `sh testing/tools/run.sh INT-01`, then flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`
 
 ### INT-02 Line loss and recovery
@@ -100,6 +116,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 2. Lift the line section away in front of the car.
 
 **Show on video:** The sweep finding the line, or the stop.
+
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`
 
@@ -116,6 +136,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** The letter card, then the turn at the junction.
 
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`
 
 ### INT-04 Barcode then straight and U-turn
@@ -129,6 +153,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 1. Run each letter through the junction.
 
 **Show on video:** The car crossing straight, then the U-turn.
+
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`
 
@@ -144,6 +172,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** The car continuing without stopping.
 
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`
 
 ### INT-06 Turn with one wheel on a hump
@@ -157,6 +189,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 1. Press GP20 for each pivot (`left_90`, `right_90`, `turn_180`), as in S2-U03, five of each.
 
 **Show on video:** Each pivot against the tape.
+
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` (`[BENCH]` lines); write down the errors and compare them with S2-U03.
 
@@ -172,6 +208,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** The car holding the line and `humps=` rising.
 
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`; write down the hump height.
 
 ### INT-08 Obstacle stop on the line
@@ -185,6 +225,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 1. Start following toward it.
 
 **Show on video:** The car slowing and stopping; tape the gap.
+
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`; write down the gap.
 
@@ -202,6 +246,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** Each bypass and the rejoin, or the stop when blocked.
 
+**Test code:** `logs/INT-09/test_mission.c`, `logs/INT-09/test_mission_pending.c`, `logs/INT-09/test_smooth_navigation.c`
+
+**Run:** `sh testing/tools/run.sh INT-09`, then flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`
 
 ### INT-10 Telemetry and events during a run
@@ -216,5 +264,9 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 2. Mid-run, stop the broker for 10 s and restart it.
 
 **Show on video:** Each event on the dashboard, the turn rate (Turn under Motor speed, from the encoders, FR-20) changing in the turns, and the car carrying on during the loss.
+
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`
