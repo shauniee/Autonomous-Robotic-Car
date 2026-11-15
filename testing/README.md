@@ -4,6 +4,7 @@
 
 - [Layout](#layout)
 - [Three levels of test](#three-levels-of-test)
+- [Run the test code](#run-the-test-code)
 - [How to run and record a test](#how-to-run-and-record-a-test)
 - [Videos of tests and demos](#videos-of-tests-and-demos)
 - [Rules](#rules)
@@ -19,9 +20,11 @@ done when it is **written down here with its result and a saved log**.
 testing/
 ├── README.md              this guide
 ├── comms/                 S1, kept by its owner
+│   ├── README.md          runbook: how to run each test and the commands
 │   ├── TEST_LOG.md        test cases + results
-│   └── logs/<test ID>/    one folder per test, e.g. logs/S1-U01/,
-│                          holding only YYYY-MM-DD_<what>.log files
+│   └── logs/<test ID>/    one folder per test, e.g. logs/S1-U01/, holding
+│                          its YYYY-MM-DD_<what>.log files and the host test
+│                          code for that ID (test_*.c, .py or .mjs)
 ├── motion/                S2
 ├── line_barcode/          S3
 ├── terrain/               S4
@@ -29,7 +32,9 @@ testing/
 ├── integration/           tests across two or more subsystems (shared)
 ├── system/                tests of the whole robot against its requirements
 │                          (shared), plus the mission-readiness checklist
-└── host/                  host tests of the real code with fake hardware (CI)
+└── tools/                 the host-test runner, firmware build and size probe,
+                           and checks of the repo scripts (removed before the
+                           final submission)
 ```
 
 Choose the folder by what the test exercises, not where it ran. A barcode read
@@ -49,13 +54,30 @@ Test IDs never change and are never reused, even if a test is dropped. On
 code and docs cite that older evidence by date, and it stays in git history
 (commit `67bfa3b` and earlier).
 
+## Run the test code
+
+Each subsystem's `README.md` is its runbook: what to set up, the steps for every
+test ID and the exact commands. Host test code (the real subsystem code with
+fake hardware, no robot needed) sits in the folder of the test ID it backs:
+
+```sh
+sh testing/tools/run.sh            # every host test, as CI runs it
+sh testing/tools/run.sh S2-U05     # only the code in */logs/S2-U05/
+sh testing/tools/run.sh tools      # only the checks in testing/tools/
+```
+
+A test ID with no code (a manual test) prints `no tests for <ID>`. The on-car
+automatic checks are in `app_program/<subsystem>/<subsystem>_test.c` and run on
+`./flash.sh test`, which prints `[TEST] <ID> PASS|FAIL`.
+
 ## How to run and record a test
 
 1. **Define it first.** Add a row to the *Test cases* table in the right
    `TEST_LOG.md`: ID, what it checks, how, and the expected result.
 2. **Automate it if you can.** Add a `TEST_CHECK` with the same ID to
    `app_program/<subsystem>/<subsystem>_test.c` (see `app_program/test_report.h`).
-   A test that needs eyes or instruments (a motor turns, a sensor reacts, a
+   Host test code goes in `logs/<test ID>/` and gets one line in
+   `testing/tools/run.sh`. A test that needs eyes or instruments (a motor turns, a sensor reacts, a
    tape measure) is a *manual* test. Write its steps in the table instead.
 3. **Build the image and flash it** ([build and flash](../README.md#getting-started)).
    `./flash.sh test` runs every subsystem's checks at power-up, prints one
@@ -108,8 +130,8 @@ in [video/README.md](../video/README.md), and put the link in the
 | --- | --- | --- |
 | Coding standard | `python3 scripts/check_barr.py --all` | Any `app_program` line breaks a mechanical BARR-C:2018 rule |
 | Deliverables | `python3 scripts/check_deliverables.py` | A subsystem's source, public function, wired-in test or report section is missing; a second motor writer appears; networking commands Motion; firmware and laptop frame lengths differ |
-| Host tests | `bash testing/host/run.sh` and `node testing/host/test_dashboard.mjs` | Any test of the real subsystem code fails |
-| Firmware build | `sh testing/build_pending_profiles.sh` | Any of the six images fails to compile or link, or a struct outgrows its bound in `testing/sizeof_probe.c`. It never flashes |
+| Host tests | `bash testing/tools/run.sh` (includes the Node dashboard check) | Any test of the real subsystem code fails |
+| Firmware build | `sh testing/tools/build_pending_profiles.sh` | Any of the six images fails to compile or link, or a struct outgrows its bound in `testing/tools/sizeof_probe.c`. It never flashes |
 
 Deliverables that need the car print NEEDS EVIDENCE and do not fail the check, because only a physical run can close them.
 

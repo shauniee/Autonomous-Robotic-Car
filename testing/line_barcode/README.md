@@ -4,6 +4,7 @@
 
 - [Before you start](#before-you-start)
 - [Captures](#captures)
+- [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
 - [After each test](#after-each-test)
 - [Tests](#tests)
@@ -54,6 +55,17 @@ Telemetry with laptop timestamps (every frame, nothing folded):
 ~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/line_barcode/logs/<ID>/YYYY-MM-DD_monitor.log
 ```
 
+## Run the test code
+
+Host test code for a test ID is in `logs/<ID>/` beside its logs. It runs the real subsystem code with fake hardware, so it needs no robot. Run it before flashing:
+
+```bash
+sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
+sh testing/tools/run.sh        # every host test, as CI runs it
+```
+
+A manual test with no code prints `no tests for <ID>`. The on-car check for S3-U01 is in `app_program/line_barcode/line_barcode_test.c`; `./flash.sh test` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
+
 ## Every video
 
 1. Hold up or say the test ID.
@@ -82,6 +94,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** The `[IR] … black=L/R … line=…` lines changing with each move. At boot the image also prints its self-check, `[TEST] S3-U01 PASS` (line IR sample valid); show it.
 
+**Test code:** `logs/S3-U01/test_ir_tracking.c`, `app_program/line_barcode/line_barcode_test.c` (on the car)
+
+**Run:** `sh testing/tools/run.sh S3-U01`, then flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log`
 
 ### S3-U02 Barcode IR level
@@ -98,6 +114,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** `[BCPIN] level=` flipping and `edges=` counting up; say the pot setting.
 
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log`; note the pot setting.
 
 ### S3-U03 All 26 letters
@@ -112,6 +132,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 2. Stop with GP21, change the letter, repeat for A to Z.
 
 **Show on video:** Each letter on the floor and the dashboard letter card.
+
+**Test code:** `logs/S3-U03/test_barcode.c`
+
+**Run:** `sh testing/tools/run.sh S3-U03`, then flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`
 
@@ -128,6 +152,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** The letter card matching each print.
 
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`
 
 ### S3-U05 Read rate at course speed
@@ -141,5 +169,9 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 1. Drive over it ten times.
 
 **Show on video:** Each pass and the letter card.
+
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`; Claude counts reads against passes.
