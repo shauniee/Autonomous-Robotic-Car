@@ -6,7 +6,7 @@
   probe            send three bad requests (truncated, wrong version, drive) the robot must refuse
   serve            live web dashboard at http://127.0.0.1:8080 (scripts/dashboard.html);
                    the dashboard can send mappings and next-junction test directions
-  --self-test      decode the golden vectors shared with testing/host/test_mqtt_frame.c
+  --self-test      decode the golden vectors shared with testing/comms/logs/S1-U05/test_mqtt_frame.c
 
 Frame layouts: docs/architecture.md (MQTT binary protocol). Speed and
 direction are derived here from encoder counts between telemetry frames, so

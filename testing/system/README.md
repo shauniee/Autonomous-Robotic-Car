@@ -4,6 +4,7 @@
 
 - [Before you start](#before-you-start)
 - [Captures](#captures)
+- [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
 - [After each test](#after-each-test)
 - [Tests](#tests)
@@ -59,6 +60,17 @@ Telemetry with laptop timestamps (every frame, nothing folded):
 ~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/system/logs/<ID>/YYYY-MM-DD_monitor.log
 ```
 
+## Run the test code
+
+Host test code for a test ID is in `logs/<ID>/` beside its logs. It runs the real subsystem code with fake hardware, so it needs no robot. Run it before flashing:
+
+```bash
+sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
+sh testing/tools/run.sh        # every host test, as CI runs it
+```
+
+A manual test with no code prints `no tests for <ID>`. SYS-02 runs every subsystem's on-car checks with `./flash.sh test`.
+
 ## Every video
 
 1. Hold up or say the test ID.
@@ -89,6 +101,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** The meter on each reading.
 
+**Test code:** none (manual test)
+
+**Run:** no image; follow the steps with the board unpowered except for step 5.
+
 **Logs:** a typed `readings.log` of each value.
 
 ### SYS-02 TEST image self-checks (auto)
@@ -113,6 +129,10 @@ The image checks each subsystem and prints one line each:
 
 **Show on video:** Every `[TEST]` line PASS and the wheels still.
 
+**Test code:** every `app_program/<subsystem>/<subsystem>_test.c` (on the car: S1-U05, S2-U05, S3-U01, S4-U01, S5-U01)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log`
 
 ### SYS-03 Mission-day routine
@@ -130,6 +150,10 @@ The image checks each subsystem and prints one line each:
 
 **Show on video:** Each step, with no laptop code change.
 
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `monitor.log`
 
 ### SYS-04 Full course
@@ -145,6 +169,10 @@ The image checks each subsystem and prints one line each:
 
 **Show on video:** The whole run; say the time.
 
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`; write down the run time.
 
 ### SYS-05 Three runs in a row
@@ -158,6 +186,10 @@ The image checks each subsystem and prints one line each:
 1. Run SYS-04 two more times.
 
 **Show on video:** Each run.
+
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log` for each run.
 
@@ -175,6 +207,10 @@ The image checks each subsystem and prints one line each:
 
 **Show on video:** The stop, the tape and the fresh start.
 
+**Test code:** `logs/SYS-06/test_safety.c`
+
+**Run:** `sh testing/tools/run.sh SYS-06`, then flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`; write down the stopping distance.
 
 ### SYS-07 Fault handling
@@ -190,6 +226,10 @@ The image checks each subsystem and prints one line each:
 3. Power off, unplug the IMU, boot.
 
 **Show on video:** Each stop and the fault name on the dashboard.
+
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`
 
@@ -207,6 +247,10 @@ The image checks each subsystem and prints one line each:
 
 **Show on video:** The car keeping its own state; no start from the laptop.
 
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`
 
 ### SYS-09 Endless operation
@@ -222,6 +266,10 @@ The image checks each subsystem and prints one line each:
 
 **Show on video:** Each loop behaving the same.
 
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`
 
 ### SYS-10 Timing and memory under full load
@@ -235,5 +283,9 @@ The image checks each subsystem and prints one line each:
 1. Run the full course.
 
 **Show on video:** The `[TIMING]` lines on the USB terminal.
+
+**Test code:** `logs/SYS-10/test_robot_data.c`, `logs/SYS-10/test_robot_time.c`, `logs/SYS-10/test_trace_ring.c`
+
+**Run:** `sh testing/tools/run.sh SYS-10`, then flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log`; Claude reads `[TIMING]` max, overruns and stack.
