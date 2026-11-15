@@ -67,7 +67,8 @@ Terminal monitor and host tests:
 ```
 
 ```sh
-testing/host/run.sh
+sh testing/tools/run.sh          # every host test
+sh testing/tools/run.sh S1-U01   # only one test ID
 ```
 
 The Pico connects to your Mac's LAN IP, never `127.0.0.1` or `0.0.0.0`. If port 1883 is
@@ -112,15 +113,15 @@ Requirements are in [project-specs](docs/project-specs.md). Full-robot bring-up 
 ### Software regression and firmware profile checks
 
 For kernel-free C/Python/MQTT checks, run
-`bash testing/host/run.sh`. The new GitHub Actions workflow
-`.github/workflows/host-tests.yml` runs that suite and
-`node testing/host/test_dashboard.mjs` on pull requests and main pushes.
+`sh testing/tools/run.sh` (add a test ID, such as `S1-U01`, to run one test).
+The GitHub Actions workflow `.github/workflows/host-tests.yml` runs that suite,
+including the Node dashboard check, on pull requests and main pushes.
 A green host check does not mean the Pico firmware built or that the robot
 has passed physical tests.
 
 The pending safety/profile matrix is defined by
-`testing/build_pending_profiles.sh`. Run
-`sh testing/build_pending_profiles.sh` only on a configured machine with
+`testing/tools/build_pending_profiles.sh`. Run
+`sh testing/tools/build_pending_profiles.sh` only on a configured machine with
 `PICO_SDK_PATH`, `arm-none-eabi-gcc` and `make`. It **builds but never
 flashes** TEST/normal and TRACE 0/1 profiles plus the two course
 images. Inspect any compiler errors before preparing a wheels-raised test

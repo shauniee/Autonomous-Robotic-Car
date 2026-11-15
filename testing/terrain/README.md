@@ -4,6 +4,7 @@
 
 - [Before you start](#before-you-start)
 - [Captures](#captures)
+- [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
 - [After each test](#after-each-test)
 - [Tests](#tests)
@@ -54,6 +55,17 @@ Telemetry with laptop timestamps (every frame, nothing folded):
 ~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/terrain/logs/<ID>/YYYY-MM-DD_monitor.log
 ```
 
+## Run the test code
+
+Host test code for a test ID is in `logs/<ID>/` beside its logs. It runs the real subsystem code with fake hardware, so it needs no robot. Run it before flashing:
+
+```bash
+sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
+sh testing/tools/run.sh        # every host test, as CI runs it
+```
+
+A manual test with no code prints `no tests for <ID>`. The on-car check for S4-U01 is in `app_program/terrain/terrain_test.c`; `./flash.sh test` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
+
 ## Every video
 
 1. Hold up or say the test ID.
@@ -82,6 +94,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** Each `[IMU]` line, the refused start and, on the still boot, the self-check line `[TEST] S4-U01 PASS`.
 
+**Test code:** `app_program/terrain/terrain_test.c` (on the car)
+
+**Run:** flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log`
 
 ### S4-U02 Tilt and lift
@@ -100,6 +116,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** Pitch rising on the dashboard; each lift and turn over, the wheels stopping and `Terrain: lifted`.
 
+**Test code:** `logs/S4-U02/test_capture_imu.py`
+
+**Run:** `sh testing/tools/run.sh S4-U02`, then flash the image above, start the captures and follow the steps.
+
 **Logs:** `monitor.log`. Claude reads the vertical axis (`z=`) in the trace at each lift and on the floor. Set `LIFT_ACCEL_G` (now 0.3 g, provisional D06) from that trace.
 
 ### S4-U03 Hump count
@@ -116,6 +136,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** Each crossing and `humps=` on the dashboard.
 
+**Test code:** `logs/S4-U03/test_terrain.c`
+
+**Run:** `sh testing/tools/run.sh S4-U03`, then flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`
 
 ### S4-U04 Hump height
@@ -129,6 +153,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 1. Push one wheel over each hump three times.
 
 **Show on video:** The measured height and the reported height.
+
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`; write down each hump's measured height.
 
@@ -144,5 +172,9 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 2. Right wheel forward, right wheel reverse.
 
 **Show on video:** Each crossing and the side reported.
+
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`

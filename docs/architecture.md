@@ -433,7 +433,7 @@ the evidence: no lost function, memory, message sizes and timing.
 
 ## MQTT binary protocol, schema version 3
 
-Implemented by `app_program/comms/comms.h` and `mqtt_frame.c`, tested by `testing/host/test_mqtt_frame.c`; the laptop decoder `scripts/mqtt_client.py` checks the same golden vectors (`--self-test`). Field widths follow the [data table](team.md#6-data-representation). Version 3 packs the six owner fault bytes into one 12-bit fault word, so telemetry shrinks from 22 to 18 bytes; version 1 and 2 frames are rejected. A laptop decoder and firmware must be on the same version.
+Implemented by `app_program/comms/comms.h` and `mqtt_frame.c`, tested by `testing/comms/logs/S1-U05/test_mqtt_frame.c`; the laptop decoder `scripts/mqtt_client.py` checks the same golden vectors (`--self-test`). Field widths follow the [data table](team.md#6-data-representation). Version 3 packs the six owner fault bytes into one 12-bit fault word, so telemetry shrinks from 22 to 18 bytes; version 1 and 2 frames are rejected. A laptop decoder and firmware must be on the same version.
 
 Topics (root `robot/s3`, set in `config/wifi_secrets.h`): `<root>/telemetry` carries every robot-to-PC frame, `<root>/request` carries mapping and snapshot requests, `<root>/status` is the retained online/offline text.
 
