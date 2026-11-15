@@ -4,6 +4,7 @@
 
 - [Before you start](#before-you-start)
 - [Captures](#captures)
+- [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
 - [After each test](#after-each-test)
 - [Tests](#tests)
@@ -54,6 +55,17 @@ Telemetry with laptop timestamps (every frame, nothing folded):
 ~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/comms/logs/<ID>/YYYY-MM-DD_monitor.log
 ```
 
+## Run the test code
+
+Host test code for a test ID is in `logs/<ID>/` beside its logs. It runs the real subsystem code with fake hardware, so it needs no robot. Run it before flashing:
+
+```bash
+sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
+sh testing/tools/run.sh        # every host test, as CI runs it
+```
+
+A manual test with no code prints `no tests for <ID>`. The on-car check for S1-U05 is in `app_program/comms/comms_test.c`; `./flash.sh test` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
+
 ## Every video
 
 1. Hold up or say the test ID.
@@ -82,6 +94,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** The `wifi: link up` line, then the dashboard updating, including Turn under Motor speed (turn rate from the encoders, FR-20; `monitor` prints it as `turn=`).
 
+**Test code:** `logs/S1-U01/test_comms_report.c`, `logs/S1-U01/test_comms_stress.c`, `logs/S1-U01/test_dashboard.mjs`, `logs/S1-U01/test_dashboard_http.py`
+
+**Run:** `sh testing/tools/run.sh S1-U01`, then flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`; Claude measures the telemetry interval (target about 500 ms).
 
 ### S1-U02 Letter mapping rules
@@ -99,6 +115,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** The refused start, the `map` command and its reply, the dashboard before and after the reset.
 
+**Test code:** `logs/S1-U02/test_mission_mapping.c`
+
+**Run:** `sh testing/tools/run.sh S1-U02`, then flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log` and `monitor.log`
 
 ### S1-U03 Broker restart while stopped
@@ -114,6 +134,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 3. Stop the stopwatch when the dashboard updates again.
 
 **Show on video:** The dashboard showing the loss, then telemetry returning; say the recovery time.
+
+**Test code:** none (manual test)
+
+**Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`; note the recovery time.
 
@@ -135,6 +159,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** The three probe lines, `monitor` with no ACK and no state change, and the robot still idle.
 
+**Test code:** `logs/S1-U04/test_mqtt_cli.py`
+
+**Run:** `sh testing/tools/run.sh S1-U04`, then flash the image above, start the captures and follow the steps.
+
 **Logs:** `usb.log`, `monitor.log` and `probe.log`
 
 ### S1-U05 Frame codec on the Pico (auto)
@@ -149,5 +177,9 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 2. Wait for `[TEST] === test run end ===`.
 
 **Show on video:** The line `[TEST] S1-U05 PASS`.
+
+**Test code:** `logs/S1-U05/test_mqtt_frame.c`, `app_program/comms/comms_test.c` (on the car)
+
+**Run:** `sh testing/tools/run.sh S1-U05`, then flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log`
