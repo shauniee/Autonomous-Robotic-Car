@@ -75,7 +75,7 @@ Agreed by Nicholas on 2026-11-03 for M1. Nicholas self-tests the lap rate (2026-
 2. Build and flash: `./flash.sh trial`.
 3. Copy `build_make/trial.uf2` to a named file, restore the source, and record the hash the script prints.
 4. Run on battery with `mqtt_client.py monitor` saving to a file; analyse `WHEEL` and `LINE` records.
-5. Run `testing/host/run.sh` before changing any default; append a new result row to `testing/line_barcode/TEST_LOG.md`.
+5. Run `sh testing/tools/run.sh` before changing any default; append a new result row to `testing/line_barcode/TEST_LOG.md`.
 
 ## Lessons from the trials
 

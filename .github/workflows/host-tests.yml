@@ -58,10 +58,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Host test suite (C and Python)
-        run: bash testing/host/run.sh
-      - name: Dashboard regression checks (Node)
-        run: node testing/host/test_dashboard.mjs
+      - name: Host test suite (C, Python and the Node dashboard check)
+        run: bash testing/tools/run.sh
 
   firmware-build:
     name: Firmware builds for every profile
@@ -83,4 +81,4 @@ jobs:
       - name: Build all profiles, never flashes
         env:
           JOBS: 4
-        run: PICO_SDK_PATH="$RUNNER_TEMP/pico-sdk" sh testing/build_pending_profiles.sh
+        run: PICO_SDK_PATH="$RUNNER_TEMP/pico-sdk" sh testing/tools/build_pending_profiles.sh
