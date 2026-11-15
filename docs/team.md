@@ -412,7 +412,7 @@ into the 12-bit fault word in this order: Motion bits 0-1, Line 2-4, Terrain
 - **Compile-time proof.** Every narrowed field has a `_Static_assert` that its
   largest enumerator or configured maximum fits. Changing a config value past a
   field's width fails the build.
-- **Boundary tests.** `sh testing/host/run.sh` runs the host suite against the
+- **Boundary tests.** `sh testing/tools/run.sh` runs the host suite against the
   real `app_program` sources. Tests that cover packed data include
   `test_mqtt_frame.c` (golden vectors, every maximum, one past maximum and
   reserved bits), `test_robot_data.c` (field accessors, torn-read stress),
@@ -426,14 +426,14 @@ into the 12-bit fault word in this order: Motion bits 0-1, Line 2-4, Terrain
   meaning. The C codec and `scripts/mqtt_client.py --self-test` decode the same
   new golden vectors, and the 2026-11-08 run walks each of the 12 fault bits alone and all
   together.
-- **Builds.** All six profiles in `testing/build_pending_profiles.sh` compile
+- **Builds.** All six profiles in `testing/tools/build_pending_profiles.sh` compile
   with `-Wall -Wextra`, and the Arm size probes pass their size bounds.
 - **Physical.** A course trial on the final image is still to be run (2026-11-09).
 
 ### Memory
 
 Target `sizeof`, Arm GNU C, RP2040, measured with
-`sh testing/sizeof_probe.sh`
+`sh testing/tools/sizeof_probe.sh`
 on `main` (`c26bca4`) and on this change (2026-11-08).
 
 | Type | Before (bytes) | After (bytes) |
