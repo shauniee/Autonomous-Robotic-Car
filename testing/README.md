@@ -45,7 +45,7 @@ following need Mission to combine subsystems, so they are integration.
 
 | Level | ID format | Tests what | Written by | Where |
 |---|---|---|---|---|
-| Unit | `S1-U01` to `S5-U05`, five per subsystem | one subsystem on its own | the subsystem owner | `<subsystem>/TEST_LOG.md` |
+| Unit | `S1-U01` to `S5-U05`, up to five per subsystem | one subsystem on its own | the subsystem owner | `<subsystem>/TEST_LOG.md` |
 | Integration | `INT-01` to `INT-10` | subsystems working together through Mission | the owners on both sides | `integration/TEST_LOG.md` |
 | System | `SYS-01` to `SYS-10` | the finished robot against a requirement | whole team | `system/TEST_LOG.md` |
 
