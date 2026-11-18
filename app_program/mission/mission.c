@@ -47,6 +47,17 @@ enum
 
 static const bench_move_t bench_moves[BENCH_MOVE_COUNT] = {
     {"straight_100mm", MOTION_MODE_DISTANCE, 100}};
+#elif 3 == MISSION_BENCH
+/* BENCH=3 (S2-U03): GP20 runs only the pivots, in turn. */
+enum
+{
+    BENCH_MOVE_COUNT = 3
+};
+
+static const bench_move_t bench_moves[BENCH_MOVE_COUNT] = {
+    {"left_90", MOTION_MODE_TURN, 90},
+    {"right_90", MOTION_MODE_TURN, -90},
+    {"turn_180", MOTION_MODE_TURN, 180}};
 #else
 enum
 {

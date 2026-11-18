@@ -5,6 +5,7 @@
 #   ./flash.sh test   wireless self-test image: motors always inhibited
 #   ./flash.sh bench  motion bench: each GP20 press runs the next single move
 #   ./flash.sh bench10 motion bench: each GP20 press drives 100 mm straight (S2-U02)
+#   ./flash.sh benchturn motion bench: GP20 runs left_90, right_90, turn_180 in turn (S2-U03)
 # Hold BOOTSEL while plugging in USB; the script waits for the RPI-RP2 drive.
 set -eu
 
@@ -19,7 +20,8 @@ case "${1:-course}" in
     test) profile="TEST=1 FULL_COURSE=0"; name=test ;;
     bench) profile="TEST=0 FULL_COURSE=1 TRACE=1 BENCH=1"; name=bench ;;
     bench10) profile="TEST=0 FULL_COURSE=1 TRACE=1 BENCH=2"; name=bench10 ;;
-    *) echo "Usage: ./flash.sh [course|trial|test|bench|bench10]" >&2; exit 2 ;;
+    benchturn) profile="TEST=0 FULL_COURSE=1 TRACE=1 BENCH=3"; name=benchturn ;;
+    *) echo "Usage: ./flash.sh [course|trial|test|bench|bench10|benchturn]" >&2; exit 2 ;;
 esac
 
 [ -x "$tools/arm/bin/arm-none-eabi-gcc" ] && [ -d "$tools/pico-sdk" ] || {
