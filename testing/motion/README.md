@@ -42,18 +42,18 @@ How to run and record S2-U01 to S2-U05. Test definitions: [TEST_LOG.md](TEST_LOG
 
 ## Captures
 
-Every test saves its logs in `testing/motion/logs/<test ID>/`, named `YYYY-MM-DD_<what>.log`. Start each capture **before** resetting the Pico; stop it with Ctrl-C when the test ends.
+Every test saves its logs in `testing/motion/logs/<test ID>/`, named `<what>.log`. Start each capture **before** resetting the Pico; stop it with Ctrl-C when the test ends.
 
-USB console (replace `<ID>` and the date):
+USB console (replace `<ID>`):
 
 ```bash
-mkdir -p testing/motion/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/motion/logs/<ID>/YYYY-MM-DD_usb.log
+mkdir -p testing/motion/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/motion/logs/<ID>/usb.log
 ```
 
 Telemetry with laptop timestamps (every frame, nothing folded):
 
 ```bash
-~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/motion/logs/<ID>/YYYY-MM-DD_monitor.log
+~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/motion/logs/<ID>/monitor.log
 ```
 
 ## Run the test code

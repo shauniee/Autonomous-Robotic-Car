@@ -1,0 +1,225 @@
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+[TEST] line_barcode snapshot mutex creation returned=3
+[TEST] line_barcode snapshot mutex published=3
+Motion and I/O started; Mission starts after startup tests.
+[TEST] === test run start ===
+[TEST] S1-U05 PASS  binary telemetry round-trip and length check
+[TEST] comms SUMMARY 1 passed, 0 failed
+[TEST] S2-U05 PASS  command freshness gate; outputs inhibited
+[TEST] motion SUMMARY 1 passed, 0 failed
+wifi: cyw43_utk_task starting (proc 1)
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+wifi: delay 20 ms begin
+[IMU] calibration started: keep wheels still; timeout_ms=5000
+wifi: delay 20 ms end
+wifi: delay 50 ms begin
+wifi: delay 50 ms end
+wifi: resource claim No PIO state machines are available -> 4
+wifi: resource claim No DMA channels are available -> 0
+wifi: resource claim No DMA channels are available -> 1
+wifi: delay 20 ms begin
+wifi: delay 20 ms end
+wifi: delay 250 ms begin
+wifi: delay 250 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IMU] calibration passed: samples=100 elapsed_ms=2860
+[TEST] S4-U01 PASS  IMU boot calibration passed, no IMU fault
+[TEST] Terrain State: 0 | Hump count: 0
+[TEST] terrain SUMMARY 1 passed, 0 failed
+[IR] buttons GP20_down=0 GP21_down=0
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[MISSION] state=READY MOTOR_INHIBITED
+[TEST] S3-U01 PASS  line IR sample valid, no IR_INVALID fault
+[TEST] line_barcode SUMMARY 1 passed, 0 failed
+[TEST] S5-U01 PASS  front sonar echo valid (needs a target in range), no NO_ECHO fault
+[TEST] obstacle SUMMARY 1 passed, 0 failed
+[TEST] === test run end ===
+all subsystems started
+
+wifi: link status -> joined AP, no IP yet (2)
+wifi: link up, ip=172.20.10.3
+[TIMING] t=5000 | motion max=0us ovr=0 stack=528/2176B | io max=0us ovr=0 stack=448/2176B | mission max=0us ovr=0 stack=1016/2176B
+mqtt: ready
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=10000 | motion max=441us ovr=0 stack=528/2176B | io max=1658us ovr=244 stack=448/2176B | mission max=2535us ovr=250 stack=1016/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=15000 | motion max=236us ovr=0 stack=528/2176B | io max=1727us ovr=494 stack=448/2176B | mission max=1867us ovr=500 stack=1016/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=20000 | motion max=236us ovr=0 stack=528/2176B | io max=1732us ovr=744 stack=448/2176B | mission max=2842us ovr=750 stack=1016/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=25000 | motion max=234us ovr=0 stack=528/2176B | io max=1959us ovr=994 stack=448/2176B | mission max=1869us ovr=1000 stack=1016/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=30000 | motion max=236us ovr=0 stack=528/2176B | io max=1957us ovr=1244 stack=448/2176B | mission max=1974us ovr=1250 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=35000 | motion max=234us ovr=0 stack=528/2176B | io max=1697us ovr=1494 stack=448/2176B | mission max=1861us ovr=1500 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=40000 | motion max=234us ovr=0 stack=528/2176B | io max=1707us ovr=1744 stack=448/2176B | mission max=1863us ovr=1750 stack=1048/2176B
+[SAFETY] causes=2 gp21=0 fault=1 line_stale=0 motion_stale=0 motion_faults=0 terrain_faults=4 line_age_ms=0 motion_age_ms=10
+[MISSION] state=STOPPED MOTOR_INHIBITED
+[MISSION] stop: gp21=0 latched=2 inputs_ok=1 motion_stopped=1 motion_status=0 phase=0 usable_line=1 line_age_ms=0 front_valid=0 front_mm=8191
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=45000 | motion max=241us ovr=0 stack=528/2176B | io max=2000us ovr=1994 stack=448/2176B | mission max=4667us ovr=2000 stack=1096/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=50000 | motion max=481us ovr=0 stack=528/2176B | io max=1996us ovr=2244 stack=448/2176B | mission max=1872us ovr=2250 stack=1096/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=55000 | motion max=240us ovr=0 stack=528/2176B | io max=1641us ovr=2494 stack=448/2176B | mission max=2632us ovr=2500 stack=1096/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=60000 | motion max=240us ovr=0 stack=536/2176B | io max=1815us ovr=2744 stack=448/2176B | mission max=2679us ovr=2750 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=65000 | motion max=242us ovr=0 stack=536/2176B | io max=1736us ovr=2994 stack=448/2176B | mission max=2730us ovr=3000 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=70000 | motion max=235us ovr=0 stack=536/2176B | io max=2067us ovr=3244 stack=448/2176B | mission max=1754us ovr=3250 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=75000 | motion max=239us ovr=0 stack=536/2176B | io max=2015us ovr=3494 stack=448/2176B | mission max=1717us ovr=3500 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=80000 | motion max=240us ovr=0 stack=536/2176B | io max=1786us ovr=3744 stack=448/2176B | mission max=2638us ovr=3750 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=85000 | motion max=241us ovr=0 stack=536/2176B | io max=1767us ovr=3994 stack=448/2176B | mission max=1744us ovr=4000 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=90000 | motion max=246us ovr=0 stack=536/2176B | io max=1782us ovr=4244 stack=448/2176B | mission max=2660us ovr=4250 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=95000 | motion max=242us ovr=0 stack=536/2176B | io max=2000us ovr=4494 stack=448/2176B | mission max=2578us ovr=4500 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=100000 | motion max=240us ovr=0 stack=536/2176B | io max=1847us ovr=4744 stack=448/2176B | mission max=2615us ovr=4750 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=105000 | motion max=245us ovr=0 stack=536/2176B | io max=1719us ovr=4994 stack=448/2176B | mission max=2650us ovr=5000 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=110000 | motion max=239us ovr=0 stack=536/2176B | io max=1930us ovr=5244 stack=448/2176B | mission max=1726us ovr=5250 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=115000 | motion max=236us ovr=0 stack=536/2176B | io max=1990us ovr=5494 stack=448/2176B | mission max=2640us ovr=5500 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=120000 | motion max=239us ovr=0 stack=536/2176B | io max=1996us ovr=5744 stack=448/2176B | mission max=1917us ovr=5750 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=125000 | motion max=238us ovr=0 stack=536/2176B | io max=1691us ovr=5994 stack=448/2176B | mission max=1730us ovr=6000 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=130000 | motion max=239us ovr=0 stack=536/2176B | io max=1863us ovr=6244 stack=448/2176B | mission max=2574us ovr=6250 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=135000 | motion max=238us ovr=0 stack=536/2176B | io max=1658us ovr=6494 stack=448/2176B | mission max=1658us ovr=6500 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=140000 | motion max=238us ovr=0 stack=536/2176B | io max=1780us ovr=6744 stack=448/2176B | mission max=1785us ovr=6750 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=145000 | motion max=233us ovr=0 stack=536/2176B | io max=1678us ovr=6994 stack=448/2176B | mission max=2644us ovr=7000 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=150000 | motion max=242us ovr=0 stack=536/2176B | io max=1816us ovr=7244 stack=448/2176B | mission max=1700us ovr=7250 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=155000 | motion max=237us ovr=0 stack=536/2176B | io max=1662us ovr=7494 stack=448/2176B | mission max=1684us ovr=7500 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=160000 | motion max=233us ovr=0 stack=536/2176B | io max=1854us ovr=7744 stack=448/2176B | mission max=1760us ovr=7750 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=165000 | motion max=237us ovr=0 stack=536/2176B | io max=1631us ovr=7994 stack=448/2176B | mission max=1670us ovr=8000 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=170000 | motion max=238us ovr=0 stack=536/2176B | io max=1835us ovr=8244 stack=448/2176B | mission max=1664us ovr=8250 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=175000 | motion max=230us ovr=0 stack=536/2176B | io max=1719us ovr=8494 stack=448/2176B | mission max=2484us ovr=8500 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=180000 | motion max=241us ovr=0 stack=536/2176B | io max=1685us ovr=8744 stack=448/2176B | mission max=1669us ovr=8750 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=185000 | motion max=240us ovr=0 stack=536/2176B | io max=1710us ovr=8994 stack=448/2176B | mission max=2708us ovr=9000 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=190000 | motion max=242us ovr=0 stack=536/2176B | io max=1681us ovr=9244 stack=448/2176B | mission max=2609us ovr=9250 stack=1096/2176B
+[IR] buttons GP20_down=1 GP21_down=0
+[MISSION] GP20 ignored: release GP20 then press again state=STOPPED GP21_down=0
+[IR] buttons GP20_down=0 GP21_down=0
+[MISSION] GP20 released state=STOPPED GP21_down=0
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=195000 | motion max=240us ovr=0 stack=536/2176B | io max=1834us ovr=9494 stack=448/2176B | mission max=2223us ovr=9500 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=200000 | motion max=235us ovr=0 stack=536/2176B | io max=1696us ovr=9744 stack=448/2176B | mission max=1700us ovr=9750 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=205000 | motion max=236us ovr=0 stack=536/2176B | io max=1683us ovr=9994 stack=448/2176B | mission max=1704us ovr=10000 stack=1096/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=210000 | motion max=236us ovr=0 stack=536/2176B | io max=1709us ovr=10244 stack=448/2176B | mission max=1674us ovr=10250 stack=1096/2176B
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+[TEST] line_barcode snapshot mutex creation returned=3
+[TEST] line_barcode snapshot mutex published=3
+Motion and I/O started; Mission starts after startup tests.
+[TEST] === test run start ===
+[TEST] S1-U05 PASS  binary telemetry round-trip and length check
+[TEST] comms SUMMARY 1 passed, 0 failed
+[TEST] S2-U05 PASS  command freshness gate; outputs inhibited
+[TEST] motion SUMMARY 1 passed, 0 failed
+wifi: cyw43_utk_task starting (proc 1)
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+wifi: delay 20 ms begin
+[IMU] calibration started: keep wheels still; timeout_ms=5000
+wifi: delay 20 ms end
+wifi: delay 50 ms begin
+wifi: delay 50 ms end
+wifi: resource claim No PIO state machines are available -> 4
+wifi: resource claim No DMA channels are available -> 0
+wifi: resource claim No DMA channels are available -> 1
+wifi: delay 20 ms begin
+wifi: delay 20 ms end
+wifi: delay 250 ms begin
+wifi: delay 250 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IMU] calibration passed: samples=100 elapsed_ms=2420
+[TEST] S4-U01 PASS  IMU boot calibration passed, no IMU fault
+[TEST] Terrain State: 0 | Hump count: 0
+[TEST] terrain SUMMARY 1 passed, 0 failed
+[IR] buttons GP20_down=0 GP21_down=0
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[MISSION] state=READY MOTOR_INHIBITED
+[TEST] S3-U01 PASS  line IR sample valid, no IR_INVALID fault
+[TEST] line_barcode SUMMARY 1 passed, 0 failed
+[TEST] S5-U01 PASS  front sonar echo valid (needs a target in range), no NO_ECHO fault
+[TEST] obstacle SUMMARY 1 passed, 0 failed
+[TEST] === test run end ===
+all subsystems started
+
+wifi: link status -> joined AP, no IP yet (2)
+wifi: link up, ip=172.20.10.3
+[TIMING] t=5000 | motion max=0us ovr=0 stack=528/2176B | io max=0us ovr=0 stack=464/2176B | mission max=0us ovr=0 stack=1016/2176B
+mqtt: ready
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=10000 | motion max=445us ovr=0 stack=528/2176B | io max=1607us ovr=244 stack=464/2176B | mission max=1865us ovr=250 stack=1016/2176B
