@@ -1,0 +1,4 @@
+1794972478.532 STATUS 1
+1794972478.532 sent truncated mapping (34 3e 20 88); Pico should drop it: wrong length, no ACK, state unchanged
+1794972478.532 sent mapping as v2 (24 3e 20 88 01); Pico should drop it: wrong version, no ACK, state unchanged
+1794972478.532 sent drive both wheels forward (3f 3e 64 64); Pico should drop it: unknown type, no ACK, wheels stay still
