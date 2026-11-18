@@ -104,7 +104,7 @@ c_test smooth_navigation_geometry -DNAV_GEOMETRY_RELEASED=1 -DNAV_SENSOR_FORWARD
 c_test mission_mapping $C/S1-U02/test_mission_mapping.c app_program/mission/mission_mapping.c $DATA
 c_test echo_range $O/S5-U01/test_echo_range.c
 c_test obstacle_profile $O/S5-U03/test_obstacle_profile.c $PROFILE
-c_test range_filter $O/S5-U05/test_range_filter.c $PROFILE
+c_test range_filter $O/S5-U01/test_range_filter.c $PROFILE
 c_test profile_edges $O/S5-U03/test_profile_edges.c $PROFILE
 c_test mqtt_frame $C/S1-U05/test_mqtt_frame.c $FRAME
 c_test terrain $TR/S4-U02/test_terrain.c app_program/terrain/terrain_algo.c $DATA
