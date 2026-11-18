@@ -32,3 +32,4 @@ Add a new row for every run. Never edit or delete old rows.
 | Date | Test ID | Commit | Tester | Result | Log / evidence | Notes |
 |---|---|---|---|---|---|---|
 | YYYY-MM-DD | S2-U01 | `abc1234` | | PASS / FAIL | `logs/<ID>/YYYY-MM-DD_….log`, video link | |
+| 2026-11-18 | S2-U02 | `2526ba8` (`bench10`, BENCH=2) | Mahesha | PARTIAL | `logs/S2-U02/2026-11-18_monitor.log`, video: pending | Run at 100 mm, not the defined 1 m, on the battery-powered `bench10` image (100 mm/s). Tape: 5/5 runs stopped at 100 mm, 0 mm lateral error. Encoders: 98.2-100.2 mm per run, left-right difference at most 8 counts (~0.3 deg). PARTIAL because the 10 mm lateral limit is set over 1 m. |
