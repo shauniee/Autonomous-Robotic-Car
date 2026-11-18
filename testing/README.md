@@ -23,7 +23,7 @@ testing/
 │   ├── README.md          runbook: how to run each test and the commands
 │   ├── TEST_LOG.md        test cases + results
 │   └── logs/<test ID>/    one folder per test, e.g. logs/S1-U01/, holding
-│                          its YYYY-MM-DD_<what>.log files and the host test
+│                          its <what>.log files (usb.log, monitor.log) and the host test
 │                          code for that ID (test_*.c, .py or .mjs)
 ├── motion/                S2
 ├── line_barcode/          S3
@@ -84,15 +84,15 @@ automatic checks are in `app_program/<subsystem>/<subsystem>_test.c` and run on
    `[TEST] <ID> PASS|FAIL` line per check and never drives the motors.
    `./flash.sh trial` is the full course with diagnostics; follow the
    [power policy](../README.md#power-and-flashing).
-4. **Save the console output** to `logs/<test ID>/`, named `YYYY-MM-DD_<what>.log`
-   (for example `system/logs/SYS-04/2026-11-09_usb.log`). Logs are plain text
+4. **Save the console output** to `logs/<test ID>/`, named `<what>.log`
+   (for example `system/logs/SYS-04/usb.log`). Logs are plain text
    `.log` files only:
    ```sh
    # macOS (find the port name with: ls /dev/cu.usbmodem*)
    mkdir -p testing/system/logs/SYS-04
-   cat /dev/cu.usbmodemMTK3PICO1 | tee testing/system/logs/SYS-04/2026-11-09_usb.log
+   cat /dev/cu.usbmodemMTK3PICO1 | tee testing/system/logs/SYS-04/usb.log
    # laptop monitor during a battery run
-   ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py monitor --broker 127.0.0.1 | tee testing/system/logs/SYS-04/2026-11-09_monitor.log
+   ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py monitor --broker 127.0.0.1 | tee testing/system/logs/SYS-04/monitor.log
    ```
    Start the command first, then reset the Pico. Press Ctrl-C when it is done.
    On Windows with PuTTY, use *Session → Logging → All session output*.
@@ -101,7 +101,7 @@ automatic checks are in `app_program/<subsystem>/<subsystem>_test.c` and run on
    Do not save build or host-test output.
 5. **Record the result.** Add a row to the *Results* table: date, test ID,
    the commit you tested (`git rev-parse --short HEAD`, with `+` for
-   uncommitted changes), who ran it, PASS/FAIL, the log file and the video
+   uncommitted changes), the subsystem owner as tester, PASS/FAIL, the log file and the video
    link. Commit the log and the table together. A build or host test is not
    a car pass.
 
@@ -147,8 +147,8 @@ Which test now covers each Tribunal trial. Limits come from
 | T03 | Straight/curve/junction tracking under lighting, surface and speed variation | INT-01, INT-05 |
 | T04 | Known barcode scales/speeds in both directions, same-character decoding, pending-to-junction execution, duplicate/partial rejection and capture overflow | S3-U03 to S3-U05, INT-03 |
 | T05 | Four encoder actions: repeated distance/angle accuracy, completion, timeout and obstacle cancellation | S2-U02, S2-U03 |
-| T06 | Labelled stationary/acceleration/turn/climb/descent/lift traces; no raw gyro claim | S4-U02 |
-| T07 | Measured reference humps, slip/dynamic/incomplete rejection and invalid estimate after valid maximum | S4-U04 |
+| T06 | Labelled stationary/acceleration/turn/climb/descent/lift traces; no raw gyro claim | none (S4-U02 dropped 2026-11-18) |
+| T07 | Measured reference humps, slip/dynamic/incomplete rejection and invalid estimate after valid maximum | S4-U03 |
 | T08 | Known forward ranges/materials/angles; no/late/out-of-range echo, settled repeated filtering and repeat timing | S5-U01, S5-U05 |
 | T09 | Moving scan rejection, coarse/fine profile for 100-200 mm widths, uncertainty, separate front age and restored-center acquisition | S5-U03 |
 | T10 | Vehicle envelope/course boundary, both bypass sides, blocked paths and original-line versus wrong-crossing recovery | S5-U04, INT-09 |

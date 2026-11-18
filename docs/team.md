@@ -67,7 +67,7 @@ Nicholas is the sole contact for pending decisions and approvals; historical sub
 | GP12 | Jia Jing | SG90 Servo 1 signal S, orange; bench holds signal low |
 | GP16 | Unclaimed | Grove 4 first signal; barcode IR DOUT until 2026-11-09 |
 | GP17 | Nicholas | Right line IR DOUT, digital input (Grove 4 second signal on the carrier); AOUT not connected |
-| GP18 | Unclaimed | Onboard RGB LEDs; no firmware owner |
+| GP18 | Nicholas | Onboard WS2812 RGB LEDs 0 and 1 show the mission state; PIO0 state machine 0, Mission task only |
 | GP20 | Nicholas | Onboard active-low calibration/start; target fresh start only after eligible reset |
 | GP21 | Nicholas | Onboard active-low stop/cancel; target eligible release-to-ready handshake |
 | GP22 | Nicholas | Onboard buzzer; not used by the firmware |
@@ -338,6 +338,7 @@ range needs, stored is what the field occupies.
 | Safety inputs | `SafetyInputs_t` | flags; ages in ms | 1 each; 32 | bit-fields; `uint32_t` | per release |
 | Mapping request | `mission_mapping.c` `request_word` | letters 20, mapped 1, sequence 8, direction 3 | 32 | `rd_word_t` bits 0-31 | I/O (core 0) → Mission |
 | Mapping reply | `mission_mapping.c` `reply_word` | sequence 8, result 2 | 10 / 32 | `rd_word_t` | Mission → I/O |
+| Status LEDs ready | `status_led.c` `led` | flag | 1 | bit-field | Mission only |
 
 ### Comms
 

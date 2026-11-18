@@ -31,4 +31,4 @@ Add a new row for every run. Never edit or delete old rows.
 
 | Date | Test ID | Commit | Tester | Result | Log / evidence | Notes |
 |---|---|---|---|---|---|---|
-| YYYY-MM-DD | SYS-03 | `abc1234` | | PASS / FAIL | `logs/<ID>/YYYY-MM-DD_….log`, video link | |
+| YYYY-MM-DD | SYS-03 | `abc1234` | | PASS / FAIL | `logs/<ID>/<what>.log`, video link | |

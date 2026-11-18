@@ -145,6 +145,9 @@ _Static_assert(ROBOT_TRACE_ENABLED == 0 || ROBOT_TRACE_ENABLED == 1,
 #define SAFETY_BOOT_GRACE_MS    1500u
 #define REPORT_PERIOD_MS    500u
 #define FOLLOW_PERIOD_MS    10u
+/* Onboard WS2812 RGB LEDs showing the mission state (Robo Pico GP18). */
+#define STATUS_LED_GPIO     18u
+#define STATUS_LED_COUNT    2u
 #ifndef MISSION_RECOVERY_RELEASED
 #define MISSION_RECOVERY_RELEASED 1
 #endif

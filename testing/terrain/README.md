@@ -3,18 +3,18 @@
 ## Contents
 
 - [Before you start](#before-you-start)
+- [Which image to flash](#which-image-to-flash)
 - [Captures](#captures)
 - [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
 - [After each test](#after-each-test)
 - [Tests](#tests)
   - [S4-U01](#s4-u01-imu-boot-calibration)
-  - [S4-U02](#s4-u02-tilt-and-lift)
-  - [S4-U03](#s4-u03-hump-count)
-  - [S4-U04](#s4-u04-hump-height)
-  - [S4-U05](#s4-u05-hump-under-the-other-wheel-and-in-reverse)
+  - [S4-U02](#s4-u02-hump-count)
+  - [S4-U03](#s4-u03-hump-height)
+  - [S4-U04](#s4-u04-mission-stop-on-lift-and-flip)
 
-How to run and record S4-U01 to S4-U05. Test definitions: [TEST_LOG.md](TEST_LOG.md).
+How to run and record S4-U01 to S4-U04. Test definitions: [TEST_LOG.md](TEST_LOG.md).
 
 ## Before you start
 
@@ -39,20 +39,34 @@ How to run and record S4-U01 to S4-U05. Test definitions: [TEST_LOG.md](TEST_LOG
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
    ```
 
+## Which image to flash
+
+Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no flash. Tests on the car need the image named in their **Image** line. Run every test of one image before flashing the next, top to bottom; a test listed under two images uses both (see its steps):
+
+| Image | Power | Tests |
+| --- | --- | --- |
+| `TERRAIN_DIAGNOSTICS=1 ./flash.sh test` | USB only | S4-U01, S4-U02, S4-U03 |
+| `./flash.sh trial` | Battery only | S4-U04 |
+
+Before every flash:
+
+1. `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
+2. `git status` is clean, so the commit you record is the code you flashed.
+
 ## Captures
 
-Every test saves its logs in `testing/terrain/logs/<test ID>/`, named `YYYY-MM-DD_<what>.log`. Start each capture **before** resetting the Pico; stop it with Ctrl-C when the test ends.
+Every test saves its logs in `testing/terrain/logs/<test ID>/`, named `<what>.log`. Start each capture **before** resetting the Pico; stop it with Ctrl-C when the test ends.
 
-USB console (replace `<ID>` and the date):
+USB console (replace `<ID>`):
 
 ```bash
-mkdir -p testing/terrain/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/terrain/logs/<ID>/YYYY-MM-DD_usb.log
+mkdir -p testing/terrain/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/terrain/logs/<ID>/usb.log
 ```
 
 Telemetry with laptop timestamps (every frame, nothing folded):
 
 ```bash
-~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/terrain/logs/<ID>/YYYY-MM-DD_monitor.log
+~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/terrain/logs/<ID>/monitor.log
 ```
 
 ## Run the test code
@@ -100,29 +114,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Logs:** `usb.log`
 
-### S4-U02 Tilt and lift
-
-**Image:** `./flash.sh trial` (battery; it sends the IMU trace)
-
-**Set up:** Booted still on the floor; letters mapped; telemetry capture started; dashboard IMU graphs open.
-
-**Steps:**
-
-1. Lift the nose about 20 degrees and hold, then put it down.
-2. Press GP20 to start a run. Lift the car straight up off the floor.
-3. Check the wheels stop and the dashboard shows `Terrain: lifted` and a latched stop. Put the car down; press and release GP21 to clear it.
-4. Start again and turn the car over.
-5. Repeat steps 2 to 4 three times.
-
-**Show on video:** Pitch rising on the dashboard; each lift and turn over, the wheels stopping and `Terrain: lifted`.
-
-**Test code:** `logs/S4-U02/test_capture_imu.py`
-
-**Run:** `sh testing/tools/run.sh S4-U02`, then flash the image above, start the captures and follow the steps.
-
-**Logs:** `monitor.log`. Claude reads the vertical axis (`z=`) in the trace at each lift and on the floor. Set `LIFT_ACCEL_G` (now 0.3 g, provisional D06) from that trace.
-
-### S4-U03 Hump count
+### S4-U02 Hump count
 
 **Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh test`
 
@@ -136,21 +128,21 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** Each crossing and `humps=` on the dashboard.
 
-**Test code:** `logs/S4-U03/test_terrain.c`
+**Test code:** `logs/S4-U02/test_terrain.c`
 
-**Run:** `sh testing/tools/run.sh S4-U03`, then flash the image above, start the captures and follow the steps.
+**Run:** `sh testing/tools/run.sh S4-U02`, then flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`
+**Logs:** `usb.log` or `monitor.log`
 
-### S4-U04 Hump height
+### S4-U03 Hump height
 
 **Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh test`
 
-**Set up:** Humps of measured heights from 10 to 30 mm; captures started.
+**Set up:** A 10 mm hump, height measured; captures started.
 
 **Steps:**
 
-1. Push one wheel over each hump three times.
+1. Push one wheel over the hump three times.
 
 **Show on video:** The measured height and the reported height.
 
@@ -158,23 +150,25 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`; write down each hump's measured height.
+**Logs:** `usb.log` or `monitor.log`; write down the hump's measured height.
 
-### S4-U05 Hump under the other wheel and in reverse
+### S4-U04 Mission stop on lift and flip
 
-**Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh test`
+**Image:** `./flash.sh trial` (battery). The TEST image cannot be used: it keeps the motors inhibited, so GP21 never clears a stop.
 
-**Set up:** 10 mm hump; captures started.
+**Set up:** Booted still on the floor; telemetry shows `state=READY`; no run started; telemetry capture started.
 
 **Steps:**
 
-1. Left wheel forward, left wheel reverse.
-2. Right wheel forward, right wheel reverse.
+1. Lift the car straight up off the floor, hold it for a second, then set it down flat.
+2. Wait a few seconds, then press and release GP21.
+3. Turn the car over, then set it back on its wheels.
+4. Wait a few seconds, then press and release GP21.
 
-**Show on video:** Each crossing and the side reported.
+**Show on video:** Each lift and flip, `Terrain: lifted` and `state=STOPPED` on the dashboard, and READY again after GP21.
 
 **Test code:** none (manual test)
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`
+**Logs:** `monitor.log`
