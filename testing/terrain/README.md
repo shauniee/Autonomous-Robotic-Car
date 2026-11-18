@@ -13,7 +13,7 @@
   - [S4-U02](#s4-u02-tilt-and-lift)
   - [S4-U03](#s4-u03-hump-count)
   - [S4-U04](#s4-u04-hump-height)
-  - [S4-U05](#s4-u05-hump-under-the-other-wheel-and-in-reverse)
+  - [S4-U05](#s4-u05-mission-stop-on-lift-and-flip)
 
 How to run and record S4-U01 to S4-U05. Test definitions: [TEST_LOG.md](TEST_LOG.md).
 
@@ -175,21 +175,23 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Logs:** `usb.log` or `monitor.log`; write down the hump's measured height.
 
-### S4-U05 Hump under the other wheel and in reverse
+### S4-U05 Mission stop on lift and flip
 
-**Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh test`
+**Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh test` (motors always off)
 
-**Set up:** 10 mm hump; captures started.
+**Set up:** Booted still on the floor; `[MISSION] state=READY`; USB capture started.
 
 **Steps:**
 
-1. Left wheel forward, left wheel reverse.
-2. Right wheel forward, right wheel reverse.
+1. Lift the car straight up off the floor, hold it for a second, then set it down flat.
+2. Wait a few seconds, then press and release GP21.
+3. Turn the car over, then set it back on its wheels.
+4. Wait a few seconds, then press and release GP21.
 
-**Show on video:** Each crossing and the side reported.
+**Show on video:** Each lift and flip, the `[SAFETY]` and `[MISSION] state=STOPPED` lines, and READY again after GP21.
 
 **Test code:** none (manual test)
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` or `monitor.log`
+**Logs:** `usb.log`
