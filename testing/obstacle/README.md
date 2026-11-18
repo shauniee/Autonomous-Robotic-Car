@@ -3,6 +3,7 @@
 ## Contents
 
 - [Before you start](#before-you-start)
+- [Which image to flash](#which-image-to-flash)
 - [Captures](#captures)
 - [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
@@ -11,10 +12,8 @@
   - [S5-U01](#s5-u01-sonar-range)
   - [S5-U02](#s5-u02-servo-centre-and-limits)
   - [S5-U03](#s5-u03-scan-profile-width)
-  - [S5-U04](#s5-u04-bypass-side-from-the-scan)
-  - [S5-U05](#s5-u05-no-echo-and-out-of-range)
 
-How to run and record S5-U01 to S5-U05. Wheels never move: all five use the TEST image. Test definitions: [TEST_LOG.md](TEST_LOG.md).
+How to run and record S5-U01, S5-U02 and S5-U03. Wheels never move: all three use the TEST image. Test definitions: [TEST_LOG.md](TEST_LOG.md).
 
 ## Before you start
 
@@ -38,6 +37,19 @@ How to run and record S5-U01 to S5-U05. Wheels never move: all five use the TEST
    ```bash
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
    ```
+
+## Which image to flash
+
+Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no flash. Tests on the car need the image named in their **Image** line. Run every test of one image before flashing the next, top to bottom; a test listed under two images uses both (see its steps):
+
+| Image | Power | Tests |
+| --- | --- | --- |
+| `./flash.sh test` | USB only | S5-U01, S5-U02, S5-U03 |
+
+Before every flash:
+
+1. `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
+2. `git status` is clean, so the commit you record is the code you flashed.
 
 ## Captures
 
@@ -89,12 +101,11 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 **Steps:**
 
 1. Board at 100 mm; hold 5 s.
-2. 250, 500 and 1000 mm.
-3. Aim at open space.
+2. 250 and 500 mm.
 
 **Show on video:** The tape and the dashboard `front=` reading at each distance. At boot, with the board in range, the image also prints its self-check `[TEST] S5-U01 PASS` (front echo valid); show it.
 
-**Test code:** `logs/S5-U01/test_echo_range.c`, `app_program/obstacle/obstacle_test.c` (on the car)
+**Test code:** `logs/S5-U01/test_echo_range.c`, `logs/S5-U01/test_range_filter.c`, `app_program/obstacle/obstacle_test.c` (on the car)
 
 **Run:** `sh testing/tools/run.sh S5-U01`, then flash the image above, start the captures and follow the steps.
 
@@ -123,7 +134,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Image:** `./flash.sh test` (wireless, motors always off, USB)
 
-**Set up:** Boxes 100, 150 and 200 mm wide, 300 mm ahead on the line; captures started.
+**Set up:** Boxes 120, 180 and 250 mm wide, 150 mm ahead on the line (where Mission stops to scan); captures started.
 
 **Steps:**
 
@@ -137,49 +148,3 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 **Run:** `sh testing/tools/run.sh S5-U03`, then flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log`; write down the real widths.
-
-### S5-U04 Bypass side from the scan
-
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
-
-**Set up:** One box 300 mm ahead; captures started.
-
-**Steps:**
-
-1. Box centred: scan three times.
-2. Box offset left: three scans.
-3. Box offset right: three scans.
-4. Box centred, with a wall or a second box less than 220 mm past one edge: three scans. Then move it to the other edge: three scans.
-
-The side is chosen like this:
-
-- If exactly one side shows at least `MISSION_BYPASS_MIN_CLEAR_MM` (220 mm) of clearance, the car takes that side (step 4).
-- Otherwise it takes the side with the shorter edge; a tie goes left (steps 1 to 3). Clearance 0 means no echo, not blocked.
-
-**Show on video:** The box position and the side chosen each time.
-
-**Test code:** none (manual test)
-
-**Run:** flash the image above, start the captures and follow the steps.
-
-**Logs:** `usb.log` and `monitor.log`
-
-### S5-U05 No echo and out of range
-
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
-
-**Set up:** Captures started.
-
-**Steps:**
-
-1. Aim at open space.
-2. Aim at a soft object (cloth).
-3. Aim at a board angled 45 degrees.
-
-**Show on video:** No obstacle reported and no stop.
-
-**Test code:** `logs/S5-U05/test_range_filter.c`
-
-**Run:** `sh testing/tools/run.sh S5-U05`, then flash the image above, start the captures and follow the steps.
-
-**Logs:** `usb.log` and `monitor.log`

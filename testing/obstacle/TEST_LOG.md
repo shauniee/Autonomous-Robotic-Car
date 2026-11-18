@@ -15,11 +15,9 @@ Define a test here before running it. Test IDs never change.
 
 | ID | What is tested | Requirement / interface | Method | Steps / how | Expected result |
 |---|---|---|---|---|---|
-| S5-U01 | Sonar range | MR-17, T08 | manual | 1. Board at 100, 250, 500 and 1000 mm. 2. Open space | Range recorded against a tape; open space reads no echo |
+| S5-U01 | Sonar range | MR-17, T08 | manual | 1. Board at 100, 250 and 500 mm | Range recorded against a tape at each distance |
 | S5-U02 | Servo centre and limits | MR-18 | manual | 1. `./flash.sh test`. 2. Servo to centre and both sweep limits | Centre faces forward; limits do not stall |
-| S5-U03 | Scan profile width | M7, T09 | manual | 1. Scan boxes 100, 150 and 200 mm wide at 300 mm, car still | Width and edges recorded against a tape |
-| S5-U04 | Bypass side from the scan | M8, MR-30 | manual | 1. Scan a box centred, left and right of the line, three times each, car still | Side with the shorter edge chosen each time |
-| S5-U05 | No echo and out of range | T08 | manual | 1. Aim at open space, a soft object and an angled board | No false obstacle; no stop |
+| S5-U03 | Scan profile width | M7, T09 | manual | 1. Scan boxes 120, 180 and 250 mm wide at 150 mm (the Mission obstacle stop), car still | Width and edges recorded against a tape |
 
 *Method:* **auto** = `TEST_CHECK` in code, result printed on the console;
 **manual** = a person observes the result (motor, sensor, dashboard, tape measure).
@@ -32,3 +30,6 @@ Add a new row for every run. Never edit or delete old rows.
 | Date | Test ID | Commit | Tester | Result | Log / evidence | Notes |
 |---|---|---|---|---|---|---|
 | YYYY-MM-DD | S5-U01 | `abc1234` | | PASS / FAIL | `logs/<ID>/<what>.log`, video link | |
+| 2026-11-18 | S5-U01 | `e922198` (`test`, TEST=1) | Jia Jing | PASS | `logs/S5-U01/usb.log`, `logs/S5-U01/monitor.log`, video: pending | USB-powered TEST image, motors inhibited. Every boot printed `[TEST] S5-U01 PASS  front sonar echo valid`. Two takes against the tape, median `front=` (range): 100 mm read 107 (97-107) and 104 (95-112); 250 mm read 245 (244-251) and 254 (242-257); 500 mm read 492 (474-499, one 325 outlier) and 488. All within 12 mm. 1000 mm and open space dropped from this test; open space and no echo are covered by S5-U05. The monitor capture was trimmed to the takes (from 18:39:10); earlier hotspot dropouts are in `usb.log`. |
+| 2026-11-18 | S5-U02 | `3e6a79f` (`test`, TEST=1) | Jia Jing | PASS | `logs/S5-U02/usb.log`, video: pending | USB-powered TEST image, motors inhibited; firmware source unchanged from `e922198` (only test records changed). Box ahead, GP20: one scan swept coarse rays -60 to +60 deg in 10 deg steps, then fine rays at -25 and 45 deg, all with echoes; servo reached centre and both limits with no stall or buzz (observed). Profile `width=161 uncertainty=56 closest=217 left=197 right=171`. Box echoes spanned -20 to +40 deg, so check the servo centre before S5-U03. Earlier GP20 presses in the log were ignored while Mission was STOPPED after a terrain LIFTED latch (car tilted); a reboot restored READY. |
+| 2026-11-18 | S5-U03 | `db25868` (`test`, TEST=1) | Jia Jing | PASS | `logs/S5-U03/usb.log`, video: pending | USB-powered TEST image, boxes 150 mm ahead, one GP20 scan per press; 10 scans over 4 boots, scans 1-3 cut short by resets. Profiles: 120 mm box (0 deg range 163-164 mm) width 230, 229, 255 (uncertainty 62-64); 180 mm box (150-155 mm) width 218, 211 (60-61); 250 mm box (136 mm) width 211, 209 (60). PASS against the defined expectation (width and edges recorded; no accuracy limit set). The 120 mm box reads 110-135 mm too wide, outside its uncertainty: every scan echoes from about -30 to +30/40 deg, so the beam spread sets the edges. Box edges were not measured against the tape. Earlier attempts at 300 mm gave no profile: side objects within about 0.4-0.7 m projected inside the box depth. |

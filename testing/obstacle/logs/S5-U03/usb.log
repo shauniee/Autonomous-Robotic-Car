@@ -1,0 +1,535 @@
+[TIMING] t=35000 | motion max=354us ovr=0 stack=528/2176B | io max=1701us ovr=1494 stack=448/2176B | mission max=2840us ovr=1500 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=40000 | motion max=369us ovr=0 stack=528/2176B | io max=1828us ovr=1744 stack=448/2176B | mission max=1928us ovr=1750 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=45000 | motion max=374us ovr=0 stack=528/2176B | io max=1695us ovr=1994 stack=448/2176B | mission max=2678us ovr=2000 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=50000 | motion max=373us ovr=0 stack=528/2176B | io max=1670us ovr=2244 stack=448/2176B | mission max=2744us ovr=2250 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=55000 | motion max=363us ovr=0 stack=528/2176B | io max=1886us ovr=2494 stack=448/2176B | mission max=2623us ovr=2500 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[IR] buttons GP20_down=1 GP21_down=0
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] start refused: mapped=0 start_blocked=0 motion_stopped=1 safety_latched=0 guidance=1 line=1 ir_fresh=1 network_ready=1 imu_startup_done=1 motion_fresh=1 TEST=1
+[MISSION] start faults: motion=0 line=0 terrain=0
+[IR] buttons GP20_down=0 GP21_down=0
+[MISSION] GP20 released state=READY GP21_down=0
+[TIMING] t=60000 | motion max=364us ovr=0 stack=528/2176B | io max=1693us ovr=2744 stack=448/2176B | mission max=1925us ovr=2750 stack=1040/2176B
+[SCAN] ray -60 deg no echo 0 mm
+[SCAN] ray -50 deg echo 633 mm
+[SCAN] ray -40 deg echo 675 mm
+[SCAN] ray -30 deg echo 193 mm
+[SCAN] ray -20 deg echo 161 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray -10 deg echo 164 mm
+[SCAN] ray 0 deg echo 164 mm
+[IR] buttons GP20_down=1 GP21_down=0
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] start refused: mapped=0 start_blocked=0 motion_stopped=1 safety_latched=0 guidance=1 line=1 ir_fresh=1 network_ready=1 imu_startup_done=1 motion_fresh=1 TEST=1
+[MISSION] start faults: motion=0 line=0 terrain=0
+[IR] buttons GP20_down=0 GP21_down=0
+[SCAN] ray 10 deg echo 151 mm
+[MISSION] GP20 released state=READY GP21_down=0
+[SCAN] ray 20 deg echo 161 mm
+[SCAN] ray 30 deg echo 180 mm
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+[TEST] line_barcode snapshot mutex creation returned=3
+[TEST] line_barcode snapshot mutex published=3
+Motion and I/O started; Mission starts after startup tests.
+[TEST] === test run start ===
+[TEST] S1-U05 PASS  binary telemetry round-trip and length check
+[TEST] comms SUMMARY 1 passed, 0 failed
+[TEST] S2-U05 PASS  command freshness gate; outputs inhibited
+[TEST] motion SUMMARY 1 passed, 0 failed
+wifi: cyw43_utk_task starting (proc 1)
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+wifi: delay 20 ms begin
+[IMU] calibration started: keep wheels still; timeout_ms=5000
+wifi: delay 20 ms end
+wifi: delay 50 ms begin
+wifi: delay 50 ms end
+wifi: resource claim No PIO state machines are available -> 4
+wifi: resource claim No DMA channels are available -> 0
+wifi: resource claim No DMA channels are available -> 1
+wifi: delay 20 ms begin
+wifi: delay 20 ms end
+wifi: delay 250 ms begin
+wifi: delay 250 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IMU] calibration passed: samples=100 elapsed_ms=2120
+[TEST] S4-U01 PASS  IMU boot calibration passed, no IMU fault
+[TEST] Terrain State: 0 | Hump count: 0
+[TEST] terrain SUMMARY 1 passed, 0 failed
+[IR] buttons GP20_down=0 GP21_down=0
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[MISSION] state=READY MOTOR_INHIBITED
+[TEST] S3-U01 PASS  line IR sample valid, no IR_INVALID fault
+[TEST] line_barcode SUMMARY 1 passed, 0 failed
+[TEST] S5-U01 PASS  front sonar echo valid (needs a target in range), no NO_ECHO fault
+[TEST] obstacle SUMMARY 1 passed, 0 failed
+[TEST] === test run end ===
+all subsystems started
+
+wifi: link status -> joined AP, no IP yet (2)
+wifi: link up, ip=172.20.10.3
+[TIMING] t=5000 | motion max=0us ovr=0 stack=528/2176B | io max=0us ovr=0 stack=448/2176B | mission max=0us ovr=0 stack=1024/2176B
+mqtt: ready
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=10000 | motion max=437us ovr=0 stack=528/2176B | io max=1652us ovr=244 stack=448/2176B | mission max=2709us ovr=250 stack=1024/2176B
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+[TEST] line_barcode snapshot mutex creation returned=3
+[TEST] line_barcode snapshot mutex published=3
+Motion and I/O started; Mission starts after startup tests.
+[TEST] === test run start ===
+[TEST] S1-U05 PASS  binary telemetry round-trip and length check
+[TEST] comms SUMMARY 1 passed, 0 failed
+[TEST] S2-U05 PASS  command freshness gate; outputs inhibited
+[TEST] motion SUMMARY 1 passed, 0 failed
+wifi: cyw43_utk_task starting (proc 1)
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+wifi: delay 20 ms begin
+[IMU] calibration started: keep wheels still; timeout_ms=5000
+wifi: delay 20 ms end
+wifi: delay 50 ms begin
+wifi: delay 50 ms end
+wifi: resource claim No PIO state machines are available -> 4
+wifi: resource claim No DMA channels are available -> 0
+wifi: resource claim No DMA channels are available -> 1
+wifi: delay 20 ms begin
+wifi: delay 20 ms end
+wifi: delay 250 ms begin
+wifi: delay 250 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IMU] calibration passed: samples=100 elapsed_ms=2320
+[TEST] S4-U01 PASS  IMU boot calibration passed, no IMU fault
+[TEST] Terrain State: 0 | Hump count: 0
+[TEST] terrain SUMMARY 1 passed, 0 failed
+[IR] buttons GP20_down=0 GP21_down=0
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[MISSION] state=READY MOTOR_INHIBITED
+[TEST] S3-U01 PASS  line IR sample valid, no IR_INVALID fault
+[TEST] line_barcode SUMMARY 1 passed, 0 failed
+[TEST] S5-U01 PASS  front sonar echo valid (needs a target in range), no NO_ECHO fault
+[TEST] obstacle SUMMARY 1 passed, 0 failed
+[TEST] === test run end ===
+all subsystems started
+
+wifi: link status -> joined AP, no IP yet (2)
+wifi: link up, ip=172.20.10.3
+mqtt: ready
+[TIMING] t=5000 | motion max=0us ovr=0 stack=528/2176B | io max=0us ovr=0 stack=448/2176B | mission max=0us ovr=0 stack=1024/2176B
+[IR] buttons GP20_down=1 GP21_down=0
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] start refused: mapped=0 start_blocked=0 motion_stopped=1 safety_latched=0 guidance=1 line=1 ir_fresh=1 network_ready=1 imu_startup_done=1 motion_fresh=1 TEST=1
+[MISSION] start faults: motion=0 line=0 terrain=0
+[IR] buttons GP20_down=0 GP21_down=0
+[MISSION] GP20 released state=READY GP21_down=0
+[SCAN] ray -60 deg echo 407 mm
+[SCAN] ray -50 deg echo 450 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray -40 deg echo 498 mm
+[SCAN] ray -30 deg echo 170 mm
+[SCAN] ray -20 deg echo 164 mm
+[SCAN] ray -10 deg echo 163 mm
+[SCAN] ray 0 deg echo 154 mm
+[SCAN] ray 10 deg echo 164 mm
+[TIMING] t=10000 | motion max=454us ovr=0 stack=528/2176B | io max=1730us ovr=244 stack=448/2176B | mission max=2667us ovr=250 stack=1024/2176B
+[SCAN] ray 20 deg echo 173 mm
+[SCAN] ray 30 deg echo 180 mm
+[SCAN] ray 40 deg echo 186 mm
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+[TEST] line_barcode snapshot mutex creation returned=3
+[TEST] line_barcode snapshot mutex published=3
+Motion and I/O started; Mission starts after startup tests.
+[TEST] === test run start ===
+[TEST] S1-U05 PASS  binary telemetry round-trip and length check
+[TEST] comms SUMMARY 1 passed, 0 failed
+[TEST] S2-U05 PASS  command freshness gate; outputs inhibited
+[TEST] motion SUMMARY 1 passed, 0 failed
+wifi: cyw43_utk_task starting (proc 1)
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+wifi: delay 20 ms begin
+[IMU] calibration started: keep wheels still; timeout_ms=5000
+wifi: delay 20 ms end
+wifi: delay 50 ms begin
+wifi: delay 50 ms end
+wifi: resource claim No PIO state machines are available -> 4
+wifi: resource claim No DMA channels are available -> 0
+wifi: resource claim No DMA channels are available -> 1
+wifi: delay 20 ms begin
+wifi: delay 20 ms end
+wifi: delay 250 ms begin
+wifi: delay 250 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IMU] calibration passed: samples=100 elapsed_ms=2120
+[TEST] S4-U01 PASS  IMU boot calibration passed, no IMU fault
+[TEST] Terrain State: 0 | Hump count: 0
+[TEST] terrain SUMMARY 1 passed, 0 failed
+[IR] buttons GP20_down=0 GP21_down=0
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[MISSION] state=READY MOTOR_INHIBITED
+[TEST] S3-U01 PASS  line IR sample valid, no IR_INVALID fault
+[TEST] line_barcode SUMMARY 1 passed, 0 failed
+[TEST] S5-U01 PASS  front sonar echo valid (needs a target in range), no NO_ECHO fault
+[TEST] obstacle SUMMARY 1 passed, 0 failed
+[TEST] === test run end ===
+all subsystems started
+
+wifi: link status -> joined AP, no IP yet (2)
+wifi: link up, ip=172.20.10.3
+mqtt: ready
+[TIMING] t=5000 | motion max=0us ovr=0 stack=528/2176B | io max=0us ovr=0 stack=448/2176B | mission max=0us ovr=0 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=10000 | motion max=626us ovr=0 stack=528/2176B | io max=1888us ovr=244 stack=448/2176B | mission max=1898us ovr=250 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=15000 | motion max=377us ovr=0 stack=528/2176B | io max=1697us ovr=494 stack=448/2176B | mission max=2632us ovr=500 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=20000 | motion max=361us ovr=0 stack=528/2176B | io max=1707us ovr=744 stack=448/2176B | mission max=2853us ovr=750 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=25000 | motion max=375us ovr=0 stack=528/2176B | io max=1893us ovr=994 stack=448/2176B | mission max=2640us ovr=1000 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[IR] buttons GP20_down=1 GP21_down=0
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] start refused: mapped=1 start_blocked=0 motion_stopped=1 safety_latched=0 guidance=1 line=1 ir_fresh=1 network_ready=1 imu_startup_done=1 motion_fresh=1 TEST=1
+[MISSION] start faults: motion=0 line=0 terrain=0
+[IR] buttons GP20_down=0 GP21_down=0
+[MISSION] GP20 released state=READY GP21_down=0
+[SCAN] ray -60 deg no echo 0 mm
+[TIMING] t=30000 | motion max=394us ovr=0 stack=528/2176B | io max=1690us ovr=1244 stack=448/2176B | mission max=1853us ovr=1250 stack=1024/2176B
+[SCAN] ray -50 deg echo 766 mm
+[SCAN] ray -40 deg echo 754 mm
+[SCAN] ray -30 deg echo 193 mm
+[SCAN] ray -20 deg echo 161 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray -10 deg echo 164 mm
+[SCAN] ray 0 deg echo 164 mm
+[SCAN] ray 10 deg echo 151 mm
+[SCAN] ray 20 deg echo 161 mm
+[SCAN] ray 30 deg echo 179 mm
+[SCAN] ray 40 deg no echo 0 mm
+[TIMING] t=35000 | motion max=368us ovr=0 stack=528/2176B | io max=1838us ovr=1494 stack=448/2176B | mission max=2634us ovr=1500 stack=1032/2176B
+[SCAN] ray 50 deg no echo 0 mm
+[SCAN] ray 60 deg echo 504 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray -35 deg echo 745 mm
+[SCAN] ray 35 deg echo 189 mm
+[SCAN] profile width=230 uncertainty=62 closest=269 left=0 right=261 need=220
+[TIMING] t=40000 | motion max=381us ovr=0 stack=528/2176B | io max=1958us ovr=1744 stack=448/2176B | mission max=3725us ovr=1750 stack=1144/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=45000 | motion max=379us ovr=0 stack=528/2176B | io max=1753us ovr=1994 stack=448/2176B | mission max=3771us ovr=2000 stack=1144/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=50000 | motion max=386us ovr=0 stack=528/2176B | io max=1898us ovr=2244 stack=448/2176B | mission max=2567us ovr=2250 stack=1144/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=55000 | motion max=366us ovr=0 stack=528/2176B | io max=1785us ovr=2494 stack=448/2176B | mission max=1895us ovr=2500 stack=1144/2176B
+[IR] buttons GP20_down=1 GP21_down=0
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] start refused: mapped=1 start_blocked=0 motion_stopped=1 safety_latched=0 guidance=1 line=1 ir_fresh=1 network_ready=1 imu_startup_done=1 motion_fresh=1 TEST=1
+[MISSION] start faults: motion=0 line=0 terrain=0
+[IR] buttons GP20_down=0 GP21_down=0
+[MISSION] GP20 released state=READY GP21_down=0
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray -60 deg echo 495 mm
+[SCAN] ray -50 deg echo 498 mm
+[SCAN] ray -40 deg echo 738 mm
+[SCAN] ray -30 deg echo 193 mm
+[SCAN] ray -20 deg echo 160 mm
+[SCAN] ray -10 deg echo 164 mm
+[TIMING] t=60000 | motion max=378us ovr=0 stack=528/2176B | io max=1670us ovr=2744 stack=448/2176B | mission max=2161us ovr=2750 stack=1144/2176B
+[SCAN] ray 0 deg echo 163 mm
+[SCAN] ray 10 deg echo 151 mm
+[SCAN] ray 20 deg echo 161 mm
+[SCAN] ray 30 deg echo 180 mm
+[SCAN] ray 40 deg no echo 0 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray 50 deg no echo 0 mm
+[SCAN] ray 60 deg echo 496 mm
+[TIMING] t=65000 | motion max=374us ovr=0 stack=528/2176B | io max=1776us ovr=2994 stack=448/2176B | mission max=2567us ovr=3000 stack=1144/2176B
+[SCAN] ray -35 deg echo 442 mm
+[SCAN] ray 35 deg echo 188 mm
+[SCAN] profile width=229 uncertainty=62 closest=268 left=0 right=88 need=220
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[IR] buttons GP20_down=1 GP21_down=0
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] start refused: mapped=1 start_blocked=0 motion_stopped=1 safety_latched=0 guidance=1 line=1 ir_fresh=1 network_ready=1 imu_startup_done=1 motion_fresh=1 TEST=1
+[MISSION] start faults: motion=0 line=0 terrain=0
+[IR] buttons GP20_down=0 GP21_down=0
+[MISSION] GP20 released state=READY GP21_down=0
+[TIMING] t=70000 | motion max=385us ovr=0 stack=528/2176B | io max=1785us ovr=3244 stack=448/2176B | mission max=5092us ovr=3250 stack=1144/2176B
+[SCAN] ray -60 deg echo 442 mm
+[SCAN] ray -50 deg echo 494 mm
+[SCAN] ray -40 deg echo 441 mm
+[SCAN] ray -30 deg echo 193 mm
+[SCAN] ray -20 deg echo 161 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray -10 deg echo 164 mm
+[SCAN] ray 0 deg echo 164 mm
+[SCAN] ray 10 deg echo 151 mm
+[SCAN] ray 20 deg echo 160 mm
+[SCAN] ray 30 deg echo 180 mm
+[SCAN] ray 40 deg echo 186 mm
+[TIMING] t=75000 | motion max=369us ovr=0 stack=528/2176B | io max=1634us ovr=3494 stack=448/2176B | mission max=2567us ovr=3500 stack=1144/2176B
+[SCAN] ray 50 deg no echo 0 mm
+[SCAN] ray 60 deg echo 509 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray -35 deg echo 426 mm
+[SCAN] ray 45 deg no echo 0 mm
+[SCAN] profile width=255 uncertainty=64 closest=269 left=0 right=115 need=220
+[TIMING] t=80000 | motion max=384us ovr=0 stack=528/2176B | io max=1723us ovr=3744 stack=448/2176B | mission max=3817us ovr=3750 stack=1144/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=85000 | motion max=382us ovr=0 stack=528/2176B | io max=1877us ovr=3994 stack=448/2176B | mission max=3586us ovr=4000 stack=1144/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=90000 | motion max=357us ovr=0 stack=528/2176B | io max=1680us ovr=4244 stack=448/2176B | mission max=1990us ovr=4250 stack=1144/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[IR] buttons GP20_down=1 GP21_down=0
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] start refused: mapped=1 start_blocked=0 motion_stopped=1 safety_latched=0 guidance=1 line=1 ir_fresh=1 network_ready=1 imu_startup_done=1 motion_fresh=1 TEST=1
+[MISSION] start faults: motion=0 line=0 terrain=0
+[IR] buttons GP20_down=0 GP21_down=0
+[MISSION] GP20 released state=READY GP21_down=0
+[SCAN] ray -60 deg echo 476 mm
+[SCAN] ray -50 deg echo 414 mm
+[SCAN] ray -40 deg echo 391 mm
+[TIMING] t=95000 | motion max=366us ovr=0 stack=528/2176B | io max=1723us ovr=4494 stack=448/2176B | mission max=1911us ovr=4500 stack=1144/2176B
+[SCAN] ray -30 deg echo 170 mm
+[SCAN] ray -20 deg echo 161 mm
+[SCAN] ray -10 deg echo 142 mm
+[SCAN] ray 0 deg echo 155 mm
+[SCAN] ray 10 deg echo 142 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray 20 deg echo 161 mm
+[SCAN] ray 30 deg echo 180 mm
+[SCAN] ray 40 deg echo 1483 mm
+[SCAN] ray 50 deg echo 1027 mm
+[SCAN] ray 60 deg echo 565 mm
+[TIMING] t=100000 | motion max=357us ovr=0 stack=528/2176B | io max=1789us ovr=4744 stack=448/2176B | mission max=2636us ovr=4750 stack=1144/2176B
+[SCAN] ray -35 deg echo 410 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray 35 deg echo 190 mm
+[SCAN] profile width=218 uncertainty=61 closest=260 left=309 right=76 need=220
+[IR] buttons GP20_down=1 GP21_down=0
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] start refused: mapped=1 start_blocked=0 motion_stopped=1 safety_latched=0 guidance=1 line=1 ir_fresh=1 network_ready=1 imu_startup_done=1 motion_fresh=1 TEST=1
+[MISSION] start faults: motion=0 line=0 terrain=0
+[IR] buttons GP20_down=0 GP21_down=0
+[MISSION] GP20 released state=READY GP21_down=0
+[TIMING] t=105000 | motion max=360us ovr=0 stack=528/2176B | io max=1716us ovr=4994 stack=448/2176B | mission max=2303us ovr=5000 stack=1144/2176B
+[SCAN] ray -60 deg echo 453 mm
+[SCAN] ray -50 deg echo 444 mm
+[SCAN] ray -40 deg echo 436 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray -30 deg echo 157 mm
+[SCAN] ray -20 deg echo 160 mm
+[SCAN] ray -10 deg echo 141 mm
+[SCAN] ray 0 deg echo 150 mm
+[SCAN] ray 10 deg echo 142 mm
+[SCAN] ray 20 deg echo 161 mm
+[SCAN] ray 30 deg echo 179 mm
+[TIMING] t=110000 | motion max=377us ovr=0 stack=528/2176B | io max=1707us ovr=5244 stack=448/2176B | mission max=3739us ovr=5250 stack=1144/2176B
+[SCAN] ray 40 deg echo 1488 mm
+[SCAN] ray 50 deg no echo 0 mm
+[SCAN] ray 60 deg echo 575 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray -35 deg echo 449 mm
+[TIMING] t=115000 | motion max=387us ovr=0 stack=528/2176B | io max=1769us ovr=5494 stack=448/2176B | mission max=2841us ovr=5500 stack=1144/2176B
+[SCAN] ray 35 deg echo 189 mm
+[SCAN] profile width=211 uncertainty=60 closest=255 left=323 right=102 need=220
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=120000 | motion max=385us ovr=0 stack=528/2176B | io max=1743us ovr=5744 stack=448/2176B | mission max=3851us ovr=5750 stack=1144/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[IR] buttons GP20_down=1 GP21_down=0
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] start refused: mapped=1 start_blocked=0 motion_stopped=1 safety_latched=0 guidance=1 line=1 ir_fresh=1 network_ready=1 imu_startup_done=1 motion_fresh=1 TEST=1
+[MISSION] start faults: motion=0 line=0 terrain=0
+[IR] buttons GP20_down=0 GP21_down=0
+[MISSION] GP20 released state=READY GP21_down=0
+[SCAN] ray -60 deg echo 514 mm
+[TIMING] t=125000 | motion max=388us ovr=0 stack=528/2176B | io max=1640us ovr=5994 stack=448/2176B | mission max=1939us ovr=6000 stack=1144/2176B
+[SCAN] ray -50 deg echo 526 mm
+[SCAN] ray -40 deg echo 536 mm
+[SCAN] ray -30 deg echo 174 mm
+[SCAN] ray -20 deg echo 154 mm
+[SCAN] ray -10 deg echo 136 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray 0 deg echo 136 mm
+[SCAN] ray 10 deg echo 136 mm
+[SCAN] ray 20 deg echo 142 mm
+[SCAN] ray 30 deg echo 148 mm
+[SCAN] ray 40 deg echo 167 mm
+[SCAN] ray 50 deg echo 1483 mm
+[SCAN] ray 60 deg echo 575 mm
+[TIMING] t=130000 | motion max=327us ovr=0 stack=528/2176B | io max=1702us ovr=6244 stack=448/2176B | mission max=2127us ovr=6250 stack=1144/2176B
+[SCAN] ray -35 deg echo 540 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray 45 deg echo 1479 mm
+[SCAN] profile width=211 uncertainty=60 closest=241 left=313 right=163 need=220
+[TIMING] t=135000 | motion max=341us ovr=0 stack=528/2176B | io max=1753us ovr=6494 stack=448/2176B | mission max=2352us ovr=6500 stack=1144/2176B
+[IR] buttons GP20_down=1 GP21_down=0
+[MISSION] GP20 pressed state=READY GP21_down=0
+[MISSION] start refused: mapped=1 start_blocked=0 motion_stopped=1 safety_latched=0 guidance=1 line=1 ir_fresh=1 network_ready=1 imu_startup_done=1 motion_fresh=1 TEST=1
+[MISSION] start faults: motion=0 line=0 terrain=0
+[IR] buttons GP20_down=0 GP21_down=0
+[MISSION] GP20 released state=READY GP21_down=0
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray -60 deg echo 494 mm
+[SCAN] ray -50 deg echo 481 mm
+[SCAN] ray -40 deg echo 480 mm
+[SCAN] ray -30 deg echo 174 mm
+[SCAN] ray -20 deg echo 154 mm
+[SCAN] ray -10 deg echo 136 mm
+[SCAN] ray 0 deg echo 136 mm
+[TIMING] t=140000 | motion max=371us ovr=0 stack=528/2176B | io max=1724us ovr=6744 stack=576/2176B | mission max=5358us ovr=6750 stack=1144/2176B
+[SCAN] ray 10 deg echo 136 mm
+[SCAN] ray 20 deg echo 142 mm
+[SCAN] ray 30 deg echo 148 mm
+[SCAN] ray 40 deg echo 1488 mm
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[SCAN] ray 50 deg echo 1483 mm
+[SCAN] ray 60 deg echo 570 mm
+[SCAN] ray -35 deg echo 167 mm
+[TIMING] t=145000 | motion max=363us ovr=0 stack=528/2176B | io max=1779us ovr=6994 stack=576/2176B | mission max=2617us ovr=7000 stack=1144/2176B
+[SCAN] ray 35 deg echo 157 mm
+[SCAN] profile width=209 uncertainty=60 closest=241 left=330 right=145 need=220
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=150000 | motion max=387us ovr=0 stack=528/2176B | io max=1838us ovr=7244 stack=576/2176B | mission max=4345us ovr=7250 stack=1144/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+[TEST] line_barcode snapshot mutex creation returned=3
+[TEST] line_barcode snapshot mutex published=3
+Motion and I/O started; Mission starts after startup tests.
+[TEST] === test run start ===
+[TEST] S1-U05 PASS  binary telemetry round-trip and length check
+[TEST] comms SUMMARY 1 passed, 0 failed
+[TEST] S2-U05 PASS  command freshness gate; outputs inhibited
+[TEST] motion SUMMARY 1 passed, 0 failed
+wifi: cyw43_utk_task starting (proc 1)
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+wifi: delay 20 ms begin
+[IMU] calibration started: keep wheels still; timeout_ms=5000
+wifi: delay 20 ms end
+wifi: delay 50 ms begin
+wifi: delay 50 ms end
+wifi: resource claim No PIO state machines are available -> 4
+wifi: resource claim No DMA channels are available -> 0
+wifi: resource claim No DMA channels are available -> 1
+wifi: delay 20 ms begin
+wifi: delay 20 ms end
+wifi: delay 250 ms begin
+wifi: delay 250 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IMU] calibration passed: samples=100 elapsed_ms=2120
+[TEST] S4-U01 PASS  IMU boot calibration passed, no IMU fault
+[TEST] Terrain State: 0 | Hump count: 0
+[TEST] terrain SUMMARY 1 passed, 0 failed
+[IR] buttons GP20_down=0 GP21_down=0
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[MISSION] state=READY MOTOR_INHIBITED
+[TEST] S3-U01 PASS  line IR sample valid, no IR_INVALID fault
+[TEST] line_barcode SUMMARY 1 passed, 0 failed
+[TEST] S5-U01 PASS  front sonar echo valid (needs a target in range), no NO_ECHO fault
+[TEST] obstacle SUMMARY 1 passed, 0 failed
+[TEST] === test run end ===
+all subsystems started
+
+wifi: link status -> joined AP, no IP yet (2)
+wifi: link up, ip=172.20.10.3
+mqtt: ready
+[TIMING] t=5000 | motion max=0us ovr=0 stack=528/2176B | io max=0us ovr=0 stack=448/2176B | mission max=0us ovr=0 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=10000 | motion max=618us ovr=0 stack=528/2176B | io max=1868us ovr=244 stack=448/2176B | mission max=2535us ovr=250 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
