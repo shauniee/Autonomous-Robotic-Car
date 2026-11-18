@@ -10,12 +10,11 @@
 - [After each test](#after-each-test)
 - [Tests](#tests)
   - [S4-U01](#s4-u01-imu-boot-calibration)
-  - [S4-U02](#s4-u02-tilt-and-lift)
-  - [S4-U03](#s4-u03-hump-count)
-  - [S4-U04](#s4-u04-hump-height)
-  - [S4-U05](#s4-u05-mission-stop-on-lift-and-flip)
+  - [S4-U02](#s4-u02-hump-count)
+  - [S4-U03](#s4-u03-hump-height)
+  - [S4-U04](#s4-u04-mission-stop-on-lift-and-flip)
 
-How to run and record S4-U01 to S4-U05. Test definitions: [TEST_LOG.md](TEST_LOG.md).
+How to run and record S4-U01 to S4-U04. Test definitions: [TEST_LOG.md](TEST_LOG.md).
 
 ## Before you start
 
@@ -46,8 +45,8 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 
 | Image | Power | Tests |
 | --- | --- | --- |
-| `TERRAIN_DIAGNOSTICS=1 ./flash.sh test` | USB only | S4-U01, S4-U03, S4-U04 |
-| `./flash.sh trial` | Battery only | S4-U02, S4-U05 |
+| `TERRAIN_DIAGNOSTICS=1 ./flash.sh test` | USB only | S4-U01, S4-U02, S4-U03 |
+| `./flash.sh trial` | Battery only | S4-U04 |
 
 Before every flash:
 
@@ -115,29 +114,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Logs:** `usb.log`
 
-### S4-U02 Tilt and lift
-
-**Image:** `./flash.sh trial` (battery; it sends the IMU trace)
-
-**Set up:** Booted still on the floor; letters mapped; telemetry capture started; dashboard IMU graphs open.
-
-**Steps:**
-
-1. Lift the nose about 20 degrees and hold, then put it down.
-2. Press GP20 to start a run. Lift the car straight up off the floor.
-3. Check the wheels stop and the dashboard shows `Terrain: lifted` and a latched stop. Put the car down; press and release GP21 to clear it.
-4. Start again and turn the car over.
-5. Repeat steps 2 to 4 three times.
-
-**Show on video:** Pitch rising on the dashboard; each lift and turn over, the wheels stopping and `Terrain: lifted`.
-
-**Test code:** `logs/S4-U02/test_capture_imu.py`
-
-**Run:** `sh testing/tools/run.sh S4-U02`, then flash the image above, start the captures and follow the steps.
-
-**Logs:** `monitor.log`. Claude reads the vertical axis (`z=`) in the trace at each lift and on the floor. Set `LIFT_ACCEL_G` (now 0.3 g, provisional D06) from that trace.
-
-### S4-U03 Hump count
+### S4-U02 Hump count
 
 **Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh test`
 
@@ -151,13 +128,13 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Show on video:** Each crossing and `humps=` on the dashboard.
 
-**Test code:** `logs/S4-U03/test_terrain.c`
+**Test code:** `logs/S4-U02/test_terrain.c`
 
-**Run:** `sh testing/tools/run.sh S4-U03`, then flash the image above, start the captures and follow the steps.
+**Run:** `sh testing/tools/run.sh S4-U02`, then flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` or `monitor.log`
 
-### S4-U04 Hump height
+### S4-U03 Hump height
 
 **Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh test`
 
@@ -175,7 +152,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Logs:** `usb.log` or `monitor.log`; write down the hump's measured height.
 
-### S4-U05 Mission stop on lift and flip
+### S4-U04 Mission stop on lift and flip
 
 **Image:** `./flash.sh trial` (battery). The TEST image cannot be used: it keeps the motors inhibited, so GP21 never clears a stop.
 
