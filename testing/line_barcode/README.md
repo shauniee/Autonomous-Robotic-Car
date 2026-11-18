@@ -3,6 +3,7 @@
 ## Contents
 
 - [Before you start](#before-you-start)
+- [Which image to flash](#which-image-to-flash)
 - [Captures](#captures)
 - [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
@@ -11,7 +12,7 @@
   - [S3-U01](#s3-u01-line-ir-levels)
   - [S3-U02](#s3-u02-barcode-ir-level)
   - [S3-U03](#s3-u03-all-26-letters)
-  - [S3-U04](#s3-u04-reverse-direction-and-flipped-print)
+  - [S3-U04](#s3-u04-flipped-print)
   - [S3-U05](#s3-u05-read-rate-at-course-speed)
 
 How to run and record S3-U01 to S3-U05. Test definitions: [TEST_LOG.md](TEST_LOG.md).
@@ -38,6 +39,21 @@ How to run and record S3-U01 to S3-U05. Test definitions: [TEST_LOG.md](TEST_LOG
    ```bash
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
    ```
+
+## Which image to flash
+
+Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no flash. Tests on the car need the image named in their **Image** line. Run every test of one image before flashing the next, top to bottom; a test listed under two images uses both (see its steps):
+
+| Image | Power | Tests |
+| --- | --- | --- |
+| `./flash.sh test` | USB only | S3-U01 |
+| `BARCODE_DIAGNOSTICS=1 ./flash.sh test` | USB only | S3-U02 |
+| `BARCODE_DIAGNOSTICS=1 ./flash.sh trial` | Battery only | S3-U03, S3-U04, S3-U05 |
+
+Before every flash:
+
+1. `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
+2. `git status` is clean, so the commit you record is the code you flashed.
 
 ## Captures
 
@@ -110,15 +126,14 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 1. Slide a black strip slowly under the barcode sensor (GP27), then white.
 2. Repeat three times.
-3. Read the module's potentiometer position.
 
-**Show on video:** `[BCPIN] level=` flipping and `edges=` counting up; say the pot setting.
+**Show on video:** `[BCPIN] level=` flipping and `edges=` counting up.
 
 **Test code:** none (manual test)
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log`; note the pot setting.
+**Logs:** `usb.log`
 
 ### S3-U03 All 26 letters
 
@@ -137,26 +152,26 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Run:** `sh testing/tools/run.sh S3-U03`, then flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`
+**Logs:** `usb.log` or `monitor.log`
 
-### S3-U04 Reverse direction and flipped print
+### S3-U04 Flipped print
 
 **Image:** `BARCODE_DIAGNOSTICS=1 ./flash.sh trial` (battery)
 
-**Set up:** Same as S3-U03 with five letters.
+**Set up:** Same as S3-U03 with one letter.
 
 **Steps:**
 
-1. Drive each letter in the reverse direction.
-2. Turn the print 180 degrees and drive again.
+1. Turn the print 180 degrees.
+2. Drive over it in the normal direction.
 
-**Show on video:** The letter card matching each print.
+**Show on video:** The letter card matching the print.
 
 **Test code:** none (manual test)
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`
+**Logs:** `usb.log` or `monitor.log`
 
 ### S3-U05 Read rate at course speed
 
@@ -166,7 +181,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Steps:**
 
-1. Drive over it ten times.
+1. Drive over it three times.
 
 **Show on video:** Each pass and the letter card.
 
@@ -174,4 +189,4 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`; Claude counts reads against passes.
+**Logs:** `usb.log` or `monitor.log`; Claude counts reads against passes.
