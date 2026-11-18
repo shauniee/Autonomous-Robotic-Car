@@ -80,10 +80,10 @@ py_test() {
 
 # shellcheck disable=SC2086 # the source lists are several words
 {
-c_test robot_time $S/SYS-10/test_robot_time.c
-c_test trace_ring $S/SYS-10/test_trace_ring.c
+c_test robot_time $S/SYS-04/test_robot_time.c
+c_test trace_ring $S/SYS-04/test_trace_ring.c
 c_test encoder_math $M/S2-U01/test_encoder_math.c
-c_test robot_data $S/SYS-10/test_robot_data.c $DATA
+c_test robot_data $S/SYS-04/test_robot_data.c $DATA
 c_test motion_control $M/S2-U05/test_motion_control.c app_program/motion/motion_control.c $DATA
 c_test motion_control_stall_guard -DMOTION_STALL_GUARD_ENABLED=1 \
     $M/S2-U05/test_motion_control.c app_program/motion/motion_control.c $DATA

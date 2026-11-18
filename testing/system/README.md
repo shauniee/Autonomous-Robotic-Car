@@ -8,19 +8,15 @@
 - [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
 - [After each test](#after-each-test)
+- [One full course run](#one-full-course-run)
 - [Tests](#tests)
-  - [SYS-01](#sys-01-electrical-readiness)
-  - [SYS-02](#sys-02-test-image-self-checks-auto)
   - [SYS-03](#sys-03-mission-day-routine)
   - [SYS-04](#sys-04-full-course)
-  - [SYS-05](#sys-05-three-runs-in-a-row)
   - [SYS-06](#sys-06-stop-and-reset)
-  - [SYS-07](#sys-07-fault-handling)
   - [SYS-08](#sys-08-network-never-drives)
   - [SYS-09](#sys-09-endless-operation)
-  - [SYS-10](#sys-10-timing-and-memory-under-full-load)
 
-How to run and record SYS-01 to SYS-10. Test definitions: [TEST_LOG.md](TEST_LOG.md); ready-to-run checks: [mission readiness](mission-readiness.md).
+How to run and record SYS-03, SYS-04, SYS-06, SYS-08 and SYS-09, all from [one full course run](#one-full-course-run). Test definitions: [TEST_LOG.md](TEST_LOG.md); ready-to-run checks: [mission readiness](mission-readiness.md).
 
 ## Before you start
 
@@ -51,10 +47,7 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 
 | Image | Power | Tests |
 | --- | --- | --- |
-| `./flash.sh test` | USB only | SYS-02 |
-| `./flash.sh trial` | Battery only | SYS-04, SYS-05, SYS-06, SYS-07, SYS-08, SYS-09, SYS-10 |
-| `./flash.sh` | Battery only | SYS-03 |
-| none (no image) | Off | SYS-01 |
+| `./flash.sh trial` | Battery only | SYS-03, SYS-04, SYS-06, SYS-08, SYS-09 |
 
 Before every flash:
 
@@ -86,7 +79,7 @@ sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
 sh testing/tools/run.sh        # every host test, as CI runs it
 ```
 
-A manual test with no code prints `no tests for <ID>`. SYS-02 runs every subsystem's on-car checks with `./flash.sh test`.
+A manual test with no code prints `no tests for <ID>`.
 
 ## Every video
 
@@ -100,61 +93,47 @@ A manual test with no code prints `no tests for <ID>`. SYS-02 runs every subsyst
 
 Send Claude the test ID, the video link and anything you measured (tape readings, counts). Claude checks the logs and makes **one commit per test**: the logs plus one result row in [TEST_LOG.md](TEST_LOG.md), message `test(system): <ID> <PASS|FAIL|PARTIAL>`.
 
+## One full course run
+
+One scripted run on `./flash.sh trial` (battery only) records every system and integration test. Save its captures once, in `logs/SYS-04/` (`monitor.log`; no USB during a battery run), film it as one continuous video, and give every test it covers its own result row that points to those files and that video.
+
+**Course:** line with straights and the tightest curve; four barcodes (left, right, straight, U-turn), each before a junction; one junction with no barcode before it; a hump on a straight, and one on a curve if possible; a box on the line with both sides open.
+
+**Steps:**
+
+1. Fresh boot on the battery, broker running, map four letters not used before, dashboard open. Start the captures and the video.
+2. Press GP20 and start a stopwatch. Do not touch the car for three laps.
+3. During lap 2, stop the broker for about 10 s, then start it again.
+4. After lap 3, at course speed, press GP21. Tape the stopping distance.
+5. Hold GP20: nothing starts. Release it.
+6. While stopped, send `map` and `snapshot` requests from the laptop: the car does not move.
+7. Reset with a fresh GP21 press and release, then press GP20 fresh: it starts. Stop it with GP21.
+
+**Covers** every system and integration test that remains:
+
+| Test | Evidence |
+| --- | --- |
+| SYS-03 Mission-day routine | Step 1, local start |
+| SYS-04 Full course | Lap time from the stopwatch |
+| SYS-06 Stop and reset | Steps 4, 5 and 7 |
+| SYS-08 Network never drives | Steps 3 and 6 |
+| SYS-09 Endless operation | Three laps over the same junctions, GP21 ends it |
+| INT-01 Line following, three laps | Three laps |
+| INT-03 Left and right turns | Left and right barcodes |
+| INT-04 Straight and U-turn | Straight and U-turn barcodes |
+| INT-05 Junction or curve, no turn queued | Unqueued junction and the tightest curve |
+| INT-07 Hump while following | The hump on the straight, and on the curve if the course has one |
+| INT-08 Obstacle stop | Rest distance from `front=` at the scan, or taped |
+| INT-09 Bypass and rejoin | The box with both sides open |
+| INT-10 Telemetry during a run | Each event once on the dashboard; step 3 |
+
+SYS-01, SYS-02, SYS-05, SYS-07, SYS-10, INT-02 and INT-06 were dropped so that this one run is the whole system and integration record. Their IDs are not reused.
+
 ## Tests
-
-### SYS-01 Electrical readiness
-
-**Image:** none (power off for continuity)
-
-**Set up:** Multimeter; [pin table](../../docs/team.md#2-pins).
-
-**Steps:**
-
-1. Continuity of every wire (MR-01).
-2. Jumpers and contacts (MR-02).
-3. Sonar echo level (MR-03).
-4. Power polarity (MR-04).
-5. 3V3 and VSYS with motors and servo running (MR-05).
-
-**Show on video:** The meter on each reading.
-
-**Test code:** none (manual test)
-
-**Run:** no image; follow the steps with the board unpowered except for step 5.
-
-**Logs:** a typed `readings.log` of each value.
-
-### SYS-02 TEST image self-checks (auto)
-
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
-
-**Set up:** USB capture started; wheels free; car still; a board about 250 mm in front of the sonar.
-
-**Steps:**
-
-1. Reset the Pico.
-2. Wait for `[TEST] === test run end ===`.
-3. Press GP21, then GP20: nothing moves.
-
-The image checks each subsystem and prints one line each:
-
-- `S1-U05` frame codec
-- `S2-U05` command freshness gate
-- `S3-U01` line IR sample valid
-- `S4-U01` IMU calibration passed (boot still)
-- `S5-U01` front sonar echo valid (needs the board in range)
-
-**Show on video:** Every `[TEST]` line PASS and the wheels still.
-
-**Test code:** every `app_program/<subsystem>/<subsystem>_test.c` (on the car: S1-U05, S2-U05, S3-U01, S4-U01, S5-U01)
-
-**Run:** flash the image above, start the captures and follow the steps.
-
-**Logs:** `usb.log`
 
 ### SYS-03 Mission-day routine
 
-**Image:** `./flash.sh` (course image)
+**Image:** `./flash.sh trial` (full course with diagnostics; battery for driving)
 
 **Set up:** Fresh boot on battery; letters you have not used before.
 
@@ -186,29 +165,11 @@ The image checks each subsystem and prints one line each:
 
 **Show on video:** The whole run; say the time.
 
-**Test code:** none (manual test)
+**Test code:** `logs/SYS-04/test_robot_data.c`, `logs/SYS-04/test_robot_time.c`, `logs/SYS-04/test_trace_ring.c`
 
-**Run:** flash the image above, start the captures and follow the steps.
+**Run:** `sh testing/tools/run.sh SYS-04`, then flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`; write down the run time.
-
-### SYS-05 Three runs in a row
-
-**Image:** `./flash.sh trial` (full course with diagnostics; battery for driving)
-
-**Set up:** Same as SYS-04, no code or constant change.
-
-**Steps:**
-
-1. Run SYS-04 two more times.
-
-**Show on video:** Each run.
-
-**Test code:** none (manual test)
-
-**Run:** flash the image above, start the captures and follow the steps.
-
-**Logs:** `usb.log` and `monitor.log` for each run.
 
 ### SYS-06 Stop and reset
 
@@ -230,26 +191,6 @@ The image checks each subsystem and prints one line each:
 
 **Logs:** `usb.log` and `monitor.log`; write down the stopping distance.
 
-### SYS-07 Fault handling
-
-**Image:** `./flash.sh trial` (full course with diagnostics; battery for driving)
-
-**Set up:** Driving on the line.
-
-**Steps:**
-
-1. Wiggle an encoder lead.
-2. Reset; start again and lift the car off the floor (`Terrain: lifted`).
-3. Power off, unplug the IMU, boot.
-
-**Show on video:** Each stop and the fault name on the dashboard.
-
-**Test code:** none (manual test)
-
-**Run:** flash the image above, start the captures and follow the steps.
-
-**Logs:** `usb.log` and `monitor.log`
-
 ### SYS-08 Network never drives
 
 **Image:** `./flash.sh trial` (full course with diagnostics; battery for driving)
@@ -258,8 +199,8 @@ The image checks each subsystem and prints one line each:
 
 **Steps:**
 
-1. Turn WiFi off at the hotspot mid-run.
-2. Turn it back on.
+1. Stop the broker mid-run.
+2. Start it again.
 3. While stopped, send `map` and `snapshot` requests.
 
 **Show on video:** The car keeping its own state; no start from the laptop.
@@ -288,21 +229,3 @@ The image checks each subsystem and prints one line each:
 **Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`
-
-### SYS-10 Timing and memory under full load
-
-**Image:** `./flash.sh trial` (full course with diagnostics; battery for driving)
-
-**Set up:** USB console captured during a full course (can be the SYS-04 run).
-
-**Steps:**
-
-1. Run the full course.
-
-**Show on video:** The `[TIMING]` lines on the USB terminal.
-
-**Test code:** `logs/SYS-10/test_robot_data.c`, `logs/SYS-10/test_robot_time.c`, `logs/SYS-10/test_trace_ring.c`
-
-**Run:** `sh testing/tools/run.sh SYS-10`, then flash the image above, start the captures and follow the steps.
-
-**Logs:** `usb.log`; Claude reads `[TIMING]` max, overruns and stack.
