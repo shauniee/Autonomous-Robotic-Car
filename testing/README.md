@@ -147,8 +147,8 @@ Which test now covers each Tribunal trial. Limits come from
 | T03 | Straight/curve/junction tracking under lighting, surface and speed variation | INT-01, INT-05 |
 | T04 | Known barcode scales/speeds in both directions, same-character decoding, pending-to-junction execution, duplicate/partial rejection and capture overflow | S3-U03 to S3-U05, INT-03 |
 | T05 | Four encoder actions: repeated distance/angle accuracy, completion, timeout and obstacle cancellation | S2-U02, S2-U03 |
-| T06 | Labelled stationary/acceleration/turn/climb/descent/lift traces; no raw gyro claim | S4-U02 |
-| T07 | Measured reference humps, slip/dynamic/incomplete rejection and invalid estimate after valid maximum | S4-U04 |
+| T06 | Labelled stationary/acceleration/turn/climb/descent/lift traces; no raw gyro claim | none (S4-U02 dropped 2026-11-18) |
+| T07 | Measured reference humps, slip/dynamic/incomplete rejection and invalid estimate after valid maximum | S4-U03 |
 | T08 | Known forward ranges/materials/angles; no/late/out-of-range echo, settled repeated filtering and repeat timing | S5-U01, S5-U05 |
 | T09 | Moving scan rejection, coarse/fine profile for 100-200 mm widths, uncertainty, separate front age and restored-center acquisition | S5-U03 |
 | T10 | Vehicle envelope/course boundary, both bypass sides, blocked paths and original-line versus wrong-crossing recovery | S5-U04, INT-09 |

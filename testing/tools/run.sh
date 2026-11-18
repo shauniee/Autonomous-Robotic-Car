@@ -107,7 +107,7 @@ c_test obstacle_profile $O/S5-U03/test_obstacle_profile.c $PROFILE
 c_test range_filter $O/S5-U05/test_range_filter.c $PROFILE
 c_test profile_edges $O/S5-U03/test_profile_edges.c $PROFILE
 c_test mqtt_frame $C/S1-U05/test_mqtt_frame.c $FRAME
-c_test terrain $TR/S4-U03/test_terrain.c app_program/terrain/terrain_algo.c $DATA
+c_test terrain $TR/S4-U02/test_terrain.c app_program/terrain/terrain_algo.c $DATA
 c_test comms_report $C/S1-U01/test_comms_report.c app_program/comms/report.c $FRAME
 c_test comms_stress $C/S1-U01/test_comms_stress.c app_program/comms/report.c $FRAME
 }
@@ -118,7 +118,7 @@ py_test mqtt_decoder scripts/mqtt_client.py --self-test
 py_test check_barr $T/test_check_barr.py
 py_test check_deliverables $T/test_check_deliverables.py
 py_test field_tools $T/test_field_tools.py
-py_test capture_imu $TR/S4-U02/test_capture_imu.py
+py_test capture_imu $T/test_capture_imu.py
 
 # Dashboard script in a fake DOM; needs Node, which CI installs.
 if wanted $C/S1-U01/test_dashboard.mjs; then
