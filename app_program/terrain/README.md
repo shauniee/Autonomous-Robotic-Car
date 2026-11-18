@@ -71,7 +71,7 @@ Install `pyserial` on the laptop once, then capture using the actual port:
 
 ```sh
 python -m pip install pyserial
-python scripts/capture_imu.py --port COM5 --seconds 60 --output testing/terrain/logs/S4-U04/YYYY-MM-DD_hump-raw-01.log
+python scripts/capture_imu.py --port COM5 --seconds 60 --output testing/terrain/logs/S4-U04/hump-raw-01.log
 ```
 
 Start capture before resetting the board. Keep it level with wheels still

@@ -55,18 +55,18 @@ Before every flash:
 
 ## Captures
 
-Every test saves its logs in `testing/comms/logs/<test ID>/`, named `YYYY-MM-DD_<what>.log`. Start each capture **before** resetting the Pico; stop it with Ctrl-C when the test ends.
+Every test saves its logs in `testing/comms/logs/<test ID>/`, named `<what>.log`. Start each capture **before** resetting the Pico; stop it with Ctrl-C when the test ends.
 
-USB console (replace `<ID>` and the date):
+USB console (replace `<ID>`):
 
 ```bash
-mkdir -p testing/comms/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/comms/logs/<ID>/YYYY-MM-DD_usb.log
+mkdir -p testing/comms/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/comms/logs/<ID>/usb.log
 ```
 
 Telemetry with laptop timestamps (every frame, nothing folded):
 
 ```bash
-~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/comms/logs/<ID>/YYYY-MM-DD_monitor.log
+~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/comms/logs/<ID>/monitor.log
 ```
 
 ## Run the test code
@@ -166,7 +166,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 1. In another terminal run the probe. It sends a truncated mapping, a mapping with the old version and a drive request, one line each:
 
    ```bash
-   ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py probe --broker 127.0.0.1 | tee testing/comms/logs/S1-U04/YYYY-MM-DD_probe.log
+   ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py probe --broker 127.0.0.1 | tee testing/comms/logs/S1-U04/probe.log
    ```
 
 2. Watch `monitor`: no ACK and no state change. Watch the robot: nothing moves.
