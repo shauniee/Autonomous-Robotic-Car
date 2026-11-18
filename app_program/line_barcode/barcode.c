@@ -485,6 +485,11 @@ bool barcode_init(void)
     }
     barcode_frame_reset(&frame);
     initialised = true;
+#if APP_TEST && BARCODE_DIAGNOSTICS
+    /* TEST never starts a run, so arm the edge IRQ for the bench pin check;
+       the decoder stays off, so no barcode event reaches Mission. */
+    drv_barcode_enable(true);
+#endif
     return true;
 }
 

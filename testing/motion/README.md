@@ -3,6 +3,7 @@
 ## Contents
 
 - [Before you start](#before-you-start)
+- [Which image to flash](#which-image-to-flash)
 - [Captures](#captures)
 - [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
@@ -40,20 +41,36 @@ How to run and record S2-U01 to S2-U05. Test definitions: [TEST_LOG.md](TEST_LOG
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
    ```
 
+## Which image to flash
+
+Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no flash. Tests on the car need the image named in their **Image** line. Run every test of one image before flashing the next, top to bottom; a test listed under two images uses both (see its steps):
+
+| Image | Power | Tests |
+| --- | --- | --- |
+| `./flash.sh test` | USB only | S2-U01, S2-U05 |
+| `./flash.sh bench` | Battery only | S2-U01, S2-U02, S2-U03, S2-U04 |
+| `./flash.sh bench10` | Battery only | S2-U02 (every GP20 press drives 100 mm) |
+| `./flash.sh benchturn` | Battery only | S2-U03 (GP20 runs `left_90`, `right_90`, `turn_180` only) |
+
+Before every flash:
+
+1. `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
+2. `git status` is clean, so the commit you record is the code you flashed.
+
 ## Captures
 
-Every test saves its logs in `testing/motion/logs/<test ID>/`, named `YYYY-MM-DD_<what>.log`. Start each capture **before** resetting the Pico; stop it with Ctrl-C when the test ends.
+Every test saves its logs in `testing/motion/logs/<test ID>/`, named `<what>.log`. Start each capture **before** resetting the Pico; stop it with Ctrl-C when the test ends.
 
-USB console (replace `<ID>` and the date):
+USB console (replace `<ID>`):
 
 ```bash
-mkdir -p testing/motion/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/motion/logs/<ID>/YYYY-MM-DD_usb.log
+mkdir -p testing/motion/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/motion/logs/<ID>/usb.log
 ```
 
 Telemetry with laptop timestamps (every frame, nothing folded):
 
 ```bash
-~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/motion/logs/<ID>/YYYY-MM-DD_monitor.log
+~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/motion/logs/<ID>/monitor.log
 ```
 
 ## Run the test code
@@ -89,7 +106,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 4. `right_90`
 5. `turn_180`
 
-Then it starts again at 1. Each move prints one `[BENCH]` line with the move, the result (`DONE`, `FAILED` or `ABORTED`), the left and right counts, the travel in mm, the heading and the time. A move that does not finish is run again on the next press. GP21 still stops; if a press prints `[BENCH] refused`, press and release GP21 first. The last `[BENCH]` line tells you which move is next.
+Then it starts again at 1. `bench10` (BENCH=2) and `benchturn` (BENCH=3) are the same bench with a shorter list: one 100 mm straight, or the three pivots. Each move prints one `[BENCH]` line with the move, the result (`DONE`, `FAILED` or `ABORTED`), the left and right counts, the travel in mm, the heading and the time. A move that does not finish is run again on the next press. GP21 still stops; if a press prints `[BENCH] refused`, press and release GP21 first. The last `[BENCH]` line tells you which move is next.
 
 ## Tests
 
@@ -115,7 +132,7 @@ Then it starts again at 1. Each move prints one `[BENCH]` line with the move, th
 
 ### S2-U02 1 m straight
 
-**Image:** `./flash.sh bench` (battery)
+**Image:** `./flash.sh bench` (battery), or `./flash.sh bench10` for 100 mm runs with no other moves between them
 
 **Set up:** Tape a start line and a 1 m mark; mark the car's centre.
 
@@ -136,7 +153,7 @@ Then it starts again at 1. Each move prints one `[BENCH]` line with the move, th
 
 ### S2-U03 90 and 180 degree pivots
 
-**Image:** `./flash.sh bench` (battery)
+**Image:** `./flash.sh bench` (battery), or `./flash.sh benchturn` for the pivots only
 
 **Set up:** Tape a square on the floor; align the car with one edge.
 

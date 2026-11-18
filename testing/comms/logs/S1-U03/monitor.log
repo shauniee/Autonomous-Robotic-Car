@@ -1,0 +1,729 @@
+1794972510.774 Monitoring; Ctrl+C to exit.
+1794972510.774 STATUS 1
+1794972510.786 WHEEL {"type":"wheel_trace","sampled_ms":843450,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972510.786 TELEMETRY #25 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed n/a | humps=0 max=none | front=497 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972510.786 WHEEL {"type":"wheel_trace","sampled_ms":843470,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972510.808 WHEEL {"type":"wheel_trace","sampled_ms":843490,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972510.847 WHEEL {"type":"wheel_trace","sampled_ms":843510,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972510.847 HUMP t=57108 pitch=-0.25 roll=-0.25 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972510.847 WHEEL {"type":"wheel_trace","sampled_ms":843530,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972510.871 WHEEL {"type":"wheel_trace","sampled_ms":843550,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972510.907 WHEEL {"type":"wheel_trace","sampled_ms":843570,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972510.907 WHEEL {"type":"wheel_trace","sampled_ms":843590,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972510.925 WHEEL {"type":"wheel_trace","sampled_ms":843610,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972510.969 HUMP t=57208 pitch=-0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972510.969 WHEEL {"type":"wheel_trace","sampled_ms":843630,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972510.969 WHEEL {"type":"wheel_trace","sampled_ms":843650,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972510.991 WHEEL {"type":"wheel_trace","sampled_ms":843670,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.031 WHEEL {"type":"wheel_trace","sampled_ms":843690,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.031 WHEEL {"type":"wheel_trace","sampled_ms":843710,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.046 HUMP t=57308 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972511.046 WHEEL {"type":"wheel_trace","sampled_ms":843730,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.096 WHEEL {"type":"wheel_trace","sampled_ms":843750,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.096 WHEEL {"type":"wheel_trace","sampled_ms":843770,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.124 WHEEL {"type":"wheel_trace","sampled_ms":843790,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.124 WHEEL {"type":"wheel_trace","sampled_ms":843810,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.151 HUMP t=57408 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972511.152 WHEEL {"type":"wheel_trace","sampled_ms":843830,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.199 WHEEL {"type":"wheel_trace","sampled_ms":843850,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.200 WHEEL {"type":"wheel_trace","sampled_ms":843870,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.241 WHEEL {"type":"wheel_trace","sampled_ms":843890,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.241 WHEEL {"type":"wheel_trace","sampled_ms":843910,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.269 HUMP t=57508 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972511.269 WHEEL {"type":"wheel_trace","sampled_ms":843930,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.269 WHEEL {"type":"wheel_trace","sampled_ms":843950,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.309 WHEEL {"type":"wheel_trace","sampled_ms":843970,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.309 WHEEL {"type":"wheel_trace","sampled_ms":843990,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.326 TELEMETRY #26 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=505 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972511.326 WHEEL {"type":"wheel_trace","sampled_ms":844010,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.346 HUMP t=57608 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972511.346 WHEEL {"type":"wheel_trace","sampled_ms":844030,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.396 WHEEL {"type":"wheel_trace","sampled_ms":844050,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.396 WHEEL {"type":"wheel_trace","sampled_ms":844070,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.426 WHEEL {"type":"wheel_trace","sampled_ms":844090,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.427 WHEEL {"type":"wheel_trace","sampled_ms":844110,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.473 HUMP t=57708 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972511.473 WHEEL {"type":"wheel_trace","sampled_ms":844130,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.474 WHEEL {"type":"wheel_trace","sampled_ms":844150,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.506 WHEEL {"type":"wheel_trace","sampled_ms":844170,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.506 WHEEL {"type":"wheel_trace","sampled_ms":844190,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.526 WHEEL {"type":"wheel_trace","sampled_ms":844210,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.566 HUMP t=57808 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972511.566 WHEEL {"type":"wheel_trace","sampled_ms":844230,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.566 WHEEL {"type":"wheel_trace","sampled_ms":844250,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.626 WHEEL {"type":"wheel_trace","sampled_ms":844270,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.626 WHEEL {"type":"wheel_trace","sampled_ms":844290,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.626 WHEEL {"type":"wheel_trace","sampled_ms":844310,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.646 HUMP t=57908 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972511.646 WHEEL {"type":"wheel_trace","sampled_ms":844330,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.686 WHEEL {"type":"wheel_trace","sampled_ms":844350,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.686 WHEEL {"type":"wheel_trace","sampled_ms":844370,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.726 WHEEL {"type":"wheel_trace","sampled_ms":844390,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.726 WHEEL {"type":"wheel_trace","sampled_ms":844410,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.746 HUMP t=58008 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=16 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972511.746 WHEEL {"type":"wheel_trace","sampled_ms":844430,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.767 WHEEL {"type":"wheel_trace","sampled_ms":844450,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.788 WHEEL {"type":"wheel_trace","sampled_ms":844470,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.828 WHEEL {"type":"wheel_trace","sampled_ms":844490,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.828 WHEEL {"type":"wheel_trace","sampled_ms":844510,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.868 HUMP t=58108 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972511.868 WHEEL {"type":"wheel_trace","sampled_ms":844530,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.868 TELEMETRY #27 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=462 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972511.868 WHEEL {"type":"wheel_trace","sampled_ms":844550,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.911 WHEEL {"type":"wheel_trace","sampled_ms":844570,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.911 WHEEL {"type":"wheel_trace","sampled_ms":844590,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.926 WHEEL {"type":"wheel_trace","sampled_ms":844610,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.949 HUMP t=58208 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972511.949 WHEEL {"type":"wheel_trace","sampled_ms":844630,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.989 WHEEL {"type":"wheel_trace","sampled_ms":844650,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972511.989 WHEEL {"type":"wheel_trace","sampled_ms":844670,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.016 WHEEL {"type":"wheel_trace","sampled_ms":844690,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.052 WHEEL {"type":"wheel_trace","sampled_ms":844710,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.052 HUMP t=58308 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972512.052 WHEEL {"type":"wheel_trace","sampled_ms":844730,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.072 WHEEL {"type":"wheel_trace","sampled_ms":844750,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.114 WHEEL {"type":"wheel_trace","sampled_ms":844770,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.114 WHEEL {"type":"wheel_trace","sampled_ms":844790,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.148 WHEEL {"type":"wheel_trace","sampled_ms":844810,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.148 HUMP t=58408 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972512.148 WHEEL {"type":"wheel_trace","sampled_ms":844830,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.167 WHEEL {"type":"wheel_trace","sampled_ms":844850,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.186 WHEEL {"type":"wheel_trace","sampled_ms":844870,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.262 WHEEL {"type":"wheel_trace","sampled_ms":844890,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.262 WHEEL {"type":"wheel_trace","sampled_ms":844910,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.262 HUMP t=58508 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972512.262 WHEEL {"type":"wheel_trace","sampled_ms":844930,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.292 WHEEL {"type":"wheel_trace","sampled_ms":844950,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.292 WHEEL {"type":"wheel_trace","sampled_ms":844970,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.319 WHEEL {"type":"wheel_trace","sampled_ms":844990,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.345 WHEEL {"type":"wheel_trace","sampled_ms":845010,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.345 HUMP t=58608 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972512.345 WHEEL {"type":"wheel_trace","sampled_ms":845030,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.371 WHEEL {"type":"wheel_trace","sampled_ms":845050,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.420 WHEEL {"type":"wheel_trace","sampled_ms":845070,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.420 TELEMETRY #28 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=461 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972512.420 WHEEL {"type":"wheel_trace","sampled_ms":845090,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.467 WHEEL {"type":"wheel_trace","sampled_ms":845110,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.467 HUMP t=58708 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972512.467 WHEEL {"type":"wheel_trace","sampled_ms":845130,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.467 WHEEL {"type":"wheel_trace","sampled_ms":845150,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.486 WHEEL {"type":"wheel_trace","sampled_ms":845170,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.534 WHEEL {"type":"wheel_trace","sampled_ms":845190,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.534 WHEEL {"type":"wheel_trace","sampled_ms":845210,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.568 HUMP t=58808 pitch=-0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972512.568 WHEEL {"type":"wheel_trace","sampled_ms":845230,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.568 WHEEL {"type":"wheel_trace","sampled_ms":845250,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.587 WHEEL {"type":"wheel_trace","sampled_ms":845270,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.607 WHEEL {"type":"wheel_trace","sampled_ms":845290,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.648 WHEEL {"type":"wheel_trace","sampled_ms":845310,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.648 HUMP t=58908 pitch=-0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=0 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972512.648 WHEEL {"type":"wheel_trace","sampled_ms":845330,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.670 WHEEL {"type":"wheel_trace","sampled_ms":845350,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.710 WHEEL {"type":"wheel_trace","sampled_ms":845370,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.710 WHEEL {"type":"wheel_trace","sampled_ms":845390,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.733 WHEEL {"type":"wheel_trace","sampled_ms":845410,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.771 HUMP t=59008 pitch=-0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=0 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972512.771 WHEEL {"type":"wheel_trace","sampled_ms":845430,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.771 WHEEL {"type":"wheel_trace","sampled_ms":845450,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.788 WHEEL {"type":"wheel_trace","sampled_ms":845470,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.831 WHEEL {"type":"wheel_trace","sampled_ms":845490,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.831 WHEEL {"type":"wheel_trace","sampled_ms":845510,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.846 HUMP t=59108 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972512.846 WHEEL {"type":"wheel_trace","sampled_ms":845530,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.869 WHEEL {"type":"wheel_trace","sampled_ms":845550,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.888 WHEEL {"type":"wheel_trace","sampled_ms":845570,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.936 WHEEL {"type":"wheel_trace","sampled_ms":845590,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.936 WHEEL {"type":"wheel_trace","sampled_ms":845610,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.966 TELEMETRY #29 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=497 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972512.966 HUMP t=59208 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972512.966 WHEEL {"type":"wheel_trace","sampled_ms":845630,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.967 WHEEL {"type":"wheel_trace","sampled_ms":845650,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972512.986 WHEEL {"type":"wheel_trace","sampled_ms":845670,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.005 WHEEL {"type":"wheel_trace","sampled_ms":845690,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.034 WHEEL {"type":"wheel_trace","sampled_ms":845710,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.072 HUMP t=59308 pitch=0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972513.072 WHEEL {"type":"wheel_trace","sampled_ms":845730,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.072 WHEEL {"type":"wheel_trace","sampled_ms":845750,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.105 WHEEL {"type":"wheel_trace","sampled_ms":845770,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.106 WHEEL {"type":"wheel_trace","sampled_ms":845790,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.127 WHEEL {"type":"wheel_trace","sampled_ms":845810,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.193 HUMP t=59408 pitch=0 roll=-0.25 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972513.194 WHEEL {"type":"wheel_trace","sampled_ms":845830,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.194 WHEEL {"type":"wheel_trace","sampled_ms":845850,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.269 WHEEL {"type":"wheel_trace","sampled_ms":845870,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.270 WHEEL {"type":"wheel_trace","sampled_ms":845890,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.270 WHEEL {"type":"wheel_trace","sampled_ms":845910,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.270 HUMP t=59508 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972513.304 WHEEL {"type":"wheel_trace","sampled_ms":845930,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.304 WHEEL {"type":"wheel_trace","sampled_ms":845950,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.304 WHEEL {"type":"wheel_trace","sampled_ms":845970,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.304 WHEEL {"type":"wheel_trace","sampled_ms":845990,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.360 WHEEL {"type":"wheel_trace","sampled_ms":846010,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.361 HUMP t=59608 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972513.361 WHEEL {"type":"wheel_trace","sampled_ms":846030,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.384 WHEEL {"type":"wheel_trace","sampled_ms":846050,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.384 WHEEL {"type":"wheel_trace","sampled_ms":846070,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.410 WHEEL {"type":"wheel_trace","sampled_ms":846090,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.426 WHEEL {"type":"wheel_trace","sampled_ms":846110,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.469 HUMP t=59708 pitch=0.5 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972513.469 WHEEL {"type":"wheel_trace","sampled_ms":846130,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.469 WHEEL {"type":"wheel_trace","sampled_ms":846150,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.486 TELEMETRY #30 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=496 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972513.486 WHEEL {"type":"wheel_trace","sampled_ms":846170,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.508 WHEEL {"type":"wheel_trace","sampled_ms":846190,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.561 WHEEL {"type":"wheel_trace","sampled_ms":846210,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.561 HUMP t=59808 pitch=0.25 roll=0.25 state=0 rise=0mm accel=1010mg x=16 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972513.561 WHEEL {"type":"wheel_trace","sampled_ms":846230,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.587 WHEEL {"type":"wheel_trace","sampled_ms":846250,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.587 WHEEL {"type":"wheel_trace","sampled_ms":846270,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.606 WHEEL {"type":"wheel_trace","sampled_ms":846290,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.631 WHEEL {"type":"wheel_trace","sampled_ms":846310,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.665 HUMP t=59908 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972513.666 WHEEL {"type":"wheel_trace","sampled_ms":846330,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.666 WHEEL {"type":"wheel_trace","sampled_ms":846350,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.701 WHEEL {"type":"wheel_trace","sampled_ms":846370,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.752 WHEEL {"type":"wheel_trace","sampled_ms":846390,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.753 WHEEL {"type":"wheel_trace","sampled_ms":846410,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.753 HUMP t=60008 pitch=0 roll=0 state=0 rise=0mm accel=1000mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972513.753 WHEEL {"type":"wheel_trace","sampled_ms":846430,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.766 WHEEL {"type":"wheel_trace","sampled_ms":846450,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.786 WHEEL {"type":"wheel_trace","sampled_ms":846470,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.813 WHEEL {"type":"wheel_trace","sampled_ms":846490,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.849 WHEEL {"type":"wheel_trace","sampled_ms":846510,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.849 HUMP t=60108 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972513.849 WHEEL {"type":"wheel_trace","sampled_ms":846530,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.866 WHEEL {"type":"wheel_trace","sampled_ms":846550,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.886 WHEEL {"type":"wheel_trace","sampled_ms":846570,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.905 WHEEL {"type":"wheel_trace","sampled_ms":846590,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.931 WHEEL {"type":"wheel_trace","sampled_ms":846610,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.946 HUMP t=60208 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972513.946 WHEEL {"type":"wheel_trace","sampled_ms":846630,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.965 WHEEL {"type":"wheel_trace","sampled_ms":846650,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972513.988 WHEEL {"type":"wheel_trace","sampled_ms":846670,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.027 WHEEL {"type":"wheel_trace","sampled_ms":846690,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.027 TELEMETRY #31 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=505 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972514.027 WHEEL {"type":"wheel_trace","sampled_ms":846710,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.048 HUMP t=60308 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=16 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972514.048 WHEEL {"type":"wheel_trace","sampled_ms":846730,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.087 WHEEL {"type":"wheel_trace","sampled_ms":846750,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.087 WHEEL {"type":"wheel_trace","sampled_ms":846770,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.106 WHEEL {"type":"wheel_trace","sampled_ms":846790,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.147 WHEEL {"type":"wheel_trace","sampled_ms":846810,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.147 HUMP t=60408 pitch=0 roll=-0.25 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972514.147 WHEEL {"type":"wheel_trace","sampled_ms":846830,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.186 WHEEL {"type":"wheel_trace","sampled_ms":846850,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.186 WHEEL {"type":"wheel_trace","sampled_ms":846870,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.204 WHEEL {"type":"wheel_trace","sampled_ms":846890,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.269 WHEEL {"type":"wheel_trace","sampled_ms":846910,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.269 HUMP t=60508 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972514.269 WHEEL {"type":"wheel_trace","sampled_ms":846930,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.293 WHEEL {"type":"wheel_trace","sampled_ms":846950,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.293 WHEEL {"type":"wheel_trace","sampled_ms":846970,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.326 WHEEL {"type":"wheel_trace","sampled_ms":846990,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.326 WHEEL {"type":"wheel_trace","sampled_ms":847010,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.351 HUMP t=60608 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972514.351 WHEEL {"type":"wheel_trace","sampled_ms":847030,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.388 WHEEL {"type":"wheel_trace","sampled_ms":847050,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.388 WHEEL {"type":"wheel_trace","sampled_ms":847070,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.406 WHEEL {"type":"wheel_trace","sampled_ms":847090,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.429 WHEEL {"type":"wheel_trace","sampled_ms":847110,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.451 HUMP t=60708 pitch=0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972514.451 WHEEL {"type":"wheel_trace","sampled_ms":847130,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.490 WHEEL {"type":"wheel_trace","sampled_ms":847150,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.490 WHEEL {"type":"wheel_trace","sampled_ms":847170,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.506 WHEEL {"type":"wheel_trace","sampled_ms":847190,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.548 WHEEL {"type":"wheel_trace","sampled_ms":847210,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.548 HUMP t=60808 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972514.548 WHEEL {"type":"wheel_trace","sampled_ms":847230,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.572 TELEMETRY #32 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=505 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972514.572 WHEEL {"type":"wheel_trace","sampled_ms":847250,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.586 WHEEL {"type":"wheel_trace","sampled_ms":847270,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.628 WHEEL {"type":"wheel_trace","sampled_ms":847290,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.628 WHEEL {"type":"wheel_trace","sampled_ms":847310,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.672 HUMP t=60908 pitch=-0.25 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972514.673 WHEEL {"type":"wheel_trace","sampled_ms":847330,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.673 WHEEL {"type":"wheel_trace","sampled_ms":847350,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.686 WHEEL {"type":"wheel_trace","sampled_ms":847370,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.715 WHEEL {"type":"wheel_trace","sampled_ms":847390,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.749 WHEEL {"type":"wheel_trace","sampled_ms":847410,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.749 HUMP t=61008 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972514.749 WHEEL {"type":"wheel_trace","sampled_ms":847430,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.790 WHEEL {"type":"wheel_trace","sampled_ms":847450,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.842 WHEEL {"type":"wheel_trace","sampled_ms":847470,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.843 WHEEL {"type":"wheel_trace","sampled_ms":847490,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.843 WHEEL {"type":"wheel_trace","sampled_ms":847510,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.880 HUMP t=61108 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972514.880 WHEEL {"type":"wheel_trace","sampled_ms":847530,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.880 WHEEL {"type":"wheel_trace","sampled_ms":847550,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.906 WHEEL {"type":"wheel_trace","sampled_ms":847570,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.906 WHEEL {"type":"wheel_trace","sampled_ms":847590,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.925 WHEEL {"type":"wheel_trace","sampled_ms":847610,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.946 HUMP t=61208 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972514.946 WHEEL {"type":"wheel_trace","sampled_ms":847630,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972514.966 WHEEL {"type":"wheel_trace","sampled_ms":847650,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.044 WHEEL {"type":"wheel_trace","sampled_ms":847670,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.044 WHEEL {"type":"wheel_trace","sampled_ms":847690,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.044 WHEEL {"type":"wheel_trace","sampled_ms":847710,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.044 HUMP t=61308 pitch=0 roll=-0.25 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972515.069 WHEEL {"type":"wheel_trace","sampled_ms":847730,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.070 WHEEL {"type":"wheel_trace","sampled_ms":847750,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.127 WHEEL {"type":"wheel_trace","sampled_ms":847770,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.127 TELEMETRY #33 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=461 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972515.127 WHEEL {"type":"wheel_trace","sampled_ms":847790,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.164 WHEEL {"type":"wheel_trace","sampled_ms":847810,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.164 HUMP t=61408 pitch=0.75 roll=-0.25 state=0 rise=0mm accel=940mg x=-16 y=32 z=944 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972515.164 WHEEL {"type":"wheel_trace","sampled_ms":847830,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.164 WHEEL {"type":"wheel_trace","sampled_ms":847850,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.186 WHEEL {"type":"wheel_trace","sampled_ms":847870,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.226 WHEEL {"type":"wheel_trace","sampled_ms":847890,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.226 WHEEL {"type":"wheel_trace","sampled_ms":847910,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.249 HUMP t=61508 pitch=0 roll=0 state=0 rise=0mm accel=990mg x=0 y=16 z=992 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972515.249 WHEEL {"type":"wheel_trace","sampled_ms":847930,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.290 WHEEL {"type":"wheel_trace","sampled_ms":847950,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.290 WHEEL {"type":"wheel_trace","sampled_ms":847970,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.306 WHEEL {"type":"wheel_trace","sampled_ms":847990,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.326 WHEEL {"type":"wheel_trace","sampled_ms":848010,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.346 HUMP t=61608 pitch=-0.25 roll=0 state=0 rise=0mm accel=1030mg x=16 y=16 z=1040 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972515.346 WHEEL {"type":"wheel_trace","sampled_ms":848030,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.367 WHEEL {"type":"wheel_trace","sampled_ms":848050,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.392 WHEEL {"type":"wheel_trace","sampled_ms":848070,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.429 WHEEL {"type":"wheel_trace","sampled_ms":848090,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.429 WHEEL {"type":"wheel_trace","sampled_ms":848110,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.444 HUMP t=61708 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=16 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972515.444 WHEEL {"type":"wheel_trace","sampled_ms":848130,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.466 WHEEL {"type":"wheel_trace","sampled_ms":848150,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.494 WHEEL {"type":"wheel_trace","sampled_ms":848170,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.527 WHEEL {"type":"wheel_trace","sampled_ms":848190,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.527 WHEEL {"type":"wheel_trace","sampled_ms":848210,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.550 HUMP t=61808 pitch=0.25 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972515.550 WHEEL {"type":"wheel_trace","sampled_ms":848230,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.594 WHEEL {"type":"wheel_trace","sampled_ms":848250,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.594 WHEEL {"type":"wheel_trace","sampled_ms":848270,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.610 WHEEL {"type":"wheel_trace","sampled_ms":848290,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.646 WHEEL {"type":"wheel_trace","sampled_ms":848310,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.646 TELEMETRY #34 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=497 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972515.646 HUMP t=61908 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972515.673 WHEEL {"type":"wheel_trace","sampled_ms":848330,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.673 WHEEL {"type":"wheel_trace","sampled_ms":848350,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.706 WHEEL {"type":"wheel_trace","sampled_ms":848370,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.706 WHEEL {"type":"wheel_trace","sampled_ms":848390,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.766 WHEEL {"type":"wheel_trace","sampled_ms":848410,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.766 HUMP t=62008 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972515.766 WHEEL {"type":"wheel_trace","sampled_ms":848430,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.767 WHEEL {"type":"wheel_trace","sampled_ms":848450,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.799 WHEEL {"type":"wheel_trace","sampled_ms":848470,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.826 WHEEL {"type":"wheel_trace","sampled_ms":848490,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.826 WHEEL {"type":"wheel_trace","sampled_ms":848510,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.847 HUMP t=62108 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972515.848 WHEEL {"type":"wheel_trace","sampled_ms":848530,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.888 WHEEL {"type":"wheel_trace","sampled_ms":848550,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.888 WHEEL {"type":"wheel_trace","sampled_ms":848570,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.926 WHEEL {"type":"wheel_trace","sampled_ms":848590,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.926 WHEEL {"type":"wheel_trace","sampled_ms":848610,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.949 HUMP t=62208 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972515.949 WHEEL {"type":"wheel_trace","sampled_ms":848630,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972515.971 WHEEL {"type":"wheel_trace","sampled_ms":848650,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.008 WHEEL {"type":"wheel_trace","sampled_ms":848670,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.008 WHEEL {"type":"wheel_trace","sampled_ms":848690,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.046 WHEEL {"type":"wheel_trace","sampled_ms":848710,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.047 HUMP t=62308 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972516.047 WHEEL {"type":"wheel_trace","sampled_ms":848730,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.097 WHEEL {"type":"wheel_trace","sampled_ms":848750,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.097 WHEEL {"type":"wheel_trace","sampled_ms":848770,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.128 WHEEL {"type":"wheel_trace","sampled_ms":848790,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.128 WHEEL {"type":"wheel_trace","sampled_ms":848810,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.153 HUMP t=62408 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972516.153 WHEEL {"type":"wheel_trace","sampled_ms":848830,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.188 WHEEL {"type":"wheel_trace","sampled_ms":848850,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.188 TELEMETRY #35 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=497 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972516.189 WHEEL {"type":"wheel_trace","sampled_ms":848870,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.231 WHEEL {"type":"wheel_trace","sampled_ms":848890,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.231 WHEEL {"type":"wheel_trace","sampled_ms":848910,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.248 HUMP t=62508 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972516.248 WHEEL {"type":"wheel_trace","sampled_ms":848930,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.266 WHEEL {"type":"wheel_trace","sampled_ms":848950,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.313 WHEEL {"type":"wheel_trace","sampled_ms":848970,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.313 WHEEL {"type":"wheel_trace","sampled_ms":848990,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.349 WHEEL {"type":"wheel_trace","sampled_ms":849010,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.349 HUMP t=62608 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=16 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972516.349 WHEEL {"type":"wheel_trace","sampled_ms":849030,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.367 WHEEL {"type":"wheel_trace","sampled_ms":849050,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.387 WHEEL {"type":"wheel_trace","sampled_ms":849070,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.414 WHEEL {"type":"wheel_trace","sampled_ms":849090,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.469 WHEEL {"type":"wheel_trace","sampled_ms":849110,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.469 HUMP t=62708 pitch=0.25 roll=0.25 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972516.469 WHEEL {"type":"wheel_trace","sampled_ms":849130,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.469 WHEEL {"type":"wheel_trace","sampled_ms":849150,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.490 WHEEL {"type":"wheel_trace","sampled_ms":849170,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.516 WHEEL {"type":"wheel_trace","sampled_ms":849190,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.546 WHEEL {"type":"wheel_trace","sampled_ms":849210,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.546 HUMP t=62808 pitch=0.25 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972516.546 WHEEL {"type":"wheel_trace","sampled_ms":849230,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.567 WHEEL {"type":"wheel_trace","sampled_ms":849250,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.586 WHEEL {"type":"wheel_trace","sampled_ms":849270,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.609 WHEEL {"type":"wheel_trace","sampled_ms":849290,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.667 WHEEL {"type":"wheel_trace","sampled_ms":849310,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.667 HUMP t=62908 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972516.667 WHEEL {"type":"wheel_trace","sampled_ms":849330,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.667 WHEEL {"type":"wheel_trace","sampled_ms":849350,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.688 WHEEL {"type":"wheel_trace","sampled_ms":849370,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.719 WHEEL {"type":"wheel_trace","sampled_ms":849390,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.755 TELEMETRY #36 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=461 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972516.755 WHEEL {"type":"wheel_trace","sampled_ms":849410,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.755 HUMP t=63008 pitch=0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972516.755 WHEEL {"type":"wheel_trace","sampled_ms":849430,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.768 WHEEL {"type":"wheel_trace","sampled_ms":849450,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.806 WHEEL {"type":"wheel_trace","sampled_ms":849470,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.807 WHEEL {"type":"wheel_trace","sampled_ms":849490,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.846 WHEEL {"type":"wheel_trace","sampled_ms":849510,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.846 HUMP t=63108 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972516.846 WHEEL {"type":"wheel_trace","sampled_ms":849530,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.886 WHEEL {"type":"wheel_trace","sampled_ms":849550,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.886 WHEEL {"type":"wheel_trace","sampled_ms":849570,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.913 WHEEL {"type":"wheel_trace","sampled_ms":849590,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.946 WHEEL {"type":"wheel_trace","sampled_ms":849610,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.947 HUMP t=63208 pitch=0.25 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972516.947 WHEEL {"type":"wheel_trace","sampled_ms":849630,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.966 WHEEL {"type":"wheel_trace","sampled_ms":849650,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972516.989 WHEEL {"type":"wheel_trace","sampled_ms":849670,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.057 WHEEL {"type":"wheel_trace","sampled_ms":849690,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.058 WHEEL {"type":"wheel_trace","sampled_ms":849710,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.086 HUMP t=63308 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972517.086 WHEEL {"type":"wheel_trace","sampled_ms":849730,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.086 WHEEL {"type":"wheel_trace","sampled_ms":849750,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.086 WHEEL {"type":"wheel_trace","sampled_ms":849770,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.110 WHEEL {"type":"wheel_trace","sampled_ms":849790,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.131 WHEEL {"type":"wheel_trace","sampled_ms":849810,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.146 HUMP t=63408 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972517.146 WHEEL {"type":"wheel_trace","sampled_ms":849830,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.171 WHEEL {"type":"wheel_trace","sampled_ms":849850,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.209 WHEEL {"type":"wheel_trace","sampled_ms":849870,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.209 WHEEL {"type":"wheel_trace","sampled_ms":849890,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.266 WHEEL {"type":"wheel_trace","sampled_ms":849910,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.266 HUMP t=63508 pitch=0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972517.266 WHEEL {"type":"wheel_trace","sampled_ms":849930,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.267 TELEMETRY #37 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=505 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972517.289 WHEEL {"type":"wheel_trace","sampled_ms":849950,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.289 WHEEL {"type":"wheel_trace","sampled_ms":849970,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.311 WHEEL {"type":"wheel_trace","sampled_ms":849990,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.335 WHEEL {"type":"wheel_trace","sampled_ms":850010,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.367 HUMP t=63608 pitch=0 roll=0.25 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972517.367 WHEEL {"type":"wheel_trace","sampled_ms":850030,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.367 WHEEL {"type":"wheel_trace","sampled_ms":850050,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.412 WHEEL {"type":"wheel_trace","sampled_ms":850070,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.412 WHEEL {"type":"wheel_trace","sampled_ms":850090,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.426 WHEEL {"type":"wheel_trace","sampled_ms":850110,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.467 HUMP t=63708 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972517.467 WHEEL {"type":"wheel_trace","sampled_ms":850130,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.468 WHEEL {"type":"wheel_trace","sampled_ms":850150,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.487 WHEEL {"type":"wheel_trace","sampled_ms":850170,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.506 WHEEL {"type":"wheel_trace","sampled_ms":850190,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.526 WHEEL {"type":"wheel_trace","sampled_ms":850210,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.589 HUMP t=63808 pitch=0 roll=0.25 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972517.590 WHEEL {"type":"wheel_trace","sampled_ms":850230,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.590 WHEEL {"type":"wheel_trace","sampled_ms":850250,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.590 WHEEL {"type":"wheel_trace","sampled_ms":850270,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.606 WHEEL {"type":"wheel_trace","sampled_ms":850290,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.630 WHEEL {"type":"wheel_trace","sampled_ms":850310,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.670 HUMP t=63908 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972517.670 WHEEL {"type":"wheel_trace","sampled_ms":850330,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.671 WHEEL {"type":"wheel_trace","sampled_ms":850350,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.687 WHEEL {"type":"wheel_trace","sampled_ms":850370,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.708 WHEEL {"type":"wheel_trace","sampled_ms":850390,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.724 WHEEL {"type":"wheel_trace","sampled_ms":850410,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.750 HUMP t=64008 pitch=0 roll=0.25 state=0 rise=0mm accel=1020mg x=16 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972517.750 WHEEL {"type":"wheel_trace","sampled_ms":850430,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972517.763 STATUS 0
+1794972533.269 STATUS 1
+1794972533.287 WHEEL {"type":"wheel_trace","sampled_ms":865990,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.310 WHEEL {"type":"wheel_trace","sampled_ms":866010,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.342 HUMP t=14072 pitch=0 roll=-0.25 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972533.366 WHEEL {"type":"wheel_trace","sampled_ms":866030,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.366 WHEEL {"type":"wheel_trace","sampled_ms":866050,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.386 WHEEL {"type":"wheel_trace","sampled_ms":866070,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.412 WHEEL {"type":"wheel_trace","sampled_ms":866090,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.446 WHEEL {"type":"wheel_trace","sampled_ms":866110,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.447 HUMP t=14172 pitch=0 roll=-0.25 state=0 rise=0mm accel=1000mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972533.447 WHEEL {"type":"wheel_trace","sampled_ms":866130,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.519 TELEMETRY #67 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed n/a | humps=0 max=none | front=506 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972533.519 WHEEL {"type":"wheel_trace","sampled_ms":866150,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.519 WHEEL {"type":"wheel_trace","sampled_ms":866170,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.519 WHEEL {"type":"wheel_trace","sampled_ms":866190,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.546 WHEEL {"type":"wheel_trace","sampled_ms":866210,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.546 HUMP t=14272 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972533.546 WHEEL {"type":"wheel_trace","sampled_ms":866230,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.567 WHEEL {"type":"wheel_trace","sampled_ms":866250,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.587 WHEEL {"type":"wheel_trace","sampled_ms":866270,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.618 WHEEL {"type":"wheel_trace","sampled_ms":866290,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.646 WHEEL {"type":"wheel_trace","sampled_ms":866310,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.646 HUMP t=14372 pitch=0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972533.646 WHEEL {"type":"wheel_trace","sampled_ms":866330,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.669 WHEEL {"type":"wheel_trace","sampled_ms":866350,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.687 WHEEL {"type":"wheel_trace","sampled_ms":866370,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.726 WHEEL {"type":"wheel_trace","sampled_ms":866390,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.726 WHEEL {"type":"wheel_trace","sampled_ms":866410,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.746 HUMP t=14472 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972533.746 WHEEL {"type":"wheel_trace","sampled_ms":866430,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.766 WHEEL {"type":"wheel_trace","sampled_ms":866450,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.789 WHEEL {"type":"wheel_trace","sampled_ms":866470,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.825 WHEEL {"type":"wheel_trace","sampled_ms":866490,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.849 WHEEL {"type":"wheel_trace","sampled_ms":866510,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.849 HUMP t=14572 pitch=-0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=0 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972533.849 WHEEL {"type":"wheel_trace","sampled_ms":866530,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.870 WHEEL {"type":"wheel_trace","sampled_ms":866550,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.912 WHEEL {"type":"wheel_trace","sampled_ms":866570,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.912 WHEEL {"type":"wheel_trace","sampled_ms":866590,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.950 WHEEL {"type":"wheel_trace","sampled_ms":866610,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.950 HUMP t=14672 pitch=0 roll=0 state=0 rise=0mm accel=1000mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972533.950 WHEEL {"type":"wheel_trace","sampled_ms":866630,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972533.970 WHEEL {"type":"wheel_trace","sampled_ms":866650,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.005 WHEEL {"type":"wheel_trace","sampled_ms":866670,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.005 TELEMETRY #68 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=497 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972534.005 WHEEL {"type":"wheel_trace","sampled_ms":866690,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.051 WHEEL {"type":"wheel_trace","sampled_ms":866710,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.052 HUMP t=14772 pitch=0.5 roll=0.25 state=0 rise=0mm accel=1020mg x=0 y=48 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972534.052 WHEEL {"type":"wheel_trace","sampled_ms":866730,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.086 WHEEL {"type":"wheel_trace","sampled_ms":866750,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.086 WHEEL {"type":"wheel_trace","sampled_ms":866770,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.106 WHEEL {"type":"wheel_trace","sampled_ms":866790,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.136 WHEEL {"type":"wheel_trace","sampled_ms":866810,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.166 HUMP t=14872 pitch=0.25 roll=0 state=0 rise=0mm accel=1000mg x=0 y=0 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972534.166 WHEEL {"type":"wheel_trace","sampled_ms":866830,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.166 WHEEL {"type":"wheel_trace","sampled_ms":866850,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.186 WHEEL {"type":"wheel_trace","sampled_ms":866870,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.231 WHEEL {"type":"wheel_trace","sampled_ms":866890,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.231 WHEEL {"type":"wheel_trace","sampled_ms":866910,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.246 HUMP t=14972 pitch=0.25 roll=0 state=0 rise=0mm accel=1020mg x=0 y=32 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972534.246 WHEEL {"type":"wheel_trace","sampled_ms":866930,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.265 WHEEL {"type":"wheel_trace","sampled_ms":866950,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.284 WHEEL {"type":"wheel_trace","sampled_ms":866970,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.313 WHEEL {"type":"wheel_trace","sampled_ms":866990,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.345 WHEEL {"type":"wheel_trace","sampled_ms":867010,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.345 HUMP t=15072 pitch=0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972534.345 WHEEL {"type":"wheel_trace","sampled_ms":867030,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.386 WHEEL {"type":"wheel_trace","sampled_ms":867050,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.386 WHEEL {"type":"wheel_trace","sampled_ms":867070,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.405 WHEEL {"type":"wheel_trace","sampled_ms":867090,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.448 WHEEL {"type":"wheel_trace","sampled_ms":867110,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.448 HUMP t=15172 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972534.448 WHEEL {"type":"wheel_trace","sampled_ms":867130,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.465 WHEEL {"type":"wheel_trace","sampled_ms":867150,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.489 WHEEL {"type":"wheel_trace","sampled_ms":867170,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.509 WHEEL {"type":"wheel_trace","sampled_ms":867190,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.525 WHEEL {"type":"wheel_trace","sampled_ms":867210,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.566 TELEMETRY #69 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=505 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972534.566 HUMP t=15272 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972534.566 WHEEL {"type":"wheel_trace","sampled_ms":867230,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.566 WHEEL {"type":"wheel_trace","sampled_ms":867250,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.586 WHEEL {"type":"wheel_trace","sampled_ms":867270,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.628 WHEEL {"type":"wheel_trace","sampled_ms":867290,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.628 WHEEL {"type":"wheel_trace","sampled_ms":867310,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.666 HUMP t=15372 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972534.666 WHEEL {"type":"wheel_trace","sampled_ms":867330,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.666 WHEEL {"type":"wheel_trace","sampled_ms":867350,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.689 WHEEL {"type":"wheel_trace","sampled_ms":867370,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.717 WHEEL {"type":"wheel_trace","sampled_ms":867390,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.747 WHEEL {"type":"wheel_trace","sampled_ms":867410,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.747 HUMP t=15472 pitch=-0.25 roll=0 state=0 rise=0mm accel=1030mg x=0 y=0 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972534.747 WHEEL {"type":"wheel_trace","sampled_ms":867430,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.767 WHEEL {"type":"wheel_trace","sampled_ms":867450,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.785 WHEEL {"type":"wheel_trace","sampled_ms":867470,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.805 WHEEL {"type":"wheel_trace","sampled_ms":867490,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.828 WHEEL {"type":"wheel_trace","sampled_ms":867510,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.871 HUMP t=15572 pitch=0 roll=-0.25 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972534.871 WHEEL {"type":"wheel_trace","sampled_ms":867530,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.871 WHEEL {"type":"wheel_trace","sampled_ms":867550,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.925 WHEEL {"type":"wheel_trace","sampled_ms":867570,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.925 WHEEL {"type":"wheel_trace","sampled_ms":867590,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.948 WHEEL {"type":"wheel_trace","sampled_ms":867610,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.948 HUMP t=15672 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972534.948 WHEEL {"type":"wheel_trace","sampled_ms":867630,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.966 WHEEL {"type":"wheel_trace","sampled_ms":867650,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972534.986 WHEEL {"type":"wheel_trace","sampled_ms":867670,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.006 WHEEL {"type":"wheel_trace","sampled_ms":867690,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.027 WHEEL {"type":"wheel_trace","sampled_ms":867710,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.050 HUMP t=15772 pitch=-0.25 roll=-0.25 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972535.051 WHEEL {"type":"wheel_trace","sampled_ms":867730,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.066 WHEEL {"type":"wheel_trace","sampled_ms":867750,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.086 TELEMETRY #70 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=505 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972535.086 WHEEL {"type":"wheel_trace","sampled_ms":867770,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.106 WHEEL {"type":"wheel_trace","sampled_ms":867790,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.127 WHEEL {"type":"wheel_trace","sampled_ms":867810,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.157 HUMP t=15872 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972535.157 WHEEL {"type":"wheel_trace","sampled_ms":867830,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.186 WHEEL {"type":"wheel_trace","sampled_ms":867850,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.186 WHEEL {"type":"wheel_trace","sampled_ms":867870,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.235 WHEEL {"type":"wheel_trace","sampled_ms":867890,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.267 WHEEL {"type":"wheel_trace","sampled_ms":867910,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.268 HUMP t=15972 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972535.268 WHEEL {"type":"wheel_trace","sampled_ms":867930,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.268 WHEEL {"type":"wheel_trace","sampled_ms":867950,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.286 WHEEL {"type":"wheel_trace","sampled_ms":867970,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.311 WHEEL {"type":"wheel_trace","sampled_ms":867990,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.331 WHEEL {"type":"wheel_trace","sampled_ms":868010,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.346 HUMP t=16072 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972535.346 WHEEL {"type":"wheel_trace","sampled_ms":868030,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.416 WHEEL {"type":"wheel_trace","sampled_ms":868050,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.416 WHEEL {"type":"wheel_trace","sampled_ms":868070,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.447 WHEEL {"type":"wheel_trace","sampled_ms":868090,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.447 WHEEL {"type":"wheel_trace","sampled_ms":868110,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.447 HUMP t=16172 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972535.447 WHEEL {"type":"wheel_trace","sampled_ms":868130,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.522 WHEEL {"type":"wheel_trace","sampled_ms":868150,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.522 WHEEL {"type":"wheel_trace","sampled_ms":868170,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.522 WHEEL {"type":"wheel_trace","sampled_ms":868190,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.548 WHEEL {"type":"wheel_trace","sampled_ms":868210,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.549 HUMP t=16272 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972535.549 WHEEL {"type":"wheel_trace","sampled_ms":868230,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.590 WHEEL {"type":"wheel_trace","sampled_ms":868250,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.590 WHEEL {"type":"wheel_trace","sampled_ms":868270,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.606 WHEEL {"type":"wheel_trace","sampled_ms":868290,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.626 TELEMETRY #71 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=466 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972535.626 WHEEL {"type":"wheel_trace","sampled_ms":868310,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.647 HUMP t=16372 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972535.647 WHEEL {"type":"wheel_trace","sampled_ms":868330,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.669 WHEEL {"type":"wheel_trace","sampled_ms":868350,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.687 WHEEL {"type":"wheel_trace","sampled_ms":868370,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.706 WHEEL {"type":"wheel_trace","sampled_ms":868390,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.728 WHEEL {"type":"wheel_trace","sampled_ms":868410,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.746 HUMP t=16472 pitch=0.25 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972535.746 WHEEL {"type":"wheel_trace","sampled_ms":868430,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.770 WHEEL {"type":"wheel_trace","sampled_ms":868450,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.826 WHEEL {"type":"wheel_trace","sampled_ms":868470,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.826 WHEEL {"type":"wheel_trace","sampled_ms":868490,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.826 WHEEL {"type":"wheel_trace","sampled_ms":868510,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.848 HUMP t=16572 pitch=0.25 roll=0.25 state=0 rise=0mm accel=1020mg x=16 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972535.848 WHEEL {"type":"wheel_trace","sampled_ms":868530,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.899 WHEEL {"type":"wheel_trace","sampled_ms":868550,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.899 WHEEL {"type":"wheel_trace","sampled_ms":868570,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.924 WHEEL {"type":"wheel_trace","sampled_ms":868590,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.924 WHEEL {"type":"wheel_trace","sampled_ms":868610,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.950 HUMP t=16672 pitch=0.25 roll=0.25 state=0 rise=0mm accel=1030mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972535.951 WHEEL {"type":"wheel_trace","sampled_ms":868630,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972535.972 WHEEL {"type":"wheel_trace","sampled_ms":868650,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.006 WHEEL {"type":"wheel_trace","sampled_ms":868670,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.006 WHEEL {"type":"wheel_trace","sampled_ms":868690,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.048 WHEEL {"type":"wheel_trace","sampled_ms":868710,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.048 HUMP t=16772 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972536.048 WHEEL {"type":"wheel_trace","sampled_ms":868730,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.076 WHEEL {"type":"wheel_trace","sampled_ms":868750,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.146 WHEEL {"type":"wheel_trace","sampled_ms":868770,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.146 WHEEL {"type":"wheel_trace","sampled_ms":868790,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.177 WHEEL {"type":"wheel_trace","sampled_ms":868810,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.178 HUMP t=16872 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972536.178 WHEEL {"type":"wheel_trace","sampled_ms":868830,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.178 TELEMETRY #72 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=461 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972536.211 WHEEL {"type":"wheel_trace","sampled_ms":868850,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.211 WHEEL {"type":"wheel_trace","sampled_ms":868870,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.211 WHEEL {"type":"wheel_trace","sampled_ms":868890,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.247 WHEEL {"type":"wheel_trace","sampled_ms":868910,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.247 HUMP t=16972 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972536.247 WHEEL {"type":"wheel_trace","sampled_ms":868930,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.270 WHEEL {"type":"wheel_trace","sampled_ms":868950,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.312 WHEEL {"type":"wheel_trace","sampled_ms":868970,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.312 WHEEL {"type":"wheel_trace","sampled_ms":868990,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.328 WHEEL {"type":"wheel_trace","sampled_ms":869010,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.467 HUMP t=17072 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972536.467 WHEEL {"type":"wheel_trace","sampled_ms":869030,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.467 WHEEL {"type":"wheel_trace","sampled_ms":869050,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.489 WHEEL {"type":"wheel_trace","sampled_ms":869070,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.489 WHEEL {"type":"wheel_trace","sampled_ms":869090,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.489 WHEEL {"type":"wheel_trace","sampled_ms":869110,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.489 HUMP t=17172 pitch=0.25 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972536.524 WHEEL {"type":"wheel_trace","sampled_ms":869130,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.524 WHEEL {"type":"wheel_trace","sampled_ms":869150,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.525 WHEEL {"type":"wheel_trace","sampled_ms":869170,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.525 WHEEL {"type":"wheel_trace","sampled_ms":869190,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.548 WHEEL {"type":"wheel_trace","sampled_ms":869210,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.549 HUMP t=17272 pitch=0.25 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972536.587 WHEEL {"type":"wheel_trace","sampled_ms":869230,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.587 WHEEL {"type":"wheel_trace","sampled_ms":869250,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.587 WHEEL {"type":"wheel_trace","sampled_ms":869270,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.609 WHEEL {"type":"wheel_trace","sampled_ms":869290,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.626 WHEEL {"type":"wheel_trace","sampled_ms":869310,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.644 HUMP t=17372 pitch=0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972536.644 WHEEL {"type":"wheel_trace","sampled_ms":869330,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.671 WHEEL {"type":"wheel_trace","sampled_ms":869350,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.721 WHEEL {"type":"wheel_trace","sampled_ms":869370,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.721 TELEMETRY #73 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=505 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972536.721 WHEEL {"type":"wheel_trace","sampled_ms":869390,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.746 WHEEL {"type":"wheel_trace","sampled_ms":869410,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.746 HUMP t=17472 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972536.746 WHEEL {"type":"wheel_trace","sampled_ms":869430,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.793 WHEEL {"type":"wheel_trace","sampled_ms":869450,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.793 WHEEL {"type":"wheel_trace","sampled_ms":869470,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.827 WHEEL {"type":"wheel_trace","sampled_ms":869490,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.827 WHEEL {"type":"wheel_trace","sampled_ms":869510,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.853 HUMP t=17572 pitch=-0.25 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972536.853 WHEEL {"type":"wheel_trace","sampled_ms":869530,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.894 WHEEL {"type":"wheel_trace","sampled_ms":869550,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.894 WHEEL {"type":"wheel_trace","sampled_ms":869570,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.906 WHEEL {"type":"wheel_trace","sampled_ms":869590,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.950 WHEEL {"type":"wheel_trace","sampled_ms":869610,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.950 HUMP t=17672 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972536.950 WHEEL {"type":"wheel_trace","sampled_ms":869630,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972536.966 WHEEL {"type":"wheel_trace","sampled_ms":869650,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.021 WHEEL {"type":"wheel_trace","sampled_ms":869670,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.022 WHEEL {"type":"wheel_trace","sampled_ms":869690,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.046 WHEEL {"type":"wheel_trace","sampled_ms":869710,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.047 HUMP t=17772 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=16 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972537.047 WHEEL {"type":"wheel_trace","sampled_ms":869730,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.066 WHEEL {"type":"wheel_trace","sampled_ms":869750,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.086 WHEEL {"type":"wheel_trace","sampled_ms":869770,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.150 WHEEL {"type":"wheel_trace","sampled_ms":869790,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.150 WHEEL {"type":"wheel_trace","sampled_ms":869810,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.166 HUMP t=17872 pitch=0.25 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972537.166 WHEEL {"type":"wheel_trace","sampled_ms":869830,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.167 WHEEL {"type":"wheel_trace","sampled_ms":869850,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.187 WHEEL {"type":"wheel_trace","sampled_ms":869870,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.226 WHEEL {"type":"wheel_trace","sampled_ms":869890,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.226 WHEEL {"type":"wheel_trace","sampled_ms":869910,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.246 TELEMETRY #74 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=466 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972537.246 HUMP t=17972 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972537.282 WHEEL {"type":"wheel_trace","sampled_ms":869930,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.282 WHEEL {"type":"wheel_trace","sampled_ms":869950,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.313 WHEEL {"type":"wheel_trace","sampled_ms":869970,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.314 WHEEL {"type":"wheel_trace","sampled_ms":869990,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.354 WHEEL {"type":"wheel_trace","sampled_ms":870010,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.366 HUMP t=18072 pitch=0.25 roll=0.25 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972537.366 WHEEL {"type":"wheel_trace","sampled_ms":870030,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.366 WHEEL {"type":"wheel_trace","sampled_ms":870050,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.389 WHEEL {"type":"wheel_trace","sampled_ms":870070,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.428 WHEEL {"type":"wheel_trace","sampled_ms":870090,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.428 WHEEL {"type":"wheel_trace","sampled_ms":870110,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.448 HUMP t=18172 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=0 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972537.448 WHEEL {"type":"wheel_trace","sampled_ms":870130,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.467 WHEEL {"type":"wheel_trace","sampled_ms":870150,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.491 WHEEL {"type":"wheel_trace","sampled_ms":870170,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.508 WHEEL {"type":"wheel_trace","sampled_ms":870190,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.526 WHEEL {"type":"wheel_trace","sampled_ms":870210,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.548 HUMP t=18272 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972537.548 WHEEL {"type":"wheel_trace","sampled_ms":870230,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.570 WHEEL {"type":"wheel_trace","sampled_ms":870250,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.589 WHEEL {"type":"wheel_trace","sampled_ms":870270,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.610 WHEEL {"type":"wheel_trace","sampled_ms":870290,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.627 WHEEL {"type":"wheel_trace","sampled_ms":870310,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.649 HUMP t=18372 pitch=0 roll=0 state=0 rise=0mm accel=1020mg x=16 y=16 z=1024 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972537.649 WHEEL {"type":"wheel_trace","sampled_ms":870330,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.686 WHEEL {"type":"wheel_trace","sampled_ms":870350,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.687 WHEEL {"type":"wheel_trace","sampled_ms":870370,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.713 WHEEL {"type":"wheel_trace","sampled_ms":870390,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.751 WHEEL {"type":"wheel_trace","sampled_ms":870410,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.751 HUMP t=18472 pitch=0.25 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972537.751 WHEEL {"type":"wheel_trace","sampled_ms":870430,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.766 WHEEL {"type":"wheel_trace","sampled_ms":870450,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.848 TELEMETRY #75 state=READY motion=IDLE(id 0) line=VISIBLE mapped=NO | counts L=1 R=0 speed L=0 R=0 mm/s (stopped) turn=0 deg/s | humps=0 max=none | front=461 mm | barcode=-->UNMAPPED | obstacle width=0 mm clearance=0 mm | faults: none
+1794972537.849 WHEEL {"type":"wheel_trace","sampled_ms":870470,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.849 WHEEL {"type":"wheel_trace","sampled_ms":870490,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.849 WHEEL {"type":"wheel_trace","sampled_ms":870510,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.866 HUMP t=18572 pitch=0 roll=0 state=0 rise=0mm accel=1010mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972537.866 WHEEL {"type":"wheel_trace","sampled_ms":870530,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.904 WHEEL {"type":"wheel_trace","sampled_ms":870550,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.904 WHEEL {"type":"wheel_trace","sampled_ms":870570,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.904 WHEEL {"type":"wheel_trace","sampled_ms":870590,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.953 WHEEL {"type":"wheel_trace","sampled_ms":870610,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.953 HUMP t=18672 pitch=0 roll=0 state=0 rise=0mm accel=1000mg x=0 y=16 z=1008 height=0mm travel=0mm encoder_ok=1 calibrated=1
+1794972537.953 WHEEL {"type":"wheel_trace","sampled_ms":870630,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.991 WHEEL {"type":"wheel_trace","sampled_ms":870650,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972537.991 WHEEL {"type":"wheel_trace","sampled_ms":870670,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}
+1794972538.008 WHEEL {"type":"wheel_trace","sampled_ms":870690,"target_left":0.0,"target_right":0.0,"measured_left":null,"measured_right":null,"duty_left":0,"duty_right":0,"inhibited":true,"output_ok":true}

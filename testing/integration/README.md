@@ -62,18 +62,18 @@ Before every flash:
 
 ## Captures
 
-Every test saves its logs in `testing/integration/logs/<test ID>/`, named `YYYY-MM-DD_<what>.log`. Start each capture **before** resetting the Pico; stop it with Ctrl-C when the test ends.
+Every test saves its logs in `testing/integration/logs/<test ID>/`, named `<what>.log`. Start each capture **before** resetting the Pico; stop it with Ctrl-C when the test ends.
 
-USB console (replace `<ID>` and the date):
+USB console (replace `<ID>`):
 
 ```bash
-mkdir -p testing/integration/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/integration/logs/<ID>/YYYY-MM-DD_usb.log
+mkdir -p testing/integration/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/integration/logs/<ID>/usb.log
 ```
 
 Telemetry with laptop timestamps (every frame, nothing folded):
 
 ```bash
-~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/integration/logs/<ID>/YYYY-MM-DD_monitor.log
+~/.robot-car-tools/venv/bin/python -u scripts/mqtt_client.py monitor --raw --broker 127.0.0.1 | perl -MTime::HiRes=time -ne 'printf "%.3f %s", time, $_' | tee testing/integration/logs/<ID>/monitor.log
 ```
 
 ## Run the test code

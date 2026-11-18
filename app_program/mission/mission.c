@@ -1,6 +1,7 @@
 #include "mission.h"
 #include "mission_mapping.h"
 #include "line_trace.h"
+#include "status_led.h"
 #include "../terrain/terrain.h"
 #include <stdatomic.h>
 #include "../line_barcode/line_barcode.h"
@@ -38,6 +39,27 @@ typedef struct
     int16_t target;
 } bench_move_t;
 
+#if 2 == MISSION_BENCH
+/* BENCH=2 (S2-U02): every GP20 press repeats one 100 mm straight. */
+enum
+{
+    BENCH_MOVE_COUNT = 1
+};
+
+static const bench_move_t bench_moves[BENCH_MOVE_COUNT] = {
+    {"straight_100mm", MOTION_MODE_DISTANCE, 100}};
+#elif 3 == MISSION_BENCH
+/* BENCH=3 (S2-U03): GP20 runs only the pivots, in turn. */
+enum
+{
+    BENCH_MOVE_COUNT = 3
+};
+
+static const bench_move_t bench_moves[BENCH_MOVE_COUNT] = {
+    {"left_90", MOTION_MODE_TURN, 90},
+    {"right_90", MOTION_MODE_TURN, -90},
+    {"turn_180", MOTION_MODE_TURN, 180}};
+#else
 enum
 {
     BENCH_MOVE_COUNT = 5
@@ -49,6 +71,7 @@ static const bench_move_t bench_moves[BENCH_MOVE_COUNT] = {
     {"left_90", MOTION_MODE_TURN, 90},
     {"right_90", MOTION_MODE_TURN, -90},
     {"turn_180", MOTION_MODE_TURN, 180}};
+#endif
 static const char *const bench_results[] = {"ABORTED", "DONE", "FAILED"};
 #endif /* MISSION_BENCH */
 
@@ -63,6 +86,11 @@ static void mission_task(INT stacd, void *exinf)
     Button_t start_button;
     button_init(&start_button, now);
     MissionState_t reported = MISSION_STATE_COUNT;
+    MissionState_t lit = MISSION_STATE_COUNT; /* state on the GP18 LEDs */
+    if (status_led_init() < E_OK)
+    {
+        tm_printf((UB *)"[LED] GP18 status LEDs unavailable\n");
+    }
     uint8_t bypass_route = UINT8_MAX; /* last bypass leg printed */
     uint8_t nav_phase = UINT8_MAX; /* last navigation phase printed */
     uint32_t last_left = drv_encoder_count(ENCODER_LEFT),
@@ -453,6 +481,11 @@ static void mission_task(INT stacd, void *exinf)
         }
         atomic_store_explicit(&published_state, (uint8_t)mission.state,
             memory_order_release);
+        /* Only a state change sends a frame; a refused frame retries. */
+        if ((mission.state != lit) && status_led_show(mission.state))
+        {
+            lit = mission.state;
+        }
         /* One line per bypass leg, the leg that ends it included: where the
            side ray placed the box's rear and where each pivot began. Q8
            values print as whole mm. */
