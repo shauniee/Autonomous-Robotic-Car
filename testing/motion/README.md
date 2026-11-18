@@ -49,6 +49,8 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 | --- | --- | --- |
 | `./flash.sh test` | USB only | S2-U01, S2-U05 |
 | `./flash.sh bench` | Battery only | S2-U01, S2-U02, S2-U03, S2-U04 |
+| `./flash.sh bench10` | Battery only | S2-U02 (every GP20 press drives 100 mm) |
+| `./flash.sh benchturn` | Battery only | S2-U03 (GP20 runs `left_90`, `right_90`, `turn_180` only) |
 
 Before every flash:
 
@@ -104,7 +106,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 4. `right_90`
 5. `turn_180`
 
-Then it starts again at 1. Each move prints one `[BENCH]` line with the move, the result (`DONE`, `FAILED` or `ABORTED`), the left and right counts, the travel in mm, the heading and the time. A move that does not finish is run again on the next press. GP21 still stops; if a press prints `[BENCH] refused`, press and release GP21 first. The last `[BENCH]` line tells you which move is next.
+Then it starts again at 1. `bench10` (BENCH=2) and `benchturn` (BENCH=3) are the same bench with a shorter list: one 100 mm straight, or the three pivots. Each move prints one `[BENCH]` line with the move, the result (`DONE`, `FAILED` or `ABORTED`), the left and right counts, the travel in mm, the heading and the time. A move that does not finish is run again on the next press. GP21 still stops; if a press prints `[BENCH] refused`, press and release GP21 first. The last `[BENCH]` line tells you which move is next.
 
 ## Tests
 
@@ -130,7 +132,7 @@ Then it starts again at 1. Each move prints one `[BENCH]` line with the move, th
 
 ### S2-U02 1 m straight
 
-**Image:** `./flash.sh bench` (battery)
+**Image:** `./flash.sh bench` (battery), or `./flash.sh bench10` for 100 mm runs with no other moves between them
 
 **Set up:** Tape a start line and a 1 m mark; mark the car's centre.
 
@@ -151,7 +153,7 @@ Then it starts again at 1. Each move prints one `[BENCH]` line with the move, th
 
 ### S2-U03 90 and 180 degree pivots
 
-**Image:** `./flash.sh bench` (battery)
+**Image:** `./flash.sh bench` (battery), or `./flash.sh benchturn` for the pivots only
 
 **Set up:** Tape a square on the floor; align the car with one edge.
 
