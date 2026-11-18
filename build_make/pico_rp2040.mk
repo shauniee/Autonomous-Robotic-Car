@@ -135,12 +135,16 @@ TRACE_SUFFIX := _notrace
 endif
 # BENCH=1: GP20 runs the next single Motion move instead of starting the
 # mission (flash.sh bench). The image gets a _bench suffix.
+# BENCH=2: every GP20 press repeats one 100 mm straight (flash.sh bench10).
 BENCH ?= 0
-ifneq ($(filter $(BENCH),0 1),$(BENCH))
-$(error BENCH must be 0 or 1)
+ifneq ($(filter $(BENCH),0 1 2),$(BENCH))
+$(error BENCH must be 0, 1 or 2)
 endif
 ifeq ($(BENCH),1)
 BENCH_SUFFIX := _bench
+endif
+ifeq ($(BENCH),2)
+BENCH_SUFFIX := _bench10
 endif
 NOGUARDS ?= 0
 ifneq ($(filter $(NOGUARDS),0 1),$(NOGUARDS))
