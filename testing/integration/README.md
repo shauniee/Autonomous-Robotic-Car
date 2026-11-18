@@ -3,23 +3,23 @@
 ## Contents
 
 - [Before you start](#before-you-start)
+- [Which image to flash](#which-image-to-flash)
 - [Captures](#captures)
 - [Run the test code](#run-the-test-code)
 - [Every video](#every-video)
 - [After each test](#after-each-test)
+- [One full course run](#one-full-course-run)
 - [Tests](#tests)
   - [INT-01](#int-01-line-following-three-laps)
-  - [INT-02](#int-02-line-loss-and-recovery)
   - [INT-03](#int-03-barcode-then-left-and-right-turns)
   - [INT-04](#int-04-barcode-then-straight-and-u-turn)
   - [INT-05](#int-05-junction-or-curve-with-no-turn-queued)
-  - [INT-06](#int-06-turn-with-one-wheel-on-a-hump)
   - [INT-07](#int-07-hump-while-line-following)
   - [INT-08](#int-08-obstacle-stop-on-the-line)
   - [INT-09](#int-09-bypass-and-rejoin)
   - [INT-10](#int-10-telemetry-and-events-during-a-run)
 
-How to run and record INT-01 to INT-10. These drive on the course on battery. Test definitions: [TEST_LOG.md](TEST_LOG.md).
+How to run and record INT-01, INT-03, INT-04, INT-05 and INT-07 to INT-10, all from [one full course run](#one-full-course-run). These drive on the course on battery. Test definitions: [TEST_LOG.md](TEST_LOG.md).
 
 ## Before you start
 
@@ -43,6 +43,19 @@ How to run and record INT-01 to INT-10. These drive on the course on battery. Te
    ```bash
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
    ```
+
+## Which image to flash
+
+Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no flash. Tests on the car need the image named in their **Image** line. Run every test of one image before flashing the next, top to bottom; a test listed under two images uses both (see its steps):
+
+| Image | Power | Tests |
+| --- | --- | --- |
+| `./flash.sh trial` | Battery only | INT-01, INT-03, INT-04, INT-05, INT-07, INT-08, INT-09, INT-10 |
+
+Before every flash:
+
+1. `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
+2. `git status` is clean, so the commit you record is the code you flashed.
 
 ## Captures
 
@@ -83,6 +96,10 @@ A manual test with no code prints `no tests for <ID>`. No test here has an on-ca
 
 Send Claude the test ID, the video link and anything you measured (tape readings, counts). Claude checks the logs and makes **one commit per test**: the logs plus one result row in [TEST_LOG.md](TEST_LOG.md), message `test(integration): <ID> <PASS|FAIL|PARTIAL>`.
 
+## One full course run
+
+Every integration test is recorded from the single scripted course run in the [system runbook](../system/README.md#one-full-course-run). Its captures are saved once, in `testing/system/logs/SYS-04/`; each INT result row here points to them and to that run's video. INT-02 and INT-06 were dropped; their IDs are not reused.
+
 ## Tests
 
 ### INT-01 Line following, three laps
@@ -101,25 +118,6 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 **Test code:** `logs/INT-01/test_line_replay.c`, `logs/INT-01/test_line_trace.c`
 
 **Run:** `sh testing/tools/run.sh INT-01`, then flash the image above, start the captures and follow the steps.
-
-**Logs:** `usb.log` and `monitor.log`
-
-### INT-02 Line loss and recovery
-
-**Image:** `./flash.sh trial` (full course with diagnostics; battery for driving)
-
-**Set up:** Straight line with a removable section; captures started.
-
-**Steps:**
-
-1. Start following.
-2. Lift the line section away in front of the car.
-
-**Show on video:** The sweep finding the line, or the stop.
-
-**Test code:** none (manual test)
-
-**Run:** flash the image above, start the captures and follow the steps.
 
 **Logs:** `usb.log` and `monitor.log`
 
@@ -178,29 +176,11 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Logs:** `usb.log` and `monitor.log`
 
-### INT-06 Turn with one wheel on a hump
-
-**Image:** `./flash.sh bench` (battery). Each GP20 press runs the next move: short forward, 1 m straight, 90 left, 90 right, 180, then again. Each move prints one `[BENCH]` line.
-
-**Set up:** Hump under one wheel at the taped square.
-
-**Steps:**
-
-1. Press GP20 for each pivot (`left_90`, `right_90`, `turn_180`), as in S2-U03, five of each.
-
-**Show on video:** Each pivot against the tape.
-
-**Test code:** none (manual test)
-
-**Run:** flash the image above, start the captures and follow the steps.
-
-**Logs:** `usb.log` (`[BENCH]` lines); write down the errors and compare them with S2-U03.
-
 ### INT-07 Hump while line following
 
-**Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh trial`
+**Image:** `./flash.sh trial` (full course with diagnostics; battery for driving)
 
-**Set up:** Hump on a straight, then on a curve.
+**Set up:** Hump on a straight, and on a curve if the course has one.
 
 **Steps:**
 
@@ -240,11 +220,9 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Steps:**
 
-1. Both sides open: run. The car takes the side with the shorter edge.
-2. One side blocked (a wall or box less than 220 mm past that edge): run. The car takes the other side, the only one with at least `MISSION_BYPASS_MIN_CLEAR_MM` (220 mm) of clearance.
-3. Both sides blocked: run.
+1. Both sides open: run. The car takes the side with the shorter edge, passes the box and rejoins the line.
 
-**Show on video:** Each bypass and the rejoin, or the stop when blocked.
+**Show on video:** The bypass and the rejoin.
 
 **Test code:** `logs/INT-09/test_mission.c`, `logs/INT-09/test_mission_pending.c`, `logs/INT-09/test_smooth_navigation.c`
 
