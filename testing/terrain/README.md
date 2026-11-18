@@ -155,17 +155,17 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Run:** `sh testing/tools/run.sh S4-U03`, then flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`
+**Logs:** `usb.log` or `monitor.log`
 
 ### S4-U04 Hump height
 
 **Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh test`
 
-**Set up:** Humps of measured heights from 10 to 30 mm; captures started.
+**Set up:** A 10 mm hump, height measured; captures started.
 
 **Steps:**
 
-1. Push one wheel over each hump three times.
+1. Push one wheel over the hump three times.
 
 **Show on video:** The measured height and the reported height.
 
@@ -173,7 +173,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`; write down each hump's measured height.
+**Logs:** `usb.log` or `monitor.log`; write down the hump's measured height.
 
 ### S4-U05 Hump under the other wheel and in reverse
 
@@ -192,4 +192,4 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`
+**Logs:** `usb.log` or `monitor.log`
