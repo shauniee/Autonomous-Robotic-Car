@@ -1,0 +1,51 @@
+[TIMING] t=555020 | motion max=675us ovr=0 stack=528/2176B | io max=1853us ovr=27494 stack=576/2176B | mission max=1343us ovr=27500 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=560020 | motion max=572us ovr=0 stack=528/2176B | io max=1936us ovr=27744 stack=576/2176B | mission max=1552us ovr=27750 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=565020 | motion max=560us ovr=0 stack=528/2176B | io max=1851us ovr=27994 stack=576/2176B | mission max=1410us ovr=28000 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=570020 | motion max=554us ovr=0 stack=528/2176B | io max=1790us ovr=28244 stack=576/2176B | mission max=1549us ovr=28250 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=575020 | motion max=637us ovr=0 stack=528/2176B | io max=1929us ovr=28494 stack=576/2176B | mission max=1470us ovr=28500 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=580020 | motion max=567us ovr=0 stack=528/2176B | io max=1973us ovr=28744 stack=576/2176B | mission max=1394us ovr=28750 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=585020 | motion max=653us ovr=0 stack=528/2176B | io max=1908us ovr=28994 stack=576/2176B | mission max=1762us ovr=29000 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=590020 | motion max=551us ovr=0 stack=528/2176B | io max=1969us ovr=29244 stack=576/2176B | mission max=1573us ovr=29250 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=595020 | motion max=554us ovr=0 stack=528/2176B | io max=1924us ovr=29494 stack=576/2176B | mission max=1444us ovr=29500 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=600020 | motion max=620us ovr=0 stack=528/2176B | io max=1929us ovr=29744 stack=576/2176B | mission max=1463us ovr=29750 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=605020 | motion max=573us ovr=0 stack=528/2176B | io max=1982us ovr=29994 stack=576/2176B | mission max=1801us ovr=30000 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=610020 | motion max=558us ovr=0 stack=528/2176B | io max=2049us ovr=30244 stack=576/2176B | mission max=1579us ovr=30250 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=615020 | motion max=632us ovr=0 stack=528/2176B | io max=2042us ovr=30494 stack=576/2176B | mission max=1420us ovr=30500 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=620020 | motion max=561us ovr=0 stack=528/2176B | io max=1735us ovr=30744 stack=576/2176B | mission max=1505us ovr=30750 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=625020 | motion max=662us ovr=0 stack=528/2176B | io max=1903us ovr=30994 stack=576/2176B | mission max=1375us ovr=31000 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=630020 | motion max=556us ovr=0 stack=528/2176B | io max=1835us ovr=31244 stack=576/2176B | mission max=1516us ovr=31250 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=635020 | motion max=558us ovr=0 stack=528/2176B | io max=1927us ovr=31494 stack=576/2176B | mission max=1575us ovr=31500 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=640020 | motion max=559us ovr=0 stack=528/2176B | io max=2027us ovr=31744 stack=576/2176B | mission max=1687us ovr=31750 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=645020 | motion max=552us ovr=0 stack=528/2176B | io max=2188us ovr=31994 stack=576/2176B | mission max=1734us ovr=32000 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=650020 | motion max=555us ovr=0 stack=528/2176B | io max=2016us ovr=32244 stack=576/2176B | mission max=1787us ovr=32250 stack=1032/2176B
+[IR] raw=[TIMING] t=805020 | motion max=652us ovr=0 stack=528/2176B | io max=1904us ovr=39994 stack=576/2176B | mission max=1465us ovr=40000 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=810020 | motion max=379us ovr=0 stack=528/2176B | io max=1772us ovr=40244 stack=576/2176B | mission max=2641us ovr=40250 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=815020 | motion max=378us ovr=0 stack=528/2176B | io max=1746us ovr=40494 stack=576/2176B | mission max=2793us ovr=40500 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=820020 | motion max=369us ovr=0 stack=528/2176B | io max=1756us ovr=40744 stack=576/2176B | mission max=1903us ovr=40750 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=825020 | motion max=387us ovr=0 stack=528/2176B | io max=1794us ovr=40994 stack=576/2176B | mission max=1920us ovr=41000 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=830020 | motion max=378us ovr=0 stack=528/2176B | io max=1749us ovr=41244 stack=576/2176B | mission max=2785us ovr=41250 stack=1032/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms

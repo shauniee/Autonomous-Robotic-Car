@@ -148,6 +148,8 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `./flash.sh trial` | `trial.uf2` |
 | `./flash.sh test` | `test.uf2` |
 | `./flash.sh bench` | `bench.uf2` |
+| `./flash.sh bench10` | `bench10.uf2` |
+| `./flash.sh benchturn` | `benchturn.uf2` |
 
 | Option | Meaning |
 | --- | --- |
@@ -159,6 +161,8 @@ make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_RE
 | `TEST=1` | Firmware self-tests; forces Motion braking even if the controller enables motion |
 | `TRACE=0` | Skip high-rate diagnostic frame production (types 9/10/11, plus Terrain trace), retaining telemetry, events, ACKs and all safety; `_notrace` image. Default `TRACE=0` with `FULL_COURSE=1`, otherwise `TRACE=1` |
 | `BENCH=1` | GP20 runs the next single move (100 mm forward, 1 m straight, 90 left, 90 right, 180) instead of starting the mission and prints one `[BENCH]` line per move; a move that does not finish is repeated on the next press; GP21 still stops; `_bench` image |
+| `BENCH=2` | As `BENCH=1`, but every GP20 press drives one 100 mm straight (S2-U02); `_bench10` image |
+| `BENCH=3` | As `BENCH=1`, but GP20 runs only 90 left, 90 right and 180, in turn (S2-U03); `_benchturn` image |
 | `CRASH_REPORT=1` | Crash/console copy on UART0; project uses `0` (GP0/GP1 conflict, [pins](docs/team.md#2-pins)) |
 
 Diagnostics belong in test images (Nicholas, 2026-11-04): `full_course` has none, for the least memory. To check they do not change driving, keep the same course, battery condition and
