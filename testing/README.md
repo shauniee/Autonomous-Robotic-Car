@@ -149,9 +149,9 @@ Which test now covers each Tribunal trial. Limits come from
 | T05 | Four encoder actions: repeated distance/angle accuracy, completion, timeout and obstacle cancellation | S2-U02, S2-U03 |
 | T06 | Labelled stationary/acceleration/turn/climb/descent/lift traces; no raw gyro claim | none (S4-U02 dropped 2026-11-18) |
 | T07 | Measured reference humps, slip/dynamic/incomplete rejection and invalid estimate after valid maximum | S4-U03 |
-| T08 | Known forward ranges/materials/angles; no/late/out-of-range echo, settled repeated filtering and repeat timing | S5-U01, S5-U05 |
+| T08 | Known forward ranges/materials/angles; no/late/out-of-range echo, settled repeated filtering and repeat timing | S5-U01 |
 | T09 | Moving scan rejection, coarse/fine profile for 100-200 mm widths, uncertainty, separate front age and restored-center acquisition | S5-U03 |
-| T10 | Vehicle envelope/course boundary, both bypass sides, blocked paths and original-line versus wrong-crossing recovery | S5-U04, INT-09 |
+| T10 | Vehicle envelope/course boundary, both bypass sides, blocked paths and original-line versus wrong-crossing recovery | INT-09 |
 | T11 | Controlled line loss, interrupted search, obstacle during search and bounded timeout | none (INT-02 dropped) |
 | T12 | Actual mission telemetry/status subscription, units/validity and rejection of prohibited/malformed commands | S1-U04 |
 | T13 | WiFi/broker loss/reconnect under sensor/scan load; healthy local control and no stale replay | S1-U03, SYS-08 |
