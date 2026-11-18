@@ -1,0 +1,446 @@
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+[TEST] line_barcode snapshot mutex creation returned=3
+[TEST] line_barcode snapshot mutex published=3
+Motion and I/O started; Mission starts after startup tests.
+[TEST] === test run start ===
+[TEST] S1-U05 PASS  binary telemetry round-trip and length check
+[TEST] comms SUMMARY 1 passed, 0 failed
+[TEST] S2-U05 PASS  command freshness gate; outputs inhibited
+[TEST] motion SUMMARY 1 passed, 0 failed
+wifi: cyw43_utk_task starting (proc 1)
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+wifi: delay 20 ms begin
+[IMU] calibration started: keep wheels still; timeout_ms=5000
+wifi: delay 20 ms end
+wifi: delay 50 ms begin
+wifi: delay 50 ms end
+wifi: resource claim No PIO state machines are available -> 4
+wifi: resource claim No DMA channels are available -> 0
+wifi: resource claim No DMA channels are available -> 1
+wifi: delay 20 ms begin
+wifi: delay 20 ms end
+wifi: delay 250 ms begin
+wifi: delay 250 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IMU] calibration passed: samples=100 elapsed_ms=2120
+[TEST] S4-U01 PASS  IMU boot calibration passed, no IMU fault
+[TEST] Terrain State: 0 | Hump count: 0
+[TEST] terrain SUMMARY 1 passed, 0 failed
+[IR] buttons GP20_down=0 GP21_down=0
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[MISSION] state=READY MOTOR_INHIBITED
+[TEST] S3-U01 PASS  line IR sample valid, no IR_INVALID fault
+[TEST] line_barcode SUMMARY 1 passed, 0 failed
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TEST] S5-U01 PASS  front sonar echo valid (needs a target in range), no NO_ECHO fault
+[TEST] obstacle SUMMARY 1 passed, 0 failed
+[TEST] === test run end ===
+all subsystems started
+
+[TIMING] t=5000 | motion max=0us ovr=0 stack=528/2176B | io max=0us ovr=0 stack=448/2176B | mission max=0us ovr=0 stack=1016/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=10000 | motion max=447us ovr=0 stack=528/2176B | io max=1853us ovr=244 stack=448/2176B | mission max=1914us ovr=250 stack=1016/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=15010 | motion max=340us ovr=0 stack=528/2176B | io max=1603us ovr=494 stack=448/2176B | mission max=1371us ovr=500 stack=1016/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[TIMING] t=20010 | motion max=288us ovr=0 stack=528/2176B | io max=1539us ovr=744 stack=448/2176B | mission max=1269us ovr=750 stack=1016/2176B
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=25010 | motion max=289us ovr=0 stack=528/2176B | io max=1757us ovr=994 stack=448/2176B | mission max=1246us ovr=1000 stack=1016/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+
+
+microT-Kernel Version 3.00
+
+
+=== micro T-Kernel on Raspberry Pi Pico W (spec 0x6300, product 0x0003) ===
+dual-core (SMP) build, usermain on core 0
+[TEST] line_barcode snapshot mutex creation returned=3
+[TEST] line_barcode snapshot mutex published=3
+Motion and I/O started; Mission starts after startup tests.
+[TEST] === test run start ===
+[TEST] S1-U05 PASS  binary telemetry round-trip and length check
+[TEST] comms SUMMARY 1 passed, 0 failed
+[TEST] S2-U05 PASS  command freshness gate; outputs inhibited
+[TEST] motion SUMMARY 1 passed, 0 failed
+wifi: cyw43_utk_task starting (proc 1)
+wifi: cyw43_init() ...
+wifi: cyw43_init() returned, bringing interface up ...
+wifi: delay 20 ms begin
+[IMU] calibration started: keep wheels still; timeout_ms=5000
+wifi: delay 20 ms end
+wifi: delay 50 ms begin
+wifi: delay 50 ms end
+wifi: resource claim No PIO state machines are available -> 4
+wifi: resource claim No DMA channels are available -> 0
+wifi: resource claim No DMA channels are available -> 1
+wifi: delay 20 ms begin
+wifi: delay 20 ms end
+wifi: delay 250 ms begin
+wifi: delay 250 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: delay 1 ms begin
+wifi: delay 1 ms end
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IMU] calibration passed: samples=100 elapsed_ms=2640
+[TEST] S4-U01 PASS  IMU boot calibration passed, no IMU fault
+[TEST] Terrain State: 0 | Hump count: 0
+[TEST] terrain SUMMARY 1 passed, 0 failed
+[IR] buttons GP20_down=0 GP21_down=0
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[MISSION] state=READY MOTOR_INHIBITED
+[TEST] S3-U01 PASS  line IR sample valid, no IR_INVALID fault
+[TEST] line_barcode SUMMARY 1 passed, 0 failed
+[TEST] S5-U01 PASS  front sonar echo valid (needs a target in range), no NO_ECHO fault
+[TEST] obstacle SUMMARY 1 passed, 0 failed
+[TEST] === test run end ===
+all subsystems started
+
+[TIMING] t=5000 | motion max=0us ovr=0 stack=528/2176B | io max=0us ovr=0 stack=448/2176B | mission max=0us ovr=0 stack=1016/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=10000 | motion max=606us ovr=0 stack=528/2176B | io max=1934us ovr=244 stack=448/2176B | mission max=1826us ovr=250 stack=1016/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=15000 | motion max=333us ovr=0 stack=528/2176B | io max=1589us ovr=494 stack=448/2176B | mission max=1286us ovr=500 stack=1016/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[TIMING] t=20000 | motion max=343us ovr=0 stack=528/2176B | io max=1626us ovr=744 stack=448/2176B | mission max=1358us ovr=750 stack=1016/2176B
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=25000 | motion max=315us ovr=0 stack=528/2176B | io max=1832us ovr=994 stack=448/2176B | mission max=1448us ovr=1000 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=30000 | motion max=334us ovr=0 stack=528/2176B | io max=1716us ovr=1244 stack=448/2176B | mission max=1319us ovr=1250 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/0 valid=1 fresh=1 black=1/0 normalized=1 line=visible age=0ms
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=35000 | motion max=323us ovr=0 stack=528/2176B | io max=1593us ovr=1494 stack=448/2176B | mission max=1395us ovr=1500 stack=1024/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=40000 | motion max=338us ovr=0 stack=528/2176B | io max=1699us ovr=1744 stack=448/2176B | mission max=1450us ovr=1750 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=45000 | motion max=329us ovr=0 stack=528/2176B | io max=1737us ovr=1994 stack=448/2176B | mission max=1293us ovr=2000 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=50000 | motion max=323us ovr=0 stack=528/2176B | io max=1684us ovr=2244 stack=448/2176B | mission max=1375us ovr=2250 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+[TIMING] t=55000 | motion max=328us ovr=0 stack=528/2176B | io max=1714us ovr=2494 stack=448/2176B | mission max=1439us ovr=2500 stack=1024/2176B
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=60000 | motion max=315us ovr=0 stack=528/2176B | io max=1652us ovr=2744 stack=448/2176B | mission max=1301us ovr=2750 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=65000 | motion max=334us ovr=0 stack=528/2176B | io max=1621us ovr=2994 stack=448/2176B | mission max=1306us ovr=3000 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=70000 | motion max=346us ovr=0 stack=528/2176B | io max=1684us ovr=3244 stack=448/2176B | mission max=1501us ovr=3250 stack=1024/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=75000 | motion max=330us ovr=0 stack=528/2176B | io max=1631us ovr=3494 stack=448/2176B | mission max=1269us ovr=3500 stack=1024/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=80000 | motion max=329us ovr=0 stack=528/2176B | io max=1587us ovr=3744 stack=448/2176B | mission max=1290us ovr=3750 stack=1024/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: joining configured network ...
+[TIMING] t=85000 | motion max=327us ovr=0 stack=528/2176B | io max=1689us ovr=3994 stack=448/2176B | mission max=1345us ovr=4000 stack=1024/2176B
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=90000 | motion max=336us ovr=0 stack=528/2176B | io max=1666us ovr=4244 stack=448/2176B | mission max=1299us ovr=4250 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=95000 | motion max=330us ovr=0 stack=528/2176B | io max=1649us ovr=4494 stack=448/2176B | mission max=1303us ovr=4500 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=100000 | motion max=324us ovr=0 stack=528/2176B | io max=1659us ovr=4744 stack=448/2176B | mission max=1354us ovr=4750 stack=1024/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=105000 | motion max=334us ovr=0 stack=528/2176B | io max=1676us ovr=4994 stack=448/2176B | mission max=1274us ovr=5000 stack=1024/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=110000 | motion max=332us ovr=0 stack=528/2176B | io max=1666us ovr=5244 stack=448/2176B | mission max=1293us ovr=5250 stack=1024/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[TIMING] t=115000 | motion max=338us ovr=0 stack=528/2176B | io max=1678us ovr=5494 stack=448/2176B | mission max=1369us ovr=5500 stack=1024/2176B
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=120000 | motion max=326us ovr=0 stack=528/2176B | io max=1662us ovr=5744 stack=448/2176B | mission max=1292us ovr=5750 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=125000 | motion max=330us ovr=0 stack=528/2176B | io max=1626us ovr=5994 stack=448/2176B | mission max=1289us ovr=6000 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=130000 | motion max=328us ovr=0 stack=528/2176B | io max=1697us ovr=6244 stack=448/2176B | mission max=1382us ovr=6250 stack=1024/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=135000 | motion max=327us ovr=0 stack=528/2176B | io max=1671us ovr=6494 stack=448/2176B | mission max=1282us ovr=6500 stack=1024/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=140000 | motion max=333us ovr=0 stack=528/2176B | io max=1672us ovr=6744 stack=448/2176B | mission max=1297us ovr=6750 stack=1024/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[TIMING] t=145000 | motion max=331us ovr=0 stack=528/2176B | io max=1682us ovr=6994 stack=448/2176B | mission max=1379us ovr=7000 stack=1024/2176B
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=150000 | motion max=337us ovr=0 stack=528/2176B | io max=1687us ovr=7244 stack=448/2176B | mission max=1300us ovr=7250 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[IR] raw=1/0 valid=1 fresh=1 black=1/0 normalized=1 line=visible age=0ms
+[TIMING] t=155000 | motion max=335us ovr=0 stack=528/2176B | io max=1686us ovr=7494 stack=448/2176B | mission max=1384us ovr=7500 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=160000 | motion max=322us ovr=0 stack=528/2176B | io max=1864us ovr=7744 stack=448/2176B | mission max=1322us ovr=7750 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=165000 | motion max=325us ovr=0 stack=528/2176B | io max=1663us ovr=7994 stack=448/2176B | mission max=1356us ovr=8000 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=170000 | motion max=337us ovr=0 stack=528/2176B | io max=1644us ovr=8244 stack=448/2176B | mission max=1427us ovr=8250 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[TIMING] t=175000 | motion max=333us ovr=0 stack=528/2176B | io max=1686us ovr=8494 stack=448/2176B | mission max=1302us ovr=8500 stack=1024/2176B
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=180000 | motion max=319us ovr=0 stack=528/2176B | io max=1640us ovr=8744 stack=448/2176B | mission max=1341us ovr=8750 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=185000 | motion max=321us ovr=0 stack=528/2176B | io max=1656us ovr=8994 stack=448/2176B | mission max=1447us ovr=9000 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=190000 | motion max=324us ovr=0 stack=528/2176B | io max=1714us ovr=9244 stack=448/2176B | mission max=1310us ovr=9250 stack=1024/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=195000 | motion max=338us ovr=0 stack=528/2176B | io max=1700us ovr=9494 stack=448/2176B | mission max=1420us ovr=9500 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=200000 | motion max=337us ovr=0 stack=528/2176B | io max=1796us ovr=9744 stack=448/2176B | mission max=1381us ovr=9750 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=205000 | motion max=322us ovr=0 stack=528/2176B | io max=1657us ovr=9994 stack=448/2176B | mission max=1426us ovr=10000 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+[TIMING] t=210000 | motion max=339us ovr=0 stack=528/2176B | io max=1617us ovr=10244 stack=448/2176B | mission max=1294us ovr=10250 stack=1024/2176B
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=215000 | motion max=332us ovr=0 stack=528/2176B | io max=1647us ovr=10494 stack=448/2176B | mission max=1363us ovr=10500 stack=1024/2176B
+[IR] raw=1/0 valid=1 fresh=1 black=1/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/0 valid=1 fresh=1 black=1/0 normalized=1 line=visible age=0ms
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=220000 | motion max=334us ovr=0 stack=528/2176B | io max=1656us ovr=10744 stack=448/2176B | mission max=1433us ovr=10750 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=225000 | motion max=327us ovr=0 stack=528/2176B | io max=1603us ovr=10994 stack=448/2176B | mission max=1321us ovr=11000 stack=1024/2176B
+[IR] raw=1/0 valid=1 fresh=1 black=1/0 normalized=1 line=visible age=0ms
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[IR] raw=1/0 valid=1 fresh=1 black=1/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[TIMING] t=230000 | motion max=337us ovr=0 stack=528/2176B | io max=1632us ovr=11244 stack=448/2176B | mission max=1397us ovr=11250 stack=1024/2176B
+[IR] raw=1/0 valid=1 fresh=1 black=1/0 normalized=1 line=visible age=0ms
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=235000 | motion max=335us ovr=0 stack=528/2176B | io max=1682us ovr=11494 stack=448/2176B | mission max=1372us ovr=11500 stack=1024/2176B
+[IR] raw=1/0 valid=1 fresh=1 black=1/0 normalized=1 line=visible age=0ms
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[IR] raw=1/0 valid=1 fresh=1 black=1/0 normalized=1 line=visible age=0ms
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+[TIMING] t=240000 | motion max=331us ovr=0 stack=528/2176B | io max=1615us ovr=11744 stack=448/2176B | mission max=1463us ovr=11750 stack=1024/2176B
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] raw=0/1 valid=1 fresh=1 black=0/1 normalized=1 line=visible age=0ms
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+[TIMING] t=245000 | motion max=327us ovr=0 stack=528/2176B | io max=1690us ovr=11994 stack=448/2176B | mission max=1418us ovr=12000 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=250000 | motion max=329us ovr=0 stack=528/2176B | io max=1763us ovr=12244 stack=448/2176B | mission max=1355us ovr=12250 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=255000 | motion max=331us ovr=0 stack=528/2176B | io max=1612us ovr=12494 stack=448/2176B | mission max=1383us ovr=12500 stack=1024/2176B
+[IR] raw=1/1 valid=1 fresh=1 black=1/1 normalized=1 line=broad_black age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=260000 | motion max=338us ovr=0 stack=528/2176B | io max=1650us ovr=12744 stack=448/2176B | mission max=1302us ovr=12750 stack=1024/2176B
+[IR] raw=1/0 valid=1 fresh=1 black=1/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=265000 | motion max=326us ovr=0 stack=528/2176B | io max=1707us ovr=12994 stack=448/2176B | mission max=1456us ovr=13000 stack=1024/2176B
+[IR] raw=1/0 valid=1 fresh=1 black=1/0 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[TIMING] t=270000 | motion max=331us ovr=0 stack=528/2176B | io max=1670us ovr=13244 stack=448/2176B | mission max=1310us ovr=13250 stack=1024/2176B
+[IR] raw=0/0 valid=1 fresh=1 black=0/0 normalized=1 line=visible age=0ms
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=0/1 valid=1 fresh=1 black=0/1 normalized=1 line=visible age=0ms
+[TIMING] t=275000 | motion max=335us ovr=0 stack=528/2176B | io max=1624us ovr=13494 stack=448/2176B | mission max=1453us ovr=13500 stack=1024/2176B
+wifi: joining configured network ...
+[IR] raw=0/1 valid=1 fresh=1 black=0/1 normalized=1 line=visible age=0ms
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=280000 | motion max=328us ovr=0 stack=528/2176B | io max=1672us ovr=13744 stack=448/2176B | mission max=1643us ovr=13750 stack=1024/2176B
+[IR] raw=0/1 valid=1 fresh=1 black=0/1 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=285000 | motion max=342us ovr=0 stack=528/2176B | io max=1646us ovr=13994 stack=448/2176B | mission max=1432us ovr=14000 stack=1024/2176B
+[IR] raw=0/1 valid=1 fresh=1 black=0/1 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=290000 | motion max=325us ovr=0 stack=528/2176B | io max=1650us ovr=14244 stack=448/2176B | mission max=1282us ovr=14250 stack=1024/2176B
+[IR] raw=0/1 valid=1 fresh=1 black=0/1 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[TIMING] t=295000 | motion max=325us ovr=0 stack=528/2176B | io max=1869us ovr=14494 stack=448/2176B | mission max=1374us ovr=14500 stack=1024/2176B
+[IR] raw=0/1 valid=1 fresh=1 black=0/1 normalized=1 line=visible age=0ms
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[TIMING] t=300000 | motion max=332us ovr=0 stack=528/2176B | io max=1654us ovr=14744 stack=448/2176B | mission max=1316us ovr=14750 stack=1024/2176B
+wifi: link status -> FAILED: SSID not found (out of range, wrong name, or 5GHz-only network -- this chip is 2.4GHz only) (-2)
+[IR] raw=0/1 valid=1 fresh=1 black=0/1 normalized=1 line=visible age=0ms
+[TIMING] t=305000 | motion max=329us ovr=0 stack=528/2176B | io max=1648us ovr=14994 stack=448/2176B | mission max=1287us ovr=15000 stack=1024/2176B
+wifi: joining configured network ...
+wifi: link status -> joined AP, waiting for IP (1)
+[IR] raw=0/1 valid=1 fresh=1 black=0/1 normalized=1 line=visible age=0ms

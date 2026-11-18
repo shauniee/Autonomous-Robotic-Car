@@ -32,3 +32,4 @@ Add a new row for every run. Never edit or delete old rows.
 | Date | Test ID | Commit | Tester | Result | Log / evidence | Notes |
 |---|---|---|---|---|---|---|
 | YYYY-MM-DD | S3-U01 | `abc1234` | | PASS / FAIL | `logs/<ID>/<what>.log`, video link | |
+| 2026-11-18 | S3-U01 | `893c6c8` | Nicholas | PASS | `logs/S3-U01/usb.log`; no video link yet | `[TEST] S3-U01 PASS  line IR sample valid, no IR_INVALID fault` at power-up on the TEST image (USB). On the bench, `[IR] black=` showed `0/0` over white, `1/0` with black under the left sensor (GP26) only, `0/1` with black under the right sensor (GP17) only and `1/1` with both over black: each sensor reads black and white on its own. WiFi was not joined (`SSID not found`); not needed for this test. |
