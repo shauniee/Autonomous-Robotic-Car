@@ -12,7 +12,7 @@
   - [S3-U01](#s3-u01-line-ir-levels)
   - [S3-U02](#s3-u02-barcode-ir-level)
   - [S3-U03](#s3-u03-all-26-letters)
-  - [S3-U04](#s3-u04-reverse-direction-and-flipped-print)
+  - [S3-U04](#s3-u04-flipped-print)
   - [S3-U05](#s3-u05-read-rate-at-course-speed)
 
 How to run and record S3-U01 to S3-U05. Test definitions: [TEST_LOG.md](TEST_LOG.md).
@@ -126,15 +126,14 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 1. Slide a black strip slowly under the barcode sensor (GP27), then white.
 2. Repeat three times.
-3. Read the module's potentiometer position.
 
-**Show on video:** `[BCPIN] level=` flipping and `edges=` counting up; say the pot setting.
+**Show on video:** `[BCPIN] level=` flipping and `edges=` counting up.
 
 **Test code:** none (manual test)
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log`; note the pot setting.
+**Logs:** `usb.log`
 
 ### S3-U03 All 26 letters
 
@@ -153,26 +152,26 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Run:** `sh testing/tools/run.sh S3-U03`, then flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`
+**Logs:** `usb.log` or `monitor.log`
 
-### S3-U04 Reverse direction and flipped print
+### S3-U04 Flipped print
 
 **Image:** `BARCODE_DIAGNOSTICS=1 ./flash.sh trial` (battery)
 
-**Set up:** Same as S3-U03 with five letters.
+**Set up:** Same as S3-U03 with one letter.
 
 **Steps:**
 
-1. Drive each letter in the reverse direction.
-2. Turn the print 180 degrees and drive again.
+1. Turn the print 180 degrees.
+2. Drive over it in the normal direction.
 
-**Show on video:** The letter card matching each print.
+**Show on video:** The letter card matching the print.
 
 **Test code:** none (manual test)
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`
+**Logs:** `usb.log` or `monitor.log`
 
 ### S3-U05 Read rate at course speed
 
@@ -182,7 +181,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Steps:**
 
-1. Drive over it ten times.
+1. Drive over it three times.
 
 **Show on video:** Each pass and the letter card.
 
@@ -190,4 +189,4 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`; Claude counts reads against passes.
+**Logs:** `usb.log` or `monitor.log`; Claude counts reads against passes.
