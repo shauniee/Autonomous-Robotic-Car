@@ -46,8 +46,8 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 
 | Image | Power | Tests |
 | --- | --- | --- |
-| `TERRAIN_DIAGNOSTICS=1 ./flash.sh test` | USB only | S4-U01, S4-U03, S4-U04, S4-U05 |
-| `./flash.sh trial` | Battery only | S4-U02 |
+| `TERRAIN_DIAGNOSTICS=1 ./flash.sh test` | USB only | S4-U01, S4-U03, S4-U04 |
+| `./flash.sh trial` | Battery only | S4-U02, S4-U05 |
 
 Before every flash:
 
@@ -177,9 +177,9 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 ### S4-U05 Mission stop on lift and flip
 
-**Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh test` (motors always off)
+**Image:** `./flash.sh trial` (battery). The TEST image cannot be used: it keeps the motors inhibited, so GP21 never clears a stop.
 
-**Set up:** Booted still on the floor; `[MISSION] state=READY`; USB capture started.
+**Set up:** Booted still on the floor; telemetry shows `state=READY`; no run started; telemetry capture started.
 
 **Steps:**
 
@@ -188,10 +188,10 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 3. Turn the car over, then set it back on its wheels.
 4. Wait a few seconds, then press and release GP21.
 
-**Show on video:** Each lift and flip, the `[SAFETY]` and `[MISSION] state=STOPPED` lines, and READY again after GP21.
+**Show on video:** Each lift and flip, `Terrain: lifted` and `state=STOPPED` on the dashboard, and READY again after GP21.
 
 **Test code:** none (manual test)
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log`
+**Logs:** `monitor.log`
