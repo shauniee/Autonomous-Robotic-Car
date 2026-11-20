@@ -102,5 +102,5 @@ No situation below has a recorded physical pass; host tests use synthetic data. 
 Echo capture, median groups, edge hysteresis, profile and clearance estimation and scan guards are host-tested only.
 
 - D02, D03, D05, D07, D12 and D16: servo calibration, timing, sample and edge parameters, car envelope and travel budgets.
-- Measure sonar and servo behaviour, then run both-blocked and failure cases before both-side bypass runs (MR-17, MR-18, MR-30, MR-31, T08-T10, T14, T15).
+- Measure sonar and servo behaviour, then run both-blocked and failure cases before both-side bypass runs (S5-U01, S5-U02, SYS-U01, T08-T10, T14, T15).
 - Forward coverage during bypass and rear-edge handling still need physical evidence. Compare this list against the original rubric.

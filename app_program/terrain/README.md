@@ -119,17 +119,17 @@ Record each run separately with source SHA, UF2 hash, setup and evidence. Limits
 | Scenario | Trials | Measured reference | Record | Decision |
 | --- | --- | --- | --- | --- |
 | Level standstill/startup | At least 3 boots | Stationary and tilted setup | IMU calibration completion, baseline roll, false events | D06 |
-| Single known 10 mm hump | At least 3 passes | Height from calipers | Completed count, reported height, profile, any double count | MR-29 |
+| Single known 10 mm hump | At least 3 passes | Height from calipers | Completed count, reported height, profile, any double count | S4-U03 |
 | Additional reference up to 30 mm | At least 3 passes per height | Known true height | Actual versus reported, error per pass | D06/D10 |
 | Pure pivot or tight curve | Repeated | No hump | Event count must not increase | 2026-11-02 |
-| Hump before barcode / on curve | Repeated | Known route | Event count and barcode/line continuation | MR-29 |
+| Hump before barcode / on curve | Repeated | Known route | Event count and barcode/line continuation | SYS-U01 |
 | One-wheel and reversed approach | Repeated | Known wheel and direction | Roll sign, height, count and completion | D11 |
-| Lift and turn over during a run | Repeated safe test | Car lifted level, tipped on its side, upside down | Fault byte, braked output, persistent stop and the smallest lift that triggers | MR-16 |
-| IMU disconnected | Bench only, power off first | No device | Bounded calibration failure and fault policy | MR-11 |
+| Lift and turn over during a run | Repeated safe test | Car lifted level, tipped on its side, upside down | Fault byte, braked output, persistent stop and the smallest lift that triggers | S4-U04 |
+| IMU disconnected | Bench only, power off first | No device | Bounded calibration failure and fault policy | S4-U01 |
 
 ## Status and open items
 
 Algorithms pass synthetic replays; results are in the [terrain test log](../../testing/terrain/TEST_LOG.md). Physical height and lift calibration are not established.
 
 - D06, D13 and D14: measured references up to 30 mm, height-error target, threshold and filter decisions.
-- Test stationary, acceleration, braking, turning, climb, descent, lift, repeated reference passes, partial encounters and invalid-after-valid maximum (MR-16, MR-23, MR-29, T06, T07).
+- Test stationary, acceleration, braking, turning, climb, descent, lift, repeated reference passes, partial encounters and invalid-after-valid maximum (S4-U03, S4-U04, T06, T07).

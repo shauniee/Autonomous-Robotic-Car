@@ -15,9 +15,9 @@ Define a test here before running it. Test IDs never change.
 
 | ID | What is tested | Requirement / interface | Method | Steps / how | Expected result |
 |---|---|---|---|---|---|
-| S2-U01 | Motor direction and encoder counts | MR-14, MR-19 | manual | 1. Short forward command on each motor | Both wheels drive forward; both counts rise |
-| S2-U02 | 100 mm straight | MR-21, D07 | manual | 1. Drive 100 mm at course speed, five times. 2. Tape the end point | Distance and lateral error recorded; lateral error at most 10 mm |
-| S2-U03 | 90 and 180 degree pivots | MR-22, D07 | manual | 1. Pivot 90 left, 90 right and 180, five each, on a taped square | Heading error recorded; at most 5 degrees |
+| S2-U01 | Motor direction and encoder counts | FR-05 | manual | 1. Short forward command on each motor | Both wheels drive forward; both counts rise |
+| S2-U02 | 100 mm straight | D07 | manual | 1. Drive 100 mm at course speed, five times. 2. Tape the end point | Distance and lateral error recorded; lateral error at most 10 mm |
+| S2-U03 | 90 and 180 degree pivots | D07 | manual | 1. Pivot 90 left, 90 right and 180, five each, on a taped square | Heading error recorded; at most 5 degrees |
 | S2-U04 | Wheel speed control on the floor | D07 | manual | 1. Run at 100 mm/s with `monitor` saving `WHEEL` traces | Measured speed follows the target without oscillating |
 | S2-U05 | Command freshness gate | Motion contract | auto | `motion_test.c` on the TEST image | `[TEST] S2-U05 PASS`; outputs stay inhibited |
 

@@ -17,10 +17,10 @@ On 2026-11-18 the old S4-U02 (tilt and lift during a run) was dropped, as S4-U04
 
 | ID | What is tested | Requirement / interface | Method | Steps / how | Expected result |
 |---|---|---|---|---|---|
-| S4-U01 | IMU boot calibration | MR-11, MR-16 | manual | 1. Boot still. 2. Boot while moving. 3. Boot with the IMU disconnected | Still boot calibrates; the others report a calibration fault and refuse to start |
+| S4-U01 | IMU boot calibration | FR-11 | manual | 1. Boot still. 2. Boot while moving. 3. Boot with the IMU disconnected | Still boot calibrates; the others report a calibration fault and refuse to start |
 | S4-U02 | Hump count | M4 | manual | 1. Push the car over a 10 mm hump three times, with a pivot between | `humps=` equals the crossings; pivots add none |
-| S4-U03 | Hump height | M5, MR-29 | manual | 1. Cross a measured 10 mm hump three times | Reported height recorded against the measured height |
-| S4-U04 | Mission stop on lift and flip | MR-16, MR-24 | manual | 1. On the trial image, car READY and not driving, lift it off the floor, set it down, press and release GP21. 2. Repeat, turning the car over | Each raises `Terrain: lifted` and `state=STOPPED`; it stays stopped once flat until GP21, which returns READY |
+| S4-U03 | Hump height | M5 | manual | 1. Cross a measured 10 mm hump three times | Reported height recorded against the measured height |
+| S4-U04 | Mission stop on lift and flip | NFR-07 | manual | 1. On the trial image, car READY and not driving, lift it off the floor, set it down, press and release GP21. 2. Repeat, turning the car over | Each raises `Terrain: lifted` and `state=STOPPED`; it stays stopped once flat until GP21, which returns READY |
 
 *Method:* **auto** = `TEST_CHECK` in code, result printed on the console;
 **manual** = a person observes the result (motor, sensor, dashboard, tape measure).

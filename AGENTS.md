@@ -29,6 +29,6 @@ Guardrails below always apply. Everything else lives in the guide listed under [
 | Members, pins, wiring, task budget, interfaces, coding rules | [team](docs/team.md) |
 | One subsystem: comms, motion, line_barcode, terrain, obstacle | `app_program/<name>/README.md` (`comms`, `motion`, `line_barcode`, `terrain`, `obstacle`) |
 | Test IDs, how to record results, host tests | [testing](testing/README.md) |
-| Is the robot ready for a full run? | [mission-readiness checklist](testing/system/mission-readiness.md) |
+| How to run the full course run (SYS-U01) | [system test runbook](testing/system/README.md) |
 | Line-tracking state, open issues and how to run a trial | [line_barcode README](app_program/line_barcode/README.md) |
 | Video recording | [video](video/README.md) |
