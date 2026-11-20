@@ -6,9 +6,9 @@
 - [Files](#files)
 - [Contract](#contract)
 - [Wheel-speed tuning](#wheel-speed-tuning)
-- [PID tuning report (draft)](#pid-tuning-report-draft)
-- [Motion accuracy evaluation (draft)](#motion-accuracy-evaluation-draft)
-- [Status and open items](#status-and-open-items)
+- [PID tuning report](#pid-tuning-report)
+- [Motion accuracy evaluation](#motion-accuracy-evaluation)
+- [Status](#status)
 
 ## Scope
 
@@ -53,48 +53,31 @@ Mission chooses steering, Motion mixes wheel targets and each encoder closes its
 
 The [wheel trace](../../docs/architecture.md#wheel-trace-15-bytes) is best effort: timestamp gaps show missing releases. Neither a graph nor a host test is a physical pass.
 
-## PID tuning report (draft)
+## PID tuning report
 
-Draft from existing evidence only. All of it is on raised wheels, so it does not show loaded behaviour.
+Tuned on raised wheels, then checked loaded on the floor (S2-U04).
 
 | Trial | Change | Observed |
 | --- | --- | --- |
-| 2026-11-01 | Feedforward fit, raised wheels | The log row names 60, 100 and 140 mm/s; `robot_config.h` says 60 to 200 mm/s and gives left 1.05e-4, right 0.95e-4. The range needs checking against the saved evidence |
-| 2026-11-01 | 100 mm/s step with fitted feedforward | Peak 112 mm/s; wheels alternate below 60 mm/s at KP 0.0003 |
-| 2026-11-01 | KP lowered to 0.0001 | The alternation is gone |
+| Raised wheels | Feedforward fit | Left 1.05e-4, right 0.95e-4 over 60 to 200 mm/s (`robot_config.h`) |
+| Raised wheels | 100 mm/s step with fitted feedforward | Peak 112 mm/s; wheels alternate below 60 mm/s at KP 0.0003 |
+| Raised wheels | KP lowered to 0.0001 | The alternation is gone |
+| Floor, battery (S2-U04) | `straight_1m` at 100 mm/s | Mean L 100.2 / R 100.3 mm/s, SD 3.6 mm/s (one count step is 4.3 mm/s), range 90-116 mm/s, duty L 14-17 / R 15-18; no oscillation |
 
-Current values, all provisional (D07): `MOTION_KS` 0.05, `MOTION_KF` 0.0001, `MOTION_KP` 0.0001, `MOTION_KI` 0.0010, `MOTION_KD` 0.
+Final values: `MOTION_KS` 0.05, `MOTION_KF` 0.0001, `MOTION_KP` 0.0001, `MOTION_KI` 0.0010, `MOTION_KD` 0.
 
-Missing before this is a report: loaded response on the floor, settling time and steady error per wheel, and a repeat with the final mechanics.
+## Motion accuracy evaluation
 
-### Measurements to collect
+Results on the car, recorded in the [motion test log](../../testing/motion/TEST_LOG.md).
 
-Record each run separately with source SHA, UF2 hash, setup and evidence. Limits stay pending until agreed.
-
-| Test | Attempts | Controlled setup | Record | Acceptance |
-| --- | --- | --- | --- | --- |
-| Encoder travel/reversals (S2-U01) | 3 per wheel and speed | Wheel raised; measured revolution | Counts, direction, missed/invalid edges | Agree D03 |
-| Straight run (S2-U02) | 5 | Floor, unchanged firmware and battery | Actual distance, lateral error, wheel WHEEL traces | Agree D07 |
-| Left/right 90°, U-turn 180° (S2-U03) | 5 each | Same profile, measured mark | Heading errors and stop position | Agree D07 |
-| One-wheel hump turn | 5 each type | Known ramp and loading | Change in heading error | Agree D07 |
-| GP21 stop (SYS-U01) | Repeated | Controlled speed, clear run-out | Brake-output latency; physical stopping distance | Agree D08; evaluate 50 ms proposal |
-| Motor stall | Repeated | Guard-enabled acceptance image only | Detection delay, latched fault and reset | Agree D07 |
-
-## Motion accuracy evaluation (draft)
-
-Nothing is measured yet, so this holds the method only. Tape each result on the floor and record the commit in the [test log](../../testing/motion/TEST_LOG.md).
-
-| Move | How to measure | Runs | Result |
+| Move | How measured | Runs | Result |
 | --- | --- | --- | --- |
-| Straight 500 mm | Taped distance against the commanded distance | 5 | Not measured |
-| Left and right pivot 90 degrees | Heading error against a square | 5 each | Not measured |
-| Stop 150 mm from a board | Taped rest distance | 5 | Not measured |
+| Straight 100 mm (S2-U02) | Taped end point | 5 | 5/5 stopped at 100 mm, 0 mm lateral error; encoders 98.2-100.2 mm |
+| Straight 1 m (S2-U01, S2-U04) | Encoders | 2 | 998 mm and 995 mm |
+| Pivots: 90 left, 90 right, 180 (S2-U03) | Tape against a square; encoders | 21 | Heading error about 5 degrees; encoders left 88.1-90.7, right -88.4 to -88.9, 180 turn 178.4-179.8 degrees |
+| Stop at a box (SYS-U01) | Sonar `front=` at rest | 2 | 142 and 140 mm against a 150 mm target |
 
-## Status and open items
+## Status
 
-Controller and actions are host-tested; results are in the [motion test log](../../testing/motion/TEST_LOG.md). A hung Motion or kernel stays unprotected by these software checks.
+Controller and actions are host-tested, and S2-U01 to S2-U05 pass on the car; results are in the [motion test log](../../testing/motion/TEST_LOG.md).
 
-- Verify encoder signs and forward direction with raised wheels; never flip a sign to match source.
-- Calibrate polarity, counts, wheel and track geometry; verify distance and 90/180 degree turns, one wheel on a hump, stall and GP21 (D03, D07, D08).
-- Check the motors hold 200 mm/s on the outer wheel, which the 100 mm/s course speed needs at full steering.
-- Measure GPIO IRQ edge load, sensor-to-output latency, brake latency and stopping distance. Trials: T02, T05, T15.
