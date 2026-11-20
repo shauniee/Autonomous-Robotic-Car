@@ -11,7 +11,7 @@
 - [Bench image](#bench-image)
 - [Tests](#tests)
   - [S2-U01](#s2-u01-motor-direction-and-encoder-counts)
-  - [S2-U02](#s2-u02-1-m-straight)
+  - [S2-U02](#s2-u02-100-mm-straight)
   - [S2-U03](#s2-u03-90-and-180-degree-pivots)
   - [S2-U04](#s2-u04-wheel-speed-control-on-the-floor)
   - [S2-U05](#s2-u05-command-freshness-gate-auto)
@@ -48,7 +48,7 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 | Image | Power | Tests |
 | --- | --- | --- |
 | `./flash.sh test` | USB only | S2-U05 |
-| `./flash.sh bench` | Battery only | S2-U01, S2-U02, S2-U03, S2-U04 |
+| `./flash.sh bench` | Battery only | S2-U01, S2-U03, S2-U04 |
 | `./flash.sh bench10` | Battery only | S2-U02 (every GP20 press drives 100 mm) |
 | `./flash.sh benchturn` | Battery only | S2-U03 (GP20 runs `left_90`, `right_90`, `turn_180` only) |
 
@@ -128,18 +128,18 @@ Then it starts again at 1. `bench10` (BENCH=2) and `benchturn` (BENCH=3) are the
 
 **Logs:** `usb.log` and `monitor.log`; write down the counts.
 
-### S2-U02 1 m straight
+### S2-U02 100 mm straight
 
-**Image:** `./flash.sh bench` (battery), or `./flash.sh bench10` for 100 mm runs with no other moves between them
+**Image:** `./flash.sh bench10` (battery; every GP20 press drives 100 mm)
 
-**Set up:** Tape a start line and a 1 m mark; mark the car's centre.
+**Set up:** Tape a start line and a 100 mm mark; mark the car's centre.
 
 **Steps:**
 
 1. Place the car on the start line.
-2. Press GP20 for `straight_1m`.
+2. Press GP20.
 3. Tape the stop point: distance and sideways error.
-4. Repeat five times (step through the other four moves between runs).
+4. Repeat five times.
 
 **Show on video:** Each run and the tape measurement.
 

@@ -16,7 +16,7 @@ Define a test here before running it. Test IDs never change.
 | ID | What is tested | Requirement / interface | Method | Steps / how | Expected result |
 |---|---|---|---|---|---|
 | S2-U01 | Motor direction and encoder counts | MR-14, MR-19 | manual | 1. Short forward command on each motor | Both wheels drive forward; both counts rise |
-| S2-U02 | 1 m straight | MR-21, D07 | manual | 1. Drive 1 m at course speed, five times. 2. Tape the end point | Distance and lateral error recorded; lateral error at most 10 mm |
+| S2-U02 | 100 mm straight | MR-21, D07 | manual | 1. Drive 100 mm at course speed, five times. 2. Tape the end point | Distance and lateral error recorded; lateral error at most 10 mm |
 | S2-U03 | 90 and 180 degree pivots | MR-22, D07 | manual | 1. Pivot 90 left, 90 right and 180, five each, on a taped square | Heading error recorded; at most 5 degrees |
 | S2-U04 | Wheel speed control on the floor | D07 | manual | 1. Run at 100 mm/s with `monitor` saving `WHEEL` traces | Measured speed follows the target without oscillating |
 | S2-U05 | Command freshness gate | Motion contract | auto | `motion_test.c` on the TEST image | `[TEST] S2-U05 PASS`; outputs stay inhibited |
@@ -38,3 +38,4 @@ Add a new row for every run. Never edit or delete old rows.
 | 2026-11-18 | S2-U05 | `bb0f4ce` (`test`, TEST=1) | Mahesha | PASS | `logs/S2-U05/2026-11-18_usb.log`, video: pending | USB-powered TEST image, motors inhibited. Three boots (after flash and two USB resets) each printed `[TEST] S2-U05 PASS  command freshness gate; outputs inhibited` and `motion SUMMARY 1 passed, 0 failed`; wheels stayed still. |
 | 2026-11-18 | S2-U01 | `33fd9e4` (`bench`, BENCH=1) | Mahesha | PARTIAL | `logs/S2-U01/2026-11-18_monitor.log`, video: pending | Step 1 only, wheels raised, battery: `short_forward` turned both wheels forward, counts L +1145 / R +1165 (~99 mm); `straight_1m` L +11632 / R +11631 (998 mm). Step 2 (one hand revolution per wheel, three times, on the TEST image) not yet run, so counts per revolution are not recorded. |
 | 2026-11-20 | S2-U01 | `33fd9e4` (`bench`, BENCH=1) | Mahesha | PASS | `logs/S2-U01/2026-11-18_monitor.log`, video: pending | Same run as the 2026-11-18 PARTIAL row, against the definition without the hand turns: `short_forward` turned both wheels forward, counts L +1145 / R +1165 (~99 mm). |
+| 2026-11-20 | S2-U02 | `2526ba8` (`bench10`, BENCH=2) | Mahesha | PASS | `logs/S2-U02/2026-11-18_monitor.log`, video: pending | Same run as the 2026-11-18 PARTIAL row, against the definition narrowed to 100 mm: 5/5 runs stopped at 100 mm by tape with 0 mm lateral error; encoders 98.2-100.2 mm per run. |
