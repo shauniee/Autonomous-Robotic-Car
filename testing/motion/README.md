@@ -47,7 +47,7 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 
 | Image | Power | Tests |
 | --- | --- | --- |
-| `./flash.sh test` | USB only | S2-U01, S2-U05 |
+| `./flash.sh test` | USB only | S2-U05 |
 | `./flash.sh bench` | Battery only | S2-U01, S2-U02, S2-U03, S2-U04 |
 | `./flash.sh bench10` | Battery only | S2-U02 (every GP20 press drives 100 mm) |
 | `./flash.sh benchturn` | Battery only | S2-U03 (GP20 runs `left_90`, `right_90`, `turn_180` only) |
@@ -112,17 +112,15 @@ Then it starts again at 1. `bench10` (BENCH=2) and `benchturn` (BENCH=3) are the
 
 ### S2-U01 Motor direction and encoder counts
 
-**Image:** `./flash.sh bench` for the motor check; `./flash.sh test` (wireless, motors always off, USB) for the hand turns
+**Image:** `./flash.sh bench` (battery)
 
-**Set up:** Mark a spot on each tyre. Wheels off the ground for the motor check.
+**Set up:** Wheels off the ground.
 
 **Steps:**
 
-1. Bench image: press GP20 once for `short_forward`; both wheels must turn forward and the `[BENCH]` line shows both counts rising.
-2. TEST image: turn the left wheel exactly one revolution by hand, three times, reading `counts L` on the dashboard before and after each.
-3. Repeat for the right wheel.
+1. Press GP20 once for `short_forward`; both wheels must turn forward and both counts rise.
 
-**Show on video:** Both wheels turning forward; the count before and after each revolution.
+**Show on video:** Both wheels turning forward and the counts rising.
 
 **Test code:** `logs/S2-U01/test_encoder_math.c`
 
