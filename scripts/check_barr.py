@@ -10,8 +10,8 @@ cannot judge the review checklist (units, ownership, synchronization, bounds).
     check_barr.py --all       every line of every tracked app_program C file
     check_barr.py --summary   count every finding by rule; always exits 0
     check_barr.py FILE...     every line of the named files
-    check_barr.py --hook-record   Claude Code hook: remember an edited file
-    check_barr.py --hook-check    Claude Code hook: check the remembered files
+    check_barr.py --hook-record   editor hook: remember an edited file
+    check_barr.py --hook-check    editor hook: check the remembered files
 """
 import json
 import os
@@ -260,7 +260,7 @@ def repo_root(directory):
 
 
 def state_path(session_id):
-    """Return the file listing what this Claude session has edited."""
+    """Return the file listing what this editing session has edited."""
     safe_id = re.sub(r"[^\w-]", "_", session_id)
     return os.path.join(tempfile.gettempdir(), f"check_barr_{safe_id}.txt")
 
@@ -300,9 +300,9 @@ def run_record(payload):
 
 
 def run_check(payload):
-    """Tell Claude about violations before it reports its changes."""
+    """Report violations to the editor before it reports its changes."""
     lines = []
-    # Each recording is reported once, so unfixable lines cannot trap Claude.
+    # Each recording is reported once, so unfixable lines cannot trap the editor.
     for path in take_paths(payload.get("session_id", "")):
         located = locate(path)
         if located is not None:
@@ -316,7 +316,7 @@ def run_check(payload):
     if len(lines) > MAX_HOOK_FINDINGS:
         print(f"... and {len(lines) - MAX_HOOK_FINDINGS} more",
               file=sys.stderr)
-    # Exit 2 blocks the wrap-up or the stop and hands stderr back to Claude.
+    # Exit 2 blocks the wrap-up or the stop and hands stderr back to the editor.
     return 2
 
 
