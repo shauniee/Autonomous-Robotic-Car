@@ -90,7 +90,7 @@ A manual test with no code prints `no tests for <ID>`. The on-car check for S4-U
 
 ## After each test
 
-Send Claude the test ID, the video link and anything you measured (tape readings, counts). Claude checks the logs and makes **one commit per test**: the logs plus one result row in [TEST_LOG.md](TEST_LOG.md), message `test(terrain): <ID> <PASS|FAIL|PARTIAL>`.
+Give the subsystem owner the test ID, the video link and anything you measured (tape readings, counts). The owner checks the logs and makes **one commit per test**: the logs plus one result row in [TEST_LOG.md](TEST_LOG.md), message `test(terrain): <ID> <PASS|FAIL|PARTIAL>`.
 
 ## Tests
 

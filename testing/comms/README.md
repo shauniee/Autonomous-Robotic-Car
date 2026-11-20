@@ -90,7 +90,7 @@ A manual test with no code prints `no tests for <ID>`. The on-car check for S1-U
 
 ## After each test
 
-Send Claude the test ID, the video link and anything you measured (tape readings, counts). Claude checks the logs and makes **one commit per test**: the logs plus one result row in [TEST_LOG.md](TEST_LOG.md), message `test(comms): <ID> <PASS|FAIL|PARTIAL>`.
+Give the subsystem owner the test ID, the video link and anything you measured (tape readings, counts). The owner checks the logs and makes **one commit per test**: the logs plus one result row in [TEST_LOG.md](TEST_LOG.md), message `test(comms): <ID> <PASS|FAIL|PARTIAL>`.
 
 ## Tests
 
@@ -112,7 +112,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Run:** `sh testing/tools/run.sh S1-U01`, then flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`; Claude measures the telemetry interval (target about 500 ms; up to 550 ms accepted).
+**Logs:** `usb.log` and `monitor.log`; measure the telemetry interval (target about 500 ms; up to 550 ms accepted).
 
 ### S1-U02 Letter mapping rules
 
