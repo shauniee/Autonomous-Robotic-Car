@@ -29,8 +29,7 @@ testing/
 ├── line_barcode/          S3
 ├── terrain/               S4
 ├── obstacle/              S5
-├── system/                SYS-U01, the full course run of the whole robot
-│                          (shared), plus the mission-readiness checklist
+├── system/                SYS-U01, the full course run of the whole robot (shared)
 └── tools/                 the host-test runner, firmware build and size probe,
                            and checks of the repo scripts (removed before the
                            final submission)

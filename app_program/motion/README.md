@@ -73,12 +73,12 @@ Record each run separately with source SHA, UF2 hash, setup and evidence. Limits
 
 | Test | Attempts | Controlled setup | Record | Acceptance |
 | --- | --- | --- | --- | --- |
-| MR-14 encoder travel/reversals | 3 per wheel and speed | Wheel raised; measured revolution | Counts, direction, missed/invalid edges | Agree D03 |
-| MR-21 1 m straight | 5 | Floor, unchanged firmware and battery | Actual distance, lateral error, wheel WHEEL traces | Agree D07 |
-| MR-22 left/right 90°, U-turn 180° | 5 each | Same profile, measured mark | Heading errors and stop position | Agree D07 |
-| MR-23 one-wheel hump turn | 5 each type | Known ramp and loading | Change in heading error | Agree D07 |
-| MR-24 GP21 stop | Repeated | Controlled speed, clear run-out | Brake-output latency; physical stopping distance | Agree D08; evaluate 50 ms proposal |
-| MR-25 motor stall | Repeated | Guard-enabled acceptance image only | Detection delay, latched fault and reset | Agree D07 |
+| Encoder travel/reversals (S2-U01) | 3 per wheel and speed | Wheel raised; measured revolution | Counts, direction, missed/invalid edges | Agree D03 |
+| Straight run (S2-U02) | 5 | Floor, unchanged firmware and battery | Actual distance, lateral error, wheel WHEEL traces | Agree D07 |
+| Left/right 90°, U-turn 180° (S2-U03) | 5 each | Same profile, measured mark | Heading errors and stop position | Agree D07 |
+| One-wheel hump turn | 5 each type | Known ramp and loading | Change in heading error | Agree D07 |
+| GP21 stop (SYS-U01) | Repeated | Controlled speed, clear run-out | Brake-output latency; physical stopping distance | Agree D08; evaluate 50 ms proposal |
+| Motor stall | Repeated | Guard-enabled acceptance image only | Detection delay, latched fault and reset | Agree D07 |
 
 ## Motion accuracy evaluation (draft)
 
@@ -97,4 +97,4 @@ Controller and actions are host-tested; results are in the [motion test log](../
 - Verify encoder signs and forward direction with raised wheels; never flip a sign to match source.
 - Calibrate polarity, counts, wheel and track geometry; verify distance and 90/180 degree turns, one wheel on a hump, stall and GP21 (D03, D07, D08).
 - Check the motors hold 200 mm/s on the outer wheel, which the 100 mm/s course speed needs at full steering.
-- Measure GPIO IRQ edge load, sensor-to-output latency, brake latency and stopping distance. Trials: MR-14..25, T02, T05, T15.
+- Measure GPIO IRQ edge load, sensor-to-output latency, brake latency and stopping distance. Trials: T02, T05, T15.
