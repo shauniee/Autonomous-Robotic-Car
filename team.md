@@ -9,9 +9,8 @@
   - [Physical header map (W/WH; header numbers differ from GPIO numbers)](#physical-header-map-wwh-header-numbers-differ-from-gpio-numbers)
 - [3. Task priorities and kernel object budget](#3-task-priorities-and-kernel-object-budget)
 - [4. Interfaces between subsystems](#4-interfaces-between-subsystems)
-- [5. Coding rules](#5-coding-rules)
-- [6. Data representation](#6-data-representation)
-  - [Rules](#rules)
+- [5. Data representation](#5-data-representation)
+  - [Reading the field tables](#reading-the-field-tables)
   - [Motion and encoder](#motion-and-encoder)
   - [Line and barcode](#line-and-barcode)
   - [Obstacle](#obstacle)
@@ -19,12 +18,17 @@
   - [Mission and Safety](#mission-and-safety)
   - [Comms](#comms)
   - [Queues, rings and messages](#queues-rings-and-messages)
-  - [MQTT frames](#mqtt-frames)
+  - [MQTT binary protocol, schema version 3](#mqtt-binary-protocol-schema-version-3)
+    - [Wheel trace (15 bytes)](#wheel-trace-15-bytes)
+    - [Barcode trace (18 bytes)](#barcode-trace-18-bytes)
+    - [Terrain trace (14 bytes)](#terrain-trace-14-bytes)
+    - [Line trace (17 bytes)](#line-trace-17-bytes)
+    - [Telemetry and snapshot reply (18 bytes)](#telemetry-and-snapshot-reply-18-bytes)
+    - [Event (11 bytes)](#event-11-bytes)
+    - [Mapping, acknowledgement, snapshot request](#mapping-acknowledgement-snapshot-request)
+    - [Golden vectors](#golden-vectors)
   - [Fault bitmask](#fault-bitmask)
-- [7. Correctness and performance evidence](#7-correctness-and-performance-evidence)
-  - [No lost function](#no-lost-function)
   - [Memory](#memory)
-  - [Timing](#timing)
 
 Use this guide to identify who owns a subsystem, trace a signal to its GPIO pin, and interpret the bits stored in RAM or sent over MQTT. Setup, flashing and task scheduling are in the [codebase guide](README.md).
 
@@ -45,7 +49,7 @@ Stable test IDs/measurements: [testing](testing/README.md). Demonstrations: [vid
 **Implementation status.** In the submitted firmware, Motion drives the wheels,
 Mission coordinates line following, barcode turns and obstacle bypass, and I/O
 runs Terrain and Reporting. All 22 subsystem tests have recorded passes. The
-full-course result and the revision tested are listed in [section 7](#no-lost-function).
+full-course result and the revision tested are listed in the [system test log](testing/system/TEST_LOG.md#results).
 Nicholas is the contact for pending decisions and approvals.
 
 ## 2. Pins
@@ -110,7 +114,7 @@ User confirmation 2026-10-29: physical wiring matches this allocation and sonar 
 ## 3. Task priorities and kernel object budget
 
 Lower priority numbers run first. `TP_PRC1` selects core 0 and `TP_PRC2` selects
-core 1. Worst-case scheduling margins still require measurement under load.
+core 1.
 [Scheduling rationale](README.md#tasks) · [Configured values](app_program/common/robot_config.h)
 
 | Application object | Allocation / ownership |
@@ -118,8 +122,8 @@ core 1. Worst-case scheduling margins still require measurement under load.
 | Tasks | Three application tasks. The TEST image starts Motion and I/O first, then starts Mission after the Comms, Motion and Terrain startup tests. |
 | Mutexes | Four: Motion command/health, line snapshot, Obstacle profile, cross-core events |
 | Event flags | One persistent Motion stop/inhibit flag |
-| Static rings | Barcode capture and events, Comms events and frame bridge, and diagnostic buffers listed in [section 6](#queues-rings-and-messages) |
-| Task stacks | 2,048 user-stack bytes per task. Trace images supply three painted 2,176-byte stacks including the system portion and report [stack use](#timing) |
+| Static rings | Barcode capture and events, Comms events and frame bridge, and diagnostic buffers listed in [Queues, rings and messages](#queues-rings-and-messages) |
+| Task stacks | 2,048 user-stack bytes per task. Trace images supply three painted 2,176-byte stacks including the system portion |
 
 Limits in [config/config.h](config/config.h) are total capacities, including
 kernel/driver objects. The inventory above counts application allocations. Required control initialization
@@ -145,21 +149,7 @@ Record changed interface layouts before coding and record whole-robot results in
 [testing/system/TEST_LOG.md](testing/system/TEST_LOG.md). A valid
 software copy or brake acknowledgement is not physical stationarity.
 
-## 5. Coding rules
-
-Apply to application code (imported kernel need not be reformatted). The standard is BARR-C:2018 (Barr Group): the local checker covers the mechanical rules in `app_program`. Its license limits it to internal use, so keep it out of this repository. This is not a compliance certification. `python3 scripts/check_barr.py --all` scans every `app_program` line for the mechanical rules below (without `--all` it scans only changed lines). The review checklist stays manual.
-
-- **Language/layout:** GNU C11 (`-std=gnu11`). Use C11 acquire/release for word snapshots and startup publication; no atomic RMW helpers on Cortex-M0+. Isolate other extensions in drivers. Four spaces, LF, one statement per line, braces on every body, opening brace on its own line, ~80 columns. Space operators, parenthesize precedence, comment purpose/units/bounds/assumptions, remove dead code.
-- **Modules:** one purpose each; lowercase `snake_case.c/.h`, guarded header, minimal exports; never include a `.c` or absolute path. Public functions prefixed with module name; private `static`. Named constants; prefer functions to macros (macros evaluate args once, parenthesized). Types `module_name_t`.
-- **Data:** fixed-width ints where width matters; packed bits for stored/shared flags; `bool` only for locals/returns; `const` for immutable. Consistent unsigned literals; justify narrowing casts; avoid signed bit ops. Initialize before use; explicit invalid codes. `float` only for justified local computation (`f` suffix, finite/range checks); stored/shared values are fixed point with documented scale (widths and scales in [section 6](#6-data-representation)). In-RAM packed state may use bit-fields; wire formats (MQTT) use explicit masks/shifts with documented byte order, never native structs, padding or bit-field order.
-- **Minimum-bit:** each field gets `ceil(log2(values))` bits including the invalid code; record range, unit, signedness, scale, rounding, invalid code, overflow behavior in [section 6](#6-data-representation) before converting. Exclusive states use one encoded value; coexisting faults use independent bits. Combine fields in one unit only with a shared writer. Access via `module_field_get()/_set()`; no caller masks. Loop counters/temporaries exempt. Test min, max and invalid code; overflow saturates or faults as documented.
-- **Control:** check return codes; safe failure responses; `default` in switches; document fallthrough. Bound polling, waits, retries, buffers, actions; validate counts/indices/inputs; keep acquisition time; wrap-safe elapsed time.
-- **Concurrency:** `volatile` is for hardware/async access, not synchronization. Share data only via the three patterns in [architecture](README.md#architecture): one-word snapshot (single store/load), mutex copy above 32 bits, ISR-to-task ring. One writer per storage unit; only it does RMW. Packed data shared with an ISR on the same core updates inside `DI`/`EI`; packed data written from both cores needs a mutex or RP2040 hardware spinlock (`DI` masks only the local core). ISRs: capture, signal, return; no blocking, formatting, decoding, allocation; use `_task`/`_isr` names.
-- **Ownership:** one motor writer, separate peripheral owners, kernel-only networking; Stop must not depend on diagnostics queues or the request mutex. No credentials in version control.
-
-**Review checklist:** purpose/API/units/ownership clear, no duplicate mutable state; style consistent; inputs, casts, arithmetic, finite values, bounds checked; hardware actions bounded, failures inhibit unsafe output; shared values synchronized, cached observations keep acquisition time; stop, stale data and reset keep the contract; no ISR blocking, foreign motor writes, student network calls or committed credentials; packed fields match [section 6](#6-data-representation), use accessors, have boundary tests; one writer per storage unit; evidence names source/profile (a build is not hardware proof).
-
-## 6. Data representation
+## 5. Data representation
 
 Read the **Bits** column as *logical bits / stored bits*. Logical width counts the bits needed to distinguish the allowed values, including any invalid code. Storage width includes the byte or word the processor actually reads and writes. The last column identifies who can change a field and how another task gets a consistent copy.
 
@@ -170,9 +160,9 @@ Read the **Bits** column as *logical bits / stored bits*. Logical width counts t
 | Terrain trace travel | Q8 stores millimetres in units of 1/256 mm. For example, 3.5 mm is stored as 896. The MQTT trace sends the whole-millimetre portion in a 16-bit field. |
 | States and faults | Seven mutually exclusive Mission states fit in 3 bits. Faults can coexist, so each condition has its own bit. Telemetry combines the six owners’ fault bytes into 12 defined bits. |
 
-The field tables describe RAM unless they explicitly name a wire frame. The MQTT encoder writes each field at a fixed byte and bit offset, so firmware and laptop agree regardless of C struct padding. [MQTT byte layouts](README.md#mqtt-binary-protocol-schema-version-3)
+The field tables describe RAM unless they explicitly name a wire frame. The MQTT encoder writes each field at a fixed byte and bit offset, so firmware and laptop agree regardless of C struct padding. [MQTT byte layouts](#mqtt-binary-protocol-schema-version-3)
 
-### Rules
+### Reading the field tables
 
 - **Bits** = `ceil(log2(valid values + invalid codes))`.
 - **Flags** use one-bit fields. Boolean fields normalize nonzero assignments to 1.
@@ -182,8 +172,7 @@ The field tables describe RAM unless they explicitly name a wire frame. The MQTT
   maximum fits, so a later config change fails the build instead of truncating.
   Computed values are clamped or saturated before the store.
 - **Signed values** use the smallest signed type (`int8_t`, `int16_t`) outside
-  bit-fields. BARR-C:2018 rule 5.3.a forbids signed bit-fields, so a signed
-  value packed into a bit-field (profile coordinates, bypass Q8 pose, Motion
+  bit-fields. A signed value packed into a bit-field (profile coordinates, bypass Q8 pose, Motion
   target and acceleration, turn length, recovery turn degrees, calibration
   sums) is stored unsigned in the same width, read with `rd_sext(raw, bits)`
   and written with `rd_swrap(value, bits)` (`common/robot_data.h`).
@@ -198,9 +187,11 @@ The field tables describe RAM unless they explicitly name a wire frame. The MQTT
   counters** (`sequence`) stay 32-bit and are only compared for equality.
 - **Floats** are per-release computation only. Terrain accumulates trace travel in unsigned Q8 fixed point.
 - **Wire frames** use explicit masks and shifts, little-endian, never a struct
-  copy. Loop counters and one-function locals are exempt.
+  copy.
 
 ### Motion and encoder
+
+Each wheel counter wraps at 65,536. To measure travel across a wrap, each consumer subtracts its own starting count modulo 65,536.
 
 | Field | Where | Valid range | Bits | Representation | Writer → readers, sync |
 | --- | --- | --- | ---: | --- | --- |
@@ -361,30 +352,146 @@ fixed rings and copies.
 | Bridge out / in | 4 / 2 | 19-byte slot | SPSC atomics, core 0 |
 | Snapshots | 1 each | `MotionCommand_t` 12, `MotionHealth_t` 8, `LineIrSnapshot_t` 8, `obstacle_profile_snapshot_t` 20 (includes the 9-byte profile), range samples 2 x 16 bytes | mutex copy |
 
-### MQTT frames
+### MQTT binary protocol, schema version 3
 
-Every frame is compact binary with explicit masks and shifts; no value is sent
-as text. Byte layouts are in [architecture](README.md#mqtt-binary-protocol-schema-version-3).
-The transport publishes retained text `"1"` on the status topic when online.
-Its MQTT last will sets the retained status to `"0"` on connection loss.
+Byte 0 identifies the frame. Its upper four bits hold the version (3), and its lower four bits hold the type. The remaining fields use explicit masks and shifts and little-endian byte order. Each type has a fixed length. Reserved bits must be zero. The retained status topic carries the text `"1"` for online and `"0"` for offline. [Firmware codec](app_program/comms/mqtt_frame.c) · [Laptop decoder](scripts/mqtt_client.py)
 
-| Frame | Bytes | Used / stored bits |
-| --- | ---: | --- |
-| Telemetry and snapshot reply | 18 | 135 / 144 |
-| Event | 11 | 83 / 88 |
-| Mapping | 5 | 36 / 40 |
-| Acknowledgement | 3 | 18 / 24 |
-| Snapshot request | 2 | 16 / 16 |
-| Junction test | 3 | 19 / 24 |
-| Wheel trace | 15 | 120 / 120 |
-| Line trace | 17 | 135 / 136 |
-| Barcode trace | 18 | 144 / 144 |
-| Terrain trace | 14 | 109 / 112 |
+| Frame | Type | Direction | Bytes | Used / stored bits |
+| --- | ---: | --- | ---: | ---: |
+| Telemetry | 1 | Robot to laptop, every 500 ms | 18 | 135 / 144 |
+| Event | 2 | Robot to laptop | 11 | 83 / 88 |
+| Snapshot reply | 3 | Robot to laptop, same layout as telemetry | 18 | 135 / 144 |
+| Mapping | 4 | Laptop to robot | 5 | 36 / 40 |
+| Acknowledgement | 5 | Robot to laptop | 3 | 18 / 24 |
+| Snapshot request | 6 | Laptop to robot | 2 | 16 / 16 |
+| Junction test | 7 | Laptop to robot | 3 | 19 / 24 |
+| Wheel trace | 8 | Robot to laptop | 15 | 120 / 120 |
+| Line trace | 9 | Robot to laptop | 17 | 135 / 136 |
+| Barcode trace | 10 | Robot to laptop | 18 | 144 / 144 |
+| Terrain trace | 11 | Robot to laptop | 14 | 109 / 112 |
 
-Telemetry carries the twelve defined fault bits as one 12-bit fault word
-(schema v3; 4 bits reserved). In RAM each owner keeps its own atomic byte,
-because each owner is the only writer of its byte and Cortex-M0+ has no atomic
-read-modify-write for a word shared by writers on both cores.
+In schema v3 the encoder packs six RAM fault bytes into twelve bits of a two-byte wire field. Four bits are reserved. This reduced the telemetry frame from 22 to 18 bytes. Normal telemetry carries wheel counts, from which the laptop derives mean speed and direction. Wheel traces carry per-release controller measurements.
+
+#### Wheel trace (15 bytes)
+
+Type 8 reports the wheel controller’s targets, measurements and applied duty.
+Byte 0 is `38` hex; bytes 1..4 are robot release time uint32 ms. Bytes 5..8
+contain left target in bits 0..14 and right target in bits 15..29 (signed
+15-bit counts/s), TEST inhibition in bit 30 and motor-output service success
+in bit 31. Bytes 9..10 and 11..12 are signed 16-bit measured left/right counts/s.
+Bytes 13 and 14 are signed left/right duty percentages. Invalid encodings and
+rounding are owned by the [data table](#motion-and-encoder).
+Output failure marks both duty fields invalid. TEST reports zero duty with
+inhibition set. Targets represent computed wheel demands; serviced braking may
+override them. This is software output evidence, not electrical measurement.
+
+Motion encodes into an eight-record SPSC ring after output service and outside
+its IRQ exclusion. I/O drains at most two per release, after normal reporting;
+offline/full TX and full trace ring drop diagnostic samples without waiting.
+Robot timestamp gaps reveal missing releases; timestamps wrap modulo 2^32.
+There is no diagnostic request, movement authority or live tuning input.
+Use the laptop decoder shipped with the firmware.
+
+#### Barcode trace (18 bytes)
+
+Type 10 is an outbound barcode diagnostic. Byte 0 is `3A`
+hex, byte 1 a wrapping sequence, bytes 2..17 eight little-endian runs: bit 15 black level, bits
+14..0 width in encoder counts after chatter is merged, zero for an unused slot. A full ring drops frames.
+
+#### Terrain trace (14 bytes)
+
+Type 11 is outbound and best effort, sent on every image for the dashboard's IMU graphs: 10 per second on flat ground, 20 on a hump. Byte 0 is `3B` hex, bytes
+1..2 time ms low 16, byte 3 signed pitch in quarter degrees, byte 4 bits 0..2 state, 6 encoder valid, 7 calibrated,
+byte 5 peak rise mm, byte 6 acceleration in 10 mg units, byte 7 signed roll in quarter degrees, bytes 8..10 signed X, Y and Z acceleration in 16 mg units (saturate at +/-2032 mg), byte 11 current height estimate mm, bytes 12..13 travel mm (wraps at 65536).
+
+#### Line trace (17 bytes)
+
+Type 9 records the line-following decision for a fresh IR sample. Byte 0 is `39` hex; bytes 1..4 are the
+IR acquisition time uint32 ms. Byte 5 flags: bit 0 left black, 1 right black,
+2 in broad black, 3 junction candidate open, 4 junction qualified, 5 curved entry,
+6 junction locked, 7 raw barcode GP27 level. Byte 6: bits 0..3 Mission state, 4..6 junction phase,
+7 zero. Bytes 7..8 and 9..10 are the low 16 bits of the left/right encoder counts.
+Byte 11 is the steering law output, signed Q7. Byte 12 is the law state: the side
+last touched (-1 left, +1 right, 0 none) times the integral held at the last touch transition, signed Q7. Byte 13 is the FOLLOW steering sent to Motion (0 for
+other modes). Bytes 14..15: bits 0..8 commanded speed mm/s, 9..10 motion mode,
+11..15 running barcode edge count (wraps). Byte 16 is, while both sensors are black, the distance in mm between
+the two sensors' black onsets (254 caps it), else 255.
+
+Mission builds one record per fresh acquisition after `mission_step` while it was
+moving (so the stopping decision is included) and puts it in an eight-record SPSC
+ring; I/O drains at most two per release after the wheel trace, and offline/full
+TX or a full ring drops records without waiting. Sample-time gaps reveal drops.
+There is no request, movement authority or live tuning input. `mqtt_client.py
+monitor` prints it as a short `LINE` line (`--raw` for JSON); the dashboard does not display it.
+
+#### Telemetry and snapshot reply (18 bytes)
+
+| Byte | Bits | Field | Range |
+| --- | --- | --- | --- |
+| 0 | 7-0 | version and type | `0x31` telemetry, `0x33` reply |
+| 1 | 7-0 | sequence | 0-255, wraps |
+| 2 | 3-0 | mission state | 0-15 |
+| 2 | 5-4 | motion status | 0 IDLE, 1 RUNNING, 2 DONE, 3 FAILED |
+| 2 | 7-6 | line status | 0 unknown, 1 visible, 2 lost, 3 broad black |
+| 3 | 5-0 | motion action ID | 0-63 |
+| 3 | 6 | mapped | four letters installed |
+| 3 | 7 | reserved | 0 |
+| 4-5 | 1-0 | Motion faults: stall, encoder | [fault bitmask](#fault-bitmask) |
+| 4-5 | 4-2 | Line faults: IR invalid, capture overflow, event overflow | |
+| 4-5 | 7-5 | Terrain faults: IMU, calibration failed, lifted | |
+| 4-5 | 8 | Obstacle fault: no echo | |
+| 4-5 | 9 | Mission fault: line lost | |
+| 4-5 | 11-10 | Network faults: Wi-Fi lost, broker lost | |
+| 4-5 | 15-12 | reserved | zero; a set bit is rejected |
+| 6-7 | 15-0 | left encoder count | wrapped, `ENC_COUNT_BITS` wide |
+| 8-9 | 15-0 | right encoder count | wrapped |
+| 10 | 7-0 | hump count | 0-255 saturating |
+| 11 | 6-0 | maximum hump height code | 7-bit result, 1 mm per count |
+| 11 | 7 | maximum valid | set once any hump completed |
+| 12-13 | 12-0 | front range, mm | 0-8190; 8191 invalid |
+| 12-13 | 13 | front range valid | no echo is not clear space |
+| 12-13 | 15-14 | IMU calibration | 0 unknown, 1 not calibrated, 2 calibrated, 3 invalid |
+| 14 | 4-0 | last decoded barcode letter, cleared when its navigation ends on the line | 0-25 (A-Z), 31 none |
+| 14 | 7-5 | action it maps to | 0 unmapped, 1 left, 2 right, 3 straight, 4 U-turn |
+| 15-17 | 9-0 | latest obstacle width, mm | 0 none; saturates at 1023 |
+| 15-17 | 19-10 | clearance on the side chosen for the latest bypass, mm | 0 none; saturates at 1023 |
+| 17 | 7-4 | reserved | zero; a set bit is rejected |
+
+IMU calibration reports Terrain's calibration flag independently of hump results
+and current sensor faults.
+
+#### Event (11 bytes)
+
+| Byte | Field |
+| --- | --- |
+| 0 | version and type, `0x32` |
+| 1 | bits 3-0 kind: 1 barcode, 2 hump, 3 obstacle, 4 turn; bits 7-4 reserved 0 |
+| 2 | arg: letter (barcode), height code (hump), action (turn) |
+| 3-4 | time, low 16 bits of kernel milliseconds |
+| 5-6 | left encoder count at the event |
+| 7-8 | right encoder count at the event |
+| 9-10 | arg2: action (barcode), clearance mm (obstacle); arg 1 passing left, 0 right |
+
+In RAM the event ring stores sixteen 10-byte entries. A full ring overwrites its oldest entry. If a producer cannot acquire the mutex within its deadline, it drops the incoming event. [Comms fields](#comms)
+
+#### Mapping, acknowledgement, snapshot request
+
+- **Mapping (5 bytes):** byte 0 `0x34`, byte 1 sequence, bytes 2-4 a 24-bit little-endian value; bits 4-0, 9-5, 14-10 and 19-15 are the letters for left, right, straight and U-turn (A=0 .. Z=25); bits 23-20 reserved 0. The four letters are distinct.
+- **Acknowledgement (3 bytes):** byte 0 `0x35`, byte 1 the sequence answered, byte 2 the result: 0 OK, 1 busy, 2 invalid, 3 malformed. Mission returns the outcome of a mapping or direction request.
+- **Snapshot request (2 bytes):** byte 0 `0x36`, byte 1 sequence.
+- **Junction test (3 bytes).** Send `37 sequence action` in hexadecimal layout, where action is 1 left, 2 right, 3 straight or 4 U-turn. An OK acknowledgement means Mission queued the instruction.
+
+#### Golden vectors
+
+Used by the host tests and `scripts/mqtt_client.py --self-test`.
+
+| Frame | Bytes |
+| --- | --- |
+| Telemetry (faults: Motion stall, Line capture overflow, Terrain lifted, no echo, line lost, both Network) | `31 2A 72 45 89 0F 34 12 78 56 03 F8 D0 30 61 A4 A9 02` |
+| Event (barcode Z, action 2) | `32 01 19 E8 03 10 00 11 00 02 00` |
+| Mapping A left, B right, C straight, D U-turn, sequence 7 | `34 07 20 88 01` |
+| Acknowledgement installed, sequence 7 | `35 07 00` |
+| Snapshot request, sequence 9 | `36 09` |
 
 ### Fault bitmask
 
@@ -401,34 +508,6 @@ into the 12-bit fault word in this order: Motion bits 0-1, Line 2-4, Terrain
 | Obstacle (Mission task) | no echo | - | - |
 | Mission (Mission) | line lost | - | - |
 | Network (kernel transport) | Wi-Fi lost | broker lost | - |
-
-## 7. Correctness and performance evidence
-
-### No lost function
-
-- **Compile-time checks.** Static assertions cover packed widths and configured
-  maxima such as barcode element counts, Motion action IDs and sonar scan capacity.
-- **Boundary tests.** `sh testing/tools/run.sh` runs the host suite against the
-  real `app_program` sources. Tests that cover packed data include
-  `test_mqtt_frame.c` (golden vectors, every maximum, one past maximum and
-  reserved bits), `test_robot_data.c` (field accessors, torn-read stress),
-  `test_barcode.c` (`test_packed_widths`: the 9-bit window keeps the newest 25
-  widths exactly, minimum and maximum included), `test_echo_range.c` (range
-  word spare bits, miss count saturating at its 2-bit limit), `test_terrain.c`
-  (2-bit state masking, spare bit zero) and `test_comms_stress.c` (terrain word
-  under two-thread load).
-- **Wire format.** Schema v3 changes only the fault field (six bytes to one
-  12-bit word) and the version nibble; every other field keeps its width and
-  meaning. The C codec and `scripts/mqtt_client.py --self-test` decode the same
-  new golden vectors, and the 2026-11-08 run walks each of the 12 fault bits alone and all
-  together.
-- **Build coverage.** The build matrix compiles nine configurations. Four combine TEST and TRACE
-  with full-course features off, two cover course and trial, and three exercise
-  the motion bench modes. The script also checks target structure sizes.
-  [Build matrix](testing/tools/build_pending_profiles.sh)
-- **Physical course result.** On 2026-11-20 Mahesha recorded a SYS-U01 pass on
-  trial firmware `880ff16`. The system log records both battery-powered runs and their stop conditions.
-  [Run details, monitor log reference and video](testing/system/TEST_LOG.md#results)
 
 ### Memory
 
@@ -463,44 +542,3 @@ by about 2.4 KB, the cost of reading and writing bit-fields: 0.6 percent of the
 image and well inside the 2 MB part. The trial image's extra RAM is the timing
 instrumentation's static task stacks (3 x 2,176 bytes), which the kernel then
 no longer allocates from its own heap; the course image has no instrumentation.
-
-### Timing
-
-With `TRACE=1`, I/O prints the three task measurements to the USB console every
-5 s. The trial, test and three motion bench profiles enable this output.
-
-```text
-[TIMING] t=<ms> | motion max=<us>us ovr=<n> stack=<used>/<size>B | io ... | mission ...
-```
-
-- `max` is the longest task body in the last 5 s, measured with the 1 MHz timer.
-- `ovr` counts releases whose body finished at or after the next deadline, saturating at 65,535.
-- `stack` is the painted high-water mark of each task's stack.
-
-**Acceptance:** each task's `max` stays below its period (Motion 20 ms,
-Mission 10 ms, I/O 10 ms), `ovr` does not grow during a run, and stack use
-stays below the stack size.
-
-| Run | Image | Motion max | Mission max | I/O max | Overruns | Stack use |
-| --- | --- | --- | --- | --- | --- | --- |
-| 2026-11-09, before narrowing | `017f5ed` trial | 889 us | 3,716 us | 2,302 us | Motion 0; Mission and I/O +50/s | 672 / 1,400 / 480 B of 2,176 B |
-| 2026-11-09, after narrowing | `f4a4a2a` trial | 1,275 us | 5,229 us | 2,400 us | Motion 0; Mission and I/O +50/s | 664 / 1,256 / 544 B of 2,176 B |
-
-The before-narrowing maxima are over the whole run: idle, bench, one line lap and one bypass;
-Mission's 3,716 us came during the bypass. Stack use is Motion / Mission / I/O.
-Mission and I/O overruns grow at exactly 50 a second in every segment,
-idle included, while their longest body stays under 4 ms of a 10 ms period. The
-rate does not follow load, so the likely cause is the 10 ms kernel tick
-(`CNF_TIMER_PERIOD` in `config/config.h`) making a 10 ms task release every 20 ms;
-this is not confirmed. The after-narrowing run compares like for like, so a change in that rate
-would still show.
-
-The after-narrowing run has no bench segment; its maxima cover idle, one line lap and two
-bypasses. Against the run before narrowing, Motion's longest body rose from 889 to 1,275 us
-(6.4 percent of its 20 ms period) and I/O's from 2,302 to 2,400 us. Mission's
-rose from 3,716 to 5,229 us, during the second scan and the start of its bypass:
-52 percent of its 10 ms period. The overrun rate is unchanged and every stack
-keeps over 900 bytes free. One run each, so these are single samples, not
-worst cases.
-
-The 2026-11-20 course run recorded MQTT telemetry. Worst-case scheduling and stop latency still require dedicated measurements.

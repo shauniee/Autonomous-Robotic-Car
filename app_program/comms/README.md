@@ -35,7 +35,7 @@ Mission needs WiFi and MQTT before a local start. A disconnect during a run is r
 | Mapping | Four distinct A-Z letters, installed by Mission only in READY or STOPPED; the ACK reports that outcome, not network receipt |
 | Connection | Online after subscription succeeds; refusal, disconnect or timeout backs off; reconnect restores the subscription and never replays old actions |
 
-Frames, topics, reserved bits and golden vectors: [MQTT protocol](../../README.md#mqtt-binary-protocol-schema-version-3). Fault policy: [fault bitmask](../../README.md#fault-policy). Credentials stay in ignored `config/wifi_secrets.h`.
+Frames, topics, reserved bits and golden vectors: [MQTT protocol](../../team.md#mqtt-binary-protocol-schema-version-3). Fault policy: [fault bitmask](../../README.md#fault-policy). Credentials stay in ignored `config/wifi_secrets.h`.
 
 Slow telemetry and broker acknowledgements do not prove live sensor progress, short transitions or brake timing. Retained online status can be stale.
 

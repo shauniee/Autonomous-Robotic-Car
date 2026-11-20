@@ -34,7 +34,7 @@ DELIVERABLES = {
                        (f"{COMMS}/comms.h", "mqtt_encode_terrain_trace")],
          "tests": ["test_comms_report.c", "test_comms_stress.c"]},
         {"name": "MQTT documentation",
-         "sections": [("README.md", "MQTT binary protocol")]},
+         "sections": [("team.md", "MQTT binary protocol")]},
         {"name": "Telemetry demonstration",
          "files": ["scripts/mqtt_client.py", "scripts/dashboard.html"],
          "tests": ["test_mqtt_cli.py", "test_dashboard.mjs"],

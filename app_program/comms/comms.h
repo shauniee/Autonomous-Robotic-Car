@@ -7,7 +7,7 @@
 #include "../common/robot_config.h"
 
 /*
- *  Binary MQTT frames, schema version 3 (README.md, MQTT binary
+ *  Binary MQTT frames, schema version 3 (team.md, MQTT binary
  *  protocol). Little-endian,
  *  explicit masks and shifts, never a struct copy. Kernel-free: encode and
  *  decode are pure functions over byte buffers.

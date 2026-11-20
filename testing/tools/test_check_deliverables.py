@@ -15,7 +15,7 @@ with tempfile.TemporaryDirectory() as temporary:
     for part in ("app_program", "scripts", "testing"):
         shutil.copytree(ROOT / part, copy / part,
                         ignore=shutil.ignore_patterns("*.o", "*.d"))
-    shutil.copy2(ROOT / "README.md", copy / "README.md")
+    shutil.copy2(ROOT / "team.md", copy / "team.md")
     assert check.main([str(copy)]) == 0
 
     # A missing test, an unwired test, a missing report and a removed API.
