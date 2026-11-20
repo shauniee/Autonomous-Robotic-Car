@@ -45,5 +45,5 @@ secrets.h
 DESIGN.md
 PRODUCT.md
 
-# Monitor captures while running; finished ones go to testing/integration/logs, compressed.
+# Monitor captures while running; finished ones go to testing/<subsystem>/logs, compressed.
 /int-*.txt
