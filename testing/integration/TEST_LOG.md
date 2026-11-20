@@ -35,3 +35,4 @@ Add a new row for every run. Never edit or delete old rows.
 | Date | Test ID | Commit | Tester | Result | Log / evidence | Notes |
 |---|---|---|---|---|---|---|
 | YYYY-MM-DD | INT-01 | `abc1234` | | PASS / FAIL | `logs/<ID>/<what>.log`, video link | |
+| 2026-11-20 | INT-07 | `880ff16` | Shaun | PASS | `../system/logs/SYS-04/monitor.log`; video: pending | Full course run on battery, fresh boot 11:02:19, two runs over one hump on a straight. Line stayed VISIBLE throughout. Run 2: one HUMP event, 12 mm (11:06:28). Run 1: two HUMP events, 9 mm at 1.17 m travel (nose down, 11:03:15) and 13 mm at 2.47 m (nose up, 11:03:28); the first event's cause is not identified. No curve hump on this course. |
