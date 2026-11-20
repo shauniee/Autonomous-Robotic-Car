@@ -88,7 +88,7 @@ the Homebrew packages the installer added (`--dry-run` lists them first).
 | [Team](docs/team.md) | Owners, pins and wiring, task and kernel-object budget, interfaces, coding rules |
 | [Architecture](docs/architecture.md) | Target three-task contracts, looping Mission, stop/freshness rules, shared data and MQTT protocol |
 | Subsystem READMEs | [comms](app_program/comms/README.md), [motion](app_program/motion/README.md), [line_barcode](app_program/line_barcode/README.md), [terrain](app_program/terrain/README.md), [obstacle](app_program/obstacle/README.md) |
-| [Mission readiness checklist](testing/system/mission-readiness.md) | Ordered physical checks before a full run |
+| [System test runbook](testing/system/README.md) | How to run and record SYS-U01, the full course run |
 | [Videos](video/README.md) | Recording and sharing instructions, video index |
 
 Each fact has one owning guide; other guides link to it. Assignment requirements, proposed design, implemented behavior and recorded results are distinct.
@@ -127,7 +127,7 @@ flashes** TEST/normal and TRACE 0/1 profiles plus the two course
 images. Inspect any compiler errors before preparing a wheels-raised test
 image. See [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) for unmet measurements and decisions.
 
-Draft reports: [PID tuning](app_program/motion/README.md#pid-tuning-report-draft) and [Terrain analysis](app_program/terrain/README.md#terrain-analysis-draft). Both need real measurements, not host passes.
+Reports: [PID tuning](app_program/motion/README.md#pid-tuning-report), [Motion accuracy](app_program/motion/README.md#motion-accuracy-evaluation) and [Terrain analysis](app_program/terrain/README.md#terrain-analysis), each from results measured on the car.
 
 ### Build profiles
 
@@ -256,7 +256,7 @@ Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--p
 ### Bring-up order and project tasks
 
 Follow the [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) and the
-[mission-readiness checklist](testing/system/mission-readiness.md). The three-task
+[system test runbook](testing/system/README.md). The three-task
 Motion/Mission/I/O refactor is implemented; remaining work is calibration,
 feature release, measured timing/load and mixed looping-mission acceptance.
 No core swap or separate Safety task is introduced. Pending numeric values

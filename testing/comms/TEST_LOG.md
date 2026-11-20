@@ -15,9 +15,9 @@ Define a test here before running it. Test IDs never change.
 
 | ID | What is tested | Requirement / interface | Method | Steps / how | Expected result |
 |---|---|---|---|---|---|
-| S1-U01 | WiFi join and telemetry rate | M10, MR-08 | manual | 1. Boot the wireless image on battery. 2. Start the broker and `mqtt_client.py serve`. 3. Watch 1 minute | Pico joins WiFi; telemetry about every 500 ms (up to 550 ms accepted: the 10 ms kernel tick) |
-| S1-U02 | Letter mapping rules | MR-09, MR-10 | manual | 1. Press GP20 with no mapping. 2. `map A B C D` while stopped. 3. Reboot | Start refused without a mapping; mapping accepted while stopped; cleared on reboot |
-| S1-U03 | Broker restart while stopped | MR-33, T13 | manual | 1. Stop the broker for 10 s. 2. Restart it | Dashboard shows the loss, then telemetry resumes; recovery time recorded |
+| S1-U01 | WiFi join and telemetry rate | M10 | manual | 1. Boot the wireless image on battery. 2. Start the broker and `mqtt_client.py serve`. 3. Watch 1 minute | Pico joins WiFi; telemetry about every 500 ms (up to 550 ms accepted: the 10 ms kernel tick) |
+| S1-U02 | Letter mapping rules | M10, NFR-06 | manual | 1. Press GP20 with no mapping. 2. `map A B C D` while stopped. 3. Reboot | Start refused without a mapping; mapping accepted while stopped; cleared on reboot |
+| S1-U03 | Broker restart while stopped | T13 | manual | 1. Stop the broker for 10 s. 2. Restart it | Dashboard shows the loss, then telemetry resumes; recovery time recorded |
 | S1-U04 | Malformed and prohibited requests | T12 | manual | 1. Send a truncated frame, a wrong-version frame and a request to drive | Each rejected; robot state unchanged |
 | S1-U05 | Frame codec on the Pico | M10 | auto | `comms_test.c` on the TEST image | `[TEST] S1-U05 PASS` |
 

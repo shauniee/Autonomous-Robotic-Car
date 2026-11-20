@@ -15,10 +15,10 @@ Define a test here before running it. Test IDs never change.
 
 | ID | What is tested | Requirement / interface | Method | Steps / how | Expected result |
 |---|---|---|---|---|---|
-| S3-U01 | Line IR levels | MR-12, D04 | manual | 1. Hold each mounted line sensor (GP26, GP17) over black, white and the line edge | Black and white read correctly on both |
-| S3-U02 | Barcode IR level | MR-13, D04 | manual | 1. Slide black and white under the barcode sensor (GP27) with `[BCPIN]` on | Level flips and edges count |
-| S3-U03 | All 26 letters | M2, MR-27 | manual | 1. Drive over each printed letter at course speed | Each letter decodes once and matches the print |
-| S3-U04 | Flipped print | M2, MR-27 | manual | 1. Turn one printed letter 180 degrees. 2. Drive over it in the normal direction | Same letter decoded |
+| S3-U01 | Line IR levels | D04 | manual | 1. Hold each mounted line sensor (GP26, GP17) over black, white and the line edge | Black and white read correctly on both |
+| S3-U02 | Barcode IR level | D04 | manual | 1. Slide black and white under the barcode sensor (GP27) with `[BCPIN]` on | Level flips and edges count |
+| S3-U03 | All 26 letters | M2 | manual | 1. Drive over each printed letter at course speed | Each letter decodes once and matches the print |
+| S3-U04 | Flipped print | M2 | manual | 1. Turn one printed letter 180 degrees. 2. Drive over it in the normal direction | Same letter decoded |
 | S3-U05 | Read rate at course speed | M2, T04 | manual | 1. Pass one letter three times at course speed | Reads out of passes recorded; no wrong letter |
 
 *Method:* **auto** = `TEST_CHECK` in code, result printed on the console;

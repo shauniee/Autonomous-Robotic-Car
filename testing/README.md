@@ -29,8 +29,7 @@ testing/
 ├── line_barcode/          S3
 ├── terrain/               S4
 ├── obstacle/              S5
-├── system/                SYS-U01, the full course run of the whole robot
-│                          (shared), plus the mission-readiness checklist
+├── system/                SYS-U01, the full course run of the whole robot (shared)
 └── tools/                 the host-test runner, firmware build and size probe,
                            and checks of the repo scripts (removed before the
                            final submission)
@@ -48,10 +47,9 @@ course run (SYS-U01).
 | Unit | `S1-U01` to `S5-U05`, up to five per subsystem | one subsystem on its own | the subsystem owner | `<subsystem>/TEST_LOG.md` |
 | System | `SYS-U01`, one full course run | the finished robot on the course | whole team | `system/TEST_LOG.md` |
 
-Test IDs never change and are never reused, even if a test is dropped. On
-2026-11-09 the earlier tests and logs were removed and these IDs restarted;
-code and docs cite that older evidence by date, and it stays in git history
-(commit `67bfa3b` and earlier).
+Test IDs never change and are never reused, even if a test is dropped.
+Earlier tests and logs were removed when these IDs restarted; they stay in
+git history (commit `67bfa3b` and earlier).
 
 ## Run the test code
 
@@ -146,7 +144,7 @@ Which test now covers each Tribunal trial. Limits come from
 | T03 | Straight/curve/junction tracking under lighting, surface and speed variation | SYS-U01 |
 | T04 | Known barcode scales/speeds in both directions, same-character decoding, pending-to-junction execution, duplicate/partial rejection and capture overflow | S3-U03 to S3-U05, SYS-U01 |
 | T05 | Four encoder actions: repeated distance/angle accuracy, completion, timeout and obstacle cancellation | S2-U02, S2-U03 |
-| T06 | Labelled stationary/acceleration/turn/climb/descent/lift traces; no raw gyro claim | none (S4-U02 dropped 2026-11-18) |
+| T06 | Labelled stationary/acceleration/turn/climb/descent/lift traces; no raw gyro claim | none |
 | T07 | Measured reference humps, slip/dynamic/incomplete rejection and invalid estimate after valid maximum | S4-U03 |
 | T08 | Known forward ranges/materials/angles; no/late/out-of-range echo, settled repeated filtering and repeat timing | S5-U01 |
 | T09 | Moving scan rejection, coarse/fine profile for 100-200 mm widths, uncertainty, separate front age and restored-center acquisition | S5-U03 |

@@ -74,7 +74,7 @@ lifting the car is the stop that ends a demonstration run. During a run
 IR/Motion failure or a lifted or overturned car stops; ordinary IMU/sonar/network loss is report-only. **Course speed guardrail (user,
 2026-11-02):** line following, crossings, junction advances and junction pivots
 are commanded at exactly 100 mm/s, humps included (the earlier half-speed hump
-request was dropped by the user, the 2026-11-02 run); steering never lowers it. A compile-time assert fixes `MISSION_TRACK_SPEED_MMPS` at 100, and
+request was dropped); steering never lowers it. A compile-time assert fixes `MISSION_TRACK_SPEED_MMPS` at 100, and
 Mission stops rather than send any other speed while following or navigating.
 Recovery sweeps and obstacle bypass keep their own slower speeds. The original moving 70-degree
 recovery request was superseded by the stationary wider sweep revision in
@@ -110,7 +110,7 @@ bypass remains required under M9.
 
 **Hump range:** Nicholas sets 10 mm as the minimum hump to detect and measure;
 the existing course maximum remains 30 mm. This is not an error tolerance.
-MR-29 uses only 10 mm humps (Nicholas, 2026-11-18).
+S4-U03 and SYS-U01 use only 10 mm humps.
 The permitted height-measurement error remains undecided under D10.
 
 **Profiles:** `MOTION_STALL_GUARD_ENABLED=0` for the demo; enabled and physically
@@ -269,7 +269,7 @@ Change requirement one, adopted at Tribunal 1 (Week 8). Implemented in firmware 
 3. Message size comparison: the size of the relevant inter-task and/or communication messages measured and compared before and after the change.
 4. Correctness and performance: evidence that the revised representation loses no required functionality and causes no unacceptable degradation in timing or system performance.
 
-The latest wording (Change Requirement 1, from Nicholas, 2026-11-13) asks for the before-and-after comparison in items 2 and 3, and replaces the 2026-10-27 course update that dropped it. Items 2 to 4 are in [team section 7](team.md#7-correctness-and-performance-evidence).
+The latest wording (Change Requirement 1, from Nicholas) asks for the before-and-after comparison in items 2 and 3, and replaces the earlier course update that dropped it. Items 2 to 4 are in [team section 7](team.md#7-correctness-and-performance-evidence).
 
 ### Historical baseline, issue #22
 
@@ -353,7 +353,7 @@ Single register. Record answers and measured values here once, then link from ot
 | D12 | Closed by Nicholas, 2026-11-03: obstacles sit on straights, and this is the operating assumption. Curved-course bypass is not supported or claimed; options are in the [Obstacle guide](../app_program/obstacle/README.md#curves-near-an-obstacle) | Nicholas |
 | D13 | Numeric target priorities/periods, execution budgets, timeout slack, data-age limits, worst sensor-to-PWM latency, GPIO ISR time, stack margin and load-test criteria; user authorized existing numeric settings as provisional software defaults on 2026-10-29; physical scheduling/age acceptance remains open | Nicholas |
 | D14 | Core swap superseded. Audit core-0 I/O integration, cross-core event producers/mapping hand-off, synchronization and required initialization order; kernel WiFi/USB and capture core unchanged | Nicholas |
-| D15 | Closed by Nicholas, 2026-11-05: the reset watchdog is removed from the firmware, replacing the earlier decision to run it on `full_course`. It never had a bench test. A hung Motion or kernel has no automatic reset. Tribunal A12 names watchdog recovery, and that wording is unchanged | Nicholas |
+| D15 | Closed by Nicholas: the reset watchdog is removed from the firmware, replacing the earlier decision to run it on `full_course`. It never had a bench test. A hung Motion or kernel has no automatic reset. Tribunal A12 names watchdog recovery, and that wording is unchanged | Nicholas |
 | D16 | Settled 2026-10-29: configurable 15 cm is the obstacle trigger distance (150 mm). The car stops at that distance: it starts slowing earlier by `motion_stop_distance_mm`, 191 mm at 100 mm/s (Nicholas, 2026-11-04). It does not authorize any travel without valid forward sonar | Nicholas |
 | D17 | Closed by Nicholas, 2026-11-13: there is no Week 13 change in requirement; Week 13 documents and demonstrates the minimum-bit change, with a before-and-after RAM and message size comparison ([section 4](#4-change-in-requirement-minimum-bit-data-representation)) | Nicholas |
 
@@ -680,7 +680,7 @@ bounds and Motion construction reject out-of-range values). Two encoder
 origins and two unsigned 32-bit timestamps retain their existing wrap rules.
 All storage is private to Mission; no shared or wire layout changes.
 
-Digital IR calibration removal (2026-10-31): `IrCalibration`, capture enums,
+Digital IR calibration removal: `IrCalibration`, capture enums,
 capture counters/results and all IR calibration gates/APIs are removed.
 `IrTracker_t` stores only line, reading, raw word and acquisition presence/time;
 `LineIrSnapshot_t` stores acquisition identity/age, raw word, digital endpoints/error,
@@ -816,7 +816,7 @@ than both targets climbing equally after a turn. Replace the two unsigned
 Q6 wheel histories with one private `follow_base_q6` field: 0..32000 (0..500
 mm/s), exact whole-mm/s requests scaled by 64, truncating per-release slew
 increments, 15 bits including invalid 32001..32767; reset zero, invalid brakes,
-updates saturate toward requested speed without overflow. (Superseded 2026-11-04 by the lift-style profile in [architecture](architecture.md).) The 250 mm/s/s
+updates saturate toward requested speed without overflow. (Superseded by the lift-style profile in [architecture](architecture.md).) The 250 mm/s/s
 provisional base ramp, one-period cap on late releases, no progress for
 duplicate timestamps and immediate zero/stop/fault reset remain. Mixed wheel
 targets are local floats, bounded by existing mixing and duty limits; a wheel
@@ -992,7 +992,7 @@ Storage extension (one writer per object; local floating point geometry only):
 | Barcode diagnostic | 2 wrapping counts, width 0..65535 counts; result 0..6; orientation 0/1; letter 0..25 or 31; action 0..4 | Width saturates; queue drops counted; no guessed letter | 16+16+16+3+1+5+3 / 8 bytes on target |
 
 MotionCommand_t remains 12 bytes with the existing mutex and two-bit mode. TURN
-style 2 is rejected (the smooth path was removed 2026-11-02); other TURN styles
+style 2 is rejected (the smooth path was removed); other TURN styles
 take degrees. DISTANCE style 3 enables
 a ramped approach. No MQTT payload changes. Diagnostic ring is optional, 32 entries;
 head/tail and saturating dropped counters are uint32 for wrap-safe lifetime indices.
