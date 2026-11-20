@@ -5,7 +5,7 @@
 - [Test cases](#test-cases)
 - [Results](#results)
 
-The test of the complete robot on the course, on the final hardware set-up: one full course run, SYS-U01. Ready-to-run checks: [mission readiness](mission-readiness.md).
+The test of the complete robot on the course, on the final hardware set-up: one full course run, SYS-U01.
 
 See [testing/README.md](../README.md) for how to run tests and record results.
 
