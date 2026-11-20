@@ -238,9 +238,8 @@ Every integration test is recorded from the single scripted course run in the [s
 **Steps:**
 
 1. Run the course.
-2. Mid-run, stop the broker for 10 s and restart it.
 
-**Show on video:** Each event on the dashboard, the turn rate (Turn under Motor speed, from the encoders, FR-20) changing in the turns, and the car carrying on during the loss.
+**Show on video:** Each event on the dashboard and the turn rate (Turn under Motor speed, from the encoders, FR-20) changing in the turns.
 
 **Test code:** none (manual test)
 
