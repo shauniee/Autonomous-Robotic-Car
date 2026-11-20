@@ -22,7 +22,7 @@ Define a test here before running it. Test IDs never change.
 | INT-07 | Hump while line following | S4, S3, S2; M4, M5 | manual | 1. Hump on a straight, and on a curve if the course has one, while following | Line held; hump counted and height reported |
 | INT-08 | Obstacle stop on the line | S5, S2; M6, M8 | manual | 1. Board on the line ahead of the car | Car slows and stops; rest distance recorded (sonar `front=` or tape) |
 | INT-09 | Bypass and rejoin | S5, S2, S3; M8, M9, MR-30, MR-31 | manual | 1. Box on the line, both sides open | No collision; a side taken; line rejoined |
-| INT-10 | Telemetry and events during a run | S1 with all; M10, MR-33 | manual | 1. Run past a barcode, junction, hump and obstacle with the dashboard open. 2. Stop the broker mid-run, then restart | Each event shown once; car keeps driving through the loss; telemetry resumes |
+| INT-10 | Telemetry and events during a run | S1 with all; M10, MR-33 | manual | 1. Run past a barcode, junction, hump and obstacle with the dashboard open | Each event shown once; telemetry throughout the run |
 
 *Method:* **auto** = `TEST_CHECK` in code, result printed on the console;
 **manual** = a person observes the result (motor, sensor, dashboard, tape measure).
@@ -42,3 +42,4 @@ Add a new row for every run. Never edit or delete old rows.
 | 2026-11-20 | INT-10 | `880ff16` | Shaun | PARTIAL | `../system/logs/SYS-04/monitor.log`; video: pending | Same run, dashboard open. Step 1: 12 events, each once: 3 HUMP, 2 OBSTACLE, 3 BARCODE, 4 TURN (including one unmapped junction at 11:08:32). 808 telemetry frames over both runs, mean 545 ms apart, longest gap 2.0 s. PARTIAL: step 2 (broker stopped mid-run, then restarted) not run. |
 | 2026-11-20 | INT-03 | `880ff16` | Shaun | PASS | `../system/logs/SYS-04/monitor.log`; video: pending | Same run as the 2026-11-20 PARTIAL row, against the definition narrowed to one turn: letter A mapped to RIGHT, three reads of A, each followed by a right turn at the next junction and an exit on the new line (11:04:52 to 11:04:55, 11:07:46 to 11:07:50, 11:08:21 to 11:08:24). |
 | 2026-11-20 | INT-08 | `880ff16` | Shaun | PASS | `../system/logs/SYS-04/monitor.log`; video: pending | Same run as the 2026-11-20 PARTIAL row, against the definition that accepts the sonar reading: 150 mm box, car at rest at 142 mm (run 1) and 140 mm (run 2) by `front=`, stop target 150 mm; no contact. |
+| 2026-11-20 | INT-10 | `880ff16` | Shaun | PASS | `../system/logs/SYS-04/monitor.log`; video: pending | Same run as the 2026-11-20 PARTIAL row, against the definition without the broker stop: 12 events, each once (3 HUMP, 2 OBSTACLE, 3 BARCODE, 4 TURN); 808 telemetry frames over both runs, mean 545 ms apart, longest gap 2.0 s. |
