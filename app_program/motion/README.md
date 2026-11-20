@@ -82,7 +82,7 @@ Record each run separately with source SHA, UF2 hash, setup and evidence. Limits
 
 ## Motion accuracy evaluation (draft)
 
-Nothing is measured yet, so this holds the method only. Tape each result on the floor and record the commit in the [test log](../../testing/integration/TEST_LOG.md).
+Nothing is measured yet, so this holds the method only. Tape each result on the floor and record the commit in the [test log](../../testing/motion/TEST_LOG.md).
 
 | Move | How to measure | Runs | Result |
 | --- | --- | --- | --- |

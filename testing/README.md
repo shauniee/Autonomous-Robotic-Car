@@ -3,7 +3,7 @@
 ## Contents
 
 - [Layout](#layout)
-- [Three levels of test](#three-levels-of-test)
+- [Two levels of test](#two-levels-of-test)
 - [Run the test code](#run-the-test-code)
 - [How to run and record a test](#how-to-run-and-record-a-test)
 - [Videos of tests and demos](#videos-of-tests-and-demos)
@@ -29,8 +29,7 @@ testing/
 ├── line_barcode/          S3
 ├── terrain/               S4
 ├── obstacle/              S5
-├── integration/           tests across two or more subsystems (shared)
-├── system/                tests of the whole robot against its requirements
+├── system/                SYS-U01, the full course run of the whole robot
 │                          (shared), plus the mission-readiness checklist
 └── tools/                 the host-test runner, firmware build and size probe,
                            and checks of the repo scripts (removed before the
@@ -39,15 +38,15 @@ testing/
 
 Choose the folder by what the test exercises, not where it ran. A barcode read
 tests line_barcode only. Line following, junction turns, bypass and a hump while
-following need Mission to combine subsystems, so they are integration.
+following need Mission to combine subsystems, so they are tested in the full
+course run (SYS-U01).
 
-## Three levels of test
+## Two levels of test
 
 | Level | ID format | Tests what | Written by | Where |
 |---|---|---|---|---|
 | Unit | `S1-U01` to `S5-U05`, up to five per subsystem | one subsystem on its own | the subsystem owner | `<subsystem>/TEST_LOG.md` |
-| Integration | `INT-01` to `INT-10` | subsystems working together through Mission | the owners on both sides | `integration/TEST_LOG.md` |
-| System | `SYS-01` to `SYS-10` (all dropped) | the finished robot against a requirement | whole team | `system/TEST_LOG.md` |
+| System | `SYS-U01`, one full course run | the finished robot on the course | whole team | `system/TEST_LOG.md` |
 
 Test IDs never change and are never reused, even if a test is dropped. On
 2026-11-09 the earlier tests and logs were removed and these IDs restarted;
@@ -85,14 +84,14 @@ automatic checks are in `app_program/<subsystem>/<subsystem>_test.c` and run on
    `./flash.sh trial` is the full course with diagnostics; follow the
    [power policy](../README.md#power-and-flashing).
 4. **Save the console output** to `logs/<test ID>/`, named `<what>.log`
-   (for example `system/logs/SYS-04/usb.log`). Logs are plain text
+   (for example `motion/logs/S2-U01/usb.log`). Logs are plain text
    `.log` files only:
    ```sh
    # macOS (find the port name with: ls /dev/cu.usbmodem*)
-   mkdir -p testing/system/logs/SYS-04
-   cat /dev/cu.usbmodemMTK3PICO1 | tee testing/system/logs/SYS-04/usb.log
+   mkdir -p testing/motion/logs/S2-U01
+   cat /dev/cu.usbmodemMTK3PICO1 | tee testing/motion/logs/S2-U01/usb.log
    # laptop monitor during a battery run
-   ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py monitor --broker 127.0.0.1 | tee testing/system/logs/SYS-04/monitor.log
+   ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py monitor --broker 127.0.0.1 | tee testing/system/logs/SYS-U01/monitor.log
    ```
    Start the command first, then reset the Pico. Press Ctrl-C when it is done.
    On Windows with PuTTY, use *Session → Logging → All session output*.
@@ -142,19 +141,19 @@ Which test now covers each Tribunal trial. Limits come from
 
 | ID | Trial | Tested in |
 | --- | --- | --- |
-| T01 | Electrical release: markings, continuity, loaded rails/current, signal highs, shared contacts and jumper | none (SYS-01 dropped) |
-| T02 | Boot/stop/reset in every motion mode; output-brake timing and physical stopping separately | S4-U04 (SYS-06 dropped) |
-| T03 | Straight/curve/junction tracking under lighting, surface and speed variation | none (INT-01 and INT-05 dropped) |
-| T04 | Known barcode scales/speeds in both directions, same-character decoding, pending-to-junction execution, duplicate/partial rejection and capture overflow | S3-U03 to S3-U05, INT-03 |
+| T01 | Electrical release: markings, continuity, loaded rails/current, signal highs, shared contacts and jumper | none |
+| T02 | Boot/stop/reset in every motion mode; output-brake timing and physical stopping separately | S4-U04, SYS-U01 |
+| T03 | Straight/curve/junction tracking under lighting, surface and speed variation | SYS-U01 |
+| T04 | Known barcode scales/speeds in both directions, same-character decoding, pending-to-junction execution, duplicate/partial rejection and capture overflow | S3-U03 to S3-U05, SYS-U01 |
 | T05 | Four encoder actions: repeated distance/angle accuracy, completion, timeout and obstacle cancellation | S2-U02, S2-U03 |
 | T06 | Labelled stationary/acceleration/turn/climb/descent/lift traces; no raw gyro claim | none (S4-U02 dropped 2026-11-18) |
 | T07 | Measured reference humps, slip/dynamic/incomplete rejection and invalid estimate after valid maximum | S4-U03 |
 | T08 | Known forward ranges/materials/angles; no/late/out-of-range echo, settled repeated filtering and repeat timing | S5-U01 |
 | T09 | Moving scan rejection, coarse/fine profile for 100-200 mm widths, uncertainty, separate front age and restored-center acquisition | S5-U03 |
-| T10 | Vehicle envelope/course boundary, both bypass sides, blocked paths and original-line versus wrong-crossing recovery | INT-09 |
-| T11 | Controlled line loss, interrupted search, obstacle during search and bounded timeout | none (INT-02 dropped) |
+| T10 | Vehicle envelope/course boundary, both bypass sides, blocked paths and original-line versus wrong-crossing recovery | SYS-U01 |
+| T11 | Controlled line loss, interrupted search, obstacle during search and bounded timeout | none |
 | T12 | Actual mission telemetry/status subscription, units/validity and rejection of prohibited/malformed commands | S1-U04 |
-| T13 | WiFi/broker loss/reconnect under sensor/scan load; healthy local control and no stale replay | S1-U03 (SYS-08 dropped) |
-| T14 | Stale/frozen producers, encoder/stall faults, expired command and full diagnostic/navigation/capture buffers | none (SYS-07 dropped) |
-| T15 | Concurrent load: releases/WCET, missed deadlines, stop latency, queue occupancy and stack/memory usage | none (SYS-10 dropped) |
-| T16 | Repeated looping-course rehearsal with junction actions, stationary U-turn pause, humps, bypass, telemetry and local-stop ending | INT-03, INT-07 to INT-10 from one full course run (SYS-04 and SYS-09 dropped) |
+| T13 | WiFi/broker loss/reconnect under sensor/scan load; healthy local control and no stale replay | S1-U03, SYS-U01 |
+| T14 | Stale/frozen producers, encoder/stall faults, expired command and full diagnostic/navigation/capture buffers | none |
+| T15 | Concurrent load: releases/WCET, missed deadlines, stop latency, queue occupancy and stack/memory usage | none |
+| T16 | Repeated looping-course rehearsal with junction actions, stationary U-turn pause, humps, bypass, telemetry and local-stop ending | SYS-U01 |

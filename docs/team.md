@@ -151,8 +151,8 @@ by [architecture](architecture.md#shared-data-rules).
 | Mission/Terrain to Reporting | Cross-core event synchronization required; same-core DI/EI is insufficient |
 | Reporting to kernel MQTT | Opaque bounded TX/RX bridge; only WiFi context invokes networking APIs |
 
-Record changed interface layouts before coding and append integration results in
-[testing/integration/TEST_LOG.md](../testing/integration/TEST_LOG.md). A valid
+Record changed interface layouts before coding and record whole-robot results in
+[testing/system/TEST_LOG.md](../testing/system/TEST_LOG.md). A valid
 software copy or brake acknowledgement is not physical stationarity.
 
 ## 5. Coding rules
@@ -507,4 +507,4 @@ worst cases.
 To fill this table: flash `017f5ed` (timing added, no narrowing) with
 `./flash.sh trial`, capture the USB console during a bench run, one line lap
 and one bypass, then repeat on the final commit. Record each run in
-[testing/integration/TEST_LOG.md](../testing/integration/TEST_LOG.md).
+[testing/system/TEST_LOG.md](../testing/system/TEST_LOG.md).

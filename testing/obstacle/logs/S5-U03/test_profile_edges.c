@@ -53,7 +53,7 @@ static void sweep(const obstacle_profile_config_t *config, float range, unsigned
     assert(obstacle_profile_estimate(rays, count, NULL, config, profile, &evidence));
 }
 
-/* Rays captured on the car, 2026-11-05 (testing/integration/logs/scan.log). */
+/* Rays captured on the car, 2026-11-05 (scan log, kept in git history). */
 static void estimate_scan(const obstacle_profile_config_t *config, const int scan[][2],
     unsigned count, ObstacleProfile_t *profile)
 {
