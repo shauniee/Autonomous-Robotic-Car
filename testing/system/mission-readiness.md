@@ -14,10 +14,10 @@
 
 Ordered physical checks that decide whether the robot is ready for a full run. Code and host tests cover only part of the project; these checks establish acceptance only for the recorded image, setup and limits. Work top to bottom: each phase assumes the earlier phases passed.
 
-- Record every result as a row in [system/TEST_LOG.md](TEST_LOG.md) with the `MR-nn` ID, date, commit, tester, PASS/FAIL and the measured value, following [Run and record](../README.md#run-and-record).
+- Record every result as a row in the `TEST_LOG.md` of the test that covers it, with the `MR-nn` ID, date, commit, tester, PASS/FAIL and the measured value, following [Run and record](../README.md#how-to-run-and-record-a-test).
 - **Record** names the value to write down and, where it replaces a placeholder, the constant in `app_program/common/robot_config.h` and the pending decision (Dnn) in [project-specs](../../docs/project-specs.md#pending-decisions). After changing a constant, rebuild and repeat the checks that depend on it.
 - Where no accepted target exists, the pass condition is "measured and agreed": Nicholas records the value and agrees the limit in the pending-decisions register. Never pass a check on a build or a host test alone.
-- The `T` column links each check to the planned integrated trials in [testing](../README.md#planned-integrated-trials).
+- The `T` column links each check to the planned integrated trials in [testing](../README.md#tribunal-trial-plan).
 
 Current procedure revision: 2026-11-03, aligned to the [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues).
 Existing results retain their historical procedure/source meaning; this page does

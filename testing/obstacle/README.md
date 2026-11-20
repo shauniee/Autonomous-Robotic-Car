@@ -17,7 +17,7 @@ How to run and record S5-U01, S5-U02 and S5-U03. Wheels never move: all three us
 
 ## Before you start
 
-1. Work on this branch: `git switch test/s5-obstacle` and `git pull`.
+1. Work on a fresh branch from `main`: `git fetch` then `git switch -c test/s5-obstacle origin/main`.
 2. Commit nothing else while testing; the image is built from the working tree, so `git status` must be clean. Note the commit: `git rev-parse --short HEAD`.
 3. Follow the [power policy](../../README.md#power-and-flashing): USB alone for flashing and TEST images; battery alone for driving.
 4. Broker (one terminal, leave it running):

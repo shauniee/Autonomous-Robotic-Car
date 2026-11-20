@@ -20,7 +20,7 @@ How to run and record S2-U01 to S2-U05. Test definitions: [TEST_LOG.md](TEST_LOG
 
 ## Before you start
 
-1. Work on this branch: `git switch test/s2-motion` and `git pull`.
+1. Work on a fresh branch from `main`: `git fetch` then `git switch -c test/s2-motion origin/main`.
 2. Commit nothing else while testing; the image is built from the working tree, so `git status` must be clean. Note the commit: `git rev-parse --short HEAD`.
 3. Follow the [power policy](../../README.md#power-and-flashing): USB alone for flashing and TEST images; battery alone for driving.
 4. Broker (one terminal, leave it running):

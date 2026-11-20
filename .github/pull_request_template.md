@@ -1,6 +1,6 @@
 <!--
 Title: a Conventional Commit with a scope, e.g. fix(mission): commit a queued turn on two both-black samples
-Types: feat, fix, chore, docs, test, refactor. The title becomes the squash commit.
+Types: feat, fix, chore, docs, test, refactor. PRs are rebase-merged, so every commit subject must follow the same format.
 No co-author or "Generated with" lines anywhere.
 -->
 

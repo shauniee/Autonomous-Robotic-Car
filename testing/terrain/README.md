@@ -18,7 +18,7 @@ How to run and record S4-U01 to S4-U04. Test definitions: [TEST_LOG.md](TEST_LOG
 
 ## Before you start
 
-1. Work on this branch: `git switch test/s4-terrain` and `git pull`.
+1. Work on a fresh branch from `main`: `git fetch` then `git switch -c test/s4-terrain origin/main`.
 2. Commit nothing else while testing; the image is built from the working tree, so `git status` must be clean. Note the commit: `git rev-parse --short HEAD`.
 3. Follow the [power policy](../../README.md#power-and-flashing): USB alone for flashing and TEST images; battery alone for driving.
 4. Broker (one terminal, leave it running):
