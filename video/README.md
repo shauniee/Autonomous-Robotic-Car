@@ -6,6 +6,7 @@
 - [What to record](#what-to-record)
 - [How to share](#how-to-share)
 - [Video index](#video-index)
+- [Pending uploads](#pending-uploads)
 
 Short videos of tests and demos on the real hardware, showing what a log cannot, such as the robot reaching the line.
 
