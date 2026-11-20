@@ -13,7 +13,7 @@ See [testing/README.md](../README.md) for how to run tests and record results.
 
 Define a test here before running it. Test IDs never change.
 
-On 2026-11-18 the old S4-U02 (tilt and lift during a run) was dropped, as S4-U04 covers the lift and flip stop, and the old S4-U03 to S4-U05 became S4-U02 to S4-U04.
+The old S4-U02 (tilt and lift during a run) was dropped, as S4-U04 covers the lift and flip stop, and the old S4-U03 to S4-U05 became S4-U02 to S4-U04.
 
 | ID | What is tested | Requirement / interface | Method | Steps / how | Expected result |
 |---|---|---|---|---|---|

@@ -7,8 +7,8 @@
 - [Behaviour](#behaviour)
 - [Contract](#contract)
 - [Raw USB capture](#raw-usb-capture)
-- [Terrain analysis (draft)](#terrain-analysis-draft)
-- [Status and open items](#status-and-open-items)
+- [Terrain analysis](#terrain-analysis)
+- [Status](#status)
 
 ## Scope
 
@@ -26,7 +26,7 @@ Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement a
 ## Behaviour
 
 - **Boot:** up to 5 seconds to collect 100 fresh stationary samples at 50 Hz. Encoder movement restarts the count without extending the deadline. The USB console's `[IMU]` messages distinguish init failure, completion and timeout. A failure blocks start, because the lift stop needs calibration; only a reboot retries it.
-- **Humps:** course humps lift one wheel, so an encounter is sideways tilt (roll) of either sign, measured from its average while both wheels are stopped so the boot pose does not matter, over `HUMP_ROLL_ENTER_DEG` until it stays under `HUMP_ROLL_EXIT_DEG` for `HUMP_FLAT_SAMPLES`. It counts with `HUMP_MIN_TRAVEL_MM` of travel over the exit level and a height, track width times the sine of peak roll, between `HUMP_MIN_HEIGHT_MM` and `HUMP_MAX_HEIGHT_MM`. Past `HUMP_MAX_TRAVEL_MM` the tilt becomes the new average (the 2026-11-02 runs). Independent of Mission states. Humps do not change the course speed.
+- **Humps:** course humps lift one wheel, so an encounter is sideways tilt (roll) of either sign, measured from its average while both wheels are stopped so the boot pose does not matter, over `HUMP_ROLL_ENTER_DEG` until it stays under `HUMP_ROLL_EXIT_DEG` for `HUMP_FLAT_SAMPLES`. It counts with `HUMP_MIN_TRAVEL_MM` of travel over the exit level and a height, track width times the sine of peak roll, between `HUMP_MIN_HEIGHT_MM` and `HUMP_MAX_HEIGHT_MM`. Past `HUMP_MAX_TRAVEL_MM` the tilt becomes the new average. Independent of Mission states. Humps do not change the course speed.
 - **Turn rate (FR-20):** the GY-511 has no gyroscope, so turn rate is encoder-derived, not measured by the IMU. The laptop tool computes (right speed - left speed) / `TRACK_WIDTH_MM` from the encoder counts in consecutive telemetry frames and shows it in degrees per second, positive left: `monitor` prints `turn=`, the dashboard shows Turn under Motor speed. No firmware or frame change; it inherits the telemetry arrival-time limits of the speed readout and the uncalibrated effective track width (D03). Host-tested in the `mqtt_decoder` self-test.
 - **Results:** only a valid completed encounter updates count or maximum, and results persist through starts and stops until reboot. Missing travel invalidates the current window but keeps completed results. Any failed quality sample disqualifies that encounter. Never fabricate height when data is missing, stale or dominated by acceleration.
 - **Lift:** the filtered vertical axis reads 1 g while the wheels rest on the floor. More than `LIFT_ACCEL_G` (0.3 g, provisional D06) away from it means the car was picked up, tipped past about 45 degrees or turned over. Terrain bit 2 is set, Safety latches the stop and the wheels brake; lifting the car is how a demonstration run ends. One short jolt is filtered out; humps tilt far less.
@@ -100,36 +100,18 @@ prove correct sensor mounting.
 Record the flashed image hash, source revision, build flags, measured hump,
 power and mounting with each physical trial in the terrain test log.
 
-## Terrain analysis (draft)
+## Terrain analysis
 
-Draft from existing evidence only. No reference height above one 10 mm hump has been measured.
+Measured on the 10 mm reference hump, the only hump height used on the course.
 
-- **Detector:** pitch did not show a one-wheel hump, so a 2026-11-02 change replaced it with roll.
-- **Counting:** One 2026-11-02 run counted the wrong encounters, and another reported `humps=5` for 1 crossing because pivots moved the baseline. The fix passes host tests and has never run on the car.
-- **Height:** one 10 mm hump read about 12.5 mm uncorrected, which gives `HUMP_CALIB_FACTOR` 0.8. That is one height, not a calibration.
+- **Detector:** humps are sideways tilt (roll), because pitch did not show a one-wheel hump.
+- **Counting:** S4-U02 counted 0, 1, 2, 3 for three crossings, and pivots added none; the full course run (SYS-U01) counted each crossing while following the line.
+- **Height:** S4-U02 and S4-U03 read 10.8 to 13.8 mm, and SYS-U01 read 9 to 13 mm, for the 10 mm hump, with `HUMP_CALIB_FACTOR` 0.8.
 - **Travel limit:** `HUMP_MIN_TRAVEL_MM` 50 rests on two crossings (76 and 156 mm) against curves of 26 mm or less.
-- **Turn rate:** no turn-rate monitor exists in Terrain. The GY-511 has no gyroscope, so any monitor must be encoder-derived and labelled so (T06).
+- **Lift stop:** lifting or turning the car over stops it (S4-U04, and the end of SYS-U01).
+- **Turn rate:** the GY-511 has no gyroscope, so the turn rate is derived from the encoders and shown in `monitor` and the dashboard (FR-20).
 
-Missing before this is a report: reference humps up to 30 mm with an agreed error limit, labelled traces and a lift result.
+## Status
 
-### Measurements to collect
+Algorithms pass synthetic replays, and S4-U01 to S4-U04 pass on the car; results are in the [terrain test log](../../testing/terrain/TEST_LOG.md).
 
-Record each run separately with source SHA, UF2 hash, setup and evidence. Limits stay pending until agreed.
-
-| Scenario | Trials | Measured reference | Record | Decision |
-| --- | --- | --- | --- | --- |
-| Level standstill/startup | At least 3 boots | Stationary and tilted setup | IMU calibration completion, baseline roll, false events | D06 |
-| Single known 10 mm hump | At least 3 passes | Height from calipers | Completed count, reported height, profile, any double count | S4-U03 |
-| Additional reference up to 30 mm | At least 3 passes per height | Known true height | Actual versus reported, error per pass | D06/D10 |
-| Pure pivot or tight curve | Repeated | No hump | Event count must not increase | 2026-11-02 |
-| Hump before barcode / on curve | Repeated | Known route | Event count and barcode/line continuation | SYS-U01 |
-| One-wheel and reversed approach | Repeated | Known wheel and direction | Roll sign, height, count and completion | D11 |
-| Lift and turn over during a run | Repeated safe test | Car lifted level, tipped on its side, upside down | Fault byte, braked output, persistent stop and the smallest lift that triggers | S4-U04 |
-| IMU disconnected | Bench only, power off first | No device | Bounded calibration failure and fault policy | S4-U01 |
-
-## Status and open items
-
-Algorithms pass synthetic replays; results are in the [terrain test log](../../testing/terrain/TEST_LOG.md). Physical height and lift calibration are not established.
-
-- D06, D13 and D14: measured references up to 30 mm, height-error target, threshold and filter decisions.
-- Test stationary, acceleration, braking, turning, climb, descent, lift, repeated reference passes, partial encounters and invalid-after-valid maximum (S4-U03, S4-U04, T06, T07).
