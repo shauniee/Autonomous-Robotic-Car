@@ -20,7 +20,6 @@ M=testing/motion/logs
 L=testing/line_barcode/logs
 TR=testing/terrain/logs
 O=testing/obstacle/logs
-I=testing/integration/logs
 S=testing/system/logs
 T=testing/tools
 DATA=app_program/common/robot_data.c
@@ -80,27 +79,27 @@ py_test() {
 
 # shellcheck disable=SC2086 # the source lists are several words
 {
-c_test robot_time $S/SYS-04/test_robot_time.c
-c_test trace_ring $S/SYS-04/test_trace_ring.c
+c_test robot_time $S/SYS-U01/test_robot_time.c
+c_test trace_ring $S/SYS-U01/test_trace_ring.c
 c_test encoder_math $M/S2-U01/test_encoder_math.c
-c_test robot_data $S/SYS-04/test_robot_data.c $DATA
+c_test robot_data $S/SYS-U01/test_robot_data.c $DATA
 c_test motion_control $M/S2-U05/test_motion_control.c app_program/motion/motion_control.c $DATA
 c_test motion_control_stall_guard -DMOTION_STALL_GUARD_ENABLED=1 \
     $M/S2-U05/test_motion_control.c app_program/motion/motion_control.c $DATA
 c_test motion_trace $M/S2-U04/test_motion_trace.c app_program/motion/motion.c $FRAME
-c_test line_trace $I/INT-03/test_line_trace.c app_program/mission/line_trace.c $FRAME
+c_test line_trace $S/SYS-U01/test_line_trace.c app_program/mission/line_trace.c $FRAME
 c_test barcode $L/S3-U03/test_barcode.c app_program/line_barcode/barcode.c $DATA
 c_test ir_tracking $L/S3-U01/test_ir_tracking.c app_program/line_barcode/line.c
-c_test line_replay $I/INT-03/test_line_replay.c app_program/line_barcode/line.c $MISSION
-c_test safety $S/SYS-06/test_safety.c $DATA
+c_test line_replay $S/SYS-U01/test_line_replay.c app_program/line_barcode/line.c $MISSION
+c_test safety $S/SYS-U01/test_safety.c $DATA
 c_test mission -DMISSION_BYPASS_RELEASED=1 -DMISSION_RECOVERY_RELEASED=1 \
-    $I/INT-09/test_mission.c $MISSION
+    $S/SYS-U01/test_mission.c $MISSION
 c_test mission_unreleased -DMISSION_BYPASS_RELEASED=0 -DMISSION_RECOVERY_RELEASED=0 \
-    $I/INT-09/test_mission_pending.c $MISSION
+    $S/SYS-U01/test_mission_pending.c $MISSION
 c_test smooth_navigation -DNAV_GEOMETRY_RELEASED=0 -DNAV_SENSOR_FORWARD_MM=0 \
-    -DNAV_CROSSBAR_MM=0 $I/INT-09/test_smooth_navigation.c $MISSION
+    -DNAV_CROSSBAR_MM=0 $S/SYS-U01/test_smooth_navigation.c $MISSION
 c_test smooth_navigation_geometry -DNAV_GEOMETRY_RELEASED=1 -DNAV_SENSOR_FORWARD_MM=150 \
-    -DNAV_CROSSBAR_MM=18 $I/INT-09/test_smooth_navigation.c $MISSION
+    -DNAV_CROSSBAR_MM=18 $S/SYS-U01/test_smooth_navigation.c $MISSION
 c_test mission_mapping $C/S1-U02/test_mission_mapping.c app_program/mission/mission_mapping.c $DATA
 c_test echo_range $O/S5-U01/test_echo_range.c
 c_test obstacle_profile $O/S5-U03/test_obstacle_profile.c $PROFILE
