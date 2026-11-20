@@ -47,7 +47,7 @@ following need Mission to combine subsystems, so they are integration.
 |---|---|---|---|---|
 | Unit | `S1-U01` to `S5-U05`, up to five per subsystem | one subsystem on its own | the subsystem owner | `<subsystem>/TEST_LOG.md` |
 | Integration | `INT-01` to `INT-10` | subsystems working together through Mission | the owners on both sides | `integration/TEST_LOG.md` |
-| System | `SYS-01` to `SYS-10` | the finished robot against a requirement | whole team | `system/TEST_LOG.md` |
+| System | `SYS-01` to `SYS-10` (all dropped) | the finished robot against a requirement | whole team | `system/TEST_LOG.md` |
 
 Test IDs never change and are never reused, even if a test is dropped. On
 2026-11-09 the earlier tests and logs were removed and these IDs restarted;
@@ -143,7 +143,7 @@ Which test now covers each Tribunal trial. Limits come from
 | ID | Trial | Tested in |
 | --- | --- | --- |
 | T01 | Electrical release: markings, continuity, loaded rails/current, signal highs, shared contacts and jumper | none (SYS-01 dropped) |
-| T02 | Boot/stop/reset in every motion mode; output-brake timing and physical stopping separately | SYS-06 |
+| T02 | Boot/stop/reset in every motion mode; output-brake timing and physical stopping separately | S4-U04 (SYS-06 dropped) |
 | T03 | Straight/curve/junction tracking under lighting, surface and speed variation | none (INT-01 and INT-05 dropped) |
 | T04 | Known barcode scales/speeds in both directions, same-character decoding, pending-to-junction execution, duplicate/partial rejection and capture overflow | S3-U03 to S3-U05, INT-03 |
 | T05 | Four encoder actions: repeated distance/angle accuracy, completion, timeout and obstacle cancellation | S2-U02, S2-U03 |
@@ -154,7 +154,7 @@ Which test now covers each Tribunal trial. Limits come from
 | T10 | Vehicle envelope/course boundary, both bypass sides, blocked paths and original-line versus wrong-crossing recovery | INT-09 |
 | T11 | Controlled line loss, interrupted search, obstacle during search and bounded timeout | none (INT-02 dropped) |
 | T12 | Actual mission telemetry/status subscription, units/validity and rejection of prohibited/malformed commands | S1-U04 |
-| T13 | WiFi/broker loss/reconnect under sensor/scan load; healthy local control and no stale replay | S1-U03, SYS-08 |
+| T13 | WiFi/broker loss/reconnect under sensor/scan load; healthy local control and no stale replay | S1-U03 (SYS-08 dropped) |
 | T14 | Stale/frozen producers, encoder/stall faults, expired command and full diagnostic/navigation/capture buffers | none (SYS-07 dropped) |
 | T15 | Concurrent load: releases/WCET, missed deadlines, stop latency, queue occupancy and stack/memory usage | none (SYS-10 dropped) |
-| T16 | Repeated looping-course rehearsal with junction actions, stationary U-turn pause, humps, bypass, telemetry and local-stop ending | SYS-04, SYS-09 |
+| T16 | Repeated looping-course rehearsal with junction actions, stationary U-turn pause, humps, bypass, telemetry and local-stop ending | INT-03, INT-07 to INT-10 from one full course run (SYS-04 and SYS-09 dropped) |
