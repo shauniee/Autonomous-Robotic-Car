@@ -144,7 +144,7 @@ Which test now covers each Tribunal trial. Limits come from
 | --- | --- | --- |
 | T01 | Electrical release: markings, continuity, loaded rails/current, signal highs, shared contacts and jumper | none (SYS-01 dropped) |
 | T02 | Boot/stop/reset in every motion mode; output-brake timing and physical stopping separately | SYS-06 |
-| T03 | Straight/curve/junction tracking under lighting, surface and speed variation | INT-01, INT-05 |
+| T03 | Straight/curve/junction tracking under lighting, surface and speed variation | none (INT-01 and INT-05 dropped) |
 | T04 | Known barcode scales/speeds in both directions, same-character decoding, pending-to-junction execution, duplicate/partial rejection and capture overflow | S3-U03 to S3-U05, INT-03 |
 | T05 | Four encoder actions: repeated distance/angle accuracy, completion, timeout and obstacle cancellation | S2-U02, S2-U03 |
 | T06 | Labelled stationary/acceleration/turn/climb/descent/lift traces; no raw gyro claim | none (S4-U02 dropped 2026-11-18) |

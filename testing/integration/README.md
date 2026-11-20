@@ -10,16 +10,13 @@
 - [After each test](#after-each-test)
 - [One full course run](#one-full-course-run)
 - [Tests](#tests)
-  - [INT-01](#int-01-line-following-three-laps)
   - [INT-03](#int-03-barcode-then-a-turn)
-  - [INT-04](#int-04-barcode-then-straight-and-u-turn)
-  - [INT-05](#int-05-junction-or-curve-with-no-turn-queued)
   - [INT-07](#int-07-hump-while-line-following)
   - [INT-08](#int-08-obstacle-stop-on-the-line)
   - [INT-09](#int-09-bypass-and-rejoin)
   - [INT-10](#int-10-telemetry-and-events-during-a-run)
 
-How to run and record INT-01, INT-03, INT-04, INT-05 and INT-07 to INT-10, all from [one full course run](#one-full-course-run). These drive on the course on battery. Test definitions: [TEST_LOG.md](TEST_LOG.md).
+How to run and record INT-03 and INT-07 to INT-10, all from [one full course run](#one-full-course-run). These drive on the course on battery. Test definitions: [TEST_LOG.md](TEST_LOG.md).
 
 ## Before you start
 
@@ -50,7 +47,7 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 
 | Image | Power | Tests |
 | --- | --- | --- |
-| `./flash.sh trial` | Battery only | INT-01, INT-03, INT-04, INT-05, INT-07, INT-08, INT-09, INT-10 |
+| `./flash.sh trial` | Battery only | INT-03, INT-07, INT-08, INT-09, INT-10 |
 
 Before every flash:
 
@@ -98,28 +95,9 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 ## One full course run
 
-Every integration test is recorded from the single scripted course run in the [system runbook](../system/README.md#one-full-course-run). Its captures are saved once, in `testing/system/logs/SYS-04/`; each INT result row here points to them and to that run's video. INT-02 and INT-06 were dropped; their IDs are not reused.
+Every integration test is recorded from the single scripted course run in the [system runbook](../system/README.md#one-full-course-run). Its captures are saved once, in `testing/system/logs/SYS-04/`; each INT result row here points to them and to that run's video. INT-02 and INT-06 were dropped, and INT-01, INT-04 and INT-05 on 2026-11-20 (not needed for the demo); their IDs are not reused.
 
 ## Tests
-
-### INT-01 Line following, three laps
-
-**Image:** `./flash.sh trial` (full course with diagnostics; battery for driving)
-
-**Set up:** Loop with straights and curves; letters mapped; captures started.
-
-**Steps:**
-
-1. Press GP20.
-2. Let it run three laps; press GP21.
-
-**Show on video:** The whole run, filmed from above if possible.
-
-**Test code:** `logs/INT-01/test_line_replay.c`, `logs/INT-01/test_line_trace.c`
-
-**Run:** `sh testing/tools/run.sh INT-01`, then flash the image above, start the captures and follow the steps.
-
-**Logs:** `usb.log` and `monitor.log`
 
 ### INT-03 Barcode then a turn
 
@@ -133,47 +111,11 @@ Every integration test is recorded from the single scripted course run in the [s
 
 **Show on video:** The letter card, then the turn at the junction.
 
-**Test code:** none (manual test)
+**Test code:** `logs/INT-03/test_line_replay.c`, `logs/INT-03/test_line_trace.c`
 
-**Run:** flash the image above, start the captures and follow the steps.
+**Run:** `sh testing/tools/run.sh INT-03`, then flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`
-
-### INT-04 Barcode then straight and U-turn
-
-**Image:** `./flash.sh trial` (full course with diagnostics; battery for driving)
-
-**Set up:** Letters mapped to STRAIGHT and U-turn.
-
-**Steps:**
-
-1. Run each letter through the junction.
-
-**Show on video:** The car crossing straight, then the U-turn.
-
-**Test code:** none (manual test)
-
-**Run:** flash the image above, start the captures and follow the steps.
-
-**Logs:** `usb.log` and `monitor.log`
-
-### INT-05 Junction or curve with no turn queued
-
-**Image:** `./flash.sh trial` (full course with diagnostics; battery for driving)
-
-**Set up:** No letter before the junction; tightest curve on the course.
-
-**Steps:**
-
-1. Run through the junction and the curve.
-
-**Show on video:** The car continuing without stopping.
-
-**Test code:** none (manual test)
-
-**Run:** flash the image above, start the captures and follow the steps.
-
-**Logs:** `usb.log` and `monitor.log`
+**Logs:** `monitor.log`
 
 ### INT-07 Hump while line following
 

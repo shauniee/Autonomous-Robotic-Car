@@ -88,10 +88,10 @@ c_test motion_control $M/S2-U05/test_motion_control.c app_program/motion/motion_
 c_test motion_control_stall_guard -DMOTION_STALL_GUARD_ENABLED=1 \
     $M/S2-U05/test_motion_control.c app_program/motion/motion_control.c $DATA
 c_test motion_trace $M/S2-U04/test_motion_trace.c app_program/motion/motion.c $FRAME
-c_test line_trace $I/INT-01/test_line_trace.c app_program/mission/line_trace.c $FRAME
+c_test line_trace $I/INT-03/test_line_trace.c app_program/mission/line_trace.c $FRAME
 c_test barcode $L/S3-U03/test_barcode.c app_program/line_barcode/barcode.c $DATA
 c_test ir_tracking $L/S3-U01/test_ir_tracking.c app_program/line_barcode/line.c
-c_test line_replay $I/INT-01/test_line_replay.c app_program/line_barcode/line.c $MISSION
+c_test line_replay $I/INT-03/test_line_replay.c app_program/line_barcode/line.c $MISSION
 c_test safety $S/SYS-06/test_safety.c $DATA
 c_test mission -DMISSION_BYPASS_RELEASED=1 -DMISSION_RECOVERY_RELEASED=1 \
     $I/INT-09/test_mission.c $MISSION
