@@ -127,7 +127,7 @@ flashes** TEST/normal and TRACE 0/1 profiles plus the two course
 images. Inspect any compiler errors before preparing a wheels-raised test
 image. See [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) for unmet measurements and decisions.
 
-Draft reports: [PID tuning](app_program/motion/README.md#pid-tuning-report-draft) and [Terrain analysis](app_program/terrain/README.md#terrain-analysis-draft). Both need real measurements, not host passes.
+Reports: [PID tuning](app_program/motion/README.md#pid-tuning-report), [Motion accuracy](app_program/motion/README.md#motion-accuracy-evaluation) and [Terrain analysis](app_program/terrain/README.md#terrain-analysis), each from results measured on the car.
 
 ### Build profiles
 
