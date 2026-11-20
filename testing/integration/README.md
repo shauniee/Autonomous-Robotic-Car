@@ -203,13 +203,13 @@ Every integration test is recorded from the single scripted course run in the [s
 
 1. Start following toward it.
 
-**Show on video:** The car slowing and stopping; tape the gap.
+**Show on video:** The car slowing and stopping.
 
 **Test code:** none (manual test)
 
 **Run:** flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`; write down the gap.
+**Logs:** `monitor.log`; the gap is the `front=` reading at rest.
 
 ### INT-09 Bypass and rejoin
 
