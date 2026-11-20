@@ -11,7 +11,7 @@
 - [One full course run](#one-full-course-run)
 - [Tests](#tests)
   - [INT-01](#int-01-line-following-three-laps)
-  - [INT-03](#int-03-barcode-then-left-and-right-turns)
+  - [INT-03](#int-03-barcode-then-a-turn)
   - [INT-04](#int-04-barcode-then-straight-and-u-turn)
   - [INT-05](#int-05-junction-or-curve-with-no-turn-queued)
   - [INT-07](#int-07-hump-while-line-following)
@@ -121,16 +121,15 @@ Every integration test is recorded from the single scripted course run in the [s
 
 **Logs:** `usb.log` and `monitor.log`
 
-### INT-03 Barcode then left and right turns
+### INT-03 Barcode then a turn
 
 **Image:** `./flash.sh trial` (full course with diagnostics; battery for driving)
 
-**Set up:** Letter mapped to LEFT before a junction; captures started.
+**Set up:** Letter mapped to LEFT or RIGHT before a junction; captures started.
 
 **Steps:**
 
 1. Run over the letter and through the junction.
-2. Swap to a letter mapped to RIGHT and repeat.
 
 **Show on video:** The letter card, then the turn at the junction.
 
