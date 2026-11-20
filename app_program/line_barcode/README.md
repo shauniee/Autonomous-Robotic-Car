@@ -13,7 +13,7 @@
 
 ## Scope
 
-Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). line_barcode reads the two line sensors (GP26 left, GP17 right) and the barcode sensor (GP27), and publishes what they saw. There is no line_barcode task and line_barcode never writes motors. Mission owns steering, junctions, recovery and the [DOUT navigation contract](../../docs/architecture.md#dout-navigation-contract). Values live in [commissioning](../../docs/project-specs.md#dout-navigation-commissioning); wiring in [team](../../docs/team.md#2-pins).
+Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). line_barcode reads the two line sensors (GP26 left, GP17 right) and the barcode sensor (GP27), and publishes what they saw. There is no line_barcode task and line_barcode never writes motors. Mission owns steering, junctions, recovery and the [DOUT navigation contract](../../README.md#mission-loop). Values live in [robot_config.h](../common/robot_config.h); wiring in [team](../../team.md#2-pins).
 
 ## Files
 
@@ -30,7 +30,7 @@ Owner: Nicholas, who also owns Mission integration (`app_program/mission/`). lin
 - Both sensors come from one GPIO snapshot every `IR_SAMPLE_MS`; acquisition time is preserved and invalid or stale readings are rejected. There is no ADC or software IR calibration.
 - Disconnect AOUT. `IR_BLACK_LEVEL` is 1: black reads HIGH.
 - With drive power off, hold each mounted sensor at operating height and set its comparator until DOUT is steadily 0 on white and 1 on black. The module LED alone proves nothing. Expect white/white 0/0, left-only 1/0, right-only 0/1, broad black 1/1.
-- For uncertain readings use `./flash.sh test`: motors stay inhibited and the USB console prints `[IR] ... digital L=... R=... SENSOR_ONLY`.
+- For uncertain readings use `test.uf2`: motors stay inhibited and the USB console prints `[IR] ... digital L=... R=... SENSOR_ONLY`.
 - White/white cannot tell a centred line from a lost one, so Mission's drift and loss distance resolve it. `line_ir_copy` copies under a private mutex; a successful copy does not mean fresh sensing.
 
 ## Barcode
@@ -62,8 +62,8 @@ Agreed by Nicholas for M1; no recorded lap rate is required.
 ## How to run a trial
 
 1. Change one value in `app_program/common/robot_config.h`.
-2. Build and flash: `./flash.sh trial`.
-3. Copy `build_make/trial.uf2` to a named file, restore the source, and record the hash the script prints.
+2. Build and flash [the trial image](../../README.md#build-profiles).
+3. Copy `build_make/trial.uf2` to a named file, restore the source, and record its SHA-256 with `sha256sum build_make/trial.uf2`.
 4. Run on battery with `mqtt_client.py monitor` saving to a file; analyse `WHEEL` and `LINE` records.
 5. Run `sh testing/tools/run.sh` before changing any default; append a new result row to `testing/line_barcode/TEST_LOG.md`.
 

@@ -9,7 +9,7 @@
 
 /* Digital raw readings are GPIO levels 0 or 1. */
 
-/* Base-2 scaled integers (docs/architecture.md): a 0..1 fraction is stored as
+/* Base-2 scaled integers (team.md): a 0..1 fraction is stored as
    0..127 and a signed -1..+1 value as -127..+127 (int8_t). Divide by
    IR_SCALE_ONE only at a float boundary (Mission building the motion
    command). */

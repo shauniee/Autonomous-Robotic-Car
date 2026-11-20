@@ -19,13 +19,13 @@ How to run and record S1-U01 to S1-U05. Test definitions: [TEST_LOG.md](TEST_LOG
 
 ## Before you start
 
-1. Work on a fresh branch from `main`: `git fetch` then `git switch -c test/s1-comms origin/main`.
+1. Start from the submission checkout and use the [build profiles](../../README.md#build-profiles) below to identify the required image.
 2. Commit nothing else while testing; the image is built from the working tree, so `git status` must be clean. Note the commit: `git rev-parse --short HEAD`.
 3. Follow the [power policy](../../README.md#power-and-flashing): USB alone for flashing and TEST images; battery alone for driving.
 4. Broker (one terminal, leave it running):
 
    ```bash
-   "$(brew --prefix)/sbin/mosquitto" -c config/mosquitto-lab.conf
+   mosquitto -c config/mosquitto-lab.conf
    ```
 
 5. A GP20 start is refused until letters are mapped. After each boot, map four letters (left, right, straight, U-turn):
@@ -46,11 +46,11 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 
 | Image | Power | Tests |
 | --- | --- | --- |
-| `./flash.sh test` | USB only | S1-U01, S1-U02, S1-U03, S1-U04, S1-U05 |
+| `test.uf2` | USB only | S1-U01, S1-U02, S1-U03, S1-U04, S1-U05 |
 
 Before every flash:
 
-1. `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
+1. Compare the broker host’s Wi-Fi address (`ip -4 -brief address` on Linux) with `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
 2. `git status` is clean, so the commit you record is the code you flashed.
 
 ## Captures
@@ -60,7 +60,7 @@ Every test saves its logs in `testing/comms/logs/<test ID>/`, named `<what>.log`
 USB console (replace `<ID>`):
 
 ```bash
-mkdir -p testing/comms/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/comms/logs/<ID>/usb.log
+mkdir -p testing/comms/logs/<ID> && cat /dev/ttyACM0 | tee testing/comms/logs/<ID>/usb.log
 ```
 
 Telemetry with laptop timestamps (every frame, nothing folded):
@@ -75,10 +75,10 @@ Host test code for a test ID is in `logs/<ID>/` beside its logs. It runs the rea
 
 ```bash
 sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
-sh testing/tools/run.sh        # every host test, as CI runs it
+sh testing/tools/run.sh        # every host test
 ```
 
-A manual test with no code prints `no tests for <ID>`. The on-car check for S1-U05 is in `app_program/comms/comms_test.c`; `./flash.sh test` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
+A manual test with no code prints `no tests for <ID>`. The on-car check for S1-U05 is in `app_program/comms/comms_test.c`; `test.uf2` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
 
 ## Every video
 
@@ -96,7 +96,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S1-U01 WiFi join and telemetry rate
 
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
+**Image:** `test.uf2` (wireless, motors always off, USB)
 
 **Set up:** Broker and dashboard running; USB and telemetry captures started.
 
@@ -116,7 +116,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S1-U02 Letter mapping rules
 
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
+**Image:** `test.uf2` (wireless, motors always off, USB)
 
 **Set up:** Booted and connected, with no mapping sent yet (skip step 5); telemetry capture started.
 
@@ -137,7 +137,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S1-U03 Broker restart while stopped
 
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
+**Image:** `test.uf2` (wireless, motors always off, USB)
 
 **Set up:** Booted, connected, dashboard open; telemetry capture started.
 
@@ -157,7 +157,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S1-U04 Malformed and prohibited requests
 
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
+**Image:** `test.uf2` (wireless, motors always off, USB)
 
 **Set up:** Booted and connected; USB and telemetry (`monitor`) captures started.
 
@@ -181,7 +181,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S1-U05 Frame codec on the Pico (auto)
 
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
+**Image:** `test.uf2` (wireless, motors always off, USB)
 
 **Set up:** USB capture started.
 

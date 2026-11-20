@@ -26,28 +26,27 @@
   - [Memory](#memory)
   - [Timing](#timing)
 
-Single owner of: members, subsystem ownership, pins/wiring, current kernel-object inventory, coding rules, the data representation table and its evidence. Architecture owns target scheduling and cross-subsystem contracts. Build, flash and bring-up: [README](../README.md#getting-started). Requirements and pending decisions: [project-specs](project-specs.md). Shared-data rules and MQTT frame: [architecture](architecture.md).
+Use this guide to identify who owns a subsystem, trace a signal to its GPIO pin, and interpret the bits stored in RAM or sent over MQTT. Setup, flashing and task scheduling are in the [codebase guide](README.md).
 
-A **subsystem** is one student's folder (may hold several tasks and peripherals); a **task** is a thread of execution; a **peripheral** is a hardware block. Subsystem owners retain responsibility for their folders; coordinate firmware changes with the owner. This documentation reconciliation is authorized by Nicholas. All members join integration, debugging, system testing and demonstration.
+A **subsystem** is one student's folder (may hold several tasks and peripherals); a **task** is a thread of execution; a **peripheral** is a hardware block. Subsystem owners retain responsibility for their folders; coordinate firmware changes with the owner. All members join integration, debugging, system testing and demonstration.
 
 ## 1. Members and subsystems
 
 | # | Subsystem | Student ID | GitHub | Code | Tests | Guide |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | **Shaun, Communications:** WiFi/MQTT, telemetry, reporting | 2500629 | shauniee | [app_program/comms/](../app_program/comms/) | [testing/comms/](../testing/comms/) | [comms](../app_program/comms/README.md) |
-| 2 | **Mahesha, Motion:** motors, encoders, wheel PID, motion APIs | 2503973 | itsjustmdawg | [app_program/motion/](../app_program/motion/) | [testing/motion/](../testing/motion/) | [motion](../app_program/motion/README.md) |
-| 3 | **Nicholas, Line, Barcode, Mission integration:** IR, barcode, coordination, integration | 2501552 | nicholas-bay | [app_program/line_barcode/](../app_program/line_barcode/) | [testing/line_barcode/](../testing/line_barcode/) | [line_barcode](../app_program/line_barcode/README.md) |
-| 4 | **Darrius, Terrain:** IMU processing, motion classification, hump measurement | 2500360 | Galaxius03 | [app_program/terrain/](../app_program/terrain/) | [testing/terrain/](../testing/terrain/) | [terrain](../app_program/terrain/README.md) |
-| 5 | **Jia Jing, Obstacle:** sonar, servo scanning, obstacle profiling | 2502825 | JJLOLLOL | [app_program/obstacle/](../app_program/obstacle/) | [testing/obstacle/](../testing/obstacle/) | [obstacle](../app_program/obstacle/README.md) |
+| 1 | **Shaun, Communications:** WiFi/MQTT, telemetry, reporting | 2500629 | shauniee | [app_program/comms/](app_program/comms/) | [testing/comms/](testing/comms/) | [comms](app_program/comms/README.md) |
+| 2 | **Mahesha, Motion:** motors, encoders, wheel PID, motion APIs | 2503973 | itsjustmdawg | [app_program/motion/](app_program/motion/) | [testing/motion/](testing/motion/) | [motion](app_program/motion/README.md) |
+| 3 | **Nicholas, Line, Barcode, Mission integration:** IR, barcode, coordination, integration | 2501552 | nicholas-bay | [line_barcode](app_program/line_barcode/), [mission](app_program/mission/) | [testing/line_barcode/](testing/line_barcode/) | [line_barcode](app_program/line_barcode/README.md) |
+| 4 | **Darrius, Terrain:** IMU processing, motion classification, hump measurement | 2500360 | Galaxius03 | [app_program/terrain/](app_program/terrain/) | [testing/terrain/](testing/terrain/) | [terrain](app_program/terrain/README.md) |
+| 5 | **Jia Jing, Obstacle:** sonar, servo scanning, obstacle profiling | 2502825 | JJLOLLOL | [app_program/obstacle/](app_program/obstacle/) | [testing/obstacle/](testing/obstacle/) | [obstacle](app_program/obstacle/README.md) |
 
-Stable test IDs/measurements: [testing](../testing/README.md). Demonstrations: [video](../video/README.md). Course/calibration decisions are recorded once in [project-specs](project-specs.md#pending-decisions).
+Stable test IDs/measurements: [testing](testing/README.md). Demonstrations: [video](video/README.md).
 
-**Implementation status.** The current source baseline and completion
-plan are linked from [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues). The code
-contains Motion PID/actions, Mission/Safety, line/barcode, Terrain, Obstacle and
-Reporting modules; this is not physical acceptance. Older smaller bench/task
-arrangements are historical. Target coordination is in [architecture](architecture.md).
-Nicholas is the sole contact for pending decisions and approvals; historical subsystem attribution and code writer responsibilities remain.
+**Implementation status.** In the submitted firmware, Motion drives the wheels,
+Mission coordinates line following, barcode turns and obstacle bypass, and I/O
+runs Terrain and Reporting. All 22 subsystem tests have recorded passes. The
+full-course result and the revision tested are listed in [section 7](#no-lost-function).
+Nicholas is the contact for pending decisions and approvals.
 
 ## 2. Pins
 
@@ -64,18 +63,18 @@ Nicholas is the sole contact for pending decisions and approvals; historical sub
 | GP7 | Mahesha | Left encoder B, Grove 7, green |
 | GP8 / GP9 | Mahesha | Left motor M1A (black) / M1B (yellow); exclusive motor writer |
 | GP10 / GP11 | Mahesha | Right motor M2A (black) / M2B (yellow); exclusive motor writer |
-| GP12 | Jia Jing | SG90 Servo 1 signal S, orange; bench holds signal low |
+| GP12 | Jia Jing | SG90 Servo 1 signal S, orange. Obstacle drives 50 Hz PWM for sonar positioning |
 | GP16 | Unclaimed | Grove 4 first signal; barcode IR DOUT until 2026-11-09 |
 | GP17 | Nicholas | Right line IR DOUT, digital input (Grove 4 second signal on the carrier); AOUT not connected |
 | GP18 | Nicholas | Onboard WS2812 RGB LEDs 0 and 1 show the mission state; PIO0 state machine 0, Mission task only |
-| GP20 | Nicholas | Onboard active-low calibration/start; target fresh start only after eligible reset |
-| GP21 | Nicholas | Onboard active-low stop/cancel; target eligible release-to-ready handshake |
+| GP20 | Nicholas | Active-low start. A fresh press starts a ready course run, requests a stationary scan in TEST, or runs one move in a motion bench image |
+| GP21 | Nicholas | Active-low stop/cancel. A fresh press and eligible release resets the stop latch after braking |
 | GP22 | Nicholas | Onboard buzzer; not used by the firmware |
 | GP26 | Nicholas | Left line IR DOUT, Grove 5 / digital input, ADC not used; AOUT not connected; Grove 6 shared GP26 contact disconnected |
 | GP27 | Nicholas | Barcode IR DOUT, digital input with edge interrupt, ADC not used; AOUT not connected |
 | GP28 | Mahesha | Left encoder A, Grove 7, red; ADC2-capable but used digitally; open battery jumper |
 
-User confirmation 2026-10-29: physical wiring matches this allocation and sonar electrical behavior is confirmed; motor/encoder polarity is not confirmed. Nicholas, 2026-11-05: wiring checked and unchanged, and no AOUT wire is connected on any of the three IR sensors. This does not append a measured test result. Nicholas, 2026-11-09: rewired to left line DOUT GP26, barcode DOUT GP27 and right line DOUT GP17; which connector each lead uses is not recorded.
+User confirmation 2026-10-29: physical wiring matches this allocation and sonar electrical behavior is confirmed; motor/encoder polarity is not confirmed. Nicholas, 2026-11-05: wiring checked and unchanged, and no AOUT wire is connected on any of the three IR sensors. This does not append a measured test result. Nicholas, 2026-11-09: rewired to left line DOUT GP26, barcode DOUT GP27 and right line DOUT GP17; the connector used for each lead was not recorded. On 2026-11-18 both wheels turned forward and both encoder counts rose during the wheels-raised direction check. [Motion test S2-U01](testing/motion/TEST_LOG.md#results)
 
 ### Supply and wires
 
@@ -110,78 +109,74 @@ User confirmation 2026-10-29: physical wiring matches this allocation and sonar 
 
 ## 3. Task priorities and kernel object budget
 
-[Architecture](architecture.md#tasks) owns the only target task/core/scheduling
-table. [robot_config.h](../app_program/common/robot_config.h) contains current
-provisional task settings. Keep Motion/Mission on core 1 and I/O on core 0;
-no core swap. Existing priorities/periods are retained provisionally with user authorization;
-D13 physical scheduling acceptance remains pending.
-`TP_PRC1` means core 0 and `TP_PRC2` core 1; lower priority number runs first.
-
-Working software allocation inventory after #130–#133 (excluding kernel/driver
-allocations; not measured live high-water marks):
+Lower priority numbers run first. `TP_PRC1` selects core 0 and `TP_PRC2` selects
+core 1. Worst-case scheduling margins still require measurement under load.
+[Scheduling rationale](README.md#tasks) · [Configured values](app_program/common/robot_config.h)
 
 | Application object | Allocation / ownership |
 | --- | --- |
-| Tasks | Motion and Mission on core 1, I/O on core 0: exactly three creation call sites |
+| Tasks | Three application tasks. The TEST image starts Motion and I/O first, then starts Mission after the Comms, Motion and Terrain startup tests. |
 | Mutexes | Four: Motion command/health, line snapshot, Obstacle profile, cross-core events |
 | Event flags | One persistent Motion stop/inhibit flag |
-| Static rings | Existing barcode capture/events and Comms bridge/events; no generic bus |
-| Task stacks | 2048 bytes requested each, 6144 bytes total requested; trace images report use ([timing](#timing)) |
+| Static rings | Barcode capture and events, Comms events and frame bridge, and diagnostic buffers listed in [section 6](#queues-rings-and-messages) |
+| Task stacks | 2,048 user-stack bytes per task. Trace images supply three painted 2,176-byte stacks including the system portion and report [stack use](#timing) |
 
-Limits in [config/config.h](../config/config.h) are total capacities, including
-kernel/driver objects. Recount actual allocations and measure memory after task
-consolidation; no invented savings or margin. Required control initialization
+Limits in [config/config.h](config/config.h) are total capacities, including
+kernel/driver objects. The inventory above counts application allocations. Required control initialization
 failure inhibits startup. Optional data failure is handled by the central policy;
 normal mission readiness still requires operational WiFi and MQTT.
 
 ## 4. Interfaces between subsystems
 
-Each provider owns private storage and exposes coherent accessors. Current APIs
-are inventoried in subsystem guides; target authority/sharing/freshness is owned
-by [architecture](architecture.md#shared-data-rules).
+Each provider owns private storage and exposes coherent accessors. The subsystem guides list their APIs. [Shared-data rules](README.md#shared-data-rules)
 
-| Path | Ownership / target rule |
+| Path | Implemented hand-off |
 | --- | --- |
 | Mission to Motion | One latest packed command, bounded mutex copy; Motion owns feedback and stop latch |
 | Local GP21 to Motion | Independent input check, persistent stop; no command-mutex/telemetry dependency |
 | line_barcode evidence to Mission | Bounded in-task sensing/decoder steps; retain original acquisition times |
-| Mission to Obstacle | Scan/side-watch intent and bounded acquisition steps, never a second motor writer |
-| Terrain to Mission/Motion | Core-0 coherent evidence with age/validity; no cross-core runtime `motion_stop()` call |
-| I/O to Mission mapping | Bounded hand-off; Mission installs whole mapping while stopped and returns result before ACK |
-| Mission/Terrain to Reporting | Cross-core event synchronization required; same-core DI/EI is insufficient |
+| Mission to Obstacle | Mission steps the sonar and servo state machine and reads timestamped ranges and the completed scan profile |
+| Terrain to Mission/Motion | I/O publishes hump results and Terrain faults. The lifted fault stays pending until the lift clears and Motion acknowledges braking |
+| I/O to Mission mapping | One request in flight. Mission installs a mapping in READY or STOPPED. Junction-test requests use the same hand-off to queue a direction during eligible line following. I/O acknowledges the result |
+| Mission/Terrain to Reporting | Producers append events to the shared ring under its mutex. I/O drains it for MQTT reporting |
 | Reporting to kernel MQTT | Opaque bounded TX/RX bridge; only WiFi context invokes networking APIs |
 
 Record changed interface layouts before coding and record whole-robot results in
-[testing/system/TEST_LOG.md](../testing/system/TEST_LOG.md). A valid
+[testing/system/TEST_LOG.md](testing/system/TEST_LOG.md). A valid
 software copy or brake acknowledgement is not physical stationarity.
 
 ## 5. Coding rules
 
-Apply to application code (imported kernel need not be reformatted). The standard is BARR-C:2018 (Barr Group): all `app_program` code complies and CI checks every line. Its license limits it to internal use, so keep it out of this repository. This is not a compliance certification. `python3 scripts/check_barr.py --all` scans every `app_program` line for the mechanical rules below (without `--all` it scans only changed lines); an editor hook runs it once the edits are finished. The review checklist stays manual.
+Apply to application code (imported kernel need not be reformatted). The standard is BARR-C:2018 (Barr Group): the local checker covers the mechanical rules in `app_program`. Its license limits it to internal use, so keep it out of this repository. This is not a compliance certification. `python3 scripts/check_barr.py --all` scans every `app_program` line for the mechanical rules below (without `--all` it scans only changed lines). The review checklist stays manual.
 
 - **Language/layout:** GNU C11 (`-std=gnu11`). Use C11 acquire/release for word snapshots and startup publication; no atomic RMW helpers on Cortex-M0+. Isolate other extensions in drivers. Four spaces, LF, one statement per line, braces on every body, opening brace on its own line, ~80 columns. Space operators, parenthesize precedence, comment purpose/units/bounds/assumptions, remove dead code.
 - **Modules:** one purpose each; lowercase `snake_case.c/.h`, guarded header, minimal exports; never include a `.c` or absolute path. Public functions prefixed with module name; private `static`. Named constants; prefer functions to macros (macros evaluate args once, parenthesized). Types `module_name_t`.
 - **Data:** fixed-width ints where width matters; packed bits for stored/shared flags; `bool` only for locals/returns; `const` for immutable. Consistent unsigned literals; justify narrowing casts; avoid signed bit ops. Initialize before use; explicit invalid codes. `float` only for justified local computation (`f` suffix, finite/range checks); stored/shared values are fixed point with documented scale (widths and scales in [section 6](#6-data-representation)). In-RAM packed state may use bit-fields; wire formats (MQTT) use explicit masks/shifts with documented byte order, never native structs, padding or bit-field order.
 - **Minimum-bit:** each field gets `ceil(log2(values))` bits including the invalid code; record range, unit, signedness, scale, rounding, invalid code, overflow behavior in [section 6](#6-data-representation) before converting. Exclusive states use one encoded value; coexisting faults use independent bits. Combine fields in one unit only with a shared writer. Access via `module_field_get()/_set()`; no caller masks. Loop counters/temporaries exempt. Test min, max and invalid code; overflow saturates or faults as documented.
 - **Control:** check return codes; safe failure responses; `default` in switches; document fallthrough. Bound polling, waits, retries, buffers, actions; validate counts/indices/inputs; keep acquisition time; wrap-safe elapsed time.
-- **Concurrency:** `volatile` is for hardware/async access, not synchronization. Share data only via the three patterns in [architecture](architecture.md): one-word snapshot (single store/load), mutex copy above 32 bits, ISR-to-task ring. One writer per storage unit; only it does RMW. Packed data shared with an ISR on the same core updates inside `DI`/`EI`; packed data written from both cores needs a mutex or RP2040 hardware spinlock (`DI` masks only the local core). ISRs: capture, signal, return; no blocking, formatting, decoding, allocation; use `_task`/`_isr` names.
+- **Concurrency:** `volatile` is for hardware/async access, not synchronization. Share data only via the three patterns in [architecture](README.md#architecture): one-word snapshot (single store/load), mutex copy above 32 bits, ISR-to-task ring. One writer per storage unit; only it does RMW. Packed data shared with an ISR on the same core updates inside `DI`/`EI`; packed data written from both cores needs a mutex or RP2040 hardware spinlock (`DI` masks only the local core). ISRs: capture, signal, return; no blocking, formatting, decoding, allocation; use `_task`/`_isr` names.
 - **Ownership:** one motor writer, separate peripheral owners, kernel-only networking; Stop must not depend on diagnostics queues or the request mutex. No credentials in version control.
 
 **Review checklist:** purpose/API/units/ownership clear, no duplicate mutable state; style consistent; inputs, casts, arithmetic, finite values, bounds checked; hardware actions bounded, failures inhibit unsafe output; shared values synchronized, cached observations keep acquisition time; stop, stale data and reset keep the contract; no ISR blocking, foreign motor writes, student network calls or committed credentials; packed fields match [section 6](#6-data-representation), use accessors, have boundary tests; one writer per storage unit; evidence names source/profile (a build is not hardware proof).
 
 ## 6. Data representation
 
-This table owns the width of every application data field. The requirement it
-answers is in [project-specs section 4](project-specs.md#4-change-in-requirement-minimum-bit-data-representation);
-MQTT byte layouts are in [architecture](architecture.md#mqtt-binary-protocol-schema-version-3).
-Bits are written as **logical / stored** when they differ: logical is what the
-range needs, stored is what the field occupies.
+Read the **Bits** column as *logical bits / stored bits*. Logical width counts the bits needed to distinguish the allowed values, including any invalid code. Storage width includes the byte or word the processor actually reads and writes. The last column identifies who can change a field and how another task gets a consistent copy.
+
+| Example from the firmware | How to read it |
+| --- | --- |
+| Sonar range | Distances 0–8190 mm and the invalid code 8191 give 8,192 encodings, exactly 13 bits. Bit 13 holds the valid flag. Together they use 14 bits of a 16-bit range word. |
+| Barcode widths | A width up to 400 encoder counts needs 9 bits because 8 bits stop at 255. The decoder packs 25 widths into 225 bits, or 29 bytes rounded up. The rest of the decoder state has its own fields. |
+| Terrain trace travel | Q8 stores millimetres in units of 1/256 mm. For example, 3.5 mm is stored as 896. The MQTT trace sends the whole-millimetre portion in a 16-bit field. |
+| States and faults | Seven mutually exclusive Mission states fit in 3 bits. Faults can coexist, so each condition has its own bit. Telemetry combines the six owners’ fault bytes into 12 defined bits. |
+
+The field tables describe RAM unless they explicitly name a wire frame. The MQTT encoder writes each field at a fixed byte and bit offset, so firmware and laptop agree regardless of C struct padding. [MQTT byte layouts](README.md#mqtt-binary-protocol-schema-version-3)
 
 ### Rules
 
 - **Bits** = `ceil(log2(valid values + invalid codes))`.
-- **Flags** are `bool name : 1`. Assignment normalises any non-zero value to 1,
-  so a flag can never be truncated to the wrong value.
+- **Flags** use one-bit fields. Boolean fields normalize nonzero assignments to 1.
+  Writers of unsigned one-bit fields supply 0 or 1.
 - **Codes and ranges** are unsigned bit-fields (`uint8_t name : N`). A
   `_Static_assert` beside the field proves the largest enumerator or configured
   maximum fits, so a later config change fails the build instead of truncating.
@@ -201,8 +196,7 @@ range needs, stored is what the field occupies.
 - **Times** stay `uint32_t` (ms or us) so elapsed-time arithmetic is wrap-safe;
   16-bit milliseconds would wrap every 65.5 s, inside one run. **Change
   counters** (`sequence`) stay 32-bit and are only compared for equality.
-- **Floats** are per-release computation only. The one stored float, the
-  terrain trace travel, is now Q8 fixed point.
+- **Floats** are per-release computation only. Terrain accumulates trace travel in unsigned Q8 fixed point.
 - **Wire frames** use explicit masks and shifts, little-endian, never a struct
   copy. Loop counters and one-function locals are exempt.
 
@@ -247,8 +241,8 @@ range needs, stored is what the field occupies.
 | Sample time | `IrTracker_t`, `LineIrSnapshot_t` | ms | 32 | `uint32_t` | same |
 | Edge ring entry | `barcode.c` `ring[64]` | two counts and a level | 33 | two `uint16_t` plus one bit of `ring_high` | GP27 ISR → Mission (same core); SPSC atomics |
 | Edge counts, level | `barcode_edge_t` | counts, 0..1 | 16 each, 1 | `barcode_count_t`, bit-field | per pop |
-| Element widths | `barcode_frame_t.widths` | 16..400 counts, 25 elements | 9 each | 29 packed bytes, masks behind `barcode_frame_width()` | Mission task |
-| Chatter carry | `barcode_frame_t.carry` | 0..415 counts | 9 | bit-field | Mission task |
+| Element widths | `barcode_frame_t.widths` | 10..400 counts, 25 elements | 9 each | 29 packed bytes, masks behind `barcode_frame_width()` | Mission task |
+| Chatter carry | `barcode_frame_t.carry` | 0..409 counts | 9 | bit-field | Mission task |
 | Element count | `barcode_frame_t.count` | 0..25 | 5 | bit-field | Mission task |
 | Last width | `barcode_frame_t.last_width` | 0..32767 counts, diagnostics | 15 | bit-field | Mission task |
 | Have edge, previous level | `barcode_frame_t` | flags | 1 each | bit-fields | Mission task |
@@ -265,11 +259,11 @@ range needs, stored is what the field occupies.
 | Sample wheel counts | `obstacle_range_sample_t` | encoder counts | 16 each | `uint16_t` | same |
 | Sample time, sequence | `obstacle_range_sample_t` | ms; change counter | 32 each | `uint32_t` | same |
 | Echo state | `obstacle.c` `echo_state` | idle, armed, high, done | 2 / 8 | `_Atomic uint8_t` | Echo ISR ↔ Mission (same core) |
-| Echo pulse width | `obstacle.c` `pulse_us` | 0..30000 us, saturates | 15 / 16 | `_Atomic uint16_t` | Echo ISR → Mission |
+| Echo pulse width | `obstacle.c` `pulse_us` | 0..65535 us, saturates at UINT16_MAX (30,000 us acquisition timeout) | 16 | `_Atomic uint16_t` | Echo ISR → Mission |
 | Consecutive misses | `obstacle_acquisition_t` | 0..3, saturates at the limit | 2 | bit-field | Mission task |
 | Ray | `ObstacleRay_t` | angle ±60 deg, 0..8190 mm, valid | 8+13+1 | packed 3 bytes | Mission task |
 | Profile distances | `ObstacleProfile_t` | closest, width, clearances 0..1023 mm | 10 each | bit-fields, saturate | Mission → Comms; mutex copy |
-| Profile coordinates | `ObstacleProfile_t` | ±1023 mm; angle ±60 deg | 11 each; 7 | unsigned bit-fields, sign-extended | same |
+| Profile coordinates | `ObstacleProfile_t` | ±1023 mm forward and left. The unused closest-angle field stays zero | 11 each, 7 for angle | unsigned bit-fields, coordinates sign-extended | same |
 | Width uncertainty | `obstacle_profile_evidence_t` | 0..1023 mm, 2047 unknown | 11 | bit-field | same |
 | Planning width | `obstacle_profile_evidence_t` | 0..1023 mm | 10 | bit-field | same |
 | Ray counts, edge flags | `obstacle_profile_evidence_t` | 0..15; flags | 4 each; 1 each | bit-fields | same |
@@ -333,7 +327,7 @@ range needs, stored is what the field occupies.
 | Recovery phase | `recovery_control_t`, `recovery_output_t` | 0..3 | 2 | bit-field | Mission only |
 | Recovery turn | `recovery_control_t` | ±360 deg | 10 | unsigned bit-field, sign-extended | Mission only |
 | Latched causes | `safety.c` `latched` | 4 cause bits | 4 / 32 | `rd_word_t` | Mission (Safety step) → Mission |
-| Reset state | `safety.c` | 0..3 | 2 / 8 | `uint8_t`, passed by pointer | Mission only |
+| Reset state | `safety.c` | boot, await press, await release | 2 / 8 | `uint8_t`, passed by pointer | Mission only |
 | Button flags | `Button_t`, `ButtonInputs_t` | flags | 1 each | bit-fields | Mission task |
 | Safety inputs | `SafetyInputs_t` | flags; ages in ms | 1 each; 32 | bit-fields; `uint32_t` | per release |
 | Mapping request | `mission_mapping.c` `request_word` | letters 20, mapped 1, sequence 8, direction 3 | 32 | `rd_word_t` bits 0-31 | I/O (core 0) → Mission |
@@ -361,16 +355,18 @@ fixed rings and copies.
 | Barcode edge ring | 64 | 33 bits (two counts, one level bit) | ISR → Mission, SPSC atomics, same core |
 | Barcode event queue | 8 | `barcode_event_t`, 6 bytes | Mission task only |
 | Barcode, wheel, line trace rings | 8 each | encoded 18, 15 and 17-byte frames | producer → I/O, SPSC atomics (trace images only) |
+| Barcode diagnostic queue | 32 | 8-byte `barcode_diagnostic_t` | Mission task only when `BARCODE_DIAGNOSTICS=1` |
+| Terrain trace | 1 pending | encoded 14-byte frame | Terrain produces and Comms consumes in the same I/O task, including on the course image |
 | Comms event ring | 16 | 10 bytes; 162 bytes in all | cross-core mutex, bounded wait |
 | Bridge out / in | 4 / 2 | 19-byte slot | SPSC atomics, core 0 |
-| Snapshots | 1 each | `MotionCommand_t` 12, `MotionHealth_t` 8, `LineIrSnapshot_t` 8, profile 20, range samples 2 x 16 bytes | mutex copy |
+| Snapshots | 1 each | `MotionCommand_t` 12, `MotionHealth_t` 8, `LineIrSnapshot_t` 8, `obstacle_profile_snapshot_t` 20 (includes the 9-byte profile), range samples 2 x 16 bytes | mutex copy |
 
 ### MQTT frames
 
 Every frame is compact binary with explicit masks and shifts; no value is sent
-as text. Byte layouts are in [architecture](architecture.md#mqtt-binary-protocol-schema-version-3).
-The only text is the retained status topic `"1"`/`"0"`, set by the kernel's
-MQTT last-will, outside the application payloads.
+as text. Byte layouts are in [architecture](README.md#mqtt-binary-protocol-schema-version-3).
+The transport publishes retained text `"1"` on the status topic when online.
+Its MQTT last will sets the retained status to `"0"` on connection loss.
 
 | Frame | Bytes | Used / stored bits |
 | --- | ---: | --- |
@@ -410,9 +406,8 @@ into the 12-bit fault word in this order: Motion bits 0-1, Line 2-4, Terrain
 
 ### No lost function
 
-- **Compile-time proof.** Every narrowed field has a `_Static_assert` that its
-  largest enumerator or configured maximum fits. Changing a config value past a
-  field's width fails the build.
+- **Compile-time checks.** Static assertions cover packed widths and configured
+  maxima such as barcode element counts, Motion action IDs and sonar scan capacity.
 - **Boundary tests.** `sh testing/tools/run.sh` runs the host suite against the
   real `app_program` sources. Tests that cover packed data include
   `test_mqtt_frame.c` (golden vectors, every maximum, one past maximum and
@@ -427,15 +422,19 @@ into the 12-bit fault word in this order: Motion bits 0-1, Line 2-4, Terrain
   meaning. The C codec and `scripts/mqtt_client.py --self-test` decode the same
   new golden vectors, and the 2026-11-08 run walks each of the 12 fault bits alone and all
   together.
-- **Builds.** All six profiles in `testing/tools/build_pending_profiles.sh` compile
-  with `-Wall -Wextra`, and the Arm size probes pass their size bounds.
-- **Physical.** A course trial on the final image is still to be run (2026-11-09).
+- **Build coverage.** The build matrix compiles nine configurations. Four combine TEST and TRACE
+  with full-course features off, two cover course and trial, and three exercise
+  the motion bench modes. The script also checks target structure sizes.
+  [Build matrix](testing/tools/build_pending_profiles.sh)
+- **Physical course result.** On 2026-11-20 Mahesha recorded a SYS-U01 pass on
+  trial firmware `880ff16`. The system log records both battery-powered runs and their stop conditions.
+  [Run details, monitor log reference and video](testing/system/TEST_LOG.md#results)
 
 ### Memory
 
-Target `sizeof`, Arm GNU C, RP2040, measured with
-`sh testing/tools/sizeof_probe.sh`
-on `main` (`c26bca4`) and on this change (2026-11-08).
+The table preserves the 2026-11-08 before/after comparison against `c26bca4`.
+On `a2a6156` the RP2040 size probe reproduced every value in the After column.
+[Target size probe](testing/tools/sizeof_probe.sh)
 
 | Type | Before (bytes) | After (bytes) |
 | --- | ---: | ---: |
@@ -458,7 +457,7 @@ on `main` (`c26bca4`) and on this change (2026-11-08).
 | Course (`TRACE=0`) | 387,912 → 390,356 B (+2,444) | 83,836 → 83,728 B (-108) |
 | Trial (`TRACE=1`) | 389,712 → 393,208 B (+3,496) | 84,284 → 90,724 B (+6,440) |
 
-Course static RAM falls by 108 bytes, and by 28 more with the schema v3 fault word (bridge slots and the receive buffer shrink from 22 to 18 bytes: course bss 83,700 B, text 390,420 B). Most of the saving is on the Mission and
+In the 2026-11-08 builds, course static RAM fell by 108 bytes, and by 28 more with the schema v3 fault word (bridge slots and the receive buffer shrink from 22 to 18 bytes: course bss 83,700 B, text 390,420 B). Most of the saving is on the Mission and
 Motion stacks, which hold the per-release input and output copies. Flash grows
 by about 2.4 KB, the cost of reading and writing bit-fields: 0.6 percent of the
 image and well inside the 2 MB part. The trial image's extra RAM is the timing
@@ -467,15 +466,15 @@ no longer allocates from its own heap; the course image has no instrumentation.
 
 ### Timing
 
-Trace images (`./flash.sh trial` and `./flash.sh test`) print one line every
-5 s on the USB console:
+With `TRACE=1`, I/O prints the three task measurements to the USB console every
+5 s. The trial, test and three motion bench profiles enable this output.
 
 ```text
 [TIMING] t=<ms> | motion max=<us>us ovr=<n> stack=<used>/<size>B | io ... | mission ...
 ```
 
 - `max` is the longest task body in the last 5 s, measured with the 1 MHz timer.
-- `ovr` counts releases that ran past the next release since boot.
+- `ovr` counts releases whose body finished at or after the next deadline, saturating at 65,535.
 - `stack` is the painted high-water mark of each task's stack.
 
 **Acceptance:** each task's `max` stays below its period (Motion 20 ms,
@@ -504,7 +503,4 @@ rose from 3,716 to 5,229 us, during the second scan and the start of its bypass:
 keeps over 900 bytes free. One run each, so these are single samples, not
 worst cases.
 
-To fill this table: flash `017f5ed` (timing added, no narrowing) with
-`./flash.sh trial`, capture the USB console during a bench run, one line lap
-and one bypass, then repeat on the final commit. Record each run in
-[testing/system/TEST_LOG.md](../testing/system/TEST_LOG.md).
+The 2026-11-20 course run recorded MQTT telemetry. Worst-case scheduling and stop latency still require dedicated measurements.

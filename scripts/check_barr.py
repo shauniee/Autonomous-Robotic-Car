@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check app_program C code against the mechanical rules of BARR-C:2018.
 
-Rule numbers refer to that standard; docs/team.md section 5 lists what the
+Rule numbers refer to that standard; team.md section 5 lists what the
 project adopted. This is a text scan, not a compliance certification, and it
 cannot judge the review checklist (units, ownership, synchronization, bounds).
 
@@ -309,7 +309,7 @@ def run_check(payload):
             lines += report(located[0], located[1], True)
     if not lines:
         return 0
-    print("Coding rule violations on changed lines (docs/team.md section 5).",
+    print("Coding rule violations on changed lines (team.md section 5).",
           "Fix them or tell the user why not, before replying:",
           file=sys.stderr)
     print("\n".join(lines[:MAX_HOOK_FINDINGS]), file=sys.stderr)

@@ -4,8 +4,8 @@
  *  constants are _Static_assert, so an inconsistent edit fails the build.
  *  No runtime configuration, parsing or validation structs.
  *
- *  "PROVISIONAL (Dnn)" marks a value that the pending decision Dnn in
- *  docs/project-specs.md will set; change it there first, then here.
+ *  "PROVISIONAL (Dnn)" identifies an engineering assumption that still
+ *  requires verification on the robot.
  *  Register addresses, bit fields and device register maps stay in their
  *  drivers: they are facts of the chip, not tuning.
  */

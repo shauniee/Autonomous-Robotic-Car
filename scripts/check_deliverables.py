@@ -34,7 +34,7 @@ DELIVERABLES = {
                        (f"{COMMS}/comms.h", "mqtt_encode_terrain_trace")],
          "tests": ["test_comms_report.c", "test_comms_stress.c"]},
         {"name": "MQTT documentation",
-         "sections": [("docs/architecture.md", "MQTT binary protocol")]},
+         "sections": [("README.md", "MQTT binary protocol")]},
         {"name": "Telemetry demonstration",
          "files": ["scripts/mqtt_client.py", "scripts/dashboard.html"],
          "tests": ["test_mqtt_cli.py", "test_dashboard.mjs"],
@@ -133,7 +133,7 @@ def check_deliverable(root, item, test_runner):
         if not any((root / "testing").rglob(test)):
             problems.append(f"missing test {test}")
         elif test not in test_runner:
-            problems.append(f"{test} is not run by CI")
+            problems.append(f"{test} is missing from the host test runner")
     for relative, section in item.get("sections", []):
         text = read(root, relative)
         pattern = rf"^#+ .*{re.escape(section)}"
@@ -189,8 +189,7 @@ def check_wire_lengths(root):
 
 def main(argv):
     root = Path(argv[0] if argv else Path(__file__).resolve().parents[1])
-    test_runner = (read(root, "testing/tools/run.sh") or "") + \
-        (read(root, ".github/workflows/host-tests.yml") or "")
+    test_runner = read(root, "testing/tools/run.sh") or ""
     failed = 0
     awaiting = 0
     for subsystem, items in DELIVERABLES.items():

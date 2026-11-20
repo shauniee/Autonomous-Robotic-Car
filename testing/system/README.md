@@ -15,13 +15,13 @@ How to run and record SYS-U01. Test definitions: [TEST_LOG.md](TEST_LOG.md).
 
 ## Before you start
 
-1. Work on a fresh branch from `main`: `git fetch` then `git switch -c test/sys-u01 origin/main`.
+1. Start from the submission checkout and use the [build profiles](../../README.md#build-profiles) below to identify the required image.
 2. Commit nothing else while testing; the image is built from the working tree, so `git status` must be clean. Note the commit: `git rev-parse --short HEAD`.
 3. Follow the [power policy](../../README.md#power-and-flashing): USB alone for flashing and TEST images; battery alone for driving.
 4. Broker (one terminal, leave it running):
 
    ```bash
-   "$(brew --prefix)/sbin/mosquitto" -c config/mosquitto-lab.conf
+   mosquitto -c config/mosquitto-lab.conf
    ```
 
 5. A GP20 start is refused until letters are mapped. After each boot, map four letters (left, right, straight, U-turn):
@@ -42,11 +42,11 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 
 | Image | Power | Tests |
 | --- | --- | --- |
-| `./flash.sh trial` | Battery only | SYS-U01 |
+| `trial.uf2` | Battery only | SYS-U01 |
 
 Before every flash:
 
-1. `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
+1. Compare the broker host’s Wi-Fi address (`ip -4 -brief address` on Linux) with `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
 2. `git status` is clean, so the commit you record is the code you flashed.
 
 ## Captures
@@ -56,7 +56,7 @@ Every test saves its logs in `testing/system/logs/<test ID>/`, named `<what>.log
 USB console (replace `<ID>`; USB images only, never during a battery run):
 
 ```bash
-mkdir -p testing/system/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/system/logs/<ID>/usb.log
+mkdir -p testing/system/logs/<ID> && cat /dev/ttyACM0 | tee testing/system/logs/<ID>/usb.log
 ```
 
 Telemetry with laptop timestamps (every frame, nothing folded):
@@ -71,7 +71,7 @@ Host test code for a test ID is in `logs/<ID>/` beside its logs. It runs the rea
 
 ```bash
 sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
-sh testing/tools/run.sh        # every host test, as CI runs it
+sh testing/tools/run.sh        # every host test
 ```
 
 A manual test with no code prints `no tests for <ID>`. SYS-U01 has no on-car automatic check; it is run by hand with the steps below.
@@ -92,7 +92,7 @@ Give the system owner the test ID, the video link and anything you measured (tap
 
 ### SYS-U01 Full course run
 
-**Image:** `./flash.sh trial` (full course with diagnostics; battery only)
+**Image:** `trial.uf2` (full course with diagnostics; battery only)
 
 **Set up:** A line with a junction; a barcode mapped to a turn before the junction; a hump on a straight; a box on the line with both sides open. Fresh boot on the battery, letters mapped, dashboard open, telemetry capture started.
 

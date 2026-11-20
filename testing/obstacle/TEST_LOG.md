@@ -16,7 +16,7 @@ Define a test here before running it. Test IDs never change.
 | ID | What is tested | Requirement / interface | Method | Steps / how | Expected result |
 |---|---|---|---|---|---|
 | S5-U01 | Sonar range | T08 | manual | 1. Board at 100, 250 and 500 mm | Range recorded against a tape at each distance |
-| S5-U02 | Servo centre and limits | FR-14 | manual | 1. `./flash.sh test`. 2. Servo to centre and both sweep limits | Centre faces forward; limits do not stall |
+| S5-U02 | Servo centre and limits | FR-14 | manual | 1. Flash the test image (`test.uf2`). 2. Servo to centre and both sweep limits | Centre faces forward; limits do not stall |
 | S5-U03 | Scan profile width | M7, T09 | manual | 1. Scan boxes 120, 180 and 250 mm wide at 150 mm (the Mission obstacle stop), car still | Width and edges recorded against a tape |
 
 *Method:* **auto** = `TEST_CHECK` in code, result printed on the console;

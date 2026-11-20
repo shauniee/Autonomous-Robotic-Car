@@ -2,310 +2,339 @@
 
 ## Contents
 
-- [Quick start](#quick-start)
-- [Reading order](#reading-order)
-- [Repository structure](#repository-structure)
-- [Getting started](#getting-started)
-  - [Build profiles](#build-profiles)
-  - [Power and flashing](#power-and-flashing)
-  - [Calibration and local controls](#calibration-and-local-controls)
-  - [Wireless telemetry](#wireless-telemetry)
-  - [Bring-up order and project tasks](#bring-up-order-and-project-tasks)
-- [Bits per subsystem](#bits-per-subsystem)
-- [Manual build and flash](#manual-build-and-flash)
+- [Codebase guide](#codebase-guide)
+- [Install dependencies on Ubuntu](#install-dependencies-on-ubuntu)
+- [Configure the robot and broker](#configure-the-robot-and-broker)
+- [Build profiles](#build-profiles)
+- [Power and flashing](#power-and-flashing)
+- [Start a course run](#start-a-course-run)
+- [Architecture](#architecture)
+  - [Tasks](#tasks)
+  - [Mission loop](#mission-loop)
+  - [Motion command contract](#motion-command-contract)
+  - [Shared-data rules](#shared-data-rules)
+  - [Fault policy](#fault-policy)
+- [MQTT binary protocol, schema version 3](#mqtt-binary-protocol-schema-version-3)
+- [Tests and measurements](#tests-and-measurements)
 
-Start with the [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues). The core software is implemented; physical calibration, timing and full mission acceptance remain incomplete. Unresolved limits live in [pending decisions](docs/project-specs.md#pending-decisions).
+The robot runs micro T-Kernel 3.0 on a Raspberry Pi Pico WH and a Robo Pico carrier. It follows a line, reads Code 39 barcodes to choose junction turns, measures humps, and scans obstacles before driving around them. A laptop receives telemetry over Wi-Fi. The local buttons start and stop the car.
 
-An autonomous Pico WH / Robo Pico robot for line tracking, barcode navigation, hump measurement, obstacle avoidance and WiFi telemetry. Firmware uses micro T-Kernel 3.0 on the RP2040. See [project specifications](docs/project-specs.md) for required outcomes and [Getting started](#getting-started) for what runs today.
+## Codebase guide
 
-## Quick start
+| Start here | What it does |
+| --- | --- |
+| [Application entry point](app_program/app_main.c) and [configuration](app_program/common/robot_config.h) | Initialize subsystems, start tasks, set pin assignments, periods, thresholds and controller gains. |
+| [Mission](app_program/mission/) | Combine sensor evidence, choose a motion command, handle stop/reset, and drive the GP18 state LEDs. |
+| [Motion](app_program/motion/README.md) | Read quadrature encoders, close the wheel-speed loops, and apply PWM or braking. |
+| [Line and barcode](app_program/line_barcode/README.md) | Sample the two digital line sensors and decode GP27 edges using encoder travel. |
+| [Obstacle](app_program/obstacle/README.md) | Position the servo, time sonar echoes, and estimate obstacle width and clearance. |
+| [Terrain](app_program/terrain/README.md) | Calibrate the accelerometer at boot, estimate hump height, and detect a lift. |
+| [Comms](app_program/comms/README.md) and [laptop tools](scripts/) | Encode reports, bridge requests to Mission, and display telemetry. |
+| [Kernel](kernel/), [drivers](device/), [libraries](lib/) and [build](build_make/) | Supply the scheduler, hardware support, network stack integration, and firmware Makefiles. |
+| [Team and hardware](team.md) | Find subsystem owners, the GPIO wiring table, packed data fields, and memory measurements. |
 
-For an Apple Silicon Mac with [Homebrew](https://brew.sh). Other systems: [Manual build and flash](#manual-build-and-flash).
+## Install dependencies on Ubuntu
 
-1. Install the Arm compiler, Pico SDK 2.2.0, Mosquitto and the Python tools. Most go in `~/.robot-car-tools`; no `sudo` or shell changes.
+Use Ubuntu 24.04 on a PC, or Ubuntu 24.04 under WSL2 for compilation. Run the commands below from the repository root. The host C++ compiler builds the UF2 converter. The Arm compiler and newlib build the Pico firmware. Python runs the laptop tools, and Node.js runs the dashboard tests.
 
-   ```sh
-   xcode-select --install   # if not installed yet
-   ./install_dependancies.sh
-   ```
+```sh
+sudo apt update
+sudo apt install build-essential git gcc-arm-none-eabi libnewlib-arm-none-eabi \
+    python3 python3-venv mosquitto nodejs screen
+mkdir -p "$HOME/pico"
+git clone --branch 2.2.0 --depth 1 https://github.com/raspberrypi/pico-sdk.git "$HOME/pico/pico-sdk"
+export PICO_SDK_PATH="$HOME/pico/pico-sdk"
+git -C "$PICO_SDK_PATH" submodule update --init --depth 1 lib/tinyusb lib/cyw43-driver lib/lwip
+arm-none-eabi-gcc --version
 
-2. Create the local credentials header, then edit `WIFI_SSID`, `WIFI_PASSWORD` and
-   `MQTT_BROKER_IP` (your Mac's LAN IPv4 address, from `ipconfig getifaddr en0`). Use a
-   reachable private 2.4 GHz network. Never commit this header; rebuild after changing it.
+python3 -m venv "$HOME/.robot-car-tools/venv"
+"$HOME/.robot-car-tools/venv/bin/python" -m pip install -r scripts/requirements-mqtt.txt
+```
+
+If the SDK is already installed, point `PICO_SDK_PATH` at its 2.2.0 checkout and initialize the three submodules there. Use a path without spaces. Set the variable in each build terminal or add the export to `~/.bashrc`.
+
+## Configure the robot and broker
+
+1. Create the local header, preserving any existing settings.
 
    ```sh
    test -e config/wifi_secrets.h || cp config/wifi_secrets.example.h config/wifi_secrets.h
    ```
 
-3. Build and flash. The script waits for the drive: hold BOOTSEL while plugging in USB.
+2. Edit `config/wifi_secrets.h`. Set `WIFI_SSID` and `WIFI_PASSWORD` for the private 2.4 GHz network. Set `MQTT_BROKER_IP` to a broker address reachable **from the Pico**. On native Linux, `ip -4 -brief address` lists the laptop's interfaces. A broker inside WSL2 needs a reachable listener and forwarding or mirrored networking. Running the broker on the Windows host also works. Rebuild the firmware after editing the header.
+3. Start one broker on port 1883. The supplied configuration listens on all IPv4 interfaces and allows anonymous access, so use it on the trusted lab network.
 
    ```sh
-   ./flash.sh        # full course: motors on, junction turns and obstacle bypass released, no diagnostics
-   ./flash.sh trial  # driving test: same as the full course, with diagnostics on
-   ./flash.sh test   # wireless self-test image: motors always inhibited
-   ./flash.sh bench  # motion bench: each GP20 press runs the next move and prints a [BENCH] line
+   mosquitto -c config/mosquitto-lab.conf
    ```
 
-   See [Power and flashing](#power-and-flashing) before running on the floor.
+   If the Ubuntu package already started a listener, inspect it with `ss -ltn 'sport = :1883'`. Use that broker if it accepts connections from the Pico, or stop the default service before starting the lab listener.
 
-4. Start the broker and dashboard, each in its own terminal, from the repository root.
-   Open <http://127.0.0.1:8080> for barcode mapping. The broker allows anonymous access
-   without TLS: trusted bench network only.
+## Build profiles
+
+Build from the repository root. For a first USB check, this complete command produces `build_make/test.uf2` with motor outputs inhibited.
+
+```sh
+make -C build_make -j"$(nproc)" SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 \
+    CRASH_REPORT=0 NOGUARDS=0 TEST=1 FULL_COURSE=0 TRACE=1 BENCH=0 EXE_FILE=test
+```
+
+Keep the common options through `NOGUARDS=0`. Replace the five options starting with `TEST` with the row for the image you need. Run one build at a time because the profiles share object files. Each row produces `build_make/<EXE_FILE>.uf2`.
+
+| Image | Options | Use |
+| --- | --- | --- |
+| test | `TEST=1 FULL_COURSE=0 TRACE=1 BENCH=0 EXE_FILE=test` | Boot self-tests over USB. GP20 requests a stationary sonar scan. |
+| full_course | `TEST=0 FULL_COURSE=1 TRACE=0 BENCH=0 EXE_FILE=full_course` | Course driving with junction turns, obstacle bypass and stall detection. |
+| trial | `TEST=0 FULL_COURSE=1 TRACE=1 BENCH=0 EXE_FILE=trial` | Course driving with wheel, line, barcode and task timing diagnostics. |
+| bench | `TEST=0 FULL_COURSE=1 TRACE=1 BENCH=1 EXE_FILE=bench` | A GP20 press runs the next distance or pivot in the motion sequence. |
+| bench10 | `TEST=0 FULL_COURSE=1 TRACE=1 BENCH=2 EXE_FILE=bench10` | Each press runs one 100 mm straight. |
+| benchturn | `TEST=0 FULL_COURSE=1 TRACE=1 BENCH=3 EXE_FILE=benchturn` | Each press runs the next left, right or 180° pivot. |
+
+Some line and terrain tests require an extra build option. Append `BARCODE_DIAGNOSTICS=1` or `TERRAIN_DIAGNOSTICS=1` to the selected make command when the runbook calls for it.
+
+USB CDC and `CRASH_REPORT=0` leave GP0 and GP1 available to the right encoder. The course image still sends ordinary telemetry, events and terrain samples. Build settings are defined in the [RP2040 Makefile](build_make/pico_rp2040.mk).
+
+## Power and flashing
+
+Use one power source at a time. Disconnect battery power before attaching USB. For a driving run, unplug USB before connecting the battery.
+
+1. Hold **BOOTSEL** on the Pico while connecting USB. Release it when the **RPI-RP2** storage volume appears.
+2. Copy the UF2 for the chosen profile onto that volume. On Ubuntu, check the mount point with `lsblk -o LABEL,MOUNTPOINTS`. For the test image, a typical desktop mount is shown below. On WSL2, open `build_make` with `explorer.exe build_make` and copy the UF2 to **RPI-RP2** in Windows Explorer.
 
    ```sh
-   "$(brew --prefix)/sbin/mosquitto" -c config/mosquitto-lab.conf
+   cp build_make/test.uf2 "/media/$USER/RPI-RP2/"
    ```
+
+3. The Pico reboots and the storage volume disappears. For USB self-tests, open the board's serial device, usually `screen /dev/ttyACM0 115200` on Linux. Look for the subsystem test results and summaries. To identify a saved image later, compute its checksum with `sha256sum build_make/test.uf2`.
+4. To drive, repeat with `trial.uf2` or `full_course.uf2`, then disconnect USB and boot on battery on a level surface. Calibration and barcode mapping start afresh after each reboot.
+
+## Start a course run
+
+1. Keep the car stationary during boot calibration. Join the laptop and Pico to the configured network. Start the dashboard on the broker host in a separate terminal.
 
    ```sh
    ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py serve --broker 127.0.0.1
    ```
 
-Terminal monitor and host tests:
+2. Open [the local dashboard](http://127.0.0.1:8080). In READY or STOPPED, map four distinct letters to **left, right, straight and U-turn**. Wait for the acknowledgement. To send the same mapping from a terminal, run
 
-```sh
-~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py monitor --broker 127.0.0.1
-```
+   ```sh
+   ~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py map A B C D --broker 127.0.0.1
+   ```
 
-```sh
-sh testing/tools/run.sh          # every host test
-sh testing/tools/run.sh S1-U01   # only one test ID
-```
+3. Position the line sensors on the course. From READY, release and freshly press **GP20**. Mission checks mapping, connectivity, fresh sensor and Motion data, and start-blocking faults.
+4. Press **GP21** to stop. Clear the cause of a fault stop, then press and release GP21 after braking has been serviced. This returns the robot to READY. A separate GP20 press starts another run.
 
-The Pico connects to your Mac's LAN IP, never `127.0.0.1` or `0.0.0.0`. If port 1883 is
-occupied, check `lsof -nP -iTCP:1883 -sTCP:LISTEN` and stop the previous broker. If the
-Pico cannot connect, check the laptop IP, firewall TCP 1883 access, Wi-Fi credentials
-and guest-network device isolation.
+The laptop client also supports `monitor` for live records and `snapshot` for a single report. If telemetry is absent, check the broker's LAN address in the flashed image, port 1883, and whether wireless clients can reach each other.
 
-When the project is over, `./delete_dependancies.sh` removes the tools folder and only
-the Homebrew packages the installer added (`--dry-run` lists them first).
+## Architecture
 
-## Reading order
+### Tasks
 
-| Guide | Use it for |
+The application starts three periodic tasks. Motion and Mission share the core that captures encoder, barcode and echo edges. The other core runs sensor reporting alongside the kernel's Wi-Fi and USB services. Lower priority numbers run first.
+
+| Task | Core | Priority | Configured period | Work per release |
+| --- | ---: | ---: | ---: | --- |
+| Motion | 1 | 13 | 20 ms | Check local stop and command age, read wheel counts, update PID, apply output and publish feedback. |
+| Mission | 1 | 14 | 10 ms | Step the sensors and safety logic, accept eligible requests, advance the mission and issue one motion command. |
+| I/O | 0 | 16 | 10 ms | Step Terrain acquisition and reporting. Service bounded numbers of requests and events. |
+
+The periods are software settings. Measured execution times and stack use are recorded in [the team guide](team.md#timing).
+
+### Mission loop
+
+| State | What the robot does |
 | --- | --- |
-| [GitHub issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) | Open work and remaining acceptance, one issue per area |
-| [Project specifications](docs/project-specs.md) | Requirements, change requirement (minimum-bit), data table, assessment, pending decisions |
-| [Team](docs/team.md) | Owners, pins and wiring, task and kernel-object budget, interfaces, coding rules |
-| [Architecture](docs/architecture.md) | Target three-task contracts, looping Mission, stop/freshness rules, shared data and MQTT protocol |
-| Subsystem READMEs | [comms](app_program/comms/README.md), [motion](app_program/motion/README.md), [line_barcode](app_program/line_barcode/README.md), [terrain](app_program/terrain/README.md), [obstacle](app_program/obstacle/README.md) |
-| [System test runbook](testing/system/README.md) | How to run and record SYS-U01, the full course run |
-| [Videos](video/README.md) | Recording and sharing instructions, video index |
+| READY | Holds still while waiting for a local start and valid inputs. |
+| FOLLOW_LINE | Steers from the two digital line sensors. A decoded barcode supplies an action for the next junction. |
+| NAVIGATE | Uses line evidence and encoder travel to execute the junction action, then returns to tracking. |
+| SCAN | Brakes, confirms wheel stationarity, then sweeps the sonar to estimate obstacle width and free space. |
+| BYPASS | Takes a side supported by the scan, watches the obstacle flank and finds the original line again. |
+| REACQUIRE | Searches for a lost line with bounded encoder-controlled sweeps. Exhausting the search stops the car. |
+| STOPPED | Keeps braking latched until the local reset conditions are met. |
 
-Each fact has one owning guide; other guides link to it. Assignment requirements, proposed design, implemented behavior and recorded results are distinct.
+The two line sensors straddle the stripe. One black sensor gives Mission a steering correction. Both white can mean the stripe is centred between the sensors, so Mission measures wheel travel since the last contact before declaring a loss. At a qualified crossing, Mission consumes the held barcode action. For a turn it advances the axle towards the crossing centre, pivots and uses fresh readings from the leading sensor to find the outgoing branch. Encoder angle and action deadlines bound the search. [Mission state machine](app_program/mission/mission_logic.c)
 
-## Repository structure
+Terrain runs alongside these states. It combines accelerometer tilt and wheel travel to estimate hump height and reports a lift to the safety logic. The dashboard can submit a junction-test direction during eligible line following. Mission decides whether to accept it and uses it once at a junction.
 
-| Path | Contents |
+### Motion command contract
+
+Mission chooses STOP, FOLLOW, DISTANCE or TURN. Each command carries the source sample time. Discrete actions also carry an ID so Mission can match RUNNING, DONE or FAILED feedback to the command it issued. Motion owns the motor outputs, checks GP21 independently and brakes on expired commands. Reusing a sensor reading preserves its original timestamp. Each wheel encoder wraps at 16 bits. Motion, barcode, Terrain and bypass logic keep separate origins and subtract counts modulo 65,536 to measure travel.
+
+### Shared-data rules
+
+- A single writer publishes a small snapshot with a release store. Readers use an acquire load and unpack the fields from that copy.
+- Larger snapshots, including the motion command and obstacle profile, use short mutex-protected copies. Sensor delays and network calls happen outside these locks.
+- GPIO interrupts capture edges and counts. The Mission task decodes queued barcode edges. A bounded bridge passes complete MQTT frames between I/O and the kernel transport. Events from Mission and Terrain share a mutex because their producers run on different cores.
+- I/O passes one mapping or junction-test request at a time to Mission and waits for its decision before acknowledging it. The kernel transport owns the MQTT connection. Local firmware retains movement authority.
+
+### Fault policy
+
+GP21, a lift, a Motion stall or an encoder fault can latch a stop. Missing required line data or stale Motion service also engages the safety checks. A missing sonar echo gives an unknown range, and Mission stops a manoeuvre when it lacks the evidence needed to continue. Wi-Fi and MQTT are prerequisites to start. A disconnection during healthy driving is reported and local control continues. The team guide maps each condition to its [owner and fault bit](team.md#fault-bitmask).
+
+## MQTT binary protocol, schema version 3
+
+Implemented by `app_program/comms/comms.h` and `mqtt_frame.c`, tested by `testing/comms/logs/S1-U05/test_mqtt_frame.c`; the laptop decoder `scripts/mqtt_client.py` checks the same golden vectors (`--self-test`). Field widths follow the [data table](team.md#6-data-representation). Version 3 packs the six owner fault bytes into one 12-bit fault word, so telemetry shrinks from 22 to 18 bytes; version 1 and 2 frames are rejected. A laptop decoder and firmware must be on the same version.
+
+Topics (root `robot/s3`, set in `config/wifi_secrets.h`): `<root>/telemetry` carries every robot-to-PC frame, `<root>/request` carries mapping, junction-test and snapshot requests, `<root>/status` is the retained online/offline text.
+
+Rules for every frame:
+
+- Little-endian multi-byte fields, written with explicit masks and shifts, never by copying a struct.
+- Byte 0: bits 7-4 version (3), bits 3-0 type.
+- Length is exact for the type. A receiver rejects a wrong length, version or type, any set reserved bit and any out-of-range field. Nothing is partially accepted.
+- Mission accepts mapping updates in READY or STOPPED. The junction-test request can queue one direction while following the line.
+- Normal telemetry omits speed/direction: the laptop derives averages from
+  successive counts. The separate wheel trace carries release-speed diagnostics.
+
+| Type | Value | Direction | Length (bytes) |
+| --- | --- | --- | --- |
+| Telemetry | 1 | robot to PC, every 500 ms | 18 |
+| Event | 2 | robot to PC | 11 |
+| Snapshot reply | 3 | robot to PC, answers a request; body as telemetry | 18 |
+| Mapping | 4 | PC to robot | 5 |
+| Acknowledgement | 5 | robot to PC | 3 |
+| Snapshot request | 6 | PC to robot | 2 |
+| Junction test | 7 | PC to robot, queue a direction | 3 |
+| Wheel trace | 8 | robot to PC, best effort per Motion release | 15 |
+| Line trace | 9 | robot to PC, best effort per fresh IR acquisition while moving | 17 |
+| Barcode trace | 10 | robot to PC, best effort, raw GP27 run widths | 18 |
+| Terrain trace | 11 | robot to PC, best effort, IMU sample for the dashboard | 14 |
+
+### Wheel trace (15 bytes)
+
+Type 8 reports the wheel controller’s targets, measurements and applied duty.
+Byte 0 is `38` hex; bytes 1..4 are robot release time uint32 ms. Bytes 5..8
+contain left target in bits 0..14 and right target in bits 15..29 (signed
+15-bit counts/s), TEST inhibition in bit 30 and motor-output service success
+in bit 31. Bytes 9..10 and 11..12 are signed 16-bit measured left/right counts/s.
+Bytes 13 and 14 are signed left/right duty percentages. Invalid encodings and
+rounding are owned by the [data table](team.md#motion-and-encoder).
+Output failure marks both duty fields invalid. TEST reports zero duty with
+inhibition set. Targets represent computed wheel demands; serviced braking may
+override them. This is software output evidence, not electrical measurement.
+
+Motion encodes into an eight-record SPSC ring after output service and outside
+its IRQ exclusion. I/O drains at most two per release, after normal reporting;
+offline/full TX and full trace ring drop diagnostic samples without waiting.
+Robot timestamp gaps reveal missing releases; timestamps wrap modulo 2^32.
+There is no diagnostic request, movement authority or live tuning input.
+Use the laptop decoder shipped with the firmware.
+
+### Barcode trace (18 bytes)
+
+Type 10 is an outbound barcode diagnostic. Byte 0 is `3A`
+hex, byte 1 a wrapping sequence, bytes 2..17 eight little-endian runs: bit 15 black level, bits
+14..0 width in encoder counts after chatter is merged, zero for an unused slot. A full ring drops frames.
+
+### Terrain trace (14 bytes)
+
+Type 11 is outbound and best effort, sent on every image for the dashboard's IMU graphs: 10 per second on flat ground, 20 on a hump. Byte 0 is `3B` hex, bytes
+1..2 time ms low 16, byte 3 signed pitch in quarter degrees, byte 4 bits 0..2 state, 6 encoder valid, 7 calibrated,
+byte 5 peak rise mm, byte 6 acceleration in 10 mg units, byte 7 signed roll in quarter degrees, bytes 8..10 signed X, Y and Z acceleration in 16 mg units (saturate at +/-2032 mg), byte 11 current height estimate mm, bytes 12..13 travel mm (wraps at 65536).
+
+### Line trace (17 bytes)
+
+Type 9 records the line-following decision for a fresh IR sample. Byte 0 is `39` hex; bytes 1..4 are the
+IR acquisition time uint32 ms. Byte 5 flags: bit 0 left black, 1 right black,
+2 in broad black, 3 junction candidate open, 4 junction qualified, 5 curved entry,
+6 junction locked, 7 raw barcode GP27 level. Byte 6: bits 0..3 Mission state, 4..6 junction phase,
+7 zero. Bytes 7..8 and 9..10 are the low 16 bits of the left/right encoder counts.
+Byte 11 is the steering law output, signed Q7. Byte 12 is the law state: the side
+last touched (-1 left, +1 right, 0 none) times the integral held at the last touch transition, signed Q7. Byte 13 is the FOLLOW steering sent to Motion (0 for
+other modes). Bytes 14..15: bits 0..8 commanded speed mm/s, 9..10 motion mode,
+11..15 running barcode edge count (wraps). Byte 16 is, while both sensors are black, the distance in mm between
+the two sensors' black onsets (254 caps it), else 255.
+
+Mission builds one record per fresh acquisition after `mission_step` while it was
+moving (so the stopping decision is included) and puts it in an eight-record SPSC
+ring; I/O drains at most two per release after the wheel trace, and offline/full
+TX or a full ring drops records without waiting. Sample-time gaps reveal drops.
+There is no request, movement authority or live tuning input. `mqtt_client.py
+monitor` prints it as a short `LINE` line (`--raw` for JSON); the dashboard does not display it.
+
+### Telemetry and snapshot reply (18 bytes)
+
+| Byte | Bits | Field | Range |
+| --- | --- | --- | --- |
+| 0 | 7-0 | version and type | `0x31` telemetry, `0x33` reply |
+| 1 | 7-0 | sequence | 0-255, wraps |
+| 2 | 3-0 | mission state | 0-15 |
+| 2 | 5-4 | motion status | 0 IDLE, 1 RUNNING, 2 DONE, 3 FAILED |
+| 2 | 7-6 | line status | 0 unknown, 1 visible, 2 lost, 3 broad black |
+| 3 | 5-0 | motion action ID | 0-63 |
+| 3 | 6 | mapped | four letters installed |
+| 3 | 7 | reserved | 0 |
+| 4-5 | 1-0 | Motion faults: stall, encoder | [fault bitmask](team.md#fault-bitmask) |
+| 4-5 | 4-2 | Line faults: IR invalid, capture overflow, event overflow | |
+| 4-5 | 7-5 | Terrain faults: IMU, calibration failed, lifted | |
+| 4-5 | 8 | Obstacle fault: no echo | |
+| 4-5 | 9 | Mission fault: line lost | |
+| 4-5 | 11-10 | Network faults: Wi-Fi lost, broker lost | |
+| 4-5 | 15-12 | reserved | zero; a set bit is rejected |
+| 6-7 | 15-0 | left encoder count | wrapped, `ENC_COUNT_BITS` wide |
+| 8-9 | 15-0 | right encoder count | wrapped |
+| 10 | 7-0 | hump count | 0-255 saturating |
+| 11 | 6-0 | maximum hump height code | 7-bit result, 1 mm per count |
+| 11 | 7 | maximum valid | set once any hump completed |
+| 12-13 | 12-0 | front range, mm | 0-8190; 8191 invalid |
+| 12-13 | 13 | front range valid | no echo is not clear space |
+| 12-13 | 15-14 | IMU calibration | 0 unknown, 1 not calibrated, 2 calibrated, 3 invalid |
+| 14 | 4-0 | last decoded barcode letter, cleared when its navigation ends on the line | 0-25 (A-Z), 31 none |
+| 14 | 7-5 | action it maps to | 0 unmapped, 1 left, 2 right, 3 straight, 4 U-turn |
+| 15-17 | 9-0 | latest obstacle width, mm | 0 none; saturates at 1023 |
+| 15-17 | 19-10 | clearance on the side chosen for the latest bypass, mm | 0 none; saturates at 1023 |
+| 17 | 7-4 | reserved | zero; a set bit is rejected |
+
+The fault word packs each owner's defined bits in owner order. The firmware
+keeps one atomic byte per owner, because each owner is that byte's only
+writer; the encoder only reads the six bytes, so packing them on the wire
+needs no lock. Undefined owner bits are never sent.
+
+IMU calibration reports Terrain's calibration flag independently of hump results
+and current sensor faults.
+
+### Event (11 bytes)
+
+| Byte | Field |
 | --- | --- |
-| `app_program/` | `app_main.c` startup, shared definitions, Mission and five subsystem folders, each with a README |
-| `build_make/` | Make profiles and generated firmware |
-| `flash.sh`, `install_dependancies.sh`, `delete_dependancies.sh` | Build and flash; install and remove the local tools |
-| `config/` | Kernel/device configuration and ignored local credentials |
-| `kernel/`, `lib/`, `device/`, `include/`, `tools/` | Imported runtime, services, drivers, headers and conversion tools |
-| `docs/` | Project specifications, team and architecture |
-| [testing/](testing/README.md) | Stable test IDs, result tables and saved evidence |
-| [video/](video/README.md) | Recording instructions and index; video files are never committed |
+| 0 | version and type, `0x32` |
+| 1 | bits 3-0 kind: 1 barcode, 2 hump, 3 obstacle, 4 turn; bits 7-4 reserved 0 |
+| 2 | arg: letter (barcode), height code (hump), action (turn) |
+| 3-4 | time, low 16 bits of kernel milliseconds |
+| 5-6 | left encoder count at the event |
+| 7-8 | right encoder count at the event |
+| 9-10 | arg2: action (barcode), clearance mm (obstacle); arg 1 passing left, 0 right |
 
-## Getting started
+**Event RAM packing.** The 11-byte event wire format is unchanged. The
+Reporting ring holds 16 `comms_packed_event_t` entries of 10 bytes: kind (3 bits)
+and arg (7 bits) share a 16-bit field; time, encoder positions and arg2 stay
+16-bit. Ring head (0-15) and count (0-16) share one 16-bit word, 162 bytes in
+all. Invalid kinds and arguments above 127 are rejected rather than truncated.
+A full ring overwrites the oldest event, and a lock that cannot be taken within
+its bound drops the new one; neither drop is counted.
 
-Requirements are in [project-specs](docs/project-specs.md). Full-robot bring-up order is at the end of this section.
+### Mapping, acknowledgement, snapshot request
 
-### Software regression and firmware profile checks
+- **Mapping (5 bytes):** byte 0 `0x34`, byte 1 sequence, bytes 2-4 a 24-bit little-endian value; bits 4-0, 9-5, 14-10 and 19-15 are the letters for left, right, straight and U-turn (A=0 .. Z=25); bits 23-20 reserved 0. The four letters are distinct.
+- **Acknowledgement (3 bytes):** byte 0 `0x35`, byte 1 the sequence answered, byte 2 the result: 0 OK, 1 busy, 2 invalid, 3 malformed. Mission returns the outcome of a mapping or direction request.
+- **Snapshot request (2 bytes):** byte 0 `0x36`, byte 1 sequence.
+- **Junction test (3 bytes).** Send `37 sequence action` in hexadecimal layout, where action is 1 left, 2 right, 3 straight or 4 U-turn. An OK acknowledgement means Mission queued the instruction.
 
-For kernel-free C/Python/MQTT checks, run
-`sh testing/tools/run.sh` (add a test ID, such as `S1-U01`, to run one test).
-The GitHub Actions workflow `.github/workflows/host-tests.yml` runs that suite,
-including the Node dashboard check, on pull requests and main pushes.
-A green host check does not mean the Pico firmware built or that the robot
-has passed physical tests.
+### Golden vectors
 
-The pending safety/profile matrix is defined by
-`testing/tools/build_pending_profiles.sh`. Run
-`sh testing/tools/build_pending_profiles.sh` only on a configured machine with
-`PICO_SDK_PATH`, `arm-none-eabi-gcc` and `make`. It **builds but never
-flashes** TEST/normal and TRACE 0/1 profiles plus the two course
-images. Inspect any compiler errors before preparing a wheels-raised test
-image. See [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) for unmet measurements and decisions.
+Used by the host tests and `scripts/mqtt_client.py --self-test`.
 
-Reports: [PID tuning](app_program/motion/README.md#pid-tuning-report), [Motion accuracy](app_program/motion/README.md#motion-accuracy-evaluation) and [Terrain analysis](app_program/terrain/README.md#terrain-analysis), each from results measured on the car.
-
-### Build profiles
-
-Build sequentially (shared `build_make/`). Give every flag each time; incompatible objects rebuild automatically.
-
-```sh
-# USB-only dev; motors always inhibited
-make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=none MQTT=0 CRASH_REPORT=0 TEST=1
-# Normal offline bench: same with TEST=0
-# Wireless dev (motors inhibited)
-make -C build_make -j8 SMP=1 CONSOLE=usb_cdc WIFI=cyw43 NET=lwip MQTT=1 CRASH_REPORT=0 TEST=1
-# Normal wireless bench: same with TEST=0
-```
-
-| Profile | Output in `build_make/` |
+| Frame | Bytes |
 | --- | --- |
-| `./flash.sh` | `full_course.uf2` |
-| `./flash.sh trial` | `trial.uf2` |
-| `./flash.sh test` | `test.uf2` |
-| `./flash.sh bench` | `bench.uf2` |
-| `./flash.sh bench10` | `bench10.uf2` |
-| `./flash.sh benchturn` | `benchturn.uf2` |
+| Telemetry (faults: Motion stall, Line capture overflow, Terrain lifted, no echo, line lost, both Network) | `31 2A 72 45 89 0F 34 12 78 56 03 F8 D0 30 61 A4 A9 02` |
+| Event (barcode Z, action 2) | `32 01 19 E8 03 10 00 11 00 02 00` |
+| Mapping A left, B right, C straight, D U-turn, sequence 7 | `34 07 20 88 01` |
+| Acknowledgement installed, sequence 7 | `35 07 00` |
+| Snapshot request, sequence 9 | `36 09` |
 
-| Option | Meaning |
-| --- | --- |
-| `SMP=1`/`0` | Dual/single-core kernel; project uses dual |
-| `CONSOLE=usb_cdc`/`uart` | USB serial / UART0 (uses encoder pins; unsuitable with encoders) |
-| `WIFI=cyw43`/`none` | W/WH radio / none (ordinary Pico must use `none`) |
-| `NET=none`/`lwip`, `MQTT=0`/`1` | Offline / TCP-IP; MQTT needs lwIP + WiFi |
-| `FULL_COURSE=1` | Releases junction turns and obstacle bypass; `_course` image (`flash.sh` default) |
-| `TEST=1` | Firmware self-tests; forces Motion braking even if the controller enables motion |
-| `TRACE=0` | Skip high-rate diagnostic frame production (types 9/10/11, plus Terrain trace), retaining telemetry, events, ACKs and all safety; `_notrace` image. Default `TRACE=0` with `FULL_COURSE=1`, otherwise `TRACE=1` |
-| `BENCH=1` | GP20 runs the next single move (100 mm forward, 1 m straight, 90 left, 90 right, 180) instead of starting the mission and prints one `[BENCH]` line per move; a move that does not finish is repeated on the next press; GP21 still stops; `_bench` image |
-| `BENCH=2` | As `BENCH=1`, but every GP20 press drives one 100 mm straight (S2-U02); `_bench10` image |
-| `BENCH=3` | As `BENCH=1`, but GP20 runs only 90 left, 90 right and 180, in turn (S2-U03); `_benchturn` image |
-| `CRASH_REPORT=1` | Crash/console copy on UART0; project uses `0` (GP0/GP1 conflict, [pins](docs/team.md#2-pins)) |
+## Tests and measurements
 
-Diagnostics belong in test images (Nicholas, 2026-11-04): `full_course` has none, for the least memory. To check they do not change driving, keep the same course, battery condition and
-controller settings, and compare `./flash.sh trial` with `./flash.sh`.
-Each build has a distinct profile name/hash; capture the same number of laps
-and compare success rates and latency, not just how smooth the dashboard
-looks. With `TRACE=0`, the dashboard still receives ordinary state/event
-telemetry but not high-rate wheel/line/barcode/terrain graphs.
+Run the host suite from the repository root with `sh testing/tools/run.sh`. For one test, append its ID, for example `sh testing/tools/run.sh S2-U05`. With the Arm toolchain installed, `sh testing/tools/sizeof_probe.sh` reports the target structure sizes, and `sh testing/tools/build_pending_profiles.sh` builds the firmware matrix.
 
-No active CMake target. The local checkpoint includes an optional dashboard; it is not the verified remote-main baseline. Offline profiles remain build/test tools; the target normal mission requires WiFi and MQTT before start.
-
-### Power and flashing
-
-**One power source at a time.** USB alone is for flashing and inhibited desktop checks. Disconnect USB before battery/power-bank operation; never add USB for logs during a powered trial. Reboot clears calibration; recalibrate after changing power.
-
-1. Check pins and conflicts ([team](docs/team.md#2-pins)). The user confirms documented wiring; actual active software and physical acceptance depend on the exact flashed revision. See [task ownership](docs/architecture.md#tasks) and the exact flashed source.
-2. Hold BOOTSEL while connecting USB; release when **RPI-RP2** appears; copy the matching **TEST** UF2 to the drive (WSL: `explorer.exe build_make`). The Pico reboots.
-3. Open USB serial at 115200: `screen /dev/tty.usbmodem<device> 115200` (Linux `/dev/ttyACM0`; Windows PuTTY/Serial Monitor on the COM port). Quit screen: Ctrl-A, K.
-4. Inspect startup, `[TEST] <ID> PASS|FAIL`, `[IR] ... SENSOR_ONLY` / `[LINE] ... MOTOR_INHIBITED`. Console output reports digital acquisition/state, not motor movement or measured duty. Record failures via [testing](testing/README.md).
-5. Before normal physical use: verify motor/encoder polarity and record raised-wheel baseline and stop response. Flash the normal image, disconnect USB, connect the battery/power bank alone. Use camera/scope and optional wireless observations as physical evidence.
-
-### Calibration and local controls
-
-For motor tuning, use the [wheel-speed procedure](app_program/motion/README.md#wheel-speed-tuning).
-The monitor's `WHEEL` records and dashboard target/PID-speed/duty readings
-come from Motion releases; ordinary telemetry speed is a slower average.
-Verify digital IR once, then hold steering settings fixed while checking
-encoder speed response. The dashboard no longer asks for black/white captures.
-
-The table below describes the working software control flow; physical release is pending the plan's calibration gates. IMU calibration is RAM-only; verify digital IR with the real mounting and surface.
-
-Target startup/control instructions are owned by [architecture](docs/architecture.md#startup-and-local-controls): bounded boot IMU calibration attempt; digital IR needs no software calibration; WiFi/MQTT required at start; eligible GP21 release returns READY, then fresh GP20 starts. This reset behavior is implemented in the working source.
-
-| Step | Action | Expected response |
-| --- | --- | --- |
-| Map | `python3 scripts/mqtt_client.py map <L> <R> <S> <U> --broker <ip>` while stopped | `MAPPING ACK ... OK`; telemetry shows `mapped=yes` |
-| Start | Sensors on visible line, release then press GP20 | FOLLOW_LINE if mapped, fresh digital IR/data qualify and no start-blocking fault; otherwise refused and reported in telemetry. TEST always refuses, as Motion stays stopped, and runs an obstacle scan instead |
-| Stop | Press GP21 | Persistent stop; barcode scanning stopped |
-| Reset | Clear cause; freshly press GP21, then release after braking is serviced | STOPPED to READY; IMU calibration kept; no movement. A separate fresh GP20 press starts |
-| Restart | Release GP20, press again on a visible line | Fresh start; held buttons never restart |
-
-Digital classification: [line_barcode](app_program/line_barcode/README.md). No IR
-black/white capture or calibration presses are needed. Both white means forward;
-both black means junction and cannot start a run. Check DOUT wiring, black
-polarity and comparator thresholds before physical use. Controls are local;
-GP20 starts and GP21 stops/resets. If stopped, record the reason before reset.
-Software state does not prove the wheels are stationary.
-
-### Wireless telemetry
-
-Use a reachable private 2.4 GHz LAN; the lab broker allows anonymous access without TLS, so keep it on the trusted bench network.
-
-1. `test -e config/wifi_secrets.h || cp config/wifi_secrets.example.h config/wifi_secrets.h`; edit `WIFI_SSID`, `WIFI_PASSWORD`, `MQTT_BROKER_IP` (laptop LAN IPv4, not `127.0.0.1`/`0.0.0.0`); for authenticated brokers also `MQTT_USERNAME`, `MQTT_PASSWORD`. Client-ID prefix gets a radio-MAC suffix; older local headers may omit new settings. The file is git-ignored; do not commit or print it.
-
-2. Start the broker and dashboard as in [Quick start](#quick-start) step 4.
-3. Open <http://127.0.0.1:8080> or run the optional terminal monitor below.
-4. Flash wireless TEST on USB alone and confirm messages originate from the Pico. After physical readiness, use normal firmware on battery alone and recalibrate.
-
-Laptop tool (binary protocol, schema v3; firmware and laptop tool must match):
-
-```sh
-~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py monitor --broker 127.0.0.1
-~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py map A B C D --broker 127.0.0.1
-~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py snapshot --broker 127.0.0.1
-~/.robot-car-tools/venv/bin/python scripts/mqtt_client.py probe --broker 127.0.0.1
-```
-
-`monitor` prints WHEEL and LINE traces as short `key=value` lines and folds exact
-repeats into one `... repeated xN to t=...` line; events, scans and barcode runs
-are never folded. Add `--raw` for every frame as JSON. `scripts/compact_log.py IN
-[OUT]` applies the same folding to a saved capture, and
-`scripts/triage_mqtt_capture.py` reads either form.
-
-Linux/WSL: install `mosquitto` and `mosquitto-clients`, allow Pico access through
-firewall/WSL boundaries, and install `scripts/requirements-mqtt.txt` in a Python virtual environment.
-
-- `monitor` prints every telemetry frame, event and acknowledgement as text, including active fault names and the speed/direction derived from encoder counts.
-- `map` sends the four mission-day letters in the order left, right, straight, U-turn and waits for the acknowledgement. The robot accepts it only while stopped, and a reboot clears it.
-- `snapshot` requests one telemetry frame.
-- `probe` sends a truncated mapping, a mapping with the old version and a drive request (unassigned type 15) for S1-U04, one line each. The robot must drop all three: no ACK, no state change, no movement.
-- `python3 scripts/mqtt_client.py --self-test` checks the decoder against the firmware golden vectors without a broker.
-- The dashboard has **Junction testing** buttons: install a barcode mapping, start
-  locally with GP20, then click **Activate left/right/straight/U-turn** while
-  FOLLOW_LINE, before the junction. Wait for the robot ACK; the direction takes
-  priority over barcode reads and runs once at the next confirmed cross junction.
-  GP21 cancels it. See [test policy](docs/project-specs.md#mission-day-barcode-rule).
-- `python3 scripts/mqtt_client.py serve --broker <broker-lan-ip>` opens the live dashboard at `http://127.0.0.1:8080`. Its barcode-mapping strip sends the same mapping frame as `map` and shows the robot's acknowledgement; Send is enabled only while live telemetry reports READY or STOPPED. Open it at `127.0.0.1` or `localhost` on that port: the server refuses mapping requests from any other origin.
-
-Optional auth via `ROBOT_MQTT_USERNAME` / `ROBOT_MQTT_PASSWORD`; `--root` / `--port` for other configs. Networking never starts, stops or drives the robot. Frame layouts: [architecture](docs/architecture.md#mqtt-binary-protocol-schema-version-3). The 500 ms stream cannot prove brief stop or recovery timing; broker loss does not change healthy local control.
-
-### Bring-up order and project tasks
-
-Follow the [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues) and the
-[system test runbook](testing/system/README.md). The three-task
-Motion/Mission/I/O refactor is implemented; remaining work is calibration,
-feature release, measured timing/load and mixed looping-mission acceptance.
-No core swap or separate Safety task is introduced. Pending numeric values
-remain in [project-specs](docs/project-specs.md#pending-decisions).
-
-## Bits per subsystem
-
-Every application field's valid range, bits and representation, per subsystem,
-is in the [data representation table](docs/team.md#6-data-representation). Struct
-and image sizes before and after the minimum-bit change, and how timing is
-measured, are in the [evidence](docs/team.md#7-correctness-and-performance-evidence).
-
-## Manual build and flash
-
-Needs git, make, host C++ compiler, Pico C SDK and `arm-none-eabi-gcc`. Windows: build in WSL Ubuntu.
-
-```sh
-xcode-select --install                                    # macOS
-sudo apt update && sudo apt install -y git make g++ gcc-arm-none-eabi   # Ubuntu / WSL
-```
-
-For macOS/manual compilers use the matching `arm-none-eabi` package from Arm's GNU toolchain downloads (WSL: Linux host package); extract and add `bin` to PATH. Template uses SDK 2.2.0 (2.3.0 also recorded working):
-
-```sh
-mkdir -p ~/pico && cd ~/pico
-git clone --branch 2.2.0 https://github.com/raspberrypi/pico-sdk.git
-cd pico-sdk && git submodule update --init lib/tinyusb lib/cyw43-driver lib/lwip
-```
-
-In `~/.zshrc` or `~/.bashrc` (SDK path must have **no spaces**; a symlink works):
-
-```sh
-export PATH="$HOME/tools/arm-gnu-toolchain-<version>/bin:$PATH"
-export PICO_SDK_PATH="$HOME/pico/pico-sdk"
-```
-
-Check: `arm-none-eabi-gcc --version`; `ls "$PICO_SDK_PATH/src"`. Clone (private, access required): `git clone https://github.com/shauniee/Autonomous-Robotic-Car.git`. In the coursework workspace, `code/` is the repository root; run commands there.
-
-Build with the [Build profiles](#build-profiles) commands as written, from the repository root. `arm-none-eabi-gcc not found`: PATH wrong. Unset SDK path or missing USB/radio/network headers: fix SDK path/submodules.
-
-Flash as in [Power and flashing](#power-and-flashing): hold BOOTSEL while connecting USB, release when **RPI-RP2** appears and copy the profile's UF2 from `build_make/` to the drive.
-
-Software verification on 2026-10-29 is in git history. Existing task periods, gains and checkpoint signs remain provisional software settings, not an instruction to flash an uncalibrated normal image. Offline profiles compile but cannot satisfy the normal WiFi/MQTT start prerequisite. Exactly three application tasks are created; see [architecture](docs/architecture.md#tasks).
-
-Current continuation: obstacle triggering follows the resolved D16 decision in
-[project specs](docs/project-specs.md#pending-decisions). Scan/filter settings
-are configured as provisional software proposals, and physical bypass release
-remains inhibited; encountering the trigger brakes and unsupported evidence stops
-the manoeuvre. Do not interpret the passing synthetic
-profile fixtures as an enabled full bypass. The user confirmed that physical
-trials are unavailable; [open issues](https://github.com/shauniee/Autonomous-Robotic-Car/issues)
-remains BLOCKED.
+The team recorded the full-course SYS-U01 pass on trial firmware `880ff16` on 2026-11-20. The system log identifies the two runs, the recorded measurements and the stop condition for each. [Testing guide](testing/README.md) · [System result](testing/system/TEST_LOG.md#results) · [Video index](video/README.md#video-index)

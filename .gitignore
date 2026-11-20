@@ -25,13 +25,6 @@ config/wifi_secrets.h
 # macOS
 .DS_Store
 
-# CSC01 generated/legacy artifacts and local credentials
-build*/**/*.o
-build*/**/*.d
-build-host/
-build-ir-tracking/
-build-sensor-bench/
-
 build/
 build-*/
 tmp/
@@ -39,11 +32,3 @@ __pycache__/
 .env
 secrets.h
 .vscode/
-
-# Local design tooling, not part of the firmware
-.impeccable/
-DESIGN.md
-PRODUCT.md
-
-# Monitor captures while running; finished ones go to testing/<subsystem>/logs, compressed.
-/int-*.txt

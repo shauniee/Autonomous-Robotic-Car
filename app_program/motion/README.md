@@ -12,7 +12,7 @@
 
 ## Scope
 
-Owner: Mahesha. Motion runs on core 1, outranks Mission and is the only writer of GP8-GP11. It owns per-wheel PID, encoders and the bounded FOLLOW, DISTANCE and TURN modes. Other subsystems supply guidance and never write PWM. Movement, stop and freshness rules: [Motion command contract](../../docs/architecture.md#motion-command-contract). Wiring: [team](../../docs/team.md#2-pins).
+Owner: Mahesha. Motion runs on core 1, outranks Mission and is the only writer of GP8-GP11. It owns per-wheel PID, encoders and the bounded FOLLOW, DISTANCE and TURN modes. Other subsystems supply guidance and never write PWM. Movement, stop and freshness rules: [Motion command contract](../../README.md#motion-command-contract). Wiring: [team](../../team.md#2-pins).
 
 ## Files
 
@@ -40,7 +40,7 @@ Owner: Mahesha. Motion runs on core 1, outranks Mission and is the only writer o
 - **Speed profile:** every planned move starts and stops like a lift, with acceleration limited by `MOTION_ACCEL_MMPS2` and its rate of change by `MOTION_JERK_MMPS3`. Lower either in `robot_config.h` for a gentler move, at the cost of more stopping distance. Safety stops skip the profile. Other subsystems call `motion_stop_distance_mm(speed)` for the travel of a planned stop, instead of assuming a car stops where a command is given.
 - **TURN** style 0 is a pivot, 1 a single-wheel swing and 3 a pivot that keeps its speed from a FOLLOW hand-over; style 2 is rejected. DISTANCE style 3 does the same.
 
-Packed widths: [data table](../../docs/team.md#6-data-representation). Keep wrapping counts with per-consumer origins.
+Packed widths: [data table](../../team.md#6-data-representation). Keep wrapping counts with per-consumer origins.
 
 ## Wheel-speed tuning
 
@@ -51,7 +51,7 @@ Mission chooses steering, Motion mixes wheel targets and each encoder closes its
 3. Set `MOTION_KS` and `MOTION_KF` from measurements. Tune `MOTION_KP` for response and `MOTION_KI` for persistent error, one change per recorded trial, with `MOTION_KD` zero. Do not raise the duty cap without motor and driver ratings.
 4. If measured speed oscillates under constant targets, look at wheel control, encoder noise, friction and power. If targets oscillate and wheels follow, look at IR and steering.
 
-The [wheel trace](../../docs/architecture.md#wheel-trace-15-bytes) is best effort: timestamp gaps show missing releases. Neither a graph nor a host test is a physical pass.
+The [wheel trace](../../README.md#wheel-trace-15-bytes) is best effort: timestamp gaps show missing releases. Neither a graph nor a host test is a physical pass.
 
 ## PID tuning report
 
