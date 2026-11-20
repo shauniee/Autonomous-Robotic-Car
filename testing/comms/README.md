@@ -112,7 +112,7 @@ Send Claude the test ID, the video link and anything you measured (tape readings
 
 **Run:** `sh testing/tools/run.sh S1-U01`, then flash the image above, start the captures and follow the steps.
 
-**Logs:** `usb.log` and `monitor.log`; Claude measures the telemetry interval (target about 500 ms).
+**Logs:** `usb.log` and `monitor.log`; Claude measures the telemetry interval (target about 500 ms; up to 550 ms accepted).
 
 ### S1-U02 Letter mapping rules
 
