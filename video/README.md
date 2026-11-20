@@ -6,15 +6,12 @@
 - [What to record](#what-to-record)
 - [How to share](#how-to-share)
 - [Video index](#video-index)
-- [Pending uploads](#pending-uploads)
 
 Short videos of tests and demos on the real hardware, showing what a log cannot, such as the robot reaching the line.
 
 ## Status
 
-As of 2026-11-20, 17 silent videos are on YouTube as unlisted uploads. BAY has seven and Nicholas Bay has ten.
-
-Nine more videos are ready without audio. Both channels reached YouTube’s daily upload limit.
+As of 2026-11-20, the index lists 26 YouTube clips.
 
 ## What to record
 
@@ -54,17 +51,12 @@ Newest at the bottom. Never delete a recorded row.
 | 2026-11-18 | [Line and barcode](../testing/line_barcode/TEST_LOG.md#results) | S3-U05 | `5c0d4e0` | 2501552 | Terminal | [Watch](https://youtu.be/Vnk85cuwu1A) |
 | 2026-11-18 | [Obstacle](../testing/obstacle/TEST_LOG.md#results) | S5-U01 | `e922198` | 2502825 | Test | [Watch](https://youtu.be/_Hi5o9f7MZk) |
 | 2026-11-18 | [Obstacle](../testing/obstacle/TEST_LOG.md#results) | S5-U01 | `e922198` | 2502825 | Terminal | [Watch](https://youtu.be/1lZWcA1DVao) |
-
-## Pending uploads
-
-The older S3-U01 and S3-U03 drafts on BAY contain audio. Their silent replacements are among the pending uploads.
-
-- `SYS-U01.mov`
-- `S3-U01.MOV`
-- `S3-U02.MOV`
-- `S3-U03.MOV`
-- `S3-U03-terminal.mov`
-- `S5-U02.mp4`
-- `S5-U02-terminal.mov`
-- `S5-U03.MOV`
-- `S5-U03-terminal.mov`
+| 2026-11-18 | [Line and barcode](../testing/line_barcode/TEST_LOG.md#results) | S3-U01 | `893c6c8` | 2501552 | Test | [Watch](https://youtu.be/FnCqoq3C2mk) |
+| 2026-11-18 | [Line and barcode](../testing/line_barcode/TEST_LOG.md#results) | S3-U02 | `ce16c4f+` | 2501552 | Test | [Watch](https://youtube.com/shorts/OAcXRysHmjQ) |
+| 2026-11-18 | [Line and barcode](../testing/line_barcode/TEST_LOG.md#results) | S3-U03 | `5c0d4e0` | 2501552 | Test | [Watch](https://youtu.be/Z7fyduXBGNg) |
+| 2026-11-18 | [Line and barcode](../testing/line_barcode/TEST_LOG.md#results) | S3-U03 | `5c0d4e0` | 2501552 | Terminal | [Watch](https://youtu.be/wuxQHhPDDg4) |
+| 2026-11-18 | [Obstacle](../testing/obstacle/TEST_LOG.md#results) | S5-U02 | `3e6a79f` | 2502825 | Test | [Watch](https://youtube.com/shorts/vc9rkEjtWGk) |
+| 2026-11-18 | [Obstacle](../testing/obstacle/TEST_LOG.md#results) | S5-U02 | `3e6a79f` | 2502825 | Terminal | [Watch](https://youtu.be/e7-_QT2xncI) |
+| 2026-11-18 | [Obstacle](../testing/obstacle/TEST_LOG.md#results) | S5-U03 | `db25868` | 2502825 | Test | [Watch](https://youtube.com/shorts/GMyfDFjMPVQ) |
+| 2026-11-18 | [Obstacle](../testing/obstacle/TEST_LOG.md#results) | S5-U03 | `db25868` | 2502825 | Terminal | [Watch](https://youtu.be/hmPKFTLMPWw) |
+| 2026-11-20 | [System](../testing/system/TEST_LOG.md#results) | SYS-U01 | `880ff16` | - | Test | [Watch](https://youtu.be/PXza6Wc6LAE) |
