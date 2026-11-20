@@ -5,7 +5,7 @@
 - [Scope](#scope)
 - [Files](#files)
 - [Contract](#contract)
-- [Status and open items](#status-and-open-items)
+- [Status](#status)
 - [Diagnostic trace policy](#diagnostic-trace-policy)
 
 ## Scope
@@ -39,14 +39,11 @@ Frames, topics, reserved bits and golden vectors: [MQTT protocol](../../docs/arc
 
 Slow telemetry and broker acknowledgements do not prove live sensor progress, short transitions or brake timing. Retained online status can be stale.
 
-## Status and open items
+## Status
 
-Codec, report assembly, mapping path, event log and bridge are host-tested; results are in the [comms test log](../../testing/comms/TEST_LOG.md). No physical network or mission pass follows from that.
+Codec, report assembly, mapping path, event log and bridge are host-tested, and S1-U01 to S1-U05 pass on the car; results are in the [comms test log](../../testing/comms/TEST_LOG.md).
 
-- Decisions D09, D13 and D14 are in [pending decisions](../../docs/project-specs.md#pending-decisions).
-- Still to test: mapping while stopped and moving; malformed, oversized and fragmented messages; full buffers and floods; startup order; reconnect; mid-run loss. Check diagnostics never delay Motion.
-- Type 9 LINE trace remains available when `TRACE=1`, and is suppressed with other high-rate diagnostic frames by `TRACE=0`. The software policy is implemented; No new wire format was authorised.
-
+- Type 9 LINE trace remains available when `TRACE=1`, and is suppressed with other high-rate diagnostic frames by `TRACE=0`.
 
 ## Diagnostic trace policy
 
