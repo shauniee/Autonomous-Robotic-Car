@@ -12,7 +12,7 @@ Short videos of tests and demos on the real hardware, showing what a log cannot,
 
 ## Status
 
-As of 2026-11-20, the index lists 26 YouTube clips.
+As of 2026-11-22, the index lists 32 YouTube clips.
 
 ## What to record
 
@@ -61,3 +61,9 @@ Newest at the bottom. Never delete a recorded row.
 | 2026-11-18 | [Obstacle](../testing/obstacle/TEST_LOG.md#results) | S5-U03 | `db25868` | 2502825 | Test | [Watch](https://youtube.com/shorts/GMyfDFjMPVQ) |
 | 2026-11-18 | [Obstacle](../testing/obstacle/TEST_LOG.md#results) | S5-U03 | `db25868` | 2502825 | Terminal | [Watch](https://youtu.be/hmPKFTLMPWw) |
 | 2026-11-20 | [System](../testing/system/TEST_LOG.md#results) | SYS-U01 | `880ff16` | - | Test | [Watch](https://youtu.be/PXza6Wc6LAE) |
+| 2026-11-22 | [Terrain](../testing/terrain/TEST_LOG.md#results) | S4-U01 | `df6dd4b` | 2500360 | Test | [Watch](https://youtube.com/shorts/spz0Khsx9uk) |
+| 2026-11-22 | [Terrain](../testing/terrain/TEST_LOG.md#results) | S4-U01 | `df6dd4b` | 2500360 | Terminal | [Watch](https://youtu.be/2H9F70z85SY) |
+| 2026-11-22 | [Terrain](../testing/terrain/TEST_LOG.md#results) | S4-U02 | `df6dd4b` | 2500360 | Test | [Watch](https://youtube.com/shorts/S-PKnSbOT6c) |
+| 2026-11-22 | [Terrain](../testing/terrain/TEST_LOG.md#results) | S4-U02 | `df6dd4b` | 2500360 | Terminal | [Watch](https://youtu.be/ww6Ak2KIjOs) |
+| 2026-11-22 | [Terrain](../testing/terrain/TEST_LOG.md#results) | S4-U03 | `df6dd4b` | 2500360 | Test | [Watch](https://youtube.com/shorts/vWSq1_WDSps) |
+| 2026-11-22 | [Terrain](../testing/terrain/TEST_LOG.md#results) | S4-U03 | `df6dd4b` | 2500360 | Terminal | [Watch](https://youtu.be/YC7Mm6QmjDA) |

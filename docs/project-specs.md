@@ -110,7 +110,7 @@ bypass remains required under M9.
 
 **Hump range:** Nicholas sets 10 mm as the minimum hump to detect and measure;
 the existing course maximum remains 30 mm. This is not an error tolerance.
-S4-U03 and SYS-U01 use only 10 mm humps.
+[S4-U02](../testing/terrain/README.md#s4-u02-hump-count-and-height) and SYS-U01 use only 10 mm humps.
 The permitted height-measurement error remains undecided under D10.
 
 **Profiles:** `MOTION_STALL_GUARD_ENABLED=0` for the demo; enabled and physically
