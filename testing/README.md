@@ -9,7 +9,6 @@
 - [Videos of tests and demos](#videos-of-tests-and-demos)
 - [Rules](#rules)
 - [Continuous integration](#continuous-integration)
-- [Tribunal trial plan](#tribunal-trial-plan)
 
 All test records for the project live in this folder. A test only counts as
 done when it is **written down here with its result and a saved log**.
@@ -131,27 +130,3 @@ in [video/README.md](../video/README.md), and put the link in the
 | Firmware build | `sh testing/tools/build_pending_profiles.sh` | Any of the six images fails to compile or link, or a struct outgrows its bound in `testing/tools/sizeof_probe.c`. It never flashes |
 
 Deliverables that need the car print NEEDS EVIDENCE and do not fail the check, because only a physical run can close them.
-
-## Tribunal trial plan
-
-Which test now covers each Tribunal trial. Limits come from
-[pending decisions](../docs/project-specs.md#pending-decisions), not from a test name.
-
-| ID | Trial | Tested in |
-| --- | --- | --- |
-| T01 | Electrical release: markings, continuity, loaded rails/current, signal highs, shared contacts and jumper | none |
-| T02 | Boot/stop/reset in every motion mode; output-brake timing and physical stopping separately | S4-U04, SYS-U01 |
-| T03 | Straight/curve/junction tracking under lighting, surface and speed variation | SYS-U01 |
-| T04 | Known barcode scales/speeds in both directions, same-character decoding, pending-to-junction execution, duplicate/partial rejection and capture overflow | S3-U03 to S3-U05, SYS-U01 |
-| T05 | Four encoder actions: repeated distance/angle accuracy, completion, timeout and obstacle cancellation | S2-U02, S2-U03 |
-| T06 | Labelled stationary/acceleration/turn/climb/descent/lift traces; no raw gyro claim | none |
-| T07 | Measured reference humps, slip/dynamic/incomplete rejection and invalid estimate after valid maximum | S4-U03 |
-| T08 | Known forward ranges/materials/angles; no/late/out-of-range echo, settled repeated filtering and repeat timing | S5-U01 |
-| T09 | Moving scan rejection, coarse/fine profile for 100-200 mm widths, uncertainty, separate front age and restored-center acquisition | S5-U03 |
-| T10 | Vehicle envelope/course boundary, both bypass sides, blocked paths and original-line versus wrong-crossing recovery | SYS-U01 |
-| T11 | Controlled line loss, interrupted search, obstacle during search and bounded timeout | none |
-| T12 | Actual mission telemetry/status subscription, units/validity and rejection of prohibited/malformed commands | S1-U04 |
-| T13 | WiFi/broker loss/reconnect under sensor/scan load; healthy local control and no stale replay | S1-U03, SYS-U01 |
-| T14 | Stale/frozen producers, encoder/stall faults, expired command and full diagnostic/navigation/capture buffers | none |
-| T15 | Concurrent load: releases/WCET, missed deadlines, stop latency, queue occupancy and stack/memory usage | none |
-| T16 | Repeated looping-course rehearsal with junction actions, stationary U-turn pause, humps, bypass, telemetry and local-stop ending | SYS-U01 |

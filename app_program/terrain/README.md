@@ -71,7 +71,7 @@ Install `pyserial` on the laptop once, then capture using the actual port:
 
 ```sh
 python -m pip install pyserial
-python scripts/capture_imu.py --port COM5 --seconds 60 --output testing/terrain/logs/S4-U03/hump-raw-01.log
+python scripts/capture_imu.py --port COM5 --seconds 60 --output hump-raw-01.log
 ```
 
 Start capture before resetting the board. Keep it level with wheels still
@@ -105,13 +105,13 @@ power and mounting with each physical trial in the terrain test log.
 Measured on the 10 mm reference hump, the only hump height used on the course.
 
 - **Detector:** humps are sideways tilt (roll), because pitch did not show a one-wheel hump.
-- **Counting:** S4-U02 counted 0, 1, 2, 3 for three crossings, and pivots added none; the full course run (SYS-U01) counted each crossing while following the line.
-- **Height:** S4-U02 and S4-U03 read 10.8 to 13.8 mm, and SYS-U01 read 9 to 13 mm, for the 10 mm hump, with `HUMP_CALIB_FACTOR` 0.8.
+- **Counting:** S4-U02 counted three crossings. The full course run (SYS-U01) counted each crossing while following the line.
+- **Height:** The [terrain test log](../../testing/terrain/TEST_LOG.md#results) records the USB height estimates. SYS-U01 reported 9 to 13 mm for the 10 mm hump with `HUMP_CALIB_FACTOR` 0.8.
 - **Travel limit:** `HUMP_MIN_TRAVEL_MM` 50 rests on two crossings (76 and 156 mm) against curves of 26 mm or less.
-- **Lift stop:** lifting or turning the car over stops it (S4-U04, and the end of SYS-U01).
+- **Lift stop:** lifting or turning the car over stops it (S4-U03 and the end of SYS-U01).
 - **Turn rate:** the GY-511 has no gyroscope, so the turn rate is derived from the encoders and shown in `monitor` and the dashboard (FR-20).
 
 ## Status
 
-Algorithms pass synthetic replays, and S4-U01 to S4-U04 pass on the car; results are in the [terrain test log](../../testing/terrain/TEST_LOG.md).
+Algorithms pass synthetic replays. Physical results are in the [terrain test log](../../testing/terrain/TEST_LOG.md).
 
