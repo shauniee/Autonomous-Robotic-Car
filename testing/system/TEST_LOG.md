@@ -15,7 +15,7 @@ Define a test here before running it. Test IDs never change.
 
 | ID | What is tested | Requirement / interface | Method | Steps / how | Expected result |
 |---|---|---|---|---|---|
-| SYS-U01 | Full course run | M1, M3, M4, M5, M6, M8, M9, M10, NFR-06, NFR-07 | manual | 1. Fresh boot on battery; letters mapped over MQTT; dashboard open. 2. Press GP20 and leave the car: line, hump, box on the line, barcode before a junction. 3. End with GP21 or by lifting the car | Line held; hump counted and its height reported; car stops at the box (about 150 mm) and passes it on a free side, then rejoins the line; turn taken at the junction after the barcode; each event once on the dashboard with telemetry throughout; car stops locally at the end |
+| SYS-U01 | Full course run | NFR-06, NFR-07 | manual | 1. Fresh boot on battery; letters mapped over MQTT; dashboard open. 2. Press GP20 and leave the car: line, hump, box on the line, barcode before a junction. 3. End with GP21 or by lifting the car | Line held; hump counted and its height reported; car stops at the box (about 150 mm) and passes it on a free side, then rejoins the line; turn taken at the junction after the barcode; each event once on the dashboard with telemetry throughout; car stops locally at the end |
 
 *Method:* **auto** = `TEST_CHECK` in code, result printed on the console;
 **manual** = a person observes the result (motor, sensor, dashboard, tape measure).
