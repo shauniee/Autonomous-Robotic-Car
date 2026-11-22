@@ -48,9 +48,21 @@ Stable test IDs/measurements: [testing](testing/README.md). Demonstrations: [vid
 
 **Implementation status.** In the submitted firmware, Motion drives the wheels,
 Mission coordinates line following, barcode turns and obstacle bypass, and I/O
-runs Terrain and Reporting. All 22 subsystem tests have recorded passes. The
+runs Terrain and Reporting. All 22 subsystem tests have recorded results;
+S4-U01 and S4-U03 are partial (see Known limitations). The
 full-course result and the revision tested are listed in the [system test log](testing/system/TEST_LOG.md#results).
 Nicholas is the contact for pending decisions and approvals.
+
+**Known limitations.**
+
+- **IMU failure after calibration.** A failed or timed-out boot calibration
+  blocks the start. If the IMU stops answering after calibration passed, only
+  the report-only IMU fault is set: the car can still start, and lift
+  detection stops because no new samples arrive.
+- **S4-U01.** The disconnected-IMU boot and the GP20 start-refusal check are
+  pending.
+- **S4-U03.** The video does not yet confirm the lift, the flip and the GP21
+  presses.
 
 ## 2. Pins
 
