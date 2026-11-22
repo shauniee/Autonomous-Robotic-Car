@@ -2,25 +2,10 @@
 
 ## Contents
 
-- [Status](#status)
-- [What to record](#what-to-record)
 - [How to share](#how-to-share)
 - [Video index](#video-index)
-- [Pending uploads](#pending-uploads)
 
 Short videos of tests and demos on the real hardware, showing what a log cannot, such as the robot reaching the line.
-
-## Status
-
-As of 2026-11-22, the index lists 32 YouTube clips.
-
-## What to record
-
-- **Short:** 15-60 seconds; the [full course run](../testing/system/README.md#sys-u01-full-course-run) can be as long as the run.
-- **One test per video.** Show the test ID (e.g. `S2-U03`, `SYS-U01`) at the start. A separate terminal clip can show the console output for the same test.
-- **Show the commit:** run `git rev-parse --short HEAD`, put it in the index, and record the flashed-image checksum in the linked test result.
-- **Show the result:** keep the hardware and, if relevant, the USB TEST console in view. During battery-only trials follow the [power policy](../README.md#power-and-flashing) and use camera, scope or wireless evidence.
-- **Landscape**, steady, good light. No music needed.
 
 ## How to share
 

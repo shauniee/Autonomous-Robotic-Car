@@ -44,7 +44,7 @@ typedef enum
     JUNCTION_PHASE_ADVANCE
 } MissionJunctionPhase_t;
 
-/* Widths below are the minimum for each field's range (docs/team.md, data
+/* Widths below are the minimum for each field's range (team.md, data
    table). Times and sample sequences stay 32-bit for wrap-safe comparison. */
 typedef struct
 {

@@ -195,9 +195,8 @@ typedef enum
     RD_OWNER_COUNT
 } rd_owner_t;
 
-/* Bit positions await owner confirmation (#113); status in docs/architecture.md
-   Fault bitmask. scripts/mqtt_client.py --self-test checks its decoder table
-   against this enum. */
+/* Fault bit assignments are listed in team.md under Fault bitmask.
+   scripts/mqtt_client.py --self-test checks its decoder against this enum. */
 enum
 {
     RD_FAULT_MOTOR_STALL = 1u << 0, /* start-blocking, run-stopping */

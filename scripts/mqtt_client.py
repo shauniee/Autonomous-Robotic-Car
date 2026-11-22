@@ -8,7 +8,7 @@
                    the dashboard can send mappings and next-junction test directions
   --self-test      decode the golden vectors shared with testing/comms/logs/S1-U05/test_mqtt_frame.c
 
-Frame layouts: docs/architecture.md (MQTT binary protocol). Speed and
+Frame layouts: team.md (MQTT binary protocol). Speed and
 direction are derived here from encoder counts between telemetry frames, so
 normal telemetry stays compact. Separate WHEEL traces report Motion-release targets,
 measured speeds and serviced duty for PID diagnosis; LINE traces report each IR

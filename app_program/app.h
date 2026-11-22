@@ -18,13 +18,13 @@
  *  Pins: free for projects are GP0..GP22 and GP26..GP28.  GP0/GP1 are
  *  taken by UART0 when built with "make CRASH_REPORT=1" (see README).
  *  Never use GP23/24/25/29: they are wired to the Pico W radio.
- *  Claim every pin in docs/TEAM.md section 2 (Pins) before using it.
+ *  Claim every pin in team.md section 2 (Pins) before using it.
  * --------------------------------------------------------------------- */
 
 /* ---------------------------------------------------------------------
  *  Task priorities: 1 is the highest; the kernel's USB console (3) and
- *  WiFi (4) tasks sit above every application task.  Each subsystem
- *  records its priorities in docs/TEAM.md section 4 and its own header.
+ *  WiFi (4) tasks sit above every application task.  Application priorities
+ *  are defined in common/robot_config.h and listed in README.md.
  * --------------------------------------------------------------------- */
 
 /* Create and start a task.  prc = TP_PRC1 (core 0), TP_PRC2 (core 1), or

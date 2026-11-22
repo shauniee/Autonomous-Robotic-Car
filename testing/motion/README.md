@@ -20,13 +20,13 @@ How to run and record S2-U01 to S2-U05. Test definitions: [TEST_LOG.md](TEST_LOG
 
 ## Before you start
 
-1. Work on a fresh branch from `main`: `git fetch` then `git switch -c test/s2-motion origin/main`.
+1. Start from the submission checkout and use the [build profiles](../../README.md#build-profiles) below to identify the required image.
 2. Commit nothing else while testing; the image is built from the working tree, so `git status` must be clean. Note the commit: `git rev-parse --short HEAD`.
 3. Follow the [power policy](../../README.md#power-and-flashing): USB alone for flashing and TEST images; battery alone for driving.
 4. Broker (one terminal, leave it running):
 
    ```bash
-   "$(brew --prefix)/sbin/mosquitto" -c config/mosquitto-lab.conf
+   mosquitto -c config/mosquitto-lab.conf
    ```
 
 5. A GP20 start is refused until letters are mapped. After each boot, map four letters (left, right, straight, U-turn):
@@ -47,14 +47,14 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 
 | Image | Power | Tests |
 | --- | --- | --- |
-| `./flash.sh test` | USB only | S2-U05 |
-| `./flash.sh bench` | Battery only | S2-U01, S2-U03, S2-U04 |
-| `./flash.sh bench10` | Battery only | S2-U02 (every GP20 press drives 100 mm) |
-| `./flash.sh benchturn` | Battery only | S2-U03 (GP20 runs `left_90`, `right_90`, `turn_180` only) |
+| `test.uf2` | USB only | S2-U05 |
+| `bench.uf2` | Battery only | S2-U01, S2-U03, S2-U04 |
+| `bench10.uf2` | Battery only | S2-U02 (every GP20 press drives 100 mm) |
+| `benchturn.uf2` | Battery only | S2-U03 (GP20 runs `left_90`, `right_90`, `turn_180` only) |
 
 Before every flash:
 
-1. `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
+1. Compare the broker host’s Wi-Fi address (`ip -4 -brief address` on Linux) with `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
 2. `git status` is clean, so the commit you record is the code you flashed.
 
 ## Captures
@@ -64,7 +64,7 @@ Every test saves its logs in `testing/motion/logs/<test ID>/`, named `<what>.log
 USB console (replace `<ID>`):
 
 ```bash
-mkdir -p testing/motion/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/motion/logs/<ID>/usb.log
+mkdir -p testing/motion/logs/<ID> && cat /dev/ttyACM0 | tee testing/motion/logs/<ID>/usb.log
 ```
 
 Telemetry with laptop timestamps (every frame, nothing folded):
@@ -79,10 +79,10 @@ Host test code for a test ID is in `logs/<ID>/` beside its logs. It runs the rea
 
 ```bash
 sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
-sh testing/tools/run.sh        # every host test, as CI runs it
+sh testing/tools/run.sh        # every host test
 ```
 
-A manual test with no code prints `no tests for <ID>`. The on-car check for S2-U05 is in `app_program/motion/motion_test.c`; `./flash.sh test` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
+A manual test with no code prints `no tests for <ID>`. The on-car check for S2-U05 is in `app_program/motion/motion_test.c`; `test.uf2` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
 
 ## Every video
 
@@ -98,7 +98,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ## Bench image
 
-`./flash.sh bench` never runs the mission. Each GP20 press runs the next single move, at course speed, in this order:
+`bench.uf2` never runs the mission. Each GP20 press runs the next single move, at course speed, in this order:
 
 1. `short_forward` (100 mm)
 2. `straight_1m` (1000 mm)
@@ -112,7 +112,7 @@ Then it starts again at 1. `bench10` (BENCH=2) and `benchturn` (BENCH=3) are the
 
 ### S2-U01 Motor direction and encoder counts
 
-**Image:** `./flash.sh bench` (battery)
+**Image:** `bench.uf2` (battery)
 
 **Set up:** Wheels off the ground.
 
@@ -130,7 +130,7 @@ Then it starts again at 1. `bench10` (BENCH=2) and `benchturn` (BENCH=3) are the
 
 ### S2-U02 100 mm straight
 
-**Image:** `./flash.sh bench10` (battery; every GP20 press drives 100 mm)
+**Image:** `bench10.uf2` (battery; every GP20 press drives 100 mm)
 
 **Set up:** Tape a start line and a 100 mm mark; mark the car's centre.
 
@@ -151,7 +151,7 @@ Then it starts again at 1. `bench10` (BENCH=2) and `benchturn` (BENCH=3) are the
 
 ### S2-U03 90 and 180 degree pivots
 
-**Image:** `./flash.sh bench` (battery), or `./flash.sh benchturn` for the pivots only
+**Image:** `bench.uf2` (battery), or `benchturn.uf2` for the pivots only
 
 **Set up:** Tape a square on the floor; align the car with one edge.
 
@@ -171,7 +171,7 @@ Then it starts again at 1. `bench10` (BENCH=2) and `benchturn` (BENCH=3) are the
 
 ### S2-U04 Wheel speed control on the floor
 
-**Image:** `./flash.sh bench` (battery; it sends `WHEEL` traces)
+**Image:** `bench.uf2` (battery; it sends `WHEEL` traces)
 
 **Set up:** Telemetry capture started.
 
@@ -190,7 +190,7 @@ Then it starts again at 1. `bench10` (BENCH=2) and `benchturn` (BENCH=3) are the
 
 ### S2-U05 Command freshness gate (auto)
 
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
+**Image:** `test.uf2` (wireless, motors always off, USB)
 
 **Set up:** USB capture started; wheels free.
 

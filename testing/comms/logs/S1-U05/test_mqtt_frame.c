@@ -1,5 +1,5 @@
 /* Host test for app_program/comms/mqtt_frame.[ch] (issue #39). The byte
-   vectors below are the schema v3 golden vectors in docs/architecture.md;
+   vectors below are the schema v3 golden vectors in team.md;
    scripts/mqtt_client.py --self-test decodes the same bytes. */
 #include <assert.h>
 #include <stdio.h>

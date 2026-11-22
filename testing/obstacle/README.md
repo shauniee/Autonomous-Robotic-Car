@@ -17,13 +17,13 @@ How to run and record S5-U01, S5-U02 and S5-U03. Wheels never move: all three us
 
 ## Before you start
 
-1. Work on a fresh branch from `main`: `git fetch` then `git switch -c test/s5-obstacle origin/main`.
+1. Start from the submission checkout and use the [build profiles](../../README.md#build-profiles) below to identify the required image.
 2. Commit nothing else while testing; the image is built from the working tree, so `git status` must be clean. Note the commit: `git rev-parse --short HEAD`.
 3. Follow the [power policy](../../README.md#power-and-flashing): USB alone for flashing and TEST images; battery alone for driving.
 4. Broker (one terminal, leave it running):
 
    ```bash
-   "$(brew --prefix)/sbin/mosquitto" -c config/mosquitto-lab.conf
+   mosquitto -c config/mosquitto-lab.conf
    ```
 
 5. A GP20 start is refused until letters are mapped. After each boot, map four letters (left, right, straight, U-turn):
@@ -44,11 +44,11 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 
 | Image | Power | Tests |
 | --- | --- | --- |
-| `./flash.sh test` | USB only | S5-U01, S5-U02, S5-U03 |
+| `test.uf2` | USB only | S5-U01, S5-U02, S5-U03 |
 
 Before every flash:
 
-1. `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
+1. Compare the broker host’s Wi-Fi address (`ip -4 -brief address` on Linux) with `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
 2. `git status` is clean, so the commit you record is the code you flashed.
 
 ## Captures
@@ -58,7 +58,7 @@ Every test saves its logs in `testing/obstacle/logs/<test ID>/`, named `<what>.l
 USB console (replace `<ID>`):
 
 ```bash
-mkdir -p testing/obstacle/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/obstacle/logs/<ID>/usb.log
+mkdir -p testing/obstacle/logs/<ID> && cat /dev/ttyACM0 | tee testing/obstacle/logs/<ID>/usb.log
 ```
 
 Telemetry with laptop timestamps (every frame, nothing folded):
@@ -73,10 +73,10 @@ Host test code for a test ID is in `logs/<ID>/` beside its logs. It runs the rea
 
 ```bash
 sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
-sh testing/tools/run.sh        # every host test, as CI runs it
+sh testing/tools/run.sh        # every host test
 ```
 
-A manual test with no code prints `no tests for <ID>`. The on-car check for S5-U01 is in `app_program/obstacle/obstacle_test.c`; `./flash.sh test` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
+A manual test with no code prints `no tests for <ID>`. The on-car check for S5-U01 is in `app_program/obstacle/obstacle_test.c`; `test.uf2` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
 
 ## Every video
 
@@ -94,7 +94,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S5-U01 Sonar range
 
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
+**Image:** `test.uf2` (wireless, motors always off, USB)
 
 **Set up:** Tape measure from the sonar face; flat board; captures started.
 
@@ -113,7 +113,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S5-U02 Servo centre and limits
 
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
+**Image:** `test.uf2` (wireless, motors always off, USB)
 
 **Set up:** USB capture started.
 
@@ -132,7 +132,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S5-U03 Scan profile width
 
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
+**Image:** `test.uf2` (wireless, motors always off, USB)
 
 **Set up:** Boxes 120, 180 and 250 mm wide, 150 mm ahead on the line (where Mission stops to scan); captures started.
 

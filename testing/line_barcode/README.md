@@ -19,13 +19,13 @@ How to run and record S3-U01 to S3-U05. Test definitions: [TEST_LOG.md](TEST_LOG
 
 ## Before you start
 
-1. Work on a fresh branch from `main`: `git fetch` then `git switch -c test/s3-line-barcode origin/main`.
+1. Start from the submission checkout and use the [build profiles](../../README.md#build-profiles) below to identify the required image.
 2. Commit nothing else while testing; the image is built from the working tree, so `git status` must be clean. Note the commit: `git rev-parse --short HEAD`.
 3. Follow the [power policy](../../README.md#power-and-flashing): USB alone for flashing and TEST images; battery alone for driving.
 4. Broker (one terminal, leave it running):
 
    ```bash
-   "$(brew --prefix)/sbin/mosquitto" -c config/mosquitto-lab.conf
+   mosquitto -c config/mosquitto-lab.conf
    ```
 
 5. A GP20 start is refused until letters are mapped. After each boot, map four letters (left, right, straight, U-turn):
@@ -46,13 +46,13 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 
 | Image | Power | Tests |
 | --- | --- | --- |
-| `./flash.sh test` | USB only | S3-U01 |
-| `BARCODE_DIAGNOSTICS=1 ./flash.sh test` | USB only | S3-U02 |
-| `BARCODE_DIAGNOSTICS=1 ./flash.sh trial` | Battery only | S3-U03, S3-U04, S3-U05 |
+| `test.uf2` | USB only | S3-U01 |
+| `test.uf2` built with `BARCODE_DIAGNOSTICS=1` | USB only | S3-U02 |
+| `trial.uf2` built with `BARCODE_DIAGNOSTICS=1` | Battery only | S3-U03, S3-U04, S3-U05 |
 
 Before every flash:
 
-1. `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
+1. Compare the broker host’s Wi-Fi address (`ip -4 -brief address` on Linux) with `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, edit that line first: the address is built into the image, and a wrong one leaves the dashboard empty.
 2. `git status` is clean, so the commit you record is the code you flashed.
 
 ## Captures
@@ -62,7 +62,7 @@ Every test saves its logs in `testing/line_barcode/logs/<test ID>/`, named `<wha
 USB console (replace `<ID>`):
 
 ```bash
-mkdir -p testing/line_barcode/logs/<ID> && cat /dev/cu.usbmodemMTK3PICO1 | tee testing/line_barcode/logs/<ID>/usb.log
+mkdir -p testing/line_barcode/logs/<ID> && cat /dev/ttyACM0 | tee testing/line_barcode/logs/<ID>/usb.log
 ```
 
 Telemetry with laptop timestamps (every frame, nothing folded):
@@ -77,10 +77,10 @@ Host test code for a test ID is in `logs/<ID>/` beside its logs. It runs the rea
 
 ```bash
 sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
-sh testing/tools/run.sh        # every host test, as CI runs it
+sh testing/tools/run.sh        # every host test
 ```
 
-A manual test with no code prints `no tests for <ID>`. The on-car check for S3-U01 is in `app_program/line_barcode/line_barcode_test.c`; `./flash.sh test` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
+A manual test with no code prints `no tests for <ID>`. The on-car check for S3-U01 is in `app_program/line_barcode/line_barcode_test.c`; `test.uf2` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
 
 ## Every video
 
@@ -98,7 +98,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S3-U01 Line IR levels
 
-**Image:** `./flash.sh test` (wireless, motors always off, USB)
+**Image:** `test.uf2` (wireless, motors always off, USB)
 
 **Set up:** Car on the bench over white; USB capture started.
 
@@ -118,7 +118,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S3-U02 Barcode IR level
 
-**Image:** `BARCODE_DIAGNOSTICS=1 ./flash.sh test`
+**Image:** `test.uf2` built with `BARCODE_DIAGNOSTICS=1`
 
 **Set up:** Car on the bench; USB capture started.
 
@@ -137,7 +137,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S3-U03 All 26 letters
 
-**Image:** `BARCODE_DIAGNOSTICS=1 ./flash.sh trial` (battery)
+**Image:** `trial.uf2` built with `BARCODE_DIAGNOSTICS=1` (battery)
 
 **Set up:** Straight line with one printed letter at a time; letters mapped; captures started.
 
@@ -156,7 +156,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S3-U04 Flipped print
 
-**Image:** `BARCODE_DIAGNOSTICS=1 ./flash.sh trial` (battery)
+**Image:** `trial.uf2` built with `BARCODE_DIAGNOSTICS=1` (battery)
 
 **Set up:** Same as S3-U03 with one letter.
 
@@ -175,7 +175,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S3-U05 Read rate at course speed
 
-**Image:** `BARCODE_DIAGNOSTICS=1 ./flash.sh trial` (battery)
+**Image:** `trial.uf2` built with `BARCODE_DIAGNOSTICS=1` (battery)
 
 **Set up:** One letter on a straight line; captures started.
 

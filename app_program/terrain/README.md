@@ -12,7 +12,7 @@
 
 ## Scope
 
-Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement and lift evidence, as bounded work in core-0 `io_task`. The GY-511 has no gyroscope, so label encoder-derived turn rate accurately. Wiring: [team](../../docs/team.md#2-pins).
+Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement and lift evidence, as bounded work in core-0 `io_task`. The GY-511 has no gyroscope, so label encoder-derived turn rate accurately. Wiring: [team](../../team.md#2-pins).
 
 ## Files
 
@@ -38,7 +38,7 @@ Owner: Darrius. IMU acquisition, boot calibration, filtering, hump measurement a
 - Publish lift evidence for Motion and Mission through shared data; never call a core-1 stop API across cores. A short lift must not disappear before it is seen.
 - Bound I2C and each processing step, and never hold shared locks through I2C.
 
-Widths: [data table](../../docs/team.md#6-data-representation). Fault policy: [fault bitmask](../../docs/architecture.md#fault-bitmask). The 1 mm/count reported scale stays unless measurements justify a change.
+Widths: [data table](../../team.md#5-data-representation). Fault policy: [fault bitmask](../../README.md#fault-policy). The 1 mm/count reported scale stays unless measurements justify a change.
 
 ## Raw USB capture
 

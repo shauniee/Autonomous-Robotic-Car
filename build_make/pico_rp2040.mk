@@ -111,7 +111,7 @@ ifneq ($(filter $(BARCODE_DIAGNOSTICS),0 1),$(BARCODE_DIAGNOSTICS))
 $(error BARCODE_DIAGNOSTICS must be 0 or 1)
 endif
 # FULL_COURSE=1 releases junction turns and obstacle bypass for a course run
-# (flash.sh default). The image gets a _course suffix.
+# on the full-course image. The image gets a _course suffix.
 FULL_COURSE ?= 0
 ifneq ($(filter $(FULL_COURSE),0 1),$(FULL_COURSE))
 $(error FULL_COURSE must be 0 or 1)
@@ -119,9 +119,9 @@ endif
 ifeq ($(FULL_COURSE),1)
 COURSE_SUFFIX := _course
 endif
-# TRACE=0 removes high-rate wheel/line/barcode/terrain diagnostics, keeping
+# TRACE=0 removes high-rate wheel/line/barcode diagnostics, keeping
 # normal telemetry, ACKs and events. Test images default to TRACE=1; a course
-# image defaults to TRACE=0 for the least memory (flash.sh trial overrides it).
+# image defaults to TRACE=0 for the least memory (the trial profile overrides it).
 ifeq ($(FULL_COURSE),1)
 TRACE ?= 0
 else
@@ -134,9 +134,9 @@ ifeq ($(TRACE),0)
 TRACE_SUFFIX := _notrace
 endif
 # BENCH=1: GP20 runs the next single Motion move instead of starting the
-# mission (flash.sh bench). The image gets a _bench suffix.
-# BENCH=2: every GP20 press repeats one 100 mm straight (flash.sh bench10).
-# BENCH=3: GP20 runs only left_90, right_90, turn_180 (flash.sh benchturn).
+# mission. The image gets a _bench suffix.
+# BENCH=2: every GP20 press repeats one 100 mm straight.
+# BENCH=3: GP20 runs only left_90, right_90, turn_180.
 BENCH ?= 0
 ifneq ($(filter $(BENCH),0 1 2 3),$(BENCH))
 $(error BENCH must be 0, 1, 2 or 3)
@@ -164,7 +164,7 @@ endif
 # USB console can no longer send anything.  It needs a USB-serial adapter on
 # GP0/GP1 and takes those two pins.
 # CRASH_REPORT=0 (default): console on USB only; the boot code leaves GP0/GP1
-# alone, so a subsystem may claim them in docs/team.md.
+# alone, so a subsystem may claim them in team.md.
 # CONSOLE=uart always uses UART0 as the console, so it forces CRASH_REPORT=1.
 CRASH_REPORT ?= 0
 ifneq ($(filter $(CRASH_REPORT),0 1),$(CRASH_REPORT))

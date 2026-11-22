@@ -17,13 +17,13 @@ How to run and record S4-U01, S4-U02 and S4-U03. See [TEST_LOG.md](TEST_LOG.md) 
 
 ## Before you start
 
-1. Work on a fresh branch from `main`: `git fetch` then `git switch -c test/s4-terrain origin/main`.
+1. Use the [build profiles](../../README.md#build-profiles) for this submission checkout.
 2. Commit nothing else while testing; the image is built from the working tree, so `git status` must be clean. Note the commit: `git rev-parse --short HEAD`.
 3. Follow the [power policy](../../README.md#power-and-flashing): USB alone for flashing and TEST images; battery alone for driving.
 4. For S4-U03, start the broker if it is not already running:
 
    ```bash
-   "$(brew --prefix)/sbin/mosquitto" -c config/mosquitto-lab.conf
+   mosquitto -c config/mosquitto-lab.conf
    ```
 
 ## Which image to flash
@@ -32,12 +32,12 @@ Host test code (`sh testing/tools/run.sh <ID>`) runs on the laptop and needs no 
 
 | Image | Power | Tests |
 | --- | --- | --- |
-| `TERRAIN_DIAGNOSTICS=1 ./flash.sh test` | USB only | S4-U01, S4-U02 |
-| `./flash.sh trial` | Battery only | S4-U03 |
+| `test.uf2` built with `TERRAIN_DIAGNOSTICS=1` | USB only | S4-U01, S4-U02 |
+| `trial.uf2` | Battery only | S4-U03 |
 
 Before every flash:
 
-1. For S4-U03, `ipconfig getifaddr en0` must print the `MQTT_BROKER_IP` in `config/wifi_secrets.h`. If the hotspot gave the laptop a new address, update that line before flashing so the Pico can reach the broker.
+1. For S4-U03, check that the broker host’s Wi-Fi address matches `MQTT_BROKER_IP` in `config/wifi_secrets.h`. On Linux, use `ip -4 -brief address`. If the hotspot gave the laptop a new address, update that line before flashing so the Pico can reach the broker.
 2. Check that `git status` is clean and record the exact firmware commit used for the run.
 
 ## Captures
@@ -47,7 +47,7 @@ Keep the latest capture for each test under `testing/terrain/logs/<test ID>/`. S
 USB console for S4-U01:
 
 ```bash
-cat /dev/cu.usbmodemMTK3PICO1 | tee testing/terrain/logs/S4-U01/usb.log
+cat /dev/ttyACM0 | tee testing/terrain/logs/S4-U01/usb.log
 ```
 
 S4-U02 and S4-U03 use the capture commands in their test steps below.
@@ -58,10 +58,10 @@ Host test code for a test ID is in `logs/<ID>/` beside its logs. It runs the rea
 
 ```bash
 sh testing/tools/run.sh <ID>   # one test ID, for example the first one below
-sh testing/tools/run.sh        # every host test, as CI runs it
+sh testing/tools/run.sh        # every host test
 ```
 
-A manual test with no code prints `no tests for <ID>`. The on-car check for S4-U01 is in `app_program/terrain/terrain_test.c`; `./flash.sh test` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
+A manual test with no code prints `no tests for <ID>`. The on-car check for S4-U01 is in `app_program/terrain/terrain_test.c`; `test.uf2` runs it at power-up and prints `[TEST] <ID> PASS|FAIL`.
 
 ## Every video
 
@@ -79,7 +79,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S4-U01 IMU boot calibration
 
-**Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh test`
+**Image:** `test.uf2` built with `TERRAIN_DIAGNOSTICS=1`
 
 **Set up:** USB capture started.
 
@@ -99,16 +99,17 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S4-U02 Hump count and height
 
-**Image:** `TERRAIN_DIAGNOSTICS=1 ./flash.sh test` (USB only).
+**Image:** `test.uf2` built with `TERRAIN_DIAGNOSTICS=1` (USB only).
 
-**Set up:** Measure the hump to confirm it is 10 mm. In macOS Terminal (zsh), run this from the repo root before resetting the Pico. It reopens USB after a reset, saves the full console output, and displays calibration and completed hump estimates for the video. The display applies `HUMP_CALIB_FACTOR` from the configuration used to build the TEST image to each valid rise sample.
+**Set up:** Measure the hump to confirm it is 10 mm. In Bash, run this from the repo root before resetting the Pico. Set `port` to the Pico’s USB serial device. It reopens USB after a reset, saves the full console output, and displays calibration and completed hump estimates for the video. The display applies `HUMP_CALIB_FACTOR` from the configuration used to build the TEST image to each valid rise sample.
 
-```zsh
+```bash
+port=/dev/ttyACM0
 (
   while true; do
-    for port in /dev/cu.usbmodemMTK3PICO*(N); do
+    if [ -c "$port" ]; then
       cat "$port"
-    done
+    fi
     sleep 0.1
   done
 ) | tee testing/terrain/logs/S4-U02/usb.log | awk '
@@ -144,7 +145,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 2. Push the car forward by hand so one wheel crosses the hump. Let it settle on flat ground and wait for the new `humps=` line with its height estimate.
 3. Return to the starting side on flat ground and repeat for three crossings total. Press Ctrl-C to stop the capture.
 
-**Show on video:** The ruler at 10 mm, each crossing, and the USB terminal showing `humps=1`, `humps=2`, `humps=3` and each corresponding height estimate. Record the three estimates against the 10 mm reference. The height error tolerance is pending under [D10](../../docs/project-specs.md#pending-decisions).
+**Show on video:** The ruler at 10 mm, each crossing, and the USB terminal showing `humps=1`, `humps=2`, `humps=3` and each corresponding height estimate. Record the three estimates against the 10 mm reference. The height error tolerance is pending.
 
 **Test code:** `logs/S4-U02/test_terrain.c` (host).
 
@@ -154,7 +155,7 @@ Give the subsystem owner the test ID, the video link and anything you measured (
 
 ### S4-U03 Mission stop on lift and flip
 
-**Image:** `./flash.sh trial`. Flash over USB with the battery disconnected. Unplug USB before connecting the battery for the trial.
+**Image:** `trial.uf2`. Flash over USB with the battery disconnected. Unplug USB before connecting the battery for the trial.
 
 **Set up:** With the broker running, start the capture from the repo root. Then boot on battery with the car still on the floor, wait for `state=READY | Terrain: none`, and leave GP20 untouched. The terminal shows changes in mission state or terrain faults. The log keeps the full capture.
 

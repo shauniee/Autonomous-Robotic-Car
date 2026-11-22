@@ -12,10 +12,10 @@ assert check.main([str(ROOT)]) == 0
 
 with tempfile.TemporaryDirectory() as temporary:
     copy = Path(temporary) / "repo"
-    for part in ("app_program", "docs", "scripts", "testing",
-                 ".github/workflows"):
+    for part in ("app_program", "scripts", "testing"):
         shutil.copytree(ROOT / part, copy / part,
                         ignore=shutil.ignore_patterns("*.o", "*.d"))
+    shutil.copy2(ROOT / "team.md", copy / "team.md")
     assert check.main([str(copy)]) == 0
 
     # A missing test, an unwired test, a missing report and a removed API.
