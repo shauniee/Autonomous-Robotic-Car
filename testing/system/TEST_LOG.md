@@ -28,3 +28,9 @@ Add a new row for every run. Never edit or delete old rows.
 | Date | Test ID | Commit | Tester | Result | Log / evidence | Notes |
 |---|---|---|---|---|---|---|
 | 2026-11-20 | SYS-U01 | `880ff16` (`trial`) | Mahesha | PASS | `logs/SYS-U01/monitor.log`; [Test video](https://youtu.be/PXza6Wc6LAE) | Battery only, fresh boot 11:02:19, two runs. **Mapping:** letter A mapped to RIGHT over MQTT (ACK 11:02:32), no recompile. **Line:** VISIBLE throughout both runs. **Hump:** HUMP events of 9 and 13 mm (run 1) and 12 mm (run 2), line held. **Obstacle stop:** 150 mm box, car at rest at 142 mm and 140 mm (`front=`), target 150 mm, no contact. **Bypass:** box read 216 and 194 mm wide; passed right with 385 mm clearance and left with 1023 mm; back in FOLLOW_LINE about 23 s after each OBSTACLE event. **Barcode turn:** three reads of A, each followed by a right turn at the next junction and an exit on the new line. **Telemetry:** 12 events, each once (3 HUMP, 2 OBSTACLE, 3 BARCODE, 4 TURN); 808 frames, mean 545 ms apart, longest gap 2.0 s. **Stop:** GP21 ended run 1; lifting the car stopped run 2 (lift stop). |
+
+**Notes on the 2026-11-20 SYS-U01 row (added 2026-11-22):**
+
+- **Commit:** `880ff16` differs from the submitted firmware only in comments, guides and the `clean` rule. `git diff 880ff16 HEAD -- app_program device build_make` shows this.
+- **Line:** "VISIBLE throughout" refers to the sampled `line=` field. Telemetry #147 in run 1 shows `state=REACQUIRE` just after the second hump; #148, 0.59 s later, is back in FOLLOW_LINE. This was a course run with one recovery, not an uninterrupted qualifying lap.
+- **Scope:** one mapping (A to RIGHT), one obstacle box with room to pass on both sides, two runs.
