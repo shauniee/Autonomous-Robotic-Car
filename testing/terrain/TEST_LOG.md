@@ -16,7 +16,7 @@ Define a test here before running it. Test IDs never change.
 | ID | What is tested | Requirement / interface | Method | Steps / how | Expected result |
 |---|---|---|---|---|---|
 | S4-U01 | IMU boot calibration | FR-11 | manual | 1. Boot still. 2. Boot while moving. 3. Boot with the IMU disconnected | Still boot calibrates; the others report a calibration fault and refuse to start |
-| S4-U02 | Hump count and height | M4, M5 | manual | Cross one measured 10 mm hump three times by hand and capture `usb.log` | `humps=` increments once per crossing and ends at 3. Record the calibrated USB height estimate for each crossing against the 10 mm reference. |
+| S4-U02 | Hump count and height | — | manual | Cross one measured 10 mm hump three times by hand and capture `usb.log` | `humps=` increments once per crossing and ends at 3. Record the calibrated USB height estimate for each crossing against the 10 mm reference. |
 | S4-U03 | Mission stop on lift and flip | NFR-07 | manual | 1. On the trial image, car READY and not driving, lift it off the floor, set it down, press and release GP21. 2. Repeat, turning the car over | Each raises `Terrain: lifted` and `state=STOPPED`; it stays stopped once flat until GP21, which returns READY |
 
 *Method:* **auto** = `TEST_CHECK` in code, result printed on the console;
