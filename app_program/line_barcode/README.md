@@ -49,7 +49,7 @@ Line following, barcode reads and junction turns pass on the car: S3-U01 to S3-U
 
 ## Line success measure
 
-Agreed by Nicholas for M1; no recorded lap rate is required.
+Agreed by Nicholas; no recorded lap rate is required.
 
 - **Attempt:** one lap of a written course layout, from a fresh GP20 start at 100 mm/s, on one image with no changes between laps. The lap includes barcodes, junctions and humps.
 - **Success, all of these:**
