@@ -67,7 +67,7 @@ endif
 
 # Other EXE_FILEs
 clean:
-	-$(RM) $(OBJS) $(SECONDARY_SIZE) $(ASM_DEPS) $(S_UPPER_DEPS) $(C_DEPS) $(EXE_FILE).elf $(EXE_FILE).map
+	-$(RM) $(OBJS) $(SECONDARY_SIZE) $(ASM_DEPS) $(S_UPPER_DEPS) $(C_DEPS) $(EXE_FILE).elf $(EXE_FILE).map $(EXE_FILE).uf2
 	-@echo ' '
 
 .PHONY: all clean dependents
